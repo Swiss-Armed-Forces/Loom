@@ -112,6 +112,61 @@ let
       /run/issue.d/50-loom.issue
   '';
 
+  # Sits beside `loom-info` and does an unrelated job: that one draws the banner
+  # the login screen shows, this one reports the hardware underneath it.
+  #
+  # The script is cicd/platform_info.sh, shared verbatim with the devenv command
+  # of the same name, because the box it most needs to run on is one that is not
+  # running Loom yet -- see the header there. What the appliance adds is the
+  # declared half: the platform's own claims, so the report can say where the
+  # hardware disagrees with the image rather than leaving somebody to compare two
+  # screens by eye. Passed as environment variables through the same `--set`
+  # route installer.nix already uses for the stick's scripts.
+  #
+  # writeShellApplication runs shellcheck at build time, so a mistake in that
+  # file fails `nix-build -A box` rather than appearing on a console in the field.
+  loom-platform-info = pkgs.writeShellApplication {
+    name = "loom-platform-info";
+    runtimeInputs =
+      with pkgs;
+      [
+        coreutils
+        gnused
+        gnugrep
+        pciutils # lspci
+        usbutils
+        iw # the AP-mode probe, which is the whole point on a --wifi box
+        nvme-cli
+        util-linux # lsblk
+        systemd # udevadm, for ID_PATH
+        jq # --json only; the text report needs none of this
+      ]
+      ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi;
+    text = ''
+      export LOOM_PLATFORM_ID=${lib.escapeShellArg config.loom.platform.id}
+      export LOOM_PLATFORM_DESCRIPTION=${lib.escapeShellArg config.loom.platform.description}
+      export LOOM_PLATFORM_NET_MATCH=${
+        lib.escapeShellArg (
+          lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k}=${v}") config.loom.platform.netMatch)
+        )
+      }
+      export LOOM_PLATFORM_WIFI_MATCH=${
+        lib.escapeShellArg (
+          lib.optionalString (config.loom.platform.wifiMatch != null) (
+            lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k}=${v}") config.loom.platform.wifiMatch)
+          )
+        )
+      }
+      export LOOM_PLATFORM_GPU_VENDOR=${
+        lib.escapeShellArg (
+          lib.optionalString (config.loom.platform.gpuVendor != null) config.loom.platform.gpuVendor
+        )
+      }
+
+      ${builtins.readFile ../cicd/platform_info.sh}
+    '';
+  };
+
   loom-info = pkgs.writeShellApplication {
     name = "loom-info";
     runtimeInputs = [ pkgs.coreutils ] ++ lib.optional showWifi pkgs.qrencode;
@@ -449,7 +504,15 @@ in
     # Omitted entirely on a platform that does not deploy Ollama: there would be
     # nothing for it to talk to, and it is not a small closure to carry for that.
     ++ lib.optional config.loom.platform.runsAiServices pkgs.opencode
-    ++ [ loom-info ]
+    # Both interactive, and neither belongs in `loom.toolchain`: no unit runs
+    # either. loom-platform-info is field diagnosis in the same sense as the
+    # pciutils/nvme-cli block above -- it is what somebody runs when the box
+    # does not behave, or when the values in platforms/<id>.nix need checking
+    # against the hardware for the first time.
+    ++ [
+      loom-info
+      loom-platform-info
+    ]
     ++ config.loom.entrypoints;
 
   # Also handed to the units in modes.nix, which need them on their PATH rather

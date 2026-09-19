@@ -141,11 +141,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
   `Documentation/appliance.md`
-- `appliance-test` - Run the NixOS appliance VM tests (`nixos/tests/`). Takes any of `appliance`,
-  `install`, `wifi`, `usb-ingest`, `interface-fallback`; with no argument it runs all five,
-  cheapest first. Defaults to the platform matching the host architecture — the tests boot a real
-  VM, so they cannot be cross-built. `--gc` collects garbage afterwards and `--min-free GB` sets
-  how much space nix should free mid-build; see the disk budget section in `nixos/README.md`
+- `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
+  `appliance`, `install`, `wifi`, `usb-ingest`, `interface-fallback`; with no argument it runs all
+  six, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
+  a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
+  `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
+  `nixos/README.md`
+- `appliance-test hardware --platform PLATFORM` - The one test that boots nothing: it asserts what
+  `nixos-hardware` gives each platform and that the Loom overrides still take the desktop userspace
+  back off. Needs no KVM and is not bound to the host architecture, so all three platforms can be
+  checked from one machine in seconds. Run it after every renovate bump of the `nixos-hardware` pin
+- `loom-platform-info` - Report this box's hardware — wired ports and their drivers, radios and
+  whether they do AP mode, GPU with the firmware VRAM carve-out beside the GTT pool, firmware
+  version — and, on an appliance, how that compares with what `nixos/platforms/<id>.nix` declared.
+  Plain bash with no Nix dependency, so it also runs on a box that is not running Loom yet. This is
+  how the guessed values in a platform file get checked against real hardware. `--json`, `--output`
 
 **Utilities:**
 

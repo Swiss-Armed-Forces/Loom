@@ -16,6 +16,16 @@
 # and boot-tested without the corresponding hardware to hand.
 {
   nixpkgs ? throw "nixos: pass --arg nixpkgs <path>; normally done by the 'build-appliance-image' script",
+  # https://github.com/NixOS/nixos-hardware, from devenv's `inputs.nixos-hardware`
+  # by the same route as nixpkgs. Reached through `specialArgs` rather than used
+  # here, because platforms/<id>.nix is what decides which profile -- if any --
+  # its box takes; see nixos/README.md.
+  #
+  # Thrown rather than defaulted to null on purpose. A closure built without it
+  # would evaluate perfectly and produce a *different* box from every other
+  # stick, silently -- the same class of failure the nixSystem assertion below
+  # exists to turn into an error.
+  nixosHardware ? throw "nixos: pass --arg nixosHardware <path>; normally done by the 'build-appliance-image' script",
   system ? builtins.currentSystem,
   # Which physical box this image is for. See platforms/<id>.nix; the chosen
   # platform's `nixSystem` is asserted against `system` below.
@@ -187,6 +197,7 @@ let
 
   specialArgs = {
     inherit
+      nixosHardware
       loomSrc
       tag
       loomHostsJson
@@ -375,6 +386,15 @@ in
     # asserts that the toolchain carries what up.sh demands of a GPU box, and
     # a test that decided for itself which box this is could not.
     inherit (boxSystem.config.loom.platform) gpuVendor;
+  };
+
+  # `nix-build ./nixos -A tests.applianceHardware --argstr platform nuc12 ...`
+  # What nixos-hardware gives this platform, and what the Loom-side overrides
+  # take back off it. Not a VM test: every value is read off the evaluated
+  # configuration, so it costs seconds and needs no KVM. Both closures are
+  # passed because the platform module reaches the installer as well as the box.
+  tests.applianceHardware = import ./tests/appliance-hardware.nix {
+    inherit pkgs boxSystem installerSystem;
   };
 
   # `nix-build ./nixos -A tests.applianceInstall --argstr system x86_64-linux`

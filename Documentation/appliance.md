@@ -138,13 +138,18 @@ matches its NIC.
 
 On the EVO-X2 specifically, check two more firmware settings before installing:
 
-- **The UMA / VRAM split.** The Ryzen AI Max+ 395 carves its LPDDR5X between CPU and iGPU in firmware, and
-  this is the one setting on this box that Loom genuinely cares about. Linux only ever sees what is left, and
-  that is what minikube is sized from — but Ollama now runs on the iGPU, and the models have to fit in the
-  half the iGPU gets. Both ends have a floor and the box has 128 GB: leave enough for the chat and embedding
-  models on the GPU side, and keep the rest above the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` checks. A split
-  that starves either end fails loudly — too little VRAM and Ollama falls back or dies, too little system
-  memory and `up.sh` refuses to start.
+- **The UMA / VRAM split — set it to the _lowest_ value the firmware offers.** This is counterintuitive
+  enough to be worth the paragraph. The Ryzen AI Max+ 395 carves a fixed slice of its LPDDR5X off for the
+  iGPU in firmware, and Linux never sees that slice: it is subtracted from the host whether the GPU uses it
+  or not. It is also _not_ where the iGPU's working memory comes from. That comes from GTT — ordinary
+  system memory the GPU pins on demand — and the image sets its ceiling at 64 GiB
+  (`nixos/platforms/evo-x2.nix`). So a large carve-out starves both ends at once: it takes memory away from
+  minikube _and_ caps nothing useful for Ollama. Pick the minimum on offer; on EVO-X2 BIOS 1.12 that is
+  2 GB, and the ~1.5 GB of GTT headroom it costs is not worth hunting for.
+
+  This follows published measurement on this board rather than on our own unit. Confirm it after
+  installing with `loom-platform-info`, which prints the firmware carve-out and the GTT ceiling side by
+  side.
 - **Disable the radios** in the AMI BIOS, for the same reason the threat model gives above.
 
 ## Building a stick
@@ -173,6 +178,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--allow-cross` | Build for an architecture other than the host's. |
 | `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
 | `--nixpkgs PATH` | nixpkgs source. Required — `build-appliance-image` passes devenv's pinned nixpkgs for you, so you only need this when driving the script directly. |
+| `--nixos-hardware PATH` | [nixos-hardware](https://github.com/NixOS/nixos-hardware) source, which the x86 platforms take their hardware profile from. Required, and passed for you the same way. |
 | `--output DIR` | Where to put the image. Defaults to `.appliance-build/`. |
 | `--skip-STEP` | Skip a build step, by name. |
 | `--yes` | Skip confirmation prompts. |
@@ -806,7 +812,18 @@ enables minikube's `amd-gpu-device-plugin` addon and asks `minikube start` for t
 and already loaded — it is what puts the installer menu on the monitor — and it is what exposes `/dev/kfd`
 for minikube's docker driver to pass into the node container. The ROCm userspace lives inside the
 `ollama/ollama:rocm` image, so the box itself carries only `rocm-smi`, which `up.sh` needs for its preflight.
-Set the firmware's VRAM split with this in mind; see [What you need](#what-you-need).
+
+That last point is also what insulates this box from an unsettled corner of the ecosystem: ROCm's support
+for this GPU (`gfx1151`) has been uneven enough that published benchmarks disagree about which release is
+fastest, and nixpkgs has open bugs against its own ROCm on this part. None of it reaches the appliance,
+which needs `amdgpu` and two kernel parameters and nothing else.
+
+Those two parameters are how the iGPU gets its memory: `amdgpu.gttsize` and `ttm.pages_limit`, set in
+`nixos/platforms/evo-x2.nix` to a 64 GiB ceiling — half the box, comfortably more than the baked-in models
+need, and leaving the rest of the stack more than twice the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` checks.
+They raise a ceiling rather than reserving anything: nothing leaves the host until the GPU actually pins
+it. Set the firmware's VRAM split to its _minimum_ to go with them, and see
+[What you need](#what-you-need) for why that is the right way round.
 
 **On the DGX Spark** mainline Linux boots but is reported to lose both the GPU and the ConnectX-7 networking,
 which NVIDIA provides through their own kernel fork. The NIC is the part that makes this more than a
@@ -839,7 +856,33 @@ prints what it decided:
 `--no-gpu` is refused on a platform that has no GPU to disable, so a stick that came out CPU-only did so for
 a reason you can read back off it.
 
+Before reaching for a new stick, run `loom-platform-info`: it says whether `/dev/kfd` exists at all, what
+`rocm-smi` reports, and — the case that looks like a working GPU but performs like none — how much GTT the
+kernel actually granted against the ceiling the image asked for. A GTT figure far below that ceiling means
+the kernel parameters did not take effect, which is a different problem from ROCm not enumerating, and has
+a different fix.
+
 ## Troubleshooting
+
+**Start with `loom-platform-info`.** It prints what the box actually is beside what the image was told to
+expect, which is the fastest route through most of what follows:
+
+```bash
+loom-platform-info
+```
+
+It reports the wired ports with their drivers and PCI paths — and says outright how many of them matched
+the platform's `netMatch`, and whether `loom0` exists; the radios, including whether the driver advertises
+AP mode at all, which is what decides whether `--wifi` can work; the GPU, with the firmware VRAM carve-out
+and the GTT pool side by side, plus whether `/dev/kfd` is there for `up.sh` to find; and the firmware
+version and boot mode. `--json` gives the same thing machine-readably; `--output FILE` writes to a file.
+
+The same command is available in the development shell, where it reports whatever machine you run it on.
+That is deliberate: it is how a box gets checked **before** there is an appliance image for it, and it is
+what to run on a new box whose values in `nixos/platforms/<id>.nix` are still guesses.
+
+One limitation worth knowing: an installed appliance has no route off its own network, so the report leaves
+by photograph, by `--output` onto a mounted filesystem, or by being read aloud. There is no upload.
 
 **The box boots into the installer every time.** The firmware is preferring the stick's removable-media path.
 Re-run the install, or set the internal disk first in the firmware boot order.
@@ -851,7 +894,9 @@ reports whether a key is present.
 **The login screen says `loom0 does not exist`.** The platform's interface match selected nothing, so the box
 has no address and serves no DHCP or DNS. The warning is printed under the banner, above the press-a-key
 prompt, and lists the interfaces that are present; rebuild the stick with `--interface <one of them>`. On the
-EVO-X2, first just try the other ethernet port.
+EVO-X2, first just try the other ethernet port. `loom-platform-info` names the ports and says which of them
+the match did and did not select — including the case where it matched more than one, where udev picks and
+moving the cable is the fix.
 
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.

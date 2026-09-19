@@ -7,6 +7,12 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
+  # renovate: datasource=git-refs depName=devenv-nixos-hardware packageName=https://github.com/NixOS/nixos-hardware currentValue=master currentDigest=b2d7d02644f0002535a3bb51a73780945cdc7ba4
+  nixos-hardware:
+    url: github:NixOS/nixos-hardware
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
   # renovate: datasource=git-refs depName=devenv-nixpkgs packageName=https://github.com/cachix/devenv-nixpkgs currentValue=rolling currentDigest=256551e45f6303e142ab4a98be1bf243feb77dc0
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling

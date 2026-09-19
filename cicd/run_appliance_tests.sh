@@ -26,6 +26,10 @@ CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 # `inputs.nixpkgs-stable`, so devenv.lock stays the only nixpkgs pin here.
 NIXPKGS=""
 
+# nixos-hardware, by the same route. The platform modules import it, so every
+# target here needs it -- including the ones that never look at a GPU.
+NIXOS_HARDWARE=""
+
 # Which box to build the nodes for. Defaults to whichever platform matches this
 # machine's architecture, because a VM test boots a real kernel: cross-building
 # one produces a closure that cannot be run here.
@@ -37,7 +41,23 @@ HOST_ARCH=""
 
 # Short names, in the order they are run: cheapest first, so a mistake that
 # breaks all of them is reported in a minute rather than in twenty.
-KNOWN_TESTS=(install interface-fallback wifi usb-ingest appliance)
+#
+# `hardware` is first because it is the only one that never boots anything: it
+# reads the evaluated configuration and exits, in seconds. A nixos-hardware bump
+# that broke every platform should be reported before the VM boots, not after.
+KNOWN_TESTS=(hardware install interface-fallback wifi usb-ingest appliance)
+
+# Targets that only read the evaluated configuration -- no kernel, no VM, and
+# not even the appliance closure. The architecture check and the KVM and disk
+# notes below all exist for VM tests and none of them apply to these, so a
+# selection made up entirely of them lifts all three. That is what makes
+# `appliance-test hardware --platform spark` work on an x86_64 workstation,
+# which is exactly what you want to run after a nixos-hardware bump: all three
+# platforms checked from one machine, in seconds.
+EVAL_ONLY_TESTS=(hardware)
+# Resolved in Main, once, like NIX_SYSTEM -- not computed inside a condition,
+# which would switch `set -e` off for the duration.
+SELECTION_NEEDS_VM=true
 
 # Free space, in GiB, that nix should collect garbage to maintain during the
 # build. 0 does not pass the options at all. Nix only honours them from the
@@ -87,6 +107,7 @@ platform_system(){
 test_attribute(){
     case "${1}" in
         appliance)          printf 'tests.appliance'                  ;;
+        hardware)           printf 'tests.applianceHardware'          ;;
         install)            printf 'tests.applianceInstall'           ;;
         wifi)               printf 'tests.applianceWifi'              ;;
         usb-ingest)         printf 'tests.applianceUsbIngest'         ;;
@@ -117,12 +138,30 @@ validate_environment(){
         exit 1
     fi
 
+    if [[ -z "${NIXOS_HARDWARE}" ]]; then
+        echo >&2 "[!] Error: no nixos-hardware given."
+        echo >&2 "    Run this through devenv: 'appliance-test' passes --nixos-hardware for you."
+        echo >&2 "    To drive the script directly, pass --nixos-hardware PATH yourself."
+        exit 1
+    fi
+    if [[ ! -e "${NIXOS_HARDWARE}/common/pc/ssd/default.nix" ]]; then
+        echo >&2 "[!] Error: not a nixos-hardware source: ${NIXOS_HARDWARE}"
+        exit 1
+    fi
+
+    # Everything from here down is about booting a VM. An eval-only selection
+    # does none of that -- see EVAL_ONLY_TESTS -- so it skips the lot.
+    if [[ "${SELECTION_NEEDS_VM}" = false ]]; then
+        return 0
+    fi
+
     # No --allow-cross to go with build-appliance-image's: an image can be built
     # under emulation and flashed, but a test has to boot the kernel it built.
     if [[ "${NIX_SYSTEM}" != "${HOST_ARCH}-linux" ]]; then
         echo >&2 "[!] Error: platform '${PLATFORM}' is ${NIX_SYSTEM}, but this host is ${HOST_ARCH}."
         echo >&2 "    The tests boot a VM, so they cannot be cross-built. Run them on a"
         echo >&2 "    ${NIX_SYSTEM} host, or pass --platform for one that matches this machine."
+        echo >&2 "    'appliance-test hardware --platform ${PLATFORM}' needs no VM and runs here."
         exit 1
     fi
 
@@ -168,6 +207,7 @@ run_test(){
         "${CONTEXT_DIR}/nixos"
         --attr "${attribute}"
         --arg nixpkgs "${NIXPKGS}"
+        --arg nixosHardware "${NIXOS_HARDWARE}"
         --argstr system "${NIX_SYSTEM}"
         --argstr platform "${PLATFORM}"
         # The working tree, filtered by `loomSrc` in nixos/default.nix -- which
@@ -226,6 +266,7 @@ usage(){
     echo "  --max-free GB                 how far a collection goes once it starts (default: ${MAX_FREE_GB})"
     echo "  --gc                          collect garbage after the tests have run"
     echo "  --nixpkgs NIXPKGS             nixpkgs source (required; 'appliance-test' passes it)"
+    echo "  --nixos-hardware PATH         nixos-hardware source (required; passed the same way)"
 }
 
 #
@@ -275,6 +316,11 @@ while [[ $# -gt 0 ]]; do
         --nixpkgs)
             shift
             NIXPKGS="${1?Missing NIXPKGS}"
+            shift
+        ;;
+        --nixos-hardware)
+            shift
+            NIXOS_HARDWARE="${1?Missing NIXOS_HARDWARE}"
             shift
         ;;
         -*)
@@ -327,6 +373,20 @@ NIX_SYSTEM="$(platform_system "${PLATFORM}")"
 if (( ${#TESTS[@]} == 0 )); then
     TESTS=("${KNOWN_TESTS[@]}")
 fi
+
+# True as soon as one selected test boots something. Computed here rather than
+# in a condition inside validate_environment, for the `set -e` reason above.
+SELECTION_NEEDS_VM=false
+for test in "${TESTS[@]}"; do
+    case " ${EVAL_ONLY_TESTS[*]} " in
+        *" ${test} "*)
+            :
+        ;;
+        *)
+            SELECTION_NEEDS_VM=true
+        ;;
+    esac
+done
 
 validate_environment
 resolve_loom_values

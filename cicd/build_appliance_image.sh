@@ -11,6 +11,12 @@ CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 # back to, and validate_environment says so rather than letting nix fail later.
 NIXPKGS=""
 
+# nixos-hardware, by the same route and for the same reason. It carries the
+# upstream profile for the x86 platforms -- see nixos/platforms/<id>.nix -- and
+# is deliberately not optional: a stick built without it would differ silently
+# from every other stick, which is the failure this directory is built to avoid.
+NIXOS_HARDWARE=""
+
 OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
 
 # Which box this stick is for. The nix system follows from it unless --system
@@ -159,6 +165,17 @@ validate_environment(){
     fi
     if [[ ! -e "${NIXPKGS}/nixos/lib/eval-config.nix" ]]; then
         echo >&2 "[!] Error: '${NIXPKGS}' does not look like a nixpkgs checkout."
+        exit 1
+    fi
+
+    if [[ -z "${NIXOS_HARDWARE}" ]]; then
+        echo >&2 "[!] Error: no nixos-hardware given."
+        echo >&2 "    Run this through devenv: 'build-appliance-image' passes --nixos-hardware for you."
+        echo >&2 "    To drive the script directly, pass --nixos-hardware PATH yourself."
+        exit 1
+    fi
+    if [[ ! -e "${NIXOS_HARDWARE}/common/pc/ssd/default.nix" ]]; then
+        echo >&2 "[!] Error: '${NIXOS_HARDWARE}' does not look like a nixos-hardware checkout."
         exit 1
     fi
 
@@ -516,6 +533,7 @@ build_image(){
     nix-build "${CONTEXT_DIR}/nixos" \
         --attr installerImage \
         --arg nixpkgs "${NIXPKGS}" \
+        --arg nixosHardware "${NIXOS_HARDWARE}" \
         --argstr system "${NIX_SYSTEM}" \
         --argstr platform "${PLATFORM}" \
         --arg repoSrc "${WORK_DIR}/loom" \
@@ -744,6 +762,7 @@ usage(){
     echo "                                platform match it (renamed to loomwl0 either way)"
     echo "  --minikube-ip MINIKUBE_IP     address '*.loom' resolves to on the box (default: ${MINIKUBE_IP})"
     echo "  --nixpkgs NIXPKGS             nixpkgs source (required; 'build-appliance-image' passes it)"
+    echo "  --nixos-hardware PATH         nixos-hardware source (required; passed the same way)"
     echo "  -y|--yes                      do not ask for confirmation"
     echo "  --allow-cross                 allow building for a system other than the host"
     echo "  --skip-STEP                   skip step STEP"
@@ -879,6 +898,11 @@ while [[ $# -gt 0 ]]; do
         --nixpkgs)
             shift
             NIXPKGS="${1?Missing NIXPKGS}"
+            shift
+        ;;
+        --nixos-hardware)
+            shift
+            NIXOS_HARDWARE="${1?Missing NIXOS_HARDWARE}"
             shift
         ;;
         -y|--yes)

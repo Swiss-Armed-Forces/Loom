@@ -1103,11 +1103,12 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        # Hand the pinned nixpkgs to the build so nixos/ needs no flake and
-        # devenv.lock stays the only nixpkgs pin in this repository. Passed
-        # ahead of "$@" so an explicit --nixpkgs on the command line still wins.
+        # Hand the pinned sources to the build so nixos/ needs no flake and
+        # devenv.lock stays the only pin in this repository. Passed ahead of
+        # "$@" so an explicit --nixpkgs or --nixos-hardware still wins.
         ./cicd/build_appliance_image.sh \
           --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
           "''${@}"
       )
     '';
@@ -1120,10 +1121,28 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        # As build-appliance-image: the pinned nixpkgs goes in ahead of "$@", so
-        # an explicit --nixpkgs still wins.
+        # As build-appliance-image: the pinned sources go in ahead of "$@", so
+        # an explicit --nixpkgs or --nixos-hardware still wins.
         ./cicd/run_appliance_tests.sh \
           --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.loom-platform-info = {
+    description = "Report this box's hardware, and how it compares with its Loom platform";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # No pinned inputs to hand over: this one is plain bash on purpose, so
+        # that it also runs on a box that is not running Loom yet -- a Spark on
+        # DGX OS, an EVO-X2 on whatever it shipped with. nixos/box.nix wraps the
+        # same script for the appliance, where it also knows what was declared.
+        ./cicd/platform_info.sh \
           "''${@}"
       )
     '';

@@ -8,11 +8,11 @@ this file is about the code.
 
 | File | What it is |
 | --- | --- |
-| `default.nix` | Entry point. Takes `nixpkgs` as an argument and returns the build targets. |
+| `default.nix` | Entry point. Takes `nixpkgs` and `nixosHardware` as arguments and returns the build targets. |
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
-| `platforms/spark.nix` | DGX Spark: aarch64, ConnectX-7. |
-| `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. |
-| `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). |
+| `platforms/spark.nix` | DGX Spark: aarch64, ConnectX-7. No upstream hardware profile exists. |
+| `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. Imports the nixos-hardware Strix Halo leaves, and sets the iGPU's GTT ceiling. |
+| `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). Imports `intel/nuc/12wshi7`. |
 | `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
 | `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
 | `console.nix` | What the operator meets: the press-a-key login, the three-pane session (the log-to-`k9s` handover, and `loom-chat` on the cluster's Ollama), `/dev/console`. No pane is a shell; `Alt-F2` is. |
@@ -27,6 +27,7 @@ this file is about the code.
 | `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer-scripts/` | `common.sh` (device interlock, the auto-install decision, console styling), `install.sh`, `wipe.sh`, `menu.sh`, and a bats suite run at build time. |
+| `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
@@ -46,6 +47,38 @@ Two reasons, either one sufficient:
 
 The `build-appliance-image` devenv script passes devenv's `inputs.nixpkgs-stable` to
 `cicd/build_appliance_image.sh` as `--nixpkgs`, which forwards it as `--arg nixpkgs`.
+`inputs.nixos-hardware` takes the identical route as `--nixos-hardware` / `--arg nixosHardware`, and so
+does `appliance-test` via `cicd/run_appliance_tests.sh`. Both arguments are **required** — there is no
+`null` fallback, because a closure built without one would evaluate perfectly and quietly produce a
+different box from every other stick.
+
+## Why nixos-hardware, and what is forced back off
+
+Two of the three platforms are covered upstream, and the coverage is uneven enough to be worth stating:
+
+| Platform | Upstream | Effect |
+| --- | --- | --- |
+| `nuc12` | `intel/nuc/12wshi7` — literally this box, down to the chassis letter | `thermald`, and `i915` in the initrd |
+| `evo-x2` | no EVO-X2; the `common/*` Strix Halo leaves that `framework/desktop/amd-ai-max-300-series` is built from | `amd_pstate=active`, and `amdgpu` in the initrd |
+| `spark` | **nothing.** No GB10, Grace or Tegra content exists upstream (issue #303) | — |
+
+`evo-x2` imports the leaves rather than the Framework profile on purpose: that profile also pulls
+`framework/framework-tool.nix`, which installs `pkgs.framework-tool` on a GMKtec box.
+
+The early-KMS half is the part worth having beyond the obvious: it gets the console onto the panel's own
+mode from stage 1 instead of a firmware framebuffer, which is what `box-hardware.nix`'s
+`consoleMode = "max"` and `branding.nix`'s banner-repaint unit are both working around.
+
+Everything else upstream sets assumes a desktop session, so each x86 platform forces it back off —
+`hardware.graphics.extraPackages`, `extraPackages32` and `enable32Bit`. There is no X, no Wayland and no
+32-bit anything here, and the ROCm userspace Ollama needs lives inside `ollama/ollama:rocm`. The override
+lands in the **installer's** closure as well as the box's, because `evalConfig` gives the platform module
+to both — which is also why no restructuring of `default.nix` was needed to keep the stick lean.
+
+`nixos-hardware` has **no release branches** and tracks nixos-unstable while this builds against
+`nixos-26.05`, and nothing in CI builds this image. `tests/appliance-hardware.nix` is the tripwire: it
+reads the evaluated configuration, costs seconds, needs no KVM, and runs for any platform on any host.
+Run it after every renovate bump of the pin.
 
 ## The two axes: `system` and `platform`
 
@@ -60,7 +93,9 @@ lists the valid ones.
 
 Adding another box means one file under `platforms/`, one entry in the `platformModules` table in
 `default.nix`, and one case each in `platform_system()` and `platform_gpu()` in
-`cicd/build_appliance_image.sh`.
+`cicd/build_appliance_image.sh`. If nixos-hardware carries a profile for it, that file also imports it
+from the `nixosHardware` argument and adds a branch to `tests/appliance-hardware.nix`; if it does not —
+as with the Spark — it imports nothing, and that is the ordinary case rather than an omission.
 
 ### `gpuVendor`, and what follows from it
 
@@ -119,12 +154,13 @@ Normally you would use `build-appliance-image`. To drive it directly:
 
 ```bash
 NIXPKGS=...                        # a nixpkgs checkout
+NIXHW=...                          # a nixos-hardware checkout
 HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
 
-# Evaluate only -- catches most mistakes in seconds, for either platform,
+# Evaluate only -- catches most mistakes in seconds, for any platform,
 # without the corresponding hardware.
 nix-instantiate ./nixos -A box \
-  --arg nixpkgs "$NIXPKGS" \
+  --arg nixpkgs "$NIXPKGS" --arg nixosHardware "$NIXHW" \
   --argstr system x86_64-linux --argstr platform evo-x2 \
   --arg repoSrc ./. --argstr tag dev --argstr loomHostsJson "$HOSTS"
 
@@ -136,6 +172,9 @@ nix-build ./nixos -A boxVm --argstr system x86_64-linux --argstr platform evo-x2
 nix-build ./nixos -A installerImage ...
 ```
 
+Both store paths are in `devenv.lock`; the devenv scripts pass them for you, and
+`nix flake metadata --json github:NixOS/nixos-hardware/<rev>` resolves one by hand.
+
 Targets: `box`, `boxVm`, `installerImage`, `tests.appliance`, plus `boxSystem` and `installerSystem`
 for poking at evaluated configuration.
 
@@ -146,10 +185,11 @@ appliance-test                      # all of them, cheapest first
 appliance-test wifi usb-ingest      # or by name
 ```
 
-The five short names and what each is for:
+The six short names and what each is for:
 
 | Name | Attribute | What it asserts |
 | --- | --- | --- |
+| `hardware` | `tests.applianceHardware` | What nixos-hardware gives this platform, and that the Loom overrides still take the desktop userspace back off. **Not a VM test** — see below. |
 | `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. |
 | `install` | `tests.applianceInstall` | The disk layout: the pool, the container where stage 1 expects it, and the wipe. |
 | `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. |
@@ -159,17 +199,30 @@ The five short names and what each is for:
 The script picks the platform matching the host architecture, passes the `*.loom` host list, the
 namespace and the chat model from `vars.sh` — `tests/appliance.nix` asserts the appliance restates
 those correctly, so defaults would fail the test for the wrong reason — and asks nix to collect
-garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--gc`
-and `--nixpkgs` are the flags; `appliance-test --help` lists them.
+garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--gc`,
+`--nixpkgs` and `--nixos-hardware` are the flags; `appliance-test --help` lists them.
+
+`hardware` is the exception to everything in this section. It boots nothing — it reads the evaluated
+configuration and exits — so it does not need KVM, does not build the appliance closure, and is not
+bound to the host's architecture. It therefore runs first, and a selection made up only of it lifts the
+cross-architecture refusal:
+
+```bash
+appliance-test hardware --platform spark      # works on an x86_64 workstation
+```
+
+That is the one to run after a renovate bump of the `nixos-hardware` pin: all three platforms checked
+from one machine, in seconds.
 
 Underneath it is one `nix-build` per target, which is still the way to run one by hand:
 
 ```bash
 NIXPKGS=...                        # a nixpkgs checkout
+NIXHW=...                          # a nixos-hardware checkout
 HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
 
 nix-build ./nixos -A tests.appliance \
-  --arg nixpkgs "$NIXPKGS" \
+  --arg nixpkgs "$NIXPKGS" --arg nixosHardware "$NIXHW" \
   --argstr system x86_64-linux --argstr platform evo-x2 \
   --arg repoSrc ./. --argstr loomHostsJson "$HOSTS" \
   --no-out-link
@@ -187,7 +240,8 @@ installerImage` runs it -- as does `bats nixos/installer-scripts/tests`, which n
 
 There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
 twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
-that is `evo-x2` on any x86_64 workstation and `spark` on a Spark.
+that is `evo-x2` on any x86_64 workstation and `spark` on a Spark. `hardware` is exempt, as above: it boots
+nothing, so all three platforms are reachable from whichever machine you have.
 
 Needs a host with KVM. On one without nested virtualisation, drop the requirement and let qemu fall back
 to software emulation — much slower, but it runs:

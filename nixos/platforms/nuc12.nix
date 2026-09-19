@@ -6,7 +6,30 @@
 #
 # The appliance runs CPU-only here, same as on the other platforms; i915 still
 # loads, because it is what puts the installer menu on the monitor.
+{ lib, nixosHardware, ... }:
 {
+  # nixos-hardware has this exact box: "12WSHi7" spells out Wall Street canyon,
+  # H (the tall chassis) and i7. The slim WSK and the i3/i5 kits share the board
+  # and the silicon, so the profile covers them too.
+  #
+  # Four lines upstream, and this is their whole transitive effect:
+  #   common/cpu/intel/alder-lake -> microcode (mkDefault), and
+  #   common/gpu/intel/alder-lake -> i915 in the initrd + the media/compute
+  #                                  userspace, which the block below drops
+  #   common/pc                   -> an ath3k blacklist, inert here
+  #   common/pc/ssd               -> fstrim, which nixpkgs already defaults to
+  #                                  true, so also inert
+  #   (the profile itself)        -> thermald
+  #
+  # thermald and the initrd i915 are the only two that do anything. The first
+  # because
+  # Alder Lake-P in a chassis this size throttles without it; the second because
+  # early KMS is what gets the console onto the panel's own mode from stage 1,
+  # rather than whatever framebuffer the firmware left behind -- which is the
+  # thing box-hardware.nix's `consoleMode = "max"` and branding.nix's
+  # banner-repaint unit are both working around.
+  imports = [ "${nixosHardware}/intel/nuc/12wshi7" ];
+
   loom.platform = {
     id = "nuc12";
     description = "Intel NUC 12 Pro (Wall Street Canyon)";
@@ -67,8 +90,26 @@
     extraInitrdModules = [ ];
   };
 
+  # Kept explicit even though common/cpu/intel/cpu-only.nix now sets it from
+  # `enableRedistributableFirmware` with mkDefault. The upstream default is a
+  # rule about a general-purpose machine; this is a statement about a box that
+  # gets handed to somebody, and it should not change because an import moved.
   hardware.cpu.intel.updateMicrocode = true;
   # i915 and the AX211 both want firmware blobs that are redistributable but not
   # free, and neither is in the default closure.
   hardware.enableRedistributableFirmware = true;
+
+  # nixos-hardware's GPU profiles assume a desktop session. Take the kernel half
+  # -- i915 in the initrd, above -- and drop the userspace: this box has no X, no
+  # Wayland and no 32-bit anything, and Loom has no path to an Intel iGPU at all
+  # (see `runsAiServices` above), so intel-media-driver, intel-compute-runtime
+  # and vpl-gpu-rt are weight with no consumer.
+  #
+  # Forced rather than defaulted, and asserted by tests/appliance-hardware.nix,
+  # because an upstream refactor could otherwise quietly put them back. They land
+  # in the installer's closure as well as the box's -- evalConfig gives the
+  # platform module to both -- so this keeps them off the stick too.
+  hardware.graphics.enable32Bit = lib.mkForce false;
+  hardware.graphics.extraPackages = lib.mkForce [ ];
+  hardware.graphics.extraPackages32 = lib.mkForce [ ];
 }
