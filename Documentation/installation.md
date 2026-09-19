@@ -144,7 +144,10 @@ To customize the deployment configuration, add your value
 overrides to `charts/values-overwrites.yaml`. This file is intentionally left empty and
 is automatically included during Skaffold deployments.
 
-To deploy without resource requests or limits, pass `--no-resources` to `up.sh`.
+To deploy without resource requests or limits, pass `--no-resources` to `up.sh`. Elasticsearch and
+Tika still bound their JVM heaps in that mode — without a limit to read they would size themselves
+from the whole node — using the budget each declares as `memoryFallback` in `charts/values.yaml`.
+Lower `elasticsearch.memoryFallback` or `tika.memoryFallback` in your overrides on a small machine.
 
 ## Multi Node Deployment
 
@@ -212,7 +215,8 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   requests are causing scheduling issues or limits are causing OOM kills or CPU throttling and you
   want containers to burst freely. Note that without requests, the Kubernetes scheduler has no
   resource information to base placement decisions on. Without limits, a single runaway container
-  can starve other workloads on the same node.
+  can starve other workloads on the same node. Elasticsearch and Tika are the exception: their
+  heaps stay bounded by the `memoryFallback` budget each declares in `charts/values.yaml`.
 - **[`values-development.yaml`](../charts/values-development.yaml)** — Use this when actively
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.

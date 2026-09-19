@@ -48,6 +48,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- /*
+              ES sizes heap at ~50% of available memory, and "available" is the
+              cgroup limit only when there is one -- without a limit it reads the
+              whole node. elasticsearch.yml cannot set heap, so this is the lever.
+              With a limit, ES's own sizing is correct and this stays out of it:
+              Elastic recommends against overriding it, and unlike tika there is
+              no scratch volume or forked JVM sharing the same budget.
+
+              `dig`: values-no-resources.yaml nulls `resources` wholesale, so a
+              plain .limits.memory traversal fails on nil.
+            */}}
+            {{- $esResources := default dict .Values.elasticsearch.resources }}
+            {{- if not (dig "limits" "memory" "" $esResources) }}
+            {{- $esBudget := include "app.memoryBudgetBytes" (dict "component" "elasticsearch" "resources" .Values.elasticsearch.resources "fallback" .Values.elasticsearch.memoryFallback) | int64 }}
+            - name: ES_JAVA_OPTS
+              value: {{ include "app.jvm.heapFlags" (mulf $esBudget .Values.elasticsearch.heapFactor | floor | int64) | quote }}
+            {{- end }}
           volumeMounts:
             - name: elasticsearch-config
               mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
