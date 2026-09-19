@@ -1131,6 +1131,22 @@ in
     '';
   };
 
+  scripts.appliance-check = {
+    description = "Run the appliance checks that boot nothing: evaluation, bats, pytest";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # As appliance-test, and for the same reason.
+        ./cicd/check_appliance.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.loom-platform-info = {
     description = "Report this box's hardware, and how it compares with its Loom platform";
     exec = ''

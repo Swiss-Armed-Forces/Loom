@@ -147,10 +147,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
-- `appliance-test hardware --platform PLATFORM` - The one test that boots nothing: it asserts what
+- `appliance-test hardware --platform all` - The one test that boots nothing: it asserts what
   `nixos-hardware` gives each platform and that the Loom overrides still take the desktop userspace
-  back off. Needs no KVM and is not bound to the host architecture, so all three platforms can be
-  checked from one machine in seconds. Run it after every renovate bump of the `nixos-hardware` pin
+  back off. Needs no KVM and is not bound to the host architecture, so `--platform all` checks all
+  three from one machine in seconds. Run it after every renovate bump of the `nixos-hardware` pin.
+  `all` is refused for any selection that includes a VM test
+- `appliance-test --no-kvm` - Build the VM tests without the `kvm` system feature, so qemu falls
+  back to software emulation — correct, and five to ten times slower. With neither this nor
+  `--kvm` (which fails rather than taking the slow path) the script probes `/dev/kvm` and says
+  which way it went. This is what lets the tests run on a CI runner with no nested virtualisation
+- `appliance-check` - The appliance checks that boot nothing: evaluates the image for all three
+  platforms and the tests for this one, then runs the installer bats suite
+  (`nixos/installer-scripts/tests`) and the usb-ingest pytest suite (`nixos/usb-ingest/tests`).
+  Takes any of `eval`, `bats`, `pytest`; with no argument it runs all three, in about a minute.
+  Needs neither KVM nor a matching architecture, which is why this is the appliance job that runs
+  on every CI pipeline while the VM tests are gated on what the MR touched
 - `loom-platform-info` - Report this box's hardware — wired ports and their drivers, radios and
   whether they do AP mode, GPU with the firmware VRAM carve-out beside the GTT pool, firmware
   version — and, on an appliance, how that compares with what `nixos/platforms/<id>.nix` declared.

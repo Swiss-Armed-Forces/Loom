@@ -59,6 +59,13 @@ EVAL_ONLY_TESTS=(hardware)
 # which would switch `set -e` off for the duration.
 SELECTION_NEEDS_VM=true
 
+# Whether to ask for the `kvm` system feature. "auto" is resolved in
+# validate_environment by probing /dev/kvm; --kvm and --no-kvm state it instead.
+# Without the feature, nixpkgs starts qemu with `-machine accel=kvm:tcg`, so it
+# falls back to software emulation by itself -- correct, and five to ten times
+# slower. See `requireKvm` in nixos/default.nix.
+USE_KVM=auto
+
 # Free space, in GiB, that nix should collect garbage to maintain during the
 # build. 0 does not pass the options at all. Nix only honours them from the
 # command line for a trusted user -- an untrusted one gets a warning and the
@@ -165,11 +172,33 @@ validate_environment(){
         exit 1
     fi
 
-    # Not fatal: qemu falls back to software emulation, which works and is slow.
-    # nixos/README.md says how to drop the requiredSystemFeatures for that.
-    if [[ ! -r /dev/kvm ]]; then
-        echo "[!] Note: /dev/kvm is not readable. Without KVM these tests are very slow,"
-        echo "[!] and the 'nixos-test' system feature they ask for may not be available."
+    # Read *and* write, because that is the test nix itself applies before it
+    # advertises the `kvm` feature, and qemu opens the device read-write. A
+    # readable-only /dev/kvm would have us ask for a feature this daemon does
+    # not have, and the build would fail before it started.
+    if [[ "${USE_KVM}" = auto ]]; then
+        if [[ -r /dev/kvm && -w /dev/kvm ]]; then
+            USE_KVM=true
+        else
+            USE_KVM=false
+        fi
+    fi
+
+    if [[ "${USE_KVM}" = true ]]; then
+        if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then
+            echo >&2 "[!] Error: --kvm was given, but /dev/kvm is not readable and writable here."
+            echo >&2 "    Drop --kvm to let qemu fall back to software emulation, or run this on"
+            echo >&2 "    a host with nested virtualisation enabled."
+            exit 1
+        fi
+    else
+        if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then
+            echo "[!] Note: /dev/kvm is not usable here -- present, readable and writable is"
+            echo "[!] what counts."
+        fi
+        echo "[!] Note: building without the 'kvm' system feature; qemu falls back to software"
+        echo "[!] emulation. Expect five to ten times the runtime of a KVM host."
+        echo "[!] Pass --kvm to fail instead of taking the slow path."
     fi
 
     # The store, not this checkout: the closure is built there and the VM disks
@@ -200,16 +229,17 @@ resolve_loom_values(){
 # Records its own failure rather than being called in a condition, which would
 # switch `set -e` off for everything it runs.
 run_test(){
-    local name="${1}" attribute
+    local name="${1}" platform="${2}" attribute nix_system label
     attribute="$(test_attribute "${name}")"
+    nix_system="$(platform_system "${platform}")"
 
     local args=(
         "${CONTEXT_DIR}/nixos"
         --attr "${attribute}"
         --arg nixpkgs "${NIXPKGS}"
         --arg nixosHardware "${NIXOS_HARDWARE}"
-        --argstr system "${NIX_SYSTEM}"
-        --argstr platform "${PLATFORM}"
+        --argstr system "${nix_system}"
+        --argstr platform "${platform}"
         # The working tree, filtered by `loomSrc` in nixos/default.nix -- which
         # is what makes passing it cheap. Unfiltered it would copy every
         # .pytest_tmp and node_modules in the checkout into the store, once per
@@ -228,16 +258,29 @@ run_test(){
             --option max-free "$(( MAX_FREE_GB * 1024 * 1024 * 1024 ))"
         )
     fi
+    # Passed only when the feature is being dropped, so an ordinary KVM run
+    # produces exactly the arguments nixos/README.md documents.
+    if [[ "${USE_KVM}" = false ]]; then
+        args+=(--arg requireKvm false)
+    fi
     if [[ "${VERBOSE}" = true ]]; then
         args+=(--show-trace)
     fi
 
-    echo "[*] Running: ${name} (${attribute}, ${PLATFORM})"
+    # The platform is in the label as well as the header because a --platform
+    # all run reports several results for the same short name.
+    label="${name} (${platform})"
+
+    if [[ "${SELECTION_NEEDS_VM}" = true ]]; then
+        echo "[*] Running: ${name} (${attribute}, ${platform}, kvm=${USE_KVM})"
+    else
+        echo "[*] Running: ${name} (${attribute}, ${platform})"
+    fi
     if nix-build "${args[@]}"; then
         return 0
     fi
-    FAILED+=("${name}")
-    echo "[!] Failed: ${name}"
+    FAILED+=("${label}")
+    echo "[!] Failed: ${label}"
 }
 
 collect_garbage(){
@@ -260,7 +303,12 @@ usage(){
     echo "  -h|--help                     show this help"
     echo "  -v|--verbose                  pass --show-trace to nix-build"
     echo "  -p|--platform PLATFORM        box to build the nodes for: ${KNOWN_PLATFORMS[*]}"
-    echo "                                (default: the one matching this machine)"
+    echo "                                (default: the one matching this machine). 'all' runs"
+    echo "                                every platform, for the targets that boot nothing:"
+    echo "                                ${EVAL_ONLY_TESTS[*]}"
+    echo "  --kvm                         fail unless /dev/kvm is usable (default: detect)"
+    echo "  --no-kvm                      build without the 'kvm' system feature, so qemu falls"
+    echo "                                back to software emulation -- correct, and much slower"
     echo "  --min-free GB                 free space nix should collect garbage to keep"
     echo "                                during the build, 0 to not ask (default: ${MIN_FREE_GB})"
     echo "  --max-free GB                 how far a collection goes once it starts (default: ${MAX_FREE_GB})"
@@ -287,16 +335,24 @@ while [[ $# -gt 0 ]]; do
         -p|--platform)
             shift
             PLATFORM="${1?Missing PLATFORM}"
-            case " ${KNOWN_PLATFORMS[*]} " in
+            case " ${KNOWN_PLATFORMS[*]} all " in
                 *" ${PLATFORM} "*)
                     :
                 ;;
                 *)
                     echo >&2 "[!] Error: unknown platform: ${PLATFORM}"
-                    echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
+                    echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]} (or 'all')"
                     exit 1
                 ;;
             esac
+            shift
+        ;;
+        --kvm)
+            USE_KVM=true
+            shift
+        ;;
+        --no-kvm)
+            USE_KVM=false
             shift
         ;;
         --min-free)
@@ -368,8 +424,6 @@ if [[ -z "${PLATFORM}" ]]; then
     esac
 fi
 
-NIX_SYSTEM="$(platform_system "${PLATFORM}")"
-
 if (( ${#TESTS[@]} == 0 )); then
     TESTS=("${KNOWN_TESTS[@]}")
 fi
@@ -388,19 +442,41 @@ for test in "${TESTS[@]}"; do
     esac
 done
 
+# `all` is for the eval-only targets: nothing is built for a machine, so the
+# three platforms are reachable from whichever one you have. A VM test is not,
+# and refusing here says so before the first of them boots.
+PLATFORMS=("${PLATFORM}")
+if [[ "${PLATFORM}" = all ]]; then
+    if [[ "${SELECTION_NEEDS_VM}" = true ]]; then
+        echo >&2 "[!] Error: --platform all covers the targets that boot nothing: ${EVAL_ONLY_TESTS[*]}."
+        echo >&2 "    The rest build a kernel for one machine and run it here, so each needs a"
+        echo >&2 "    host of its own architecture. Name a platform, or select only those."
+        exit 1
+    fi
+    PLATFORMS=("${KNOWN_PLATFORMS[@]}")
+fi
+
+# The architecture check in validate_environment asks about one platform, and
+# only a VM selection reaches it -- which is exactly when there is one.
+NIX_SYSTEM="$(platform_system "${PLATFORMS[0]}")"
+
 validate_environment
 resolve_loom_values
 
 FAILED=()
-for test in "${TESTS[@]}"; do
-    run_test "${test}"
+RAN=0
+for platform in "${PLATFORMS[@]}"; do
+    for test in "${TESTS[@]}"; do
+        run_test "${test}" "${platform}"
+        RAN=$(( RAN + 1 ))
+    done
 done
 
 collect_garbage
 
 if (( ${#FAILED[@]} > 0 )); then
-    echo >&2 "[!] ${#FAILED[@]} of ${#TESTS[@]} failed: ${FAILED[*]}"
+    echo >&2 "[!] ${#FAILED[@]} of ${RAN} failed: ${FAILED[*]}"
     exit 1
 fi
 
-echo "[*] All ${#TESTS[@]} passed: ${TESTS[*]}"
+echo "[*] All ${RAN} passed: ${TESTS[*]} (${PLATFORMS[*]})"

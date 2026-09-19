@@ -63,6 +63,16 @@
   # and there is no remote access to fix it with. This is the way back, and it
   # costs a new stick.
   disableGpu ? false,
+  # Whether the VM tests under tests/ may only be scheduled onto a builder that
+  # advertises the `kvm` system feature.
+  #
+  # False drops it, which is what lets them run on a machine with no /dev/kvm --
+  # a CI runner on a host without nested virtualisation. Nothing else has to
+  # change: nixpkgs starts qemu with `-machine accel=kvm:tcg`, so it falls back
+  # to software emulation on its own, and the test driver never opens the device
+  # itself. The requirement is nix's scheduler, not qemu's. Much slower, and it
+  # runs. cicd/run_appliance_tests.sh sets this by probing /dev/kvm.
+  requireKvm ? true,
   # The optional access point (nixos/wifi.nix). Off unless
   # build-appliance-image is given --wifi, which also generates the credentials
   # below; they are baked into the closure, so they are world-readable in
@@ -348,6 +358,24 @@ let
     ./branding.nix
     (import ./installer.nix { inherit boxSystem; })
   ];
+
+  # Applied to every VM test below, so that `requireKvm` is stated once rather
+  # than remembered five times.
+  #
+  # `lib.remove` rather than the `[ "nixos-test" ]` the nixpkgs manual writes
+  # out: `requiredFeatures` also carries `devnet` and `uid-range`, which nixpkgs
+  # turns on by itself for a test that declares containers, and a wholesale
+  # replacement would take those away on the day one does. Only
+  # `requiredSystemFeatures` changes, every inputDrv stays as it was, so a run
+  # without the feature reuses whatever a run with it already built.
+  withKvmPolicy =
+    test:
+    if requireKvm then
+      test
+    else
+      test.overrideTestDerivation (prev: {
+        requiredSystemFeatures = pkgs.lib.remove "kvm" prev.requiredSystemFeatures;
+      });
 in
 {
   inherit
@@ -370,23 +398,25 @@ in
   # `nix-build ./nixos -A tests.appliance --argstr system x86_64-linux`
   # Asserts the values box.nix restates from up.sh and vars.sh, so the two
   # cannot drift apart unnoticed.
-  tests.appliance = import ./tests/appliance.nix {
-    inherit
-      pkgs
-      specialArgs
-      applianceModules
-      loomHostsJson
-      loomChatModel
-      minikubeIp
-      loomSubnet
-      ;
-    inherit (specialArgs) loomUser loomRepoDir;
-    # Off the evaluated configuration rather than restated in the test, for the
-    # same reason applianceInstall takes its device names that way: the test
-    # asserts that the toolchain carries what up.sh demands of a GPU box, and
-    # a test that decided for itself which box this is could not.
-    inherit (boxSystem.config.loom.platform) gpuVendor;
-  };
+  tests.appliance = withKvmPolicy (
+    import ./tests/appliance.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        loomHostsJson
+        loomChatModel
+        minikubeIp
+        loomSubnet
+        ;
+      inherit (specialArgs) loomUser loomRepoDir;
+      # Off the evaluated configuration rather than restated in the test, for the
+      # same reason applianceInstall takes its device names that way: the test
+      # asserts that the toolchain carries what up.sh demands of a GPU box, and
+      # a test that decided for itself which box this is could not.
+      inherit (boxSystem.config.loom.platform) gpuVendor;
+    }
+  );
 
   # `nix-build ./nixos -A tests.applianceHardware --argstr platform nuc12 ...`
   # What nixos-hardware gives this platform, and what the Loom-side overrides
@@ -403,10 +433,12 @@ in
   # configuration rather than being restated in the test, which is the whole
   # point: the installer and stage 1 have to agree, and a test that spelled the
   # path itself could agree with neither.
-  tests.applianceInstall = import ./tests/appliance-install.nix {
-    inherit pkgs;
-    inherit (boxSystem.config.loom.storage) volumeGroup rootVolume rootDevice;
-  };
+  tests.applianceInstall = withKvmPolicy (
+    import ./tests/appliance-install.nix {
+      inherit pkgs;
+      inherit (boxSystem.config.loom.storage) volumeGroup rootVolume rootDevice;
+    }
+  );
 
   # `nix-build ./nixos -A tests.applianceWifi --argstr system x86_64-linux`
   # The --wifi build, which tests.appliance deliberately does not cover: it
@@ -415,34 +447,40 @@ in
   # Boots a box with scratch disks, puts real filesystems on them, and checks
   # what usb-ingest.nix decides about each -- above all that the LUKS key stick
   # is never touched.
-  tests.applianceUsbIngest = import ./tests/appliance-usb-ingest.nix {
-    inherit
-      pkgs
-      specialArgs
-      applianceModules
-      loomSubnet
-      ;
-  };
+  tests.applianceUsbIngest = withKvmPolicy (
+    import ./tests/appliance-usb-ingest.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        loomSubnet
+        ;
+    }
+  );
 
   # `nix-build ./nixos -A tests.applianceInterfaceFallback --argstr system x86_64-linux`
   # The box no platform matches: that a wired NIC is claimed as loom0 anyway,
   # which one is picked when there are several, and that switching it off
   # restores the old behaviour.
-  tests.applianceInterfaceFallback = import ./tests/appliance-interface-fallback.nix {
-    inherit
-      pkgs
-      specialArgs
-      applianceModules
-      loomSubnet
-      ;
-  };
+  tests.applianceInterfaceFallback = withKvmPolicy (
+    import ./tests/appliance-interface-fallback.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        loomSubnet
+        ;
+    }
+  );
 
-  tests.applianceWifi = import ./tests/appliance-wifi.nix {
-    inherit
-      pkgs
-      specialArgs
-      applianceModules
-      loomSubnet
-      ;
-  };
+  tests.applianceWifi = withKvmPolicy (
+    import ./tests/appliance-wifi.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        loomSubnet
+        ;
+    }
+  );
 }

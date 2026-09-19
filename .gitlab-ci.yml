@@ -355,6 +355,61 @@ backend_test:
         coverage_format: cobertura
         path: ./backend/coverage.xml
 
+appliance_check:
+  stage: test
+  script:
+    # Evaluation, the installer bats suite and the usb-ingest pytest suite.
+    # Boots nothing, so it needs neither KVM nor a runner of the platform's
+    # architecture -- which makes it the only coverage the Spark image gets
+    # here, and cheap enough to run on every pipeline.
+    - devenv shell -- appliance-check
+    # What nixos-hardware gives each platform, for all three of them. Reads the
+    # evaluated configuration and exits.
+    - devenv shell -- appliance-test hardware --platform all
+
+appliance_test:
+  stage: test
+  # The NixOS VM tests boot real machines: minutes each with KVM, five to ten
+  # times that without, and whether a job container has a usable /dev/kvm
+  # depends on nested virtualisation on the runner host. So this is the one job
+  # here gated on what a merge request touched -- everything under nixos/, plus
+  # the files tests/appliance.nix asserts the appliance restates (vars.sh,
+  # up.sh) and the pins the image is built from. appliance_check runs
+  # everywhere and is what catches a path missing from that list.
+  #
+  # No job in this file sets a timeout, and the project default is shorter than
+  # a run without KVM.
+  timeout: 3h
+  rules:
+    # `changes` only means what it says in a merge request pipeline, where it is
+    # the diff against the target branch. On main, a tag or a new branch every
+    # file counts as changed, which would start a multi-hour job on each. Manual
+    # there instead.
+    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: manual
+      allow_failure: true
+    - changes:
+        - nixos/**/*
+        - cicd/run_appliance_tests.sh
+        - vars.sh
+        - up.sh
+        - devenv.nix
+        - devenv.lock
+      # TODO: drop once a run has been green end to end on a runner. Until then
+      # neither the KVM question nor the cold-cache cost is answered.
+      allow_failure: true
+      when: on_success
+    - when: never
+  script:
+    # --platform is named rather than detected: the runners are x86_64, and
+    # evo-x2 is the x86_64 platform that declares a GPU, so it exercises more of
+    # box.nix than nuc12 does. Whether to ask for the `kvm` feature is the
+    # script's decision -- it probes /dev/kvm and prints which way it went. The
+    # store here is the container's writable layer, which nothing else is
+    # sharing and nothing survives, so it is collected to a smaller margin than
+    # a workstation's.
+    - devenv shell -- appliance-test --platform evo-x2 --min-free 10 --max-free 20
+
 test_build_nix-dind:
   extends: .default-docker
   stage: test

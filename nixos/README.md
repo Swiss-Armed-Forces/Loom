@@ -181,11 +181,26 @@ for poking at evaluated configuration.
 ## Running the tests
 
 ```bash
+appliance-check                     # everything that boots nothing, about a minute
 appliance-test                      # all of them, cheapest first
 appliance-test wifi usb-ingest      # or by name
 ```
 
-The six short names and what each is for:
+`appliance-check` is the cheap half, and the half that runs in CI on every pipeline. It boots
+nothing, so it needs neither KVM nor a host of the platform's architecture. Three checks, and
+`appliance-check eval` (or `bats`, or `pytest`) runs one of them:
+
+| Check | What it does |
+| --- | --- |
+| `eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
+| `bats` | `nixos/installer-scripts/tests`, the `auto_install_decision` truth table. |
+| `pytest` | `nixos/usb-ingest/tests`, the name sanitiser, the filesystem table and the exclusion rules. |
+
+Both suites also run inside the derivations that own them — `bats` in `installerScripts`, `pytest`
+in the `loom-usb-ingest` `checkPhase` — so a mistake fails an image build as well. Running them
+here costs a second instead of a closure.
+
+`appliance-test` is the other half: the six short names and what each is for:
 
 | Name | Attribute | What it asserts |
 | --- | --- | --- |
@@ -209,10 +224,12 @@ cross-architecture refusal:
 
 ```bash
 appliance-test hardware --platform spark      # works on an x86_64 workstation
+appliance-test hardware --platform all        # or all three at once
 ```
 
 That is the one to run after a renovate bump of the `nixos-hardware` pin: all three platforms checked
-from one machine, in seconds.
+from one machine, in seconds. `--platform all` is refused for any selection that includes a VM test,
+which has to boot the kernel it built.
 
 Underneath it is one `nix-build` per target, which is still the way to run one by hand:
 
@@ -231,26 +248,51 @@ nix-build ./nixos -A tests.appliance \
 The pure logic behind `usb-ingest.nix` -- the name sanitiser, the filesystem table and the exclusion
 rules -- is not tested in that VM. It is a pytest suite under `usb-ingest/tests/`, run in the package's
 `checkPhase`, so a mistake there fails the build in seconds rather than at boot. `nix-build ./nixos -A box`
-is enough to run it.
+is enough to run it, and `appliance-check pytest` runs it with nothing built at all.
 
 The installer scripts have the same arrangement, for the same reason: `auto_install_decision` in
 `installer-scripts/common.sh` decides whether a disk is destroyed with nobody watching, so its truth table
 is a bats suite under `installer-scripts/tests/`, run in the scripts' own derivation. `nix-build ./nixos -A
-installerImage` runs it -- as does `bats nixos/installer-scripts/tests`, which needs nothing built at all.
+installerImage` runs it -- as does `appliance-check bats`, or `bats nixos/installer-scripts/tests`.
 
 There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
 twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
 that is `evo-x2` on any x86_64 workstation and `spark` on a Spark. `hardware` is exempt, as above: it boots
 nothing, so all three platforms are reachable from whichever machine you have.
 
-Needs a host with KVM. On one without nested virtualisation, drop the requirement and let qemu fall back
-to software emulation — much slower, but it runs:
+Wants a host with KVM, and says so: `appliance-test` probes `/dev/kvm` and prints `kvm=true` or
+`kvm=false` with each target it starts. `--kvm` makes a machine without it an error instead; `--no-kvm`
+forces the slow path on a machine that has it, which is the only way to rehearse what a runner does.
 
-```nix
-(import ./nixos { ... }).tests.appliance.overrideTestDerivation (_: {
-  requiredSystemFeatures = [ "nixos-test" ];
-})
+What "without KVM" actually drops is one line of scheduling. nixpkgs starts qemu with
+`-machine accel=kvm:tcg`, so it falls back to software emulation by itself, and the test driver never
+opens the device — the thing that refuses is nix, which will not run a derivation asking for a system
+feature the builder does not advertise. So the fallback is to stop asking, which is what
+`requireKvm = false` does in `default.nix`, and nothing else about the build changes: only
+`requiredSystemFeatures` differs, every input is identical, and the closure is shared with a KVM run.
+Five to ten times slower, and it runs.
+
+```bash
+nix-build ./nixos -A tests.appliance --arg requireKvm false ...   # what --no-kvm passes
 ```
+
+## In CI
+
+Two jobs in `.gitlab-ci.yml`, split along the same line as the two scripts:
+
+- `appliance_check` runs `appliance-check` and `appliance-test hardware --platform all` on every
+  pipeline. Neither needs KVM nor a matching architecture, so it runs on any runner, and it is the
+  only coverage the Spark image gets there — the runners are all x86_64.
+- `appliance_test` runs the VM tests on `evo-x2`, and is the one job in that file gated with
+  `rules: changes:` — `nixos/**/*`, `cicd/run_appliance_tests.sh`, `vars.sh`, `up.sh`, `devenv.nix`
+  and `devenv.lock`. It holds a shared runner for minutes with KVM and potentially hours without, and
+  those are the files that can change what it asserts. A path missing from that list is what
+  `appliance_check` is there to catch; outside a merge request the job is `when: manual`, because
+  GitLab counts every file as changed on a tag or a new branch.
+
+`appliance_check` prints one line naming the runner's architecture, whether `/dev/kvm` is usable and
+the free space on the store. That line is how the KVM question gets answered for a runner nobody can
+log into.
 
 ## Disk budget
 
@@ -304,6 +346,12 @@ max-free = 107374182400
 *during* the build once free space drops below it. `appliance-test` also passes both on the command
 line, which nix honours only for a user in `trusted-users`; everyone else gets a warning and the
 daemon's own settings, which is why the permanent form is worth setting anyway.
+
+A CI job is the case where the command line is enough. The `nix-dind` image puts its `nix` user in
+`trusted-users`, `/nix` there is the container's own writable layer — no volume, no quota, shared with
+nothing and surviving nothing — and the job therefore passes a far smaller margin than a workstation
+wants: `--min-free 10 --max-free 20`. Collecting to 100 GB free in a container would delete the devenv
+closure the next step needs.
 
 To reclaim by hand:
 
