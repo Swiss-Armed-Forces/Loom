@@ -359,31 +359,45 @@ in
   # NixOS closure anyway, this carries the toolchain for free, with no nix store
   # pre-seeding and no direnv trust step.
   # ---------------------------------------------------------------------------
-  loom.toolchain = with pkgs; [
-    bash # `sh` (up.sh:415, and `sudo sh -c` at up.sh:927)
-    # `cp` `mkdir` `nproc` `df` `tee` `realpath` `mktemp`
-    coreutils
-    diffutils # `diff`
-    gnugrep # `grep`
-    procps # `sysctl` `pidwait` `pkill` -- pidwait needs procps-ng >= 4
-    gawk # `awk`
-    curl # also `is_offline` (up.sh:216-221), which runs every invocation
-    util-linux
-    kubectl
-    kubernetes-helm # `helm`
-    minikube
-    skaffold
-    # Must be the kislyuk wrapper, NOT yq-go: up.sh:359 calls
-    # `yq -y -s 'reduce .[] as $item ({}; . * $item)'`, which is jq syntax.
-    yq
+  loom.toolchain =
+    with pkgs;
+    [
+      bash # `sh` (up.sh:415, and `sudo sh -c` at up.sh:927)
+      # `cp` `mkdir` `nproc` `df` `tee` `realpath` `mktemp`
+      coreutils
+      diffutils # `diff`
+      gnugrep # `grep`
+      procps # `sysctl` `pidwait` `pkill` -- pidwait needs procps-ng >= 4
+      gawk # `awk`
+      curl # also `is_offline` (up.sh:216-221), which runs every invocation
+      util-linux
+      kubectl
+      kubernetes-helm # `helm`
+      minikube
+      skaffold
+      # Must be the kislyuk wrapper, NOT yq-go: up.sh:359 calls
+      # `yq -y -s 'reduce .[] as $item ({}; . * $item)'`, which is jq syntax.
+      yq
 
-    # Not in up.sh's check list, but bring-up fails without them:
-    git
-    git-lfs # the embedded checkout configures filter.lfs.*
-    gnutar # cicd/skaffold untars the vendored traefik chart
-    gzip
-    jq # the kislyuk `yq` shells out to it
-  ];
+      # Not in up.sh's check list, but bring-up fails without them:
+      git
+      git-lfs # the embedded checkout configures filter.lfs.*
+      gnutar # cicd/skaffold untars the vendored traefik chart
+      gzip
+      jq # the kislyuk `yq` shells out to it
+    ]
+    # The vendor's SMI tool, on a box that offloads Ollama to a GPU. up.sh wants
+    # it twice: `validate_environment` refuses to run without it whenever --gpus
+    # is set, and `check_host_resources` counts the GPUs by parsing its output.
+    # Both run inside loom.service, so PATH here is what matters rather than the
+    # operator's shell -- though it lands in both, as the whole toolchain does.
+    #
+    # Nothing else comes with it: the ROCm userspace Ollama needs is inside
+    # ollama/ollama:rocm, not out here. And there is no nvidia branch, because no
+    # platform declares that vendor yet -- nvidia-smi arrives with the driver
+    # rather than as a standalone package, so the platform that wants it brings
+    # `hardware.nvidia` along too.
+    ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi;
 
   environment.systemPackages =
     config.loom.toolchain
@@ -412,8 +426,11 @@ in
       less
 
       # The operator's console session (console.nix). Plain btop, not devenv's
-      # `btop.override { cudaSupport = true; }` -- the appliance has no GPU
-      # userspace and that override would drag CUDA into the closure.
+      # `btop.override { cudaSupport = true; rocmSupport = true; }`. So no GPU
+      # row on the EVO-X2, and that is the trade: the override carries CUDA and
+      # the ROCm stack into an image that is already ~60 GB of container
+      # layers, to decorate a monitoring pane. `rocm-smi` is in the toolchain
+      # above on that platform and answers the same question.
       tmux
       btop
       # What the top-left pane becomes once Loom is up. Listed here as well so

@@ -8,6 +8,18 @@
     description = "NVIDIA DGX Spark";
     nixSystem = "aarch64-linux";
 
+    # No gpuVendor, and on the one box here built around its GPU. NVIDIA drives
+    # both the Blackwell and the ConnectX-7 through their own kernel fork, and
+    # mainline Linux is reported to lose both -- so the NIC this appliance
+    # serves DHCP and *.loom on is part of the same question. Nobody has booted
+    # stock NixOS on a Spark to find out, and that is the first step; see the
+    # GPU section of Documentation/appliance.md.
+    #
+    # Until then this box also ships without Ollama and open-webui, because
+    # runsAiServices follows gpuVendor -- 128 GB of unified memory is no help
+    # when nothing can reach the accelerator it is unified with. Making the GPU
+    # work is what brings them back; there is nothing to set here for it.
+
     # ConnectX-7, claimed by mlx5_core. There is one such port, so the driver
     # alone identifies it. Confirm on the box with:
     #   udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='

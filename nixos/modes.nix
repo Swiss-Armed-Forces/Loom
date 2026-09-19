@@ -29,20 +29,30 @@
   loomSubnet,
   loomUser,
   loomRepoDir,
-  enableGpu,
   ...
 }:
 let
   cfg = config.loom;
   boxAddress = "${loomSubnet}.1";
-  gpuArgs = lib.optionalString enableGpu " --gpus all";
+
+  # Offload Ollama to the GPU this box actually has. Named, not `--gpus all`:
+  # up.sh takes `amd` or `nvidia` and rejects anything else, and the vendor is
+  # what picks the values file, the device-plugin addon and the runtime image.
+  #
+  # Empty on a platform that declares no vendor, and on any image built with
+  # --no-gpu -- nixos/default.nix forces the option to null for those, so this
+  # is the only place either question is asked.
+  gpuArgs = lib.optionalString (cfg.platform.gpuVendor != null) " --gpus ${cfg.platform.gpuVendor}";
 
   # What the platform says about this particular box, turned into up.sh flags.
-  # Both are false for every platform but the NUC 12, so both are empty strings
-  # in the images that have the memory to do without them.
   #
   # --disable-ai drops Ollama and open-webui *and* the indexing steps that call
-  # them.
+  # them. Every platform without a GPU gets it, which today is all of them but
+  # the EVO-X2: runsAiServices defaults to `gpuVendor != null`, because the
+  # embedding step runs over every indexed file and a CPU never drains the
+  # queue. The NUC 12 also says it outright, for memory.
+  #
+  # --no-resources is the NUC 12 alone.
   #
   # --no-resources rather than --skip-check_host_resources, and the difference
   # matters: the host check is not what actually stops an undersized box. Even

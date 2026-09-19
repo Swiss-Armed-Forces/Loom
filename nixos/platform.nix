@@ -8,7 +8,7 @@
 #
 # This file declares the options only. The values live in platforms/<id>.nix,
 # and nixos/default.nix picks one from its `platform` argument.
-{ lib, ... }:
+{ config, lib, ... }:
 {
   options.loom.platform = {
     id = lib.mkOption {
@@ -79,11 +79,57 @@
       };
     };
 
+    gpuVendor = lib.mkOption {
+      type = lib.types.nullOr (
+        lib.types.enum [
+          "amd"
+          "nvidia"
+        ]
+      );
+      default = null;
+      description = ''
+        The GPU vendor Ollama can be offloaded to on this box, or `null` for a
+        box that runs the whole stack on its CPU.
+
+        Non-null makes the appliance pass `--gpus <vendor>` to up.sh, which
+        selects `charts/values-{amd,nvidia}-gpu.yaml`, enables minikube's
+        matching device-plugin addon, and asks `minikube start` for the GPU. It
+        also puts the vendor's SMI tool in `loom.toolchain`, because up.sh's
+        `validate_environment` requires it whenever `--gpus` is set.
+
+        This is a claim about the box, not a preference: it means somebody has
+        confirmed that the kernel driver binds here *and* that the vendor's
+        compute stack enumerates the device. The driver alone is not enough --
+        every platform in this directory loads one, since that is what puts the
+        installer menu on the monitor.
+
+        Get it wrong and the box does not merely fall back to CPU. up.sh's
+        `check_host_resources` counts GPUs through the SMI tool and hard-exits
+        below `LOOM_MIN_GPU`, so a box that cannot see its own GPU serves
+        nothing at all -- on an appliance with no remote access. That failure is
+        what `build-appliance-image --no-gpu` exists to get out of, and it needs
+        a new stick.
+      '';
+    };
+
     runsAiServices = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = config.loom.platform.gpuVendor != null;
+      defaultText = lib.literalExpression "config.loom.platform.gpuVendor != null";
       description = ''
-        Whether this box has the memory to run Ollama and open-webui.
+        Whether this box deploys Ollama and open-webui.
+
+        Defaults to "only where there is a GPU to run them on", which is the
+        rule rather than a coincidence: every model in the image is sized for
+        offload, and the embedding step runs over *every* indexed file. On a CPU
+        that does not degrade the pipeline, it defines it -- an indexing run that
+        would take an afternoon takes days, and the queue never drains. Shipping
+        the services and letting the operator discover that is worse than not
+        shipping them, because the box looks like it is working.
+
+        Set it explicitly to say something the GPU does not already say. The
+        NUC 12 does, for memory; a CPU-only box that somebody has measured and
+        is happy with would set it true.
 
         False makes the appliance pass `--disable-ai` to up.sh, which stops both
         services being deployed *and* stops the indexing pipeline calling them --

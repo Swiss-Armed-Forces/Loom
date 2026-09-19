@@ -17,6 +17,10 @@ OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
 PLATFORM="spark"
 KNOWN_PLATFORMS=(spark evo-x2 nuc12)
 NIX_SYSTEM=""
+# The chosen platform's GPU vendor, resolved once in Main below rather than at
+# each use: calling platform_gpu inside a condition would disable `set -e` in
+# it, the same trap --platform avoids by matching against KNOWN_PLATFORMS.
+PLATFORM_GPU=""
 MINIKUBE_IP="192.168.49.2"
 
 # Empty means "let the platform's netMatch pick the interface, and rename it to
@@ -45,7 +49,9 @@ TAG=""
 SUBNET=""
 FLASH_DEVICE=""
 KEY_BACKUP=""
-ENABLE_GPU=false
+# Build the CPU-only image for a platform that offloads to a GPU. Set by
+# --no-gpu; see the flag's own comment for when that is the right answer.
+DISABLE_GPU=false
 ASSUME_YES=false
 ALLOW_CROSS=false
 VERBOSE=false
@@ -104,6 +110,33 @@ platform_system(){
         nuc12)  printf 'x86_64-linux'  ;;
         *)      return 1               ;;
     esac
+}
+
+# The GPU vendor each platform offloads Ollama to, empty for the CPU-only ones.
+# Mirrors `gpuVendor` in the matching nixos/platforms/<id>.nix, which is the
+# authority -- this copy exists so that --no-gpu can reject a platform with
+# nothing to disable, and so the report below can say what the stick will do
+# without evaluating the closure to find out.
+platform_gpu(){
+    case "${1}" in
+        spark)  printf ''     ;;
+        evo-x2) printf 'amd'  ;;
+        nuc12)  printf ''     ;;
+        *)      return 1      ;;
+    esac
+}
+
+# What the `gpu` line of the report says. Three outcomes rather than a boolean,
+# because "this box has none" and "this box has one and you turned it off" are
+# different things to read back off a stick you are about to hand to someone.
+gpu_report(){
+    if [[ -z "${PLATFORM_GPU}" ]]; then
+        printf 'none (CPU-only platform)'
+    elif [[ "${DISABLE_GPU}" = true ]]; then
+        printf 'disabled by --no-gpu (%s available)' "${PLATFORM_GPU}"
+    else
+        printf '%s' "${PLATFORM_GPU}"
+    fi
 }
 
 #
@@ -470,7 +503,7 @@ build_image(){
         --argstr minikubeIp "${MINIKUBE_IP}" \
         --argstr loomSubnet "${SUBNET}" \
         --argstr loomInterface "${LOOM_INTERFACE}" \
-        --arg enableGpu "${ENABLE_GPU}" \
+        --arg disableGpu "${DISABLE_GPU}" \
         --arg enableWifi "${ENABLE_WIFI}" \
         --argstr wifiSsid "${WIFI_SSID}" \
         --argstr wifiPsk "${WIFI_PSK}" \
@@ -607,9 +640,10 @@ backup_luks_key(){
 }
 
 report(){
-    local image checksum
+    local image checksum gpu
 
     image="$(image_file)"
+    gpu="$(gpu_report)"
     checksum="$(sha256sum "${KEY_DIR}/luks.key" 2>/dev/null | cut --delimiter=' ' --fields=1 || echo 'not generated')"
 
     echo
@@ -620,7 +654,7 @@ report(){
     echo "      system    : ${NIX_SYSTEM}"
     echo "      subnet    : ${SUBNET}.0/24 (box at ${SUBNET}.1, DHCP ${SUBNET}.100-200)"
     echo "      interface : loom0${LOOM_INTERFACE:+ (renamed from ${LOOM_INTERFACE})}"
-    echo "      gpu       : ${ENABLE_GPU}"
+    echo "      gpu       : ${gpu}"
     echo "      wifi      : ${ENABLE_WIFI}"
     if [[ "${ENABLE_WIFI}" = true ]]; then
         echo "      ssid      : ${WIFI_SSID}"
@@ -665,7 +699,10 @@ usage(){
     echo "  -o|--output OUTPUT_DIR        where to place the image (default: .appliance-build)"
     echo "  -f|--flash DEVICE             flash to DEVICE, destroying all data on it"
     echo "  -k|--key-backup FILE          also write the generated LUKS key to FILE"
-    echo "  -g|--gpu                      (not implemented yet; the appliance is CPU-only)"
+    echo "  --no-gpu                      build CPU-only for a platform that offloads to a GPU."
+    echo "                                There is no --gpu: the GPU is a property of the box and"
+    echo "                                is declared per platform. Use this when the box turns out"
+    echo "                                not to see its own GPU, which otherwise stops Loom dead."
     echo "  -p|--platform PLATFORM        box to build for: ${KNOWN_PLATFORMS[*]} (default: ${PLATFORM})"
     echo "  -s|--system SYSTEM            nix system to build (default: the platform's)"
     echo "  -i|--interface INTERFACE      pin the appliance NIC by the name the box reports"
@@ -740,18 +777,20 @@ while [[ $# -gt 0 ]]; do
             KEY_BACKUP="${1?Missing FILE}"
             shift
         ;;
-        -g|--gpu)
-            # Blocked on both platforms, for different reasons. On the Spark the
-            # driver module is not written: mainline Linux is reported to lose
-            # the GPU and the ConnectX-7 NIC, which needs validating on real
-            # hardware first. On the EVO-X2 amdgpu is mainline, but up.sh has no
-            # AMD path at all -- it requires nvidia-smi whenever --gpus is set,
-            # and values-gpu.yaml asks for nvidia.com/gpu (issue #284).
-            # Refusing beats producing a box that asks minikube for a GPU it
-            # cannot see.
-            echo >&2 "[!] Error: --gpu is not implemented yet; the appliance ships CPU-only."
-            echo >&2 "    See the 'GPU support' section of Documentation/appliance.md."
-            exit 1
+        --no-gpu)
+            # There is no --gpu to go with this. Whether a box has a usable GPU
+            # is a property of the hardware and is declared once, in
+            # nixos/platforms/<id>.nix; asking for one the box does not have
+            # would only produce a stick that fails on first boot.
+            #
+            # The opt-out is here because the declaration can be wrong in the
+            # other direction, and that failure is the expensive one: up.sh
+            # counts GPUs through the vendor's SMI tool and hard-exits when it
+            # finds none, so a box where ROCm does not enumerate serves nothing
+            # at all, with no remote access to repair it. Rebuild with this and
+            # the same stick comes back CPU-only.
+            DISABLE_GPU=true
+            shift
         ;;
         -p|--platform)
             shift
@@ -851,6 +890,16 @@ fi
 # in either order.
 if [[ -z "${NIX_SYSTEM}" ]]; then
     NIX_SYSTEM="$(platform_system "${PLATFORM}")"
+fi
+
+PLATFORM_GPU="$(platform_gpu "${PLATFORM}")"
+
+# Same reason --platform is checked against a list: catch the flag that cannot
+# do anything here, rather than building for an hour and handing over a stick
+# that is identical to the one the operator would have got anyway.
+if [[ "${DISABLE_GPU}" = true && -z "${PLATFORM_GPU}" ]]; then
+    echo >&2 "[!] Error: platform '${PLATFORM}' is already CPU-only; --no-gpu has nothing to disable."
+    exit 1
 fi
 
 if [[ -n "${FLASH_DEVICE}" ]]; then

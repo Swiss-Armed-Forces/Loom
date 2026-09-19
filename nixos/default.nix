@@ -42,7 +42,16 @@
   # selects to `loom0` and pins everything to that. Set this only to override the
   # match with a specific kernel-assigned name.
   loomInterface ? "",
-  enableGpu ? false,
+  # Build the CPU-only image for a platform that declares a GPU vendor.
+  #
+  # An opt-out rather than an opt-in, because whether the box has a usable GPU
+  # is a fact about the hardware and belongs in platforms/<id>.nix, not in the
+  # invocation. What this is for is the box where that fact turns out to be
+  # wrong: up.sh counts GPUs through the vendor's SMI tool and hard-exits when
+  # it finds none, so an appliance that cannot see its own GPU serves nothing,
+  # and there is no remote access to fix it with. This is the way back, and it
+  # costs a new stick.
+  disableGpu ? false,
   # The optional access point (nixos/wifi.nix). Off unless
   # build-appliance-image is given --wifi, which also generates the credentials
   # below; they are baked into the closure, so they are world-readable in
@@ -110,7 +119,6 @@ let
       minikubeIp
       loomSubnet
       loomInterface
-      enableGpu
       enableWifi
       wifiSsid
       wifiPsk
@@ -135,12 +143,19 @@ let
         ./platform.nix
         platformModule
         (
-          { config, ... }:
+          { config, lib, ... }:
           {
             nixpkgs.pkgs = pkgs;
             # Setting `pkgs` alone leaves hostPlatform undefined, which anything
             # reading it (the installer needs `efiArch`) then trips over.
             nixpkgs.hostPlatform = system;
+
+            # `--no-gpu`, applied by overriding the platform's own claim rather
+            # than by threading a second flag through to everything that reads
+            # it. modes.nix builds the up.sh arguments and box.nix picks the SMI
+            # tool for the toolchain, and neither should have to ask the
+            # question twice.
+            loom.platform.gpuVendor = lib.mkIf disableGpu (lib.mkForce null);
 
             # Catch a platform/system mismatch here rather than three hours into
             # a build, or -- worse -- on a box that will not boot.
@@ -269,6 +284,11 @@ in
       loomSubnet
       ;
     inherit (specialArgs) loomUser loomRepoDir;
+    # Off the evaluated configuration rather than restated in the test, for the
+    # same reason applianceInstall takes its device names that way: the test
+    # asserts that the toolchain carries what up.sh demands of a GPU box, and
+    # a test that decided for itself which box this is could not.
+    inherit (boxSystem.config.loom.platform) gpuVendor;
   };
 
   # `nix-build ./nixos -A tests.applianceInstall --argstr system x86_64-linux`

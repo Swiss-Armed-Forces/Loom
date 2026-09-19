@@ -17,10 +17,12 @@
   loomSubnet,
   loomUser,
   loomRepoDir,
+  gpuVendor,
 }:
 let
   # The literal list from up.sh `validate_environment` (up.sh:402-428), minus
-  # `nvidia-smi` (GPU only, and --gpu is rejected by build_appliance_image.sh).
+  # the two vendor SMI tools, which that function only requires when --gpus is
+  # set. Whichever of them this platform needs is appended below.
   # `sudo` is appended in the test itself, where the reason it is special --
   # a setuid wrapper rather than a package -- is asserted alongside it.
   #
@@ -47,7 +49,14 @@ let
     "minikube"
     "skaffold"
     "yq"
-  ];
+  ]
+  # A platform that declares a GPU makes modes.nix pass `--gpus <vendor>`, and
+  # from there up.sh will not start without the vendor's SMI tool: it is a
+  # check_command, and check_host_resources counts the GPUs by parsing it. This
+  # is the drift this test exists for -- declaring gpuVendor and forgetting
+  # box.nix's toolchain would otherwise ship a box that dies on first boot.
+  ++ pkgs.lib.optional (gpuVendor == "amd") "rocm-smi"
+  ++ pkgs.lib.optional (gpuVendor == "nvidia") "nvidia-smi";
 
   loomHosts = builtins.fromJSON loomHostsJson;
 
@@ -382,59 +391,70 @@ pkgs.testers.runNixOSTest {
               assert got, script
               assert got.group(1) == want, f"watches {got.group(1)}, up.sh deploys to {want}"
 
-          # The assistant pane must dial the model the workers use. Same drift
-          # argument as the namespace above, with a sharper failure: an air-gapped
-          # box only has what ollama/Dockerfile baked in, so a pane pinned to
-          # anything else waits forever on a model that will never be served.
-          chat_pane = appliance.succeed(f"cat {panes[2].split(maxsplit=1)[1]}")
-          want_model = appliance.succeed(
-              "bash -c '. ${loomRepoDir}/vars.sh; printf %s \"$LOOM_CHAT_MODEL\"'"
-          ).strip()
-          got_model = re.search(r"^model='?([\w/.:@-]+)'?$", chat_pane, re.M)
-          assert got_model, chat_pane
-          assert got_model.group(1) == want_model, (
-              f"pane pins {got_model.group(1)}, vars.sh says {want_model}"
-          )
-
-          # opencode reaches for the network on its own unless told not to. The
-          # catalogue refresh is the one to pin down: nixpkgs bakes models.dev in at
-          # build time but the flag that stops the lookup is read at *runtime*, so
-          # it is easy to lose in a package bump and hard to notice afterwards --
-          # opencode falls back to the baked-in copy rather than failing loudly.
-          # This box makes no outbound connection it was not asked to make.
-          assert "OPENCODE_DISABLE_MODELS_FETCH=1" in chat_pane, chat_pane
-          assert "OPENCODE_DISABLE_AUTOUPDATE=1" in chat_pane, chat_pane
-
-          # And the config it ships. "@ai-sdk/openai-compatible" is the load-bearing
-          # string: it is in opencode's BUNDLED_PROVIDERS table, so the adapter is
-          # already in the binary. Any other name sends opencode to the npm registry
-          # the first time the operator asks a question.
-          config_path = re.search(r"OPENCODE_CONFIG=(\S+)", chat_pane)
-          assert config_path, chat_pane
-          config = json.loads(appliance.succeed(f"cat {config_path.group(1)}"))
-          assert config["autoupdate"] is False, config
-          assert config["model"] == f"ollama/{want_model}", config
-          ollama = config["provider"]["ollama"]
-          assert ollama["npm"] == "@ai-sdk/openai-compatible", config
-          assert want_model in ollama["models"], config
-          # The endpoint has to be a name box.nix pins in /etc/hosts, or the pane
-          # cannot resolve it with no DNS off the box -- and it has to be https,
-          # because charts/values.yaml annotates every ingress `websecure` and
-          # nothing routes this host on port 80 outside values-development.
-          base = ollama["options"]["baseURL"]
-          assert base in [f"https://{h}/v1" for h in ${builtins.toJSON loomHosts}], base
-
-          # That certificate is self-signed, so the pane has to trust it explicitly.
-          # Asserting the CA is handed over rather than verification switched off.
+          # Everything below is about the assistant pane, so it only applies where
+          # there is one. The block above has already asserted the other case
+          # properly -- no pane, no loom-chat, no opencode in the closure.
           #
-          # Matching an assignment rather than the bare name: loom-chat's own
-          # comments explain why the blunt option was not taken, so a substring
-          # test for "NODE_TLS_REJECT_UNAUTHORIZED" finds the prose and fails on a
-          # script that is doing exactly the right thing.
-          assert re.search(r"^export NODE_EXTRA_CA_CERTS=", chat_pane, re.M), chat_pane
-          assert not re.search(
-              r"^\s*(export\s+)?NODE_TLS_REJECT_UNAUTHORIZED=", chat_pane, re.M
-          ), chat_pane
+          # Guarded rather than assumed, because which platforms have a pane is not
+          # a fixed list: runsAiServices follows the platform's GPU, so it is the
+          # default that decides for most boxes rather than a line somebody wrote.
+          if AI_ENABLED:
+              # The assistant pane must dial the model the workers use. Same drift
+              # argument as the namespace above, with a sharper failure: an
+              # air-gapped box only has what ollama/Dockerfile baked in, so a pane
+              # pinned to anything else waits forever on a model never served.
+              chat_pane = appliance.succeed(f"cat {panes[2].split(maxsplit=1)[1]}")
+              want_model = appliance.succeed(
+                  "bash -c '. ${loomRepoDir}/vars.sh; printf %s \"$LOOM_CHAT_MODEL\"'"
+              ).strip()
+              got_model = re.search(r"^model='?([\w/.:@-]+)'?$", chat_pane, re.M)
+              assert got_model, chat_pane
+              assert got_model.group(1) == want_model, (
+                  f"pane pins {got_model.group(1)}, vars.sh says {want_model}"
+              )
+
+              # opencode reaches for the network on its own unless told not to. The
+              # catalogue refresh is the one to pin down: nixpkgs bakes models.dev
+              # in at build time but the flag that stops the lookup is read at
+              # *runtime*, so it is easy to lose in a package bump and hard to
+              # notice afterwards -- opencode falls back to the baked-in copy rather
+              # than failing loudly. This box makes no outbound connection it was
+              # not asked to make.
+              assert "OPENCODE_DISABLE_MODELS_FETCH=1" in chat_pane, chat_pane
+              assert "OPENCODE_DISABLE_AUTOUPDATE=1" in chat_pane, chat_pane
+
+              # And the config it ships. "@ai-sdk/openai-compatible" is the
+              # load-bearing string: it is in opencode's BUNDLED_PROVIDERS table, so
+              # the adapter is already in the binary. Any other name sends opencode
+              # to the npm registry the first time the operator asks a question.
+              config_path = re.search(r"OPENCODE_CONFIG=(\S+)", chat_pane)
+              assert config_path, chat_pane
+              config = json.loads(appliance.succeed(f"cat {config_path.group(1)}"))
+              assert config["autoupdate"] is False, config
+              assert config["model"] == f"ollama/{want_model}", config
+              ollama = config["provider"]["ollama"]
+              assert ollama["npm"] == "@ai-sdk/openai-compatible", config
+              assert want_model in ollama["models"], config
+              # The endpoint has to be a name box.nix pins in /etc/hosts, or the
+              # pane cannot resolve it with no DNS off the box -- and it has to be
+              # https, because charts/values.yaml annotates every ingress
+              # `websecure` and nothing routes this host on port 80 outside
+              # values-development.
+              base = ollama["options"]["baseURL"]
+              assert base in [f"https://{h}/v1" for h in ${builtins.toJSON loomHosts}], base
+
+              # That certificate is self-signed, so the pane has to trust it
+              # explicitly. Asserting the CA is handed over rather than
+              # verification switched off.
+              #
+              # Matching an assignment rather than the bare name: loom-chat's own
+              # comments explain why the blunt option was not taken, so a substring
+              # test for "NODE_TLS_REJECT_UNAUTHORIZED" finds the prose and fails on
+              # a script that is doing exactly the right thing.
+              assert re.search(r"^export NODE_EXTRA_CA_CERTS=", chat_pane, re.M), chat_pane
+              assert not re.search(
+                  r"^\s*(export\s+)?NODE_TLS_REJECT_UNAUTHORIZED=", chat_pane, re.M
+              ), chat_pane
 
           # The session no longer holds a shell, so the promise the status line
           # makes -- "Alt-F2 for a shell" -- is the thing worth asserting. Every

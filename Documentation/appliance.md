@@ -32,8 +32,8 @@ Read this before building anything; the design only makes sense if these hold.
   `docker`. It talks to nothing outside the box, so this adds no network exposure; what it adds is a way for
   anyone already at the keyboard to act through natural language instead of a shell. Given the bullet above,
   that is not a new boundary being crossed — but it is one more reason the box must not be left unattended
-  with the stick in it. **Not on `nuc12`**, which deploys no Ollama and ships neither the pane nor
-  `opencode` — see [The NUC 12 runs a reduced Loom](#the-nuc-12-runs-a-reduced-loom).
+  with the stick in it. **Only on `evo-x2`**: the pane needs Ollama, and Ollama needs a GPU, so the other two
+  images ship neither it nor `opencode` — see [AI services follow the GPU](#ai-services-follow-the-gpu).
 - **Any USB medium plugged in is mounted and indexed.** Every image does this — see
   [Ingesting data from USB](#ingesting-data-from-usb). A USB port is therefore an unauthenticated
   data-injection path: anyone who can reach the box can put arbitrary content into the index, and kernel
@@ -67,13 +67,30 @@ differs between them.
 | Console | monitor and USB keyboard | monitor and USB keyboard | monitor and USB keyboard |
 | Network | ConnectX-7, one port | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
 | WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
-| GPU | not supported (see below) | not supported (see below) | not supported (see below) |
-| AI services | yes | yes | **no** — see below |
+| GPU | not supported (see below) | **Radeon 8060S via ROCm** | not supported (see below) |
+| AI services | **no** — no GPU | yes | **no** — no GPU, and not the memory either |
 
 `nuc12` covers both Wall Street Canyon chassis, the slim NUC12WSK and the tall NUC12WSH — same board, same
 NIC. A WSH fitted with the second-LAN expansion has two `igc` ports, and then the match cannot single one
 out: whichever udev processes first becomes `loom0`, exactly as on the EVO-X2's pair. If the box comes up
 unreachable, try the other port.
+
+### AI services follow the GPU
+
+Only a platform with a working GPU ships Ollama and open-webui. This is a rule, not a coincidence per box:
+the models in the image are sized for offload, and the embedding step runs over _every_ indexed file. On a
+CPU that does not slow the pipeline down, it stops it — an indexing run that should take an afternoon takes
+days and the queue never drains. A box that shipped them anyway would look like it was working.
+
+So `gpuVendor` in `nixos/platforms/<id>.nix` decides, and today only the EVO-X2 declares one. The other two
+pass `--disable-ai` to `up.sh`, which stops both services being deployed **and** stops the indexing pipeline
+calling them. Gone: summaries, translation, image descriptions, auto-tagging, embeddings, and with them
+semantic search and RAG. Kept: full-text search, OCR, metadata extraction and archive import. The console
+session also drops its assistant pane, because that pane is an `opencode` pointed at the cluster's own Ollama
+and would have nothing to talk to.
+
+It is stated on the login banner, so a box without AI is never a silent surprise. A platform can override the
+rule — a CPU-only box somebody has measured and is happy with sets `runsAiServices = true` — but nobody has.
 
 ### The NUC 12 runs a reduced Loom
 
@@ -81,11 +98,9 @@ These kits ship with one SO-DIMM, and the iGPU takes its share before Linux sees
 usable, against a documented minimum of 25 GiB. The platform therefore declares two facts about itself, in
 `nixos/platforms/nuc12.nix`, and the image is built around them:
 
-- **`runsAiServices = false`** → the appliance passes `--disable-ai`. No Ollama, no open-webui, and the
-  indexing pipeline stops calling them. Gone: summaries, translation, image descriptions, auto-tagging,
-  embeddings, and with them semantic search and RAG. Kept: full-text search, OCR, metadata extraction and
-  archive import. The console session drops its assistant pane, because that pane is an `opencode` pointed
-  at the cluster's own Ollama and would have nothing to talk to.
+- **`runsAiServices = false`** → the appliance passes `--disable-ai`, as described above. Written out rather
+  than left to the GPU rule, because memory is an independent reason for it: fit the second SO-DIMM and an
+  Iris Xe still cannot run the models.
 - **`meetsResourceMinimum = false`** → the appliance passes `--no-resources`. This is not merely about
   getting past `check_host_resources`: even without the AI services the chart asks for about 19.4 GiB of
   memory **requests**, so a box with ~12 GiB allocatable would clear the check and then leave most of its
@@ -95,9 +110,9 @@ usable, against a documented minimum of 25 GiB. The platform therefore declares 
 Both are stated on the login banner, so a box running below spec is never a silent surprise.
 
 **What to expect.** Usable rather than comfortable. With no limits, nothing stops one container starving the
-others, and a heavy indexing run on this much memory ends in OOM kills rather than orderly eviction. If you
-want the full stack, fit the second SO-DIMM — the board takes 64 GB — and flip both lines back to their
-defaults.
+others, and a heavy indexing run on this much memory ends in OOM kills rather than orderly eviction. Fitting
+the second SO-DIMM — the board takes 64 GB — clears the resource half and `meetsResourceMinimum` can go. The
+AI half stays: there is no GPU here for it either way.
 
 Everything else — the LUKS-key-on-stick scheme, the two boot modes, the installer and the wipe — is identical.
 
@@ -119,9 +134,13 @@ matches its NIC.
 
 On the EVO-X2 specifically, check two more firmware settings before installing:
 
-- **The UMA / VRAM split.** The Ryzen AI Max+ 395 carves its LPDDR5X between CPU and iGPU in firmware. Linux
-  only ever sees what is left, and that is what Loom sizes minikube from — so a generous VRAM split silently
-  shrinks the box. Loom runs CPU-only here, so keep the split small.
+- **The UMA / VRAM split.** The Ryzen AI Max+ 395 carves its LPDDR5X between CPU and iGPU in firmware, and
+  this is the one setting on this box that Loom genuinely cares about. Linux only ever sees what is left, and
+  that is what minikube is sized from — but Ollama now runs on the iGPU, and the models have to fit in the
+  half the iGPU gets. Both ends have a floor and the box has 128 GB: leave enough for the chat and embedding
+  models on the GPU side, and keep the rest above the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` checks. A split
+  that starves either end fails loudly — too little VRAM and Ollama falls back or dies, too little system
+  memory and `up.sh` refuses to start.
 - **Disable the radios** in the AMI BIOS, for the same reason the threat model gives above.
 
 ## Building a stick
@@ -139,6 +158,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
+| `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — today only `evo-x2`. There is no `--gpu`: the GPU is a property of the box. See [GPU support](#gpu-support) for when you need this. |
 | `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
 | `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
 | `--wifi-ssid SSID` | Network name. Defaults to a generated `loom-xxxx`. |
@@ -683,6 +703,10 @@ back, and the pane says so as it switches.
 
 ### The assistant pane
 
+Only on an image that deploys Ollama, which today means `evo-x2` alone — see
+[AI services follow the GPU](#ai-services-follow-the-gpu). Elsewhere the session is two panes and `opencode`
+is not in the closure at all.
+
 The bottom pane runs [opencode](https://github.com/anomalyco/opencode) against the Ollama already running in
 the cluster, at `https://ollama.loom/v1/`. The box has carried a model on the stick since the first build and
 nothing on the console could reach it; this is what reaches it. There is no account, no API key worth the name,
@@ -761,22 +785,49 @@ is both slower and weaker than a controller-level erase.
 
 ## GPU support
 
-**GPU support is not implemented on either platform** — the appliance ships CPU-only, and `--gpu` refuses to
-run. The reasons differ, and neither is about the appliance itself.
+Whether a box offloads Ollama to a GPU is declared once, as `gpuVendor` in `nixos/platforms/<id>.nix`, and
+nothing at build time turns it on. There is no `--gpu` flag: asking for a GPU the box does not have would
+only produce a stick that fails on first boot. Today the EVO-X2 declares one and the other two do not — and
+because [AI services follow the GPU](#ai-services-follow-the-gpu), that is also what decides which boxes ship
+Ollama at all.
 
-**On the DGX Spark**, mainline Linux boots but is reported to lose both the GPU and the ConnectX-7 networking,
-which NVIDIA provides through their own kernel fork. Since the appliance's DHCP and DNS depend on that
-interface, this needs validating on real hardware before the driver module is written. The first thing to try
-is booting a stock NixOS aarch64 image on a Spark and checking whether the ethernet port comes up.
+**On the EVO-X2** the appliance passes `--gpus amd` to `up.sh`, which selects `charts/values-amd-gpu.yaml`,
+enables minikube's `amd-gpu-device-plugin` addon and asks `minikube start` for the GPU. `amdgpu` is mainline
+and already loaded — it is what puts the installer menu on the monitor — and it is what exposes `/dev/kfd`
+for minikube's docker driver to pass into the node container. The ROCm userspace lives inside the
+`ollama/ollama:rocm` image, so the box itself carries only `rocm-smi`, which `up.sh` needs for its preflight.
+Set the firmware's VRAM split with this in mind; see [What you need](#what-you-need).
 
-**On the EVO-X2**, the kernel side is the easy half — `amdgpu` is mainline and already loads, which is what
-puts the installer menu on the monitor. The blocker is above it: `up.sh` has no AMD path at all. It advertises
-`--gpus amd`, but requires `nvidia-smi` whenever `--gpus` is set, and `charts/values-gpu.yaml` asks for
-`nvidia.com/gpu`. Enabling AMD is tracked as issue #284 and is a change to Loom proper, not to the appliance.
+**On the DGX Spark** mainline Linux boots but is reported to lose both the GPU and the ConnectX-7 networking,
+which NVIDIA provides through their own kernel fork. The NIC is the part that makes this more than a
+performance question: the appliance serves DHCP and `*.loom` on it. This needs validating on real hardware
+before a driver module is written, and the first thing to try is booting a stock NixOS aarch64 image on a
+Spark and checking whether the ethernet port comes up.
 
-The appliance-side plumbing (`enableGpu`, and the `--gpus all` that run mode would pass to `up.sh`) is already
-in place; what is missing is a NixOS module carrying the driver, and — on AMD — the Loom-side support to point
-it at.
+**On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU.
+
+### When the GPU does not come up
+
+`up.sh` counts GPUs through `rocm-smi` and hard-exits below `LOOM_MIN_GPU`. So a box where ROCm does not
+enumerate the iGPU does not quietly fall back to the CPU — it serves nothing, and there is no remote access
+to repair it with. Strix Halo is recent enough that this is worth watching for on first boot.
+
+The way out is a new stick:
+
+```bash
+build-appliance-image --platform evo-x2 --no-gpu --tag 1.4.0 --flash /dev/sdX
+```
+
+That image is the CPU-only one this platform used to produce — which, by the rule above, also means no Ollama
+and no open-webui. Full-text search, OCR, metadata extraction and archive import all still work. The build
+prints what it decided:
+
+```text
+      gpu       : disabled by --no-gpu (amd available)
+```
+
+`--no-gpu` is refused on a platform that has no GPU to disable, so a stick that came out CPU-only did so for
+a reason you can read back off it.
 
 ## Troubleshooting
 

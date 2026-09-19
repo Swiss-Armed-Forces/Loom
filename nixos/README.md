@@ -58,7 +58,26 @@ evaluation with a readable message rather than producing a box that will not boo
 lists the valid ones.
 
 Adding another box means one file under `platforms/`, one entry in the `platformModules` table in
-`default.nix`, and one case in `platform_system()` in `cicd/build_appliance_image.sh`.
+`default.nix`, and one case each in `platform_system()` and `platform_gpu()` in
+`cicd/build_appliance_image.sh`.
+
+### `gpuVendor`, and what follows from it
+
+A platform declares `gpuVendor = "amd"` (or `"nvidia"`, unused so far) when somebody has confirmed the box
+both binds the kernel driver *and* enumerates the device through the vendor's compute stack. The driver alone
+proves nothing — every platform here loads one, since that is what puts the installer menu on the monitor.
+
+Three things follow, and only the first is obvious:
+
+- `modes.nix` passes `--gpus <vendor>` to `up.sh`, in both boot modes.
+- `box.nix` adds the vendor's SMI tool to `loom.toolchain`, because `up.sh` refuses to run without it once
+  `--gpus` is set. `tests/appliance.nix` asserts this, so declaring a vendor and forgetting the tool fails in
+  CI rather than on the box.
+- `runsAiServices` defaults to `gpuVendor != null`, so a CPU-only platform also drops Ollama and open-webui.
+  That is deliberate: the embedding step runs over every indexed file, and on a CPU the queue never drains.
+
+`build-appliance-image --no-gpu` forces the vendor back to `null` through an `mkForce` in `default.nix`, which
+is why nothing else has to know the flag exists. Note that it takes the AI services with it, by the same rule.
 
 ## `loom0`, and the two things that can produce it
 

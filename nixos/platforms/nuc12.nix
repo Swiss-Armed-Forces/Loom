@@ -49,9 +49,15 @@
     #   * check_host_resources would refuse to start at all, and it is a hard
     #     exit rather than a warning.
     #
-    # Fit both SO-DIMM slots and this platform should set neither: the board
-    # takes 64 GB, and a NUC with real memory wants the full stack. Changing
-    # these two lines is the whole of it.
+    # Fit both SO-DIMM slots and `meetsResourceMinimum` can go: the board takes
+    # 64 GB, and a NUC with real memory clears the check.
+    #
+    # `runsAiServices` is a separate matter and stays either way. It is already
+    # what the default would give -- no gpuVendor above, because Loom has no
+    # path to an Intel iGPU at all -- and it is written out because memory is an
+    # independent reason for it. Give this box 64 GB and an Iris Xe still cannot
+    # run the models; the line below is what stops the default's disappearance
+    # from quietly turning them on.
     runsAiServices = false;
     meetsResourceMinimum = false;
 

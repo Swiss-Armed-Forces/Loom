@@ -8,7 +8,7 @@
 #
 ollama:
   runtimeImage:
-    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia
   resources:
     requests:
       nvidia.com/gpu: 1

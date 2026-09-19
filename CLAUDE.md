@@ -129,6 +129,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--platform` picks the box: `spark` (DGX Spark, aarch64), `evo-x2` (GMKtec EVO-X2, x86_64) or
   `nuc12` (Intel NUC 12 Pro, x86_64). The build host must match the platform's architecture unless
   `--allow-cross` is given. See `Documentation/appliance.md`
+- `build-appliance-image --no-gpu` - Build CPU-only for a platform that offloads to a GPU (today
+  only `evo-x2`, which runs Ollama on its Radeon 8060S via ROCm). There is no `--gpu`: the GPU is
+  declared per platform in `nixos/platforms/<id>.nix`. Use this when a box turns out not to
+  enumerate its own GPU, which otherwise stops Loom from starting at all. Note it also drops the
+  AI services, since those follow the GPU
 - `build-appliance-image --interface NAME` - Pin the appliance NIC by the name the box reports
   (`enp2s0`, not `eth0`). Only needed when no platform matches the hardware; without it a wired
   port is claimed automatically
