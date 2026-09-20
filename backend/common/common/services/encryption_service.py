@@ -114,6 +114,46 @@ class FileEncryptionService:
         self._master_key = master_key if master_key is not None else AESMasterKey()
         self._magic_bytes = magic_bytes
 
+    @property
+    def header_size(self) -> int:
+        """Bytes of container header before the first byte of ciphertext."""
+        return len(self._magic_bytes) + AES_SALT_LEN_BYTES + AES_NONCE_LEN_BYTES
+
+    def decrypt_prefix(self, head: bytes, length: int) -> bytes | None:
+        """Decrypt the first `length` plaintext bytes from a stream prefix.
+
+        Returns None when `head` is too short to hold a header, or does not carry this
+        service's magic bytes. Otherwise returns up to `length` plaintext bytes -- fewer
+        if `head` ran out of ciphertext first.
+
+        **The result is unauthenticated.** GCM's MAC covers the whole message and sits
+        at the *tail*, so it cannot be checked from a prefix, and this deliberately
+        never calls `verify`. With the wrong key it returns plausible-looking garbage
+        rather than raising. Callers may use it as a routing hint and nothing else:
+        never treat it as content, and never skip a full authenticated decrypt on the
+        strength of it.
+
+        That hint is worth having because the alternative is expensive. Finding out that
+        a key does not fit by way of `get_decrypted_stream` means streaming every byte
+        of the object to reach the MAC -- on a several-hundred gigabyte archive, a full
+        pass to learn one bit.
+
+        The cipher built here is used once and discarded; the real decrypt must start
+        from a clean one.
+        """
+        if len(head) < self.header_size:
+            return None
+
+        if head[: len(self._magic_bytes)] != self._magic_bytes:
+            return None
+
+        salt_end = len(self._magic_bytes) + AES_SALT_LEN_BYTES
+        salt = head[len(self._magic_bytes) : salt_end]
+        nonce = head[salt_end : self.header_size]
+
+        cipher = _get_cipher(_derive_key(self._master_key, salt), nonce)
+        return cipher.decrypt(head[self.header_size : self.header_size + length])
+
     def get_encrypted_stream(
         self, input_stream: Iterator[bytes]
     ) -> Generator[bytes, None, None]:
@@ -146,7 +186,7 @@ class FileEncryptionService:
         buffer = b""
 
         # Read header
-        header_size = len(self._magic_bytes) + AES_SALT_LEN_BYTES + AES_NONCE_LEN_BYTES
+        header_size = self.header_size
         for chunk in input_stream:
             buffer += chunk
             if len(buffer) >= header_size + AES_MAC_LEN:

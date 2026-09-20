@@ -15,7 +15,10 @@ from zipfile import BadZipFile, ZipFile
 
 from pydantic import ValidationError
 
-from common.archive.archive_encryption_service import LOOM_ARCHIVE_MAGIC_BYTES
+from common.archive.archive_encryption_service import (
+    LOOM_ARCHIVE_MAGIC_BYTES,
+    ArchiveEncryptionService,
+)
 from common.archive.archive_repository import LOOM_ARCHIVE_VERSION, Archive
 
 logger = logging.getLogger(__name__)
@@ -82,3 +85,38 @@ def is_loom_archive(fd: IO[bytes]) -> bool:
             return is_loom_archive_manifest(zip_file.read(manifest_entry))
     except (BadZipFile, ValidationError, OSError):
         return False
+
+
+# What a loom archive's *plaintext* opens with. compress_files.py writes every
+# archive as `zipfile.ZipFile(buf, mode="w", allowZip64=True)` and adds members
+# through ZipInfo, and an archive always contains at least MANIFEST.json -- so the
+# first bytes are always a local file header, never an empty-archive EOCD.
+ZIP_LOCAL_FILE_HEADER = b"PK\x03\x04"
+
+
+def encrypted_probe_length(service: ArchiveEncryptionService) -> int:
+    """How many bytes of an encrypted archive `decrypts_to_a_loom_zip` needs."""
+    return service.header_size + len(ZIP_LOCAL_FILE_HEADER)
+
+
+def decrypts_to_a_loom_zip(service: ArchiveEncryptionService, head: bytes) -> bool:
+    """True when `head` decrypts, under this deployment's key, to something zip-shaped.
+
+    The cheap half of "can this box open this archive". Reading the MAC would settle it
+    properly, but GCM puts the MAC at the tail, so asking `get_decrypted_stream` means
+    transferring the entire object -- hundreds of gigabytes to learn that a `.loom`
+    carried in from another box was never ours to begin with.
+
+    `archive_enc_master_key` is unset by default and every deployment then invents its
+    own, so a foreign archive is the *expected* case here, not an exotic one.
+
+    Answering False is cheap and safe: the blob is indexed as the opaque file it is.
+    Answering True commits only to *attempting* a real decrypt, which verifies the MAC
+    and still falls back if it fails -- so a false positive costs one wasted pass and
+    reaches the same outcome. See `FileEncryptionService.decrypt_prefix` on why the
+    plaintext here is unauthenticated.
+    """
+    return (
+        service.decrypt_prefix(head, len(ZIP_LOCAL_FILE_HEADER))
+        == ZIP_LOCAL_FILE_HEADER
+    )

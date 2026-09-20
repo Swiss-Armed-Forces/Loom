@@ -4,18 +4,13 @@ import zipfile
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
 from common.archive.archive_detection import ENCRYPTED_ARCHIVE_MAGIC, MANIFEST_FILENAME
 from common.archive.archive_repository import LOOM_ARCHIVE_VERSION, Archive
 from common.services.query_builder import QueryParameters
 from minio import Minio
 from minio.error import S3Error
 
-from crawler.archive_prescreen import (
-    IntakeObjectKind,
-    S3RangeReader,
-    classify_intake_object,
-)
+from crawler.archive_prescreen import IntakeObjectKind, classify_intake_object
 
 BUCKET = "loom-intake"
 OBJECT = "usb-crawled/KINGSTON-4c53/report"
@@ -202,34 +197,3 @@ def test_classification_reads_a_fraction_of_a_large_archive():
     fetched = sum(len(response.read()) for response in store.responses)
     assert fetched < len(big) // 4, f"read {fetched} of {len(big)} bytes"
     assert all(response.closed and response.released for response in store.responses)
-
-
-@pytest.mark.parametrize("whence", [io.SEEK_SET, io.SEEK_CUR, io.SEEK_END])
-def test_range_reader_seeks_clamp_inside_the_object(whence: int):
-    payload = b"0123456789"
-    client, _ = _client_for(payload)
-    reader = S3RangeReader(client, BUCKET, OBJECT, len(payload))
-
-    reader.seek(-9999, whence)
-
-    assert reader.tell() == 0
-
-
-def test_range_reader_reads_across_block_boundaries():
-    payload = bytes(range(256)) * 1024
-    client, _ = _client_for(payload)
-    reader = S3RangeReader(client, BUCKET, OBJECT, len(payload))
-
-    reader.seek(100_000)
-
-    assert reader.read(1024) == payload[100_000:101_024]
-
-
-def test_range_reader_read_at_eof_returns_empty():
-    payload = b"short"
-    client, _ = _client_for(payload)
-    reader = S3RangeReader(client, BUCKET, OBJECT, len(payload))
-
-    reader.seek(0, io.SEEK_END)
-
-    assert reader.read(16) == b""

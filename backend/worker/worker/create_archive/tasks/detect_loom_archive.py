@@ -19,5 +19,7 @@ def detect_loom_archive(
     if file is None:
         return None
 
-    with get_file_storage_service().load_file(file) as fd:
+    # load_seekable, not load_file: is_loom_archive only reads the zip's central
+    # directory and one small member, so there is no reason to transfer the body.
+    with get_file_storage_service().load_seekable(file) as fd:
         return file if is_loom_archive(fd) else None

@@ -8,6 +8,9 @@ import pytest
 from common.archive.archive_detection import (
     ENCRYPTED_ARCHIVE_MAGIC,
     MANIFEST_FILENAME,
+    ZIP_LOCAL_FILE_HEADER,
+    decrypts_to_a_loom_zip,
+    encrypted_probe_length,
     find_manifest_entry,
     is_encrypted_archive_header,
     is_loom_archive,
@@ -134,3 +137,75 @@ def test_magic_matches_what_the_archive_encryptor_actually_writes():
     encrypted = b"".join(service.get_encrypted_stream(iter([b"payload"])))
 
     assert is_encrypted_archive_header(encrypted)
+
+
+def _encrypted_archive(service: ArchiveEncryptionService) -> bytes:
+    archive = _zip({f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest()}).getvalue()
+    return b"".join(service.get_encrypted_stream(iter([archive])))
+
+
+def _probe_head(service: ArchiveEncryptionService, encrypted: bytes) -> bytes:
+    return encrypted[: encrypted_probe_length(service)]
+
+
+def test_the_matching_key_recognises_its_own_archive():
+    service = ArchiveEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted_archive(service)
+
+    assert decrypts_to_a_loom_zip(service, _probe_head(service, encrypted)) is True
+
+
+def test_a_foreign_key_rejects_the_archive():
+    """The case this exists for: a `.loom` carried in from another box.
+
+    `archive_enc_master_key` is per-deployment, so this is the ordinary outcome for
+    anything arriving on a USB stick -- and it has to be answered from the header, not
+    by decrypting several hundred gigabytes to reach the MAC.
+    """
+    owner = ArchiveEncryptionService(AESMasterKey())
+    stranger = ArchiveEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted_archive(owner)
+
+    assert decrypts_to_a_loom_zip(stranger, _probe_head(owner, encrypted)) is False
+
+
+def test_the_probe_reads_only_the_header():
+    """It must decide from the head alone -- no part of the body may be needed."""
+    service = ArchiveEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted_archive(service)
+    head = _probe_head(service, encrypted)
+
+    assert len(head) == service.header_size + 4
+    assert decrypts_to_a_loom_zip(service, head) is True
+
+
+def test_a_truncated_head_is_rejected():
+    service = ArchiveEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted_archive(service)
+
+    assert decrypts_to_a_loom_zip(service, encrypted[:10]) is False
+
+
+def test_a_plain_zip_is_not_an_encrypted_archive():
+    service = ArchiveEncryptionService(AESMasterKey())
+
+    archive = _zip({f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest()}).getvalue()
+
+    assert decrypts_to_a_loom_zip(service, archive[:200]) is False
+
+
+def test_the_expected_signature_is_what_loom_actually_writes():
+    """Pin the constant to a real archive rather than to itself.
+
+    `compress_files` builds archives with `zipfile.ZipFile(..., mode="w")`, so the first
+    bytes are a local file header. If that ever changed, the probe would start rejecting
+    archives this deployment can open -- silently, since the fallback indexes them as
+    opaque blobs.
+    """
+    archive = _zip({f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest()}).getvalue()
+
+    assert archive.startswith(ZIP_LOCAL_FILE_HEADER)

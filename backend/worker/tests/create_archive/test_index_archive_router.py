@@ -21,6 +21,7 @@ from common.dependencies import (
     get_task_scheduling_service,
 )
 from common.services.encryption_service import AESMasterKey
+from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import ArchiveImportRequest
 
@@ -148,3 +149,97 @@ def test_an_undecryptable_blob_routes_to_the_file_path():
 
     assert routing.decision is ArchiveDecision.INDEX_AS_FILE
     assert routing.archive_zip is None
+
+
+class _CountingFileStorage(InMemoryFileStorageLazyBytesService):
+    """An in-memory store that records every *full* transfer of an object.
+
+    `load_seekable` serves reads from ranges and is the cheap path by design, so it is
+    deliberately not counted. `_load_to` and `_load_to_generator` move the whole object,
+    and are what an expensive decision looks like.
+    """
+
+    def __init__(self, *, threshold_bytes: int):
+        super().__init__(threshold_bytes=threshold_bytes)
+        self.full_transfer_bytes = 0
+
+    def _load_to(self, service_id, dst):
+        self.full_transfer_bytes += len(self._storage[service_id])
+        super()._load_to(service_id, dst)
+
+    def _load_to_generator(self, service_id):
+        self.full_transfer_bytes += len(self._storage[service_id])
+        yield from super()._load_to_generator(service_id)
+
+
+@pytest.fixture(name="counting_storage")
+def counting_storage_fixture():
+    """Inject a storage service that can say how many bytes a decision cost.
+
+    Replaces the one `real_services` installed, and inherits its threshold so that the
+    embedded-versus-stored boundary stays where the rest of the module expects it.
+    `real_services` is autouse, so it has already run by the time this does.
+    """
+    storage = _CountingFileStorage(
+        threshold_bytes=get_file_storage_service().threshold_bytes
+    )
+    dependencies._file_storage_service = storage  # pylint: disable=protected-access
+    return storage
+
+
+def test_a_foreign_loom_blob_is_rejected_without_transferring_it(
+    counting_storage, dispatched_files
+):
+    """The cost regression, not the correctness one.
+
+    Routing used to answer "does this key fit?" by running the decryption: GCM's MAC
+    sits at the tail, so `get_decrypted_stream` had to stream every byte -- and write
+    every decrypted byte back into storage -- before raising. On a several-hundred
+    gigabyte `.loom` that is a full round trip to produce `return None`, and since
+    `archive_enc_master_key` is per-deployment it happened to *every* archive carried in
+    from another box.
+
+    The header probe settles it from ~61 bytes, so nothing may be transferred at all.
+    """
+    request = _request(ENCRYPTED_ARCHIVE_MAGIC + b"\x7f" * 4096)
+    counting_storage.full_transfer_bytes = 0
+
+    index_archive_task(request)
+
+    assert counting_storage.full_transfer_bytes == 0
+    dispatched_files.assert_called_once()
+
+
+def test_a_plain_archive_is_routed_without_transferring_it(counting_storage):
+    """Detection reads structure, so it has no reason to move the body."""
+    file_content = counting_storage.from_bytes(_loom_archive_bytes())
+    counting_storage.full_transfer_bytes = 0
+
+    routing = route_archive_blob(file_content)
+
+    assert routing.decision is ArchiveDecision.IMPORT_PLAIN
+    assert counting_storage.full_transfer_bytes == 0
+
+
+def test_an_archive_this_box_can_open_is_still_fully_decrypted(counting_storage):
+    """The probe must not become a substitute for authentication.
+
+    It is unauthenticated by construction, so a blob that passes it still has to go
+    through the real decrypt and have its MAC verified before anything is imported.
+    """
+    master_key = AESMasterKey()
+    dependencies._archive_encryption_service = (  # pylint: disable=protected-access
+        ArchiveEncryptionService(master_key)
+    )
+    encrypted = b"".join(
+        ArchiveEncryptionService(master_key).get_encrypted_stream(
+            iter([_loom_archive_bytes()])
+        )
+    )
+    file_content = counting_storage.from_bytes(encrypted)
+    counting_storage.full_transfer_bytes = 0
+
+    routing = route_archive_blob(file_content)
+
+    assert routing.decision is ArchiveDecision.IMPORT_DECRYPTED
+    assert counting_storage.full_transfer_bytes >= len(encrypted)

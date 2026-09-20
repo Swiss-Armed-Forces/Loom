@@ -11,10 +11,11 @@ So the decision is made here, up front and in one place, and there is a third ou
 anything that is not an importable archive is indexed as the ordinary file it is.
 Nothing that reaches this task can be dropped.
 
-Detecting synchronously costs what the old `load_loom_archive_encrypted` and
-`detect_loom_archive` tasks already cost -- the same read, the same decrypt -- except
-that the answer is now something to branch on rather than a None the rest of the chain
-silently ignores.
+Detecting synchronously is affordable because none of it transfers content. Every check
+here reads through `load_seekable`, so deciding what a 300 GB archive is costs a handful
+of range requests rather than a download and a local copy -- see
+`decrypts_to_a_loom_zip` for the one question that would otherwise have cost a full
+pass.
 """
 
 import logging
@@ -23,11 +24,13 @@ from enum import StrEnum
 
 from celery import chain
 from common.archive.archive_detection import (
-    ENCRYPTED_ARCHIVE_MAGIC,
+    decrypts_to_a_loom_zip,
+    encrypted_probe_length,
     is_encrypted_archive_header,
     is_loom_archive,
 )
 from common.dependencies import (
+    get_archive_encryption_service,
     get_celery_app,
     get_file_storage_service,
     get_task_scheduling_service,
@@ -62,13 +65,37 @@ class ArchiveRouting:
     reason: str
 
 
-def _looks_encrypted(file_content: FileStorageLazyBytes) -> bool:
-    with get_file_storage_service().load_file(file_content) as fd:
-        return is_encrypted_archive_header(fd.read(len(ENCRYPTED_ARCHIVE_MAGIC)))
+class EncryptedBlobVerdict(StrEnum):
+    """What the first few dozen bytes of a blob say about its encryption."""
+
+    NOT_ENCRYPTED = "not_encrypted"
+    FOREIGN_KEY = "foreign_key"
+    DECRYPTS_TO_ZIP = "decrypts_to_zip"
+
+
+def _inspect_encrypted_header(
+    file_content: FileStorageLazyBytes,
+) -> EncryptedBlobVerdict:
+    """Answer both encryption questions from a single read of the header.
+
+    Whether the blob is an encrypted container and whether this deployment's key opens
+    it are settled from the same ~61 bytes, so they share one read rather than two.
+    """
+    service = get_archive_encryption_service()
+    with get_file_storage_service().load_seekable(file_content) as fd:
+        head = fd.read(encrypted_probe_length(service))
+
+    if not is_encrypted_archive_header(head):
+        return EncryptedBlobVerdict.NOT_ENCRYPTED
+
+    if not decrypts_to_a_loom_zip(service, head):
+        return EncryptedBlobVerdict.FOREIGN_KEY
+
+    return EncryptedBlobVerdict.DECRYPTS_TO_ZIP
 
 
 def _is_importable_archive(file_content: FileStorageLazyBytes) -> bool:
-    with get_file_storage_service().load_file(file_content) as fd:
+    with get_file_storage_service().load_seekable(file_content) as fd:
         return is_loom_archive(fd)
 
 
@@ -79,16 +106,29 @@ def route_archive_blob(file_content: FileStorageLazyBytes) -> ArchiveRouting:
     below this line is Celery canvas plumbing, and everything above it is the
     part that used to get this wrong.
     """
-    if _looks_encrypted(file_content):
+    verdict = _inspect_encrypted_header(file_content)
+
+    if verdict is EncryptedBlobVerdict.FOREIGN_KEY:
+        # Carries the archive magic but will not open with this deployment's key
+        # -- almost always an archive from another box. Settled from the header,
+        # so no part of the body is transferred to find out.
+        return ArchiveRouting(
+            ArchiveDecision.INDEX_AS_FILE,
+            None,
+            "encrypted, and the key does not fit",
+        )
+
+    if verdict is EncryptedBlobVerdict.DECRYPTS_TO_ZIP:
         decrypted = decrypt_loom_archive(file_content)
         if decrypted is None:
-            # Carries the archive magic but will not open with this deployment's
-            # key -- almost always an archive from another box, see
-            # decrypt_loom_archive.
+            # The header probe already said the key fits, so reaching here means
+            # the body failed its MAC: truncation or corruption, not a foreign
+            # archive. Worth distinguishing in the log -- the two have different
+            # causes and different fixes.
             return ArchiveRouting(
                 ArchiveDecision.INDEX_AS_FILE,
                 None,
-                "encrypted, and the key does not fit",
+                "encrypted, and decryption failed",
             )
 
         if not _is_importable_archive(decrypted):
