@@ -571,7 +571,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | opentelemetry-util-http                  | 0.60b1          | Apache-2.0                                                                       |
 | py-key-value-aio                         | 0.4.5           | Apache-2.0                                                                       |
 | pytest-asyncio                           | 1.4.0           | Apache-2.0                                                                       |
-| pytest-memray                            | 1.10.0          | Apache-2.0                                                                       |
+| pytest-memray                            | 1.11.0          | Apache-2.0                                                                       |
 | python-multipart                         | 0.0.32          | Apache-2.0                                                                       |
 | types-cffi                               | 2.1.0.20260827  | Apache-2.0                                                                       |
 | types-docker                             | 7.2.0.20260827  | Apache-2.0                                                                       |
