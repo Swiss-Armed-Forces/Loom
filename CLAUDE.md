@@ -137,6 +137,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `build-appliance-image --interface NAME` - Pin the appliance NIC by the name the box reports
   (`enp2s0`, not `eth0`). Only needed when no platform matches the hardware; without it a wired
   port is claimed automatically
+- `build-appliance-image --vm-serial` - Add a getty on ttyS0 to the installer and to the box it
+  installs, so a VM can be driven from a terminal that copies and pastes. For
+  `appliance-vm installer --serial`; refused alongside `--flash`, because the result is one unit
+  different from a real stick
 - `build-appliance-image --wifi` - Additionally run a bridged WiFi access point on the appliance.
   Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
@@ -156,6 +160,20 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   back to software emulation — correct, and five to ten times slower. With neither this nor
   `--kvm` (which fails rather than taking the slow path) the script probes `/dev/kvm` and says
   which way it went. This is what lets the tests run on a CI runner with no nested virtualisation
+- `appliance-vm box` - Boot the appliance in a VM for manual testing. Fast (a minute, no tag, no
+  image build) and shows everything above the disk: the console session, the branding, the units,
+  the banner. Not the bootloader, the LUKS root or the installer — nixpkgs' qemu-vm module
+  overrides those away. Opens a window and exposes a serial socket
+- `appliance-vm installer` - The real stick image, virtually flashed onto a file and booted under
+  UEFI against emulated NVMe. Runs the actual installer onto an actual pool, reboots into what it
+  installed, and persists across runs. Needs a tag, since the image embeds a tagged checkout.
+  `--serial` adds a getty on ttyS0 so the VM can be driven from a terminal that copies and pastes —
+  one unit more than a real stick carries, so it refuses to be flashed. Related flags: `--disks`,
+  `--disk-size`, `--usb DIR`, `--memory`, `--cores`, `--no-gui`, `--force`
+- `appliance-vm attach` - Connect to a running VM's serial port. Lands in the same tmux session
+  tty1 is showing, as the only client
+- `appliance-vm reset` - Delete a platform's VM state (`.appliance-vm/<platform>/`): the disks, the
+  flashed stick and the UEFI variables. Gigabytes
 - `appliance-check` - The appliance checks that boot nothing: evaluates the image for all three
   platforms and the tests for this one, then runs the installer bats suite
   (`nixos/installer-scripts/tests`) and the usb-ingest pytest suite (`nixos/usb-ingest/tests`).

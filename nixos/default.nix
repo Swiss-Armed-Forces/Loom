@@ -63,6 +63,20 @@
   # and there is no remote access to fix it with. This is the way back, and it
   # costs a new stick.
   disableGpu ? false,
+  # Add vm-serial.nix -- a getty on ttyS0 -- to the box and to the installer.
+  #
+  # For `appliance-vm installer --serial` and nothing else. The rig drives qemu
+  # itself rather than through nixpkgs' runner, so the image it boots has only
+  # the console the image asks for, and installer.nix asks for `console=tty1`
+  # alone. Without this there is no way to get text out of a rig VM except by
+  # retyping it off the screen.
+  #
+  # It is a deviation from the bytes that get flashed, which is why it is a flag
+  # rather than the default, why `appliance-vm` prints it on every run, and why
+  # build_appliance_image.sh refuses to combine it with --flash.
+  vmSerialGetty ? false,
+  # Leave `loom.service` wanted in the `boxVm` target. See nixos/vm.nix.
+  startLoom ? false,
   # Whether the VM tests under tests/ may only be scheduled onto a builder that
   # advertises the `kvm` system feature.
   #
@@ -171,6 +185,11 @@ let
         ".direnv"
         ".skaffold"
         ".appliance-build"
+        # Gigabytes of qcow2 per platform, and `appliance-vm box` passes this
+        # very checkout as `repoSrc` -- so without this line the first run
+        # copies its own disks into the store, and the second copies the disks
+        # the first one wrote.
+        ".appliance-vm"
         "result"
       ];
 
@@ -349,15 +368,23 @@ let
         ];
       });
 
-  boxSystem = evalConfig (applianceModules ++ [ ./box-hardware.nix ]);
+  # `--serial` reaches both halves of the stick, and has to. The rig boots the
+  # installer, installs the box and reboots into it, so a getty on only one of
+  # the two would go quiet at exactly the point the run gets interesting.
+  vmSerialModules = pkgs.lib.optional vmSerialGetty ./vm-serial.nix;
+
+  boxSystem = evalConfig (applianceModules ++ [ ./box-hardware.nix ] ++ vmSerialModules);
 
   # branding.nix is in both lists on purpose: the stick is the first Loom screen
   # anyone sees, and it would otherwise boot a NixOS-branded splash into a
   # Loom-branded installer.
-  installerSystem = evalConfig [
-    ./branding.nix
-    (import ./installer.nix { inherit boxSystem; })
-  ];
+  installerSystem = evalConfig (
+    [
+      ./branding.nix
+      (import ./installer.nix { inherit boxSystem; })
+    ]
+    ++ vmSerialModules
+  );
 
   # Applied to every VM test below, so that `requireKvm` is stated once rather
   # than remembered five times.
@@ -392,8 +419,22 @@ in
   installerImage = nativeImageAssembly installerSystem.config.system.build.image;
 
   # `nix-build ./nixos -A boxVm --argstr system x86_64-linux` then
-  # `./result/bin/run-*-vm` -- for poking at the appliance by hand.
-  boxVm = boxSystem.config.system.build.vm;
+  # `./result/bin/run-*-vm` -- for poking at the appliance by hand. Normally
+  # reached through `appliance-vm box`, which supplies the state directory, the
+  # port forwards and the serial socket.
+  #
+  # A separate evaluation rather than `boxSystem.config.system.build.vm`, so
+  # that the closure anybody flashes carries no VM module at all -- not even one
+  # that only costs an unevaluated option. The modules are otherwise identical,
+  # so the two evaluations share every store path they build.
+  boxVm =
+    (evalConfig (
+      applianceModules
+      ++ [
+        ./box-hardware.nix
+        (import ./vm.nix { inherit startLoom; })
+      ]
+    )).config.system.build.vm;
 
   # `nix-build ./nixos -A tests.appliance --argstr system x86_64-linux`
   # Asserts the values box.nix restates from up.sh and vars.sh, so the two

@@ -23,6 +23,8 @@ this file is about the code.
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
 | `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror` — with its own pytest suite, run at build time. |
+| `vm.nix` | VM-only overrides for the `boxVm` target: what to take off the appliance so it can be booted on a workstation. Never in the flashed closure. |
+| `vm-serial.nix` | A getty on `ttyS0`, so a VM's console session can be reached from a terminal that copies and pastes. Never on a real stick; see `--serial` below. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
@@ -164,7 +166,8 @@ nix-instantiate ./nixos -A box \
   --argstr system x86_64-linux --argstr platform evo-x2 \
   --arg repoSrc ./. --argstr tag dev --argstr loomHostsJson "$HOSTS"
 
-# A bootable VM of the appliance, to poke at by hand.
+# A bootable VM of the appliance, to poke at by hand. `appliance-vm box` wraps
+# this with a state directory, port forwards and a serial socket -- see below.
 nix-build ./nixos -A boxVm --argstr system x86_64-linux --argstr platform evo-x2 ...
 ./result/bin/run-*-vm
 
@@ -177,6 +180,106 @@ Both store paths are in `devenv.lock`; the devenv scripts pass them for you, and
 
 Targets: `box`, `boxVm`, `installerImage`, `tests.appliance`, plus `boxSystem` and `installerSystem`
 for poking at evaluated configuration.
+
+## Booting one by hand
+
+The tests answer questions you can write down in advance. `appliance-vm` is for the other kind —
+what the console session actually looks like, whether the installer menu reads the way it should,
+what happens when you pull the key stick — on a workstation with no appliance hardware near it.
+
+```bash
+appliance-vm box                    # fast: the appliance closure, no tag, no image
+appliance-vm installer              # the real stick image, flashed onto a file, booted under UEFI
+appliance-vm installer --serial     # ...and reachable from a terminal that copies and pastes
+appliance-vm attach                 # connect to a running VM's serial port
+appliance-vm reset                  # throw this platform's disks and stick away
+```
+
+Both VMs refuse to cross-build, for the reason the tests do: a VM boots a real kernel.
+
+| | `box` | `installer` |
+| --- | --- | --- |
+| Boots | the closure, through nixpkgs' qemu-vm runner | the stick image, through UEFI |
+| Needs a tag | no | yes — `up.sh`'s offline mode wants one |
+| Console session, branding, units | yes | yes |
+| Bootloader, boot menu, specialisation | no | yes |
+| LUKS root, the key stick, the key guard | no | yes |
+| The installer itself | no | yes |
+| Survives a reboot | yes | yes |
+| Time to first screen | a minute | an image build, then a minute |
+
+`box` is the loop to iterate in. What it cannot show you is everything below the disk: nixpkgs'
+`qemu-vm.nix` replaces `fileSystems` wholesale and clears `boot.initrd.luks.devices` (both
+`mkVMOverride`), so the LUKS root, the partlabel mounts and systemd-boot are all out of frame.
+`nixos/vm.nix` takes three more things off — the interface fallback, the static address and dnsmasq
+— because otherwise the box claims the VM's only NIC as `loom0` and there is no route back to the
+host. Each of the three has a test of its own; none of them is going unexercised.
+
+### Why the installer rig can exist at all
+
+`tests/appliance-install.nix` says the image "is deliberately not booted. It wants an NVMe the test
+framework cannot supply". qemu can supply one. `target_disks` (`installer-scripts/common.sh`) wants
+`/dev/nvmeXn1`, non-removable, and not the disk it booted from — `-device nvme` with the stick on
+`usb-storage` satisfies all three, so the real `install.sh` runs against a real pool.
+
+Flashing onto a file needs no root either: it is the same two steps `build_appliance_image.sh`
+performs on a stick — write the image, then write 4096 bytes of key into the `loom-key` partition —
+and `sfdisk --json` reads a partition table out of an ordinary file. The firmware keeps its own
+variables in the state directory, so the `Loom appliance` entry `fix_boot_order` writes at install
+time is still there on the next boot.
+
+State lives in `.appliance-vm/<platform>/` and is gitignored: two sparse qcow2 disks, the flashed
+stick, the UEFI variables and the two qemu sockets. Sparse is what makes the 250 GB `check_pool_size`
+demands free — a full install writes a few gigabytes.
+
+Pull the key stick from the qemu monitor to watch the key guard fire; `appliance-vm` prints the two
+commands on every run.
+
+### `--serial`, and what it costs
+
+`console.nix` gates the console session on `$(tty)` being `/dev/tty1`, so a serial login lands in a
+plain shell. The way in is the socket: `loom.consoleSocket` is a fixed path precisely so the tmux
+server survives a logout, and `nixos/vm-serial.nix` has the serial login run `loom-console -d` —
+attaching to the very session tty1 is showing, as the only client. `-d` because tmux sizes a window
+to its smallest client, and `loom-btop` has already picked its box set from the pane it started in.
+The ping-pong is deliberate: pressing ENTER on tty1 takes the session back.
+
+Two things in that module are load-bearing and neither is obvious:
+
+- **The unit is instantiated with the template's `ExecStart` copied into it.** systemd collects
+  drop-ins by *basename*, and every drop-in NixOS generates is `overrides.conf`, so an instance-level
+  one replaces the template-level one rather than merging with it. The file it replaces is nixpkgs'
+  own `serial-getty@` override — the one carrying the real `agetty` path and the appliance's
+  `--autologin` / `--login-pause` arguments. Masked, the unit falls back to upstream's
+  `ExecStart=-/sbin/agetty`, which on NixOS is nothing at all: agetty exits with `Unable to locate
+  executable '/usr/bin/agetty'`, systemd restarts it about eight times, the start limit stops it for
+  good, and anyone attaching later finds a dead port and no explanation outside the guest's journal.
+- **The login negotiates its own window size.** A serial line carries no size and delivers no
+  SIGWINCH, so agetty assumes 80×24; tmux splits that into panes of about 39×23, and `loom-btop`
+  needs 60×8 for even its smallest box set, so the monitoring pane comes up saying "Terminal size too
+  small" instead of drawing. The login therefore does what xterm's `resize` does — park the cursor
+  past the bottom right, ask where it stopped, `stty` the answer — with the terminal briefly out of
+  canonical mode, because the reply carries no newline and a line-buffering discipline would never
+  hand it over.
+
+What this deliberately does not do is set `console=`. `console.nix` rejects that outright — a serial
+port named there becomes the *primary* console, so a panic on a box with nothing plugged into it goes
+nowhere at all — and `tests/appliance.nix` asserts `fgconsole` is 1 so it cannot come back. A getty
+is not a console: tty1 stays foreground and the installer menu keeps the `TTYPath = /dev/tty1` that
+`installer.nix` gives it.
+
+`box` always has the getty, because nixpkgs' runner already puts `console=ttyS0 console=tty0` on the
+command line there — tty0 last, so still primary — and copies the boot log to both. The installer rig
+boots the image's own command line, so there `--serial` is an opt-in that adds one unit the shipped
+image does not have. `build-appliance-image --vm-serial` is how it gets there, and it refuses
+`--flash`: that image is for a VM, not for a stick.
+
+Serial shows no firmware, no boot menu and no splash. To copy text off the graphical console anyway,
+read it as text the way `tests/appliance-wifi.nix` does:
+
+```bash
+cat /dev/vcsa1        # tty1's screen contents, from a serial shell
+```
 
 ## Running the tests
 

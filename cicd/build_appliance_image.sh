@@ -59,6 +59,10 @@ KEY_BACKUP=""
 # Build the CPU-only image for a platform that offloads to a GPU. Set by
 # --no-gpu; see the flag's own comment for when that is the right answer.
 DISABLE_GPU=false
+# Add a getty on ttyS0 to both the installer and the box it installs. Set by
+# --vm-serial, which exists for cicd/run_appliance_vm.sh and is refused
+# alongside --flash: an image built with this is for a VM, not for a stick.
+VM_SERIAL=false
 ASSUME_YES=false
 ALLOW_CROSS=false
 VERBOSE=false
@@ -545,6 +549,7 @@ build_image(){
         --argstr loomSubnet "${SUBNET}" \
         --argstr loomInterface "${LOOM_INTERFACE}" \
         --arg disableGpu "${DISABLE_GPU}" \
+        --arg vmSerialGetty "${VM_SERIAL}" \
         --arg enableWifi "${ENABLE_WIFI}" \
         --argstr wifiSsid "${WIFI_SSID}" \
         --argstr wifiPsk "${WIFI_PSK}" \
@@ -722,6 +727,12 @@ report(){
         echo "[*] 60 seconds and then installs by itself, pooling every internal NVMe"
         echo "[*] into one encrypted volume. Press any key during the countdown for a menu."
         echo "[*] The stick must stay plugged in afterwards: it holds the disk key."
+    elif [[ "${VM_SERIAL}" = true ]]; then
+        echo
+        echo "[!] Built with --vm-serial: the installer and the box it installs both carry"
+        echo "[!] a getty on ttyS0. That is one unit more than a real stick has, so do not"
+        echo "[!] flash this image -- --flash refuses it, and this line is here for the copy"
+        echo "[!] somebody keeps. Boot it with: appliance-vm installer --serial"
     else
         echo
         echo "[*] Flash it with: build-appliance-image --flash /dev/sdX"
@@ -740,6 +751,10 @@ usage(){
     echo "  -o|--output OUTPUT_DIR        where to place the image (default: .appliance-build)"
     echo "  -f|--flash DEVICE             flash to DEVICE, destroying all data on it"
     echo "  -k|--key-backup FILE          also write the generated LUKS key to FILE"
+    echo "  --vm-serial                   add a getty on ttyS0 to the installer and to the box"
+    echo "                                it installs, so a VM can be driven from a terminal that"
+    echo "                                copies and pastes. For 'appliance-vm installer --serial';"
+    echo "                                refused with --flash, because this is not a stick image."
     echo "  --no-gpu                      build CPU-only for a platform that offloads to a GPU."
     echo "                                There is no --gpu: the GPU is a property of the box and"
     echo "                                is declared per platform. Use this when the box turns out"
@@ -817,6 +832,10 @@ while [[ $# -gt 0 ]]; do
         -k|--key-backup)
             shift
             KEY_BACKUP="${1?Missing FILE}"
+            shift
+        ;;
+        --vm-serial)
+            VM_SERIAL=true
             shift
         ;;
         --no-gpu)
@@ -946,6 +965,17 @@ PLATFORM_GPU="$(platform_gpu "${PLATFORM}")"
 # that is identical to the one the operator would have got anyway.
 if [[ "${DISABLE_GPU}" = true && -z "${PLATFORM_GPU}" ]]; then
     echo >&2 "[!] Error: platform '${PLATFORM}' is already CPU-only; --no-gpu has nothing to disable."
+    exit 1
+fi
+
+# A stick with a getty on its serial port is not the stick this script exists to
+# produce, and the difference is invisible once it has been written: nothing on
+# the label, nothing on the console, nothing in `report` after the fact. Refuse
+# the combination rather than rely on whoever typed it to remember.
+if [[ "${VM_SERIAL}" = true && -n "${FLASH_DEVICE}" ]]; then
+    echo >&2 "[!] Error: --vm-serial builds an image for a VM, not for a stick."
+    echo >&2 "    It adds a getty on ttyS0 to the installer and to the box it installs."
+    echo >&2 "    Drop --flash to keep the image, or drop --vm-serial to flash one."
     exit 1
 fi
 

@@ -425,5 +425,9 @@ loom_archive_*.zip
 # asserts a clean tree in every job, so a stray build artefact would both fail
 # CI and get silently committed to LFS.
 .appliance-build/
+# appliance VM state: qcow2 disks, the virtually flashed stick, UEFI variables
+# and the two qemu sockets. Gigabytes, per platform, and regenerable --
+# 'appliance-vm reset' is the supported way to remove it.
+.appliance-vm/
 result
 result-*

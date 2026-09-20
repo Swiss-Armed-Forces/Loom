@@ -198,6 +198,18 @@ Each stick gets a **random `10.<a>.<b>.0/24` subnet**. That keeps two boxes on o
 keeps the box from clashing with a visitor's own network. The chosen subnet is printed at the end of the build
 and shown on the console's login screen.
 
+### Trying a stick without a box
+
+You do not need appliance hardware — or a stick — to see what one does. `appliance-vm installer`
+flashes the image onto a file and boots it under UEFI against emulated NVMe, so the real installer
+runs against a real pool, reboots into what it installed, and unlocks it from the key partition the
+same way a box would. `appliance-vm box` is the quicker half: the appliance closure booted directly,
+which gives you the console session and the branding in about a minute, but nothing below the disk.
+
+Both keep their disks between runs, so an installed VM is still installed tomorrow. The mechanics —
+what each one can and cannot show, why the rig can boot an image the test suite cannot, and what
+`--serial` costs — are in [../nixos/README.md](../nixos/README.md).
+
 ### Cross-building
 
 The build refuses to produce an image for an architecture other than the host's unless you pass

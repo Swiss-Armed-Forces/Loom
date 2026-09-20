@@ -327,6 +327,17 @@ in
       # requires and which util-linux does not carry.
       parted
 
+      # appliance VMs (`appliance-vm`)
+      qemu
+      # The serial side-channel: `appliance-vm attach` speaks to a unix socket,
+      # and socat is what puts a terminal on the other end of one in raw mode.
+      socat
+      # `mkfs.vfat` and `mcopy`, for building the extra USB stick `--usb` hands
+      # to a VM. mtools writes into the image without mounting it, which is the
+      # only way to do this without root.
+      dosfstools
+      mtools
+
       # k8s
       minikube
       kubectl
@@ -1126,6 +1137,27 @@ in
         ./cicd/run_appliance_tests.sh \
           --nixpkgs '${inputs.nixpkgs-stable}' \
           --nixos-hardware '${inputs.nixos-hardware}' \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-vm = {
+    description = "Boot a Loom appliance in a VM, for testing by hand";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # As appliance-test, plus the UEFI firmware the installer rig boots.
+        # `OVMF.fd` is the split CODE/VARS pair -- the script copies the vars
+        # half into its state directory so the firmware can keep the boot entry
+        # the installer writes. On aarch64 the same attribute produces AAVMF,
+        # which is why the script probes for both names rather than being told.
+        ./cicd/run_appliance_vm.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          --firmware '${pkgs.OVMF.fd}/FV' \
           "''${@}"
       )
     '';

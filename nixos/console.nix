@@ -637,7 +637,12 @@ let
         create || true
       fi
 
-      exec "''${tm[@]}" attach-session -t loom
+      # "$@" so a caller can pick how it attaches without a second copy of any
+      # of the above. The only user today is vm-serial.nix, which passes `-d` to
+      # take the session away from tty1 rather than attach beside it and shrink
+      # the window for both -- see the reasoning there. tty1 itself passes
+      # nothing and is unaffected.
+      exec "''${tm[@]}" attach-session "''${@}" -t loom
     '';
   };
 in
