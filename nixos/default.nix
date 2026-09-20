@@ -465,8 +465,17 @@ in
   # take back off it. Not a VM test: every value is read off the evaluated
   # configuration, so it costs seconds and needs no KVM. Both closures are
   # passed because the platform module reaches the installer as well as the box.
+  #
+  # `hostPkgs` goes along with them so the report builds on whichever machine
+  # is asking: the values are the platform's, printing them is not. See the
+  # header of the test.
   tests.applianceHardware = import ./tests/appliance-hardware.nix {
-    inherit pkgs boxSystem installerSystem;
+    inherit
+      pkgs
+      hostPkgs
+      boxSystem
+      installerSystem
+      ;
   };
 
   # `nix-build ./nixos -A tests.applianceInstall --argstr system x86_64-linux`

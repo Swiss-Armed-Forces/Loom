@@ -25,8 +25,17 @@
 #     silently restore them. Both closures are checked, because evalConfig
 #     hands the platform module to the installer as well as the box -- so a
 #     regression would put the Intel media stack on the stick too.
+#
+# `pkgs` is the platform's own nixpkgs -- aarch64 for the Spark -- and every
+# value read below comes out of it at evaluation time. The report itself is
+# built with `hostPkgs` instead, because nothing in it is architecture-specific
+# (it is `echo` and `touch` over strings that are already fixed by the time the
+# derivation exists) and a runCommand from `pkgs` would carry the platform's
+# system. Nix would then refuse to build the Spark's report on an x86_64 runner
+# -- "platform mismatch" -- which is precisely the run this test is for.
 {
   pkgs,
+  hostPkgs,
   boxSystem,
   installerSystem,
 }:
@@ -129,7 +138,7 @@ let
   report = lib.concatMapStringsSep "\n" (c: "  FAIL  ${c.what}") failures;
   passed = lib.concatMapStringsSep "\n" (c: "  ok    ${c.what}") checks;
 in
-pkgs.runCommand "loom-appliance-hardware-${platform}"
+hostPkgs.runCommand "loom-appliance-hardware-${platform}"
   {
     # Handy when a failure needs context -- `nix-build` prints the derivation
     # path, and these are readable straight out of it with `nix derivation show`.
