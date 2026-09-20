@@ -327,6 +327,26 @@ run_box_vm(){
         qemu_opts+=" -display none"
     fi
 
+    # A RELATIVE mouse, because the appliance's pointer cannot use the absolute
+    # one nixpkgs gives it.
+    #
+    # nixpkgs' qemu-vm module adds `-usb -device usb-tablet` on x86
+    # unconditionally, and a tablet reports absolute positions. gpm reads
+    # /dev/input/mice, where the kernel's mousedev has already converted those
+    # into relative deltas against a fixed 1024x768 grid
+    # (CONFIG_INPUT_MOUSEDEV_SCREEN_X/Y) -- and gpm then integrates the deltas
+    # back into an absolute position of its own, with acceleration applied on
+    # top. The two accumulators drift apart as soon as anything is dropped or
+    # clamped at an edge, and the symptom is a pointer that tracks roughly but
+    # cannot be driven into the corners.
+    #
+    # The tablet cannot be removed from here -- it comes from a list inside the
+    # closure -- so a relative device is added beside it. qemu routes motion to
+    # the tablet while the pointer is free and to this one while the window
+    # holds a grab, so `Ctrl-Alt-G` is what selects it. `appliance-vm` prints
+    # that below, because nothing about it is guessable.
+    qemu_opts+=" -device usb-mouse,bus=usb-bus.0,id=loommouse"
+
     report_endpoints
 
     # NIX_DISK_IMAGE is what makes the VM survive a reboot: without it the
@@ -539,6 +559,17 @@ run_installer_vm(){
         -device "usb-storage,bus=xhci.0,drive=stick,id=loomstick"
     )
 
+    # A mouse, so the console session can be driven the way it is meant to be.
+    #
+    # usb-mouse rather than usb-tablet, and the difference matters here: a
+    # tablet reports absolute coordinates against a screen the guest cannot
+    # see, while gpm reads /dev/input/mice and tracks a position from relative
+    # motion. The `box` target inherits a tablet from nixpkgs' qemu-vm module
+    # and is the worse of the two to aim with for exactly that reason.
+    args+=(
+        -device "usb-mouse,bus=xhci.0,id=loommouse"
+    )
+
     # No bootindex anywhere, on purpose. Setting one writes a boot order into
     # fw_cfg, which OVMF re-applies on every boot and which would therefore
     # overrule the NVRAM entry `fix_boot_order` creates at install time -- the
@@ -656,6 +687,15 @@ report_endpoints(){
         echo "      attach    : appliance-vm attach ${attach_args}"
     fi
     echo "      monitor   : ${MONITOR_SOCKET}"
+    if [[ "${GUI}" = true ]]; then
+        echo
+        echo "[*] To drive the console with the mouse, grab the pointer first:"
+        echo "      Ctrl-Alt-G  (and again to release)"
+        echo "[*] Ungrabbed, qemu feeds an absolute tablet whose motion the"
+        echo "[*] appliance's pointer cannot follow accurately -- it tracks, but"
+        echo "[*] drifts and will not reach the corners. That is the emulated"
+        echo "[*] tablet, not the appliance: real hardware sends relative motion."
+    fi
     if [[ "${MODE}" = installer ]]; then
         echo
         echo "[*] Pull the key stick to watch the key guard fire:"

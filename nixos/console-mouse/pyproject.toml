@@ -1,0 +1,15 @@
+[project]
+name = "loom-console-mouse"
+version = "0.1.0"
+description = "Point-and-click support for the Loom appliance's console session"
+requires-python = ">=3.11"
+
+[project.scripts]
+loom-console-mouse = "loom_console_mouse.__main__:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["loom_console_mouse"]

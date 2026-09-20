@@ -116,9 +116,18 @@ let
         #
         # psfgettable prints one `0x0df<TAB>U+2580` line per mapping, in
         # lowercase hex -- hence --ignore-case.
-        for cp in 2588 2584 2580; do
+        #
+        # 2588/2584/2580 are the three `loom-eyes` is drawn from. 00D7 is the
+        # multiplication sign on the two clickable controls in the console
+        # session's status line (console.nix). It is there rather than a nicer
+        # symbol precisely because this font is small: Cozette's console PSF
+        # carries about 515 glyphs and has no U+23FB power sign, no U+2716
+        # cross and no U+25CF disc. Checked here for the same reason the other
+        # three are -- a missing glyph is a hole on a screen nobody sees until
+        # the box is standing at a site.
+        for cp in 2588 2584 2580 00D7; do
           if ! zcat --force "$src" | psfgettable - | grep --quiet --ignore-case "U+$cp\b"; then
-            echo "$src has no U+$cp, one of the three glyphs loom-eyes draws" >&2
+            echo "$src has no U+$cp, one of the glyphs this appliance draws" >&2
             exit 1
           fi
         done

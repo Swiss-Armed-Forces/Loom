@@ -21,6 +21,14 @@
 #     /dev/console -- which, with no `console=` on the command line, meant the
 #     VT the operator is looking at -- log to the journal only now, and the
 #     first pane is what shows them.
+#   * It is driven with a mouse as well as a keyboard, on a console that has no
+#     mouse driver behind it. That takes a daemon and a pty shim, both of which
+#     live in console-mouse.nix; what belongs here is the other half -- the tmux
+#     side. `mouse on` was always set and was inert on tty1; it is now
+#     load-bearing there. The prefix is switched off, since navigation is by
+#     clicking, and the two things the prefix used to be needed for -- detach
+#     and respawning a dead pane -- are clickable regions in the status line.
+#     None of that is a security boundary; see nixos/README.md.
 #
 # Loom itself is still reached the way Documentation/appliance.md describes --
 # a laptop on the appliance NIC, browsing https://frontend.loom. There is no
@@ -75,6 +83,12 @@ let
 
     set -g default-terminal "screen-256color"
     set -g history-limit 20000
+    # Load-bearing on tty1 now, not just over serial. The shim
+    # (console-mouse.nix) is the tmux client's terminal and speaks SGR into it,
+    # and this is what makes tmux ask for mouse reporting and then route what
+    # arrives: focus the pane under the click, translate to pane-relative
+    # coordinates, re-encode in whatever protocol each pane asked for, drag
+    # borders, scroll. None of that is reimplemented anywhere in this module.
     set -g mouse on
     set -g escape-time 10
     # No `main-pane-width`/`select-layout` here: the layout is built by hand in
@@ -82,15 +96,91 @@ let
     # pane at the BOTTOM -- `main-horizontal` puts it on top -- and the widest
     # pane is the one the operator types into.
 
-    # The status line is the only place these key bindings are written down, and
-    # the box ships no manual (documentation.nixos.enable = false in box.nix).
-    # Alt-F2 earns its wording: no pane of this session is a shell any more, so
-    # that key is the only route to a prompt and has to read as an offer rather
-    # than a footnote.
+    # -------------------------------------------------------------------------
+    # No keyboard route into tmux's own command interface.
+    #
+    # `prefix None` is the instrument, and the choice of instrument matters:
+    # `unbind-key -a` would ALSO remove the root key table, and every mouse
+    # behaviour tmux has lives in there as an ordinary binding --
+    # `MouseDown1Pane { select-pane -t=; send -M }` is literally
+    # click-to-focus and forward-into-pane (tmux's key-bindings.c). Unbinding
+    # everything would silently destroy the feature this module exists to add.
+    # Setting the prefix to None takes out the prefix table and nothing else.
+    #
+    # This is interaction design, not a security boundary, and nothing here
+    # should be mistaken for one: every getty autologins the operator,
+    # `wheelNeedsPassword` is false (box.nix), and Alt-F2 reaches a shell that
+    # can run `tmux -S ${tmuxSocket}` against this very server.
+    # -------------------------------------------------------------------------
+    set -g prefix None
+    set -g prefix2 None
+
+    # Right-click is a command interface, and an unusually generous one:
+    # tmux's default MouseDown3 bindings open `display-menu` with Kill,
+    # Respawn, Horizontal/Vertical Split, New Window, New Session and a
+    # `command-prompt` for rename. The pane binding only shows that menu for a
+    # pane that has NOT asked for mouse reporting -- so on this box it would
+    # surface on a dead pane, which is exactly when an operator is most likely
+    # to be clicking around. The status ones show it always.
+    unbind -n MouseDown3Pane
+    unbind -n M-MouseDown3Pane
+    unbind -n MouseDown3Status
+    unbind -n M-MouseDown3Status
+    unbind -n MouseDown3StatusLeft
+    unbind -n M-MouseDown3StatusLeft
+
+    # -------------------------------------------------------------------------
+    # The status line, which is now the only user interface tmux itself has.
+    #
+    # `#[range=user|X]` marks a clickable region; clicking it fires the
+    # `Status` mouse key -- NOT `StatusRight`, however far right it is drawn --
+    # with X in `#{mouse_status_range}`. That is the whole mechanism.
+    #
+    # The glyph is U+00D7, and it is chosen rather than picked. The console
+    # font is Cozette's 515-glyph PSF (branding.nix), which has none of the
+    # symbols anyone would reach for first -- no U+23FB power sign, no U+2716
+    # cross, no U+25CF disc -- and a missing glyph renders as a hole on a
+    # screen nobody sees until the box is at a site. branding.nix asserts this
+    # codepoint at build time alongside the three the mark is drawn from.
+    #
+    # `status-right-length` is generous because the `#[...]` markup counts
+    # toward it: status-format[0] trims with `#{T;=/#{status-right-length}:...}`
+    # before the markup is parsed, so a tight budget cuts a range directive in
+    # half and the button stops being clickable rather than looking wrong.
+    #
+    # Alt-F2 keeps its wording: no pane of this session is a shell, so it is
+    # still the only route to a prompt -- and with the prefix gone it is also
+    # the backstop for anything this status line cannot do.
+    # -------------------------------------------------------------------------
     set -g status-style "bg=colour24,fg=white"
     set -g status-left "  LOOM  "
-    set -g status-right " Ctrl-b d detach | Alt-F2 for a shell "
-    set -g status-right-length 70
+    # The two controls are last, so they sit flush against the right-hand edge
+    # of the screen. That is deliberate on two counts: a target in the corner
+    # of the display is the easiest one there is to hit with a mouse, and it
+    # gives the VM test a position it can reach by slamming the pointer into
+    # the corner rather than by calibrating its way to a cell.
+    set -g status-right-length 200
+    set -g status-right "Alt-F2 for a shell #[range=user|respawn] × restart pane #[norange]#[range=user|detach] × detach #[norange]"
+
+    # Replaces the default `MouseDown1Status { switch-client -t= }`, which
+    # exists for the window list and has nothing to select here -- the session
+    # has exactly one window.
+    #
+    # `respawn-pane -k` without a target acts on the active pane, which is the
+    # one the operator just clicked to look at. Every pane is `remain-on-exit`
+    # (see `create` below), so a pane whose command died stays on screen with
+    # its error and this is what brings it back -- the job `Ctrl-b
+    # :respawn-pane` used to do.
+    #
+    # `detach-client` ends the session cleanly rather than killing it: the tmux
+    # client exits, the shim exits with it, `loom-console` returns 0, and the
+    # hook at the bottom of this file exits the login shell -- so agetty
+    # respawns and the box goes back to the banner and the press-a-key prompt.
+    # That is the closest thing this appliance has to a lock screen.
+    bind -n MouseDown1Status {
+      if -F '#{==:#{mouse_status_range},detach}'  { detach-client }
+      if -F '#{==:#{mouse_status_range},respawn}' { respawn-pane -k }
+    }
   '';
 
   # The first pane, in two halves of one life: the bring-up log while Loom comes
@@ -217,6 +307,45 @@ let
       printf '  Pods in the %s namespace. This pane is the cluster overview.\n' \
         "$namespace"
 
+      # k9s is the one pane that ignores the mouse unless it is told not to.
+      # tcell underneath it can do every mouse mode there is -- the binary
+      # carries `?1000h`, `?1002h`, `?1003h` and `?1006h` -- but k9s gates them
+      # all behind `ui.enableMouse`, which defaults off. Without this the pods
+      # list would be the one pane a click does nothing in, which reads as a
+      # bug in the shim rather than as a setting.
+      #
+      # Written at startup into the directory this module already creates,
+      # rather than shipped as a store path, for the same reason loom-btop
+      # writes its config there: k9s rewrites its own config file on exit, and
+      # a store path is read-only. One file rewritten on every start also
+      # leaves nothing behind to clean up.
+      #
+      # Before the wait below rather than after it, which matters on a box that
+      # takes an hour to come up: the configuration of this pane has nothing to
+      # do with whether the cluster is answering yet, and writing it first is
+      # what lets anything -- an operator, the VM test -- see what this command
+      # will run with without waiting for a cluster to exist.
+      #
+      # --logoless moves in here with it. Leaving it on the command line as
+      # well would be two places deciding the same thing.
+      conf=${lib.escapeShellArg "${builtins.dirOf tmuxSocket}/k9s"}
+      mkdir -p "$conf"
+      cat > "$conf/config.yaml" <<'EOF'
+      k9s:
+        ui:
+          enableMouse: true
+          logoless: true
+      EOF
+      # K9S_CONFIG_DIR, not the K9SCONFIG of older releases: that name is gone
+      # from k9s 0.51 and setting it would be silently ignored, leaving the
+      # pods pane as the one place the mouse does nothing.
+      export K9S_CONFIG_DIR="$conf"
+      # Logs beside it rather than on the encrypted root, for the same reason
+      # loom-chat keeps opencode's state on tmpfs: this appliance is built for
+      # ephemeral deployments and should not leave a transcript of what an
+      # operator looked at on the disk by accident.
+      export K9S_LOGS_DIR="$conf"
+
       # k9s exits when it cannot reach a cluster. Coming from the pane above
       # there always is one -- that is what the handover waits for -- but typed
       # by hand on a box that is still starting there is not, and a command that
@@ -239,7 +368,7 @@ let
         done
       fi
 
-      exec k9s --logoless --namespace "$namespace" --command pods
+      exec k9s --namespace "$namespace" --command pods
     '';
   };
 
@@ -531,6 +660,76 @@ let
     '';
   };
 
+  # Keeps a pane's program running.
+  #
+  # Every pane of this session is a single application, and quitting one -- k9s
+  # with `:q`, btop with `q`, opencode with its own exit -- used to leave a dead
+  # pane that stayed dead. On a box whose console is the entire user interface
+  # that is a trap: the operator presses the wrong key once and loses a third of
+  # the screen until they find the restart control.
+  #
+  # So the panes are supervised rather than run directly. This is deliberately
+  # NOT a bare `while true`: a command that fails instantly -- a missing
+  # binary, a TUI that will not start in the pane it was given -- would spin as
+  # fast as the kernel can fork, flooding the pane, pinning a core and making
+  # the box less usable than the dead pane it replaced.
+  #
+  # Hence a backoff, and a floor under what counts as success. A program that
+  # ran for a while and then exited is something the operator quit, and comes
+  # straight back. A program that exits immediately, twice, is broken, and the
+  # gap between attempts grows until it is slow enough to read the error.
+  loom-pane = pkgs.writeShellApplication {
+    name = "loom-pane";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      # How long a run has to last before it is treated as "it worked, the
+      # operator just quit". Both TUIs here take well under a second to draw,
+      # so anything above a few seconds means it really did run.
+      settled=5
+      # First wait, and the ceiling it doubles up to. 30s is short enough that
+      # a box recovering from a transient failure comes back on its own, and
+      # long enough that a permanently broken command is not a busy loop.
+      delay=1
+      max_delay=30
+
+      # The program's own name, for the notice below: the full argument is a
+      # store path and would wrap the pane on its own.
+      name=$(basename "$1")
+
+      while true; do
+        started=$SECONDS
+        # Deliberately not `exec`: this loop has to outlive the program. And
+        # `|| true` because writeShellApplication sets `set -e`, under which a
+        # TUI exiting non-zero would take the supervisor with it.
+        "$@" || true
+        ran=$(( SECONDS - started ))
+
+        if [ "$ran" -ge "$settled" ]; then
+          # It ran, so whatever ended it was a decision rather than a fault.
+          # Start again at once, and from a clean backoff.
+          delay=1
+          printf '\n  [%s exited after %ss -- restarting]\n' "$name" "$ran"
+        else
+          printf '\n  [%s exited after %ss -- restarting in %ss]\n' \
+            "$name" "$ran" "$delay"
+        fi
+
+        sleep "$delay"
+
+        # Grow the wait only for runs that did not settle. Written as an `if`
+        # rather than `[ ... ] && delay=...`, because a false test there is a
+        # non-zero exit status, and under `set -e` that would end the loop at
+        # the ceiling instead of staying on it.
+        if [ "$ran" -lt "$settled" ]; then
+          delay=$(( delay * 2 ))
+          if [ "$delay" -gt "$max_delay" ]; then
+            delay=$max_delay
+          fi
+        fi
+      done
+    '';
+  };
+
   loom-console = pkgs.writeShellApplication {
     name = "loom-console";
     runtimeInputs = with pkgs; [
@@ -580,10 +779,16 @@ let
       # -- splitting the top-left pane renumbers the bottom pane from 1 to 2 --
       # which makes any fixed `loom:0.N` in the middle of this function a bug
       # waiting for the next edit. IDs are assigned once and never move.
+      # Every pane runs under loom-pane, which restarts its program when it
+      # exits. Quitting k9s with `:q` or btop with `q` is a keystroke away, and
+      # on a box whose console is the whole user interface a pane that stays
+      # dead until somebody finds the restart control is a bad trade.
+      supervise=${lib.escapeShellArg (lib.getExe loom-pane)}
+
       create() {
         local main mon${lib.optionalString aiEnabled " chat"}
         main=$("''${tm[@]}" new-session -d -x "$cols" -y "$lines" -s loom -n loom \
-          -P -F '#{pane_id}' ${lib.getExe loom-progress})
+          -P -F '#{pane_id}' "$supervise" ${lib.getExe loom-progress})
       ${lib.optionalString aiEnabled ''
         # -c so the assistant starts in the checkout: it is what an operator
         # asking about this box would want it looking at, and `respawn-pane`
@@ -599,13 +804,17 @@ let
         # draw TUIs that measure their pane once at startup and cannot take that
         # back. Hence the respawns into panes that have stopped moving.
       ${lib.optionalString aiEnabled ''
-        "''${tm[@]}" respawn-pane -k -t "$chat" ${lib.getExe loom-chat}
+        "''${tm[@]}" respawn-pane -k -t "$chat" "$supervise" ${lib.getExe loom-chat}
       ''}
-        "''${tm[@]}" respawn-pane -k -t "$mon" ${lib.getExe loom-btop}
+        "''${tm[@]}" respawn-pane -k -t "$mon" "$supervise" ${lib.getExe loom-btop}
 
-        # A pane that died keeps its error on screen instead of collapsing the
-        # layout, and anything the operator quit deliberately -- k9s with `:q`,
-        # opencode with its own exit -- comes back with Ctrl-b `:respawn-pane`.
+        # The backstop under loom-pane rather than the first line of defence.
+        # Anything the operator quits is restarted by the supervisor above and
+        # never reaches this; what gets here is the supervisor itself dying,
+        # which is not routine and should leave its error on screen rather than
+        # collapse the layout. `× restart pane` in the status line is how it
+        # comes back -- with the prefix switched off there is no
+        # `:respawn-pane` to type.
         # Set after the respawns above, which would otherwise have to kill panes
         # that `remain-on-exit` is keeping around.
         #
@@ -642,7 +851,24 @@ let
       # take the session away from tty1 rather than attach beside it and shrink
       # the window for both -- see the reasoning there. tty1 itself passes
       # nothing and is unaffected.
-      exec "''${tm[@]}" attach-session "''${@}" -t loom
+      # Under the mouse shim, which is a pty between this VT and the tmux
+      # client (console-mouse.nix). A Linux console emits no mouse reports of
+      # its own -- console_codes(4) is explicit that they arrive "only when the
+      # virtual terminal driver receives a mouse update ioctl" from a user-mode
+      # program -- and gpm, despite being the program that page names, never
+      # issues that ioctl. So something has to stand in the stream and
+      # synthesise them, and being in the stream is also the only place the
+      # pointer can be drawn without leaving stale characters behind.
+      #
+      # `--` so the tmux command's own flags are never read as the shim's.
+      #
+      # Not conditional on `loom.consoleMouse.enable`, and not conditional on a
+      # mouse being plugged in: the shim `exec`s this very command unchanged
+      # whenever it cannot reach gpm, or when it is not on a VT at all -- which
+      # is the vm-serial.nix path, where the terminal on the far end does its
+      # own mouse reporting anyway. One code path, always exercised.
+      exec ${lib.getExe cfg.consoleMouse.package} -- \
+        "''${tm[@]}" attach-session "''${@}" -t loom
     '';
   };
 in

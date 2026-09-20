@@ -146,8 +146,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
   `Documentation/appliance.md`
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
-  `appliance`, `install`, `wifi`, `usb-ingest`, `interface-fallback`; with no argument it runs all
-  six, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
+  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`; with no argument it
+  runs all seven, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
@@ -176,7 +176,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   flashed stick and the UEFI variables. Gigabytes
 - `appliance-check` - The appliance checks that boot nothing: evaluates the image for all three
   platforms and the tests for this one, then runs the installer bats suite
-  (`nixos/installer-scripts/tests`) and the usb-ingest pytest suite (`nixos/usb-ingest/tests`).
+  (`nixos/installer-scripts/tests`) and the pytest suites under `nixos/usb-ingest/tests` and
+  `nixos/console-mouse/tests`.
   Takes any of `eval`, `bats`, `pytest`; with no argument it runs all three, in about a minute.
   Needs neither KVM nor a matching architecture, which is why this is the appliance job that runs
   on every CI pipeline while the VM tests are gated on what the MR touched

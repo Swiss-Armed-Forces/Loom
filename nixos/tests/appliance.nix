@@ -368,6 +368,32 @@ pkgs.testers.runNixOSTest {
           btop_conf = appliance.succeed("cat /run/loom/btop.conf")
           assert 'net_iface = "loom0"' in btop_conf, btop_conf
 
+      with subtest("a pane whose program exits gets it back"):
+          # Every pane of this session is one application, and quitting one is
+          # a keystroke: `q` in btop, `:q` in k9s. On a box whose console is
+          # the entire user interface, a pane that then stays dead costs the
+          # operator a third of the screen until they find the restart control.
+          # `loom-pane` supervises each one, so this is a restart rather than a
+          # tombstone.
+          appliance.wait_until_succeeds("pgrep -u ${loomUser} -x btop")
+          before = appliance.succeed("pgrep -u ${loomUser} -x btop").strip()
+
+          # The pane's own process is the supervisor and does not change; what
+          # is killed here is the program it is watching, which is exactly what
+          # quitting from inside it would do.
+          appliance.succeed("pkill -u ${loomUser} -x btop")
+          appliance.wait_until_succeeds(
+              f"pgrep -u ${loomUser} -x btop | grep -qvx {before}"
+          )
+
+          # And the pane never died, so the layout never collapsed and
+          # `remain-on-exit` never had to hold a corpse.
+          dead = appliance.succeed(
+              "tmux -S /run/loom/tmux.sock list-panes -t loom "
+              "-F '#{pane_dead}'"
+          ).split()
+          assert dead == ["0"] * len(dead), dead
+
           # The first pane starts on the log and hands over to k9s once Loom is
           # up. Both halves live in the script that pane starts, so read it: the
           # handover is invisible in a test VM, where nothing ever comes up.

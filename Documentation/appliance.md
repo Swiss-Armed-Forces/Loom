@@ -701,7 +701,7 @@ That keypress opens a three-pane session:
 │           the assistant           │        │           the assistant           │
 │                                   │        │                                   │
 └───────────────────────────────────┘        └───────────────────────────────────┘
-  LOOM    Ctrl-b d detach | Alt-F2 for a shell
+  LOOM    Alt-F2 for a shell   × restart pane   × detach
 ```
 
 The top-left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch`
@@ -769,15 +769,47 @@ Two things worth knowing before leaning on it:
   the number of tools in play grows. Treat it as a knowledgeable colleague who has not seen your cluster,
   rather than as something to hand a long autonomous task.
 
-`Ctrl-b` then an arrow key moves between panes. Inside `k9s`, `d` describes a pod, `l` shows its logs, `0`
-switches namespace and `:q` quits to a dead pane that `Ctrl-b :respawn-pane` brings back. **`loom-k9s`** is the
-same screen as a command, for an `Alt-F2` console.
+### Driving it with a mouse
 
-`Ctrl-b d` detaches and returns to the press-a-key prompt; the panes keep running, and the next keypress comes
-straight back to them. `Alt-F2` through `Alt-F6` give a plain console with no session at all. Since no pane of
-the session is a shell any more, that is both the way back in if anything above misbehaves **and** the ordinary
-way to get a prompt — `loom-info`, `loom-k9s`, `loom-chat`, `loom-up` and `loom-down` are all on the `PATH`
-there. `Alt-F1` returns to the session.
+Plug a USB mouse in — at any time, including long after boot — and the console gets a pointer: one character
+cell in reverse video, following the mouse. There is no X and no Wayland involved; the pointer is drawn by the
+kernel and the events are decoded by `gpm`.
+
+**Click a pane to work in it.** The pane under the pointer takes the focus, and the mouse then reaches into
+whatever is running there: `btop`'s own menus and boxes respond to clicks, `k9s` selects the row you click,
+and the assistant's input box takes focus. The scroll wheel scrolls the pane under the pointer, and dragging a
+pane border resizes it.
+
+**The two controls at the bottom right are buttons.** `× detach` ends the session and returns the box to the
+banner and the press-a-key prompt — the closest thing this appliance has to a lock screen. `× restart pane`
+forces the focused pane's program to start over, for the times something is wedged rather than gone.
+
+A mouse is never required. Everything below still works without one, and a box with no mouse behaves exactly
+as it did before any of this existed.
+
+### Panes look after themselves
+
+Each pane runs one application and nothing else, so quitting one is a single keystroke — `q` in `btop`, `:q`
+in `k9s`. That no longer costs you the pane: every pane is supervised, and the program comes straight back
+with a one-line note saying so.
+
+A program that exits _immediately_, twice running, is treated as broken rather than quit: the gap before each
+retry doubles up to thirty seconds, so the error stays on screen long enough to read instead of scrolling past
+in a loop. Nothing on this box spins a pane at full tilt.
+
+Inside `k9s`, `d` describes a pod, `l` shows its logs, `0` switches namespace and `:q` restarts it.
+**`loom-k9s`** is the same screen as a command, for an `Alt-F2` console.
+
+`Ctrl-b` does nothing: the session is a kiosk, so tmux's prefix and its right-click menus are switched off and
+the status line carries the two controls anyone needs. `Alt-F2` through `Alt-F6` give a plain console with no
+session at all. Since no pane of the session is a shell, that is both the way back in if anything above
+misbehaves **and** the ordinary way to get a prompt — `loom-info`, `loom-k9s`, `loom-chat`, `loom-up` and
+`loom-down` are all on the `PATH` there, as is `tmux -S /run/loom/tmux.sock` if the session itself needs
+handling. `Alt-F1` returns to the session.
+
+None of that is a security boundary, and it is not meant to be one: every console autologins the operator
+account, which holds passwordless root. Physical possession of the box and its USB key is the boundary — see
+[Threat model](#threat-model).
 
 `loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
 

@@ -308,6 +308,7 @@ let
     ./branding.nix
     ./box.nix
     ./console.nix
+    ./console-mouse.nix
     ./key-guard.nix
     ./modes.nix
     ./network.nix
@@ -496,6 +497,22 @@ in
         applianceModules
         loomSubnet
         ;
+    }
+  );
+
+  # `nix-build ./nixos -A tests.applianceMouse --argstr system x86_64-linux`
+  # Point-and-click on the console session, end to end: a uinput mouse in the
+  # guest, through mousedev and gpm and the pty shim, to the pane tmux focuses.
+  # The pure halves are unit-tested inside the `loom-console-mouse` derivation;
+  # this is the part that only fails on a booted machine.
+  tests.applianceMouse = withKvmPolicy (
+    import ./tests/appliance-mouse.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        ;
+      inherit (specialArgs) loomUser;
     }
   );
 

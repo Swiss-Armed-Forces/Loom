@@ -19,8 +19,9 @@
 #     whether a disk is destroyed with nobody watching; the stick's own
 #     derivation runs this suite, but building the stick costs a closure and
 #     this costs a second.
-#   * `pytest` runs nixos/usb-ingest/tests, for the same reason: the package's
-#     checkPhase runs them, and running them here needs no package built.
+#   * `pytest` runs nixos/usb-ingest/tests and nixos/console-mouse/tests, for
+#     the same reason: each package's checkPhase runs its own, and running them
+#     here needs no package built.
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -236,15 +237,18 @@ check_bats(){
 }
 
 check_pytest(){
-    echo "[*] Running: pytest (nixos/usb-ingest/tests)"
-    # PYTHONPATH rather than an install: the package is built by
-    # nixos/usb-ingest.nix for the appliance and is not in the devenv's
-    # virtualenv, but its tests import it by name. Run from the repository root
-    # so that pytest.ini applies -- above all `--basetemp=.pytest_tmp`, which is
-    # what keeps the scratch out of RAM.
+    echo "[*] Running: pytest (nixos/usb-ingest/tests, nixos/console-mouse/tests)"
+    # PYTHONPATH rather than an install: these packages are built by
+    # nixos/usb-ingest.nix and nixos/console-mouse.nix for the appliance and are
+    # not in the devenv's virtualenv, but their tests import them by name. Both
+    # directories are on the path at once because pytest is invoked once -- the
+    # two packages have no module names in common, so there is nothing to
+    # shadow. Run from the repository root so that pytest.ini applies -- above
+    # all `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
     if (
         cd "${CONTEXT_DIR}"
-        PYTHONPATH="${CONTEXT_DIR}/nixos/usb-ingest" python -m pytest nixos/usb-ingest/tests
+        PYTHONPATH="${CONTEXT_DIR}/nixos/usb-ingest:${CONTEXT_DIR}/nixos/console-mouse" \
+            python -m pytest nixos/usb-ingest/tests nixos/console-mouse/tests
     ); then
         return 0
     fi

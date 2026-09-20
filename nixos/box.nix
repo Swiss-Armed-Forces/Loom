@@ -479,6 +479,13 @@ in
       usbutils
       htop
       less
+      # Not for the daemon -- console-mouse.nix names its own store path for
+      # that -- but for the three client tools in the same package, which are
+      # the only way to debug a console mouse on a box with no remote access:
+      # `mev` prints the events gpm is delivering, `mouse-test` identifies the
+      # protocol a device speaks, and `hltest` exercises the console highlight
+      # the pointer is drawn with.
+      gpm
 
       # The operator's console session (console.nix). Plain btop, not devenv's
       # `btop.override { cudaSupport = true; rocmSupport = true; }`. So no GPU

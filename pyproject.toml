@@ -80,4 +80,11 @@ exclude = ["tests/test_secret_scan.py"]
 quiet = true
 
 [tool.pyright]
-extraPaths = ["backend/worker/tests"]
+# The appliance's Python lives under nixos/ and is built by Nix rather than by
+# Poetry, so it is not a path dependency above and the editor cannot resolve
+# `loom_usb_ingest` / `loom_console_mouse` without being told where they are.
+extraPaths = [
+  "backend/worker/tests",
+  "nixos/usb-ingest",
+  "nixos/console-mouse",
+]
