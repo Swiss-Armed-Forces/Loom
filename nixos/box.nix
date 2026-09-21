@@ -577,10 +577,15 @@ in
   # `--login-pause` so nothing opens a session until somebody presses a key.
 
   security.sudo = {
-    enable = true; # up.sh:406 requires `sudo` to exist
-    # up.sh backgrounds `sudo minikube tunnel` for --expose (up.sh:924-933), and
-    # the appliance starts Loom unattended, so this cannot prompt. Acceptable
+    enable = true; # up.sh:407 requires `sudo` to exist
+    # Setup mode's loom-fetch runs `sudo loom-promote-boot-entry` and
+    # `sudo systemctl poweroff` (modes.nix), unattended, from a unit that has no
+    # logind session for polkit to key on -- so this cannot prompt. Acceptable
     # only because the box has no sshd and is reachable from the console alone.
+    #
+    # This used to cite `sudo minikube tunnel`, which the appliance no longer
+    # runs: network.nix exposes Loom with a DNAT rule instead of `up.sh
+    # --expose`.
     wheelNeedsPassword = false;
   };
 

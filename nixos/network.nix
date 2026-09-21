@@ -13,6 +13,7 @@
   pkgs,
   loomSubnet,
   loomInterface,
+  minikubeIp,
   ...
 }:
 let
@@ -122,6 +123,158 @@ let
       done | sort | awk '{ print $2 }'
     '';
   };
+
+  # The ports a visitor may reach on the appliance address.
+  #
+  # Exactly the two the firewall opens, and deliberately not the rest of what
+  # traefik's Service carries (imap 143, amqp 5672, redis 6379/6380, prometheus
+  # 9090 -- traefik/values.yaml). `minikube tunnel` used to publish all seven on
+  # this address as a side effect of how it works; only the firewall kept them
+  # from being reachable. Here the list is the decision.
+  exposedPorts = [
+    80
+    443
+  ];
+
+  # Reaching Loom from the appliance network, as two iptables chains.
+  #
+  # traefik binds :80 and :443 with a `hostPort` (traefik/values.yaml:26,31),
+  # which puts them on the minikube node -- the docker container at
+  # `minikubeIp`. That is already what `networking.hosts` in box.nix pins every
+  # `*.loom` name to, and it is how the box itself reaches its own stack. So the
+  # whole job here is to make a packet that a visitor sent to the appliance
+  # address arrive there too.
+  #
+  # This replaces `up.sh --expose`, which did the same job with
+  # `minikube tunnel`. That is not a route: with the docker driver minikube
+  # shells out to the system `ssh` client and forwards each service port over a
+  # connection into the node. The appliance never had `ssh` on `loom.service`'s
+  # PATH -- `environment.systemPackages` does not reach a unit -- so every
+  # forward failed with "executable file not found" and nothing ever listened on
+  # the appliance address. DHCP and DNS worked, and the box served nothing.
+  #
+  # DNAT is the better mechanism here regardless of that bug: no ssh, no
+  # long-lived root process that has to outlive a oneshot unit, and the client's
+  # own address survives into traefik's access log instead of a tunnel endpoint.
+  #
+  # Both chains are ours, which is what makes install and teardown exact: the
+  # rules can be flushed and the chains removed without touching anything docker
+  # or the NixOS firewall put there.
+  loom-expose = pkgs.writeShellApplication {
+    name = "loom-expose";
+    runtimeInputs = [ pkgs.iptables ];
+    text = ''
+      readonly INTERFACE=${lib.escapeShellArg serviceInterface}
+      readonly BOX=${lib.escapeShellArg boxAddress}
+      readonly NODE=${lib.escapeShellArg minikubeIp}
+      readonly PORTS=${lib.escapeShellArg (lib.concatMapStringsSep " " toString exposedPorts)}
+      readonly MULTIPORT=${lib.escapeShellArg (lib.concatMapStringsSep "," toString exposedPorts)}
+
+      # Our own chains, jumped to from a hook each table guarantees us.
+      readonly NAT_CHAIN=LOOM-EXPOSE
+      readonly FORWARD_CHAIN=LOOM-FORWARD
+
+      up() {
+          # ---------------------------------------------------------------
+          # nat PREROUTING: the appliance address becomes the minikube node.
+          #
+          # Created-or-flushed rather than created-if-absent, so a restart
+          # rebuilds the rules instead of appending a second copy of them.
+          # ---------------------------------------------------------------
+          iptables --table nat --new-chain "''${NAT_CHAIN}" 2>/dev/null \
+              || iptables --table nat --flush "''${NAT_CHAIN}"
+
+          if ! iptables --table nat --check PREROUTING \
+              --jump "''${NAT_CHAIN}" 2>/dev/null; then
+              iptables --table nat --insert PREROUTING --jump "''${NAT_CHAIN}"
+          fi
+
+          local port
+          for port in ''${PORTS}; do
+              iptables --table nat --append "''${NAT_CHAIN}" \
+                  --in-interface "''${INTERFACE}" \
+                  --destination "''${BOX}" \
+                  --protocol tcp --destination-port "''${port}" \
+                  --jump DNAT --to-destination "''${NODE}:''${port}"
+          done
+
+          # ---------------------------------------------------------------
+          # filter FORWARD: and then it has to be allowed across.
+          #
+          # This is the half that is easy to miss. dockerd sets the FORWARD
+          # policy to DROP, so a DNAT'd packet crossing from the appliance
+          # NIC to the minikube bridge is dropped by default and the symptom
+          # is indistinguishable from the DNAT not being there at all.
+          #
+          # DOCKER-USER is docker's documented hook for this: it is jumped to
+          # ahead of every docker-generated FORWARD rule and docker never
+          # edits its contents. Created here only as a fallback -- `After`
+          # and `Requires` on docker.service mean it normally exists already,
+          # and creating it ourselves would otherwise leave a chain nothing
+          # jumps to.
+          # ---------------------------------------------------------------
+          iptables --new-chain "''${FORWARD_CHAIN}" 2>/dev/null \
+              || iptables --flush "''${FORWARD_CHAIN}"
+
+          iptables --new-chain DOCKER-USER 2>/dev/null || true
+          if ! iptables --check FORWARD --jump DOCKER-USER 2>/dev/null; then
+              iptables --insert FORWARD --jump DOCKER-USER
+          fi
+          if ! iptables --check DOCKER-USER \
+              --jump "''${FORWARD_CHAIN}" 2>/dev/null; then
+              iptables --insert DOCKER-USER --jump "''${FORWARD_CHAIN}"
+          fi
+
+          # Matched on the node's address rather than on the bridge it is
+          # behind: that bridge is `br-<docker network id>`, which changes
+          # every time the cluster is deleted and recreated.
+          iptables --append "''${FORWARD_CHAIN}" \
+              --in-interface "''${INTERFACE}" \
+              --destination "''${NODE}" \
+              --protocol tcp --match multiport --dports "''${MULTIPORT}" \
+              --jump ACCEPT
+
+          # The replies. docker's own per-network rules happen to cover these
+          # today, which is not something to depend on for the direction that
+          # makes the whole thing work.
+          iptables --append "''${FORWARD_CHAIN}" \
+              --out-interface "''${INTERFACE}" \
+              --match conntrack --ctstate RELATED,ESTABLISHED \
+              --jump ACCEPT
+
+          echo "[*] Loom is exposed on ''${BOX} ports ''${MULTIPORT} (via ''${NODE})."
+      }
+
+      # Never fails. This runs as ExecStop, including on the way to a
+      # shutdown that is about to discard the whole ruleset anyway, and a
+      # rule that somebody already removed by hand is not a failure worth
+      # refusing to stop over.
+      down() {
+          if iptables --table nat --check PREROUTING \
+              --jump "''${NAT_CHAIN}" 2>/dev/null; then
+              iptables --table nat --delete PREROUTING --jump "''${NAT_CHAIN}" || true
+          fi
+          iptables --table nat --flush "''${NAT_CHAIN}" 2>/dev/null || true
+          iptables --table nat --delete-chain "''${NAT_CHAIN}" 2>/dev/null || true
+
+          if iptables --check DOCKER-USER \
+              --jump "''${FORWARD_CHAIN}" 2>/dev/null; then
+              iptables --delete DOCKER-USER --jump "''${FORWARD_CHAIN}" || true
+          fi
+          iptables --flush "''${FORWARD_CHAIN}" 2>/dev/null || true
+          iptables --delete-chain "''${FORWARD_CHAIN}" 2>/dev/null || true
+      }
+
+      case "''${1:-}" in
+          up)   up   ;;
+          down) down ;;
+          *)
+              echo >&2 "usage: loom-expose up|down"
+              exit 1
+              ;;
+      esac
+    '';
+  };
 in
 {
   # Exported rather than kept local because the name is not derivable from
@@ -218,6 +371,38 @@ in
           53
           67 # DHCP server
         ];
+      };
+
+      # DNAT'd traffic is routed, not delivered locally, so this is no longer
+      # something to leave to dockerd -- which does enable it, as a side effect
+      # of starting, on a box where nothing has declared it.
+      boot.kernel.sysctl."net.ipv4.ip_forward" = true;
+
+      # The rules above, with a lifecycle. See `loom-expose` for what they do
+      # and why they replaced `up.sh --expose`.
+      systemd.services.loom-expose = {
+        description = "Publish Loom on the appliance address";
+        wantedBy = [ "multi-user.target" ];
+        # DOCKER-USER is created by dockerd, and half the rules go in it.
+        after = [ "docker.service" ];
+        requires = [ "docker.service" ];
+        # Ahead of the stack it exposes. Nothing breaks in the other order --
+        # bring-up takes hours and the rules can be installed at any point
+        # during it -- but an operator reading the journal should not have to
+        # wonder whether a box that is serving nothing yet is also unexposed.
+        before = [ "loom.service" ];
+        # A `systemctl restart docker` rebuilds the FORWARD chain. The
+        # contents of DOCKER-USER survive that by docker's own contract, but
+        # the box should not be relying on a contract for the one thing that
+        # makes it reachable -- this reinstalls the rules afterwards, in the
+        # right order, because of `after` above.
+        partOf = [ "docker.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${lib.getExe loom-expose} up";
+          ExecStop = "${lib.getExe loom-expose} down";
+        };
       };
 
       # A record of the generated subnet, for whoever debugs the box later

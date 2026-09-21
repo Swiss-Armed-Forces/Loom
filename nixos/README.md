@@ -21,7 +21,7 @@ this file is about the code.
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
-| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches. |
+| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, and `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
 | `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror`, and the console pane the copy is drawn in — with its own pytest suite, run at build time. |

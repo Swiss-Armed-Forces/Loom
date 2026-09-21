@@ -123,6 +123,11 @@ and re-start Loom in full offline mode: `./up.sh --offline`.
 If you want to access the loom UIs remotely, you need to start loom using `./up.sh --expose 0.0.0.0`.
 Note that with IP 0.0.0.0 loom will listen on all available network interfaces. Replace 0.0.0.0 with an IP of a specific network interfaces to make loom listen only on that interface.
 
+This flag runs `minikube tunnel`, which with the docker driver forwards each port over the system `ssh` client
+rather than installing a route — so an `ssh` binary has to be on the `PATH`. Without one the tunnel starts,
+logs `error starting ssh tunnel`, and binds nothing at all, which looks like a firewall problem rather than a
+missing package.
+
 On the remote machine you want to access loom from, you must make the `.loom` domain resolvable.
 For example, via setting in `/etc/hosts`:
 

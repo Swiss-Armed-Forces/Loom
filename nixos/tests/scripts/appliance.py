@@ -411,7 +411,11 @@ def _assistant_pane(appliance: "Machine", params: Params, panes: list[str]) -> N
     # The assistant pane must dial the model the workers use. Same drift
     # argument as the namespace above, with a sharper failure: an
     # air-gapped box only has what ollama/Dockerfile baked in, so a pane
-    # pinned to anything else waits forever on a model never served.
+    # pinned to anything else warns and then fails every question the
+    # operator asks it. The pane no longer *waits* on the model -- see
+    # `ready` in console.nix -- which is what makes this assertion the only
+    # thing standing between a typo in vars.sh and an assistant that is
+    # simply broken on a box with no way to fetch the tag it wants.
     chat_pane = appliance.succeed(f"cat {panes[2].split(maxsplit=1)[1]}")
     want_model = appliance.succeed(
         f"bash -c '. {params.operator.repo_dir}/vars.sh;"
@@ -499,10 +503,110 @@ def _loom_up_on_path(appliance: "Machine", subtest: "Subtest") -> None:
         assert "loom-up" in unit_path, unit_path
 
 
+def _state_directories(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest("the unit and the operator agree where minikube keeps its state"):
+        # box.nix sets these in `environment.sessionVariables`, which NixOS
+        # writes into /etc/profile -- so they reach login shells and nothing
+        # else. Without them on the unit as well, minikube falls back to
+        # $HOME/.minikube: the cluster loom.service builds lands somewhere no
+        # `minikube` command typed at the console can see, and the console
+        # reports no cluster on a box that is running one. Same shape as the
+        # PATH problem above, and the same cause.
+        env = appliance.succeed("systemctl show -p Environment --value loom.service")
+        for var, want in [
+            ("MINIKUBE_HOME", f"{params.operator.repo_dir}/.minikube"),
+            ("SKAFFOLD_HOME", f"{params.operator.repo_dir}/.skaffold"),
+        ]:
+            assert f"{var}={want}" in env, env
+            # The other half of "agree": a login shell, which is where the
+            # value has always been right.
+            shell = appliance.succeed(
+                f"runuser -l {params.operator.user} -c 'echo ${var}'"
+            ).splitlines()[-1]
+            assert shell == want, f"{var}: unit says {want}, shell says {shell}"
+
+
 def _docker(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("docker is available for the minikube driver"):
         appliance.wait_for_unit("docker.service")
         appliance.succeed("docker info")
+
+
+def _exposure(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
+    with subtest("Loom is published on the appliance address"):
+        # The one thing a visitor actually depends on, and for a long time
+        # nothing here checked it: the box handed out leases and resolved every
+        # *.loom name to its own address while nothing whatsoever listened
+        # there. `up.sh --expose` ran `minikube tunnel`, which on the docker
+        # driver forwards each service port over the system `ssh` client -- and
+        # `ssh` is not on loom.service's PATH, so every forward failed and the
+        # only symptom was a connection refused from the laptop. The old
+        # assertion for that flag passed throughout.
+        appliance.wait_for_unit("loom-expose.service")
+        box = f"{params.loom_subnet}.1"
+
+        # DNAT: the appliance address becomes the minikube node, which is where
+        # traefik's hostPort lives.
+        nat = appliance.succeed("iptables --table nat --list-rules LOOM-EXPOSE")
+        for port in ["80", "443"]:
+            rule = next(
+                (line for line in nat.splitlines() if f"--dport {port} " in line), None
+            )
+            assert rule, nat
+            assert f"--to-destination {params.minikube_ip}:{port}" in rule, rule
+            assert "-i loom0" in rule, rule
+            assert f"-d {box}/32" in rule, rule
+
+        # Nothing else may be forwarded. The tunnel published all seven ports
+        # of traefik's Service on this address as a side effect of how it
+        # worked; here the list is a decision, so a new one has to be made
+        # deliberately.
+        assert len([line for line in nat.splitlines() if "DNAT" in line]) == 2, nat
+
+        # And the FORWARD accept, without which dockerd's DROP policy eats the
+        # DNAT'd packet and the symptom is identical to no DNAT at all.
+        forward = appliance.succeed("iptables --list-rules LOOM-FORWARD")
+        assert f"-d {params.minikube_ip}/32" in forward, forward
+        assert "--dports 80,443 -j ACCEPT" in forward, forward
+        assert "RELATED,ESTABLISHED -j ACCEPT" in forward, forward
+
+        # Both chains have to actually be reached. DOCKER-USER is the hook
+        # docker guarantees runs before its own FORWARD rules.
+        assert "-j LOOM-EXPOSE" in appliance.succeed(
+            "iptables --table nat --list-rules PREROUTING"
+        )
+        assert "-j LOOM-FORWARD" in appliance.succeed(
+            "iptables --list-rules DOCKER-USER"
+        )
+
+        # Routed rather than delivered locally, so this is not optional -- and
+        # not something to leave to dockerd turning it on as a side effect.
+        assert appliance.succeed("sysctl -n net.ipv4.ip_forward").strip() == "1"
+
+        _exposure_is_repeatable(appliance, nat)
+
+
+def _exposure_is_repeatable(appliance: "Machine", nat: str) -> None:
+    """Restarting must rebuild the rules, not stack a second copy of them."""
+    # The chains are created-or-flushed for exactly this reason: loom-expose is
+    # PartOf=docker.service, so a `systemctl restart docker` reruns it, and on a
+    # box that is restarted often enough an appending install would grow the
+    # chain without ever being noticed -- every copy matches, so it keeps
+    # working right up until somebody reads the ruleset.
+    appliance.succeed("systemctl restart loom-expose.service")
+    again = appliance.succeed("iptables --table nat --list-rules LOOM-EXPOSE")
+    assert again == nat, f"restart changed the ruleset:\n{nat}\n---\n{again}"
+
+    # And stopping takes them away again, so a box can be unexposed without a
+    # reboot.
+    appliance.succeed("systemctl stop loom-expose.service")
+    appliance.fail("iptables --table nat --list-rules LOOM-EXPOSE")
+    assert "-j LOOM-FORWARD" not in appliance.succeed(
+        "iptables --list-rules DOCKER-USER"
+    )
+    appliance.succeed("systemctl start loom-expose.service")
 
 
 def _interface_rename(appliance: "Machine", subtest: "Subtest") -> None:
@@ -538,7 +642,7 @@ def _radios(appliance: "Machine", subtest: "Subtest") -> None:
             appliance.succeed(f"grep -R 'blacklist {module}' /etc/modprobe.d/")
 
 
-def _boot_modes(appliance: "Machine", subtest: "Subtest", params: Params) -> str:
+def _boot_modes(appliance: "Machine", subtest: "Subtest") -> str:
     with subtest("both boot modes exist and differ in the right way"):
         # The first-time-setup specialisation is what lets one box both fetch
         # images online and then run entirely offline. Its *name* is also the
@@ -561,7 +665,11 @@ def _boot_modes(appliance: "Machine", subtest: "Subtest", params: Params) -> str
         assert match, unit
         start_script = appliance.succeed(f"cat {match.group(1)}")
         assert "--offline" in start_script, start_script
-        assert f"--expose {params.loom_subnet}.1" in start_script, start_script
+        # And deliberately *not* --expose. Publishing the stack is
+        # loom-expose's job now (see _exposure below), and the two cannot be
+        # combined: DNAT happens in nat PREROUTING, ahead of the routing
+        # decision that would hand a packet to a tunnel's local socket.
+        assert "--expose" not in start_script, start_script
         # First-time setup fetches instead, and must not serve DHCP.
         setup_sys = appliance.succeed(
             "readlink -f /run/current-system/specialisation/first-time-setup"
@@ -585,6 +693,12 @@ def _setup_mode_powers_off(appliance: "Machine", setup_sys: str) -> None:
     fetch_unit = appliance.succeed(
         f"cat {setup_sys}/etc/systemd/system/loom-fetch.service"
     )
+    # Both modes share modes.nix's `commonService`, so the state directories
+    # checked on loom.service in _state_directories reach this unit by the same
+    # definition. Asserted here anyway, cheaply, because the consequence is
+    # worse in this mode: a fetch that warms the wrong minikube store leaves the
+    # box with hours of downloads that run mode cannot find.
+    assert "MINIKUBE_HOME=" in fetch_unit, fetch_unit
     fetch_match = re.search(r"ExecStart=(\S+)", fetch_unit)
     assert fetch_match, fetch_unit
     fetch_script = appliance.succeed(f"cat {fetch_match.group(1)}")
@@ -849,12 +963,14 @@ def run(
     _repository(appliance, subtest, params)
     _loom_up_flags(appliance, subtest, params)
     _loom_up_on_path(appliance, subtest)
+    _state_directories(appliance, subtest, params)
     _docker(appliance, subtest)
+    _exposure(appliance, subtest, params)
     _interface_rename(appliance, subtest)
     _radios(appliance, subtest)
 
     # The two boot modes, and the branding both of them wear.
-    setup_sys = _boot_modes(appliance, subtest, params)
+    setup_sys = _boot_modes(appliance, subtest)
     _mode_sessions(appliance, subtest, setup_sys)
     _boot_splash(appliance, subtest)
 

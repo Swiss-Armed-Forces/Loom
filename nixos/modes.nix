@@ -5,8 +5,9 @@
 # modes cost a boot menu entry rather than a second image.
 #
 #   `Loom`                    (default) offline. Serves DHCP and *.loom, starts
-#                             Loom with --offline --expose so visitors can
-#                             reach it.
+#                             Loom with --offline, and publishes it on the
+#                             appliance address so visitors can reach it
+#                             (network.nix's loom-expose).
 #   `Loom (first-time-setup)` DHCP client. Builds and pulls every container
 #                             image into minikube, once, then powers the box
 #                             off -- after which it never needs the internet
@@ -26,14 +27,12 @@
   config,
   lib,
   pkgs,
-  loomSubnet,
   loomUser,
   loomRepoDir,
   ...
 }:
 let
   cfg = config.loom;
-  boxAddress = "${loomSubnet}.1";
 
   # Offload Ollama to the GPU this box actually has. Named, not `--gpus all`:
   # up.sh takes `amd` or `nvidia` and rejects anything else, and the vendor is
@@ -183,8 +182,6 @@ let
       Group = "users";
       WorkingDirectory = loomRepoDir;
       TimeoutStartSec = "infinity";
-      # up.sh backgrounds `sudo minikube tunnel`, which must outlive the unit.
-      KillMode = "process";
       # Journal only. These used to also go to /dev/console, which -- with no
       # `console=` on the command line -- meant the active VT, so hours of
       # bring-up log painted over the login screen. The first pane of
@@ -203,11 +200,28 @@ let
       "loom-seed-repo.service"
     ];
     wants = [ "network-online.target" ];
+    # Where minikube and skaffold keep their state.
+    #
+    # box.nix sets both in `environment.sessionVariables`, which is written into
+    # /etc/profile and therefore reaches login shells and nothing else -- so the
+    # units below ran without them and minikube fell back to `$HOME/.minikube`.
+    # The result was two state directories for one box: the cluster these units
+    # built lived in /home/loom/.minikube, while every `minikube` command an
+    # operator typed at the console addressed the empty repo-relative one and
+    # reported no cluster at all.
+    #
+    # Inherited from the session variables rather than restated, because the
+    # whole point is that the two agree; the values themselves belong next to
+    # the comment in box.nix explaining why they are repo-relative.
+    environment = {
+      inherit (config.environment.sessionVariables) MINIKUBE_HOME SKAFFOLD_HOME;
+    };
     path = [
       # `sudo` is a setuid wrapper in /run/wrappers/bin rather than a package, so
       # no entry in `loom.toolchain` can supply it. A login shell gets this
-      # directory for free; a unit does not. up.sh checks for it (up.sh:406) and
-      # `stop_expose_minikube` (up.sh:883-894) runs it on every invocation.
+      # directory for free; a unit does not. up.sh's `validate_environment`
+      # refuses to run without it (up.sh:407), and setup mode's loom-fetch below
+      # calls it twice directly.
       "/run/wrappers"
       # Not in `loom.toolchain`: the docker module already puts a client in
       # systemPackages, and taking the package from the module rather than from
@@ -308,8 +322,15 @@ in
           description = "Loom (offline)";
           wantedBy = [ "multi-user.target" ];
           after = [ "dnsmasq.service" ];
+          # Deliberately no --expose. That flag runs `minikube tunnel`, which
+          # on the docker driver forwards each service port over the system
+          # `ssh` client; network.nix's loom-expose does the same job with a
+          # DNAT rule instead. The two are alternatives rather than layers --
+          # DNAT happens in nat PREROUTING, ahead of the routing decision that
+          # would hand a packet to a local listener, so a tunnel socket on the
+          # appliance address would never see one.
           script = ''
-            exec loom-up --offline --expose ${boxAddress}${gpuArgs}${platformArgs}
+            exec loom-up --offline${gpuArgs}${platformArgs}
           '';
         }
       ];

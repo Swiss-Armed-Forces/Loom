@@ -449,6 +449,9 @@ let
     text = ''
       model=${lib.escapeShellArg loomChatModel}
       endpoint=${lib.escapeShellArg "https://${ollamaHost}/v1"}
+      # Ollama's root route, which answers "Ollama is running" and nothing else.
+      # What the wait below gates on -- see `ready`.
+      probe=${lib.escapeShellArg "https://${ollamaHost}/"}
       namespace=${lib.escapeShellArg loomNamespace}
 
       export OPENCODE_CONFIG=${lib.escapeShellArg opencodeConfig}
@@ -547,10 +550,15 @@ let
       # with NXDOMAIN -- it hangs against a Traefik that is not listening yet, and
       # a pane that prints nothing reads as frozen.
       #
-      # Asking /v1/models rather than the namespace, because "the cluster is up"
-      # is not the interesting condition here: opencode exits when its first
-      # request fails, so what this has to wait for is Ollama serving the pinned
-      # model over a connection that verifies.
+      # What this waits for is that Ollama answers over a connection that
+      # verifies, and nothing more. Whether the pinned model is in its inventory
+      # used to be part of the same condition, on the grounds that opencode exits
+      # when its first request fails -- but a model that never arrives is then a
+      # pane that waits forever and says only that it is waiting, which is a
+      # worse failure than the one it was avoiding. A missing model is now a
+      # warning below and opencode's own error afterwards: the pane is
+      # `remain-on-exit` and supervised by loom-pane, so that error stays on
+      # screen, comes back on a backoff and offers "× restart pane".
       #
       # Said once per change rather than once per attempt, so a pane that waits
       # an hour for a bring-up does not scroll one line every five seconds.
@@ -562,23 +570,41 @@ let
         fi
       }
 
-      # The two halves are checked separately and named separately. Folded into
-      # one predicate they produce the same silence for "the cluster has not
-      # issued its certificate yet" and "Ollama is still pulling the model",
-      # which are hours apart and fixed by different things.
+      # The halves are checked separately and named separately. Folded into one
+      # predicate they produce the same silence for "the cluster has not issued
+      # its certificate yet", "nothing is listening on 443 yet" and "the name
+      # resolves to something that is not Ollama", which are fixed by different
+      # things.
       #
-      # `grep` without -q, deliberately: this runs under `set -o pipefail`, and
-      # -q makes grep exit on the first match, which hands the producer on its
-      # left an EPIPE and fails the pipeline *because* the match was found. The
-      # same trap is documented at length in tests/appliance.nix.
+      # curl's own message is carried into the wait line rather than dropped.
+      # This is the whole reason that was worth changing: --silent without
+      # --show-error, plus a discarded body, meant one line stood for a cert that
+      # does not verify, a route that 404s and a model that is not there, and an
+      # operator looking at the pane could not tell which. `2>&1 >"$body"`
+      # duplicates stderr onto the substitution's pipe *before* stdout goes to
+      # the file, so the status is curl's and the message is curl's.
+      #
+      # The body is matched too, and not only for tidiness: the appliance answers
+      # wildcard *.loom from its own dnsmasq (network.nix), so a misrouted name
+      # lands on some other Loom service that is only too happy to return 200 on
+      # `/`. --fail catches Traefik's 404 for a host it does not route; it cannot
+      # catch that.
       ready() {
+        local err body
         if ! fetch_ca; then
           note "Waiting for the cluster's TLS certificate."
           return 1
         fi
-        if ! curl --silent --fail --max-time 5 --cacert "$ca" "$endpoint/models" \
-          | grep --fixed-strings "$model" >/dev/null; then
-          note "Waiting for Ollama to serve $model."
+        body="$state/ollama-probe"
+        if ! err="$(curl --silent --show-error --fail --max-time 5 \
+          --cacert "$ca" "$probe" 2>&1 >"$body")"; then
+          # Folded onto one line: curl's cert diagnostics run to several, and
+          # this is a status line in a pane, not a report.
+          note "Waiting for Ollama at $probe: ''${err//$'\n'/ }"
+          return 1
+        fi
+        if ! grep --fixed-strings "Ollama is running" "$body" >/dev/null; then
+          note "Waiting for Ollama at $probe: something else answered."
           return 1
         fi
         return 0
@@ -587,6 +613,25 @@ let
       until ready; do
         sleep 5
       done
+
+      # Said once, and not waited on. An air-gapped box only has the models
+      # ollama/Dockerfile baked in, and the one thing that cannot be fixed from
+      # this pane is a model that is not on the box -- so name it here, where the
+      # operator is already looking, rather than let opencode's first failure be
+      # the only clue. /api/ps is what the chart probes, and it answers 200 on an
+      # empty model store, so a Ready ollama pod proves nothing about this.
+      #
+      # `grep` without -q, deliberately -- this one is a pipeline, unlike the
+      # probe above: the script runs under `set -o pipefail`, and -q makes grep
+      # exit on the first match, which hands the producer on its left an EPIPE
+      # and fails the pipeline *because* the match was found. The same trap is
+      # documented at length in tests/appliance.nix.
+      if ! curl --silent --fail --max-time 5 --cacert "$ca" "$endpoint/models" \
+        | grep --fixed-strings "$model" >/dev/null; then
+        printf '  Warning: Ollama does not list %s.\n' "$model"
+        printf '  Starting anyway; the first question will fail until it does.\n'
+        printf '  What is on the box: ollama list, in the ollama pod.\n'
+      fi
 
       # Bun honours this the same way Node does -- measured against a self-signed
       # server: the fetch fails with "self signed certificate" without it and

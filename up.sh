@@ -949,6 +949,15 @@ warn_dev_or_integration() {
 }
 
 expose_minikube(){
+    # Note that `minikube tunnel` needs the system `ssh` client: with the docker
+    # driver it forwards each service port over a connection into the node
+    # rather than installing a route. A caller whose PATH has no `ssh` gets a
+    # tunnel that starts, logs "error starting ssh tunnel" and binds nothing.
+    #
+    # The NixOS appliance deliberately does not use this flag for that reason,
+    # among others -- it publishes Loom with a DNAT rule instead. See
+    # `loom-expose` in nixos/network.nix and Documentation/appliance.md.
+    #
     # Store the path to the command so that we can use
     # this later in sudo.
     # This is because minikube might be installed in /nix

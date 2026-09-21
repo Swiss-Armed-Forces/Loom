@@ -763,9 +763,19 @@ The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which m
 pane at a tag the workers do not use would make Ollama load a second model and evict the one it is indexing
 with. **`loom-chat`** is the same screen as a command, for an `Alt-F2` console.
 
-The pane waits until Ollama serves that model and says so while it waits, so on a cold box it stays blank-ish
-for as long as the bring-up takes. Sessions and caches go to `tmpfs` under `/run/loom`, not to the encrypted
-root: what an operator asked about an evidence set is not something to leave on the disk by accident.
+The pane waits until Ollama answers at `https://ollama.loom/` over a connection that verifies, so on a cold box
+it stays blank-ish for as long as the bring-up takes. It names what it is waiting for while it waits, including
+whatever `curl` said — a certificate that does not verify, a route that 404s and a name that resolves to some
+other service are different problems, and the pane distinguishes them.
+
+Whether the pinned model is actually in Ollama's inventory is **not** part of that wait. The pane warns once if
+it is missing and starts anyway: a Ready `ollama` pod says nothing about its model store (the chart probes
+`/api/ps`, which answers on an empty one), so waiting for the model is waiting on something that may never
+arrive. The assistant then fails its first question with an error you can read, in a pane that keeps it on
+screen and offers `× restart pane` — see `ollama list` in the `ollama` pod for what the box really has.
+
+Sessions and caches go to `tmpfs` under `/run/loom`, not to the encrypted root: what an operator asked about an
+evidence set is not something to leave on the disk by accident.
 
 Two things worth knowing before leaning on it:
 
@@ -819,16 +829,33 @@ None of that is a security boundary, and it is not meant to be one: every consol
 account, which holds passwordless root. Physical possession of the box and its USB key is the boundary — see
 [Threat model](#threat-model).
 
-`loom-up` and `loom-down` wrap `up.sh` with the two flags the appliance needs:
+`loom-up` and `loom-down` wrap `up.sh` with the flags the appliance needs:
 
 ```bash
-loom-up --offline --expose 10.13.37.1     # whatever subnet the banner shows
+loom-up --offline
 loom-down
 ```
 
 Use these rather than `./up.sh` directly. Bare `up.sh` would rewrite `/etc/hosts` and `/etc/sysctl.d`, both of
 which this appliance declares through NixOS — it would undo its own configuration. `loom-up` passes
 `--skip-setup_system --skip-install_host_entries` for exactly that reason, and forwards everything else through.
+
+Note the absence of `up.sh`'s `--expose`. Making Loom reachable from the appliance network is a separate unit,
+**`loom-expose`**, and it is not something `loom-up` starts or stops:
+
+```bash
+systemctl status loom-expose      # is this box reachable from the network port?
+iptables --table nat --list-rules LOOM-EXPOSE
+```
+
+It installs two iptables chains that send anything arriving on the box's own address at port 80 or 443 to the
+minikube node, where Traefik binds those ports directly. `--expose` does the same job a different way — it runs
+`minikube tunnel`, which forwards each port over an `ssh` connection into the node — and the two cannot be
+combined, because the DNAT happens before the kernel would hand a packet to a tunnel's socket. If you do want
+the tunnel for some reason, stop `loom-expose` first.
+
+Only 80 and 443 are published, which is all the firewall opens. Nothing else Traefik carries (IMAP, AMQP,
+Redis, Prometheus) is reachable from the network port.
 
 ## Wiping a box
 
@@ -949,6 +976,13 @@ prompt, and lists the interfaces that are present; rebuild the stick with `--int
 EVO-X2, first just try the other ethernet port. `loom-platform-info` names the ports and says which of them
 the match did and did not select — including the case where it matched more than one, where udev picks and
 moving the cable is the fix.
+
+**A laptop gets an address and resolves `*.loom`, but nothing loads.** DHCP and DNS come from `dnsmasq`;
+reaching the stack is `loom-expose`, a different unit, so one working says nothing about the other. Check it
+with `systemctl status loom-expose` and `iptables --table nat --list-rules LOOM-EXPOSE`. If the rules are
+there, the stack itself is probably still coming up — `curl --insecure https://frontend.loom` from an
+`Alt-F2` console goes straight to Traefik and bypasses the whole question, so it separates "not exposed" from
+"not up yet" in one command.
 
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
