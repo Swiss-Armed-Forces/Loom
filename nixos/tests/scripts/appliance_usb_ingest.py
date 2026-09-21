@@ -296,11 +296,17 @@ def _mc_runs_in_the_units_environment(
 
         assert "mcConfigDir" not in output, output
         assert "getent" not in output, output
+        # That it reached the network is the assertion, not that it failed: our own
+        # headline names the endpoint, so every way mc can die on its own command line
+        # -- a config directory it cannot resolve, an environment variable it cannot
+        # parse into the bool a flag wants -- would pass a test that only looked for
+        # the address.
+        assert "connection refused" in output, output
+        assert "could not parse" not in output, output
         # And the failure it did have is on the operator's screen, not only in the
         # journal: a count of failures with no reason is not something anybody
         # standing at the box can act on.
         assert "was not ingested" in output, output
-        assert "127.0.0.1:1" in output, output
 
         record = appliance.succeed("cat /run/loom/usb-progress/vdc.json")
         assert '"stage": "failed"' in record, record

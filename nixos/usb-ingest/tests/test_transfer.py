@@ -56,7 +56,14 @@ def test_the_rest_of_the_environment_survives() -> None:
     assert env["PATH"] == UNIT_ENVIRONMENT["PATH"]
     assert env["INVOCATION_ID"] == UNIT_ENVIRONMENT["INVOCATION_ID"]
     assert env["MC_UPDATE"] == "off"
-    assert env["MC_DISABLE_PAGER"] == "on"
+
+
+def test_a_variable_that_backs_a_flag_is_spelled_as_a_bool() -> None:
+    # `MC_DISABLE_PAGER` feeds `--disable-pager`, and mc parses every flag-backed
+    # variable with Go's `strconv.ParseBool`: `on` is not a word that accepts, and it
+    # is fatal rather than ignored -- mc refuses to run at all, which on this box means
+    # a stick that copies nothing. Only `true` and `false` are safe to write here.
+    assert mc_env(CONFIG_DIR, UNIT_ENVIRONMENT)["MC_DISABLE_PAGER"] in ("true", "false")
 
 
 def _script(source: str) -> list[str]:

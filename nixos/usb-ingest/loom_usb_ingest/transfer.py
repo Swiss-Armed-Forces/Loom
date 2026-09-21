@@ -54,7 +54,14 @@ def mc_env(config_dir: str, environ: Mapping[str, str] | None = None) -> dict[st
 
     `MC_UPDATE=off` is policy rather than tuning, the same policy
     `OPENCODE_DISABLE_MODELS_FETCH` states in console.nix: this box makes no outbound
-    connection it was not asked to make.
+    connection it was not asked to make. It is a string mc compares, which is why `off`
+    is the right word there and the wrong one below.
+
+    `MC_DISABLE_PAGER` backs a *flag*, `--disable-pager`, and every environment
+    variable that does is parsed by Go's `strconv.ParseBool`. `on` is not one of the
+    words that accepts, and mc does not shrug it off: it refuses to run at all, with
+    `could not parse on as bool value for flag disable-pager`. So `true`, for this one
+    and for any other flag-backed variable added beside it.
 
     `HOME` is not decoration and `MC_CONFIG_DIR` does not cover for it. `mc` computes
     the *default* of its `--config-dir` flag from the home directory while it builds
@@ -78,7 +85,7 @@ def mc_env(config_dir: str, environ: Mapping[str, str] | None = None) -> dict[st
         {
             "MC_CONFIG_DIR": config_dir,
             "MC_UPDATE": "off",
-            "MC_DISABLE_PAGER": "on",
+            "MC_DISABLE_PAGER": "true",
         }
     )
     # Only when there is none: an operator debugging by hand has a real home
