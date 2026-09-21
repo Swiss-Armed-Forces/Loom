@@ -544,6 +544,12 @@ A row that says `stopped before it finished` is a copy whose service died or was
 still in: nothing was pulled early, but nothing is complete either. `journalctl --unit
 loom-usb-ingest@<device>` has the reason.
 
+**A stick plugged in before Loom is up waits for it.** A box that has just been switched on spends the best
+part of an hour bringing the cluster up, and media handed to it in that window is not refused: the row says
+`waiting for Loom`, with what the last attempt to reach the intake bucket reported, and the copy starts by
+itself once the bucket answers. An hour is also where it gives up, and then the row says how long it waited
+and what it heard.
+
 **A row that failed says why.** A red row carries the first thing that went wrong in its own words — the
 storage endpoint refusing a connection, a volume skipped because the box has no driver for it, a certificate
 it would not trust — rather than a count of failures on its own. A finished row can carry one too: a stick

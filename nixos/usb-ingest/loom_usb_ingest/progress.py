@@ -258,6 +258,20 @@ class Reporter:
         )
         self.update(force=True)
 
+    def note(self, message: str) -> None:
+        """Say what the stage the device is in is waiting on, without changing it.
+
+        The wait for the cluster is the long one, and an operator who can see `waiting
+        for Loom to answer` learns nothing from watching it for another ten minutes.
+        What they need is the reason the last attempt gave.
+        """
+        if message == self._record.message:
+            return
+        self._record = replace(
+            self._record, outcome=replace(self._record.outcome, message=message)
+        )
+        self.update(force=True)
+
     def advance(self, objects: int, copied: int) -> None:
         """One `mc mirror` event: totals for the volume in flight."""
         self._record = replace(

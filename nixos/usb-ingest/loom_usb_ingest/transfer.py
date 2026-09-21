@@ -35,22 +35,71 @@ class TransferResult:
     first_error: str = ""
 
 
+@dataclass(frozen=True)
+class ClusterWait:
+    """Whether the intake bucket answered, and what it said while it did not."""
+
+    ready: bool
+    last_error: str = ""
+
+
+@dataclass(frozen=True)
+class WaitHooks:
+    """What the wait does between attempts, beside sleeping.
+
+    `trust` is retried until it succeeds -- it installs the cluster's CA, which is read
+    through the Kubernetes API, also not answering on a box that is still coming up.
+    `on_attempt` is given the reason each failed attempt gave, for the console pane.
+    `poll_s` is how long to sleep between attempts, and is a knob so the tests are not.
+    """
+
+    trust: Callable[[], bool] | None = None
+    on_attempt: Callable[[str], None] | None = None
+    poll_s: float = CLUSTER_POLL_INTERVAL_S
+
+
+# The default for `wait_for_cluster`, as a value rather than a call in the signature:
+# a call there would be evaluated once at definition time, which flake8 rightly refuses.
+# Shared safely because `WaitHooks` is frozen.
+NO_HOOKS = WaitHooks()
+
+
 class TransferError(RuntimeError):
     pass
 
 
-def _run(argv: list[str], env: dict[str, str], timeout: int = 300) -> str:
+def _run(argv: list[str], env: Mapping[str, str], timeout: int = 300) -> str:
     return subprocess.run(
-        argv, check=True, capture_output=True, text=True, timeout=timeout, env=env
+        argv, check=True, capture_output=True, text=True, timeout=timeout, env=dict(env)
     ).stdout
 
 
-def mc_env(config_dir: str, environ: Mapping[str, str] | None = None) -> dict[str, str]:
+def _reason(error: Exception) -> str:
+    """What to tell the operator about a tool that would not run."""
+    if isinstance(error, subprocess.CalledProcessError):
+        return (error.stderr or "").strip() or f"mc exited {error.returncode}"
+    return str(error)
+
+
+def mc_env(
+    config_dir: str, endpoint: str, environ: Mapping[str, str] | None = None
+) -> dict[str, str]:
     """Environment for every `mc` call.
 
     `environ` is the environment to build on, and defaults to this process's. It is a
     parameter so that the tests can hand in the environment a systemd unit has without
     editing the one they are running in.
+
+    The endpoint is declared here, as `MC_HOST_<alias>`, rather than registered with
+    `mc alias set`. That is not a simplification: `alias set` *probes* the endpoint and
+    refuses to record one that does not answer, so on a box still bringing Loom up --
+    which is the ordinary case for a stick plugged in at the console, and what
+    `wait_for_cluster` below exists for -- configuring mc failed outright and the wait
+    was never reached. An environment alias is recorded by being read, so the only
+    thing that waits for the cluster is the thing whose job that is.
+
+    No credentials: charts/values.yaml leaves intakeStorage's keys null, so SeaweedFS's
+    S3 gateway takes unauthenticated requests, and a bare URL is how mc spells that.
 
     `MC_UPDATE=off` is policy rather than tuning, the same policy
     `OPENCODE_DISABLE_MODELS_FETCH` states in console.nix: this box makes no outbound
@@ -86,6 +135,7 @@ def mc_env(config_dir: str, environ: Mapping[str, str] | None = None) -> dict[st
             "MC_CONFIG_DIR": config_dir,
             "MC_UPDATE": "off",
             "MC_DISABLE_PAGER": "true",
+            f"MC_HOST_{ALIAS}": endpoint,
         }
     )
     # Only when there is none: an operator debugging by hand has a real home
@@ -144,59 +194,57 @@ def install_cluster_ca(config_dir: str, namespace: str, kubeconfig: str) -> bool
     return written
 
 
-def wait_for_cluster(endpoint: str, config_dir: str, deadline_s: int) -> bool:
-    """Block until the S3 endpoint answers.
+def wait_for_cluster(
+    bucket: str,
+    env: Mapping[str, str],
+    deadline_s: int,
+    hooks: WaitHooks = NO_HOOKS,
+) -> ClusterWait:
+    """Block until the intake bucket can be listed.
 
     A stick can be plugged in at any point, including while `loom.service` is still
     bringing the stack up -- which takes a long time on this hardware. So waiting is the
     normal case, not an error path.
+
+    Listing the bucket, and NOT `mc ready`: that command asks for
+    `/minio/health/cluster`, which is MinIO's own admin endpoint. Loom's S3 gateway is
+    SeaweedFS, which answers it 404, so `mc ready` reports "the cluster is not ready"
+    against a perfectly healthy Loom -- forever. Listing the bucket asks the question
+    that actually matters anyway: the mirror needs this bucket, reachable and
+    unauthenticated, and nothing else.
+
+    See `WaitHooks` for what happens between attempts: the CA install that has to be
+    retried for the same reason this wait exists, and the reason the pane is told.
     """
-    env = mc_env(config_dir)
     started = time.monotonic()
+    trusted = hooks.trust is None
+    last_error = ""
 
-    while time.monotonic() - started < deadline_s:
+    while True:
+        if not trusted and hooks.trust is not None:
+            trusted = hooks.trust()
+
         try:
-            _run(["mc", "--json", "ready", ALIAS], env, timeout=60)
-            return True
-        except (subprocess.SubprocessError, OSError):
-            logger.info("Waiting for %s to answer", endpoint)
-            time.sleep(CLUSTER_POLL_INTERVAL_S)
+            _run(["mc", "ls", f"{ALIAS}/{bucket}"], env, timeout=60)
+            return ClusterWait(True)
+        except (subprocess.SubprocessError, OSError) as error:
+            last_error = _reason(error)
 
-    return False
+        logger.info("Waiting for the intake bucket: %s", last_error)
+        if hooks.on_attempt:
+            hooks.on_attempt(last_error)
 
-
-def configure_alias(endpoint: str, config_dir: str) -> None:
-    """Point `mc` at the appliance's own S3 endpoint.
-
-    Anonymous: charts/values.yaml leaves intakeStorage's access and secret keys
-    null, so SeaweedFS's S3 gateway takes unauthenticated requests. Empty
-    credentials are what `mc` expects for that.
-    """
-    try:
-        _run(
-            ["mc", "alias", "set", ALIAS, endpoint, "", ""],
-            mc_env(config_dir),
-            timeout=60,
-        )
-    except subprocess.CalledProcessError as error:
-        raise TransferError(
-            f"could not configure mc for {endpoint}: {(error.stderr or '').strip()}"
-        ) from error
-    except (subprocess.SubprocessError, OSError) as error:
-        # An mc that hung until the timeout, or one that could not be executed at
-        # all. Neither is a CalledProcessError, and letting either out of here would
-        # end the unit in a traceback -- with nothing on the console, which is the one
-        # place the operator is standing.
-        raise TransferError(
-            f"could not configure mc for {endpoint}: {error}"
-        ) from error
+        remaining = deadline_s - (time.monotonic() - started)
+        if remaining <= 0:
+            return ClusterWait(False, last_error)
+        time.sleep(min(hooks.poll_s, remaining))
 
 
 def mirror(
     source: str,
     bucket: str,
     prefix: str,
-    config_dir: str,
+    env: Mapping[str, str],
     on_event: Callable[[int, int], None] | None = None,
 ) -> TransferResult:
     """Mirror a mounted volume into the intake bucket under `prefix`.
@@ -224,7 +272,7 @@ def mirror(
     failures = 0
     first_error = ""
 
-    for event in _stream_json(argv, mc_env(config_dir)):
+    for event in _stream_json(argv, env):
         if event.get("status") == "error":
             failures += 1
             message = str(event.get("error", {}).get("message") or "").strip()
@@ -232,6 +280,12 @@ def mirror(
             first_error = first_error or message
             continue
         if event.get("status") == "success":
+            # `mc mirror --json` closes with a summary event -- totals, duration,
+            # speed -- which is a success like any other to `status` alone. Counted as
+            # an object it made every copy report one more file than it moved, and an
+            # empty volume report one. Only a per-object event names a target.
+            if "target" not in event:
+                continue
             objects += 1
             transferred += int(event.get("size") or 0)
             if on_event:
@@ -240,7 +294,7 @@ def mirror(
     return TransferResult(objects, transferred, failures, first_error)
 
 
-def _stream_json(argv: list[str], env: dict[str, str]) -> Iterator[dict]:
+def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
     """Run a command and yield its newline-delimited JSON events as they arrive.
 
     A command that fails without having said so in JSON -- mc refusing to start at all
@@ -250,7 +304,7 @@ def _stream_json(argv: list[str], env: dict[str, str]) -> Iterator[dict]:
     stick full of documents was copied successfully.
     """
     with subprocess.Popen(
-        argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+        argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=dict(env)
     ) as process:
         assert process.stdout is not None
         for line in process.stdout:
@@ -278,7 +332,7 @@ def _stream_json(argv: list[str], env: dict[str, str]) -> Iterator[dict]:
             }
 
 
-def put_manifest(manifest: dict, bucket: str, key: str, config_dir: str) -> str:
+def put_manifest(manifest: dict, bucket: str, key: str, env: Mapping[str, str]) -> str:
     """Write the provenance record next to the data it describes.
 
     Returns why it could not be written, or an empty string. The caller reports it: a
@@ -286,7 +340,6 @@ def put_manifest(manifest: dict, bucket: str, key: str, config_dir: str) -> str:
     documents in front of them came from, which is worth a line on the console rather
     than a warning in a journal nobody opens.
     """
-    env = mc_env(config_dir)
     payload = json.dumps(manifest, indent=2, sort_keys=True).encode()
 
     with subprocess.Popen(
@@ -294,7 +347,7 @@ def put_manifest(manifest: dict, bucket: str, key: str, config_dir: str) -> str:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        env=env,
+        env=dict(env),
     ) as process:
         _, raw = process.communicate(payload, timeout=120)
         if process.returncode == 0:

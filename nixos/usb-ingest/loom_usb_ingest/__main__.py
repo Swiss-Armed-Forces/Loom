@@ -71,6 +71,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="user the mounted files are presented as owned by",
     )
     parser.add_argument(
+        "--cluster-wait",
+        type=int,
+        default=transfer.CLUSTER_WAIT_TIMEOUT_S,
+        help="seconds to wait for the intake bucket to answer before giving up;"
+        " the default is an hour, because a box that has just been switched on"
+        " takes most of one to bring Loom up",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="print the volumes, mount recipes and object keys, and change nothing",
@@ -174,6 +182,13 @@ def describe(
     return rows
 
 
+def _duration(seconds: int) -> str:
+    """How long the box waited, in the units somebody standing at it would use."""
+    if seconds >= 120:
+        return f"{seconds // 60} minutes"
+    return f"{seconds} seconds"
+
+
 def run(args: argparse.Namespace) -> int:
     # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
     disk = settle(args.device)
@@ -231,27 +246,31 @@ def run(args: argparse.Namespace) -> int:
 
     config_dir = os.path.join(args.state_dir, "mc")
     os.makedirs(config_dir, mode=0o700, exist_ok=True)
-    transfer.install_cluster_ca(config_dir, args.namespace, args.kubeconfig)
+    # Built once and handed to every call: the endpoint lives in here now (see
+    # `mc_env`), so there is no step between here and the copy that can fail because
+    # Loom has not finished starting.
+    env = transfer.mc_env(config_dir, args.endpoint)
 
-    try:
-        transfer.configure_alias(args.endpoint, config_dir)
-    except transfer.TransferError as error:
-        # mc's own words, both on the screen and in the row: everything that can go
-        # wrong here -- a certificate the box does not trust, an endpoint nothing
-        # answers on, an mc that will not start -- is distinguishable only by them.
-        reason = report.failure(
-            f"{disk.path} was not ingested", str(error), args.console_socket
-        )
-        reporter.finish(0, 0, 1, reason)
-        return 1
-
-    if not transfer.wait_for_cluster(
-        args.endpoint, config_dir, transfer.CLUSTER_WAIT_TIMEOUT_S
-    ):
+    waited = transfer.wait_for_cluster(
+        args.bucket,
+        env,
+        args.cluster_wait,
+        transfer.WaitHooks(
+            # Retried by the wait rather than done once before it, because reading the
+            # cluster's certificate needs the same cluster the wait is waiting for.
+            trust=lambda: transfer.install_cluster_ca(
+                config_dir, args.namespace, args.kubeconfig
+            ),
+            # What it is waiting on, on the row rather than in the journal: "waiting"
+            # with no reason looks the same after five seconds and after an hour.
+            on_attempt=lambda reason: reporter.note(report.condense(reason)),
+        ),
+    )
+    if not waited.ready:
         reason = report.failure(
             f"{disk.path} was not ingested",
-            f"{args.endpoint} never answered, after "
-            f"{transfer.CLUSTER_WAIT_TIMEOUT_S // 60} minutes of waiting",
+            f"{args.endpoint} never answered in {_duration(args.cluster_wait)}: "
+            f"{waited.last_error}",
             args.console_socket,
         )
         reporter.finish(0, 0, 1, reason)
@@ -262,12 +281,12 @@ def run(args: argparse.Namespace) -> int:
     )
 
     return _ingest_volumes(
-        args, disk, identity, plan_rows, supported, config_dir, guard, owner, reporter
+        args, disk, identity, plan_rows, supported, env, guard, owner, reporter
     )
 
 
 def _ingest_volumes(
-    args, disk, identity, plan_rows, supported, config_dir, guard, owner, reporter
+    args, disk, identity, plan_rows, supported, env, guard, owner, reporter
 ) -> int:
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     total_objects = 0
@@ -313,7 +332,7 @@ def _ingest_volumes(
                 mounted.mountpoint,
                 args.bucket,
                 f"{args.prefix}/{prefix}",
-                config_dir,
+                env,
                 on_event=reporter.advance,
             )
         finally:
@@ -363,7 +382,7 @@ def _ingest_volumes(
         manifest,
         args.bucket,
         f"{args.prefix}/{identity.prefix_component}/{MANIFEST_NAME}",
-        config_dir,
+        env,
     )
     if manifest_error:
         first_error = first_error or f"provenance record not written: {manifest_error}"

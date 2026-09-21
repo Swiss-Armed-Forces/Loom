@@ -286,12 +286,14 @@ def _mc_runs_in_the_units_environment(
         # not on the wrapper's PATH -- and dies before it reads a single argument.
         #
         # The endpoint is a port nothing listens on and the kubeconfig does not exist,
-        # so this fails in seconds without a cluster, and fails *after* the point where
-        # a broken environment would have stopped it.
+        # so this fails without a cluster, and fails *after* the point where a broken
+        # environment would have stopped it. `--cluster-wait` is what keeps it short:
+        # the real default is an hour, because that is how long a box that has just
+        # been switched on takes to bring Loom up.
         _set_guard(appliance, params, "armed", "/dev/vdb")
         output = appliance.fail(
             f"env -u HOME {_ingest(params)} --endpoint https://127.0.0.1:1 "
-            "--kubeconfig /nonexistent /dev/vdc 2>&1"
+            "--kubeconfig /nonexistent --cluster-wait 5 /dev/vdc 2>&1"
         )
 
         assert "mcConfigDir" not in output, output
@@ -303,6 +305,11 @@ def _mc_runs_in_the_units_environment(
         # the address.
         assert "connection refused" in output, output
         assert "could not parse" not in output, output
+        # And that it got there by *waiting*, which is what a stick plugged into a box
+        # still starting Loom has to do. Registering the endpoint used to probe it,
+        # so an endpoint that was not up yet failed the ingest outright and this wait
+        # was unreachable in exactly the case it was written for.
+        assert "never answered in 5 seconds" in output, output
         # And the failure it did have is on the operator's screen, not only in the
         # journal: a count of failures with no reason is not something anybody
         # standing at the box can act on.

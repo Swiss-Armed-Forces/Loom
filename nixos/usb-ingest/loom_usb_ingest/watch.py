@@ -124,31 +124,38 @@ def _counts(record: DeviceProgress) -> str:
 
 
 def _status(record: DeviceProgress) -> Text:
-    style = STAGE_STYLE[record.stage]
+    return Text(_status_text(record), style=STAGE_STYLE[record.stage])
+
+
+def _status_text(record: DeviceProgress) -> str:
+    """The right-hand column: what this device is doing, and what it ran into."""
     if record.stage is Stage.WAITING:
-        return Text("waiting for Loom to answer", style=style)
+        # With the reason the last attempt gave, when there has been an attempt. Loom
+        # takes most of an hour to come up on this hardware, and "waiting" on its own
+        # looks identical whether the cluster is starting normally or will never
+        # answer at all.
+        if record.message:
+            return f"waiting for Loom: {record.message}"
+        return "waiting for Loom to answer"
     if record.stage is Stage.COPYING:
         where = ""
         if record.volume.count > 1:
             where = f" ({record.volume.index}/{record.volume.count})"
-        return Text(f"copying {record.volume.path}{where}", style=style)
+        return f"copying {record.volume.path}{where}"
     if record.stage is Stage.FAILED:
         # The reason, when the ingest had one. This column folds rather than
         # truncating, so a long one costs the row a second line and nothing else --
         # and an operator who can see "connection refused" can do something about it,
         # where "1 failed" only tells them to find somebody who can read a journal.
         reason = f": {record.message}" if record.message else ""
-        return Text(
-            f"{record.counts.failures} failed{reason} -- safe to remove", style=style
-        )
+        return f"{record.counts.failures} failed{reason} -- safe to remove"
     if record.stage is Stage.INTERRUPTED:
-        return Text("stopped before it finished -- safe to remove", style=style)
+        return "stopped before it finished -- safe to remove"
     # A finished stick can still have something to say: a volume that was skipped
     # costs the operator documents they expected to see, without costing the copy a
     # failure.
-    if record.message:
-        return Text(f"DONE ({record.message}) -- safe to remove", style=style)
-    return Text("DONE -- safe to remove", style=style)
+    detail = f" ({record.message})" if record.message else ""
+    return f"DONE{detail} -- safe to remove"
 
 
 def watch(progress_dir: str, console: Console | None = None) -> int:

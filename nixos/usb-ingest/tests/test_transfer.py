@@ -9,9 +9,17 @@ stick plugged into a real box, and a journal line about `getent`) is not the way
 import os
 import sys
 
-from loom_usb_ingest.transfer import _stream_json, mc_env
+from loom_usb_ingest.transfer import (
+    ALIAS,
+    WaitHooks,
+    _stream_json,
+    mc_env,
+    mirror,
+    wait_for_cluster,
+)
 
 CONFIG_DIR = "/run/loom/usb/mc"
+ENDPOINT = "https://s3.loom"
 
 # What a root system service actually sees. Systemd sets `$HOME` only for units that
 # set `User=` (systemd.exec(5)) and the ingest units do not, so the value is absent --
@@ -26,7 +34,7 @@ def test_mc_has_a_home_when_the_unit_has_none() -> None:
     # Without this, mc dies building its flag set -- before MC_CONFIG_DIR is ever read
     # -- because resolving the home directory shells out to `getent`, which is not on
     # the unit's PATH.
-    env = mc_env(CONFIG_DIR, UNIT_ENVIRONMENT)
+    env = mc_env(CONFIG_DIR, ENDPOINT, UNIT_ENVIRONMENT)
 
     assert env["HOME"]
     assert env["MC_CONFIG_DIR"] == CONFIG_DIR
@@ -35,14 +43,14 @@ def test_mc_has_a_home_when_the_unit_has_none() -> None:
 def test_an_empty_home_counts_as_none() -> None:
     # mc reads `HOME=` as unset and goes looking for `getent` just the same, so an
     # empty value has to be replaced rather than preserved.
-    assert mc_env(CONFIG_DIR, dict(UNIT_ENVIRONMENT, HOME=""))["HOME"]
+    assert mc_env(CONFIG_DIR, ENDPOINT, dict(UNIT_ENVIRONMENT, HOME=""))["HOME"]
 
 
 def test_a_real_home_is_left_alone() -> None:
     # An operator running the binary by hand keeps their own home directory: mc only
     # needs the value to exist, and overriding it would hide their `mc` state from
     # them for no gain.
-    env = mc_env(CONFIG_DIR, dict(UNIT_ENVIRONMENT, HOME="/home/loom"))
+    env = mc_env(CONFIG_DIR, ENDPOINT, dict(UNIT_ENVIRONMENT, HOME="/home/loom"))
 
     assert env["HOME"] == "/home/loom"
 
@@ -51,7 +59,7 @@ def test_the_rest_of_the_environment_survives() -> None:
     # The unit's PATH is in here, and every binary mc reaches for -- its mount helpers,
     # and `getent` on a box that has one -- is found through it. Building the
     # environment from scratch rather than from the unit's would drop it.
-    env = mc_env(CONFIG_DIR, UNIT_ENVIRONMENT)
+    env = mc_env(CONFIG_DIR, ENDPOINT, UNIT_ENVIRONMENT)
 
     assert env["PATH"] == UNIT_ENVIRONMENT["PATH"]
     assert env["INVOCATION_ID"] == UNIT_ENVIRONMENT["INVOCATION_ID"]
@@ -63,7 +71,10 @@ def test_a_variable_that_backs_a_flag_is_spelled_as_a_bool() -> None:
     # variable with Go's `strconv.ParseBool`: `on` is not a word that accepts, and it
     # is fatal rather than ignored -- mc refuses to run at all, which on this box means
     # a stick that copies nothing. Only `true` and `false` are safe to write here.
-    assert mc_env(CONFIG_DIR, UNIT_ENVIRONMENT)["MC_DISABLE_PAGER"] in ("true", "false")
+    assert mc_env(CONFIG_DIR, ENDPOINT, UNIT_ENVIRONMENT)["MC_DISABLE_PAGER"] in (
+        "true",
+        "false",
+    )
 
 
 def _script(source: str) -> list[str]:
@@ -107,3 +118,112 @@ def test_events_from_a_command_that_succeeds_are_passed_through() -> None:
     )
 
     assert events == [{"status": "success", "size": 12}]
+
+
+def test_the_endpoint_is_declared_in_the_environment() -> None:
+    # Not registered with `mc alias set`: that command probes the endpoint and refuses
+    # to record one that does not answer, so on a box still starting Loom -- the case
+    # the wait below exists for -- configuring mc failed outright and the wait was
+    # never reached. An environment alias needs nothing to be up.
+    env = mc_env(CONFIG_DIR, ENDPOINT, UNIT_ENVIRONMENT)
+
+    assert env[f"MC_HOST_{ALIAS}"] == ENDPOINT
+
+
+def _fake_mc(tmp_path, body: str) -> dict[str, str]:
+    """An environment whose PATH holds an `mc` that does what the test wants.
+
+    The wait shells out, so this is the honest way to drive it: a real process, a real
+    exit status, real stderr. Nothing is patched into the module.
+    """
+    binary = tmp_path / "bin" / "mc"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_text(f"#!/bin/sh\n{body}\n")
+    binary.chmod(0o755)
+    return {"PATH": str(binary.parent)}
+
+
+def test_the_wait_ends_when_the_bucket_answers(tmp_path) -> None:
+    waited = wait_for_cluster(
+        "loom-intake", _fake_mc(tmp_path, "exit 0"), 5, WaitHooks(poll_s=0)
+    )
+
+    assert waited.ready
+    assert waited.last_error == ""
+
+
+def test_the_wait_gives_up_saying_what_it_last_heard(tmp_path) -> None:
+    # The reason is the whole point of carrying it: "never answered" alone does not
+    # distinguish a cluster that is still starting from a certificate the box will
+    # never trust.
+    env = _fake_mc(tmp_path, "echo 'mc: <ERROR> connection refused' >&2; exit 1")
+    seen: list[str] = []
+
+    waited = wait_for_cluster(
+        "loom-intake", env, 0, WaitHooks(on_attempt=seen.append, poll_s=0)
+    )
+
+    assert not waited.ready
+    assert "connection refused" in waited.last_error
+    assert seen and "connection refused" in seen[0]
+
+
+def test_the_cluster_ca_is_retried_until_it_lands(tmp_path) -> None:
+    # Installing it needs the Kubernetes API, which on a box still coming up is no more
+    # awake than the S3 endpoint. Done once before the wait, it never happened at all,
+    # and every later call failed verification against the box's own certificate.
+    attempts: list[int] = []
+    probe = tmp_path / "probe"
+    body = f"test -f {probe} || exit 1"
+
+    def trust() -> bool:
+        attempts.append(1)
+        if len(attempts) < 3:
+            return False
+        probe.write_text("")
+        return True
+
+    waited = wait_for_cluster(
+        "loom-intake", _fake_mc(tmp_path, body), 5, WaitHooks(trust=trust, poll_s=0)
+    )
+
+    assert waited.ready
+    assert len(attempts) == 3
+
+
+def test_a_cluster_that_is_already_trusted_is_not_asked_again(tmp_path) -> None:
+    attempts: list[int] = []
+
+    wait_for_cluster(
+        "loom-intake",
+        _fake_mc(tmp_path, "exit 0"),
+        5,
+        WaitHooks(trust=lambda: bool(attempts.append(1)) or True, poll_s=0),
+    )
+
+    assert len(attempts) == 1
+
+
+def test_the_summary_event_is_not_a_file(tmp_path) -> None:
+    # `mc mirror --json` ends with totals rather than a file, and it carries
+    # `"status": "success"` like every object before it. Counted as one, a stick with
+    # ten documents reported eleven and an empty volume reported one.
+    env = _fake_mc(
+        tmp_path,
+        "printf '%s\\n' "
+        '\'{"status":"success","target":"loom/b/a.txt","size":6}\' '
+        '\'{"status":"success","total":6,"transferred":6,"speed":27.5}\'',
+    )
+    seen: list[int] = []
+
+    result = mirror(
+        "/mnt/stick",
+        "loom-intake",
+        "usb-crawled/x",
+        env,
+        lambda objects, _bytes: seen.append(objects),
+    )
+
+    assert result.objects == 1
+    assert result.bytes_transferred == 6
+    assert seen == [1]
