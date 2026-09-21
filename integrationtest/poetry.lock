@@ -2461,6 +2461,7 @@ crawler = {path = "backend/crawler", develop = true}
 integrationtest = {path = "integrationtest", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
+loom-ready = {path = "nixos/ready", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
 types-docker = "^7.1.0.20240601"
 worker = {path = "backend/worker", develop = true}
@@ -2468,6 +2469,23 @@ worker = {path = "backend/worker", develop = true}
 [package.source]
 type = "directory"
 url = ".."
+
+[[package]]
+name = "loom-ready"
+version = "0.1.0"
+description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "../nixos/ready"
 
 [[package]]
 name = "loom-usb-ingest"
@@ -2478,6 +2496,9 @@ python-versions = ">=3.11"
 groups = ["main"]
 files = []
 develop = true
+
+[package.dependencies]
+rich = ">=13"
 
 [package.source]
 type = "directory"

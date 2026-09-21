@@ -3,13 +3,15 @@ name = "loom-usb-ingest"
 version = "0.1.0"
 description = "Mount USB media read-only on the Loom appliance and ingest it"
 requires-python = ">=3.11"
+# The console pane the copy is drawn in (loom_usb_ingest/watch.py).
+dependencies = ["rich>=13"]
 
 [project.scripts]
 loom-usb-ingest = "loom_usb_ingest.__main__:main"
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.setuptools]
-packages = ["loom_usb_ingest"]
+[tool.poetry]
+packages = [{ include = "loom_usb_ingest" }]

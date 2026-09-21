@@ -11,8 +11,8 @@ loom-menu = "loom_installer.menu:main"
 loom-wipe = "loom_installer.wipe:main"
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.setuptools]
-packages = ["loom_installer"]
+[tool.poetry]
+packages = [{ include = "loom_installer" }]

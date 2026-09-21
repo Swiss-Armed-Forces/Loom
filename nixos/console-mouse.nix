@@ -57,7 +57,7 @@ let
     src = ./console-mouse;
     pyproject = true;
 
-    build-system = [ pkgs.python3Packages.setuptools ];
+    build-system = [ pkgs.python3Packages.poetry-core ];
     nativeCheckInputs = [ pkgs.python3Packages.pytest ];
 
     checkPhase = ''

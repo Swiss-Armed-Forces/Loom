@@ -32,7 +32,7 @@ let
     version = "0.1.0";
     src = ../installer;
     pyproject = true;
-    build-system = [ pkgs.python3Packages.setuptools ];
+    build-system = [ pkgs.python3Packages.poetry-core ];
     dependencies = [ pkgs.python3Packages.rich ];
     # Run by the stick's own derivation (installer.nix) and by `appliance-check`;
     # a third run would only add build time to a VM test.

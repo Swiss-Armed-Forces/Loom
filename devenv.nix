@@ -20,7 +20,10 @@ let
   };
 
   # Python subdirectories managed by Poetry: the whole hook set, lockfile checks
-  # included.
+  # included. The four appliance packages are here too -- Nix builds them, but it
+  # builds them through poetry-core and resolves their dependencies from nixpkgs,
+  # so the lockfile beside each one is what keeps `poetry lock` honest about the
+  # versions the devenv's virtualenv gets.
   pythonSubdirs = [
     "backend/api"
     "backend/common"
@@ -28,23 +31,17 @@ let
     "backend/worker"
     "integrationtest"
     "cicd/aitools"
-  ];
-
-  # Python that Nix builds rather than Poetry: the three programs the appliance
-  # image is made of, and the scripts its VM tests are made of. They get the same
-  # formatting, linting and type checking as everything above -- the top-level
-  # pyproject.toml depends on all three, so the devenv's virtualenv has what they
-  # import -- minus the two Poetry hooks, because their dependencies come from
-  # nixpkgs and there is no lockfile to check.
-  #
-  # nixos/tests/scripts is not a package at all: it is the testScripts that used to
-  # be strings inside .nix files, out here so that these hooks can reach them. See
-  # nixos/tests/scripts/driver.py.
-  pythonNixSubdirs = [
     "nixos/console-mouse"
     "nixos/installer"
     "nixos/ready"
     "nixos/usb-ingest"
+  ];
+
+  # Python that is not a package, so there is no pyproject.toml and nothing to
+  # lock: nixos/tests/scripts is the testScripts that used to be strings inside
+  # .nix files, out here so that the formatting, linting and type checking hooks
+  # can reach them. See nixos/tests/scripts/driver.py.
+  pythonNixSubdirs = [
     "nixos/tests/scripts"
   ];
 
@@ -160,7 +157,9 @@ let
       "poetry-check_${subdirName}" = {
         enable = poetry;
         entry = createToolWrapper "poetry" subdir subdirName "check";
-        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
+        # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
+        # so the old spelling made every subdir's hook fire on any poetry.lock.
+        files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -168,7 +167,9 @@ let
       "poetry-lock_${subdirName}" = {
         enable = poetry;
         entry = createToolWrapper "poetry" subdir subdirName "lock";
-        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
+        # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
+        # so the old spelling made every subdir's hook fire on any poetry.lock.
+        files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
         types = [ "toml" ];
         pass_filenames = false;
       };

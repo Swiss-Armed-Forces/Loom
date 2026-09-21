@@ -60,6 +60,22 @@ does `appliance-test` via `cicd/run_appliance_tests.sh`. Both arguments are **re
 `null` fallback, because a closure built without one would evaluate perfectly and quietly produce a
 different box from every other stick.
 
+## The `poetry.lock` beside each Python package
+
+`console-mouse/`, `installer/`, `ready/` and `usb-ingest/` are Poetry projects like every other
+Python package in the repository — `poetry-core` build backend, a `poetry.lock` beside the
+`pyproject.toml`, and `poetry-lock` regenerating them along with the rest.
+
+Those lockfiles do **not** govern the appliance. `buildPythonApplication` resolves `rich` from the
+pinned nixpkgs, so what a stick ships is whatever that pin carries, and the version in `poetry.lock`
+is free to differ. Read them as a statement about the development environment, not the image.
+
+What they are for is making the `pyproject.toml` beside them load-bearing. That manifest used to be
+free to drift from the `dependencies` list in the `.nix` file — `ready/` and `usb-ingest/` both
+imported `rich` while declaring no dependencies at all — because Nix supplied the import either way
+and nothing else read the manifest. The root `pyproject.toml` installs these four as path
+dependencies, so an undeclared import is now visible in the devenv rather than only at a box.
+
 ## Why nixos-hardware, and what is forced back off
 
 Two of the three platforms are covered upstream, and the coverage is uneven enough to be worth stating:

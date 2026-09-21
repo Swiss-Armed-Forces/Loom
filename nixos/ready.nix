@@ -51,7 +51,7 @@ let
     src = ./ready;
     pyproject = true;
 
-    build-system = [ pkgs.python3Packages.setuptools ];
+    build-system = [ pkgs.python3Packages.poetry-core ];
     # The panel, the bar and the pane (loom_ready/render.py, loom_ready/pane.py).
     dependencies = [ pkgs.python3Packages.rich ];
     nativeCheckInputs = [ pkgs.python3Packages.pytest ];

@@ -3,13 +3,15 @@ name = "loom-ready"
 version = "0.1.0"
 description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
 requires-python = ">=3.11"
+# The panel, the bar and the pane (loom_ready/render.py, loom_ready/pane.py).
+dependencies = ["rich>=13"]
 
 [project.scripts]
 loom-ready = "loom_ready.__main__:main"
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.setuptools]
-packages = ["loom_ready"]
+[tool.poetry]
+packages = [{ include = "loom_ready" }]

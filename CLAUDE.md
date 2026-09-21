@@ -194,7 +194,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Utilities:**
 
-- `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
+- `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`).
+  Discovers projects by walking every tracked `pyproject.toml`, so a newly added package is locked
+  without editing a list — `backend/common` first, the root project last, the rest in between.
+  This covers the four appliance packages under `nixos/` as well; see the lockfile section in
+  `nixos/README.md` for why their locks do not govern what an image ships
 - `generate-openapi-schema` - Print OpenAPI schema JSON
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart's Ingress rules render. Runs as a git hook on any change under

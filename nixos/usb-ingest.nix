@@ -69,7 +69,7 @@ let
     src = ./usb-ingest;
     pyproject = true;
 
-    build-system = [ pkgs.python3Packages.setuptools ];
+    build-system = [ pkgs.python3Packages.poetry-core ];
     # The console pane the copy is drawn in (loom_usb_ingest/watch.py).
     dependencies = [ pkgs.python3Packages.rich ];
     nativeCheckInputs = [ pkgs.python3Packages.pytest ];

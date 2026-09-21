@@ -8,8 +8,8 @@ requires-python = ">=3.11"
 loom-console-mouse = "loom_console_mouse.__main__:main"
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.setuptools]
-packages = ["loom_console_mouse"]
+[tool.poetry]
+packages = [{ include = "loom_console_mouse" }]

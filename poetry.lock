@@ -3057,6 +3057,23 @@ type = "directory"
 url = "nixos/installer"
 
 [[package]]
+name = "loom-ready"
+version = "0.1.0"
+description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "nixos/ready"
+
+[[package]]
 name = "loom-usb-ingest"
 version = "0.1.0"
 description = "Mount USB media read-only on the Loom appliance and ingest it"
@@ -3065,6 +3082,9 @@ python-versions = ">=3.11"
 groups = ["main"]
 files = []
 develop = true
+
+[package.dependencies]
+rich = ">=13"
 
 [package.source]
 type = "directory"
@@ -7444,4 +7464,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "1fa96975859b8ca129fa1bebb3a01f8ccf36514618447083325a963186c6468e"
+content-hash = "6419a22b563e84402db79cbf8cda60ee75ff6eec73919bb2daee9c644a59cb20"

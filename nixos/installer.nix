@@ -73,7 +73,7 @@ let
     src = ./installer;
     pyproject = true;
 
-    build-system = [ pkgs.python3Packages.setuptools ];
+    build-system = [ pkgs.python3Packages.poetry-core ];
     dependencies = [ pkgs.python3Packages.rich ];
     nativeCheckInputs = [ pkgs.python3Packages.pytest ];
 
