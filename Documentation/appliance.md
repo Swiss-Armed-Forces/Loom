@@ -768,11 +768,21 @@ It goes in through Traefik because that is the only door from outside the cluste
 Ollama by its in-cluster Service instead. `https`, not `http`: every ingress is bound to the `websecure`
 entrypoint alone, so nothing answers for `ollama.loom` on port 80.
 
-That certificate is the wildcard `*.loom` one the chart generates for itself at install time, and it is
-self-signed, which an HTTP client will not accept on trust the way a human clicks through a browser warning.
-So `loom-chat` builds a CA bundle from the certificate secrets the cluster holds and passes it in
-`NODE_EXTRA_CA_CERTS`. Certificate verification stays **on**: if the bundle cannot be built the pane says so
-and waits, rather than falling back to an unverified connection.
+That certificate is the one the chart generates for itself at install time, and it is self-signed, which an
+HTTP client will not accept on trust the way a human clicks through a browser warning. So `loom-chat` builds a
+CA bundle from the certificate secrets the cluster holds and passes it in `NODE_EXTRA_CA_CERTS`. Certificate
+verification stays **on**: if the bundle cannot be built the pane says so and waits, rather than falling back
+to an unverified connection.
+
+It has to name `ollama.loom` explicitly, and this is the one thing that has to be true of the Loom release the
+box ships. A certificate carrying only `DNS:*.loom` does not work: a wildcard needs at least two dots, so
+OpenSSL refuses to expand one under a single-label parent and Bun — like curl — rejects the connection with
+"no alternative certificate subject name matches target hostname". Releases whose chart predates
+`hostnames` in `charts/values.yaml` (everything up to and including `1.4.0-rc2`) generate a certificate the
+assistant cannot verify, and the pane says exactly that while it waits. See
+[Hostnames and the self-signed certificate](installation.md#hostnames-and-the-self-signed-certificate);
+on a box already running such a release, replacing the `self-signed-cert` secret by hand is the only fix,
+and it sticks, because the Job never replaces a certificate that covers every host.
 
 The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which must name a model
 `ollama/Dockerfile` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the

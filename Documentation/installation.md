@@ -226,6 +226,42 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
 
+### Hostnames and the self-signed certificate
+
+Loom serves every service under one domain (`domain`, `loom` by default), and every name it answers to is
+listed in `hostnames` in `charts/values.yaml`:
+
+```yaml
+domain: loom
+
+hostnames:
+  ingress:        # one per Ingress rule the chart renders
+    - api
+    - frontend
+    # ...
+  extra:          # no Ingress: Traefik routes these by entrypoint
+    - rabbit-amqp
+    - redis
+    # ...
+```
+
+That list is what the pre-install Job puts in the certificate's `subjectAltName`, one entry per host. It
+cannot be a wildcard: `*.loom` looks like it covers `ollama.loom`, but a wildcard pattern needs at least two
+dots, so OpenSSL — and curl, Node, Bun and anything else built on it — refuses to expand a wildcard directly
+under a single-label parent and compares the pattern literally. A certificate carrying only `DNS:*.loom` is
+rejected for every `*.loom` host there is. Browsers show a warning a human can click through; a programmatic
+client simply fails.
+
+**If you add a service with an Ingress, add its name here too** — otherwise its host is not in the
+certificate and every verifying client gets a hostname mismatch. `cicd/check_chart_hostnames.sh` compares the
+`ingress` half against the hosts the chart actually renders and fails if they disagree; it runs as a git hook
+on any change under `charts/`.
+
+The Job leaves an existing `self-signed-cert` alone unless it generated it itself (marked by
+`O=Wildcard Self-Signed`) **and** it does not cover every name in the list, in which case it replaces it. A
+certificate you installed yourself — including via `up.sh --certificate`, which writes the same secret — is
+never touched.
+
 ### Crawling external S3 sources
 
 By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.

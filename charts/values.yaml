@@ -24,6 +24,52 @@ global:
 
 domain: &default-domain loom
 
+# Every name this deployment answers to, as a short label under `domain`.
+#
+# This exists because the certificate cannot be a wildcard. `*.loom` looks like
+# it covers `ollama.loom`, and it does not: a wildcard pattern needs at least
+# two dots, so OpenSSL and every client built on it -- curl, Node, Bun -- refuse
+# to expand a wildcard sitting directly under a single-label parent and compare
+# `*.loom` literally instead. A cert with `subjectAltName=DNS:*.loom` is
+# therefore rejected for every `*.loom` host there is, and the pre-install Job
+# below has to name them one by one.
+#
+# Split in two, because the two halves are checkable against different things:
+hostnames:
+  # Hosts this chart serves over HTTP, one per Ingress rule. The chart's own
+  # `spec.rules[].host` values are the authority here -- a Helm template cannot
+  # read what its siblings rendered, so the list is restated rather than
+  # derived, and `cicd/check_chart_hostnames.sh` fails if the two disagree.
+  ingress:
+    - api
+    - elasticsearch
+    - elasticvue
+    - frontend
+    - gotenberg
+    - grafana
+    - ollama
+    - open-webui
+    - prometheus
+    - rabbit
+    - redisinsight
+    - roundcube
+    - rspamd
+    - rspamd-worker
+    - s3
+    - seaweedfs
+    - tika
+  # Hosts with no Ingress rule to derive them from. Traefik tells these apart by
+  # entrypoint -- their routes match HostSNI(`*`) -- so the name is a convention
+  # between whoever resolves it and whoever dials it, and nothing in the
+  # templates implies it. `rabbit-amqp` is in `backend/common/settings.py`,
+  # `traefik` is the dashboard from the Traefik chart.
+  extra:
+    - dovecot
+    - rabbit-amqp
+    - redis
+    - redis-cache
+    - traefik
+
 kubernetes:
   api: 192.168.49.2
 

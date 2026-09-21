@@ -513,7 +513,15 @@ let
       # Two secrets, because which one Traefik presents depends on how the chart
       # was deployed, and a bundle costs nothing:
       #
-      #   self-signed-cert  The wildcard `CN=*.loom` that
+      # Trusting the certificate is only half of it: it also has to name the
+      # host. The chart's Job puts every `*.loom` host in the subjectAltName one
+      # by one, because a wildcard cannot do it -- `*.loom` has one dot, and
+      # OpenSSL (so also Bun, and curl in `ready` below) will not expand a
+      # wildcard under a single-label parent. A release whose chart predates
+      # `hostnames` in charts/values.yaml serves a certificate that cannot
+      # verify no matter what is in this bundle, and `ready` says so.
+      #
+      #   self-signed-cert  The `CN=*.loom` certificate that
       #                     charts/templates/pre-install/generate-self-signed-certificate.yaml
       #                     makes with `openssl req -x509` on every install, and
       #                     that traefik/tls-store.yaml sets as the DEFAULT

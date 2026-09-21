@@ -196,6 +196,14 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
 - `generate-openapi-schema` - Print OpenAPI schema JSON
+- `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
+  exactly the set of hosts the chart's Ingress rules render. Runs as a git hook on any change under
+  `charts/`, needs no cluster (`helm template` is client-side). **Adding a service with an Ingress
+  means adding its name to `hostnames.ingress`** - that list is what the pre-install Job puts in the
+  TLS certificate's `subjectAltName`, one entry per host, and a wildcard cannot stand in for it
+  (`*.loom` has one dot, and OpenSSL will not expand a wildcard under a single-label parent). A host
+  served by entrypoint rather than by an Ingress rule goes in `hostnames.extra` instead. See the
+  `## Hostnames and the self-signed certificate` section in `Documentation/installation.md`
 
 **AI developer tools (`aitools` subcommands):**
 

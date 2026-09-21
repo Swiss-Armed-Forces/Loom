@@ -521,12 +521,43 @@ normalize_git_config(){
 # always matches the tag being shipped. vars.sh stays the single source of truth.
 # This is also where ${NAMESPACE} and ${LOOM_CHAT_MODEL} come from -- `source` at
 # function scope still assigns globally, and build_image runs after this step.
+#
+# A value this script wants but the tag's vars.sh has never heard of is a real
+# case, not a hypothetical: the stick's Nix code comes from *this* checkout
+# (`${CONTEXT_DIR}/nixos`) while the tree it embeds comes from the tag, so the
+# console can be newer than the variables it reads. Every such value is
+# pre-initialised empty at the top of this script for shellcheck, which is
+# exactly what makes the gap silent -- `loomChatModel ""` builds an image whose
+# assistant pane announces "Loom assistant on ." and pins opencode to the model
+# named `ollama/`. Hence the fallback below rather than an empty --argstr.
 generate_loom_hosts(){
     # shellcheck disable=SC1091
     # shellcheck source=../vars.sh
     source "${WORK_DIR}/loom/vars.sh"
     printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq --raw-input . | jq --slurp --compact-output . \
         > "${WORK_DIR}/loom-hosts.json"
+
+    if [[ -z "${LOOM_CHAT_MODEL}" ]]; then
+        # Read in a subshell, so this one value crosses over and the tag's
+        # other variables -- the host list above included -- stay the tag's.
+        LOOM_CHAT_MODEL="$(
+            # shellcheck disable=SC1091
+            # shellcheck source=../vars.sh
+            source "${CONTEXT_DIR}/vars.sh"
+            printf '%s' "${LOOM_CHAT_MODEL}"
+        )"
+        if [[ -z "${LOOM_CHAT_MODEL}" ]]; then
+            echo >&2 "[!] Error: neither ${TAG}'s vars.sh nor this checkout's defines"
+            echo >&2 "    LOOM_CHAT_MODEL, and the console's assistant pane cannot be"
+            echo >&2 "    pinned to a model without it."
+            exit 1
+        fi
+        echo "[!] ${TAG}'s vars.sh defines no LOOM_CHAT_MODEL -- it predates the console"
+        echo "    assistant. Pinning the pane to this checkout's value instead:"
+        echo "      ${LOOM_CHAT_MODEL}"
+        echo "[!] That has to be a model the tag's ollama image bakes in. Check it"
+        echo "    against '_llmDefaults.model' in the embedded charts/values.yaml."
+    fi
 }
 
 build_image(){
