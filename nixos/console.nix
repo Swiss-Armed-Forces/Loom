@@ -694,11 +694,24 @@ let
   # not exist is silently ignored in favour of the same auto-pick, so this is
   # safe in every build. It also puts the box address in the net box's header,
   # which is the number a walk-up operator actually wants.
+  #
+  # `gpu0` is deliberately NOT in any of those box sets, on the platform whose
+  # btop can read a GPU (`loom.btopPackage`). btop shows the GPU two ways and
+  # they are mutually exclusive: as its own box, or as a line inside the cpu box
+  # under `show_gpu_info`, whose default "Auto" means "show it here unless a
+  # dedicated box already has it" -- `gpus.size() > 0 and (gpu_always or
+  # (gpu_auto and Gpu::shown < Gpu::count))` in btop_draw.cpp. Naming `gpu0`
+  # would therefore *remove* the GPU from the cpu box and spend a whole box of a
+  # pane that is half the screen wide and 40% of it tall on it. Leaving it out
+  # keeps the GPU on screen at every rung of the ladder above, the 60x8 cpu-only
+  # one included, and costs no space at all. Nothing is written for it: "Auto"
+  # is the default, and this config sets only the two keys above.
   loom-btop = pkgs.writeShellApplication {
     name = "loom-btop";
-    runtimeInputs = with pkgs; [
-      btop
-      coreutils
+    runtimeInputs = [
+      # Built for this platform's GPU; see loom.btopPackage below.
+      cfg.btopPackage
+      pkgs.coreutils
     ];
     text = ''
       read -r lines cols < <(stty size 2>/dev/null || echo "24 80")
@@ -979,6 +992,50 @@ in
       mode, `loom-fetch.service` in setup mode. Declared here and set there for
       the same reason as `loom.toolchain` and `loom.entrypoints` -- the value
       belongs beside the thing it describes, so the two cannot drift.
+    '';
+  };
+
+  options.loom.btopPackage = lib.mkOption {
+    type = lib.types.package;
+    default = pkgs.btop.override {
+      cudaSupport = cfg.platform.gpuVendor == "nvidia";
+      rocmSupport = cfg.platform.gpuVendor == "amd";
+    };
+    defaultText = lib.literalExpression "pkgs.btop, built for loom.platform.gpuVendor";
+    internal = true;
+    description = ''
+      The btop the box carries, built to reach this platform's GPU.
+
+      Neither flag adds a compute stack. Stock btop already has GPU support
+      compiled in -- it dlopens libnvidia-ml.so.1 and librocm_smi64.so at
+      runtime -- and the derivation has no CUDA or ROCm entry in buildInputs at
+      all. What the flags change is the RUNPATH, so that dlopen finds something:
+      `cudaSupport` prepends /run/opengl-driver/lib via autoAddDriverRunpath,
+      and `rocmSupport` patchelfs ${"\${rocmPackages.rocm-smi}"}/lib on. So the
+      cuda build is byte-for-byte the same size as the plain one, and the rocm
+      build differs by rocm-smi alone -- which on the one platform that asks for
+      it (evo-x2) is already in `loom.toolchain` for up.sh's preflight, and is
+      the same store path rather than a second copy. Both are in the binary
+      cache, so neither is a source rebuild either.
+
+      Keyed on `loom.platform.gpuVendor` rather than on a second notion of
+      "has a GPU", which also means `--no-gpu` gets the plain build for free
+      (nixos/default.nix forces gpuVendor to null there). The Spark therefore
+      gets the plain build today: cudaSupport would only prepend a driver
+      directory that nothing on that image populates, since no platform
+      configures hardware.nvidia yet, and btop would still fail the dlopen.
+      Settling that question sets gpuVendor and brings the driver along, and
+      this follows with no edit here.
+
+      On the EVO-X2 the rocm path works despite that platform forcing
+      `hardware.graphics.extraPackages` empty, because btop reaches
+      librocm_smi64.so through its own rpath rather than through
+      /run/opengl-driver.
+
+      An option rather than a literal in each place because there are two
+      readers -- box.nix puts it on PATH, and loom-btop below runs it in the
+      console pane. Picking the package separately would let a shell `btop` show
+      a GPU row while the pane the operator is actually looking at did not.
     '';
   };
 

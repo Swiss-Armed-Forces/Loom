@@ -57,6 +57,19 @@ let
 
   check = what: ok: { inherit what ok; };
 
+  # console.nix's `loom.btopPackage` builds btop for whatever `gpuVendor` the
+  # platform declares. Compared by derivation rather than by override argument,
+  # which is not readable back off the result.
+  btopIsPlain = box.loom.btopPackage.drvPath == pkgs.btop.drvPath;
+
+  # The rocm-smi that a GPU btop links has to be the one the toolchain already
+  # carries for up.sh's preflight. If these ever diverge the image has gained a
+  # second ~169 MiB copy of ROCm, which is exactly the cost the plain build used
+  # to be justified by avoiding.
+  toolchainHasRocmSmi = lib.any (
+    p: p.drvPath == pkgs.rocmPackages.rocm-smi.drvPath
+  ) box.loom.toolchain;
+
   # True for every platform, including the one that imports nothing.
   shared = [
     (check "box: hardware.graphics.extraPackages is empty" (box.hardware.graphics.extraPackages == [ ]))
@@ -100,6 +113,9 @@ let
       (check "nuc12: intel microcode updates are on" box.hardware.cpu.intel.updateMicrocode)
       (check "nuc12: no Strix Halo GTT parameters" (!hasParamPrefix "amdgpu.gttsize="))
       (check "nuc12: no amd_pstate parameter" (!elem "amd_pstate=active" box.boot.kernelParams))
+      # btop has no Intel GPU backend at all, so there is nothing for a GPU
+      # build to reach here even though the box has an iGPU driving its console.
+      (check "nuc12: btop is the plain build" btopIsPlain)
     ];
 
     # platforms/evo-x2.nix -> common/cpu/amd/pstate.nix, common/gpu/amd, common/pc/ssd
@@ -117,6 +133,10 @@ let
       # box that gets given away, silently.
       (check "evo-x2: IOMMU is not switched off" (!elem "amd_iommu=off" box.boot.kernelParams))
       (check "evo-x2: no thermald leaking from the Intel profile" (!box.services.thermald.enable))
+      # The one platform declaring a gpuVendor, so the one that gets a GPU row
+      # in the console's monitoring pane.
+      (check "evo-x2: btop is built for the GPU" (!btopIsPlain))
+      (check "evo-x2: btop's rocm-smi is the toolchain's" toolchainHasRocmSmi)
     ];
 
     # platforms/spark.nix imports nothing: nixos-hardware has no DGX Spark, GB10,
@@ -129,6 +149,13 @@ let
       (check "spark: thermald is off" (!box.services.thermald.enable))
       (check "spark: no amd_pstate parameter" (!elem "amd_pstate=active" box.boot.kernelParams))
       (check "spark: no Strix Halo GTT parameters" (!hasParamPrefix "amdgpu.gttsize="))
+      # Deliberate, and the tripwire on it. This box is built around its GPU but
+      # declares no gpuVendor (platforms/spark.nix), so btop gets the plain
+      # build: cudaSupport would only prepend a driver directory that nothing
+      # here populates, no platform having hardware.nvidia yet. The day somebody
+      # settles that and sets gpuVendor = "nvidia", this fails -- which is the
+      # prompt to check the driver landed with it rather than to delete the line.
+      (check "spark: btop is the plain build" btopIsPlain)
     ];
   };
 

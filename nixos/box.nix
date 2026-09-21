@@ -487,14 +487,18 @@ in
       # the pointer is drawn with.
       gpm
 
-      # The operator's console session (console.nix). Plain btop, not devenv's
-      # `btop.override { cudaSupport = true; rocmSupport = true; }`. So no GPU
-      # row on the EVO-X2, and that is the trade: the override carries CUDA and
-      # the ROCm stack into an image that is already ~60 GB of container
-      # layers, to decorate a monitoring pane. `rocm-smi` is in the toolchain
-      # above on that platform and answers the same question.
+      # The operator's console session (console.nix).
       tmux
-      btop
+      # The monitoring pane's btop, listed here as well so that an operator on a
+      # plain Alt-F2 console gets the same binary the pane runs rather than a
+      # second one built differently. Which it is follows `gpuVendor` -- the same
+      # rule that picks the SMI tool for `loom.toolchain` above, and the two have
+      # to stay in step for the GPU row and up.sh's preflight to be reading the
+      # same device.
+      # `loom.btopPackage` in console.nix has the detail; the short version is
+      # that the GPU flags are a runpath, not a compute stack, so this costs
+      # nothing the toolchain was not already carrying.
+      config.loom.btopPackage
       # What the top-left pane becomes once Loom is up. Listed here as well so
       # that an operator on a plain Alt-F2 console, or one who closed the pane,
       # still has it.

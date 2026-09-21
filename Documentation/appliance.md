@@ -734,6 +734,13 @@ interface has moved the most bytes so far and minikube's own loopback traffic wi
 also puts the box address in the pane's header. The pin is a starting point, not a lock: `b` and `n` still
 cycle interfaces in that box.
 
+On a box that declares a `gpuVendor` — today the EVO-X2 — the **cpu** box also carries the GPU, reading it
+through the same vendor library `up.sh` uses for its preflight. It rides inside the cpu box rather than
+taking a box of its own, which is why it survives every rung of that ladder down to the smallest: a pane
+this size has no room for a fifth box, and `btop` shows the GPU one way or the other but not both. It costs
+the image nothing either — the build carries no compute stack for it, only a link to the one already there.
+See [GPU support](#gpu-support).
+
 **None of these three panes is a shell.** The middle one used to be. `Alt-F2` is the way to a prompt — see
 below.
 
@@ -900,6 +907,8 @@ enables minikube's `amd-gpu-device-plugin` addon and asks `minikube start` for t
 and already loaded — it is what puts the installer menu on the monitor — and it is what exposes `/dev/kfd`
 for minikube's docker driver to pass into the node container. The ROCm userspace lives inside the
 `ollama/ollama:rocm` image, so the box itself carries only `rocm-smi`, which `up.sh` needs for its preflight.
+That same `rocm-smi` is what puts the GPU readout in the console's `btop` pane: `btop` already knows how to
+read it and only needs pointing at the copy the box has, so the readout adds nothing beyond the link.
 
 That last point is also what insulates this box from an unsettled corner of the ecosystem: ROCm's support
 for this GPU (`gfx1151`) has been uneven enough that published benchmarks disagree about which release is
@@ -917,9 +926,12 @@ it. Set the firmware's VRAM split to its _minimum_ to go with them, and see
 which NVIDIA provides through their own kernel fork. The NIC is the part that makes this more than a
 performance question: the appliance serves DHCP and `*.loom` on it. This needs validating on real hardware
 before a driver module is written, and the first thing to try is booting a stock NixOS aarch64 image on a
-Spark and checking whether the ethernet port comes up.
+Spark and checking whether the ethernet port comes up. Until then the console's `btop` pane has no GPU
+readout either: it is built for whatever `gpuVendor` says, and a readout over a driver that is not loaded
+would report a broken accelerator rather than an absent one. Settling the driver question brings both back
+together.
 
-**On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU.
+**On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU, and neither has `btop`.
 
 ### When the GPU does not come up
 
