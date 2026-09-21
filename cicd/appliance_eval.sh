@@ -1,27 +1,21 @@
 #!/usr/bin/env bash
-# The appliance checks that boot nothing.
+# Instantiate the appliance image for every platform, building nothing.
 #
-# cicd/run_appliance_tests.sh boots real machines: it wants KVM, it needs a host
-# of the platform's own architecture, and it costs minutes per target. None of
-# that is true here, which is why this is the tier .gitlab-ci.yml runs on every
-# pipeline while the VM tests are gated on what the merge request touched.
+# The one appliance check that has to be a shell script: it is nix-instantiate
+# plumbing -- a dozen `--arg`s, one of them a JSON list built from vars.sh -- and
+# nothing about it is a test. The tests themselves are pytest suites run by
+# `appliance-pytest` from devenv.nix, next to every other test runner in this
+# repository.
 #
-# Three checks, each catching a different class of mistake:
+# cicd/run_appliance_tests.sh boots real machines: it wants KVM, it needs a host of
+# the platform's own architecture, and it costs minutes per target. None of that is
+# true here, which is why this is the tier .gitlab-ci.yml runs on every pipeline
+# while the VM tests are gated on what the merge request touched.
 #
-#   * `eval` instantiates the stick -- and with it the appliance, which
-#     installer.nix puts inside the stick's store image -- for *every* platform,
-#     plus the tests for this one. Evaluation builds nothing, so this is the
-#     only thing that covers the Spark from an x86_64 machine. It catches a
-#     module that no longer evaluates, an option renamed out from under us, a
-#     failed assertion, and a typo in a test file that would otherwise surface
-#     twenty minutes into a VM boot.
-#   * `bats` runs nixos/installer-scripts/tests. `auto_install_decision` decides
-#     whether a disk is destroyed with nobody watching; the stick's own
-#     derivation runs this suite, but building the stick costs a closure and
-#     this costs a second.
-#   * `pytest` runs nixos/usb-ingest/tests and nixos/console-mouse/tests, for
-#     the same reason: each package's checkPhase runs its own, and running them
-#     here needs no package built.
+# What it catches: a module that no longer evaluates, an option renamed out from
+# under us, a failed assertion, and a typo in a test file that would otherwise
+# surface twenty minutes into a VM boot. Evaluation builds nothing, so this is also
+# the only thing that covers the Spark from an x86_64 machine.
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -36,11 +30,6 @@ NIXOS_HARDWARE=""
 # Must agree with `platformModules` in nixos/default.nix.
 KNOWN_PLATFORMS=(spark evo-x2 nuc12)
 PLATFORMS=()
-
-# Short names, in the order they are run: the evaluation first, because it is
-# the one that fails when nixos/ does not evaluate at all.
-KNOWN_CHECKS=(eval bats pytest)
-CHECKS=()
 
 # Both resolved in Main, once. HOST_PLATFORM is the platform whose tests are
 # evaluated as well as its image; empty on an architecture no platform claims,
@@ -58,8 +47,7 @@ LOOM_CHAT_MODEL=""
 # Built from LOOM_HOSTS_FQDN by resolve_loom_values.
 LOOM_HOSTS_JSON=""
 
-# Appended to by the check_* functions, so each may record its own failure and
-# the rest still run.
+# Appended to by instantiate, so one platform failing does not hide the next.
 FAILED=()
 
 #
@@ -94,49 +82,31 @@ platform_system(){
 validate_environment(){
     local command icon magic store_dir free_gb kvm
 
-    for command in git jq; do
+    for command in git jq nix-instantiate; do
         check_command "${command}"
     done
 
-    case " ${CHECKS[*]} " in
-        *" eval "*)
-            check_command nix-instantiate
+    if [[ -z "${NIXPKGS}" ]]; then
+        echo >&2 "[!] Error: no nixpkgs given."
+        echo >&2 "    Run this through devenv: 'appliance-eval' passes --nixpkgs for you."
+        echo >&2 "    To drive the script directly, pass --nixpkgs PATH yourself."
+        exit 1
+    fi
+    if [[ ! -e "${NIXPKGS}/nixos/lib/eval-config.nix" ]]; then
+        echo >&2 "[!] Error: not a nixpkgs source: ${NIXPKGS}"
+        exit 1
+    fi
 
-            if [[ -z "${NIXPKGS}" ]]; then
-                echo >&2 "[!] Error: no nixpkgs given."
-                echo >&2 "    Run this through devenv: 'appliance-check' passes --nixpkgs for you."
-                echo >&2 "    To drive the script directly, pass --nixpkgs PATH yourself."
-                exit 1
-            fi
-            if [[ ! -e "${NIXPKGS}/nixos/lib/eval-config.nix" ]]; then
-                echo >&2 "[!] Error: not a nixpkgs source: ${NIXPKGS}"
-                exit 1
-            fi
-
-            if [[ -z "${NIXOS_HARDWARE}" ]]; then
-                echo >&2 "[!] Error: no nixos-hardware given."
-                echo >&2 "    Run this through devenv: 'appliance-check' passes --nixos-hardware for you."
-                echo >&2 "    To drive the script directly, pass --nixos-hardware PATH yourself."
-                exit 1
-            fi
-            if [[ ! -e "${NIXOS_HARDWARE}/common/pc/ssd/default.nix" ]]; then
-                echo >&2 "[!] Error: not a nixos-hardware source: ${NIXOS_HARDWARE}"
-                exit 1
-            fi
-        ;;
-        *)
-            :
-        ;;
-    esac
-
-    case " ${CHECKS[*]} " in
-        *" bats "*)   check_command bats   ;;
-        *)            :                    ;;
-    esac
-    case " ${CHECKS[*]} " in
-        *" pytest "*) check_command python ;;
-        *)            :                    ;;
-    esac
+    if [[ -z "${NIXOS_HARDWARE}" ]]; then
+        echo >&2 "[!] Error: no nixos-hardware given."
+        echo >&2 "    Run this through devenv: 'appliance-eval' passes --nixos-hardware for you."
+        echo >&2 "    To drive the script directly, pass --nixos-hardware PATH yourself."
+        exit 1
+    fi
+    if [[ ! -e "${NIXOS_HARDWARE}/common/pc/ssd/default.nix" ]]; then
+        echo >&2 "[!] Error: not a nixos-hardware source: ${NIXOS_HARDWARE}"
+        exit 1
+    fi
 
     # Four bytes, and the one thing an evaluation cannot catch: branding.nix
     # embeds this PNG and guards on its magic number at *build* time, so an
@@ -151,10 +121,9 @@ validate_environment(){
         exit 1
     fi
 
-    # Printed rather than acted on: this is the cheap job that runs everywhere,
-    # so it is the one place a runner says what it can do. Whether the VM tests
-    # can use KVM on a given machine is otherwise only discoverable by starting
-    # them.
+    # Printed rather than acted on: this is the cheap job that runs everywhere, so
+    # it is the one place a runner says what it can do. Whether the VM tests can use
+    # KVM on a given machine is otherwise only discoverable by starting them.
     store_dir="${NIX_STORE_DIR:-/nix/store}"
     free_gb="$(df --block-size=1G --output=avail "${store_dir}" | tail --lines=1 | tr --delete ' ')"
     if [[ -r /dev/kvm && -w /dev/kvm ]]; then
@@ -204,11 +173,11 @@ instantiate(){
     if nix-instantiate "${args[@]}" > /dev/null; then
         return 0
     fi
-    FAILED+=("eval: ${attribute} (${platform})")
-    echo "[!] Failed: eval: ${attribute} (${platform})"
+    FAILED+=("${attribute} (${platform})")
+    echo "[!] Failed: ${attribute} (${platform})"
 }
 
-check_eval(){
+evaluate_platforms(){
     local platform
 
     for platform in "${PLATFORMS[@]}"; do
@@ -227,68 +196,17 @@ check_eval(){
     done
 }
 
-check_bats(){
-    echo "[*] Running: bats (nixos/installer-scripts/tests)"
-    if bats "${CONTEXT_DIR}/nixos/installer-scripts/tests"; then
-        return 0
-    fi
-    FAILED+=(bats)
-    echo "[!] Failed: bats"
-}
-
-check_pytest(){
-    echo "[*] Running: pytest (nixos/usb-ingest/tests, nixos/console-mouse/tests)"
-    # PYTHONPATH rather than an install: these packages are built by
-    # nixos/usb-ingest.nix and nixos/console-mouse.nix for the appliance and are
-    # not in the devenv's virtualenv, but their tests import them by name. Both
-    # directories are on the path at once because pytest is invoked once -- the
-    # two packages have no module names in common, so there is nothing to
-    # shadow. Run from the repository root so that pytest.ini applies -- above
-    # all `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
-    if (
-        cd "${CONTEXT_DIR}"
-        PYTHONPATH="${CONTEXT_DIR}/nixos/usb-ingest:${CONTEXT_DIR}/nixos/console-mouse" \
-            python -m pytest nixos/usb-ingest/tests nixos/console-mouse/tests
-    ); then
-        return 0
-    fi
-    FAILED+=(pytest)
-    echo "[!] Failed: pytest"
-}
-
-# Called rather than dispatched through a condition, which would switch `set -e`
-# off for everything the check runs.
-run_check(){
-    case "${1}" in
-        eval)
-            check_eval
-        ;;
-        bats)
-            check_bats
-        ;;
-        pytest)
-            check_pytest
-        ;;
-        *)
-            echo >&2 "[!] Error: unknown check: ${1}"
-            exit 1
-        ;;
-    esac
-}
-
 #
 # Usage
 #
 
 usage(){
-    echo "usage: $0 [<options>] [<check>...]"
-    echo "  checks: ${KNOWN_CHECKS[*]} (default: all of them, in that order)"
+    echo "usage: $0 [<options>]"
     echo "  -h|--help                     show this help"
     echo "  -v|--verbose                  pass --show-trace to nix-instantiate"
     echo "  -p|--platform PLATFORM        evaluate only this one: ${KNOWN_PLATFORMS[*]}"
     echo "                                (repeatable; default: all of them)"
-    echo "  --nixpkgs NIXPKGS             nixpkgs source (required for 'eval';"
-    echo "                                'appliance-check' passes it)"
+    echo "  --nixpkgs NIXPKGS             nixpkgs source ('appliance-eval' passes it)"
     echo "  --nixos-hardware PATH         nixos-hardware source (required the same way)"
 }
 
@@ -330,33 +248,14 @@ while [[ $# -gt 0 ]]; do
             NIXOS_HARDWARE="${1?Missing NIXOS_HARDWARE}"
             shift
         ;;
-        -*)
-            echo >&2 "[!] Error: unknown option: ${1}"
+        *)
+            echo >&2 "[!] Error: unknown argument: ${1}"
             usage
             exit 1
-        ;;
-        *)
-            # Matched against the list rather than by calling run_check, which in
-            # a condition would silently disable `set -e` inside it -- the same
-            # reason --platform matches KNOWN_PLATFORMS above.
-            case " ${KNOWN_CHECKS[*]} " in
-                *" ${1} "*)
-                    CHECKS+=("${1}")
-                ;;
-                *)
-                    echo >&2 "[!] Error: unknown check: ${1}"
-                    echo >&2 "    Known checks: ${KNOWN_CHECKS[*]}"
-                    exit 1
-                ;;
-            esac
-            shift
         ;;
     esac
 done
 
-if (( ${#CHECKS[@]} == 0 )); then
-    CHECKS=("${KNOWN_CHECKS[@]}")
-fi
 if (( ${#PLATFORMS[@]} == 0 )); then
     PLATFORMS=("${KNOWN_PLATFORMS[@]}")
 fi
@@ -378,14 +277,11 @@ esac
 
 validate_environment
 resolve_loom_values
-
-for check in "${CHECKS[@]}"; do
-    run_check "${check}"
-done
+evaluate_platforms
 
 if (( ${#FAILED[@]} > 0 )); then
-    echo >&2 "[!] ${#FAILED[@]} failed: ${FAILED[*]}"
+    echo >&2 "[!] ${#FAILED[@]} failed to evaluate: ${FAILED[*]}"
     exit 1
 fi
 
-echo "[*] All passed: ${CHECKS[*]}"
+echo "[*] All evaluated: ${PLATFORMS[*]}"

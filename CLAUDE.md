@@ -174,18 +174,23 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   tty1 is showing, as the only client
 - `appliance-vm reset` - Delete a platform's VM state (`.appliance-vm/<platform>/`): the disks, the
   flashed stick and the UEFI variables. Gigabytes
-- `appliance-check` - The appliance checks that boot nothing: evaluates the image for all three
-  platforms and the tests for this one, then runs the installer bats suite
-  (`nixos/installer-scripts/tests`) and the pytest suites under `nixos/usb-ingest/tests` and
-  `nixos/console-mouse/tests`.
-  Takes any of `eval`, `bats`, `pytest`; with no argument it runs all three, in about a minute.
-  Needs neither KVM nor a matching architecture, which is why this is the appliance job that runs
-  on every CI pipeline while the VM tests are gated on what the MR touched
+- `appliance-check` - The appliance checks that boot nothing, in about a minute: `appliance-pytest`
+  then `appliance-eval`, both of them below. Runs both even when the first fails. Needs neither KVM
+  nor a matching architecture, which is why this is the appliance job that runs on every CI pipeline
+  while the VM tests are gated on what the MR touched
+- `appliance-pytest` - The appliance's own pytest suites: `nixos/installer/tests`,
+  `nixos/usb-ingest/tests` and `nixos/console-mouse/tests`. Each also runs in its package's
+  `checkPhase`, so a mistake fails an image build too; running them here needs nothing built.
+  Extra arguments go to pytest
+- `appliance-eval` - Instantiates the stick image for all three platforms and the tests for this
+  one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
+  assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
 - `loom-platform-info` - Report this box's hardware — wired ports and their drivers, radios and
   whether they do AP mode, GPU with the firmware VRAM carve-out beside the GTT pool, firmware
   version — and, on an appliance, how that compares with what `nixos/platforms/<id>.nix` declared.
-  Plain bash with no Nix dependency, so it also runs on a box that is not running Loom yet. This is
-  how the guessed values in a platform file get checked against real hardware. `--json`, `--output`
+  Plain bash with no Nix dependency (`nixos/scripts/platform_info.sh`), so it also runs on a box
+  that is not running Loom yet. This is how the guessed values in a platform file get checked
+  against real hardware. `--json`, `--output`
 
 **Utilities:**
 

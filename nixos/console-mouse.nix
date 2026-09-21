@@ -62,7 +62,10 @@ let
 
     checkPhase = ''
       runHook preCheck
-      PYTHONPATH=$PWD pytest tests -q
+      # Appended rather than assigned: an assignment would drop the paths the
+      # python setup hook exported for this package's own dependencies, and the
+      # suite would fail to import them.
+      PYTHONPATH=$PWD''${PYTHONPATH:+:$PYTHONPATH} pytest tests -q
       runHook postCheck
     '';
 

@@ -1,15 +1,15 @@
 """Which block devices may be ingested, and which must never be touched.
 
-The one that must never be touched is the LUKS key stick. `nixos/key-guard.nix`
-polls it every two seconds and powers the box off ten seconds after it stops
-reading, so disturbing it is not a cosmetic mistake.
+The one that must never be touched is the LUKS key stick. `nixos/key-guard.nix` polls it
+every two seconds and powers the box off ten seconds after it stops reading, so
+disturbing it is not a cosmetic mistake.
 
-Identifying it by `/dev/disk/by-partlabel/loom-key` is not good enough, and
-key-guard.nix says why in its own comments: that path is not unique, and with a
-second Loom stick attached udev points it at whichever was linked last. The
-authoritative answer is the guard's own `device` file, which holds the node it
-armed on -- and it got there by proving, with `cryptsetup --test-passphrase`,
-that the stick actually unlocks *this* disk.
+Identifying it by `/dev/disk/by-partlabel/loom-key` is not good enough, and key-
+guard.nix says why in its own comments: that path is not unique, and with a second Loom
+stick attached udev points it at whichever was linked last. The authoritative answer is
+the guard's own `device` file, which holds the node it armed on -- and it got there by
+proving, with `cryptsetup --test-passphrase`, that the stick actually unlocks *this*
+disk.
 """
 
 import json
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 # Every partition label the appliance itself uses: the stick's, and the internal
-# disk's. installer-scripts/common.sh owns these names.
+# disk's. installer/loom_installer/constants.py owns these names.
 LOOM_PARTLABELS: frozenset[str] = frozenset(
     {
         "loom-key",
@@ -51,9 +51,9 @@ class KeyGuard:
     def authoritative(self) -> bool:
         """True when the guard has positively identified the key stick.
 
-        When it has not -- a box booted on the recovery passphrase leaves the
-        guard idle -- there is no proven key device, and exclusion falls back to
-        partition labels, which is weaker.
+        When it has not -- a box booted on the recovery passphrase leaves the guard idle
+        -- there is no proven key device, and exclusion falls back to partition labels,
+        which is weaker.
         """
         return self.state is GuardState.ARMED and self.disk is not None
 
@@ -90,15 +90,15 @@ class Verdict:
 def classify_disk(
     disk: Disk,
     guard: KeyGuard,
-    protected_disks: frozenset[str],
+    protected: frozenset[str],
 ) -> Verdict:
     """Decide whether a whole disk may be ingested.
 
-    `protected_disks` are the kernel names carrying `/` and `/boot`. They are
-    passed in rather than looked up here so that the decision stays a pure
-    function of what was observed.
+    `protected` are the kernel names carrying `/` and `/boot`, as `protected_disks`
+    below reports them. They are passed in rather than looked up here so that the
+    decision stays a pure function of what was observed.
     """
-    if disk.kernel_name in protected_disks:
+    if disk.kernel_name in protected:
         return Verdict(False, "carries the appliance's own root or boot filesystem")
 
     if guard.disk is not None and disk.kernel_name == guard.disk:
@@ -110,7 +110,9 @@ def classify_disk(
     # container images nobody wants indexed, and another box's key stick.
     shared = disk.partlabels & LOOM_PARTLABELS
     if shared:
-        return Verdict(False, f"carries Loom partition labels ({', '.join(sorted(shared))})")
+        return Verdict(
+            False, f"carries Loom partition labels ({', '.join(sorted(shared))})"
+        )
 
     if all(volume.mountpoint for volume in disk.volumes) and disk.volumes:
         return Verdict(False, "every volume on it is already mounted")
@@ -148,8 +150,8 @@ def _run(argv: list[str]) -> str:
 def parent_disk(device: str) -> str | None:
     """Map a partition node to the kernel name of the disk containing it.
 
-    A device that is already a whole disk maps to itself, which is what makes
-    this safe to call on the guard's node without knowing which it is.
+    A device that is already a whole disk maps to itself, which is what makes this safe
+    to call on the guard's node without knowing which it is.
     """
     # `--nodeps` is what makes this a question about one device: without it
     # lsblk prints the whole subtree, and the first row is not reliably the one
@@ -178,7 +180,14 @@ def protected_disks() -> frozenset[str]:
     for mountpoint in ("/", "/boot", "/nix/store"):
         try:
             source = _run(
-                ["findmnt", "--noheadings", "--output", "SOURCE", "--target", mountpoint]
+                [
+                    "findmnt",
+                    "--noheadings",
+                    "--output",
+                    "SOURCE",
+                    "--target",
+                    mountpoint,
+                ]
             ).strip()
         except (subprocess.SubprocessError, OSError):
             continue
@@ -209,7 +218,10 @@ def udev_properties(device: str) -> dict[str, str]:
 def _node_for(nodes: list[dict], device: str) -> dict:
     name = os.path.basename(device)
     for node in nodes:
-        if node.get("path") == device or os.path.basename(node.get("kname") or "") == name:
+        if (
+            node.get("path") == device
+            or os.path.basename(node.get("kname") or "") == name
+        ):
             return node
     return nodes[0] if nodes else {}
 
@@ -228,10 +240,10 @@ def _volume_from(entry: dict) -> Volume:
 def inspect_disk(device: str) -> Disk:
     """Build the full picture of a disk: its volumes and its udev identity.
 
-    A disk with no partition table but a filesystem of its own -- the
-    "superfloppy" layout most cameras and many SD cards use -- is reported by
-    lsblk as a single node with an fstype and no children, and is treated here as
-    one volume covering the whole device.
+    A disk with no partition table but a filesystem of its own -- the "superfloppy"
+    layout most cameras and many SD cards use -- is reported by lsblk as a single node
+    with an fstype and no children, and is treated here as one volume covering the whole
+    device.
     """
     # Two flags this call cannot do without, both learned the hard way:
     #
@@ -266,11 +278,12 @@ def inspect_disk(device: str) -> Disk:
 
 
 def disk_from_lsblk(nodes: list[dict], device: str, properties: dict[str, str]) -> Disk:
-    """Build a `Disk` from lsblk's `blockdevices`. Split out so it can be tested.
+    """Build a `Disk` from lsblk's `blockdevices`.
 
-    The node asked about is found by name rather than taken as the first one:
-    lsblk puts holders ahead of the device they hold, so a disk carrying a
-    dm-crypt mapping is not the head of its own listing.
+    Split out so it can be tested.
+        The node asked about is found by name rather than taken as the first one:
+        lsblk puts holders ahead of the device they hold, so a disk carrying a
+        dm-crypt mapping is not the head of its own listing.
     """
     root = _node_for(nodes, device)
 

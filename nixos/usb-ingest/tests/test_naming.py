@@ -73,14 +73,20 @@ def test_identity_falls_back_to_vendor_and_model():
 
 
 def test_identity_of_a_nameless_stick_is_still_stable_and_unique():
-    """Cheap sticks report no serial and no label. Two must not collide."""
+    """Cheap sticks report no serial and no label.
+
+    Two must not collide.
+    """
     first = derive_identity({"ID_VENDOR": "Generic"}, size_bytes=8_000_000_000)
     second = derive_identity({"ID_VENDOR": "Generic"}, size_bytes=16_000_000_000)
 
     assert first.identifier != second.identifier
-    assert first.identifier == derive_identity(
-        {"ID_VENDOR": "Generic"}, size_bytes=8_000_000_000
-    ).identifier
+    assert (
+        first.identifier
+        == derive_identity(
+            {"ID_VENDOR": "Generic"}, size_bytes=8_000_000_000
+        ).identifier
+    )
 
 
 def test_volume_component_with_and_without_a_label():
@@ -100,9 +106,7 @@ def test_object_key_translates_windows_separators():
 
     Left alone they would render as one flat filename rather than a tree.
     """
-    assert (
-        object_key("p", "Users\\alice\\notes.txt") == "p/Users/alice/notes.txt"
-    )
+    assert object_key("p", "Users\\alice\\notes.txt") == "p/Users/alice/notes.txt"
 
 
 def test_object_key_cannot_escape_its_prefix():

@@ -56,77 +56,83 @@ let
     comp = "zstd -Xcompression-level 6";
   };
 
-  installerScripts =
-    pkgs.runCommand "loom-installer-scripts"
-      {
-        nativeBuildInputs = [
-          pkgs.makeWrapper
-          pkgs.bats
-        ];
-      }
-      ''
-        # The rule deciding whether a disk is destroyed with nobody watching is
-        # pure shell, so it is exercised here rather than in a VM: a mistake
-        # fails this build in seconds instead of at a box. Same argument as the
-        # pytest suite in usb-ingest/, which runs in its own checkPhase.
-        #
-        # The whole directory is copied because the suite sources ../common.sh,
-        # which a bare store path for tests/ alone would not reach.
-        cp -r ${./installer-scripts} scripts
-        bats scripts/tests
+  # The installer itself: `loom-menu`, `loom-install` and `loom-wipe`, one Python
+  # package (nixos/installer/). The rules that decide whether a disk is destroyed
+  # with nobody watching are exercised in its checkPhase rather than in a VM, so a
+  # mistake fails this build in seconds instead of at a box -- the same argument
+  # the suites in usb-ingest/ and console-mouse/ are run for.
+  #
+  # Everything the programs shell out to goes on their PATH here rather than in
+  # the unit, and every value they were built with goes in beside it: a unit's
+  # PATH is built from its own `path` plus a minimal default, and the three
+  # storage names below have to be the ones the box's stage 1 waits for or the
+  # install produces a box that never boots again.
+  installerPackage = pkgs.python3Packages.buildPythonApplication {
+    pname = "loom-installer";
+    version = "0.1.0";
+    src = ./installer;
+    pyproject = true;
 
-        install -Dm444 ${./installer-scripts/common.sh} $out/libexec/loom/common.sh
-        install -Dm555 ${./installer-scripts/install.sh} $out/bin/loom-install
-        install -Dm555 ${./installer-scripts/menu.sh}    $out/bin/loom-menu
-        install -Dm555 ${./installer-scripts/wipe.sh}    $out/bin/loom-wipe
+    build-system = [ pkgs.python3Packages.setuptools ];
+    dependencies = [ pkgs.python3Packages.rich ];
+    nativeCheckInputs = [ pkgs.python3Packages.pytest ];
 
-        for program in $out/bin/*; do
-          wrapProgram "$program" \
-            --prefix PATH : ${
-              lib.makeBinPath (
-                with pkgs;
-                [
-                  bash
-                  coreutils
-                  cryptsetup
-                  diffutils # `cmp`, used by key_state
-                  dosfstools
-                  e2fsprogs
-                  efibootmgr
-                  gawk
-                  gnugrep
-                  gnused
-                  # The pool. `lvm2` carries pvcreate/vgcreate/lvcreate and the
-                  # vgchange the teardown and the already-installed probe need.
-                  lvm2
-                  nvme-cli
-                  gptfdisk
-                  parted
-                  systemd
-                  util-linux
-                  nixos-install-tools
-                  # nixos-install is a wrapper around `nix-env` and friends and
-                  # does not carry them itself, so without this the install
-                  # dies with "nix-env: command not found" -- after the disk
-                  # has already been partitioned and encrypted.
-                  config.nix.package
-                  # `loom_banner` in common.sh draws the mark with this, so the
-                  # stick and the box it installs print the same eyes.
-                  config.loom.branding.eyes
-                ]
-              )
-            } \
-            --set LOOM_INSTALLER_LIB "$out/libexec/loom" \
-            --set LOOM_INSTALLER_BIN "$out/bin" \
-            --set LOOM_EFI_ARCH "${efiArch}" \
-            --set LOOM_TAG "${tag}" \
-            --set LOOM_PLATFORM "${config.loom.platform.description}" \
-            --set LOOM_AUTO_GRACE "${toString autoInstallGrace}" \
-            --set LOOM_VG_NAME "${boxSystem.config.loom.storage.volumeGroup}" \
-            --set LOOM_LV_NAME "${boxSystem.config.loom.storage.rootVolume}" \
-            --set LOOM_ROOT_DEVICE "${boxSystem.config.loom.storage.rootDevice}"
-        done
-      '';
+    checkPhase = ''
+      runHook preCheck
+      # Appended rather than assigned: an assignment would drop the paths the
+      # python setup hook exported for this package's own dependencies, and the
+      # suite would fail to import them.
+      PYTHONPATH=$PWD''${PYTHONPATH:+:$PYTHONPATH} pytest tests -q
+      runHook postCheck
+    '';
+
+    makeWrapperArgs = [
+      "--prefix PATH : ${
+        lib.makeBinPath (
+          with pkgs;
+          [
+            bash
+            coreutils
+            cryptsetup
+            diffutils # `cmp`, used by key_state
+            dosfstools
+            e2fsprogs
+            efibootmgr
+            gnugrep
+            gnused
+            # The pool. `lvm2` carries pvcreate/vgcreate/lvcreate and the
+            # vgchange the teardown and the already-installed probe need.
+            lvm2
+            nvme-cli
+            gptfdisk
+            parted
+            systemd
+            util-linux
+            nixos-install-tools
+            # nixos-install is a wrapper around `nix-env` and friends and does
+            # not carry them itself, so without this the install dies with
+            # "nix-env: command not found" -- after the disk has already been
+            # partitioned and encrypted. `nix-store` is also what the install
+            # progress bar asks how much there is to copy.
+            config.nix.package
+            # `Ui.banner` draws the mark with this, so the stick and the box it
+            # installs print the same eyes.
+            config.loom.branding.eyes
+          ]
+        )
+      }"
+      "--set LOOM_INSTALLER_BIN ${placeholder "out"}/bin"
+      "--set LOOM_EFI_ARCH ${efiArch}"
+      "--set LOOM_TAG ${lib.escapeShellArg tag}"
+      "--set LOOM_PLATFORM ${lib.escapeShellArg config.loom.platform.description}"
+      "--set LOOM_AUTO_GRACE ${toString autoInstallGrace}"
+      "--set LOOM_VG_NAME ${boxSystem.config.loom.storage.volumeGroup}"
+      "--set LOOM_LV_NAME ${boxSystem.config.loom.storage.rootVolume}"
+      "--set LOOM_ROOT_DEVICE ${boxSystem.config.loom.storage.rootDevice}"
+    ];
+
+    meta.mainProgram = "loom-menu";
+  };
 in
 {
   imports = [ "${modulesPath}/image/repart.nix" ];
@@ -245,10 +251,11 @@ in
   # And which boot entry it should leave selected once that closure is in place.
   #
   # A fresh box has no container images, so the first boot has to be first-time
-  # setup rather than the default `Loom` entry -- see modes.nix. install.sh picks
-  # that entry by *filename*, which the systemd-boot builder composes out of the
-  # specialisation's attribute name (`generation_conf_filename`), so what it needs
-  # from here is that name and not a store path.
+  # setup rather than the default `Loom` entry -- see modes.nix. The installer's
+  # `select_setup_entry` picks that entry by *filename*, which the systemd-boot
+  # builder composes out of the specialisation's attribute name
+  # (`generation_conf_filename`), so what it needs from here is that name and not a
+  # store path.
   #
   # Read off the evaluated configuration rather than written out as
   # `first-time-setup`, so renaming the specialisation in modes.nix follows
@@ -270,12 +277,12 @@ in
         assertion = lib.length names == 1;
         message =
           "nixos/installer.nix: the appliance declares ${toString (lib.length names)} "
-          + "specialisations (${lib.concatStringsSep ", " names}); install.sh can only "
-          + "preselect one. Teach `select_setup_entry` which of them to pick.";
+          + "specialisations (${lib.concatStringsSep ", " names}); the installer can "
+          + "only preselect one. Teach `select_setup_entry` which of them to pick.";
       }
     ];
 
-  environment.systemPackages = [ installerScripts ];
+  environment.systemPackages = [ installerPackage ];
 
   # nixos-install copies the appliance closure out of the stick's read-only
   # store, and for that the daemon has to consider those paths valid. They are
@@ -318,7 +325,7 @@ in
     serviceConfig = {
       # Let the boot messages finish first.
       Type = "idle";
-      ExecStart = "${installerScripts}/bin/loom-menu";
+      ExecStart = "${lib.getExe installerPackage}";
       TTYPath = "/dev/tty1";
       TTYReset = true;
       TTYVHangup = true;

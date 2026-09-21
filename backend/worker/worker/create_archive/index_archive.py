@@ -22,7 +22,6 @@ import logging
 from dataclasses import dataclass
 from enum import StrEnum
 
-from celery import chain
 from common.archive.archive_detection import (
     decrypts_to_a_loom_zip,
     encrypted_probe_length,
@@ -40,7 +39,6 @@ from common.services.task_scheduling_service import ArchiveImportRequest
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks import unzip_loom_archive
-from worker.create_archive.tasks.detect_loom_archive import detect_loom_archive
 from worker.create_archive.tasks.load_loom_archive_encrypted import decrypt_loom_archive
 
 logger = logging.getLogger(__name__)
@@ -182,7 +180,9 @@ def index_archive_task(request: ArchiveImportRequest):
         else None
     )
 
-    chain(
-        detect_loom_archive.s(routing.archive_zip),
-        unzip_loom_archive.signature(encrypted_archive_zip=encrypted_archive_zip),
-    ).delay().forget()
+    # `route_archive_blob` has already read the zip's central directory and its
+    # MANIFEST.json, so the canvas is handed the archive directly -- there is no
+    # detection step left to put in front of it.
+    unzip_loom_archive.signature(
+        encrypted_archive_zip=encrypted_archive_zip
+    ).apply_async(args=(routing.archive_zip,)).forget()

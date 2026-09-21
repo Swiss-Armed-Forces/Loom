@@ -1,8 +1,9 @@
 """Deciding whether a blob is a loom archive.
 
-Extracted from worker's `detect_loom_archive` task so that the crawler can reach it too:
-crawler depends on `common` and `minio` only (backend/crawler/pyproject.toml), so it
-cannot import anything under `worker`.
+Lives in `common` so that the crawler can reach it too: crawler depends on `common` and
+`minio` only (backend/crawler/pyproject.toml), so it cannot import anything under
+`worker`, where the archive router (`worker.create_archive.index_archive`) calls the
+same functions.
 
 The crawler needs this because it is the one component holding an S3 client pointed at
 the object, which lets it classify an intake object from a handful of range reads

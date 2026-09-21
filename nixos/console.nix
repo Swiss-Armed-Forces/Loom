@@ -12,6 +12,11 @@
 #     because by then the log is a finished transcript and the pods are the live
 #     thing. Both boot modes get the same session; only the unit in that pane
 #     differs, which is what `loom.progressUnit` carries over from modes.nix.
+#   * A fourth pane appears while a USB stick is being copied in, splitting the
+#     k9s pane in half and drawing the progress of the copy underneath it. It
+#     goes away again when the last stick is unplugged, and k9s has the space
+#     back. usb-ingest.nix owns it; what belongs here is the mark on the pane it
+#     splits (`@loom-main`, below).
 #   * None of those panes is a shell. The middle column used to be, and is now
 #     opencode pointed at the cluster's own Ollama -- the box already carries a
 #     model, and nothing on the console could reach it. A prompt is Alt-F2 away,
@@ -822,6 +827,13 @@ let
         # contains a shell, so there is no pane left whose death is routine.
         "''${tm[@]}" set-option -p -t "$main" remain-on-exit on
         "''${tm[@]}" set-option -p -t "$mon" remain-on-exit on
+
+        # How usb-ingest.nix finds the pane to split while a stick is being
+        # copied: k9s stays in the top half and the copy is drawn underneath it.
+        # A user option rather than an index, because indices follow layout
+        # position and are rewritten by every split -- including that one. See
+        # nixos/usb-ingest/loom_usb_ingest/pane.py.
+        "''${tm[@]}" set-option -p -t "$main" @loom-main 1
       ${
         if aiEnabled then
           ''

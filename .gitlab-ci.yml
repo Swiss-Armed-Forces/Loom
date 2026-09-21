@@ -358,10 +358,10 @@ backend_test:
 appliance_check:
   stage: test
   script:
-    # Evaluation, the installer bats suite and the usb-ingest pytest suite.
-    # Boots nothing, so it needs neither KVM nor a runner of the platform's
-    # architecture -- which makes it the only coverage the Spark image gets
-    # here, and cheap enough to run on every pipeline.
+    # The appliance's own pytest suites, then an evaluation of the image for
+    # every platform. Boots nothing, so it needs neither KVM nor a runner of the
+    # platform's architecture -- which makes it the only coverage the Spark image
+    # gets here, and cheap enough to run on every pipeline.
     - devenv shell -- appliance-check
     # What nixos-hardware gives each platform, for all three of them. Reads the
     # evaluated configuration and exits.

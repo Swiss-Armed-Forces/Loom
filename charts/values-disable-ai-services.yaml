@@ -11,23 +11,11 @@ ollama:
 open_webui:
   enabled: false
 
-# Turning the services off is not enough on its own, because the indexing
-# pipeline goes on calling them.
-#
-# create_embedding's signature() only becomes a no-op when
-# skip_embedding_while_indexing is set, and that defaults to False
-# (worker/settings.py). So without the line below every indexed file dispatches
-# an embedding task at an Ollama that is not there, retries it
-# CREATE_EMBEDDING_MAX_RETRIES (15) times, and ends up in the graveyard queue --
-# fifteen failures per file, for a flag whose whole point was to stop touching
-# those services.
-#
-# Auto-tagging is chained inside that same task, so skipping the embedding skips
-# it too. It is named anyway: relying on that coupling silently would break the
-# moment auto-tagging moved.
-#
-# The other three -- translate, summarize and image description -- already
-# default to skipped, so they need nothing here.
+# Embedding defaults to on, so without this every indexed file would retry
+# against an Ollama that is not there until it lands in the graveyard queue.
+# Auto-tagging is chained inside the embedding task, but is named explicitly so
+# the coupling is not relied on. Translate, summarize and image description
+# already default to skipped.
 pipeline:
   skip_embedding_while_indexing: true
   skip_auto_tag_file_while_indexing: true

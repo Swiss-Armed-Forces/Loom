@@ -134,9 +134,9 @@ def plan_mount(
 ) -> MountPlan:
     """Decide how -- or whether -- to mount a volume of this type.
 
-    `kernel_filesystems` is what /proc/filesystems reports. It only gates tier 3;
-    a known type is attempted regardless, because its module may simply not be
-    loaded yet and mount(8) will autoload it.
+    `kernel_filesystems` is what /proc/filesystems reports. It only gates tier 3; a
+    known type is attempted regardless, because its module may simply not be loaded yet
+    and mount(8) will autoload it.
     """
     if not fstype:
         return MountPlan(

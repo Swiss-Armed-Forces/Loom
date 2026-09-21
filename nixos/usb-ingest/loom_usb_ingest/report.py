@@ -1,13 +1,13 @@
 """Telling whoever is standing at the box.
 
-The appliance has no remote access, so the console is the only place a message
-can land. This mirrors `loom-key-guard`'s `announce`: the journal always, plus
-`wall` and the operator's tmux session on a best-effort basis, because there may
-be no session and no terminal at all.
+The appliance has no remote access, so the console is the only place a message can land.
+This mirrors `loom-key-guard`'s `announce`: the journal always, plus `wall` and the
+operator's tmux session on a best-effort basis, because there may be no session and no
+terminal at all.
 
-Deliberately not /dev/console. `modes.nix` and `network.nix` both explain why --
-with no `console=` on the kernel command line that means the active VT, and it
-paints over the operator's session.
+Deliberately not /dev/console. `modes.nix` and `network.nix` both explain why -- with no
+`console=` on the kernel command line that means the active VT, and it paints over the
+operator's session.
 """
 
 import json
@@ -30,7 +30,9 @@ def announce(message: str, console_socket: str) -> None:
         ["tmux", "-S", console_socket, "display-message", message],
     ):
         try:
-            subprocess.run(argv, check=False, capture_output=True, timeout=_ANNOUNCE_TIMEOUT_S)
+            subprocess.run(
+                argv, check=False, capture_output=True, timeout=_ANNOUNCE_TIMEOUT_S
+            )
         except (subprocess.SubprocessError, OSError):
             continue
 
@@ -38,9 +40,8 @@ def announce(message: str, console_socket: str) -> None:
 def write_state(state_dir: str, state: dict) -> None:
     """Publish what the service is doing, for `loom-usb-ingest status`.
 
-    Written through a temporary file in the same directory so a reader can never
-    catch a half-written document, the same way key-guard.nix writes its own
-    state.
+    Written through a temporary file in the same directory so a reader can never catch a
+    half-written document, the same way key-guard.nix writes its own state.
     """
     os.makedirs(state_dir, mode=0o700, exist_ok=True)
     path = os.path.join(state_dir, "state.json")
@@ -71,9 +72,7 @@ def free_bytes(path: str) -> int:
 HEADROOM_FACTOR = 2.2
 
 
-def warn_if_short_on_space(
-    root: str, incoming_bytes: int, console_socket: str
-) -> bool:
+def warn_if_short_on_space(root: str, incoming_bytes: int, console_socket: str) -> bool:
     """Warn -- but never refuse -- when the encrypted root is running out.
 
     Refusing is deliberately not an option: an operator who plugs a stick in

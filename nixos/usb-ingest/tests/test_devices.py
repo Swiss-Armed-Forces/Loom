@@ -1,6 +1,10 @@
-"""The exclusion rules. The key stick must never be ingested."""
+"""The exclusion rules.
+
+The key stick must never be ingested.
+"""
 
 import pytest
+
 from loom_usb_ingest.devices import (
     Disk,
     GuardState,
@@ -39,7 +43,10 @@ def test_an_ordinary_stick_is_ingested():
 
 
 def test_the_armed_key_disk_is_never_ingested():
-    """The central guarantee. Pulling this stick powers the box off."""
+    """The central guarantee.
+
+    Pulling this stick powers the box off.
+    """
     verdict = classify_disk(_disk("sdb", [_volume("/dev/sdb1")]), ARMED, NO_PROTECTED)
 
     assert not verdict.ingest

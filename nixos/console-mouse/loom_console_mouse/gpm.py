@@ -2,14 +2,13 @@
 
 Two structs and a unix socket, and that really is the whole of it: connect to
 /dev/gpmctl, write one `Gpm_Connect`, then read a stream of `Gpm_Event`. The
-`GPM_USE_MAGIC` framing that `src/lib/liblow.c` can be built with is `#undef`ed
-in `src/headers/gpmInt.h`, so there is no per-message prefix to skip.
+`GPM_USE_MAGIC` framing that `src/lib/liblow.c` can be built with is `#undef`ed in
+`src/headers/gpmInt.h`, so there is no per-message prefix to skip.
 
-Spoken directly rather than by parsing `mev`'s output, because `mev` prints
-`type`, position, delta, buttons and modifiers -- and not `wdx`/`wdy`, which is
-the only channel a wheel arrives on for the `imps2` protocol
-console-mouse.nix selects. A scroll wheel parsed out of `mev` would be a scroll
-wheel that does not work.
+Spoken directly rather than by parsing `mev`'s output, because `mev` prints `type`,
+position, delta, buttons and modifiers -- and not `wdx`/`wdy`, which is the only channel
+a wheel arrives on for the `imps2` protocol console-mouse.nix selects. A scroll wheel
+parsed out of `mev` would be a scroll wheel that does not work.
 """
 
 import os
@@ -72,9 +71,9 @@ _EVENT = struct.Struct("=BBHhhhhiiihh")
 class GpmEvent(NamedTuple):
     """One `Gpm_Event`, field for field.
 
-    `x` and `y` are absolute console cells and are **1-based**, which is also
-    what the TIOCLINUX selection ioctl wants, so nothing has to be adjusted
-    between reading one and drawing the pointer at it.
+    `x` and `y` are absolute console cells and are **1-based**, which is also what the
+    TIOCLINUX selection ioctl wants, so nothing has to be adjusted between reading one
+    and drawing the pointer at it.
     """
 
     buttons: int
@@ -99,8 +98,8 @@ class GpmEvent(NamedTuple):
 def connect_payload(vc: int, event_mask: int, default_mask: int, pid: int) -> bytes:
     """The single `Gpm_Connect` a client writes after connecting.
 
-    Split out from `GpmClient.connect` so the wire format can be checked
-    without a daemon to talk to.
+    Split out from `GpmClient.connect` so the wire format can be checked without a
+    daemon to talk to.
     """
     return _CONNECT.pack(
         event_mask,
@@ -120,11 +119,14 @@ class EventStream(Protocol):
     or a cast.
     """
 
-    def recv(self, size: int, /) -> bytes: ...
+    def recv(self, size: int, /) -> bytes:
+        """Read at most `size` bytes."""
 
-    def fileno(self) -> int: ...
+    def fileno(self) -> int:
+        """The descriptor, for select()."""
 
-    def close(self) -> None: ...
+    def close(self) -> None:
+        """Let go of it."""
 
 
 class GpmClient:
@@ -138,18 +140,16 @@ class GpmClient:
     def connect(cls, vc: int, event_mask: int, default_mask: int) -> "GpmClient":
         """Register for events on virtual console `vc`.
 
-        `event_mask` selects what is delivered here. `default_mask` selects
-        what gpm's own handler keeps -- and the split is load-bearing rather
-        than a tuning knob. Motion has to stay with the default handler because
-        that handler *is* the pointer: `do_selection.c` draws it with
-        `selection_copy(x,y,x,y,3)` on every GPM_MOVE. Buttons have to be taken
-        away from it, or dragging across the console paints an inverse-video
-        text selection over whatever tmux has drawn.
+        `event_mask` selects what is delivered here. `default_mask` selects what gpm's
+        own handler keeps -- and the split is load-bearing rather than a tuning knob.
+        Motion has to stay with the default handler because that handler *is* the
+        pointer: `do_selection.c` draws it with `selection_copy(x,y,x,y,3)` on every
+        GPM_MOVE. Buttons have to be taken away from it, or dragging across the console
+        paints an inverse-video text selection over whatever tmux has drawn.
 
-        gpm allows this connection from a non-root process only when the
-        caller's uid owns /dev/tty<vc> (`src/daemon/processconn.c`); logind
-        chowns tty1 to the operator at autologin, which is what lets the shim
-        run as an ordinary user.
+        gpm allows this connection from a non-root process only when the caller's uid
+        owns /dev/tty<vc> (`src/daemon/processconn.c`); logind chowns tty1 to the
+        operator at autologin, which is what lets the shim run as an ordinary user.
         """
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:

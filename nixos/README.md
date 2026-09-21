@@ -24,19 +24,21 @@ this file is about the code.
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
-| `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror` — with its own pytest suite, run at build time. |
+| `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror`, and the console pane the copy is drawn in — with its own pytest suite, run at build time. |
 | `vm.nix` | VM-only overrides for the `boxVm` target: what to take off the appliance so it can be booted on a workstation. Never in the flashed closure. |
 | `vm-serial.nix` | A getty on `ttyS0`, so a VM's console session can be reached from a terminal that copies and pastes. Never on a real stick; see `--serial` below. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
-| `installer-scripts/` | `common.sh` (device interlock, the auto-install decision, console styling), `install.sh`, `wipe.sh`, `menu.sh`, and a bats suite run at build time. |
+| `installer/` | The three programs the stick runs — `loom-menu`, `loom-install`, `loom-wipe` — as one Python package: the device interlock, the auto-install decision, the console drawing (rich), and a pytest suite run at build time. |
+| `scripts/platform_info.sh` | `loom-platform-info`: what the box actually is, next to what the platform file claims. Plain bash with no Nix dependency, because the box it most needs to run on is one that is not running Loom yet. |
 | `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 | `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
+| `tests/scripts/` | The testScripts themselves, as Python files the repository's own hooks lint and type-check. Each `.nix` file above reads one in and calls its `run()`; `driver.py` is the typing shim for what the NixOS test driver hands them. |
 
 ## Why `default.nix` and not a flake
 
@@ -265,7 +267,7 @@ host. Each of the three has a test of its own; none of them is going unexercised
 ### Why the installer rig can exist at all
 
 `tests/appliance-install.nix` says the image "is deliberately not booted. It wants an NVMe the test
-framework cannot supply". qemu can supply one. `target_disks` (`installer-scripts/common.sh`) wants
+framework cannot supply". qemu can supply one. `target_disks` (`installer/loom_installer/devices.py`) wants
 `/dev/nvmeXn1`, non-removable, and not the disk it booted from — `-device nvme` with the stick on
 `usb-storage` satisfies all three, so the real `install.sh` runs against a real pool.
 
@@ -337,18 +339,19 @@ appliance-test wifi usb-ingest      # or by name
 ```
 
 `appliance-check` is the cheap half, and the half that runs in CI on every pipeline. It boots
-nothing, so it needs neither KVM nor a host of the platform's architecture. Three checks, and
-`appliance-check eval` (or `bats`, or `pytest`) runs one of them:
+nothing, so it needs neither KVM nor a host of the platform's architecture. It is two commands,
+each runnable on its own, and it runs both even when the first one fails:
 
-| Check | What it does |
+| Command | What it does |
 | --- | --- |
-| `eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
-| `bats` | `nixos/installer-scripts/tests`, the `auto_install_decision` truth table. |
-| `pytest` | `nixos/usb-ingest/tests`, the name sanitiser, the filesystem table and the exclusion rules. |
+| `appliance-pytest` | The three suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records) and `console-mouse/tests` (the gpm wire format and the SGR translation). Extra arguments go to pytest. |
+| `appliance-eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
 
-Both suites also run inside the derivations that own them — `bats` in `installerScripts`, `pytest`
-in the `loom-usb-ingest` `checkPhase` — so a mistake fails an image build as well. Running them
-here costs a second instead of a closure.
+Every suite also runs inside the derivation that owns it — each package's `checkPhase` — so a
+mistake fails an image build as well. Running them here costs a second instead of a closure. They
+are in `devenv.nix` rather than in a shell runner for the same reason every other test in this
+repository is; `cicd/appliance_eval.sh` stays a script because it is `nix-instantiate` plumbing
+rather than a test.
 
 `appliance-test` is the other half: the six short names and what each is for:
 
@@ -399,12 +402,12 @@ nix-build ./nixos -A tests.appliance \
 The pure logic behind `usb-ingest.nix` -- the name sanitiser, the filesystem table and the exclusion
 rules -- is not tested in that VM. It is a pytest suite under `usb-ingest/tests/`, run in the package's
 `checkPhase`, so a mistake there fails the build in seconds rather than at boot. `nix-build ./nixos -A box`
-is enough to run it, and `appliance-check pytest` runs it with nothing built at all.
+is enough to run it, and `appliance-pytest` runs it with nothing built at all.
 
-The installer scripts have the same arrangement, for the same reason: `auto_install_decision` in
-`installer-scripts/common.sh` decides whether a disk is destroyed with nobody watching, so its truth table
-is a bats suite under `installer-scripts/tests/`, run in the scripts' own derivation. `nix-build ./nixos -A
-installerImage` runs it -- as does `appliance-check bats`, or `bats nixos/installer-scripts/tests`.
+The installer has the same arrangement, for the same reason: `decide` in
+`installer/loom_installer/decision.py` decides whether a disk is destroyed with nobody watching, so its
+truth table is a pytest suite under `installer/tests/`, run in the package's own `checkPhase`.
+`nix-build ./nixos -A installerImage` runs it — as does `appliance-pytest`.
 
 There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
 twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
@@ -618,7 +621,7 @@ belongs to — `poweroff` in run mode, `warn` in first-time setup. `loom.console
 the other direction: `console.nix` owns the operator's tmux session, and the guard writes its countdown
 into it.
 
-The stick side of the same numbers lives in `installer-scripts/common.sh` (`LOOM_KEY_BYTES`, the partition
+The stick side of the same numbers lives in `installer/loom_installer/constants.py` (`KEY_BYTES`, the partition
 labels) and in `cicd/build_appliance_image.sh` (`KEY_BYTES`, `KEY_PARTLABEL`). Those cannot share the Nix
 options — they run from the stick, before any of this exists — so they are the one pair that still has to
 be kept in step by hand.

@@ -19,7 +19,8 @@ let
     locales = [ "${use-locale}/UTF-8" ];
   };
 
-  # Python subdirectories
+  # Python subdirectories managed by Poetry: the whole hook set, lockfile checks
+  # included.
   pythonSubdirs = [
     "backend/api"
     "backend/common"
@@ -27,6 +28,30 @@ let
     "backend/worker"
     "integrationtest"
     "cicd/aitools"
+  ];
+
+  # Python that Nix builds rather than Poetry: the three programs the appliance
+  # image is made of, and the scripts its VM tests are made of. They get the same
+  # formatting, linting and type checking as everything above -- the top-level
+  # pyproject.toml depends on all three, so the devenv's virtualenv has what they
+  # import -- minus the two Poetry hooks, because their dependencies come from
+  # nixpkgs and there is no lockfile to check.
+  #
+  # nixos/tests/scripts is not a package at all: it is the testScripts that used to
+  # be strings inside .nix files, out here so that these hooks can reach them. See
+  # nixos/tests/scripts/driver.py.
+  pythonNixSubdirs = [
+    "nixos/console-mouse"
+    "nixos/installer"
+    "nixos/usb-ingest"
+    "nixos/tests/scripts"
+  ];
+
+  # Where the appliance's own pytest suites live, for `appliance-check`.
+  appliancePytestPaths = [
+    "nixos/console-mouse/tests"
+    "nixos/installer/tests"
+    "nixos/usb-ingest/tests"
   ];
 
   # JavaScript/TypeScript subdirectories
@@ -63,7 +88,7 @@ let
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
-    subdir:
+    { subdir, poetry }:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
       top_pyproject_toml = "${config.devenv.root}/pyproject.toml";
@@ -131,7 +156,7 @@ let
       };
 
       "poetry-check_${subdirName}" = {
-        enable = true;
+        enable = poetry;
         entry = createToolWrapper "poetry" subdir subdirName "check";
         files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
         types = [ "toml" ];
@@ -139,7 +164,7 @@ let
       };
 
       "poetry-lock_${subdirName}" = {
-        enable = true;
+        enable = poetry;
         entry = createToolWrapper "poetry" subdir subdirName "lock";
         files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
         types = [ "toml" ];
@@ -221,9 +246,23 @@ let
     };
 
   # Merge all hooks
-  pythonHooks = builtins.foldl' (
-    acc: subdir: acc // (createPythonHooksForSubdir subdir)
-  ) { } pythonSubdirs;
+  pythonHooks =
+    builtins.foldl' (
+      acc: subdir:
+      acc
+      // (createPythonHooksForSubdir {
+        inherit subdir;
+        poetry = true;
+      })
+    ) { } pythonSubdirs
+    // builtins.foldl' (
+      acc: subdir:
+      acc
+      // (createPythonHooksForSubdir {
+        inherit subdir;
+        poetry = false;
+      })
+    ) { } pythonNixSubdirs;
   jsHooks = builtins.foldl' (acc: subdir: acc // (createJsHooksForSubdir subdir)) { } jsSubdirs;
   helmHooks = builtins.foldl' (acc: subdir: acc // (createHelmHooksForSubdir subdir)) { } helmSubdirs;
 
@@ -1163,18 +1202,61 @@ in
     '';
   };
 
-  scripts.appliance-check = {
-    description = "Run the appliance checks that boot nothing: evaluation, bats, pytest";
+  scripts.appliance-pytest = {
+    description = "Run the appliance's own pytest suites (nixos/*/tests)";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # No PYTHONPATH: the top-level pyproject.toml depends on all three
+        # packages, so devenv's virtualenv already imports them by name. Run from
+        # the repository root so that pytest.ini applies -- above all
+        # `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
+        # One invocation, so the three suites share a session. Their module
+        # basenames are unique across all three for that reason: pytest imports
+        # them into one namespace.
+        python -m pytest ${lib.concatStringsSep " " appliancePytestPaths} "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-eval = {
+    description = "Instantiate the appliance image for every platform, building nothing";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}'
 
         # As appliance-test, and for the same reason.
-        ./cicd/check_appliance.sh \
+        ./cicd/appliance_eval.sh \
           --nixpkgs '${inputs.nixpkgs-stable}' \
           --nixos-hardware '${inputs.nixos-hardware}' \
           "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-check = {
+    description = "Run the appliance checks that boot nothing: pytest, then evaluation";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Both, whatever the first one does: a failing test suite and a module that
+        # no longer evaluates are different mistakes, and a run that stopped at the
+        # first would hide the second until the next pipeline.
+        failed=()
+
+        appliance-pytest || failed+=(pytest)
+        appliance-eval "''${@}" || failed+=(eval)
+
+        if [ "''${#failed[@]}" -gt 0 ]; then
+          echo >&2 "[!] appliance checks failed: ''${failed[*]}"
+          exit 1
+        fi
+        echo "[*] appliance checks passed: pytest, eval"
       )
     '';
   };
@@ -1188,9 +1270,11 @@ in
 
         # No pinned inputs to hand over: this one is plain bash on purpose, so
         # that it also runs on a box that is not running Loom yet -- a Spark on
-        # DGX OS, an EVO-X2 on whatever it shipped with. nixos/box.nix wraps the
-        # same script for the appliance, where it also knows what was declared.
-        ./cicd/platform_info.sh \
+        # DGX OS, an EVO-X2 on whatever it shipped with. It lives beside the
+        # appliance rather than in cicd/ because that box is where it belongs;
+        # nixos/box.nix wraps the very same file, where it also knows what was
+        # declared.
+        ./nixos/scripts/platform_info.sh \
           "''${@}"
       )
     '';

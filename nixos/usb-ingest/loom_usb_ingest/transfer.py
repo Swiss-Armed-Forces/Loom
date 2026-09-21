@@ -1,11 +1,11 @@
 """Getting the bytes into the intake bucket.
 
-`mc mirror` moves the data; this module is everything around it. Classification
-is deliberately NOT done here -- the crawler decides what is a loom archive and
-what is an ordinary file, from range reads on the object once it has landed
-(backend/crawler/crawler/archive_prescreen.py). That is why the appliance side
-can be a single mirror per volume with no per-file branching, no second endpoint
-and no multi-gigabyte upload through the API.
+`mc mirror` moves the data; this module is everything around it. Classification is
+deliberately NOT done here -- the crawler decides what is a loom archive and what is an
+ordinary file, from range reads on the object once it has landed
+(backend/crawler/crawler/archive_prescreen.py). That is why the appliance side can be a
+single mirror per volume with no per-file branching, no second endpoint and no multi-
+gigabyte upload through the API.
 """
 
 import base64
@@ -14,7 +14,7 @@ import logging
 import os
 import subprocess
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -45,8 +45,8 @@ def mc_env(config_dir: str) -> dict[str, str]:
     """Environment for every `mc` call.
 
     `MC_UPDATE=off` is policy rather than tuning, the same policy
-    `OPENCODE_DISABLE_MODELS_FETCH` states in console.nix: this box makes no
-    outbound connection it was not asked to make.
+    `OPENCODE_DISABLE_MODELS_FETCH` states in console.nix: this box makes no outbound
+    connection it was not asked to make.
     """
     env = dict(os.environ)
     env.update(
@@ -62,10 +62,10 @@ def mc_env(config_dir: str) -> dict[str, str]:
 def install_cluster_ca(config_dir: str, namespace: str, kubeconfig: str) -> bool:
     """Trust the cluster's self-signed certificate, rather than skipping checks.
 
-    Same approach and same two secrets as console.nix's loom-chat: which one
-    Traefik presents depends on how the chart was deployed, and a bundle costs
-    nothing. Read through the API rather than off the wire -- pulling the chain
-    from the server and then trusting it would verify nothing at all.
+    Same approach and same two secrets as console.nix's loom-chat: which one Traefik
+    presents depends on how the chart was deployed, and a bundle costs nothing. Read
+    through the API rather than off the wire -- pulling the chain from the server and
+    then trusting it would verify nothing at all.
     """
     certs_dir = os.path.join(config_dir, "certs", "CAs")
     os.makedirs(certs_dir, mode=0o700, exist_ok=True)
@@ -110,9 +110,9 @@ def install_cluster_ca(config_dir: str, namespace: str, kubeconfig: str) -> bool
 def wait_for_cluster(endpoint: str, config_dir: str, deadline_s: int) -> bool:
     """Block until the S3 endpoint answers.
 
-    A stick can be plugged in at any point, including while `loom.service` is
-    still bringing the stack up -- which takes a long time on this hardware. So
-    waiting is the normal case, not an error path.
+    A stick can be plugged in at any point, including while `loom.service` is still
+    bringing the stack up -- which takes a long time on this hardware. So waiting is the
+    normal case, not an error path.
     """
     env = mc_env(config_dir)
     started = time.monotonic()
@@ -152,13 +152,18 @@ def mirror(
     bucket: str,
     prefix: str,
     config_dir: str,
-    on_event=None,
+    on_event: Callable[[int, int], None] | None = None,
 ) -> TransferResult:
     """Mirror a mounted volume into the intake bucket under `prefix`.
 
     `mc mirror` skips objects that are already there with the same size, which is
     what makes re-plugging the same stick cheap and idempotent without this
     service keeping a state database of its own.
+
+    `on_event` is called with the running object and byte counts as each object
+    lands. It is what drives the console pane (`watch.py`), and it is a callback
+    rather than a return value because a full stick is minutes to hours: by the time
+    this function returns there is nothing left to report.
     """
     argv = [
         "mc",
@@ -205,9 +210,7 @@ def _stream_json(argv: list[str], env: dict[str, str]) -> Iterator[dict]:
         process.wait()
 
 
-def put_manifest(
-    manifest: dict, bucket: str, key: str, config_dir: str
-) -> None:
+def put_manifest(manifest: dict, bucket: str, key: str, config_dir: str) -> None:
     """Write the provenance record next to the data it describes."""
     env = mc_env(config_dir)
     payload = json.dumps(manifest, indent=2, sort_keys=True).encode()

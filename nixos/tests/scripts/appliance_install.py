@@ -1,0 +1,251 @@
+"""What the installer lays down on the internal disks.
+
+The installer image is deliberately not booted. It wants an NVMe the test framework
+cannot supply -- `target_disks` accepts nothing else, on purpose -- and a whole box
+closure to copy. What is worth testing is the layout, and the layout is reachable by
+calling the installer's own steps one at a time, which is why they are module-level
+functions taking a runner rather than methods on an object.
+
+`volume_group`, `root_volume` and `root_device` are passed in from default.nix, taken
+off the *appliance's* evaluated configuration rather than restated here. A test that
+spelled the path itself could agree with neither side and still pass.
+"""
+
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from driver import Machine, StartAll, Subtest
+
+
+class Storage(NamedTuple):
+    """The three names nixos/storage.nix gives the pool.
+
+    One argument rather than three, because they are one fact -- where the box's stage 1
+    will look for its root -- and because the .nix file that calls `run` interpolates
+    all three from the same evaluated configuration.
+    """
+
+    volume_group: str
+    root_volume: str
+    root_device: str
+
+
+# vda is the node's own root and is never named below.
+DISKS = ["/dev/vdb", "/dev/vdc"]
+
+
+class Installer:
+    """The installer package, driven one step at a time on the node.
+
+    Each call is a `python3 -c` on the guest with the environment the wrapper in
+    installer.nix would have set. The three storage names reach this test from the
+    appliance's own configuration by way of default.nix, so a rename in
+    nixos/storage.nix arrives here rather than leaving a literal somebody has to
+    remember to update.
+    """
+
+    def __init__(self, machine: "Machine", storage: Storage) -> None:
+        self.machine = machine
+        self.environment = " ".join(
+            [
+                "LOOM_EFI_ARCH=x64",
+                "LOOM_TAG=test",
+                "LOOM_PLATFORM=test",
+                "LOOM_AUTO_GRACE=1",
+                "LOOM_INSTALLER_BIN=/run/current-system/sw/bin",
+                f"LOOM_VG_NAME={storage.volume_group}",
+                f"LOOM_LV_NAME={storage.root_volume}",
+                f"LOOM_ROOT_DEVICE={storage.root_device}",
+            ]
+        )
+
+    def step(self, statement: str) -> str:
+        """Run one statement with the installer's modules imported."""
+        program = (
+            "from loom_installer import devices, install, storage, wipe;"
+            "from loom_installer.commands import Subprocess;"
+            "runner = Subprocess();"
+            f"{statement}"
+        )
+        return self.machine.succeed(
+            f"env {self.environment} python3 -c {_quote(program)}"
+        )
+
+
+def _quote(program: str) -> str:
+    """Single-quote a Python program for the guest's shell."""
+    return "'" + program.replace("'", "'\\''") + "'"
+
+
+def run(
+    installer: "Machine",
+    *,
+    start_all: "StartAll",
+    subtest: "Subtest",
+    storage: Storage,
+) -> None:
+    """The whole test, as the .nix file calls it."""
+    start_all()
+    installer.wait_for_unit("multi-user.target")
+
+    steps = Installer(installer, storage)
+    volume_group = storage.volume_group
+    root_device = storage.root_device
+
+    # The stick's key partition, as a plain file: the installer reads 4096 bytes of
+    # it exactly as systemd-cryptsetup will in stage 1, and cryptsetup does not care
+    # which kind of thing it was handed.
+    installer.succeed("dd if=/dev/urandom of=/tmp/key bs=4096 count=1 status=none")
+    installer.succeed(
+        "dd if=/dev/urandom of=/tmp/other-key bs=4096 count=1 status=none"
+    )
+
+    with subtest("every eligible disk joins one volume group"):
+        _pool_spans_every_disk(installer, steps, volume_group)
+
+    with subtest("the ESP lands on the first disk and only the first"):
+        _esp_is_on_the_first_disk(installer)
+
+    with subtest("the container is exactly where the box will look for it"):
+        _container_is_where_stage_one_looks(installer, steps, root_device)
+
+    with subtest("the recovery passphrase opens the same container"):
+        _recovery_passphrase_opens_the_container(
+            installer, steps, volume_group, root_device
+        )
+
+    with subtest("a stick recognises the box it installed, and only that box"):
+        _only_its_own_stick_claims_the_pool(installer, steps, root_device)
+
+    with subtest("the wipe still reaches the key material"):
+        _the_wipe_reaches_the_key_material(installer, steps, volume_group, root_device)
+
+    with subtest("a single-disk box gets the same layout"):
+        _one_disk_gets_the_same_layout(installer, steps, volume_group, root_device)
+
+
+def _pool_spans_every_disk(
+    installer: "Machine", steps: Installer, volume_group: str
+) -> None:
+    steps.step(f"install.partition(runner, {DISKS!r})")
+    steps.step(f"install.create_pool(runner, {len(DISKS)})")
+
+    # Both members, not just the first. A pool that silently forms over one disk and
+    # leaves the second unused looks, from the console, exactly like a working
+    # install.
+    pv_count = installer.succeed(f"vgs --noheadings -o pv_count {volume_group}").strip()
+    assert pv_count == str(len(DISKS)), f"volume group spans {pv_count} PVs"
+
+    pvs = installer.succeed("pvs --noheadings -o pv_name,vg_name")
+    for disk in DISKS:
+        assert disk in pvs, f"{disk} is not a physical volume:\n{pvs}"
+
+    # And the volume takes the whole group. Extents left behind would cost the
+    # operator disk space that nothing would ever report as missing.
+    free = installer.succeed(
+        f"vgs --noheadings --nosuffix --units b -o vg_free {volume_group}"
+    ).strip()
+    assert free == "0", f"{free} bytes left unallocated"
+
+
+def _esp_is_on_the_first_disk(installer: "Machine") -> None:
+    installer.succeed("test -b /dev/disk/by-partlabel/loom-esp")
+    esp_parent = installer.succeed(
+        "lsblk --noheadings --raw --paths --output PKNAME "
+        "/dev/disk/by-partlabel/loom-esp | head -1"
+    ).strip()
+    assert esp_parent == DISKS[0], f"ESP is on {esp_parent}, not {DISKS[0]}"
+
+
+def _container_is_where_stage_one_looks(
+    installer: "Machine", steps: Installer, root_device: str
+) -> None:
+    # The assertion this file exists for. `root_device` comes off the appliance's own
+    # configuration, so this is box-hardware.nix's stage-1 device and the key guard's
+    # device, not a string chosen here.
+    installer.succeed(f"test -b {root_device}")
+    steps.step("install.encrypt(runner, '/tmp/key')")
+    installer.succeed(f"cryptsetup isLuks {root_device}")
+    installer.succeed("test -b /dev/mapper/cryptroot")
+
+    # The filesystem goes on the mapping, not on a partition.
+    steps.step("install.make_filesystems(runner)")
+    fstype = installer.succeed(
+        "lsblk --noheadings --raw --output FSTYPE /dev/mapper/cryptroot"
+    ).strip()
+    assert fstype == "ext4", f"root filesystem is {fstype}"
+
+
+def _recovery_passphrase_opens_the_container(
+    installer: "Machine", steps: Installer, volume_group: str, root_device: str
+) -> None:
+    # Losing the stick must not mean losing the box. The keyslot is enrolled against
+    # the pooled container now, so one added to the wrong device would leave the
+    # passphrase on the login banner useless -- and nothing would say so until
+    # somebody needed it.
+    steps.step("install.mount_target(runner)")
+    passphrase = steps.step(
+        "print(install.enroll_recovery_passphrase(runner, '/tmp/key'))"
+    ).strip()
+    assert len(passphrase.split("-")) == 6, passphrase
+    installer.succeed("test -s /mnt/var/lib/loom/recovery-passphrase")
+    steps.step("install.unmount_target(runner)")
+
+    # `unmount_target` also deactivates the group, so the container has to be brought
+    # back before it can be opened -- which is itself worth asserting: an installer
+    # that left the pool active would leave the partition tables busy for whatever
+    # the operator picks next.
+    installer.fail(f"test -b {root_device}")
+    installer.succeed(f"vgchange --activate y {volume_group}")
+    installer.succeed(f"printf %s {passphrase} >/tmp/pass")
+    installer.succeed(
+        f"cryptsetup luksOpen --test-passphrase --key-file /tmp/pass {root_device}"
+    )
+
+
+def _only_its_own_stick_claims_the_pool(
+    installer: "Machine", steps: Installer, root_device: str
+) -> None:
+    # The guard that replaces the typed INSTALL word. It has to answer yes to the key
+    # that built this pool and no to any other, or an unattended install either
+    # destroys a working box or refuses to provision a new one.
+    claimed = steps.step(
+        "print(storage.pool_claimed_by_key(runner, '/tmp/key'))"
+    ).strip()
+    assert claimed == "True", claimed
+
+    foreign = steps.step(
+        "print(storage.pool_claimed_by_key(runner, '/tmp/other-key'))"
+    ).strip()
+    assert foreign == "False", foreign
+
+    # Looking must not leave the box changed.
+    installer.fail(f"test -b {root_device}")
+
+
+def _the_wipe_reaches_the_key_material(
+    installer: "Machine", steps: Installer, volume_group: str, root_device: str
+) -> None:
+    # The regression this guards: the container moved onto a logical volume, so
+    # `wipe_disk`'s per-partition sweep no longer finds it. With layer 1 skipped the
+    # wipe says nothing and falls through to layers that are slower and weaker -- a
+    # silent downgrade of the only step that matters.
+    steps.step("wipe.erase_pool_keys(runner)")
+    installer.fail(f"vgs {volume_group}")
+    installer.succeed(f"vgchange --activate y {volume_group} || true")
+    installer.fail(f"test -b {root_device}")
+
+
+def _one_disk_gets_the_same_layout(
+    installer: "Machine", steps: Installer, volume_group: str, root_device: str
+) -> None:
+    # One closure serves both, which is why the disks are pooled rather than a second
+    # image built for boxes with two slots. The device path must not depend on how
+    # many disks were found.
+    installer.succeed(f"sgdisk --zap-all {DISKS[1]}")
+    steps.step(f"install.partition(runner, [{DISKS[0]!r}])")
+    steps.step("install.create_pool(runner, 1)")
+
+    installer.succeed(f"test -b {root_device}")
+    pv_count = installer.succeed(f"vgs --noheadings -o pv_count {volume_group}").strip()
+    assert pv_count == "1", pv_count

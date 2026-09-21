@@ -30,9 +30,7 @@ def kernel_filesystems() -> frozenset[str]:
     """What /proc/filesystems reports, for the generic tier's support check."""
     try:
         with open("/proc/filesystems", "r", encoding="utf-8") as handle:
-            return frozenset(
-                line.split()[-1] for line in handle if line.strip()
-            )
+            return frozenset(line.split()[-1] for line in handle if line.strip())
     except OSError:
         return frozenset()
 
@@ -56,7 +54,9 @@ def set_block_read_only(device: str) -> bool:
     except (subprocess.SubprocessError, OSError) as error:
         # Not fatal. Some USB bridges reject the ioctl, and the mount options
         # still stand; say so rather than refusing to read the stick at all.
-        logger.warning("Could not set %s read-only at the block layer: %s", device, error)
+        logger.warning(
+            "Could not set %s read-only at the block layer: %s", device, error
+        )
         return False
 
 

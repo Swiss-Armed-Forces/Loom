@@ -1,4 +1,5 @@
 import pytest
+
 from loom_usb_ingest.filesystems import (
     BASE_OPTIONS,
     VolumePolicy,
@@ -34,11 +35,12 @@ def test_every_known_filesystem_is_mounted_read_only(fstype):
     ],
 )
 def test_journalled_filesystems_never_replay_their_journal(fstype, expected):
-    """`-o ro` alone still writes to a dirty volume. This is the actual guarantee.
+    """`-o ro` alone still writes to a dirty volume.
 
-    It is both an integrity property -- the media must not be modified by being
-    read -- and a practical one, since the same write fails outright once the
-    block device has been set read-only.
+    This is the actual guarantee.
+        It is both an integrity property -- the media must not be modified by being
+        read -- and a practical one, since the same write fails outright once the
+        block device has been set read-only.
     """
     assert expected in _plan(fstype).options
 

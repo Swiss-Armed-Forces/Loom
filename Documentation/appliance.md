@@ -374,6 +374,8 @@ happens on its own, and where you can still interrupt it.
 4. It partitions every eligible internal disk, pools them into one volume, creates the LUKS container from
     the stick's key, installs the appliance closure entirely offline, enrols a recovery passphrase, makes the
     internal disk the default boot entry, and selects **first-time setup** as the entry that disk boots.
+    Copying the closure is the long step — tens of gigabytes — and gets a progress bar with the copy's own
+    output scrolling above it, so a slow disk and a stuck install look different from across the room.
 5. **Write down the recovery passphrase it prints**, if you are there. It holds the screen for 30 seconds and
     then reboots on its own, so an install nobody comes back to still finishes. Nothing is lost if you miss
     it: the installed box shows the same passphrase on every console login.
@@ -522,8 +524,14 @@ has.
 
 Plug a USB stick, card reader or external drive into a running box and its contents are indexed. Nothing has
 to be typed: a udev rule starts `loom-usb-ingest@<device>.service`, which mounts every volume it finds,
-copies it into the `loom-intake` bucket and lets the ordinary crawler pick it up from there. Progress appears
-on the console, and `loom-usb-status` prints the last run.
+copies it into the `loom-intake` bucket and lets the ordinary crawler pick it up from there.
+`loom-usb-status` prints the last run.
+
+**Watch it on the console.** While a copy is running, the pod-list pane splits in half: `k9s` keeps the top,
+and the bottom shows a bar per device — the volume being copied, gigabytes moved, files uploaded. When a
+device is finished it says so and stays on screen, which is the signal that the stick can come out; when the
+last one has been unplugged the split is undone and `k9s` has the space back. Plug a second stick in while
+the first is still going and it gets a line of its own rather than a second pane.
 
 Read the [threat model](#threat-model) bullet about this before deploying a box where strangers can reach a
 port.

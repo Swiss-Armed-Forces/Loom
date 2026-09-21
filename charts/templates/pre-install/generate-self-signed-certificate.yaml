@@ -39,29 +39,8 @@ spec:
 
               create_self_signed_cert() {
                   if kubectl get secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}" &>/dev/null; then
-                      # Keep it only if it carries a subjectAltName. Certificates
-                      # minted before that extension was added are CN-only, and a
-                      # CN-only certificate is rejected outright by every modern
-                      # TLS client (see the openssl call below). Without this the
-                      # guard above would preserve the broken certificate for the
-                      # life of the cluster and the fix would never take effect on
-                      # anything but a fresh deployment.
-                      #
-                      # Grepping the output rather than checking the exit status:
-                      # `openssl x509 -ext` exits 0 whether or not the extension
-                      # is there, printing "No extensions in certificate" when it
-                      # is not.
-                      if kubectl get secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}" \
-                          -o jsonpath='{.data.tls\.crt}' \
-                          | base64 --decode \
-                          | openssl x509 -noout -ext subjectAltName 2>/dev/null \
-                          | grep -q "Subject Alternative Name"; then
-                          echo "[-] Certificate '${CERT_SECRET_NAME}' already exists in namespace"
-                          return
-                      fi
-
-                      echo "[*] Certificate '${CERT_SECRET_NAME}' has no subjectAltName; regenerating"
-                      kubectl delete secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}"
+                      echo "[-] Certificate '${CERT_SECRET_NAME}' already exists in namespace"
+                      return
                   fi
 
                   local common_name

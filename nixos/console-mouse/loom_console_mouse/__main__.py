@@ -1,4 +1,7 @@
-"""Entry point: `loom-console-mouse -- tmux ... attach-session ...`."""
+"""Entry point: `loom-console-mouse -- tmux ...
+
+attach-session ...`.
+"""
 
 import sys
 

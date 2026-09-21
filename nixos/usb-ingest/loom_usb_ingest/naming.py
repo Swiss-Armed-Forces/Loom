@@ -1,9 +1,9 @@
 """Turning a USB device into a stable, safe S3 prefix.
 
 The object key produced here *is* the path an operator sees in the frontend:
-`S3Crawler._download_object` builds the file's full name as
-`//{bucket}/{object key}`. So this is user-facing text, an Elasticsearch field
-and an S3 key all at once, and it has to survive being all three.
+`S3Crawler._download_object` builds the file's full name as `//{bucket}/{object key}`.
+So this is user-facing text, an Elasticsearch field and an S3 key all at once, and it
+has to survive being all three.
 """
 
 import hashlib
@@ -48,9 +48,9 @@ def sanitize_component(raw: str, fallback: str = UNKNOWN_NAME) -> str:
     """Reduce arbitrary device text to one safe path component.
 
     A suffix of the original's hash is appended whenever anything was changed or
-    truncated. Without it two different sticks -- `My Stick (1)` and
-    `My Stick [1]` -- would sanitize to the same component and silently share a
-    prefix, mixing two pieces of evidence into one folder.
+    truncated. Without it two different sticks -- `My Stick (1)` and `My Stick [1]` --
+    would sanitize to the same component and silently share a prefix, mixing two pieces
+    of evidence into one folder.
     """
     normalised = unicodedata.normalize("NFC", raw).strip()
     cleaned = _EDGES.sub("", _ALLOWED.sub("-", normalised))
@@ -67,10 +67,10 @@ def sanitize_component(raw: str, fallback: str = UNKNOWN_NAME) -> str:
 def derive_identity(properties: dict[str, str], size_bytes: int) -> StickIdentity:
     """Name and identify a stick from its udev properties.
 
-    The identifier falls through four sources because cheap sticks routinely
-    omit or duplicate a serial, and two unlabelled no-name sticks must not land
-    in the same prefix. The last resort hashes what little the device does
-    report, which is at least stable across re-insertions of the same one.
+    The identifier falls through four sources because cheap sticks routinely omit or
+    duplicate a serial, and two unlabelled no-name sticks must not land in the same
+    prefix. The last resort hashes what little the device does report, which is at least
+    stable across re-insertions of the same one.
     """
     raw_name = (
         properties.get("ID_FS_LABEL")
@@ -113,9 +113,9 @@ def volume_component(index: int, label: str | None) -> str:
 def object_key(prefix: str, relative_path: str) -> str:
     """Join an S3 prefix and an on-stick relative path.
 
-    Backslashes become separators because NTFS and FAT volumes authored on
-    Windows use them, and a key containing one would otherwise render as a single
-    flat filename in the frontend rather than as the directory tree it is.
+    Backslashes become separators because NTFS and FAT volumes authored on Windows use
+    them, and a key containing one would otherwise render as a single flat filename in
+    the frontend rather than as the directory tree it is.
     """
     cleaned = relative_path.replace("\\", "/").lstrip("/")
     parts = [part for part in cleaned.split("/") if part not in ("", ".", "..")]

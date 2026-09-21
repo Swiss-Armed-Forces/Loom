@@ -1,9 +1,9 @@
 """The wire format, which is a C struct and therefore a thing to get exactly right.
 
-There is no version negotiation on /dev/gpmctl and no framing: a client writes
-one `Gpm_Connect` and then reads fixed-size `Gpm_Event` records forever. A
-struct format string that is one byte out does not fail, it silently yields
-nonsense coordinates -- so the sizes are asserted rather than trusted.
+There is no version negotiation on /dev/gpmctl and no framing: a client writes one
+`Gpm_Connect` and then reads fixed-size `Gpm_Event` records forever. A struct format
+string that is one byte out does not fail, it silently yields nonsense coordinates -- so
+the sizes are asserted rather than trusted.
 """
 
 import struct
@@ -22,15 +22,15 @@ from loom_console_mouse.gpm import (
 
 
 def test_connect_struct_is_sixteen_bytes() -> None:
-    """unsigned short x4, then int x2, all naturally aligned."""
+    """Unsigned short x4, then int x2, all naturally aligned."""
     assert _CONNECT.size == 16
 
 
 def test_event_struct_is_twenty_eight_bytes() -> None:
     """2 chars, a short, 4 shorts, 3 ints (two of them enums), 2 shorts.
 
-    The comment in gpm.h -- "try to be a multiple of 4" -- is the author
-    telling us this layout is deliberate and unpadded.
+    The comment in gpm.h -- "try to be a multiple of 4" -- is the author telling us this
+    layout is deliberate and unpadded.
     """
     assert _EVENT.size == 28
 
@@ -84,7 +84,9 @@ class _FakeSocket:
     def __init__(self, chunks: list[bytes]) -> None:
         self._chunks = list(chunks)
 
-    def recv(self, size: int, /) -> bytes:
+    def recv(self, _size: int, /) -> bytes:
+        # The size is ignored on purpose: the chunking is the test's, which is what
+        # lets one exercise a record split across two reads.
         return self._chunks.pop(0) if self._chunks else b""
 
     def fileno(self) -> int:
@@ -101,13 +103,13 @@ def _packed(x: int, y: int) -> bytes:
 def test_a_split_record_is_held_over_to_the_next_read() -> None:
     """This is a SOCK_STREAM, so a short read is a fact of life, not a bug.
 
-    Dropping the tail of a partial struct would resynchronise the stream one
-    byte at a time and turn every subsequent event into garbage.
+    Dropping the tail of a partial struct would resynchronise the stream one byte at a
+    time and turn every subsequent event into garbage.
     """
     whole = _packed(40, 12)
     client = GpmClient(_FakeSocket([whole[:10], whole[10:]]))
 
-    assert client.read_events() == []  # nothing complete yet -- but not a close
+    assert not client.read_events()  # nothing complete yet -- but not a close
     events = client.read_events()
     assert len(events) == 1
     assert (events[0].x, events[0].y) == (40, 12)

@@ -1,8 +1,8 @@
 """Ingest one USB device into Loom.
 
-Started per device by a udev rule, through `loom-usb-ingest@<kname>.service`.
-See nixos/usb-ingest.nix for the wiring and Documentation/appliance.md for what
-this means for the box's threat model.
+Started per device by a udev rule, through `loom-usb-ingest@<kname>.service`. See
+nixos/usb-ingest.nix for the wiring and Documentation/appliance.md for what this means
+for the box's threat model.
 """
 
 import argparse
@@ -15,7 +15,17 @@ import sys
 import time
 from typing import NamedTuple
 
-from loom_usb_ingest import devices, filesystems, mounts, naming, report, transfer
+from loom_usb_ingest import (
+    devices,
+    filesystems,
+    mounts,
+    naming,
+    pane,
+    progress,
+    report,
+    transfer,
+    watch,
+)
 
 logger = logging.getLogger("loom-usb-ingest")
 
@@ -35,7 +45,12 @@ MANIFEST_NAME = "_loom-usb.json"
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="loom-usb-ingest")
-    parser.add_argument("device", help="whole-disk device node, e.g. /dev/sdb")
+    # Optional, because two of the three modes below are not about one device: the
+    # watcher draws every device there is, and neither it nor a release needs one
+    # named on the command line.
+    parser.add_argument(
+        "device", nargs="?", help="whole-disk device node, e.g. /dev/sdb"
+    )
     parser.add_argument("--bucket", default="loom-intake")
     parser.add_argument("--endpoint", default="https://s3.loom")
     parser.add_argument("--prefix", default="usb-crawled")
@@ -46,6 +61,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--key-guard-state-dir", default="/run/loom/key-guard")
     parser.add_argument("--console-socket", default="/run/loom/tmux.sock")
     parser.add_argument(
+        "--progress-dir",
+        default="/run/loom/usb-progress",
+        help="where per-device progress records are published for the console pane",
+    )
+    parser.add_argument(
         "--owner",
         default="loom",
         help="user the mounted files are presented as owned by",
@@ -54,6 +74,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         help="print the volumes, mount recipes and object keys, and change nothing",
+    )
+    parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="draw the progress of every ingest in flight; this is what the console"
+        " pane runs, and it exits when the last device is gone",
+    )
+    parser.add_argument(
+        "--release",
+        action="store_true",
+        help="forget a device that has been unplugged; the unit's ExecStopPost",
     )
     return parser.parse_args(argv)
 
@@ -82,8 +113,8 @@ class _Owner(NamedTuple):
 def _resolve_owner(name: str) -> _Owner:
     """Look the operator account up rather than hardcoding its numbers.
 
-    box.nix declares `loom` as an ordinary user without pinning a uid, so the
-    value is only known on the running box.
+    box.nix declares `loom` as an ordinary user without pinning a uid, so the value is
+    only known on the running box.
     """
     try:
         entry = pwd.getpwnam(name)
@@ -119,7 +150,9 @@ def _volume_prefix(
     return f"{component}/{naming.volume_component(index, volume.label)}"
 
 
-def describe(disk: devices.Disk, identity: naming.StickIdentity, supported) -> list[dict]:
+def describe(
+    disk: devices.Disk, identity: naming.StickIdentity, supported
+) -> list[dict]:
     """The per-volume plan, used by --dry-run and by the manifest alike."""
     rows = []
     for index, volume in enumerate(disk.volumes, start=1):
@@ -134,9 +167,7 @@ def describe(disk: devices.Disk, identity: naming.StickIdentity, supported) -> l
                 "mount_options": plan.option_string,
                 "driver": plan.helper or plan.fstype or "auto",
                 "reason": plan.reason,
-                "prefix": _volume_prefix(
-                    identity, index, volume, len(disk.volumes)
-                ),
+                "prefix": _volume_prefix(identity, index, volume, len(disk.volumes)),
             }
         )
     return rows
@@ -179,6 +210,17 @@ def run(args: argparse.Namespace) -> int:
         args.console_socket,
     )
 
+    # Published, and the pane opened, before anything is copied -- the wait for the
+    # cluster below is often the longest part of an ingest, and "waiting for Loom to
+    # answer" is exactly what somebody standing at the box needs to be told.
+    reporter = progress.Reporter(
+        args.progress_dir, disk.kernel_name, disk.path, identity.prefix_component
+    )
+    pane.open_pane(
+        args.console_socket,
+        pane.watcher_command(args.progress_dir, args.console_socket),
+    )
+
     config_dir = os.path.join(args.state_dir, "mc")
     os.makedirs(config_dir, mode=0o700, exist_ok=True)
     transfer.install_cluster_ca(config_dir, args.namespace, args.kubeconfig)
@@ -187,6 +229,7 @@ def run(args: argparse.Namespace) -> int:
         transfer.configure_alias(args.endpoint, config_dir)
     except transfer.TransferError as error:
         logger.error("%s", error)
+        reporter.finish(0, 1)
         return 1
 
     if not transfer.wait_for_cluster(
@@ -196,6 +239,7 @@ def run(args: argparse.Namespace) -> int:
             f"[loom] {args.endpoint} never answered; {disk.path} was not ingested.",
             args.console_socket,
         )
+        reporter.finish(0, 1)
         return 1
 
     report.warn_if_short_on_space(
@@ -203,12 +247,12 @@ def run(args: argparse.Namespace) -> int:
     )
 
     return _ingest_volumes(
-        args, disk, identity, plan_rows, supported, config_dir, guard, owner
+        args, disk, identity, plan_rows, supported, config_dir, guard, owner, reporter
     )
 
 
 def _ingest_volumes(
-    args, disk, identity, plan_rows, supported, config_dir, guard, owner
+    args, disk, identity, plan_rows, supported, config_dir, guard, owner, reporter
 ) -> int:
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     total_objects = 0
@@ -229,12 +273,22 @@ def _ingest_volumes(
             _annotate(plan_rows, volume.path, "skipped", mounted.reason)
             continue
 
+        # Measured once the volume is mounted and before a byte moves: this is what
+        # the bar in the console pane is a fraction of.
+        reporter.start_volume(
+            volume.path,
+            index,
+            len(disk.volumes),
+            progress.volume_bytes(mounted.mountpoint),
+        )
+
         try:
             result = transfer.mirror(
                 mounted.mountpoint,
                 args.bucket,
                 f"{args.prefix}/{prefix}",
                 config_dir,
+                on_event=reporter.advance,
             )
         finally:
             mounts.unmount(mounted.mountpoint)
@@ -279,6 +333,9 @@ def _ingest_volumes(
     )
     report.write_state(args.state_dir, manifest)
 
+    # The pane keeps saying this until the stick is actually unplugged, which is the
+    # half `announce` alone could never do: a line scrolls, a pane does not.
+    reporter.finish(total_objects, total_failures)
     report.announce(
         f"[loom] {disk.path} done: {total_objects} files, "
         f"{total_bytes / (1024 ** 3):.1f} GiB, {total_failures} failures. "
@@ -308,9 +365,37 @@ def _print_dry_run(disk, identity, rows) -> None:
             print(f"    ({row['reason']})")
 
 
+def release(args: argparse.Namespace) -> int:
+    """A device was unplugged: take its line out of the console pane.
+
+    Run from the unit's ExecStopPost, which fires whenever systemd stops the unit --
+    including when the device itself disappeared, which is the case this is for.
+
+    The pane is closed here only as a backstop. The watcher ends itself when the last
+    record is gone, and a pane whose command exits is closed by tmux; this covers the
+    case where the watcher is not running at all, so that a stale split cannot outlive
+    every stick that justified it.
+    """
+    if args.device:
+        progress.withdraw(args.progress_dir, os.path.basename(args.device))
+    if not progress.read_all(args.progress_dir):
+        pane.close_pane(args.console_socket)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    if args.watch:
+        return watch.watch(args.progress_dir)
+
+    if args.release:
+        return release(args)
+
+    if not args.device:
+        logger.error("No device given. Pass one, or --watch, or --release.")
+        return 2
 
     if args.dry_run:
         return run(args)

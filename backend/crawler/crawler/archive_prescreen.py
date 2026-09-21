@@ -8,8 +8,8 @@ storage needs the same trick (`LazyBytesService.load_seekable`), but here it is 
 straight at the intake bucket, where there is no `LazyBytes` to go through.
 
 The classification itself is `common.archive.archive_detection`, the very function the
-worker's `detect_loom_archive` task uses, so the two can never disagree about what a
-loom archive is.
+worker's archive router (`worker.create_archive.index_archive`) uses, so the two can
+never disagree about what a loom archive is.
 """
 
 import io

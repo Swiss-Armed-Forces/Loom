@@ -95,20 +95,20 @@ def test_hide_clears_rather_than_redrawing() -> None:
 
 
 def test_hide_is_a_no_op_when_nothing_is_drawn() -> None:
-    """Otherwise every write before the first mouse movement would clear a
-    selection the operator might have made on the console by hand."""
+    """Otherwise every write before the first mouse movement would clear a selection the
+    operator might have made on the console by hand."""
     pointer = _RecordingPointer()
     pointer.hide()
-    assert pointer.calls == []
+    assert not pointer.calls
 
 
 def test_a_write_is_bracketed_clear_then_show() -> None:
     """The ordering that finding this bug came down to.
 
-    `complement_pos()` caches the cell under the pointer and writes that cache
-    back when the pointer next moves. Redrawing *after* the write -- rather
-    than clearing before it -- leaves the cache holding the cell as it was
-    beforehand, and the next mouse movement paints it over live output.
+    `complement_pos()` caches the cell under the pointer and writes that cache back when
+    the pointer next moves. Redrawing *after* the write -- rather than clearing before
+    it -- leaves the cache holding the cell as it was beforehand, and the next mouse
+    movement paints it over live output.
     """
     pointer = _RecordingPointer()
     pointer.move(40, 12)
@@ -124,4 +124,4 @@ def test_a_write_is_bracketed_clear_then_show() -> None:
 def test_show_before_any_position_is_known_draws_nothing() -> None:
     pointer = _RecordingPointer()
     pointer.show()
-    assert pointer.calls == []
+    assert not pointer.calls

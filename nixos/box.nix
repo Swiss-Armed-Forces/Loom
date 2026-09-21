@@ -115,9 +115,9 @@ let
   # Sits beside `loom-info` and does an unrelated job: that one draws the banner
   # the login screen shows, this one reports the hardware underneath it.
   #
-  # The script is cicd/platform_info.sh, shared verbatim with the devenv command
-  # of the same name, because the box it most needs to run on is one that is not
-  # running Loom yet -- see the header there. What the appliance adds is the
+  # The script is scripts/platform_info.sh, shared verbatim with the devenv
+  # command of the same name, because the box it most needs to run on is one
+  # that is not running Loom yet -- see the header there. What the appliance adds is the
   # declared half: the platform's own claims, so the report can say where the
   # hardware disagrees with the image rather than leaving somebody to compare two
   # screens by eye. Passed as environment variables through the same `--set`
@@ -163,7 +163,7 @@ let
         )
       }
 
-      ${builtins.readFile ../cicd/platform_info.sh}
+      ${builtins.readFile ./scripts/platform_info.sh}
     '';
   };
 

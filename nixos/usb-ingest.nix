@@ -70,6 +70,8 @@ let
     pyproject = true;
 
     build-system = [ pkgs.python3Packages.setuptools ];
+    # The console pane the copy is drawn in (loom_usb_ingest/watch.py).
+    dependencies = [ pkgs.python3Packages.rich ];
     nativeCheckInputs = [ pkgs.python3Packages.pytest ];
 
     # The pure logic -- the name sanitiser, the filesystem table and the
@@ -77,7 +79,10 @@ let
     # in it fails the build in seconds instead of at boot.
     checkPhase = ''
       runHook preCheck
-      PYTHONPATH=$PWD pytest tests -q
+      # Appended rather than assigned: an assignment would drop the paths the
+      # python setup hook exported for this package's own dependencies, and the
+      # suite would fail to import them.
+      PYTHONPATH=$PWD''${PYTHONPATH:+:$PYTHONPATH} pytest tests -q
       runHook postCheck
     '';
 
@@ -98,6 +103,7 @@ let
     "--state-dir ${lib.escapeShellArg cfg.stateDir}"
     "--key-guard-state-dir ${lib.escapeShellArg config.loom.keyGuard.stateDir}"
     "--console-socket ${lib.escapeShellArg config.loom.consoleSocket}"
+    "--progress-dir ${lib.escapeShellArg cfg.progressDir}"
     "--owner ${lib.escapeShellArg loomUser}"
   ];
 
@@ -188,6 +194,20 @@ in
       description = "Where the lock, the mc configuration and state.json live.";
     };
 
+    progressDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/run/loom/usb-progress";
+      internal = true;
+      description = ''
+        Where the copy publishes what it is doing, for the console pane.
+
+        Deliberately not under `stateDir`: that is 0700 root, and the pane is drawn
+        by a process the operator's tmux server spawns, which therefore runs as the
+        operator. What is in here is byte counts and device paths -- see
+        loom_usb_ingest/progress.py.
+      '';
+    };
+
     kubeconfig = lib.mkOption {
       type = lib.types.str;
       default = "/home/${loomUser}/.kube/config";
@@ -234,6 +254,8 @@ in
     systemd.tmpfiles.rules = [
       "d ${cfg.mountRoot} 0700 root root -"
       "d ${cfg.stateDir} 0700 root root -"
+      # Readable by the operator, unlike the two above: see `progressDir`.
+      "d ${cfg.progressDir} 0755 root root -"
     ];
 
     # Whole disks, not partitions. The service enumerates volumes itself, which
@@ -263,9 +285,13 @@ in
         ExecStart = "${lib.getExe loom-usb-ingest} ${ingestArgs} /dev/%i";
 
         # Unmount whatever this device left behind, including when the operator
-        # pulled it mid-copy. Unlike the ExecStopPost case key-guard.nix warns
-        # about, firing this on an ordinary shutdown is harmless.
-        ExecStopPost = "-${pkgs.util-linux}/bin/umount --recursive --lazy ${cfg.mountRoot}/%i";
+        # pulled it mid-copy, and take its line out of the console pane. Unlike the
+        # ExecStopPost case key-guard.nix warns about, firing these on an ordinary
+        # shutdown is harmless.
+        ExecStopPost = [
+          "-${pkgs.util-linux}/bin/umount --recursive --lazy ${cfg.mountRoot}/%i"
+          "-${lib.getExe loom-usb-ingest} ${ingestArgs} --release /dev/%i"
+        ];
 
         # A 2 TB drive is a long copy, and so is waiting for the cluster to come
         # up. Same stance modes.nix takes for loom.service.

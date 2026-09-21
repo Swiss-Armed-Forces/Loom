@@ -25,7 +25,7 @@
 #              tests/appliance-install.nix says outright that the image "is
 #              deliberately not booted. It wants an NVMe the test framework
 #              cannot supply". qemu can supply one -- `target_disks`
-#              (installer-scripts/common.sh) wants /dev/nvmeXn1, non-removable
+#              (installer/loom_installer/devices.py) wants /dev/nvmeXn1, non-removable
 #              and not the boot disk, and `-device nvme` plus the stick on
 #              usb-storage satisfies all three.
 #
@@ -96,7 +96,7 @@ CORES=4
 # second unused looks, from the console, exactly like a working install
 # (tests/appliance-install.nix).
 #
-# 200 GB each because `check_pool_size` (installer-scripts/install.sh) wants 250
+# 200 GB each because `check_pool_size` (installer/loom_installer/install.py) wants 250
 # GB across the pool and refuses to install below it. It costs nothing: a qcow2
 # takes what the guest writes, which for a full install is a few gigabytes.
 DISK_COUNT=2
@@ -510,8 +510,8 @@ prepare_firmware(){
     fi
 
     # A writable copy per state directory, and the reason the rig can test
-    # anything about booting at all: `fix_boot_order` (installer-scripts's
-    # install.sh) writes a `Loom appliance` entry into EFI variables, and a
+    # anything about booting at all: `fix_boot_order` (the installer's
+    # install.py) writes a `Loom appliance` entry into EFI variables, and a
     # firmware whose variables were thrown away between runs would lose it
     # every time.
     FIRMWARE_VARS="${STATE_DIR}/efi-vars.fd"

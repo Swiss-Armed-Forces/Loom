@@ -106,7 +106,7 @@ in
   # the bootloader builder again at the end of first-time setup, and this option
   # is what puts `--no-variables` on the `bootctl` calls it makes -- so that run
   # cannot disturb the `Loom appliance` NVRAM entry, or the boot order, that
-  # `fix_boot_order` (installer-scripts/install.sh) set at install time.
+  # `fix_boot_order` (installer/loom_installer/install.py) set at install time.
   boot.loader.efi.canTouchEfiVariables = false;
   # Generous on purpose, though no longer for the reason it started as.
   #

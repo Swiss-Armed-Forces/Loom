@@ -163,7 +163,7 @@ let
       # only if it hashes to what was recorded. That is also what makes
       # /dev/disk/by-partlabel safe to consult here at all: it is not unique,
       # and with a second Loom stick attached it resolves to whichever one udev
-      # linked last (installer-scripts/common.sh).
+      # linked last (installer/loom_installer/constants.py).
       key_present() {
           local expected pinned resolved node fingerprint
           expected="$(cat "''${FINGERPRINT_FILE}" 2>/dev/null)" || return 1
