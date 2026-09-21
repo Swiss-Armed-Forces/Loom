@@ -266,6 +266,37 @@ let
         poetry = false;
       })
     ) { } pythonNixSubdirs;
+  # The root project cannot go through createPythonHooksForSubdir: `subdir = "."`
+  # renders `files = "^./.*\.py$"`, where the dot is a regex wildcard, so the
+  # pattern would claim every Python file in the repository. Its lockfile check is
+  # spelled out here instead.
+  #
+  # integrationtest is checked alongside it, because it takes the root project as
+  # a path dependency (`loom-overarching-dev = {path = "../"}`). A change to the
+  # root manifest therefore stales two lockfiles, and its own hooks do not fire on
+  # a file outside its directory -- which is how both went stale at once when
+  # nixos/ready was added to the root pyproject.toml and neither was regenerated.
+  #
+  # `poetry check` reports a lockfile that no longer matches its manifest, so this
+  # fails the commit and points at `poetry-lock`; it deliberately does not
+  # regenerate anything itself, because the fix spans both projects.
+  rootPoetryHooks = {
+    poetry-check_root = {
+      enable = true;
+      entry = builtins.toString (
+        pkgs.writeShellScript "poetry-check-root" ''
+          set -euo pipefail
+          for dir in '${config.devenv.root}' '${config.devenv.root}/integrationtest'; do
+            cd "''${dir}"
+            poetry check
+          done
+        ''
+      );
+      files = "^(pyproject\\.toml|poetry\\.lock)$";
+      pass_filenames = false;
+    };
+  };
+
   jsHooks = builtins.foldl' (acc: subdir: acc // (createJsHooksForSubdir subdir)) { } jsSubdirs;
   helmHooks = builtins.foldl' (acc: subdir: acc // (createHelmHooksForSubdir subdir)) { } helmSubdirs;
 
@@ -712,6 +743,7 @@ in
     };
   }
   // pythonHooks
+  // rootPoetryHooks
   // jsHooks
   // helmHooks;
 

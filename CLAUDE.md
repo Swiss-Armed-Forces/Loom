@@ -406,6 +406,12 @@ dependencies. This enables IDE tooling (Pylance) to see across packages.
 Each backend package has its own `pyproject.toml` and `poetry.lock`. After changing `common` dependencies,
 you **must** run `poetry-lock` to update all lockfiles.
 
+Editing the root `pyproject.toml` stales **two** lockfiles, not one: `integrationtest` takes the root
+project as a path dependency (`loom-overarching-dev = {path = "../"}`), so its lock carries the root
+manifest too. The `poetry-check_root` git hook checks both and fails the commit if either has drifted —
+`poetry-lock` is the fix. A stale lock is not cosmetic: `poetry install` refuses to run against one, so
+committing it breaks `devenv` for everyone until it is regenerated.
+
 ### File Processing Pipeline
 
 1. Files uploaded to SeaweedFS bucket (via S3 API)
