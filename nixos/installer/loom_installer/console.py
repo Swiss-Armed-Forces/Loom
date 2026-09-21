@@ -114,20 +114,44 @@ class Ui:
         Never anywhere but a VT: console_codes(4) warns that xterm hangs on this
         sequence until somebody presses return, and this program is also run by hand
         from a shell that may be one.
-        """
-        if self.interactive and _on_virtual_terminal(self.out.file):
-            self.out.file.write(f"\033]P3{AMBER_RGB}\033]PB{AMBER_RGB}")
-            self.out.file.flush()
 
-        # Written to the file descriptor by `loom-eyes` itself, which is why the
-        # stream is flushed first: the art is UTF-8 half blocks and this console is
-        # an ASCII stream, so it must not go through it.
+        The colour itself is a *state left on the terminal* rather than anything
+        rich renders. `loom-eyes` (branding.nix) prints the art uncoloured and
+        writes to this descriptor as a subprocess, precisely so that the caller --
+        which is the only thing that knows what console it is on -- decides. So the
+        pair is written raw around the call, and selecting index 3 is what makes the
+        palette redefinition above visible at all: without it the eyes come out in
+        whatever the console's default foreground is.
+        """
+        if not self.interactive:
+            self._draw_eyes()
+            return
+
+        if _on_virtual_terminal(self.out.file):
+            self.out.file.write(f"\033]P3{AMBER_RGB}\033]PB{AMBER_RGB}")
+
+        # Bold as well as yellow, because bold is what promotes index 3 to index 11
+        # -- both redefined above -- and what the appliance's own login banner
+        # (box.nix) draws the same pair in.
+        self.out.file.write("\033[1;33m")
+        self._draw_eyes()
+        self.out.file.write("\033[0m")
+        self.out.file.flush()
+
+    def _draw_eyes(self) -> None:
+        """Run `loom-eyes`, which writes to this descriptor itself.
+
+        The stream is flushed first so that what rich has buffered cannot land
+        after the art: the two write to the same descriptor but through different
+        buffers. Going through rich instead is not an option -- the art is UTF-8
+        half blocks and this console is an ASCII stream (see the module docstring).
+        """
         self.out.file.flush()
         try:
             subprocess.run(["loom-eyes"], check=False, timeout=10)
         except (OSError, subprocess.SubprocessError):
             # A stick whose branding failed to build is still a working installer.
-            self.out.print("LOOM", style="loom.brand")
+            self.out.file.write("  LOOM\n")
 
     def rule(self) -> None:
         self.out.print("=" * min(self.out.width, MAX_WIDTH), style="loom.quiet")
