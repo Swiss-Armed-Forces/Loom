@@ -229,13 +229,24 @@ def make_filesystems(runner: CommandRunner, ui: Ui | None = None) -> None:
 
 def mount_target(runner: CommandRunner) -> None:
     """The live root is a tmpfs built from nothing, so /mnt does not exist until we
-    create it -- unlike on an installed system, where it always does."""
+    create it -- unlike on an installed system, where it always does.
+
+    The ESP is mounted with the same `umask=0077` box-hardware.nix gives it, because
+    vfat has no permissions on disk and synthesises every mode from the mount options.
+    nixos-install's bootloader step writes /boot/loader/random-seed through this mount,
+    and bootctl warns that the seed is world accessible when the mount it lands on is
+    0022. Nothing is left insecure without this -- the installed box remounts the same
+    partition at 0077 -- but the warning is the last thing an operator sees at the end
+    of an install, and it should not be there.
+    """
     os.makedirs(constants.MOUNT, exist_ok=True)
     runner.check(["mount", f"/dev/mapper/{constants.CRYPT_MAPPING}", constants.MOUNT])
     os.makedirs(f"{constants.MOUNT}/boot", exist_ok=True)
     runner.check(
         [
             "mount",
+            "-o",
+            constants.ESP_MOUNT_OPTIONS,
             f"{constants.BY_PARTLABEL}/{constants.ESP_LABEL}",
             f"{constants.MOUNT}/boot",
         ]

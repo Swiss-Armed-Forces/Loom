@@ -21,6 +21,12 @@ KEY_LABEL: Final = "loom-key"
 ESP_LABEL: Final = "loom-esp"
 PV_LABEL_PREFIX: Final = "loom-pv"
 
+# Kept identical to `fileSystems."/boot".options` in box-hardware.nix. vfat carries no
+# permissions on disk, so the ESP is only as private as whatever mounted it -- and the
+# installer mounts the target ESP itself, long before the installed configuration has
+# any say. See mount_target().
+ESP_MOUNT_OPTIONS: Final = "umask=0077"
+
 BY_PARTLABEL: Final = "/dev/disk/by-partlabel"
 KEY_DEVICE: Final = f"{BY_PARTLABEL}/{KEY_LABEL}"
 

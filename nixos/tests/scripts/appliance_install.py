@@ -109,6 +109,9 @@ def run(
     with subtest("the container is exactly where the box will look for it"):
         _container_is_where_stage_one_looks(installer, steps, root_device)
 
+    with subtest("the target ESP is private while the installer writes it"):
+        _the_target_esp_is_not_world_readable(installer, steps)
+
     with subtest("the recovery passphrase opens the same container"):
         _recovery_passphrase_opens_the_container(
             installer, steps, volume_group, root_device
@@ -176,6 +179,34 @@ def _container_is_where_stage_one_looks(
     assert fstype == "ext4", f"root filesystem is {fstype}"
 
 
+def _the_target_esp_is_not_world_readable(
+    installer: "Machine", steps: Installer
+) -> None:
+    # vfat has no permissions on disk: every mode comes from the mount options, so the
+    # ESP is only as private as whoever mounted it. nixos-install writes
+    # /boot/loader/random-seed through this mount, and bootctl warns that the seed is
+    # world accessible when it is not 0077 -- the last thing an operator sees at the
+    # end of an install. Asserted against a real vfat mount rather than the argv,
+    # because it is the resulting mode that the warning is about.
+    #
+    # This is also the mount the two subtests below use. It is left in place for them.
+    steps.step("install.mount_target(runner)")
+
+    # `umask` is an argument to the driver rather than a stored option: vfat splits it
+    # into the file and directory masks and reports only those back, so this is what
+    # `umask=0077` looks like once it has been accepted.
+    options = installer.succeed(
+        "findmnt --noheadings --output OPTIONS --target /mnt/boot"
+    ).strip()
+    for mask in ("fmask=0077", "dmask=0077"):
+        assert mask in options, f"/mnt/boot is mounted {options}"
+
+    installer.succeed("touch /mnt/boot/seed-probe")
+    mode = installer.succeed("stat -c %a /mnt/boot/seed-probe").strip()
+    installer.succeed("rm /mnt/boot/seed-probe")
+    assert mode == "700", f"a file on the target ESP is mode {mode}"
+
+
 def _recovery_passphrase_opens_the_container(
     installer: "Machine", steps: Installer, volume_group: str, root_device: str
 ) -> None:
@@ -183,7 +214,6 @@ def _recovery_passphrase_opens_the_container(
     # the pooled container now, so one added to the wrong device would leave the
     # passphrase on the login banner useless -- and nothing would say so until
     # somebody needed it.
-    steps.step("install.mount_target(runner)")
     passphrase = steps.step(
         "print(install.enroll_recovery_passphrase(runner, '/tmp/key'))"
     ).strip()
