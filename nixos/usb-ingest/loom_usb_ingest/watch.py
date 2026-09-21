@@ -8,6 +8,12 @@ It ends itself when the last record is gone, which is what reverts the split: a 
 whose command exits is closed by tmux, so "the operator unplugged the last stick" and
 "k9s gets its space back" are the same event rather than two that have to be kept in
 step.
+
+A record is gone when the ingest withdrew it OR when the device it describes is no
+longer there -- the second is a backstop for the first, and the reason the pane cannot
+be left split across a missed udev event. Note that neither of those is "the copy
+finished": that is the moment this pane exists to show, and it is the one moment it must
+not disappear at. See `release` in __main__.py.
 """
 
 import time
@@ -18,13 +24,14 @@ from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
-from loom_usb_ingest.progress import DeviceProgress, Stage, read_all
+from loom_usb_ingest.progress import DeviceProgress, Stage, device_present, read_all
 
 REFRESH_INTERVAL_S = 1.0
 
-# How long the pane stays after the last stick is unplugged. Not zero: a stick pulled
-# the moment its copy finishes would otherwise take the "safe to remove" line off the
-# screen before it had been read.
+# How long the pane stays after the last device is gone. By then the stick is out of
+# the operator's hand, so this is not reading time -- it is slack, so that a record
+# withdrawn a moment before the pane is killed from outside does not leave a flash of
+# an empty pane behind.
 LINGER_S = 3.0
 
 GIBIBYTE = 1024**3
@@ -39,6 +46,7 @@ STAGE_STYLE = {
     Stage.COPYING: "bold yellow",
     Stage.DONE: "bold green",
     Stage.FAILED: "bold red",
+    Stage.INTERRUPTED: "bold red",
 }
 
 
@@ -68,6 +76,11 @@ def render(records: list[DeviceProgress]) -> RenderableType:
             " is out.",
             style="dim",
         )
+    elif any(record.stage is Stage.COPYING for record in records):
+        hint = Text(
+            "Leave the stick in until its row says so.",
+            style="dim",
+        )
 
     return Group(table, hint)
 
@@ -79,7 +92,7 @@ def _bar(record: DeviceProgress) -> ProgressBar:
     would not say how much is on it -- see `progress.volume_bytes`.
     """
     if record.finished:
-        colour = "red" if record.stage is Stage.FAILED else "green"
+        colour = "green" if record.stage is Stage.DONE else "red"
         return ProgressBar(
             total=1,
             completed=1,
@@ -99,7 +112,10 @@ def _bar(record: DeviceProgress) -> ProgressBar:
 
 
 def _counts(record: DeviceProgress) -> str:
-    if record.counts.total:
+    # A finished device is reported as one figure rather than as a fraction: what
+    # `finish` leaves behind is the whole device's total, so "12.3/12.3 GiB" would be
+    # the same number written twice -- and `total` is per volume in any case.
+    if record.counts.total and not record.finished:
         return (
             f"{record.counts.copied / GIBIBYTE:5.1f}/{record.counts.total / GIBIBYTE:.1f} GiB"
             f"  {record.counts.objects} files"
@@ -118,7 +134,9 @@ def _status(record: DeviceProgress) -> Text:
         return Text(f"copying {record.volume.path}{where}", style=style)
     if record.stage is Stage.FAILED:
         return Text(f"{record.counts.failures} failed -- safe to remove", style=style)
-    return Text("done -- safe to remove", style=style)
+    if record.stage is Stage.INTERRUPTED:
+        return Text("stopped before it finished -- safe to remove", style=style)
+    return Text("DONE -- safe to remove", style=style)
 
 
 def watch(progress_dir: str, console: Console | None = None) -> int:
@@ -128,7 +146,9 @@ def watch(progress_dir: str, console: Console | None = None) -> int:
 
     with Live(console=console, refresh_per_second=4, transient=False) as live:
         while True:
-            records = read_all(progress_dir)
+            records = [
+                record for record in read_all(progress_dir) if device_present(record)
+            ]
             live.update(render(records))
 
             if records:

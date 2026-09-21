@@ -529,9 +529,18 @@ copies it into the `loom-intake` bucket and lets the ordinary crawler pick it up
 
 **Watch it on the console.** While a copy is running, the pod-list pane splits in half: `k9s` keeps the top,
 and the bottom shows a bar per device — the volume being copied, gigabytes moved, files uploaded. When a
-device is finished it says so and stays on screen, which is the signal that the stick can come out; when the
-last one has been unplugged the split is undone and `k9s` has the space back. Plug a second stick in while
+device is finished its row turns green and says `DONE — safe to remove`, with what the whole stick moved
+beside it, and **it stays there until that stick is unplugged** — that row is the signal to pull it. Only
+when the last device is out is the split undone and `k9s` given the space back. Plug a second stick in while
 the first is still going and it gets a line of its own rather than a second pane.
+
+A row that says `stopped before it finished` is a copy whose service died or was stopped with the stick
+still in: nothing was pulled early, but nothing is complete either. `journalctl --unit
+loom-usb-ingest@<device>` has the reason.
+
+Milestones are also announced in the tmux status bar — ingest started, each volume uploaded, the box short
+on disk — and to `wall`, which reaches any console somebody has logged into. Those lines scroll away; the
+pane is what persists.
 
 Read the [threat model](#threat-model) bullet about this before deploying a box where strangers can reach a
 port.

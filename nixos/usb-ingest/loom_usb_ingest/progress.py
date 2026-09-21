@@ -40,6 +40,11 @@ class Stage(StrEnum):
     COPYING = "copying"
     DONE = "done"
     FAILED = "failed"
+    # The ingest that owned this device is gone without reaching either of the two
+    # above -- the unit was stopped, or it died. Distinct from FAILED because there
+    # is no failure count to report, and because a row that still said "copying"
+    # would be a lie for as long as the stick stayed in.
+    INTERRUPTED = "interrupted"
 
 
 @dataclass(frozen=True)
@@ -70,6 +75,9 @@ class DeviceProgress:
     """One device's line in the pane."""
 
     device: str
+    # The name of the record's own file, carried inside it so that a sweep over the
+    # directory can withdraw a record without parsing file names back into devices.
+    kernel_name: str
     name: str
     stage: Stage = Stage.WAITING
     volume: VolumeProgress = field(default_factory=VolumeProgress)
@@ -78,7 +86,7 @@ class DeviceProgress:
 
     @property
     def finished(self) -> bool:
-        return self.stage in (Stage.DONE, Stage.FAILED)
+        return self.stage in (Stage.DONE, Stage.FAILED, Stage.INTERRUPTED)
 
 
 def path_for(progress_dir: str, kernel_name: str) -> str:
@@ -114,6 +122,31 @@ def withdraw(progress_dir: str, kernel_name: str) -> None:
         pass
 
 
+def mark_interrupted(progress_dir: str, record: DeviceProgress) -> None:
+    """Record that the ingest which owned a device is over without having finished."""
+    publish(
+        progress_dir,
+        record.kernel_name,
+        replace(record, stage=Stage.INTERRUPTED, updated=time.time()),
+    )
+
+
+def device_present(record: DeviceProgress) -> bool:
+    """Whether the device a record describes is still plugged in.
+
+    The node itself is the question, not the unit that copied it: udev deletes
+    /dev/sdb as part of handling the remove event, so this flips at exactly the
+    moment the operator pulls the stick -- which is the moment, and the only moment,
+    that a row is allowed to leave the pane.
+
+    A record whose device is gone should normally have been withdrawn already, by
+    the sweep the remove event triggers (usb-ingest.nix). This is what makes a
+    missed event cost nothing: the row disappears from the pane either way, and the
+    file is cleaned up by the next sweep.
+    """
+    return os.path.exists(record.device)
+
+
 def read_all(progress_dir: str) -> list[DeviceProgress]:
     """Every device currently being ingested, oldest record first."""
     records = []
@@ -141,6 +174,7 @@ def _read(path: str) -> DeviceProgress | None:
     try:
         return DeviceProgress(
             device=str(raw["device"]),
+            kernel_name=str(raw["kernel_name"]),
             name=str(raw["name"]),
             stage=Stage(raw["stage"]),
             volume=VolumeProgress(
@@ -173,7 +207,7 @@ class Reporter:
     def __init__(self, progress_dir: str, kernel_name: str, device: str, name: str):
         self._dir = progress_dir
         self._kernel_name = kernel_name
-        self._record = DeviceProgress(device=device, name=name)
+        self._record = DeviceProgress(device=device, kernel_name=kernel_name, name=name)
         # Rate-limited: `mc mirror` reports every object, and a stick of small files
         # would otherwise be one write per file.
         self._last_write = 0.0
@@ -201,12 +235,25 @@ class Reporter:
         )
         self.update()
 
-    def finish(self, objects: int, failures: int) -> None:
-        """The copy is over, one way or the other."""
+    def finish(self, objects: int, copied: int, failures: int) -> None:
+        """The copy is over, one way or the other.
+
+        `copied` is the whole device's byte count, not the volume in flight's, and it
+        replaces what `advance` last wrote. This row is the last thing an operator reads
+        before pulling the stick, and until the pane started outliving the copy it was
+        never read at all -- so it has to say what the *stick* moved. `advance` resets
+        per volume, so on a two-partition stick the figure left behind was the second
+        partition's alone.
+        """
         self._record = replace(
             self._record,
             stage=Stage.FAILED if failures else Stage.DONE,
-            counts=replace(self._record.counts, objects=objects, failures=failures),
+            counts=replace(
+                self._record.counts,
+                copied=copied,
+                objects=objects,
+                failures=failures,
+            ),
         )
         self.update(force=True)
 

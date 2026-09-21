@@ -84,7 +84,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--release",
         action="store_true",
-        help="forget a device that has been unplugged; the unit's ExecStopPost",
+        help="take the devices that are no longer plugged in out of the console"
+        " pane; run from the udev remove rule, and from the unit's ExecStopPost",
     )
     return parser.parse_args(argv)
 
@@ -229,7 +230,7 @@ def run(args: argparse.Namespace) -> int:
         transfer.configure_alias(args.endpoint, config_dir)
     except transfer.TransferError as error:
         logger.error("%s", error)
-        reporter.finish(0, 1)
+        reporter.finish(0, 0, 1)
         return 1
 
     if not transfer.wait_for_cluster(
@@ -239,7 +240,7 @@ def run(args: argparse.Namespace) -> int:
             f"[loom] {args.endpoint} never answered; {disk.path} was not ingested.",
             args.console_socket,
         )
-        reporter.finish(0, 1)
+        reporter.finish(0, 0, 1)
         return 1
 
     report.warn_if_short_on_space(
@@ -334,8 +335,9 @@ def _ingest_volumes(
     report.write_state(args.state_dir, manifest)
 
     # The pane keeps saying this until the stick is actually unplugged, which is the
-    # half `announce` alone could never do: a line scrolls, a pane does not.
-    reporter.finish(total_objects, total_failures)
+    # half `announce` alone could never do: a line scrolls, a pane does not. What
+    # takes the row away is the device going, not this call -- see `release`.
+    reporter.finish(total_objects, total_bytes, total_failures)
     report.announce(
         f"[loom] {disk.path} done: {total_objects} files, "
         f"{total_bytes / (1024 ** 3):.1f} GiB, {total_failures} failures. "
@@ -366,18 +368,39 @@ def _print_dry_run(disk, identity, rows) -> None:
 
 
 def release(args: argparse.Namespace) -> int:
-    """A device was unplugged: take its line out of the console pane.
+    """Take the devices that are no longer plugged in out of the console pane.
 
-    Run from the unit's ExecStopPost, which fires whenever systemd stops the unit --
-    including when the device itself disappeared, which is the case this is for.
+    A sweep of every record rather than an instruction about one device, because the
+    two places it runs from know different things:
+
+      * The udev remove rule, through loom-usb-release.service. This is what normally
+        ends a pane: it fires when a device actually goes away, which -- unlike the
+        end of a copy -- is the event the pane is waiting for.
+      * The ingest unit's ExecStopPost, which fires when the *copy* stops. A oneshot
+        stops the moment its work is done, so this runs while a finished stick is
+        still in the box, and the sweep deliberately leaves that record alone. This
+        used to withdraw it unconditionally, which took the pane off the screen about
+        a second after it had anything worth reading on it.
+
+    `--release <device>` additionally says whose ingest has ended, which is the one
+    thing a sweep cannot see: a record for a device that is still present but whose
+    copy is over without having finished would otherwise claim to be copying for as
+    long as the stick stayed in. Only that device is judged -- another stick's copy
+    may legitimately be running.
 
     The pane is closed here only as a backstop. The watcher ends itself when the last
     record is gone, and a pane whose command exits is closed by tmux; this covers the
     case where the watcher is not running at all, so that a stale split cannot outlive
     every stick that justified it.
     """
-    if args.device:
-        progress.withdraw(args.progress_dir, os.path.basename(args.device))
+    ending = os.path.basename(args.device) if args.device else None
+
+    for record in progress.read_all(args.progress_dir):
+        if not progress.device_present(record):
+            progress.withdraw(args.progress_dir, record.kernel_name)
+        elif record.kernel_name == ending and not record.finished:
+            progress.mark_interrupted(args.progress_dir, record)
+
     if not progress.read_all(args.progress_dir):
         pane.close_pane(args.console_socket)
     return 0

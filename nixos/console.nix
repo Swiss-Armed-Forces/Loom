@@ -96,6 +96,23 @@ let
     # borders, scroll. None of that is reimplemented anywhere in this module.
     set -g mouse on
     set -g escape-time 10
+
+    # How long a `display-message` line stays in the status bar, against a default
+    # of 750ms -- which is not a message, it is a flicker.
+    #
+    # Everything that writes here is the box talking to whoever is standing in
+    # front of it, and there is nowhere else for it to land: key-guard.nix says the
+    # LUKS key has been pulled and the box is about to power off, usb-ingest.nix
+    # says a stick has started copying, that a volume is done, or that the disk is
+    # nearly full. Those also go to `wall`, which reaches a tty somebody has logged
+    # into -- and the tmux client redraws over it a moment later. So this line is
+    # the one that is actually read.
+    #
+    # Eight seconds is a compromise: long enough for a line of prose at a walk-up
+    # pace, short enough that a stale notice is not still on screen when the next
+    # one arrives. Progress that has to persist belongs in the ingest pane, not
+    # here (loom_usb_ingest/watch.py).
+    set -g display-time 8000
     # No `main-pane-width`/`select-layout` here: the layout is built by hand in
     # `create` below, because none of tmux's five preset layouts puts the main
     # pane at the BOTTOM -- `main-horizontal` puts it on top -- and the widest

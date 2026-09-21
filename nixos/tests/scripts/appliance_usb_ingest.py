@@ -182,6 +182,54 @@ def _unit_and_rule(appliance: "Machine", subtest: "Subtest") -> None:
         assert 'ENV{ID_BUS}=="usb"' in rules, "udev rule is missing its USB match"
         assert "loom-usb-ingest@" in rules, "udev rule does not start the service"
 
+    with subtest("removing a device is a rule of its own"):
+        # What ends the console pane. It cannot be the ingest unit's own
+        # ExecStopPost: that is a oneshot, so systemd stops it when the copy
+        # finishes -- with the stick still in the box and its "done" row unread.
+        appliance.succeed("systemctl cat loom-usb-release.service >&2")
+        rules = appliance.succeed("cat /etc/udev/rules.d/*.rules")
+        assert 'ACTION=="remove"' in rules, "nothing reacts to a device going away"
+        assert (
+            "loom-usb-release.service" in rules
+        ), "the remove rule does not start the sweep"
+
+
+# A device that is still plugged in, as the ingest would have left it after a copy
+# that finished. Written by hand because the transfer itself needs a cluster; what is
+# under test here is what `--release` does with such a record, which is nothing.
+_FINISHED_RECORD = (
+    '{{"device": "{device}", "kernel_name": "{kernel}", "name": "stick-{kernel}",'
+    ' "stage": "done", "volume": {{"path": "{device}1", "index": 1, "count": 1}},'
+    ' "counts": {{"total": 4096, "copied": 4096, "objects": 7, "failures": 0}},'
+    ' "updated": 0.0}}'
+)
+
+
+def _pane_outlives_the_copy(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest("a finished device keeps its row until it is unplugged"):
+        # The default progress directory, deliberately: the point is that the real
+        # binary, with the real paths, leaves a finished record alone.
+        directory = "/run/loom/usb-progress"
+        appliance.succeed(f"mkdir -p {directory}")
+
+        present = _FINISHED_RECORD.format(device="/dev/vdc", kernel="vdc")
+        appliance.succeed(f"printf '%s' '{present}' > {directory}/vdc.json")
+        # vdz is not a device on this machine, which is what a stick that has been
+        # pulled looks like from here.
+        gone = _FINISHED_RECORD.format(device="/dev/vdz", kernel="vdz")
+        appliance.succeed(f"printf '%s' '{gone}' > {directory}/vdz.json")
+
+        appliance.succeed(f"{_ingest(params)} --release /dev/vdc")
+
+        # `succeed`/`fail` are the assertion: either raises with the machine's own
+        # output when the box does not agree.
+        appliance.succeed(f"test -e {directory}/vdc.json")
+        appliance.fail(f"test -e {directory}/vdz.json")
+
+        appliance.succeed(f"rm -f {directory}/vdc.json")
+
 
 def _wrapper_path(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("every binary the service shells out to is on its own PATH"):
@@ -239,5 +287,6 @@ def run(appliance: "Machine", *, subtest: "Subtest", params: Params) -> None:
     options = _mount_options_accepted(appliance, subtest, params)
     _read_only_device(appliance, subtest, options)
     _unit_and_rule(appliance, subtest)
+    _pane_outlives_the_copy(appliance, subtest, params)
     _wrapper_path(appliance, subtest, params)
     _status_before_ingest(appliance, subtest)

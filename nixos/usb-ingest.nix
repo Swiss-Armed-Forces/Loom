@@ -264,10 +264,50 @@ in
     #
     # %k rather than $env{DEVNAME}: the kernel name (`sdb`) needs no unit-name
     # escaping, where a path (`/dev/sdb`) would.
+    #
+    # The remove half is what ends the console pane, and it has to be its own
+    # rule rather than the ingest unit's ExecStopPost. That unit is a oneshot:
+    # systemd stops it when the *copy* is done, which is the one moment the pane
+    # must not disappear at -- the operator has not read it yet, and on a small
+    # stick the whole copy is over in seconds. Unplugging is the event the pane
+    # waits for, and this is where that event arrives.
+    #
+    # `SYSTEMD_WANTS` is add-only in practice -- systemd starts units from device
+    # units appearing, not from them going away -- so this is a `RUN` that pokes
+    # systemctl. It returns immediately, which is what `RUN` requires; the sweep
+    # itself happens in the unit below.
+    #
+    # A missed remove event costs nothing visible: the watcher drops any record
+    # whose device node has gone (loom_usb_ingest/progress.py, `device_present`),
+    # so the row leaves the pane either way and the stale file is cleaned up by
+    # the next sweep.
     services.udev.extraRules = ''
       ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ENV{DEVTYPE}=="disk", \
         TAG+="systemd", ENV{SYSTEMD_WANTS}+="loom-usb-ingest@%k.service"
+
+      ACTION=="remove", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ENV{DEVTYPE}=="disk", \
+        RUN+="${config.systemd.package}/bin/systemctl --no-block start loom-usb-release.service"
     '';
+
+    # One unit for every device, not one per device, because what it does is a
+    # sweep: it withdraws the records whose devices are gone and leaves the rest
+    # alone. Two sticks pulled at once therefore need no coordination -- systemd
+    # merges the second start into the job the first one queued, and the sweep is
+    # the same either way.
+    systemd.services.loom-usb-release = {
+      description = "Forget USB media that has been unplugged";
+
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${lib.getExe loom-usb-ingest} ${ingestArgs} --release";
+
+        # Same stance as the ingest unit: the journal only, because with no
+        # `console=` on the kernel command line "console" is the VT the operator
+        # is looking at.
+        StandardOutput = "journal";
+        StandardError = "journal";
+      };
+    };
 
     systemd.services."loom-usb-ingest@" = {
       description = "Ingest USB media at /dev/%i into Loom";
@@ -285,9 +325,16 @@ in
         ExecStart = "${lib.getExe loom-usb-ingest} ${ingestArgs} /dev/%i";
 
         # Unmount whatever this device left behind, including when the operator
-        # pulled it mid-copy, and take its line out of the console pane. Unlike the
-        # ExecStopPost case key-guard.nix warns about, firing these on an ordinary
-        # shutdown is harmless.
+        # pulled it mid-copy. Unlike the ExecStopPost case key-guard.nix warns
+        # about, firing these on an ordinary shutdown is harmless.
+        #
+        # The `--release` here does NOT end the pane. This fires when the copy
+        # stops, which on a finished stick is while it is still plugged in, and
+        # the sweep keeps every record whose device is still present -- see the
+        # remove rule above. What it adds over that rule is the device name: a
+        # copy that stopped without finishing leaves a row that would otherwise
+        # say "copying" for as long as the stick stayed in, and only the unit
+        # that ran it knows which row that is.
         ExecStopPost = [
           "-${pkgs.util-linux}/bin/umount --recursive --lazy ${cfg.mountRoot}/%i"
           "-${lib.getExe loom-usb-ingest} ${ingestArgs} --release /dev/%i"
