@@ -348,8 +348,30 @@ in
 
           dhcp-range = "${poolStart},${poolEnd},255.255.255.0,12h";
           dhcp-option = [
-            # Deliberately no option:router -- the box is not a gateway and
-            # advertising it as one would black-hole the client's traffic.
+            # No default gateway -- stated, because leaving option 3 out does
+            # NOT leave it out.
+            #
+            # dnsmasq(8): "By default, dnsmasq sends some standard options to
+            # DHCP clients, the netmask and broadcast address are set to the
+            # same as the host running dnsmasq, and the DNS server and default
+            # route are set to the address of the machine running dnsmasq." So
+            # an omitted option:router is an advertised option:router, and the
+            # only way to suppress one dnsmasq provides a default for is to
+            # name it with no value, as here.
+            #
+            # What that cost: every lease told the visitor's laptop that the
+            # appliance was its default gateway. A wired link outranks wifi on
+            # metric almost everywhere, so the new route won, and from then on
+            # *all* of that laptop's off-link traffic -- not just *.loom -- was
+            # handed to a box that has no upstream. ip_forward is on for the
+            # DNAT below, so the packets were accepted and then dropped rather
+            # than refused. Plugging into Loom took the visitor off the
+            # internet, on every interface they had.
+            #
+            # The box is an island: the client needs no route to reach it,
+            # being on the same segment, and there is nothing behind it to
+            # route to.
+            "option:router"
             "option:dns-server,${boxAddress}"
           ];
 

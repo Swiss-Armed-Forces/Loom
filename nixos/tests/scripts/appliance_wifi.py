@@ -70,6 +70,38 @@ def _bridge(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         assert "loombr0" in btop, btop
 
 
+def _lease_carries_no_gateway(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest("a lease points at the resolver and at no gateway"):
+        # The appliance is an island: it has no upstream, and a client that
+        # took it for a default gateway would hand it every packet bound for
+        # anywhere else -- which is what happened, silently, for as long as
+        # nixos/network.nix trusted an omitted option:router to mean no router
+        # option. Plugging a laptop in took that laptop off the internet.
+        #
+        # Read off a real offer rather than off the configuration file, for the
+        # reason given where loom-dhcp-probe is built.
+        offer = appliance.succeed(f"loom-dhcp-probe loombr0 {params.box_address}")
+
+        options = {
+            int(line.split()[1]): line.split()[2]
+            for line in offer.splitlines()
+            if line.startswith("option ")
+        }
+        assert 3 not in options, offer  # router
+        assert options.get(6) == params.box_address, offer  # dns-server
+        assert options.get(1) == "255.255.255.0", offer  # netmask
+
+        # And the address offered is out of the pool network.nix configured.
+        # The probe already refuses an offer from any other server on the
+        # segment -- qemu's own runs one in here -- so this is the second half
+        # of that: the right server, handing out the right range.
+        pool = params.box_address.rsplit(".", 1)[0]
+        yiaddr = offer.splitlines()[0]
+        assert yiaddr.startswith(f"yiaddr {pool}."), offer
+
+
 def _bridge_forwarding(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("bridge ports forward immediately"):
         # With STP off the kernel puts ports straight into forwarding, so the
@@ -222,6 +254,7 @@ def run(
 
     _radio_renamed(appliance, subtest, params)
     _bridge(appliance, subtest, params)
+    _lease_carries_no_gateway(appliance, subtest, params)
     _bridge_forwarding(appliance, subtest)
     _radios_state(appliance, subtest)
     _login_credentials(appliance, subtest, params)

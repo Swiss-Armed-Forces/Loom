@@ -517,8 +517,14 @@ https://frontend.loom
 No hosts file, no configuration on the visitor's side. The other services — `grafana.loom`, `open-webui.loom`,
 `elasticvue.loom` and the rest — resolve the same way.
 
-The box is not a gateway and does not advertise itself as one, so the laptop keeps whatever other networking it
-has.
+The box is not a gateway and does not advertise itself as one: the lease carries an address, a netmask and a
+DNS server, and deliberately no default route. So a laptop that is also on wifi keeps reaching the internet
+over the wifi, and only `*.loom` comes from the box.
+
+The one thing the laptop does take from the box is DNS, and the appliance's resolver has no upstream — it
+answers under `.loom` and refuses everything else. Most systems query both links and are unaffected; one that
+adopts the box as its only resolver will resolve nothing but `*.loom` until it is unplugged. Nothing on the
+box can fix that, there being no internet behind it to forward to.
 
 ### Ingesting data from USB
 
@@ -1020,6 +1026,14 @@ with `systemctl status loom-expose` and `iptables --table nat --list-rules LOOM-
 there, the stack itself is probably still coming up — `curl --insecure https://frontend.loom` from an
 `Alt-F2` console goes straight to Traefik and bypasses the whole question, so it separates "not exposed" from
 "not up yet" in one command.
+
+**A laptop plugged into the box loses the internet on every other interface.** The box's lease is naming it as
+the laptop's default gateway, and a wired link outranks wifi nearly everywhere, so everything the laptop sends
+anywhere goes to a box with no upstream. Confirm it with `ip route` (`route print` on Windows): a `default via
+<box address>` is the symptom. Sticks built before this was fixed all do it — `dnsmasq` sends a router option
+of its own accord unless one is explicitly suppressed, so leaving it unconfigured was not the same as leaving
+it out. Build a new stick. To finish a session on the stick in hand, delete that route on the laptop
+(`sudo ip route del default via <box address>`); it comes back at the next lease renewal.
 
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
