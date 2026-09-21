@@ -610,7 +610,8 @@ purge the intake bucket by hand.
 ### From the box's own console
 
 The console shows the box's banner before anyone logs in — release, platform, which port to plug a laptop
-into, the subnet it serves, whether the key guard is armed, and the LUKS recovery passphrase:
+into, the subnet it serves, how far the bring-up has got, whether the key guard is armed, and the LUKS
+recovery passphrase:
 
 <!--
 The eyes are pasted from a real console, and their rows are an odd number of
@@ -630,6 +631,7 @@ which no uniform shift of this art can satisfy.
   GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
   Plug a laptop into loom0 and browse https://frontend.loom
   This box serves DHCP on 10.13.37.0/24 and answers for *.loom
+  Loom: starting -- 12/18 pods ready.
 
   USB key guard: armed. Removing the USB key powers this
   box off after 10 seconds.
@@ -642,6 +644,23 @@ which no uniform shift of this art can satisfy.
 ```
 
 <!-- editorconfig-checker-enable -->
+
+**`Loom: starting -- 12/18 pods ready.`** is the one line that changes while the box runs, and it answers the
+question somebody walking up to a monitor actually has. A bring-up takes tens of minutes to hours, and until
+it is done the appliance serves nothing; this says how far along it is without logging in. It reads
+`ready.` once every pod the cluster wants is running, `degraded` if the box was up and something has since
+stopped, and `failed to start` if `up.sh` returned non-zero.
+
+The line is **absent** for the first minute or so of every boot, while the cluster has not answered yet, and
+absent for the whole of first-time setup, which has no cluster at all. That is deliberate: it earns its row
+once it has a number on it. The banner is written straight to the VT with no paging — see
+[Why the banner sometimes drops the logo](#why-the-banner-sometimes-drops-the-logo) — so on a `--wifi` box,
+where a QR code is already competing for the same rows, a line saying only "waiting" would cost the logo for
+nothing.
+
+It is redrawn when it changes, not on a timer, and only while the screen is still showing the login prompt: a
+box where somebody has pressed a key is a box with a session on it, and restarting a getty under that session
+would blank it. `loom-banner-refresh` on a console reprints it by hand.
 
 The eyes are the same mark the boot splash and the installer stick show, drawn in half blocks and in the
 logo's amber — the screenshot above cannot show the colour, but the monitor does. One rendering, everywhere:
@@ -724,17 +743,45 @@ That keypress opens a three-pane session:
 ┌─────────────────────┬─────────────┐        ┌─────────────────────┬─────────────┐
 │  the bring-up       │             │        │  k9s, on the pods   │             │
 │  log, live          │    btop     │  once  │  of the loom        │    btop     │
-│                     │             │  it is │  namespace          │             │
-├─────────────────────┴─────────────┤   up   ├─────────────────────┴─────────────┤
+│  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  │             │  it is │  namespace          │             │
+│  Loom ━━━━  12/18   │             │   up   │                     │             │
+├─────────────────────┴─────────────┤        ├─────────────────────┴─────────────┤
 │                                   │        │                                   │
 │           the assistant           │        │           the assistant           │
 │                                   │        │                                   │
 └───────────────────────────────────┘        └───────────────────────────────────┘
-  LOOM    Alt-F2 for a shell   × restart pane   × detach
+  LOOM  starting 12/18   Alt-F2 for a shell   × restart pane   × detach
 ```
 
 The top-left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch`
-under first-time setup — and hands over to `k9s` once the box is up. `btop` sits beside it. The assistant gets
+under first-time setup — and hands over to `k9s` once the box is up. `btop` sits beside it.
+
+**A readiness bar is pinned along the bottom of that pane** while the log scrolls past above it: how many of
+the pods the cluster wants are ready, and — when something is not going to resolve by waiting — which pod and
+why, as `waiting on: loom-ollama-0 (ImagePullBackOff)`. If the count stops moving for five minutes it says so,
+which is the failure a percentage hides best: nothing is crashing, nothing is pulling, the number simply sits
+there. The bar pulses rather than filling while there is no cluster to ask yet, because a ratio of nothing to
+nothing is not zero per cent and must never be drawn as a hundred.
+
+What it counts is **workloads**, not pods: a Deployment mid-rollout has no pods yet for the replicas it has
+not created, so counting pods alone makes the denominator chase the numerator and the bar sits near the end
+from the first second. Deployments, StatefulSets, DaemonSets and Jobs each carry both numbers. Two cases are
+worth knowing about, because both would otherwise make the bar lie:
+
+- **KEDA scales to zero.** `worker`, `tika`, `gotenberg` and `ollama` are allowed to sit at zero replicas
+  when there is nothing queued. A workload that wants none is not counted at all — counted, it would hold the
+  bar short of the end for the life of the box.
+- **Jobs never become Ready.** The init and pre-install Jobs gate everything behind them and finish as
+  `Succeeded`, so a check written in terms of Ready pods never sees them. They count as done when they have
+  completed.
+
+**The status line carries the same answer for the life of the session** — `starting 12/18`, then `ready` in
+green, or `degraded` in red. That matters because the bar goes when the pane becomes `k9s`, and a box that
+comes up fine on Monday and loses a pod on Tuesday would otherwise say nothing anywhere. It is read from a
+file rather than from the cluster: `loom-ready.service` does the asking every five seconds, so a cluster that
+stops answering can never hang the tmux server. Typing `loom-ready` on an `Alt-F2` console prints the same
+panel plus every workload still outstanding, and exits non-zero unless the box is up — which is what makes it
+usable from a script. The assistant gets
 the full width along the bottom, because it is the only pane anyone types prose into and a chat folded into
 half a console is unreadable; the two above it are glanced at rather than read.
 

@@ -87,8 +87,9 @@ let
   # `$'\033'` is a literal ESC byte by the time it is written, and agetty(8)
   # only ever reads a backslash as the start of an escape of its own.
   # Writing the banner into the issue directory, as a script rather than inline,
-  # because two units run it: loom-issue.service at boot, and
-  # loom-banner-repaint.service once the console has stopped resizing under it.
+  # because three things run it: loom-issue.service at boot, and
+  # loom-banner-repaint.service and loom-banner-refresh below, once for the console
+  # settling under it and once for every time what it says stops being true.
   writeIssue = pkgs.writeShellScript "loom-write-issue" ''
     set -euo pipefail
     ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
@@ -111,6 +112,65 @@ let
     ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
       /run/issue.d/50-loom.issue
   '';
+
+  # Redraw the login screen, because what it says has stopped being true.
+  #
+  # Rewriting the issue is only half of it: agetty paints the file once, when it starts,
+  # and then blocks on a keypress -- so a fresh file changes nothing on a screen somebody
+  # is standing in front of. The getty has to be restarted for that, and restarting it is
+  # only safe while it is still *at* the prompt.
+  #
+  # That check is the reason this is a command rather than two lines in the one caller it
+  # used to have. loom-banner-repaint.service below wants it for a console that is still
+  # resizing; ready.nix's publisher wants it every time the bring-up reaches a new stage,
+  # which is the whole point of putting Loom's progress on a screen nobody has logged into.
+  # Two copies of "is anybody looking at this" would be two chances to get it wrong, and
+  # the way to get it wrong is to blank the screen under an operator mid-sentence.
+  #
+  # Exit status says whether the screen was redrawn, so a caller that is tracking whether
+  # the banner is stale can tell "done" from "not now".
+  loom-banner-refresh = pkgs.writeShellApplication {
+    name = "loom-banner-refresh";
+    runtimeInputs = [
+      pkgs.coreutils
+      config.systemd.package
+    ];
+    text = ''
+      ${writeIssue}
+
+      # The banner is only ours to redraw while it is still the thing on screen.
+      # `--login-pause` holds agetty at the issue until a keypress, and `--autologin`
+      # then has it exec login and the operator's shell in the same process -- so a main
+      # PID that is still agetty is the signal that nobody has pressed a key yet.
+      #
+      # Anything else is left alone, and "anything else" is deliberately not interpreted.
+      # A logged-in operator, a getty between lives after somebody restarted it, and a
+      # getty that has not exec'd agetty yet are indistinguishable from here and do not
+      # need to be told apart: none of them is a screen to redraw this round.
+      #
+      # tty1's getty is autovt@tty1.service on NixOS (an alias of the getty@ template,
+      # see console.nix); both names are tried, and a miss on the first moves on to the
+      # second rather than deciding the question.
+      for unit in autovt@tty1.service getty@tty1.service; do
+        pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
+        if [ -z "$pid" ] || [ "$pid" = 0 ]; then
+          continue
+        fi
+        if [ "$(cat "/proc/$pid/comm" 2>/dev/null || true)" != agetty ]; then
+          continue
+        fi
+        # getty@ clears the VT on start (TTYVTDisallocate), so the new banner lands on a
+        # clean screen rather than under the old copy. --no-block: a caller may itself be
+        # in the job queue this would wait on.
+        systemctl restart --no-block "$unit"
+        exit 0
+      done
+
+      # Nothing at a prompt. The file is written either way, so the next getty to paint
+      # shows the new banner; there is simply nothing to redraw now.
+      exit 1
+    '';
+  };
 
   # Sits beside `loom-info` and does an unrelated job: that one draws the banner
   # the login screen shows, this one reports the hardware underneath it.
@@ -263,6 +323,29 @@ let
         printf '  This box serves DHCP on %s and answers for *.loom\n' \
           "''${LOOM_SUBNET}"
       fi
+      # How far the bring-up has got, in one line.
+      #
+      # Read at print time for the same reason the key guard's state below is, and with a
+      # sharper edge: this banner is rendered once per boot, so a box that came up an hour
+      # ago would otherwise still be telling whoever walks past that it is starting.
+      # ready.nix's publisher runs loom-banner-refresh on every stage change, which
+      # rewrites this file and redraws the screen if nobody has pressed a key yet.
+      #
+      # A line of plain text rather than a field out of the published JSON: this is a
+      # shell script assembling an agetty issue file, and parsing JSON here would mean
+      # putting jq in the banner's closure to render something it can be handed.
+      # loom_ready/text.py is what guarantees it is one ASCII line with no backslash in
+      # it -- see the header of this file for why that matters.
+      #
+      # One line and no more, and `-s` rather than `-r`: the file is written on every
+      # poll and is deliberately EMPTY while the cluster has not answered yet, because
+      # this banner is the one screen with a hard height budget -- it is written straight
+      # to the VT with no paging, so what does not fit scrolls off the top, taking the
+      # mark with it, and on a --wifi box there is already a QR code below. The line
+      # appears once it has a number on it. See loom_ready/text.py.
+      if [ -s ${config.loom.ready.stateDir}/summary ]; then
+        printf '  %s\n' "$(cat ${config.loom.ready.stateDir}/summary)"
+      fi
       # Read at print time, not baked in: a box booted with the recovery
       # passphrase has no key at all and its guard never arms, and a banner
       # that claimed otherwise would be promising protection the box does not
@@ -355,6 +438,11 @@ let
   };
 in
 {
+  # Declared in ready.nix and set here, the way `loom.progressUnit` is declared in
+  # console.nix and set in modes.nix: the value belongs beside the thing it names, and
+  # the one other module that runs it should not carry a second copy of the path.
+  loom.bannerRefresh = loom-banner-refresh;
+
   # ---------------------------------------------------------------------------
   # Host tuning -- mirrors up.sh `setup_system` (up.sh:616-684).
   #
@@ -523,6 +611,13 @@ in
     ++ [
       loom-info
       loom-platform-info
+      # Beside loom-info rather than hidden in the unit that used to be its only
+      # caller: that one prints the banner, this one puts it back on the screen.
+      # An operator who has just changed something the banner reports -- disarmed
+      # the key guard, brought the network up -- has no other way to make the
+      # login screen agree, and on a box with no remote access "log out and look"
+      # is not always available.
+      loom-banner-refresh
     ]
     ++ config.loom.entrypoints;
 
@@ -708,6 +803,7 @@ in
     path = [
       pkgs.coreutils
       config.systemd.package
+      loom-banner-refresh
     ];
     script = ''
       # Watch the console instead of guessing when it stops moving.
@@ -745,39 +841,6 @@ in
         stty size </dev/tty1 2>/dev/null | cut --delimiter=' ' --fields=1 || true
       }
 
-      # The banner is only ours to redraw while it is still the thing on screen.
-      # `--login-pause` holds agetty at the issue until a keypress, and
-      # `--autologin` then has it exec login and the operator's shell in the same
-      # process -- so a main PID that is still agetty is the signal that nobody
-      # has pressed a key yet.
-      #
-      # Echoes the unit name in that case and nothing in every other, and
-      # "nothing" is deliberately not interpreted. A logged-in operator, a getty
-      # between lives after we restarted it ourselves, and a getty that has not
-      # exec'd agetty yet are indistinguishable from here and do not need to be
-      # told apart: the caller simply does not redraw this round. An earlier
-      # version tried to read one of those as "logged in, stop watching", and
-      # since it hit that state on its very first pass it stopped before it had
-      # done anything at all.
-      #
-      # tty1's getty is autovt@tty1.service on NixOS (an alias of the getty@
-      # template, see console.nix); both names are tried, and a miss on the first
-      # moves on to the second rather than deciding the question.
-      banner_getty() {
-        local unit pid
-        for unit in autovt@tty1.service getty@tty1.service; do
-          pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
-          if [ -z "$pid" ] || [ "$pid" = 0 ]; then
-            continue
-          fi
-          if [ "$(cat "/proc/$pid/comm" 2>/dev/null || true)" != agetty ]; then
-            continue
-          fi
-          printf '%s' "$unit"
-          return
-        done
-      }
-
       while [ "$SECONDS" -lt "$deadline" ]; do
         rows="$(measure)"
 
@@ -790,13 +853,13 @@ in
           continue
         fi
 
-        unit="$(banner_getty)"
-        if [ "$dirty" = yes ] && [ -n "$unit" ] && [ -n "$rows" ]; then
-          ${writeIssue}
-          # getty@ clears the VT on start (TTYVTDisallocate), so this lands on a
-          # clean screen rather than under the old copy. --no-block: never wait
-          # on a job from inside a queue this unit is itself in.
-          systemctl restart --no-block "$unit"
+        # loom-banner-refresh rewrites the issue and restarts tty1's getty only while
+        # that getty is still at the prompt -- an earlier version of this loop carried
+        # that check itself, and it moved out when a second caller (ready.nix, on every
+        # stage change) needed exactly the same guard. Its exit status is what says
+        # whether the screen was actually redrawn, so a round that found somebody logged
+        # in leaves `dirty` set rather than deciding the banner is done.
+        if [ "$dirty" = yes ] && [ -n "$rows" ] && loom-banner-refresh; then
           dirty=no
         fi
         sleep ${toString bannerRepaintInterval}

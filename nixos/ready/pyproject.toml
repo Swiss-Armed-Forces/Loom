@@ -1,0 +1,15 @@
+[project]
+name = "loom-ready"
+version = "0.1.0"
+description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
+requires-python = ">=3.11"
+
+[project.scripts]
+loom-ready = "loom_ready.__main__:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["loom_ready"]

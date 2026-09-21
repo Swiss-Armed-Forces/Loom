@@ -122,13 +122,22 @@ pkgs.testers.runNixOSTest {
 
   # The test itself is scripts/appliance.py, so that the repository's Python hooks
   # reach it -- see scripts/driver.py for why, and for why `skipTypeCheck` is set
-  # above. The function form here is for one value: whether this platform deploys
+  # above.
+  #
+  # Two files, concatenated into the one namespace the driver `exec`s. The readiness
+  # section is the size of a small test on its own and this file was at pylint's
+  # module-length ceiling; splitting it costs nothing at runtime -- the driver sees the
+  # same globals either way -- and keeps both halves lintable. It goes first only for
+  # readability: `run()` at the bottom of appliance.py is still the single entry point.
+  #
+  # The function form here is for one value: whether this platform deploys
   # Ollama. The console session has three panes where it does and two where it does
   # not (platforms/nuc12.nix), and hardcoding either number would make this test pass
   # only for some of the platforms it is run against.
   testScript =
     { nodes, ... }:
     ''
+      ${builtins.readFile ./scripts/appliance_readiness.py}
       ${builtins.readFile ./scripts/appliance.py}
 
       run(
@@ -151,6 +160,7 @@ pkgs.testers.runNixOSTest {
                   root_device="${keyGuardRootDevice}",
               ),
           ),
+          check_readiness=check_readiness,
       )
     '';
 }

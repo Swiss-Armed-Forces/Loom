@@ -12,7 +12,7 @@ also the list of things the appliance and up.sh have to agree about.
 import json
 import re
 import shlex
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Callable, NamedTuple
 
 if TYPE_CHECKING:
     from driver import Machine, StartAll, Subtest
@@ -377,16 +377,21 @@ def _log_pane_hands_over(
     appliance: "Machine", params: Params, panes: list[str]
 ) -> None:
     """The first pane starts on the log and becomes k9s once Loom is up."""
-    # The first pane starts on the log and hands over to k9s once Loom is
-    # up. Both halves live in the script that pane starts, so read it: the
-    # handover is invisible in a test VM, where nothing ever comes up.
+    # The handover is invisible in a test VM, where nothing ever comes up, so what is
+    # read here is the wrapper that pane starts -- which names the unit, the namespace
+    # and the thing it hands over to.
     progress_pane = appliance.succeed(f"cat {panes[0].split(maxsplit=1)[1]}")
     k9s = re.search(r"/nix/store/\S+-loom-k9s/bin/loom-k9s", progress_pane)
     assert k9s, progress_pane
-    # It waits for the unit to have *succeeded*, not merely to exist. On
-    # `activating` the bring-up is still running and the log is the screen
-    # that matters; on `failed` it is the only screen that does.
-    assert "ActiveState" in progress_pane, progress_pane
+    # The condition it hands over on is `Readiness.settled` in nixos/ready/ -- one
+    # definition shared by the pane, the status line and the banner, exercised in that
+    # package's own suite. What must be true here is that the pane has somewhere to read
+    # it from: an empty --state-dir is how setup mode says there is no publisher.
+    # Quotes are stripped because lib.escapeShellArg only adds them where they are
+    # needed, which here is the empty string and not the path.
+    state_dir = re.search(r"--state-dir (\S*)", progress_pane)
+    assert state_dir, progress_pane
+    assert state_dir.group(1).strip("'"), "run mode must name a state dir"
 
     # And k9s must watch the namespace up.sh actually deploys into. Both
     # come from vars.sh -- NAMESPACE reaches the pane through
@@ -935,7 +940,14 @@ def _guard_powers_off(appliance: "Machine", subtest: "Subtest", key_loop: str) -
 
 
 def run(
-    appliance: "Machine", *, start_all: "StartAll", subtest: "Subtest", params: Params
+    appliance: "Machine",
+    *,
+    start_all: "StartAll",
+    subtest: "Subtest",
+    params: Params,
+    # scripts/appliance_readiness.py's, handed in the way the driver's own globals are:
+    # appliance.nix concatenates both files, so it is neither importable nor a global.
+    check_readiness: "Callable[[Machine, Subtest, str], None]",
 ) -> None:
     """The whole test, as the .nix file calls it.
 
@@ -958,6 +970,8 @@ def run(
     _console_font(appliance, subtest)
     panes = _console_session(appliance, subtest, params)
     _pane_restart(appliance, subtest, params, panes)
+    # After the session exists: two of the three screens it draws on are in it.
+    check_readiness(appliance, subtest, params.operator.user)
 
     # What Loom itself is started through.
     _repository(appliance, subtest, params)

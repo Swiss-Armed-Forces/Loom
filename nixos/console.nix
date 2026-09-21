@@ -12,6 +12,11 @@
 #     because by then the log is a finished transcript and the pods are the live
 #     thing. Both boot modes get the same session; only the unit in that pane
 #     differs, which is what `loom.progressUnit` carries over from modes.nix.
+#   * A readiness bar is pinned along the bottom of that log pane, and a segment
+#     of the status line carries the same answer for the life of the session --
+#     which is what is left once the pane becomes k9s and the bar goes with it.
+#     ready.nix owns both; what belongs here is the pane's wrapper and the
+#     status-left format below.
 #   * A fourth pane appears while a USB stick is being copied in, splitting the
 #     k9s pane in half and drawing the progress of the copy underneath it. It
 #     goes away again when the last stick is unplugged, and k9s has the space
@@ -63,6 +68,19 @@ let
   # It also takes `opencode` out of the closure entirely -- see box.nix -- which
   # is the honest thing to do on an image that cannot use it.
   aiEnabled = cfg.platform.runsAiServices;
+
+  # Whether anything on this box publishes readiness for the pane and the status line to
+  # draw. False in setup mode, where ready.nix deploys no publisher because there is no
+  # cluster to ask about -- and both readers are built to say nothing at all in that case
+  # rather than to show an empty bar, so that console is byte-for-byte the one this box
+  # shipped with before the bar existed.
+  readinessPublished = cfg.ready.enable && cfg.mode == "run";
+
+  # The status line's readiness segment, or nothing. Built here rather than inline so the
+  # status-left assignment below stays one line with one meaning, whichever mode this is.
+  readinessSegment = lib.optionalString readinessPublished (
+    "#(${lib.getExe cfg.ready.package} --oneline --state-dir ${cfg.ready.stateDir})  "
+  );
 
   # Taken from the host list rather than written out again, so the name the chat
   # pane dials is by construction one of the names box.nix pins in /etc/hosts.
@@ -175,7 +193,41 @@ let
     # the backstop for anything this status line cannot do.
     # -------------------------------------------------------------------------
     set -g status-style "bg=colour24,fg=white"
-    set -g status-left "  LOOM  "
+    # -------------------------------------------------------------------------
+    # Readiness, next to the name, for as long as the session lives.
+    #
+    # The pane's bar is gone the moment that pane becomes k9s, and that is the
+    # right trade -- the pod list is what an operator wants once up.sh has
+    # returned. What it leaves out is anything saying whether the box ever
+    # finished coming up, or whether it stopped being up on a Tuesday. This is
+    # that, and it costs a row nothing else was using.
+    #
+    # Three things about it are load-bearing:
+    #
+    #   * A file read, never a `kubectl`. This runs from the tmux server on a
+    #     timer, and a command here that can block on a cluster that is not
+    #     answering is a session that can freeze. ready.nix's unit does the
+    #     asking; this only ever opens a file, and prints nothing at all when
+    #     there is not a fresh one.
+    #   * `#()` output is re-expanded by tmux, which is why loom_ready/text.py
+    #     guarantees the segment carries no `#` of its own -- a stray one would
+    #     be read as the start of a format directive. The styles it does emit
+    #     are re-expanded on purpose: green for up, red for degraded, which is
+    #     the fastest thing on this screen to read from across a room.
+    #   * `status-left-length` defaults to TEN characters, which is two more
+    #     than "  LOOM  " and would silently cut the segment off entirely.
+    #
+    # `status-interval` is set rather than left at its default of 15 for the
+    # same reason: the bar in the pane refreshes four times a second, and a
+    # segment beside it running a quarter of a minute behind reads as a bug in
+    # one of the two.
+    #
+    # Both are empty in setup mode -- see `readinessPublished` -- so that
+    # console is exactly the one this box shipped with before any of this.
+    # -------------------------------------------------------------------------
+    ${lib.optionalString readinessPublished "set -g status-interval 5"}
+    set -g status-left-length 60
+    set -g status-left "  LOOM  ${readinessSegment}"
     # The two controls are last, so they sit flush against the right-hand edge
     # of the screen. That is deliberate on two counts: a target in the corner
     # of the display is the easiest one there is to hit with a mouse, and it
@@ -215,84 +267,41 @@ let
   # Prints where the unit stands before following it, because a bare
   # `journalctl --follow` on a unit that has not started -- or that a condition
   # skipped -- is an empty screen with no explanation.
+  #
+  # And, since the readiness bar went in, it keeps a panel pinned along the bottom of the
+  # pane while the log scrolls past above it: how many of the pods the cluster wants are
+  # ready, what is blocking, how long it has been since that moved. The log has always
+  # said what is happening and never how much is left, which on a box that takes an hour
+  # is the question somebody standing in front of it actually has.
+  #
+  # That is why the body of this moved into Python (nixos/ready/, loom_ready/pane.py):
+  # pinning a live region below a stream means the stream has to be read line by line
+  # rather than left to inherit the pane's stdout, and the handover condition is now one
+  # definition shared with the status line and the banner instead of a `case` here.
+  #
+  # What stays is this wrapper, and it stays deliberately. It is where the unit, the
+  # namespace and the k9s path are written down, which is what nixos/tests/scripts/
+  # appliance.py reads to prove that both boot modes follow their own unit and that k9s
+  # watches the namespace up.sh actually deploys into.
   loom-progress = pkgs.writeShellApplication {
     name = "loom-progress";
-    runtimeInputs = with pkgs; [
-      systemd
-      kubectl
-      coreutils
-    ];
+    runtimeInputs = [ cfg.ready.package ];
     text = ''
       unit=${lib.escapeShellArg cfg.progressUnit}
       namespace=${lib.escapeShellArg loomNamespace}
 
-      printf '  Following %s. This pane is the live bring-up log,\n' "$unit"
-      printf '  and becomes the pod list once Loom is up.\n'
-      state="$(systemctl show --property=ActiveState --value "$unit" || echo unknown)"
-      case "$state" in
-        inactive)
-          # Setup mode guards loom-fetch with ConditionPathExists, so on every
-          # boot after the first the unit never runs at all.
-          if [ -e ${lib.escapeShellArg "${loomRepoDir}/.loom-setup-complete"} ]; then
-            printf '  First-time setup already completed -- this mode powers the box\n'
-            printf '  off when it finishes. Boot the default "Loom" entry where the\n'
-            printf '  appliance is to be used. Below is the log of that run.\n'
-          else
-            printf '  %s has not started yet; output appears here when it does.\n' "$unit"
-          fi
-          ;;
-        failed)
-          printf '  %s FAILED. The end of its log is below.\n' "$unit"
-          ;;
-        *) ;;
-      esac
-      printf '\n'
-
-      # Deliberately not --boot: in setup mode the run worth reading is usually
-      # the previous boot's, because this boot skipped the unit.
-      #
-      # In the background, and deliberately not `exec`ed as it used to be: this
-      # script has to outlive the log to notice the moment Loom is up, and exec
-      # would replace the very process that watches for it.
-      journalctl --no-hostname --lines=500 --follow --unit "$unit" &
-      follower=$!
-
-      # Two conditions, and both are needed.
-      #
-      # ActiveState alone is the honest definition of "up.sh returned": the unit
-      # is Type=oneshot with RemainAfterExit (modes.nix), so it reads
-      # `activating` for the hours of a bring-up, `active` only once up.sh has
-      # exited 0, and `failed` if it did not -- which is exactly when the log
-      # must stay on screen rather than being replaced by a pod list.
-      #
-      # The namespace check is what keeps first-time setup on its log. That mode
-      # runs loom-fetch, which also reaches `active`, but it only populates
-      # minikube's image store and deploys nothing -- so the namespace never
-      # appears, the handover never fires, and the box powers itself off still
-      # showing the fetch log. No second option to set, and no way for the two
-      # modes to disagree about which pane they get.
-      up() {
-        [ "$(systemctl show --property=ActiveState --value "$unit")" = active ] \
-          && kubectl --request-timeout=5s \
-            get namespace "$namespace" >/dev/null 2>&1
-      }
-
-      until up; do
-        sleep 5
-      done
-
-      kill "$follower" 2>/dev/null || true
-      wait "$follower" 2>/dev/null || true
-
-      printf '\n  Loom is up. This pane now shows its pods; the log is still\n'
-      printf '  there, on an Alt-F2 console:\n\n'
-      printf '    journalctl --unit %s --follow\n\n' "$unit"
-      # Long enough to read the two lines above before k9s takes the screen: it
-      # draws on the alternate buffer, so everything printed here is gone until
-      # k9s exits.
-      sleep 5
-
-      exec ${lib.getExe loom-k9s}
+      # Empty in setup mode, and that is the whole of how the pane is told there is no
+      # readiness to draw: ready.nix publishes nothing there, because that mode is a DHCP
+      # client pulling images for hours with no cluster to ask and none coming. The pane
+      # is the fetch log alone, exactly as it was, and the handover it has no state to
+      # trigger is the same handover that never fired there before -- see the namespace
+      # note in loom_ready/cluster.py.
+      exec loom-ready --pane \
+        --unit "$unit" \
+        --namespace "$namespace" \
+        --state-dir ${lib.escapeShellArg (lib.optionalString readinessPublished cfg.ready.stateDir)} \
+        --setup-marker ${lib.escapeShellArg "${loomRepoDir}/.loom-setup-complete"} \
+        --k9s ${lib.escapeShellArg (lib.getExe loom-k9s)}
     '';
   };
 

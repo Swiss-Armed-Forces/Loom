@@ -125,7 +125,19 @@ let
         # cross and no U+25CF disc. Checked here for the same reason the other
         # three are -- a missing glyph is a hole on a screen nobody sees until
         # the box is standing at a site.
-        for cp in 2588 2584 2580 00D7; do
+        #
+        # 2501/2578/257A are what rich's progress bar draws with: the heavy
+        # horizontal and its two half-width ends. Two panes of the console
+        # session put one on this screen -- the readiness bar under the
+        # bring-up log (nixos/ready/, loom_ready/render.py) and the USB copy
+        # (nixos/usb-ingest/, loom_usb_ingest/watch.py) -- and neither chose
+        # those glyphs, rich did, which is exactly the kind of dependency that
+        # changes in a package bump without anyone reading a release note.
+        # Cozette maps all three onto one glyph, so a filled bar and an empty
+        # one differ by colour rather than by shape; that is legible, and it is
+        # a decision rather than an accident because this is where it would
+        # fail loudly if the font ever dropped them.
+        for cp in 2588 2584 2580 00D7 2501 2578 257A; do
           if ! zcat --force "$src" | psfgettable - | grep --quiet --ignore-case "U+$cp\b"; then
             echo "$src has no U+$cp, one of the glyphs this appliance draws" >&2
             exit 1

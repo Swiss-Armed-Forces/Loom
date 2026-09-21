@@ -312,6 +312,7 @@ let
     ./key-guard.nix
     ./modes.nix
     ./network.nix
+    ./ready.nix
     ./repo.nix
     ./storage.nix
     ./usb-ingest.nix

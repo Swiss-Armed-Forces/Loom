@@ -19,6 +19,7 @@ integrationtest = {path = "integrationtest", develop = true}
 # the git hooks can lint and type-check them like every other package.
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
+loom-ready = {path = "nixos/ready", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
 types-docker = "^7.1.0.20240601"
 

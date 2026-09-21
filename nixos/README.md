@@ -21,6 +21,8 @@ this file is about the code.
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
+| `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
+| `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, and `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
@@ -641,3 +643,43 @@ banner reads it: one path, not three copies.
 The fallback matters too. A box booted on the recovery passphrase never arms, so there is no proven key
 device, and the ingest service drops back to refusing any disk carrying a Loom partition label. That is
 weaker — it is the very thing the guard exists to improve on — so the console says so when it happens.
+
+## Readiness, in one place and three screens
+
+`ready.nix` and `ready/` answer "is Loom up yet?" — a question the console could not answer before it, because
+the bring-up log says what is happening rather than how much is left, and `k9s` appears when `up.sh` returns,
+which is well before the pods are Ready.
+
+One unit computes it and writes two files into `/run/loom/ready`; three readers draw them and none of them
+asks the cluster anything:
+
+| File | Who reads it | Why |
+| --- | --- | --- |
+| `state.json` | the bring-up pane, the tmux status segment | everything: counts, workloads, blockers, stage |
+| `summary` | `loom-info`, for the pre-login banner | one line of plain ASCII, so the banner needs no `jq` |
+
+The split is the same one `usb-ingest/` uses, and for the same reason: the writer needs the cluster and runs
+as root, while two of the readers are spawned by the operator's tmux server. A file is the whole of what they
+share. The status segment is the sharp case — it runs from the tmux server on `status-interval`, so a
+`kubectl` there could hang the session on a cluster that has stopped answering.
+
+Three decisions in `ready/loom_ready/cluster.py` are worth knowing before changing anything:
+
+- **Workloads, not pods.** A pod list cannot express "desired": a Deployment rolling out has no pods yet for
+  the replicas it has not created, so a pod count makes the denominator chase the numerator.
+- **A workload that wants zero replicas is not counted.** That is a KEDA-idle Deployment in its healthy steady
+  state (`charts/templates/{worker,tika,gotenberg,ollama}/*scaledobjects.yaml`), and counting it would park the
+  bar short of the end for the life of the box.
+- **Jobs count as done when they have succeeded.** The init and pre-install Jobs gate everything behind them
+  and never become Ready, so a check written in terms of Ready pods never sees them at all.
+
+`Readiness.settled` — the `rolling-out`/`ready`/`degraded` stages — is the appliance's one definition of "up.sh
+has returned and the namespace exists". `console.nix`'s pane used to evaluate that for itself; it now reads
+this, which is what keeps the pane, the status line and the banner from disagreeing.
+
+The banner is the one reader with a hard budget. agetty writes it straight to the VT with no paging, so
+`summary` is deliberately **empty** while the cluster has not answered — the line earns its row once it has a
+number on it, and `box.nix` tests `-s` rather than `-r`. The publisher redraws the banner through
+`loom-banner-refresh` on a stage change and never on a count change, and never for the first stage a box
+reaches: at boot `loom-banner-repaint` is already watching the console for a minute, and a second getty
+restart inside that window would eat the keypress that opens the operator's session.

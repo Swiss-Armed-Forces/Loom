@@ -43,6 +43,7 @@ let
   pythonNixSubdirs = [
     "nixos/console-mouse"
     "nixos/installer"
+    "nixos/ready"
     "nixos/usb-ingest"
     "nixos/tests/scripts"
   ];
@@ -51,6 +52,7 @@ let
   appliancePytestPaths = [
     "nixos/console-mouse/tests"
     "nixos/installer/tests"
+    "nixos/ready/tests"
     "nixos/usb-ingest/tests"
   ];
 
