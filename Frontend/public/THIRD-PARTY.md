@@ -575,7 +575,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | python-multipart                         | 0.0.32          | Apache-2.0                                                                       |
 | types-cffi                               | 2.1.0.20260827  | Apache-2.0                                                                       |
 | types-docker                             | 7.2.0.20260827  | Apache-2.0                                                                       |
-| types-requests                           | 2.33.0.20260712 | Apache-2.0                                                                       |
+| types-requests                           | 2.33.0.20260906 | Apache-2.0                                                                       |
 | types-setuptools                         | 84.0.0.20260812 | Apache-2.0                                                                       |
 | tzdata                                   | 2026.4          | Apache-2.0                                                                       |
 | websocket-client                         | 1.9.2           | Apache-2.0                                                                       |
@@ -811,6 +811,9 @@ The complete source code for Traefik is publicly available at https://github.com
 | email-validator                          | 2.3.0           | The Unlicense (Unlicense)                                                        |
 | IMAPClient                               | 4.0.1           | UNKNOWN                                                                          |
 | crashtest                                | 0.4.1           | UNKNOWN                                                                          |
+| loom-console-mouse                       | 0.1.0           | UNKNOWN                                                                          |
+| loom-installer                           | 0.1.0           | UNKNOWN                                                                          |
+| loom-usb-ingest                          | 0.1.0           | UNKNOWN                                                                          |
 
 ## JavaScript
 
