@@ -21,6 +21,13 @@ logger = logging.getLogger(__name__)
 _ANNOUNCE_TIMEOUT_S = 10
 
 
+# How much of a captured error goes in front of the operator. `wall` writes to every
+# terminal on the box and tmux's `display-message` is one line over the status bar, so
+# a page of mc's JSON or of kubectl's usage would cost somebody the screen they were
+# working on. The journal keeps the whole thing either way -- see `failure`.
+REASON_LIMIT = 200
+
+
 def announce(message: str, console_socket: str) -> None:
     """Put one line in front of whoever is at the keyboard."""
     logger.info("%s", message)
@@ -35,6 +42,43 @@ def announce(message: str, console_socket: str) -> None:
             )
         except (subprocess.SubprocessError, OSError):
             continue
+
+
+def condense(detail: str) -> str:
+    """One line an operator can act on, out of whatever a tool wrote to stderr.
+
+    The first non-empty line, because every tool this service runs puts the failure
+    there and the rest is context: mc follows its error with hints, kubectl with usage.
+    """
+    for line in (detail or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if len(line) > REASON_LIMIT:
+            return line[: REASON_LIMIT - 3] + "..."
+        return line
+    return ""
+
+
+def failure(headline: str, detail: str, console_socket: str) -> str:
+    """Announce something that went wrong, and say what went wrong.
+
+    Without this the operator got the headline alone -- "not ingested", with the reason
+    it was not ingested only in a journal they have no way to read from the console
+    session. Whatever a stick does not do, the box now says why on the screen.
+
+    The full detail goes to the journal and the condensed line to the console, so the
+    journal always shows both what happened and what the operator was told about it.
+    Returns the reason, for the caller that also wants it in the pane.
+    """
+    reason = condense(detail)
+    if detail:
+        logger.error("%s: %s", headline, detail)
+    else:
+        logger.error("%s", headline)
+
+    announce(f"[loom] {headline}{f': {reason}' if reason else '.'}", console_socket)
+    return reason
 
 
 def write_state(state_dir: str, state: dict) -> None:

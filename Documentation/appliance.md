@@ -538,9 +538,15 @@ A row that says `stopped before it finished` is a copy whose service died or was
 still in: nothing was pulled early, but nothing is complete either. `journalctl --unit
 loom-usb-ingest@<device>` has the reason.
 
+**A row that failed says why.** A red row carries the first thing that went wrong in its own words — the
+storage endpoint refusing a connection, a volume skipped because the box has no driver for it, a certificate
+it would not trust — rather than a count of failures on its own. A finished row can carry one too: a stick
+whose second partition was skipped still says `DONE`, with the skip in brackets after it. The journal keeps
+the untruncated version.
+
 Milestones are also announced in the tmux status bar — ingest started, each volume uploaded, the box short
-on disk — and to `wall`, which reaches any console somebody has logged into. Those lines scroll away; the
-pane is what persists.
+on disk, and every failure with its reason — and to `wall`, which reaches any console somebody has logged
+into. Those lines scroll away; the pane is what persists.
 
 Read the [threat model](#threat-model) bullet about this before deploying a box where strangers can reach a
 port.

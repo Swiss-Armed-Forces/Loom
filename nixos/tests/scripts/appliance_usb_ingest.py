@@ -199,7 +199,8 @@ def _unit_and_rule(appliance: "Machine", subtest: "Subtest") -> None:
 # under test here is what `--release` does with such a record, which is nothing.
 _FINISHED_RECORD = (
     '{{"device": "{device}", "kernel_name": "{kernel}", "name": "stick-{kernel}",'
-    ' "stage": "done", "volume": {{"path": "{device}1", "index": 1, "count": 1}},'
+    ' "outcome": {{"stage": "done", "message": ""}},'
+    ' "volume": {{"path": "{device}1", "index": 1, "count": 1}},'
     ' "counts": {{"total": 4096, "copied": 4096, "objects": 7, "failures": 0}},'
     ' "updated": 0.0}}'
 )
@@ -272,6 +273,42 @@ def _status_before_ingest(appliance: "Machine", subtest: "Subtest") -> None:
         appliance.succeed("loom-usb-status")
 
 
+def _mc_runs_in_the_units_environment(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest(
+        "mc starts with the environment the unit has, and says why it did not"
+    ):
+        # `env -u HOME` is the whole point: systemd sets $HOME only for units that set
+        # `User=` (systemd.exec(5)) and the ingest units run as root without one, so
+        # every run of this by hand had a home directory the service never has. Without
+        # one, mc resolves its config directory by shelling out to `getent` -- which is
+        # not on the wrapper's PATH -- and dies before it reads a single argument.
+        #
+        # The endpoint is a port nothing listens on and the kubeconfig does not exist,
+        # so this fails in seconds without a cluster, and fails *after* the point where
+        # a broken environment would have stopped it.
+        _set_guard(appliance, params, "armed", "/dev/vdb")
+        output = appliance.fail(
+            f"env -u HOME {_ingest(params)} --endpoint https://127.0.0.1:1 "
+            "--kubeconfig /nonexistent /dev/vdc 2>&1"
+        )
+
+        assert "mcConfigDir" not in output, output
+        assert "getent" not in output, output
+        # And the failure it did have is on the operator's screen, not only in the
+        # journal: a count of failures with no reason is not something anybody
+        # standing at the box can act on.
+        assert "was not ingested" in output, output
+        assert "127.0.0.1:1" in output, output
+
+        record = appliance.succeed("cat /run/loom/usb-progress/vdc.json")
+        assert '"stage": "failed"' in record, record
+        assert '"message": ""' not in record, record
+
+        appliance.succeed("rm -f /run/loom/usb-progress/vdc.json")
+
+
 def run(appliance: "Machine", *, subtest: "Subtest", params: Params) -> None:
     """The whole test, as the .nix file calls it."""
     appliance.wait_for_unit("multi-user.target")
@@ -290,3 +327,6 @@ def run(appliance: "Machine", *, subtest: "Subtest", params: Params) -> None:
     _pane_outlives_the_copy(appliance, subtest, params)
     _wrapper_path(appliance, subtest, params)
     _status_before_ingest(appliance, subtest)
+    # Last, because it is the only subtest that runs an ingest for real rather than
+    # planning one: it leaves a progress record behind, and cleans it up itself.
+    _mc_runs_in_the_units_environment(appliance, subtest, params)

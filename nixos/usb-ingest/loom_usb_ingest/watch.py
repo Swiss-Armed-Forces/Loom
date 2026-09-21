@@ -133,9 +133,21 @@ def _status(record: DeviceProgress) -> Text:
             where = f" ({record.volume.index}/{record.volume.count})"
         return Text(f"copying {record.volume.path}{where}", style=style)
     if record.stage is Stage.FAILED:
-        return Text(f"{record.counts.failures} failed -- safe to remove", style=style)
+        # The reason, when the ingest had one. This column folds rather than
+        # truncating, so a long one costs the row a second line and nothing else --
+        # and an operator who can see "connection refused" can do something about it,
+        # where "1 failed" only tells them to find somebody who can read a journal.
+        reason = f": {record.message}" if record.message else ""
+        return Text(
+            f"{record.counts.failures} failed{reason} -- safe to remove", style=style
+        )
     if record.stage is Stage.INTERRUPTED:
         return Text("stopped before it finished -- safe to remove", style=style)
+    # A finished stick can still have something to say: a volume that was skipped
+    # costs the operator documents they expected to see, without costing the copy a
+    # failure.
+    if record.message:
+        return Text(f"DONE ({record.message}) -- safe to remove", style=style)
     return Text("DONE -- safe to remove", style=style)
 
 

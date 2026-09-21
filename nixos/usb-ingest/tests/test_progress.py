@@ -12,10 +12,13 @@ reason the pane exists. It is the device going away, not the copy ending.
 import json
 import os
 
+from rich.console import Console
+
 from loom_usb_ingest.__main__ import parse_args, release
 from loom_usb_ingest.progress import (
     Counts,
     DeviceProgress,
+    Outcome,
     Reporter,
     Stage,
     VolumeProgress,
@@ -79,6 +82,31 @@ def test_failures_are_a_stage_of_their_own(tmp_path) -> None:
     assert record.finished
 
 
+def test_why_it_failed_reaches_the_pane(tmp_path) -> None:
+    # A count of failures tells an operator to fetch somebody who can read a journal.
+    # The reason tells them whether to plug the stick back in, wait for Loom to come
+    # up, or go and find a different one.
+    reporter = Reporter(str(tmp_path), "sdb", "/dev/sdb", "kingston-a1b2")
+    reporter.finish(0, 0, 1, "mc: <ERROR> Unable to connect to https://s3.loom")
+
+    record = read_all(str(tmp_path))[0]
+    assert "Unable to connect" in record.message
+
+
+def test_a_stage_without_a_reason_beside_it_is_not_a_record(tmp_path) -> None:
+    # The shape a record had before a failure carried its reason -- which is what a
+    # box halfway through an upgrade has, the watcher being the operator's process
+    # and the ingest being root's. It costs that one row and nothing else: the
+    # records around it are still drawn.
+    reporter = Reporter(str(tmp_path), "sdb", "/dev/sdb", "kingston-a1b2")
+    reporter.finish(3, 1024, 0)
+    raw = json.loads((tmp_path / "sdb.json").read_text())
+    raw["stage"] = raw.pop("outcome")["stage"]
+    (tmp_path / "sdc.json").write_text(json.dumps(raw))
+
+    assert [record.device for record in read_all(str(tmp_path))] == ["/dev/sdb"]
+
+
 def test_an_unreadable_record_costs_one_line_and_no_more(tmp_path) -> None:
     # A record written by another version of this program, which is what a box
     # halfway through an upgrade has. Dropping it costs one line in the pane;
@@ -120,16 +148,25 @@ def test_a_volume_nothing_can_measure_reads_as_no_total() -> None:
 
 
 def _record(
-    stage: Stage = Stage.COPYING, counts: Counts | None = None
+    stage: Stage = Stage.COPYING,
+    counts: Counts | None = None,
+    message: str = "",
 ) -> DeviceProgress:
     return DeviceProgress(
         device="/dev/sdb",
         kernel_name="sdb",
         name="kingston-a1b2",
-        stage=stage,
+        outcome=Outcome(stage=stage, message=message),
         volume=VolumeProgress(path="/dev/sdb1", index=1, count=1),
         counts=counts if counts is not None else Counts(1000, 500, 7, 0),
     )
+
+
+def _drawn(record: DeviceProgress) -> str:
+    """What the pane actually puts on the screen for one record."""
+    console = Console(width=200, record=True)
+    console.print(render([record]))
+    return console.export_text()
 
 
 class _Box:
@@ -252,3 +289,28 @@ def test_every_stage_renders() -> None:
 
 def test_a_volume_with_no_total_still_renders() -> None:
     assert render([_record(counts=Counts(total=0))]) is not None
+
+
+def test_a_failed_row_says_what_went_wrong() -> None:
+    # The pane is the persistent surface: `report.announce` puts the same reason on
+    # the status line for a few seconds, and this is where the operator finds it
+    # again when they come back to the box.
+    drawn = _drawn(
+        _record(
+            stage=Stage.FAILED,
+            counts=Counts(0, 0, 0, 1),
+            message="Unable to connect to https://s3.loom",
+        )
+    )
+
+    assert "Unable to connect" in drawn
+    assert "safe to remove" in drawn
+
+
+def test_a_finished_row_can_still_carry_a_reason() -> None:
+    # A skipped volume costs the operator documents without costing the copy a
+    # failure, so "DONE" alone would be the wrong thing to leave on the screen.
+    drawn = _drawn(_record(stage=Stage.DONE, message="/dev/sdb2 skipped: LUKS"))
+
+    assert "LUKS" in drawn
+    assert "DONE" in drawn

@@ -71,6 +71,20 @@ class Counts:
 
 
 @dataclass(frozen=True)
+class Outcome:
+    """Where a device got to, and -- when that is somewhere bad -- why.
+
+    The reason travels with the stage rather than beside it, because the pane is where
+    an operator finds out that something went wrong and therefore has to be where they
+    find out what: `report.announce` scrolls away, and the journal is not reachable
+    from the console session at all. Empty for everything that is going well.
+    """
+
+    stage: Stage = Stage.WAITING
+    message: str = ""
+
+
+@dataclass(frozen=True)
 class DeviceProgress:
     """One device's line in the pane."""
 
@@ -79,10 +93,20 @@ class DeviceProgress:
     # directory can withdraw a record without parsing file names back into devices.
     kernel_name: str
     name: str
-    stage: Stage = Stage.WAITING
+    outcome: Outcome = field(default_factory=Outcome)
     volume: VolumeProgress = field(default_factory=VolumeProgress)
     counts: Counts = field(default_factory=Counts)
     updated: float = 0.0
+
+    # Read through often enough -- by the pane, by the sweep, by the tests -- to be
+    # worth not spelling `record.outcome.stage` at every one of them.
+    @property
+    def stage(self) -> Stage:
+        return self.outcome.stage
+
+    @property
+    def message(self) -> str:
+        return self.outcome.message
 
     @property
     def finished(self) -> bool:
@@ -127,7 +151,11 @@ def mark_interrupted(progress_dir: str, record: DeviceProgress) -> None:
     publish(
         progress_dir,
         record.kernel_name,
-        replace(record, stage=Stage.INTERRUPTED, updated=time.time()),
+        replace(
+            record,
+            outcome=replace(record.outcome, stage=Stage.INTERRUPTED),
+            updated=time.time(),
+        ),
     )
 
 
@@ -176,7 +204,10 @@ def _read(path: str) -> DeviceProgress | None:
             device=str(raw["device"]),
             kernel_name=str(raw["kernel_name"]),
             name=str(raw["name"]),
-            stage=Stage(raw["stage"]),
+            outcome=Outcome(
+                stage=Stage(raw["outcome"]["stage"]),
+                message=str(raw["outcome"]["message"]),
+            ),
             volume=VolumeProgress(
                 path=str(raw["volume"]["path"]),
                 index=int(raw["volume"]["index"]),
@@ -221,7 +252,7 @@ class Reporter:
         """Begin one volume, carrying the object count from the ones before it."""
         self._record = replace(
             self._record,
-            stage=Stage.COPYING,
+            outcome=replace(self._record.outcome, stage=Stage.COPYING),
             volume=VolumeProgress(path=volume, index=index, count=count),
             counts=replace(self._record.counts, total=total, copied=0),
         )
@@ -235,8 +266,14 @@ class Reporter:
         )
         self.update()
 
-    def finish(self, objects: int, copied: int, failures: int) -> None:
+    def finish(
+        self, objects: int, copied: int, failures: int, message: str = ""
+    ) -> None:
         """The copy is over, one way or the other.
+
+        `message` is why it failed, when it did. It is the only account of the failure
+        that stays on the screen: the announcement scrolls, this row waits for the
+        operator to come back and read it.
 
         `copied` is the whole device's byte count, not the volume in flight's, and it
         replaces what `advance` last wrote. This row is the last thing an operator reads
@@ -247,7 +284,9 @@ class Reporter:
         """
         self._record = replace(
             self._record,
-            stage=Stage.FAILED if failures else Stage.DONE,
+            outcome=Outcome(
+                stage=Stage.FAILED if failures else Stage.DONE, message=message
+            ),
             counts=replace(
                 self._record.counts,
                 copied=copied,

@@ -178,7 +178,14 @@ def run(args: argparse.Namespace) -> int:
     # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
     disk = settle(args.device)
     if not disk.kernel_name:
-        logger.error("%s is not a block device this box can read", args.device)
+        # Announced, not just logged: a stick the box cannot read at all is the one
+        # case where nothing else will ever appear on the screen -- there is no pane,
+        # no progress record and no manifest, so silence would read as "ignored".
+        report.failure(
+            f"{args.device} is not a block device this box can read",
+            "",
+            args.console_socket,
+        )
         return 1
 
     guard = wait_for_key_guard(args.key_guard_state_dir)
@@ -229,18 +236,25 @@ def run(args: argparse.Namespace) -> int:
     try:
         transfer.configure_alias(args.endpoint, config_dir)
     except transfer.TransferError as error:
-        logger.error("%s", error)
-        reporter.finish(0, 0, 1)
+        # mc's own words, both on the screen and in the row: everything that can go
+        # wrong here -- a certificate the box does not trust, an endpoint nothing
+        # answers on, an mc that will not start -- is distinguishable only by them.
+        reason = report.failure(
+            f"{disk.path} was not ingested", str(error), args.console_socket
+        )
+        reporter.finish(0, 0, 1, reason)
         return 1
 
     if not transfer.wait_for_cluster(
         args.endpoint, config_dir, transfer.CLUSTER_WAIT_TIMEOUT_S
     ):
-        report.announce(
-            f"[loom] {args.endpoint} never answered; {disk.path} was not ingested.",
+        reason = report.failure(
+            f"{disk.path} was not ingested",
+            f"{args.endpoint} never answered, after "
+            f"{transfer.CLUSTER_WAIT_TIMEOUT_S // 60} minutes of waiting",
             args.console_socket,
         )
-        reporter.finish(0, 0, 1)
+        reporter.finish(0, 0, 1, reason)
         return 1
 
     report.warn_if_short_on_space(
@@ -259,6 +273,9 @@ def _ingest_volumes(
     total_objects = 0
     total_bytes = 0
     total_failures = 0
+    # The first thing that went wrong on this stick, kept for the row the operator
+    # reads at the end. Counts say how much went wrong; only this says what.
+    first_error = ""
 
     for index, volume in enumerate(disk.volumes, start=1):
         prefix = _volume_prefix(identity, index, volume, len(disk.volumes))
@@ -272,6 +289,14 @@ def _ingest_volumes(
         )
         if isinstance(mounted, mounts.SkippedVolume):
             _annotate(plan_rows, volume.path, "skipped", mounted.reason)
+            # A volume that could not be mounted is the commonest way for a stick to
+            # produce fewer documents than the operator expected -- an encrypted
+            # partition, a filesystem this box has no driver for -- and until now the
+            # only account of it was in a manifest inside the bucket.
+            first_error = first_error or f"{volume.path} skipped: {mounted.reason}"
+            report.failure(
+                f"{volume.path} was not copied", mounted.reason, args.console_socket
+            )
             continue
 
         # Measured once the volume is mounted and before a byte moves: this is what
@@ -303,11 +328,19 @@ def _ingest_volumes(
             "ingested",
             f"{result.objects} objects, {result.failures} failures",
         )
-        report.announce(
-            f"[loom] {volume.path}: {result.objects} files uploaded "
-            f"({result.bytes_transferred / (1024 ** 3):.1f} GiB).",
-            args.console_socket,
+        uploaded = (
+            f"{volume.path}: {result.objects} files uploaded "
+            f"({result.bytes_transferred / (1024 ** 3):.1f} GiB)"
         )
+        if result.failures:
+            first_error = first_error or result.first_error
+            report.failure(
+                f"{uploaded}, {result.failures} failed",
+                result.first_error,
+                args.console_socket,
+            )
+        else:
+            report.announce(f"[loom] {uploaded}.", args.console_socket)
 
     status = "complete" if total_failures == 0 else "partial"
     manifest = {
@@ -326,24 +359,39 @@ def _ingest_volumes(
         "volumes": plan_rows,
     }
 
-    transfer.put_manifest(
+    manifest_error = transfer.put_manifest(
         manifest,
         args.bucket,
         f"{args.prefix}/{identity.prefix_component}/{MANIFEST_NAME}",
         config_dir,
     )
+    if manifest_error:
+        first_error = first_error or f"provenance record not written: {manifest_error}"
+        report.failure(
+            f"{disk.path}: the provenance record was not written",
+            manifest_error,
+            args.console_socket,
+        )
     report.write_state(args.state_dir, manifest)
+
+    # Phrased so that the reason `report.failure` appends lands at the end of the
+    # line rather than after the full stop of "safe to remove".
+    summary = (
+        f"{disk.path} done: {total_objects} files, "
+        f"{total_bytes / (1024 ** 3):.1f} GiB, {total_failures} failures "
+        "-- safe to remove"
+    )
 
     # The pane keeps saying this until the stick is actually unplugged, which is the
     # half `announce` alone could never do: a line scrolls, a pane does not. What
     # takes the row away is the device going, not this call -- see `release`.
-    reporter.finish(total_objects, total_bytes, total_failures)
-    report.announce(
-        f"[loom] {disk.path} done: {total_objects} files, "
-        f"{total_bytes / (1024 ** 3):.1f} GiB, {total_failures} failures. "
-        "Safe to remove.",
-        args.console_socket,
+    reporter.finish(
+        total_objects, total_bytes, total_failures, report.condense(first_error)
     )
+    if total_failures:
+        report.failure(summary, first_error, args.console_socket)
+    else:
+        report.announce(f"[loom] {summary}", args.console_socket)
     return 0 if total_failures == 0 else 1
 
 
