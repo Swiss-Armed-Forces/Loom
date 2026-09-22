@@ -198,10 +198,18 @@ let
         iw # the AP-mode probe, which is the whole point on a --wifi box
         nvme-cli
         util-linux # lsblk
-        systemd # udevadm, for ID_PATH
+        systemd # udevadm, for ID_PATH; bootctl, the Secure Boot fallback
         jq # --json only; the text report needs none of this
       ]
-      ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi;
+      ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi
+      # Keyed on the driver being configured rather than on `gpuVendor` -- the
+      # one place in this file where those two deliberately differ. `--no-gpu`
+      # builds a stick with gpuVendor forced to null but `hardware.nvidia` still
+      # present, because on the Spark the driver also runs the console. A box
+      # built that way is exactly the box somebody runs this tool on, to find
+      # out why the GPU did not enumerate, and without nvidia-smi on its PATH
+      # the report cannot answer that.
+      ++ lib.optional config.hardware.nvidia.enabled config.hardware.nvidia.package.bin;
     text = ''
       export LOOM_PLATFORM_ID=${lib.escapeShellArg config.loom.platform.id}
       export LOOM_PLATFORM_DESCRIPTION=${lib.escapeShellArg config.loom.platform.description}
@@ -535,12 +543,18 @@ in
     # Both run inside loom.service, so PATH here is what matters rather than the
     # operator's shell -- though it lands in both, as the whole toolchain does.
     #
-    # Nothing else comes with it: the ROCm userspace Ollama needs is inside
-    # ollama/ollama:rocm, not out here. And there is no nvidia branch, because no
-    # platform declares that vendor yet -- nvidia-smi arrives with the driver
-    # rather than as a standalone package, so the platform that wants it brings
-    # `hardware.nvidia` along too.
-    ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi;
+    # Nothing else comes with either: the ROCm userspace Ollama needs is inside
+    # ollama/ollama:rocm and the CUDA userspace is inside ollama/ollama, not out
+    # here.
+    #
+    # The two are spelled differently because the vendors package them
+    # differently. rocm-smi is a standalone package; nvidia-smi is not, it is an
+    # output of the driver -- so the nvidia branch names the driver the platform
+    # configured rather than something fetched alongside it, and a platform that
+    # sets this vendor without `hardware.nvidia` gets an evaluation error rather
+    # than a stick whose loom.service dies on `nvidia-smi: command not found`.
+    ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi
+    ++ lib.optional (config.loom.platform.gpuVendor == "nvidia") config.hardware.nvidia.package.bin;
 
   environment.systemPackages =
     config.loom.toolchain

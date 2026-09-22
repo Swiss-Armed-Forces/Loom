@@ -65,11 +65,12 @@ differs between them.
 | Architecture | `aarch64-linux` | `x86_64-linux` | `x86_64-linux` |
 | Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine | any ordinary x86_64 machine |
 | Console | monitor and USB keyboard | monitor and USB keyboard | monitor and USB keyboard |
-| Network | ConnectX-7, one port | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
+| Network | ConnectX-7, expected to present four `mlx5` ports, plus a 10GbE RJ45 — see below | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
 | WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
-| GPU | not supported (see below) | **Radeon 8060S via ROCm** | not supported (see below) |
-| AI services | **no** — no GPU | yes | **no** — no GPU, and not the memory either |
+| GPU | **GB10 Blackwell via CUDA** — not yet confirmed on hardware, see below | **Radeon 8060S via ROCm** | not supported (see below) |
+| AI services | yes | yes | **no** — no GPU, and not the memory either |
 | Autoscaling | yes | yes | **no** — see below |
+| Before installing | update firmware from DGX OS, Secure Boot off — see [What you need](#what-you-need) | UMA split, radios off — see [What you need](#what-you-need) | — |
 
 `nuc12` covers both Wall Street Canyon chassis, the slim NUC12WSK and the tall NUC12WSH — same board, same
 NIC. A WSH fitted with the second-LAN expansion has two `igc` ports, and then the match cannot single one
@@ -184,6 +185,33 @@ On the EVO-X2 specifically, check two more firmware settings before installing:
   side.
 - **Disable the radios** in the AMI BIOS, for the same reason the threat model gives above.
 
+On the DGX Spark specifically, there is one step that has to happen **before** the box is disconnected
+from the internet, and it cannot be undone later:
+
+- **Update the firmware from DGX OS, while the box still has a network.** A factory-fresh Spark ships with
+  firmware only DGX OS can boot from — NixOS will not come up on it at all, and the appliance stick will
+  look dead rather than unsupported. NVIDIA publishes Spark firmware to the Linux Vendor Firmware Service,
+  so from the DGX OS the box arrived with:
+
+  ```bash
+  fwupdmgr refresh
+  fwupdmgr get-updates
+  fwupdmgr update
+  ```
+
+  This is the one prerequisite that needs the box online. An air-gapped Spark that was never updated has to
+  be put back on a network to get past it.
+- **Secure Boot off**, as for every platform, but worth checking twice here: it is on by default on this
+  box.
+
+`loom-platform-info` reports both — the firmware version with any pending update, and the Secure Boot and
+Setup Mode flags read straight out of the EFI variables. It is plain bash with no Nix dependency precisely
+so it can be run on the Spark **while it is still running DGX OS**, before a stick is ever built:
+
+```bash
+./nixos/scripts/platform_info.sh
+```
+
 ## Building a stick
 
 ```bash
@@ -199,7 +227,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
-| `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — today only `evo-x2`. There is no `--gpu`: the GPU is a property of the box. See [GPU support](#gpu-support) for when you need this. |
+| `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — `spark` or `evo-x2`. There is no `--gpu`: the GPU is a property of the box. On the Spark this drops the offload but keeps the NVIDIA driver, which also runs that box's console. See [GPU support](#gpu-support) for when you need this. |
 | `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
 | `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
 | `--wifi-ssid SSID` | Network name. Defaults to a generated `loom-xxxx`. |
@@ -1009,9 +1037,9 @@ is both slower and weaker than a controller-level erase.
 
 Whether a box offloads Ollama to a GPU is declared once, as `gpuVendor` in `nixos/platforms/<id>.nix`, and
 nothing at build time turns it on. There is no `--gpu` flag: asking for a GPU the box does not have would
-only produce a stick that fails on first boot. Today the EVO-X2 declares one and the other two do not — and
-because [AI services follow the GPU](#ai-services-follow-the-gpu), that is also what decides which boxes ship
-Ollama at all.
+only produce a stick that fails on first boot. The Spark and the EVO-X2 declare one and the NUC 12 does
+not — and because [AI services follow the GPU](#ai-services-follow-the-gpu), that is also what decides which
+boxes ship Ollama at all.
 
 **On the EVO-X2** the appliance passes `--gpus amd` to `up.sh`, which selects `charts/values-amd-gpu.yaml`,
 enables minikube's `amd-gpu-device-plugin` addon and asks `minikube start` for the GPU. `amdgpu` is mainline
@@ -1033,22 +1061,50 @@ They raise a ceiling rather than reserving anything: nothing leaves the host unt
 it. Set the firmware's VRAM split to its _minimum_ to go with them, and see
 [What you need](#what-you-need) for why that is the right way round.
 
-**On the DGX Spark** mainline Linux boots but is reported to lose both the GPU and the ConnectX-7 networking,
-which NVIDIA provides through their own kernel fork. The NIC is the part that makes this more than a
-performance question: the appliance serves DHCP and `*.loom` on it. This needs validating on real hardware
-before a driver module is written, and the first thing to try is booting a stock NixOS aarch64 image on a
-Spark and checking whether the ethernet port comes up. Until then the console's `btop` pane has no GPU
-readout either: it is built for whatever `gpuVendor` says, and a readout over a driver that is not loaded
-would report a broken accelerator rather than an absent one. Settling the driver question brings both back
-together.
+**On the DGX Spark** the appliance passes `--gpus nvidia` to `up.sh`, which selects
+`charts/values-nvidia-gpu.yaml`, enables minikube's `nvidia-gpu-device-plugin` addon and asks
+`minikube start` for the GPU. The driver is stock nixpkgs: the pin carries NVIDIA 595.71.05 with the open
+kernel modules, which is what a GB10 Blackwell needs, and `nixos/platforms/spark.nix` adds
+`hardware.nvidia-container-toolkit` so the device reaches the minikube node container through a CDI spec.
+As on the EVO-X2, none of the compute stack lives on the host — the CUDA userspace is inside the `ollama`
+image, and the box carries only `nvidia-smi`, which comes out of the driver itself and which `up.sh` needs
+for its preflight. That same driver puts the GPU readout in the console's `btop` pane.
+
+> **This has not been confirmed on hardware yet.** Nobody has booted this image on a Spark, so
+> `gpuVendor = "nvidia"` is a claim from documentation rather than a measurement. Run
+> `loom-platform-info` on the box before relying on it — its **GPU** and **GPU in containers** sections
+> exist for exactly this, and [When the GPU does not come up](#when-the-gpu-does-not-come-up) is the way
+> back if the claim turns out wrong.
+
+Two things about this box are genuinely unsettled, and neither is the GPU.
+
+The first is **the network port**. The ConnectX-7 presents two QSFP cages with two 100G MACs each, so Linux
+is expected to show four `mlx5` interfaces — `netMatch` in `nixos/platforms/spark.nix` matches the driver
+and therefore matches all four, and whichever udev processes first becomes `loom0`. There is also a 10GbE
+RJ45 that NVIDIA's documentation calls the management port, which is the more natural thing to hand an
+operator a cable for. `loom-platform-info` prints the PCI ids and port ids for every interface and warns
+when more than one matches; use `--interface NAME` to pin the right one until the platform file can be
+narrowed. See [The appliance network interface](#the-appliance-network-interface).
+
+The second is **the kernel**. Every published route to NixOS on this box goes through NVIDIA's kernel fork
+via [`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), and this image deliberately
+does not use it. Their own USB image offers both kernels and describes the difference as _Ethernet_, not
+GPU; their fork is NV-Kernels 6.17.13 where our pin ships 6.18.49, so taking it means going back a major
+version on the one subsystem in question; and it would be built from source on aarch64 with no cache hits.
+What it would buy, besides possibly the NIC, is `cppc_cpufreq.auto_sel_mode=1`, which upstream measures at
+roughly 3× single-thread memory bandwidth and which needs their kernel to work — a real cost of the choice
+made here. If `loom-platform-info` shows no usable wired NIC on a Spark, that report is the evidence for
+reopening this.
 
 **On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU, and neither has `btop`.
 
 ### When the GPU does not come up
 
-`up.sh` counts GPUs through `rocm-smi` and hard-exits below `LOOM_MIN_GPU`. So a box where ROCm does not
-enumerate the iGPU does not quietly fall back to the CPU — it serves nothing, and there is no remote access
-to repair it with. Strix Halo is recent enough that this is worth watching for on first boot.
+`up.sh` counts GPUs through the vendor's SMI tool — `rocm-smi` or `nvidia-smi` — and hard-exits below
+`LOOM_MIN_GPU`. So a box where the GPU does not enumerate does not quietly fall back to the CPU: it serves
+nothing, and there is no remote access to repair it with. Worth watching for on first boot on both GPU
+platforms — Strix Halo is recent enough on the EVO-X2, and on the Spark nothing has been confirmed on
+hardware at all.
 
 The way out is a new stick:
 
@@ -1067,11 +1123,23 @@ prints what it decided:
 `--no-gpu` is refused on a platform that has no GPU to disable, so a stick that came out CPU-only did so for
 a reason you can read back off it.
 
-Before reaching for a new stick, run `loom-platform-info`: it says whether `/dev/kfd` exists at all, what
-`rocm-smi` reports, and — the case that looks like a working GPU but performs like none — how much GTT the
-kernel actually granted against the ceiling the image asked for. A GTT figure far below that ceiling means
-the kernel parameters did not take effect, which is a different problem from ROCm not enumerating, and has
-a different fix.
+On the Spark the same flag does the same job — `build-appliance-image --platform spark --no-gpu ...` — with
+one difference worth knowing: it drops the offload and the AI services but **keeps the NVIDIA driver**,
+because on that box the driver is also what puts the console on the monitor. The result is therefore not
+"the Spark stick without NVIDIA"; it is the Spark stick without the GPU _offload_.
+
+Before reaching for a new stick, run `loom-platform-info`. On the EVO-X2 it says whether `/dev/kfd` exists
+at all, what `rocm-smi` reports, and — the case that looks like a working GPU but performs like none — how
+much GTT the kernel actually granted against the ceiling the image asked for. A GTT figure far below that
+ceiling means the kernel parameters did not take effect, which is a different problem from ROCm not
+enumerating and has a different fix.
+
+On the Spark it answers the equivalent questions in two places. The **GPU** section reports
+`/dev/nvidiactl`, the loaded `nvidia*` modules, the driver version out of `/proc/driver/nvidia/version` and
+what `nvidia-smi -L` names the board. The **GPU in containers** section covers the half that a working
+`nvidia-smi` does not prove: whether a CDI spec was generated, whether `nvidia-ctk` is present, and which
+runtimes docker knows about. A box where `nvidia-smi` works but no CDI spec exists will pass `up.sh`'s
+preflight and then schedule Ollama onto a node advertising no `nvidia.com/gpu` at all.
 
 ## Troubleshooting
 
