@@ -12,8 +12,8 @@ about what may be in them:
   * One line. `loom-info` prints the summary with a single `printf`, and a status line is
     a line.
 
-tests/test_text.py asserts all three against every stage, which is cheaper than finding
-out on a box in a room somebody had to drive to.
+tests/test_summary.py asserts all three against every stage, which is cheaper than
+finding out on a box in a room somebody had to drive to.
 """
 
 from loom_ready.state import Readiness, Stage

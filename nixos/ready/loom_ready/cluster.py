@@ -3,7 +3,8 @@
 Split deliberately down the middle: everything that shells out is in `Commands` and
 `Cluster`, and everything that decides is a plain function over parsed JSON. The rules
 below are the whole point of this package and none of them needs a cluster to exercise --
-see tests/test_cluster.py, which feeds them the documents a real bring-up produces.
+see tests/test_workloads.py and tests/test_stages.py, which feed them the documents a
+real bring-up produces.
 
 Workloads, not pods. A pod list cannot express "desired": a Deployment rolling out has no
 pods for the replicas it has not created yet, so counting pods makes the denominator

@@ -769,6 +769,10 @@ which is the failure a percentage hides best: nothing is crashing, nothing is pu
 there. The bar pulses rather than filling while there is no cluster to ask yet, because a ratio of nothing to
 nothing is not zero per cent and must never be drawn as a hundred.
 
+The bar belongs to run mode. First-time setup pulls container images for hours with no cluster to ask and none
+coming, so nothing publishes readiness there and that pane is the `loom-fetch` log alone — every line of it,
+which is the whole of what that mode has to show for itself.
+
 What it counts is **workloads**, not pods: a Deployment mid-rollout has no pods yet for the replicas it has
 not created, so counting pods alone makes the denominator chase the numerator and the bar sits near the end
 from the first second. Deployments, StatefulSets, DaemonSets and Jobs each carry both numbers. Two cases are

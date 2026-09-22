@@ -19,7 +19,7 @@ Two files rather than one, and the second is not a duplicate:
 The `summary` line is ASCII with no backslash in it, which is not a style preference:
 agetty reads a backslash in an issue file as the start of an escape of its own and eats it
 before anyone sees it (box.nix:84-88). `text.summary` is what guarantees that, and
-tests/test_text.py is what keeps it true.
+tests/test_summary.py is what keeps it true.
 """
 
 import json

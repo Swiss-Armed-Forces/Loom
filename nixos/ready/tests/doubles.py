@@ -1,14 +1,24 @@
-"""Test doubles for the two seams this package has.
+"""Test doubles for the seams this package has.
 
-Both are passed in rather than patched into place: `Cluster` takes a `Commands`, and
-`Publisher` takes a `Cluster`. Nothing here replaces anything at runtime behind the
-code's back, which is the repository's standing rule about monkeypatching -- and the
-reason the seams exist in the shape they do.
+Every one of them is passed in rather than patched into place: `Cluster` takes a
+`Commands`, `Publisher` takes a `Cluster`, and `Pane` takes a `Journal` and a console.
+Nothing here replaces anything at runtime behind the code's back, which is the
+repository's standing rule about monkeypatching -- and the reason the seams exist in the
+shape they do.
+
+The one exception is `RecordingPane`, which overrides the `execv` that ends the pane's
+life. That is not a seam that can be injected: the point of the call is that nothing
+runs after it.
 """
 
+import io
 import json
+from collections.abc import Callable, Iterator
+
+from rich.console import Console
 
 from loom_ready.cluster import Cluster, Commands, Completed, Observation
+from loom_ready.pane import Journal, Pane, PaneSettings, PaneTiming
 
 # What a call is about, decided from its argv. The publisher makes at most three kinds of
 # call per tick and a test wants to answer them differently.
@@ -131,6 +141,63 @@ def unschedulable(name: str, reason: str = "Unschedulable") -> dict:
             ],
         },
     }
+
+
+class FakeJournal(Journal):
+    """Canned log lines, and whether the pane stopped following them.
+
+    A subclass for the same reason `StubCluster` is one: `Pane` keeps its real
+    constructor, so the tests cannot drift from it. A real journal under `--follow`
+    never ends; this one does, which is what lets a test assert on everything the pane
+    printed.
+
+    `then` runs once the last line has been yielded. That is how a test makes the box
+    become ready at a moment it chooses -- after the log has been drawn -- rather than
+    racing the panel's own poll for it.
+    """
+
+    def __init__(self, lines: list[str], then: Callable[[], None] | None = None):
+        super().__init__(unit="test.service")
+        self._lines = list(lines)
+        self._then = then
+        self.stopped = False
+
+    def lines(self) -> Iterator[str]:
+        yield from self._lines
+        if self._then is not None:
+            self._then()
+
+    def stop(self) -> None:
+        self.stopped = True
+
+
+class RecordingPane(Pane):
+    """A pane that records the handover instead of performing it.
+
+    `_become` is `os.execv`, which does not return; a test that let it run would be
+    replaced by k9s, and there is no k9s here. Overriding the one call keeps everything
+    above it -- the preamble, the log, the panel, the closing lines -- exactly the code
+    the appliance runs.
+    """
+
+    def __init__(self, settings: PaneSettings, journal: Journal, **kwargs):
+        # Wide enough that nothing the pane prints is wrapped mid-word, since the
+        # assertions are about the words.
+        self.screen = io.StringIO()
+        kwargs.setdefault("console", Console(file=self.screen, width=120))
+        # Quick enough that a case costs milliseconds rather than the six seconds the
+        # real waits add up to. See PaneTiming.
+        kwargs.setdefault("timing", PaneTiming(refresh=0.01, handover_grace=0.0))
+        super().__init__(settings, journal=journal, **kwargs)
+        self.became: str | None = None
+
+    def _become(self, program: str) -> int:
+        self.became = program
+        return 0
+
+    def printed(self) -> str:
+        """Everything this pane put on the screen."""
+        return self.screen.getvalue()
 
 
 class StubCluster(Cluster):
