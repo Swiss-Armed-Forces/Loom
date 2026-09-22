@@ -50,9 +50,15 @@ class S3Crawler:
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
 
         def stream_generator():
-            yield from self.client.get_object(self.bucket_name, object_name).stream(
-                S3_READ_CHUNK_SIZE
-            )
+            response = self.client.get_object(self.bucket_name, object_name)
+            try:
+                yield from response.stream(S3_READ_CHUNK_SIZE)
+            finally:
+                # minio requires both calls, otherwise the buffered response and its
+                # connection stay alive - notably when retry() abandons a partially
+                # consumed stream.
+                response.close()
+                response.release_conn()
 
         uploaded_at = datetime.now()
         file_content = retry(
