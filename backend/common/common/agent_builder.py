@@ -66,8 +66,16 @@ def sanitize_document_text(text: str) -> str:
 #
 # thinking -> reasoning_effort
 #
-# Default mapping of pydantic is True: 'medium', False: 'none'.
-# These are supported by Ollama.
+# Mapped by OPENAI_REASONING_EFFORT_MAP in
+# https://github.com/pydantic/pydantic-ai/blob/main/pydantic_ai_slim/pydantic_ai/profiles/openai.py
+# as True: 'medium', False: 'none'. Both are accepted by Ollama, which turns them
+# back into its native `think` value, and by vLLM, which turns them into the
+# `enable_thinking` chat template variable Qwen reads.
+#
+# That translation only runs when the resolved model profile advertises
+# supports_thinking. It defaults to False and OpenAIProvider recognises no
+# self-hosted model name, so without the profile parameter below
+# Model.prepare_request strips `thinking` and no reasoning_effort is ever sent.
 class AgentBuilder[T, U]:
     def __init__(self, dependency_format: type[T], output_format: OutputSpec[U]):
         self._dependency_format = dependency_format
@@ -78,6 +86,12 @@ class AgentBuilder[T, U]:
         agent_settings: LLMClientSettings, merge_system_messages: bool = False
     ) -> OpenAIModelProfile:
         profile = OpenAIModelProfile()
+
+        # Set for every backend rather than for a list of known ones: the
+        # OpenAI-compatible servers Loom is pointed at (Ollama, vLLM, SGLang,
+        # llama.cpp, ...) all accept reasoning_effort, and an allowlist would
+        # silently drop `thinking` for whichever server is not on it.
+        profile["supports_thinking"] = True
 
         if merge_system_messages:
             profile["openai_chat_supports_multiple_system_messages"] = False
@@ -104,7 +118,8 @@ class AgentBuilder[T, U]:
         if agent_settings.max_tokens is not None:
             result["max_tokens"] = agent_settings.max_tokens
 
-        result["thinking"] = agent_settings.thinking
+        if agent_settings.thinking is not None:
+            result["thinking"] = agent_settings.thinking
 
         return result
 
@@ -162,7 +177,8 @@ class AgentBuilder[T, U]:
             return self._init_agent(
                 agent_settings,
                 lambda: f"{instructions()}\n\n{_GENERAL_GUARDRAILS}",
-                merge_system_messages,
+                tool_timeout=tool_timeout,
+                merge_system_messages=merge_system_messages,
             )
 
         system_prompt = ""

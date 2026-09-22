@@ -264,6 +264,9 @@ data:
     {{- if ne .Values.llm.embedding.temperature nil }}
     llm__embedding__temperature: {{ .Values.llm.embedding.temperature | quote }}
     {{- end }}
+    {{- if ne .Values.llm.embedding.thinking nil }}
+    llm__embedding__thinking: {{ .Values.llm.embedding.thinking | quote }}
+    {{- end }}
     {{- if .Values.llm.embedding.extra_headers }}
     llm__embedding__extra_headers: {{ .Values.llm.embedding.extra_headers | toJson | quote }}
     {{- end }}
@@ -307,6 +310,9 @@ data:
     {{- if ne .Values.llm.tool.temperature nil }}
     llm__tool__temperature: {{ .Values.llm.tool.temperature | quote }}
     {{- end }}
+    {{- if ne .Values.llm.tool.thinking nil }}
+    llm__tool__thinking: {{ .Values.llm.tool.thinking | quote }}
+    {{- end }}
     {{- if .Values.llm.tool.extra_headers }}
     llm__tool__extra_headers: {{ .Values.llm.tool.extra_headers | toJson | quote }}
     {{- end }}
@@ -334,6 +340,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.agent.temperature nil }}
     llm__agent__temperature: {{ .Values.llm.agent.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.agent.thinking nil }}
+    llm__agent__thinking: {{ .Values.llm.agent.thinking | quote }}
     {{- end }}
     {{- if .Values.llm.agent.extra_headers }}
     llm__agent__extra_headers: {{ .Values.llm.agent.extra_headers | toJson | quote }}
@@ -368,6 +377,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.summarization_key_points.temperature nil }}
     llm__summarization_key_points__temperature: {{ .Values.llm.summarization_key_points.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.summarization_key_points.thinking nil }}
+    llm__summarization_key_points__thinking: {{ .Values.llm.summarization_key_points.thinking | quote }}
     {{- end }}
     {{- if .Values.llm.summarization_key_points.extra_headers }}
     llm__summarization_key_points__extra_headers: {{ .Values.llm.summarization_key_points.extra_headers | toJson | quote }}
@@ -406,6 +418,9 @@ data:
     {{- if ne .Values.llm.summarization.temperature nil }}
     llm__summarization__temperature: {{ .Values.llm.summarization.temperature | quote }}
     {{- end }}
+    {{- if ne .Values.llm.summarization.thinking nil }}
+    llm__summarization__thinking: {{ .Values.llm.summarization.thinking | quote }}
+    {{- end }}
     {{- if .Values.llm.summarization.extra_headers }}
     llm__summarization__extra_headers: {{ .Values.llm.summarization.extra_headers | toJson | quote }}
     {{- end }}
@@ -437,6 +452,9 @@ data:
     {{- if ne .Values.llm.summarization_refine.temperature nil }}
     llm__summarization_refine__temperature: {{ .Values.llm.summarization_refine.temperature | quote }}
     {{- end }}
+    {{- if ne .Values.llm.summarization_refine.thinking nil }}
+    llm__summarization_refine__thinking: {{ .Values.llm.summarization_refine.thinking | quote }}
+    {{- end }}
     {{- if .Values.llm.summarization_refine.extra_headers }}
     llm__summarization_refine__extra_headers: {{ .Values.llm.summarization_refine.extra_headers | toJson | quote }}
     {{- end }}
@@ -467,6 +485,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.hyde.temperature nil }}
     llm__rag_hyde__temperature: {{ .Values.llm.hyde.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.hyde.thinking nil }}
+    llm__rag_hyde__thinking: {{ .Values.llm.hyde.thinking | quote }}
     {{- end }}
     {{- if .Values.llm.hyde.extra_headers }}
     llm__rag_hyde__extra_headers: {{ .Values.llm.hyde.extra_headers | toJson | quote }}
@@ -507,6 +528,9 @@ data:
     {{- if ne .Values.llm.rerank.temperature nil }}
     llm__rag_rerank__temperature: {{ .Values.llm.rerank.temperature | quote }}
     {{- end }}
+    {{- if ne .Values.llm.rerank.thinking nil }}
+    llm__rag_rerank__thinking: {{ .Values.llm.rerank.thinking | quote }}
+    {{- end }}
     {{- if .Values.llm.rerank.extra_headers }}
     llm__rag_rerank__extra_headers: {{ .Values.llm.rerank.extra_headers | toJson | quote }}
     {{- end }}
@@ -535,6 +559,9 @@ data:
     {{- if ne .Values.llm.synthesize.temperature nil }}
     llm__rag_synthesize__temperature: {{ .Values.llm.synthesize.temperature | quote }}
     {{- end }}
+    {{- if ne .Values.llm.synthesize.thinking nil }}
+    llm__rag_synthesize__thinking: {{ .Values.llm.synthesize.thinking | quote }}
+    {{- end }}
     {{- if .Values.llm.synthesize.extra_headers }}
     llm__rag_synthesize__extra_headers: {{ .Values.llm.synthesize.extra_headers | toJson | quote }}
     {{- end }}
@@ -562,6 +589,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.vision.temperature nil }}
     llm__vision__temperature: {{ .Values.llm.vision.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.vision.thinking nil }}
+    llm__vision__thinking: {{ .Values.llm.vision.thinking | quote }}
     {{- end }}
     {{- if .Values.llm.vision.extra_headers }}
     llm__vision__extra_headers: {{ .Values.llm.vision.extra_headers | toJson | quote }}
@@ -593,6 +623,9 @@ data:
     {{- end }}
     {{- if ne .Values.llm.translation.temperature nil }}
     llm__translation__temperature: {{ .Values.llm.translation.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.translation.thinking nil }}
+    llm__translation__thinking: {{ .Values.llm.translation.thinking | quote }}
     {{- end }}
     {{- if .Values.llm.translation.extra_headers }}
     llm__translation__extra_headers: {{ .Values.llm.translation.extra_headers | toJson | quote }}

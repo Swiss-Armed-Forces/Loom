@@ -276,6 +276,7 @@ _llmDefaults: &llm-defaults
   api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
   temperature: null
+  thinking: null      # true/false; null leaves the model to its own default
   extra_headers: null
   extra_body: null
   timeout: null

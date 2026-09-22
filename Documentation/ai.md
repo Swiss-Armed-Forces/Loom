@@ -93,6 +93,43 @@ Tools are split into two tiers:
 - **Frontend tools** — TypeScript functions registered in the React frontend. The agent declares
   them as deferred tools; the frontend executes them after each agent run and re-submits results.
 
+### Thinking
+
+Every LLM client has a `thinking` setting (`llm.<client>.thinking` in Helm), which
+`AgentBuilder._build_model_settings` turns into pydantic-ai's unified `thinking` model setting:
+
+| Value   | Sent as                    | Effect                                                |
+| ------- | -------------------------- | ----------------------------------------------------- |
+| `true`  | `reasoning_effort: medium` | Thinking on                                           |
+| `false` | `reasoning_effort: none`   | Thinking off                                          |
+| `null`  | nothing                    | Parameter omitted — the model applies its own default |
+
+Both supported backends accept `reasoning_effort` on `/v1/chat/completions` and translate it
+themselves: Ollama converts it back into its native `think` value, and vLLM converts it into the
+`enable_thinking` chat-template variable that Qwen's template reads. Reasoning text comes back in a
+`reasoning` field on the message in both cases, which pydantic-ai turns into the `ThinkingPart`s
+that become `ReasoningActivityEntry` items.
+
+Two things to know:
+
+- The translation only happens because `AgentBuilder._build_model_profile` sets
+  `supports_thinking` on the model profile. pydantic-ai defaults that to `False` and strips the
+  setting without warning, so removing it makes every `thinking` value silently inert.
+- The model's chat template has the final say. A checkpoint whose template ignores
+  `enable_thinking`, or one that always reasons, will keep thinking no matter what is sent. Check a
+  new model with:
+
+  ```bash
+  curl -s http://ollama.loom/v1/chat/completions -H 'Content-Type: application/json' \
+    -d '{"model":"<model>","reasoning_effort":"none","messages":[{"role":"user","content":"What is 17*23?"}]}' \
+    | jq '.choices[0].message.reasoning'
+  ```
+
+Defaults are set per client in `LLMClientSettings` subclasses: on for `summarization`,
+`summarization_refine`, `rag_rerank`, `rag_synthesize`, `tool` and `agent`; off for `embedding`,
+`summarization_key_points`, `rag_hyde`, `vision`, `language_detection` and `translation`. Clients
+that reason spend part of `max_tokens` on reasoning tokens — see #287.
+
 ### AG-UI Streaming Protocol
 
 The agent run is exposed as a Server-Sent Event (SSE) stream via pydantic-ai's `AGUIAdapter`. The
