@@ -40,7 +40,8 @@ this file is about the code.
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 | `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
-| `tests/scripts/` | The testScripts themselves, as Python files the repository's own hooks lint and type-check. Each `.nix` file above reads one in and calls its `run()`; `driver.py` is the typing shim for what the NixOS test driver hands them. |
+| `tests/scripts.nix` | The tests as a Python package, built for the test driver's own interpreter and installed through its `extraPythonPackages`. |
+| `tests/scripts/` | The tests themselves (`loom_tests`), as Python the repository's own hooks lint and type-check. A module per test node, `vt.py` and `tmux.py` shared between them, `driver.py` the typing shim for what the driver hands them, and a pytest suite for the two helpers that parse something. |
 
 ## Why `default.nix` and not a flake
 
@@ -62,8 +63,8 @@ different box from every other stick.
 
 ## The `poetry.lock` beside each Python package
 
-`console-mouse/`, `installer/`, `ready/` and `usb-ingest/` are Poetry projects like every other
-Python package in the repository — `poetry-core` build backend, a `poetry.lock` beside the
+`console-mouse/`, `installer/`, `ready/`, `usb-ingest/` and `tests/scripts/` are Poetry projects
+like every other Python package in the repository — `poetry-core` build backend, a `poetry.lock` beside the
 `pyproject.toml`, and `poetry-lock` regenerating them along with the rest.
 
 Those lockfiles do **not** govern the appliance. `buildPythonApplication` resolves `rich` from the
@@ -73,7 +74,7 @@ is free to differ. Read them as a statement about the development environment, n
 What they are for is making the `pyproject.toml` beside them load-bearing. That manifest used to be
 free to drift from the `dependencies` list in the `.nix` file — `ready/` and `usb-ingest/` both
 imported `rich` while declaring no dependencies at all — because Nix supplied the import either way
-and nothing else read the manifest. The root `pyproject.toml` installs these four as path
+and nothing else read the manifest. The root `pyproject.toml` installs them all as path
 dependencies, so an undeclared import is now visible in the devenv rather than only at a box.
 
 ## Why nixos-hardware, and what is forced back off
@@ -362,7 +363,7 @@ each runnable on its own, and it runs both even when the first one fails:
 
 | Command | What it does |
 | --- | --- |
-| `appliance-pytest` | The three suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records) and `console-mouse/tests` (the gpm wire format and the SGR translation). Extra arguments go to pytest. |
+| `appliance-pytest` | The suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records), `console-mouse/tests` (the gpm wire format and the SGR translation), `ready/tests` (what counts as a workload, and the stage machine) and `tests/scripts/tests` (the VM tests' own screen and pane parsers). Extra arguments go to pytest. |
 | `appliance-eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
 
 Every suite also runs inside the derivation that owns it — each package's `checkPhase` — so a
@@ -370,6 +371,41 @@ mistake fails an image build as well. Running them here costs a second instead o
 are in `devenv.nix` rather than in a shell runner for the same reason every other test in this
 repository is; `cicd/appliance_eval.sh` stays a script because it is `nix-instantiate` plumbing
 rather than a test.
+
+### How a VM test is loaded
+
+Each `tests/*.nix` installs `tests/scripts.nix` through the driver's `extraPythonPackages` and its
+`testScript` is two lines — an import and the call:
+
+```nix
+  extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
+
+  testScript = ''
+    from loom_tests.wifi import Params, run
+
+    run(appliance, start_all=start_all, subtest=subtest, params=Params(...))
+  '';
+```
+
+The package is built from the callback's own argument rather than from this repository's `pkgs`,
+which is the part worth keeping: that argument is the *driver's* Python package set, so the package
+is built for the interpreter that will import it by construction rather than by assuming the two
+match.
+
+What this replaced was `builtins.readFile`, which pasted each script into the one namespace the
+driver `exec`s. That arrangement cost more than it looked: two files could not both `import json`
+without the driver's ruff rejecting the pair as a redefinition, a reference from one file to another
+was a pylint `used-before-assignment` that had to be worked around by passing functions as
+arguments, and nothing could be shared *between* tests at all — which is how two of them ended up
+with their own copy of the `/dev/vcsa1` decoder and three with their own copy of the tmux socket
+path. `vt.py` and `tmux.py` are those, now written once. Being ordinary modules, the parsing in
+them is also unit-tested in `tests/scripts/tests/` against a fake `Machine`, so an off-by-one in a
+screen offset fails in milliseconds rather than ten minutes into a boot.
+
+`driver.py` stays a Protocol rather than the driver's real `test_driver.machine.Machine`: that
+package exists only inside the driver's closure, and importing it would mean the devenv could not
+type-check any of this. Which is also why every test sets `skipTypeCheck = true` — exactly one of
+the two type checks can run, and the one that runs on every commit is worth more.
 
 `appliance-test` is the other half: the six short names and what each is for:
 

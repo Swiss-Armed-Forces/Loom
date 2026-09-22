@@ -41,9 +41,13 @@ in
 pkgs.testers.runNixOSTest {
   name = "loom-appliance-interface-fallback";
 
-  # The driver's own mypy cannot resolve scripts/driver.py, so the type check that
-  # runs is the repository's. See the header of that file.
+  # The driver's own mypy cannot resolve loom_tests/driver.py, so the type check
+  # that runs is the repository's. See the header of that file.
   skipTypeCheck = true;
+
+  # The tests themselves, as a package this driver can import. scripts.nix explains
+  # why it is built from the callback's argument rather than from `pkgs`.
+  extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
 
   node.specialArgs = specialArgs;
 
@@ -73,11 +77,11 @@ pkgs.testers.runNixOSTest {
     };
   };
 
-  # The test itself is scripts/appliance_interface_fallback.py, so that the
-  # repository's Python hooks reach it -- see scripts/driver.py for why, and for why
+  # The test itself is loom_tests/interface_fallback.py, so that the repository's
+  # Python hooks reach it -- see loom_tests/driver.py for why, and for why
   # `skipTypeCheck` is set above.
   testScript = ''
-    ${builtins.readFile ./scripts/appliance_interface_fallback.py}
+    from loom_tests.interface_fallback import run
 
     run(single, dual, disabled, start_all=start_all, subtest=subtest)
   '';

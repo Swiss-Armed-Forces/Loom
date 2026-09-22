@@ -14,7 +14,7 @@ import re
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from driver import Machine, Subtest
+    from loom_tests.driver import Machine, Subtest
 
 
 class Params(NamedTuple):

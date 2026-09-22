@@ -3074,6 +3074,20 @@ type = "directory"
 url = "nixos/ready"
 
 [[package]]
+name = "loom-tests"
+version = "0.1.0"
+description = "The appliance's VM tests, as a package the NixOS test driver imports"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "nixos/tests/scripts"
+
+[[package]]
 name = "loom-usb-ingest"
 version = "0.1.0"
 description = "Mount USB media read-only on the Loom appliance and ingest it"
@@ -7464,4 +7478,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "6419a22b563e84402db79cbf8cda60ee75ff6eec73919bb2daee9c644a59cb20"
+content-hash = "f4920097d86b888e815be6c002b1860d40d632d2f8444117a8e5697c0f24889e"

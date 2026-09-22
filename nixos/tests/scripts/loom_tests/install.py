@@ -14,7 +14,7 @@ spelled the path itself could agree with neither side and still pass.
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from driver import Machine, StartAll, Subtest
+    from loom_tests.driver import Machine, StartAll, Subtest
 
 
 class Storage(NamedTuple):

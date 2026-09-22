@@ -11,8 +11,8 @@
 # the *appliance's* evaluated configuration rather than restated here. A test that
 # spelled the path itself could agree with neither side and still pass.
 #
-# The test itself is scripts/appliance_install.py, so that the repository's Python
-# hooks reach it -- see scripts/driver.py for why, and for why `skipTypeCheck` is
+# The test itself is loom_tests/install.py, so that the repository's Python
+# hooks reach it -- see loom_tests/driver.py for why, and for why `skipTypeCheck` is
 # set below.
 {
   pkgs,
@@ -47,9 +47,13 @@ in
 pkgs.testers.runNixOSTest {
   name = "loom-appliance-install";
 
-  # The driver's own mypy cannot resolve scripts/driver.py, so the type check that
+  # The driver's own mypy cannot resolve loom_tests/driver.py, so the type check that
   # runs is the repository's. See the header of that file.
   skipTypeCheck = true;
+
+  # The tests themselves, as a package this driver can import. scripts.nix explains
+  # why it is built from the callback's argument rather than from `pkgs`.
+  extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
 
   nodes.installer = {
     virtualisation.memorySize = 1024;
@@ -73,7 +77,7 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = ''
-    ${builtins.readFile ./scripts/appliance_install.py}
+    from loom_tests.install import Storage, run
 
     run(
         installer,

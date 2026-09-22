@@ -7,10 +7,11 @@ focuses. The pure halves are unit-tested inside the `loom-console-mouse` derivat
 
 from typing import TYPE_CHECKING, NamedTuple
 
-if TYPE_CHECKING:
-    from driver import Machine, StartAll, Subtest
+from loom_tests import tmux
+from loom_tests.tmux import Session
 
-SOCKET = "/run/loom/tmux.sock"
+if TYPE_CHECKING:
+    from loom_tests.driver import Machine, StartAll, Subtest
 
 # Far enough to clamp at any console size this box will ever have.
 FAR = 30000
@@ -20,79 +21,6 @@ class Params(NamedTuple):
     """What the .nix file knows and this file cannot."""
 
     operator: str
-
-
-class Pane(NamedTuple):
-    """One pane, as tmux reports it.
-
-    The geometry is what makes a click testable: a console cell is turned into the
-    pane that covers it, and that pane is what the focus is then asserted on.
-    """
-
-    id: str
-    left: int
-    top: int
-    right: int
-    bottom: int
-    active: bool
-    command: str
-
-    def covers(self, col: int, row: int) -> bool:
-        return self.left <= col <= self.right and self.top <= row <= self.bottom
-
-
-class Session:
-    """The operator's tmux session, and the mouse pointed at it."""
-
-    def __init__(self, appliance: "Machine") -> None:
-        self.appliance = appliance
-
-    def tmux(self, command: str) -> str:
-        return self.appliance.succeed(f"tmux -S {SOCKET} {command}").strip()
-
-    def panes(self) -> list[Pane]:
-        raw = self.tmux(
-            "list-panes -t loom -F "
-            "'#{pane_id} #{pane_left} #{pane_top} #{pane_right} "
-            "#{pane_bottom} #{pane_active} #{pane_start_command}'"
-        )
-        out = []
-        for line in raw.splitlines():
-            pane_id, left, top, right, bottom, active, command = line.split(" ", 6)
-            out.append(
-                Pane(
-                    id=pane_id,
-                    left=int(left),
-                    top=int(top),
-                    right=int(right),
-                    bottom=int(bottom),
-                    active=active == "1",
-                    command=command,
-                )
-            )
-        return out
-
-    def pane_covering(self, col: int, row: int) -> Pane | None:
-        """The pane containing a zero-based console cell, or None."""
-        for pane in self.panes():
-            if pane.covers(col, row):
-                return pane
-        return None
-
-    def active_pane(self) -> Pane:
-        for pane in self.panes():
-            if pane.active:
-                return pane
-        raise AssertionError("no active pane")
-
-    def mouse(self, *commands: str) -> None:
-        self.appliance.succeed("loom-fake-mouse " + " ".join(commands))
-
-    def wait_until_focused(self, pane: Pane) -> None:
-        self.appliance.wait_until_succeeds(
-            f"tmux -S {SOCKET} display -p -t {pane.id} '#{{pane_active}}'"
-            " | grep -qx 1"
-        )
 
 
 def _gpm_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
@@ -135,7 +63,7 @@ def _gpm_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
 def _session_runs_under_the_shim(
     session: Session, subtest: "Subtest", params: Params
 ) -> None:
-    appliance = session.appliance
+    appliance = session.machine
     with subtest("a keypress opens the session, under the shim"):
         fg = appliance.succeed("fgconsole").strip()
         assert fg == "1", f"foreground console is {fg}, not tty1"
@@ -162,7 +90,7 @@ def _session_runs_under_the_shim(
         # tty1. It has to be: the ioctl that draws the pointer only works from a
         # process whose controlling terminal is the console it is drawing on.
         appliance.wait_until_succeeds(
-            f"tmux -S {SOCKET} list-clients -t loom | grep -q ."
+            f"tmux -S {tmux.SOCKET} list-clients -t loom | grep -q ."
         )
         client = int(session.tmux("list-clients -t loom -F '#{client_pid}'"))
         terminal = appliance.succeed(f"ps -o tty= -p {client}").strip()
@@ -200,8 +128,8 @@ def _mouse_reaches_into_the_pane(session: Session, subtest: "Subtest") -> None:
         # and tmux only forwards what its own terminal sends it. `mouse_any_flag` is
         # tmux's record of the pane having asked, so a true value here is tmux
         # saying it will route events inward.
-        session.appliance.wait_until_succeeds(
-            f"tmux -S {SOCKET} display -p -t {session.active_pane().id}"
+        session.machine.wait_until_succeeds(
+            f"tmux -S {tmux.SOCKET} display -p -t {session.active_pane().id}"
             " '#{mouse_any_flag}' | grep -qx 1"
         )
 
@@ -221,11 +149,11 @@ def _k9s_accepts_the_mouse(
         # operator, or the config directory would end up owned by root -- and killed
         # once it starts waiting for that same cluster. It writes its config before
         # the wait for exactly this kind of reason.
-        session.appliance.succeed(
+        session.machine.succeed(
             f"su {params.operator} -s /bin/sh -c 'timeout 5 loom-k9s'"
             " >/dev/null 2>&1 || true"
         )
-        config = session.appliance.succeed("cat /run/loom/k9s/config.yaml")
+        config = session.machine.succeed("cat /run/loom/k9s/config.yaml")
         assert "enableMouse: true" in config, config
 
 
@@ -244,9 +172,9 @@ def _prefix_is_unreachable(session: Session, subtest: "Subtest") -> None:
 
         # The proof rather than the configuration: Ctrl-b d is what used to detach,
         # and the session must still have its client afterwards.
-        session.appliance.send_key("ctrl-b")
-        session.appliance.send_chars("d")
-        session.appliance.sleep(2)
+        session.machine.send_key("ctrl-b")
+        session.machine.send_chars("d")
+        session.machine.sleep(2)
         attached = session.tmux("list-clients -t loom | wc -l")
         assert attached != "0", "Ctrl-b d detached the session"
 
@@ -258,14 +186,14 @@ def _status_line_detaches(session: Session, subtest: "Subtest") -> None:
         # so that an operator has the easiest target on the display.
         session.mouse(f"move:{FAR},{FAR}")
         session.mouse("click:")
-        session.appliance.wait_until_succeeds(
-            f"tmux -S {SOCKET} list-clients -t loom | wc -l | grep -qx 0"
+        session.machine.wait_until_succeeds(
+            f"tmux -S {tmux.SOCKET} list-clients -t loom | wc -l | grep -qx 0"
         )
 
         # Detaching is meant to hand the box back to the banner: the client exits,
         # the shim exits with it, loom-console returns 0 and the login shell leaves,
         # so agetty comes back round.
-        session.appliance.wait_until_succeeds("pgrep -f 'agetty.*tty1'")
+        session.machine.wait_until_succeeds("pgrep -f 'agetty.*tty1'")
 
 
 def run(
@@ -282,7 +210,7 @@ def run(
     # Wait for the layout to stop moving. `create` respawns panes after the last
     # split, and a click landing mid-respawn would be testing nothing.
     appliance.wait_until_succeeds(
-        f"tmux -S {SOCKET} list-panes -t loom | wc -l | grep -qvx 0"
+        f"tmux -S {tmux.SOCKET} list-panes -t loom | wc -l | grep -qvx 0"
     )
     _, cols = (
         int(value) for value in appliance.succeed("stty size < /dev/tty1").split()

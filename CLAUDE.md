@@ -179,7 +179,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   nor a matching architecture, which is why this is the appliance job that runs on every CI pipeline
   while the VM tests are gated on what the MR touched
 - `appliance-pytest` - The appliance's own pytest suites: `nixos/installer/tests`,
-  `nixos/ready/tests`, `nixos/usb-ingest/tests` and `nixos/console-mouse/tests`. Each also runs in its package's
+  `nixos/ready/tests`, `nixos/usb-ingest/tests`, `nixos/console-mouse/tests` and
+  `nixos/tests/scripts/tests` (the VM tests' own helpers). Each also runs in its package's
   `checkPhase`, so a mistake fails an image build too; running them here needs nothing built.
   Extra arguments go to pytest
 - `appliance-eval` - Instantiates the stick image for all three platforms and the tests for this

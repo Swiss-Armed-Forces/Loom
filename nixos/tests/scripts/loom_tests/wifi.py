@@ -1,14 +1,15 @@
 """The `--wifi` build: the access point, the bridge, and what the screen says.
 
-scripts/appliance.py deliberately does not cover any of this: it forces off dnsmasq and
+loom_tests/appliance deliberately does not cover any of this: it forces off dnsmasq and
 the static addresses, which are exactly what this one exercises on a bridge.
 """
 
-import base64
 from typing import TYPE_CHECKING, NamedTuple
 
+from loom_tests import vt
+
 if TYPE_CHECKING:
-    from driver import Machine, StartAll, Subtest
+    from loom_tests.driver import Machine, StartAll, Subtest
 
 
 class Params(NamedTuple):
@@ -191,34 +192,21 @@ def _banner_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         # loom-console-font-reapply does, and leaves the console back at the size
         # it started -- which is why the watcher has to track that a resize
         # happened rather than compare the size it now reads.
-        def screen_top(lines=10):
-            raw = base64.b64decode(appliance.succeed("base64 -w0 /dev/vcsa1"))
-            rows, cols = raw[0], raw[1]
-            body = raw[4:]
-            return rows, [
-                "".join(
-                    (
-                        chr(body[(r * cols + c) * 2])
-                        if 32 <= body[(r * cols + c) * 2] < 127
-                        else ("#" if body[(r * cols + c) * 2] else ".")
-                    )
-                    for c in range(min(cols, 40))
-                )
-                for r in range(lines)
-            ]
-
         # The mark's own signature: two block groups with a gap. The QR code is
         # dense and irregular and never produces it, so this distinguishes "the
-        # mark is on screen" from "some block glyph is on screen".
+        # mark is on screen" from "some block glyph is on screen". It reads as
+        # '#' rather than as U+2588 because a console cell holds a font index --
+        # see loom_tests/vt.py, which owns that decoding for every test.
         mark = "######    ######"
 
-        _, before = screen_top()
-        assert any(mark in line for line in before), before
+        def marked() -> bool:
+            return any(mark in line for line in vt.read(appliance).top(10, width=40))
+
+        assert marked()
 
         appliance.succeed("setfont -d -C /dev/tty1 2>&1 || true")
         appliance.sleep(2)
-        _, cropped = screen_top()
-        assert not any(mark in line for line in cropped), cropped
+        assert not marked(), vt.read(appliance).top(10, width=40)
 
         appliance.succeed(
             "/run/current-system/systemd/lib/systemd/systemd-vconsole-setup || true"
@@ -228,8 +216,7 @@ def _banner_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         # The whole assertion: the banner was redrawn for the console that is
         # there now, rather than left as the tail of one drawn for a console
         # that no longer exists.
-        _, healed = screen_top()
-        assert any(mark in line for line in healed), healed
+        assert marked(), vt.read(appliance).top(10, width=40)
 
 
 def _missing_radio_reported(appliance: "Machine", subtest: "Subtest") -> None:

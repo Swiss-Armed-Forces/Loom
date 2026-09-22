@@ -12,7 +12,7 @@ the appliance itself chooses.
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from driver import Machine, StartAll, Subtest
+    from loom_tests.driver import Machine, StartAll, Subtest
 
 
 def _single_nic_claimed(single: "Machine", subtest: "Subtest") -> None:

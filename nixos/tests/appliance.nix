@@ -72,9 +72,13 @@ in
 pkgs.testers.runNixOSTest {
   name = "loom-appliance";
 
-  # The driver's own mypy cannot resolve scripts/driver.py, so the type check that
+  # The driver's own mypy cannot resolve loom_tests/driver.py, so the type check that
   # runs is the repository's. See the header of that file.
   skipTypeCheck = true;
+
+  # The tests themselves, as a package this driver can import. scripts.nix explains
+  # why it is built from the callback's argument rather than from `pkgs`.
+  extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
 
   node.specialArgs = specialArgs;
 
@@ -120,15 +124,10 @@ pkgs.testers.runNixOSTest {
     };
   };
 
-  # The test itself is scripts/appliance.py, so that the repository's Python hooks
-  # reach it -- see scripts/driver.py for why, and for why `skipTypeCheck` is set
-  # above.
-  #
-  # Two files, concatenated into the one namespace the driver `exec`s. The readiness
-  # section is the size of a small test on its own and this file was at pylint's
-  # module-length ceiling; splitting it costs nothing at runtime -- the driver sees the
-  # same globals either way -- and keeps both halves lintable. It goes first only for
-  # readability: `run()` at the bottom of appliance.py is still the single entry point.
+  # The test itself is loom_tests/appliance/, so that the repository's Python hooks
+  # reach it -- see loom_tests/driver.py for why, and for why `skipTypeCheck` is set
+  # above. It is a package of its own because it is the big one: a module per subject,
+  # and `run()` is the table of contents.
   #
   # The function form here is for one value: whether this platform deploys
   # Ollama. The console session has three panes where it does and two where it does
@@ -137,8 +136,7 @@ pkgs.testers.runNixOSTest {
   testScript =
     { nodes, ... }:
     ''
-      ${builtins.readFile ./scripts/appliance_readiness.py}
-      ${builtins.readFile ./scripts/appliance.py}
+      from loom_tests.appliance import KeyGuardPaths, Operator, Params, run
 
       run(
           appliance,
@@ -150,6 +148,7 @@ pkgs.testers.runNixOSTest {
               minikube_ip="${minikubeIp}",
               upsh_commands=${builtins.toJSON upshCommands} + ["sudo"],
               loom_subnet="${loomSubnet}",
+              console_socket="${nodes.appliance.loom.consoleSocket}",
               operator=Operator(
                   user="${loomUser}",
                   repo_dir="${loomRepoDir}",
@@ -160,7 +159,6 @@ pkgs.testers.runNixOSTest {
                   root_device="${keyGuardRootDevice}",
               ),
           ),
-          check_readiness=check_readiness,
       )
     '';
 }

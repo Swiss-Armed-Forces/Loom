@@ -2462,6 +2462,7 @@ integrationtest = {path = "integrationtest", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
 loom-ready = {path = "nixos/ready", develop = true}
+loom-tests = {path = "nixos/tests/scripts", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
 types-docker = "^7.1.0.20240601"
 worker = {path = "backend/worker", develop = true}
@@ -2486,6 +2487,20 @@ rich = ">=13"
 [package.source]
 type = "directory"
 url = "../nixos/ready"
+
+[[package]]
+name = "loom-tests"
+version = "0.1.0"
+description = "The appliance's VM tests, as a package the NixOS test driver imports"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../nixos/tests/scripts"
 
 [[package]]
 name = "loom-usb-ingest"

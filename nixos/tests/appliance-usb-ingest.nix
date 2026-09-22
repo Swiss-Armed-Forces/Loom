@@ -23,9 +23,13 @@ in
 pkgs.testers.runNixOSTest {
   name = "loom-appliance-usb-ingest";
 
-  # The driver's own mypy cannot resolve scripts/driver.py, so the type check that
+  # The driver's own mypy cannot resolve loom_tests/driver.py, so the type check that
   # runs is the repository's. See the header of that file.
   skipTypeCheck = true;
+
+  # The tests themselves, as a package this driver can import. scripts.nix explains
+  # why it is built from the callback's argument rather than from `pkgs`.
+  extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
 
   node.specialArgs = specialArgs;
 
@@ -63,11 +67,11 @@ pkgs.testers.runNixOSTest {
     ];
   };
 
-  # The test itself is scripts/appliance_usb_ingest.py, so that the repository's
-  # Python hooks reach it -- see scripts/driver.py for why, and for why
+  # The test itself is loom_tests/usb_ingest.py, so that the repository's
+  # Python hooks reach it -- see loom_tests/driver.py for why, and for why
   # `skipTypeCheck` is set above.
   testScript = ''
-    ${builtins.readFile ./scripts/appliance_usb_ingest.py}
+    from loom_tests.usb_ingest import Params, run
 
     run(
         appliance,

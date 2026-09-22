@@ -20,6 +20,7 @@ integrationtest = {path = "integrationtest", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
 loom-ready = {path = "nixos/ready", develop = true}
+loom-tests = {path = "nixos/tests/scripts", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
 types-docker = "^7.1.0.20240601"
 
@@ -88,9 +89,7 @@ quiet = true
 
 [tool.pyright]
 # Directories that are not packages, so nothing installs them: the worker's test
-# helpers, and the testScripts the appliance's VM tests are made of, which import
-# their own driver shim from beside them.
+# helpers.
 extraPaths = [
   "backend/worker/tests",
-  "nixos/tests/scripts",
 ]

@@ -20,10 +20,11 @@ let
   };
 
   # Python subdirectories managed by Poetry: the whole hook set, lockfile checks
-  # included. The four appliance packages are here too -- Nix builds them, but it
+  # included. The appliance's own packages are here too -- Nix builds them, but it
   # builds them through poetry-core and resolves their dependencies from nixpkgs,
   # so the lockfile beside each one is what keeps `poetry lock` honest about the
-  # versions the devenv's virtualenv gets.
+  # versions the devenv's virtualenv gets. nixos/tests/scripts is the VM tests,
+  # which the driver installs the same way (nixos/tests/scripts.nix).
   pythonSubdirs = [
     "backend/api"
     "backend/common"
@@ -34,15 +35,8 @@ let
     "nixos/console-mouse"
     "nixos/installer"
     "nixos/ready"
-    "nixos/usb-ingest"
-  ];
-
-  # Python that is not a package, so there is no pyproject.toml and nothing to
-  # lock: nixos/tests/scripts is the testScripts that used to be strings inside
-  # .nix files, out here so that the formatting, linting and type checking hooks
-  # can reach them. See nixos/tests/scripts/driver.py.
-  pythonNixSubdirs = [
     "nixos/tests/scripts"
+    "nixos/usb-ingest"
   ];
 
   # Where the appliance's own pytest suites live, for `appliance-check`.
@@ -50,6 +44,7 @@ let
     "nixos/console-mouse/tests"
     "nixos/installer/tests"
     "nixos/ready/tests"
+    "nixos/tests/scripts/tests"
     "nixos/usb-ingest/tests"
   ];
 
@@ -87,7 +82,7 @@ let
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
-    { subdir, poetry }:
+    { subdir }:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
       top_pyproject_toml = "${config.devenv.root}/pyproject.toml";
@@ -155,7 +150,7 @@ let
       };
 
       "poetry-check_${subdirName}" = {
-        enable = poetry;
+        enable = true;
         entry = createToolWrapper "poetry" subdir subdirName "check";
         # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
         # so the old spelling made every subdir's hook fire on any poetry.lock.
@@ -165,7 +160,7 @@ let
       };
 
       "poetry-lock_${subdirName}" = {
-        enable = poetry;
+        enable = true;
         entry = createToolWrapper "poetry" subdir subdirName "lock";
         # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
         # so the old spelling made every subdir's hook fire on any poetry.lock.
@@ -249,23 +244,9 @@ let
     };
 
   # Merge all hooks
-  pythonHooks =
-    builtins.foldl' (
-      acc: subdir:
-      acc
-      // (createPythonHooksForSubdir {
-        inherit subdir;
-        poetry = true;
-      })
-    ) { } pythonSubdirs
-    // builtins.foldl' (
-      acc: subdir:
-      acc
-      // (createPythonHooksForSubdir {
-        inherit subdir;
-        poetry = false;
-      })
-    ) { } pythonNixSubdirs;
+  pythonHooks = builtins.foldl' (
+    acc: subdir: acc // (createPythonHooksForSubdir { inherit subdir; })
+  ) { } pythonSubdirs;
   # The root project cannot go through createPythonHooksForSubdir: `subdir = "."`
   # renders `files = "^./.*\.py$"`, where the dot is a regex wildcard, so the
   # pattern would claim every Python file in the repository. Its lockfile check is
