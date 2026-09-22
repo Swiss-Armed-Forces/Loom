@@ -73,7 +73,10 @@
     #     exit rather than a warning.
     #
     # Fit both SO-DIMM slots and `meetsResourceMinimum` can go: the board takes
-    # 64 GB, and a NUC with real memory clears the check.
+    # 64 GB, and a NUC with real memory clears the check. `runsAutoscaling`
+    # follows it and would come back with it, which is the right order: up.sh
+    # refuses --scaling and --no-resources together, so this box has to stay at
+    # one replica per service until it has the memory to carry requests at all.
     #
     # `runsAiServices` is a separate matter and stays either way. It is already
     # what the default would give -- no gpuVendor above, because Loom has no

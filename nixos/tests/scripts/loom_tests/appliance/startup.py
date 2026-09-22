@@ -7,6 +7,7 @@ appliance address. None of it brings Loom up -- a test VM has no images and no c
 itself.
 """
 
+import json
 from typing import TYPE_CHECKING
 
 from loom_tests.appliance.params import Params
@@ -27,6 +28,24 @@ def repository(appliance: "Machine", subtest: "Subtest", params: Params) -> None
         appliance.succeed(
             f"runuser -u {params.operator.user} -- test -w {params.operator.repo_dir}/charts"
         )
+
+    with subtest("the checkout carries this platform's chart overrides"):
+        # repo.nix writes `loom.chartOverrides` into charts/values-overwrites.yaml,
+        # which skaffold lists after the values file up.sh generates and therefore
+        # applies last. Parsed through the box's own yq rather than compared as text:
+        # what has to match is the values, and the generator's formatting is not part
+        # of the claim.
+        overwrites = f"{params.operator.repo_dir}/charts/values-overwrites.yaml"
+        got = json.loads(appliance.succeed(f"yq --compact-output . {overwrites}")) or {}
+        want = json.loads(params.chart_overrides_json)
+        # Every declared override must be in there, rather than the file being exactly
+        # the overrides. The committed copy is comments only -- it parses to `null`, the
+        # `or {}` above -- but these tests are also run with `repoSrc ./.` against a
+        # developer's checkout, where this very file is the one they keep their own
+        # overrides in. What is being asserted is that the platform's landed, not that
+        # nobody else wrote here.
+        for key, value in want.items():
+            assert got.get(key) == value, f"{key}: {got.get(key)} != {value}"
 
 
 def loom_up_flags(appliance: "Machine", subtest: "Subtest", params: Params) -> None:

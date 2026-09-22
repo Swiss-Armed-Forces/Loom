@@ -69,6 +69,7 @@ differs between them.
 | WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
 | GPU | not supported (see below) | **Radeon 8060S via ROCm** | not supported (see below) |
 | AI services | **no** — no GPU | yes | **no** — no GPU, and not the memory either |
+| Autoscaling | yes | yes | **no** — see below |
 
 `nuc12` covers both Wall Street Canyon chassis, the slim NUC12WSK and the tall NUC12WSH — same board, same
 NIC. A WSH fitted with the second-LAN expansion has two `igc` ports, and then the match cannot single one
@@ -92,6 +93,35 @@ and would have nothing to talk to.
 It is stated on the login banner, so a box without AI is never a silent surprise. A platform can override the
 rule — a CPU-only box somebody has measured and is happy with sets `runsAiServices = true` — but nobody has.
 
+### Two of the three boxes autoscale
+
+The Spark and the EVO-X2 pass `--scaling` to `up.sh`, which installs KEDA and applies
+[`charts/values-scaling.yaml`](../charts/values-scaling.yaml): the worker and the reaper follow the depth of
+their RabbitMQ queues (up to ten replicas each), Tika and Gotenberg follow CPU. Without it every service sits
+at the one replica the chart declares, and an indexing run on a twenty-core box uses a fraction of it.
+
+Nothing is fetched for this. KEDA's chart is vendored in `keda/` and its two images are pulled during
+first-time setup like every other image — which is _why_ the flag is set in both boot modes rather than only
+in the one that runs Loom. A stick whose setup ran without `--scaling` has no KEDA images on it, and run mode
+is air-gapped by then.
+
+One node is still one node. The quota in that values file is written for a small cluster and never binds
+here; what binds is the scheduler. At full stretch the worker and reaper replicas ask for about 10 more cores
+and 27 GiB more memory than the single-replica stack does, which both boxes have — but a pod that does not
+fit stays `Pending` until the load drops, and the readiness bar on the console counts it while it waits. A
+bar that dips during a heavy indexing run and recovers afterwards is that, not a fault.
+
+Two things are deliberately not scaled:
+
+- **Ollama.** `values-scaling.yaml` gives it an HPA, written for a cluster with more than one GPU node. On
+  the EVO-X2 the pod requests `amd.com/gpu: 1` and the box advertises exactly one, so a second replica could
+  never be scheduled — it would sit `Pending` for as long as the HPA wanted it, and the readiness bar on the
+  console counts it as a workload that has not come up. The appliance therefore writes
+  `ollama.hpa.enabled: false` into `charts/values-overwrites.yaml` when it seeds the checkout. That file is
+  Skaffold's last word on values, so it wins over the flag; a header in it says who wrote it, and an
+  operator's later edits stay.
+- **The NUC 12**, which cannot have the flag at all — below.
+
 ### The NUC 12 runs a reduced Loom
 
 These kits ship with one SO-DIMM, and the iGPU takes its share before Linux sees the rest — around 15 GiB
@@ -105,7 +135,9 @@ usable, against a documented minimum of 25 GiB. The platform therefore declares 
   getting past `check_host_resources`: even without the AI services the chart asks for about 19.4 GiB of
   memory **requests**, so a box with ~12 GiB allocatable would clear the check and then leave most of its
   pods `Pending` forever. `--no-resources` strips requests and limits, and skips the host check on the way
-  past.
+  past. It also rules out `--scaling`: `up.sh` rejects the two together, because the scaling values file
+  turns on a resource quota that requires requests on every pod and this flag is what removes them. So
+  `runsAutoscaling` follows `meetsResourceMinimum`, and this box stays at one replica per service.
 
 Both are stated on the login banner, so a box running below spec is never a silent surprise.
 

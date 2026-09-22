@@ -8,11 +8,13 @@ system's store path -- which is what these do rather than booting the specialisa
 import re
 from typing import TYPE_CHECKING
 
+from loom_tests.appliance.params import Params
+
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, Subtest
 
 
-def boot_modes(appliance: "Machine", subtest: "Subtest") -> str:
+def boot_modes(appliance: "Machine", subtest: "Subtest", params: Params) -> str:
     with subtest("both boot modes exist and differ in the right way"):
         # The first-time-setup specialisation is what lets one box both fetch
         # images online and then run entirely offline. Its *name* is also the
@@ -48,9 +50,40 @@ def boot_modes(appliance: "Machine", subtest: "Subtest") -> str:
         appliance.fail(f"test -e {setup_sys}/etc/systemd/system/dnsmasq.service")
 
         _setup_mode_powers_off(appliance, setup_sys)
+        _platform_flags(appliance, setup_sys, start_script, params)
         _kernel_command_lines(appliance, setup_sys)
 
     return setup_sys
+
+
+def _platform_flags(
+    appliance: "Machine", setup_sys: str, start_script: str, params: Params
+) -> None:
+    """The flags modes.nix derives from the platform reach *both* modes."""
+    # --scaling is the one where the two modes are not merely consistent but
+    # coupled. It is the only thing that installs KEDA, so a first-time setup
+    # that ran without it leaves no KEDA images in minikube's store -- and run
+    # mode, air-gapped by then, has no way to fetch what the fetch skipped. The
+    # symptom would be a box that comes up with its ScaledObjects referring to a
+    # controller that is not there, which nothing else here would catch.
+    fetch_script = _fetch_script(appliance, setup_sys)
+    for mode, script in [("run", start_script), ("setup", fetch_script)]:
+        assert ("--scaling" in script) == params.autoscaling, f"{mode}: {script}"
+        # And the pairing up.sh rejects outright. Asserted from the same two
+        # scripts rather than from the platform, so this still holds if some
+        # future flag starts contributing --no-resources of its own.
+        if "--scaling" in script:
+            assert "--no-resources" not in script, f"{mode}: {script}"
+
+
+def _fetch_script(appliance: "Machine", setup_sys: str) -> str:
+    """The script loom-fetch runs, through the same indirection as loom.service's."""
+    fetch_unit = appliance.succeed(
+        f"cat {setup_sys}/etc/systemd/system/loom-fetch.service"
+    )
+    match = re.search(r"ExecStart=(\S+)", fetch_unit)
+    assert match, fetch_unit
+    return appliance.succeed(f"cat {match.group(1)}")
 
 
 def _setup_mode_powers_off(appliance: "Machine", setup_sys: str) -> None:
@@ -69,9 +102,7 @@ def _setup_mode_powers_off(appliance: "Machine", setup_sys: str) -> None:
     # worse in this mode: a fetch that warms the wrong minikube store leaves the
     # box with hours of downloads that run mode cannot find.
     assert "MINIKUBE_HOME=" in fetch_unit, fetch_unit
-    fetch_match = re.search(r"ExecStart=(\S+)", fetch_unit)
-    assert fetch_match, fetch_unit
-    fetch_script = appliance.succeed(f"cat {fetch_match.group(1)}")
+    fetch_script = _fetch_script(appliance, setup_sys)
     assert "poweroff" in fetch_script, fetch_script
 
 

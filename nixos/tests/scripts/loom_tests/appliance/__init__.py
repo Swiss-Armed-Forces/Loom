@@ -77,7 +77,7 @@ def run(
     startup.radios(appliance, subtest)
 
     # The two boot modes, and the branding both of them wear.
-    setup_sys = modes.boot_modes(appliance, subtest)
+    setup_sys = modes.boot_modes(appliance, subtest, params)
     modes.mode_sessions(appliance, subtest, setup_sys)
     banner.boot_splash(appliance, subtest)
 

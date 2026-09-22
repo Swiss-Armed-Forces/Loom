@@ -168,6 +168,36 @@
       '';
     };
 
+    runsAutoscaling = lib.mkOption {
+      type = lib.types.bool;
+      default = config.loom.platform.meetsResourceMinimum;
+      defaultText = lib.literalExpression "config.loom.platform.meetsResourceMinimum";
+      description = ''
+        Whether this box scales its compute-intensive services with load.
+
+        True makes the appliance pass `--scaling` to up.sh, which installs KEDA
+        (`keda/`, a vendored chart -- nothing is fetched at run time) and applies
+        `charts/values-scaling.yaml`: worker and reaper scale on RabbitMQ queue
+        depth, tika and gotenberg on CPU. Without it every service stays at the
+        one replica the chart declares, so an indexing run uses a fraction of a
+        box that has cores to spare.
+
+        The flag reaches both boot modes, and it has to. `--scaling` is the only
+        thing that installs KEDA, so a stick whose first-time setup ran without
+        it has no KEDA images in minikube's store -- and run mode, being
+        air-gapped, cannot go and get them.
+
+        Defaults to `meetsResourceMinimum`, which is not a convenience: up.sh
+        rejects `--scaling` alongside `--no-resources` outright
+        (`validate_environment`), because the scaling values file turns on a
+        resource quota that requires requests on every pod and `--no-resources`
+        is what strips them. On an appliance that pairing is not a usage error
+        printed to a terminal -- it is a box that never comes up, with no remote
+        access to find out why. modes.nix asserts the two agree at evaluation
+        time so the stick cannot be built.
+      '';
+    };
+
     extraInitrdModules = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];

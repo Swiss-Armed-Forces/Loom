@@ -51,6 +51,13 @@ let
   # embedding step runs over every indexed file and a CPU never drains the
   # queue. The NUC 12 also says it outright, for memory.
   #
+  # --scaling is the other two: it defaults to `meetsResourceMinimum`, and up.sh
+  # refuses the two together (see the assertion below). It installs KEDA and
+  # lets worker and reaper follow the queue depth instead of sitting at one
+  # replica each on a box with twenty cores. It goes in both modes because the
+  # KEDA images only reach minikube's store if the first-time fetch deployed
+  # them -- run mode is air-gapped and cannot fetch what setup mode skipped.
+  #
   # --no-resources is the NUC 12 alone.
   #
   # --no-resources rather than --skip-check_host_resources, and the difference
@@ -68,6 +75,7 @@ let
   # this much memory ends in OOM kills rather than orderly eviction.
   platformArgs =
     lib.optionalString (!cfg.platform.runsAiServices) " --disable-ai"
+    + lib.optionalString cfg.platform.runsAutoscaling " --scaling"
     + lib.optionalString (!cfg.platform.meetsResourceMinimum) " --no-resources";
 
   # How long setup mode leaves its closing message on screen before powering the
@@ -281,6 +289,50 @@ in
   };
 
   config = lib.mkMerge [
+    # -------------------------------------------------------------------------
+    # Both modes
+    # -------------------------------------------------------------------------
+    {
+      assertions = [
+        {
+          assertion = !(cfg.platform.runsAutoscaling && !cfg.platform.meetsResourceMinimum);
+          message =
+            "nixos: platform '${cfg.platform.id}' sets runsAutoscaling with "
+            + "meetsResourceMinimum = false. up.sh rejects --scaling alongside "
+            + "--no-resources: the scaling values file enables a resource quota that "
+            + "requires requests on every pod, and --no-resources removes them. The "
+            + "box would fail bring-up with no remote access to see it. Drop one.";
+        }
+      ];
+
+      # Keep Ollama at one replica on a box whose GPU there is only one of.
+      #
+      # charts/values-scaling.yaml turns on Ollama's HPA -- two replicas at 80%
+      # CPU -- which is written for a cluster with more than one GPU node. Here
+      # `--gpus <vendor>` makes the pod request `<vendor>.com/gpu: 1`
+      # (charts/values-amd-gpu.yaml), the node advertises exactly one, and the
+      # second replica is unschedulable for as long as the HPA wants it. It
+      # never arrives, so it cannot help; and because Ollama requests only half
+      # a core, any inference at all puts it over the threshold, so this is the
+      # normal case rather than an edge one.
+      #
+      # What it costs beyond the wasted pod is the console. loom-ready counts
+      # ready against desired over workloads (ready/loom_ready/cluster.py), and
+      # `Unschedulable` is a pod condition rather than one of the container
+      # waiting reasons it can name -- so the bar would sit short of the end
+      # through every indexing run with nothing on screen saying why.
+      #
+      # Only the HPA goes. Worker, reaper, tika and gotenberg scale as the
+      # values file intends; they are bound by cores and memory, which this box
+      # has.
+      loom.chartOverrides =
+        lib.mkIf
+          (cfg.platform.runsAutoscaling && cfg.platform.runsAiServices && cfg.platform.gpuVendor != null)
+          {
+            ollama.hpa.enabled = false;
+          };
+    }
+
     # -------------------------------------------------------------------------
     # Run mode
     # -------------------------------------------------------------------------

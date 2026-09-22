@@ -140,6 +140,27 @@ Three things follow, and only the first is obvious:
 `build-appliance-image --no-gpu` forces the vendor back to `null` through an `mkForce` in `default.nix`, which
 is why nothing else has to know the flag exists. Note that it takes the AI services with it, by the same rule.
 
+### `runsAutoscaling`, and `loom.chartOverrides`
+
+`runsAutoscaling` defaults to `meetsResourceMinimum` and adds `--scaling` to the `up.sh` arguments
+`modes.nix` builds. The default is load-bearing rather than tidy: `up.sh` refuses `--scaling` alongside the
+`--no-resources` an undersized box needs, and on an appliance that refusal is not a message on a terminal but
+a box that never comes up. `modes.nix` asserts the two agree, so the mistake fails `appliance-eval` instead of
+a stick.
+
+The flag reaches **both** boot modes, like `--gpus` does, and for a reason specific to this one: `--scaling`
+is the only thing that installs KEDA, so a first-time setup that ran without it leaves no KEDA images in
+minikube's store, and run mode is air-gapped. `tests/scripts/loom_tests/appliance/modes.py` asserts both
+scripts agree.
+
+`loom.chartOverrides` is the other half. Some facts are true of the box rather than of Loom — today, that
+scaling Ollama is pointless where there is one GPU to schedule it on — and they fit neither a values file
+under `charts/` (shared with every cluster install) nor an `up.sh` flag (an argument to have on machines
+nobody here is building). `modes.nix` puts them in that option, `repo.nix` writes them into
+`charts/values-overwrites.yaml` while it seeds the checkout, and Skaffold applies that file after everything
+else. The written file carries a header saying where it came from; it is written once, so an operator can
+edit it afterwards.
+
 ## `loom0`, and the two things that can produce it
 
 A platform's `netMatch` is a **driver** match, applied by a `.link` file. That is the fast path and the one
