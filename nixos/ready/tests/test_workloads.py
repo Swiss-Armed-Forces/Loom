@@ -1,9 +1,9 @@
 """What the cluster's documents are read as.
 
 Every rule here decides what the bar shows, and every one of them was chosen against a
-specific thing the Loom chart does -- KEDA scaling a Deployment to zero, an init Job that
-reaches Succeeded rather than Ready, a StatefulSet rolling one ordinal at a time. They are
-tested against those documents rather than against invented ones.
+specific thing the Loom chart does -- KEDA scaling a Deployment to zero, an init Job
+that reaches Succeeded rather than Ready, a StatefulSet rolling one ordinal at a time.
+They are tested against those documents rather than against invented ones.
 """
 
 import doubles

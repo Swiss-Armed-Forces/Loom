@@ -75,7 +75,10 @@ def summary(readiness: Readiness | None) -> str:
 
 
 def oneline(readiness: Readiness | None) -> str:
-    """The status line's segment, unstyled. Short: it shares a row with two controls."""
+    """The status line's segment, unstyled.
+
+    Short: it shares a row with two controls.
+    """
     if readiness is None:
         return ""
     if readiness.stage is Stage.READY:

@@ -116,8 +116,8 @@ class Readiness:
     """The whole answer, as published.
 
     `changed` is when `counts` last moved, not when this record was written: it is what
-    lets a renderer say "no change for 14m", which on a box pulling a multi-gigabyte image
-    is the difference between slow and stuck.
+    lets a renderer say "no change for 14m", which on a box pulling a multi-gigabyte
+    image is the difference between slow and stuck.
     """
 
     stage: Stage = Stage.WAITING
@@ -137,7 +137,10 @@ class Readiness:
         return self.stage in SETTLED_STAGES
 
     def stalled_for(self, now: float) -> float:
-        """Seconds since the ready count last moved. 0 when it never has."""
+        """Seconds since the ready count last moved.
+
+        0 when it never has.
+        """
         if not self.changed:
             return 0.0
         return max(now - self.changed, 0.0)
@@ -154,8 +157,8 @@ def summary_path(state_dir: str) -> str:
 def publish(state_dir: str, readiness: Readiness, summary: str) -> None:
     """Write both files, atomically.
 
-    Through a temporary file in the same directory, so a reader can never catch a
-    half-written document. The status line reads this every five seconds and the banner
+    Through a temporary file in the same directory, so a reader can never catch a half-
+    written document. The status line reads this every five seconds and the banner
     generator reads it from a unit that can start at any moment; neither may see half a
     number. Same mechanism as `loom_usb_ingest.progress.publish` and key-guard.nix's
     `put`.

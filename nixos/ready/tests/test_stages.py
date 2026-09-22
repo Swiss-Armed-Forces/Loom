@@ -39,7 +39,10 @@ def test_no_cluster_is_waiting():
 
 
 def test_cluster_without_the_namespace_is_still_waiting():
-    """minikube is up and up.sh has not deployed yet. Different cause, same screen."""
+    """Minikube is up and up.sh has not deployed yet.
+
+    Different cause, same screen.
+    """
     assert classify(observation(namespace_present=False)) is Stage.WAITING
 
 
@@ -56,7 +59,8 @@ def test_a_failed_unit_outranks_everything():
 
 
 def test_bring_up_still_running_is_deploying():
-    """`activating` is hours of work on these boxes, and the denominator is still growing."""
+    """`activating` is hours of work on these boxes, and the denominator is still
+    growing."""
     assert classify(observation(unit_state="activating")) is Stage.DEPLOYING
 
 

@@ -71,7 +71,10 @@ MAX_BLOCKERS = 3
 
 @dataclass(frozen=True)
 class Completed:
-    """One command's outcome. A named type rather than a tuple, as everything here is."""
+    """One command's outcome.
+
+    A named type rather than a tuple, as everything here is.
+    """
 
     ok: bool
     stdout: str
@@ -133,7 +136,10 @@ class Cluster:
         self._commands = commands or Commands()
 
     def observe(self) -> Observation:
-        """One tick. Cheap while the box is waiting, three calls at its most expensive."""
+        """One tick.
+
+        Cheap while the box is waiting, three calls at its most expensive.
+        """
         unit_state = self._unit_state()
 
         namespace = self._kubectl(
@@ -342,8 +348,8 @@ def classify(observation: Observation, previous: Stage | None = None) -> Stage:
     """Which stage one observation puts the box in.
 
     `previous` is consulted for one thing only: telling a box that has never been ready
-    apart from one that was and is not any more. Everything else is a function of what is
-    true now.
+    apart from one that was and is not any more. Everything else is a function of what
+    is true now.
     """
     if observation.unit_state == "failed":
         return Stage.FAILED

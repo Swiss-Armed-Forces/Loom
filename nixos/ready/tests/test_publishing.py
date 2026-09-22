@@ -3,8 +3,8 @@
 Everything here is about a reader that is not the writer: a tmux status line refreshing
 every five seconds, a banner generator that can start at any moment, an operator typing
 the command. None of them can ask the publisher a question, so the file has to answer
-every one of them on its own -- including "is this still true?", which is the whole reason
-a published record carries a timestamp.
+every one of them on its own -- including "is this still true?", which is the whole
+reason a published record carries a timestamp.
 """
 
 import json
@@ -122,7 +122,8 @@ def test_publishing_leaves_no_temporary_files_behind(tmp_path):
 
 
 def test_a_record_is_never_half_written(tmp_path):
-    """The status line reads this on a timer; it must not be able to catch a partial one.
+    """The status line reads this on a timer; it must not be able to catch a partial
+    one.
 
     Asserted through the mechanism rather than by racing it: the write lands through a
     temporary file in the same directory and an `os.replace`, which is atomic, so no
@@ -138,7 +139,7 @@ def test_a_record_is_never_half_written(tmp_path):
 
 
 def test_a_directory_that_does_not_exist_yet_is_made(tmp_path):
-    """tmpfiles creates it on the box; a test box and a debug run have neither."""
+    """Tmpfiles creates it on the box; a test box and a debug run have neither."""
     target = os.path.join(str(tmp_path), "ready")
     publish(target, record(), "Loom: starting.")
     assert read(target, now=1000.0) is not None

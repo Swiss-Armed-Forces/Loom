@@ -1,20 +1,21 @@
 """The one process that works the answer out.
 
-Runs as root out of `loom-ready.service` (ready.nix) with the operator's kubeconfig, polls
-the cluster, and writes `state.json` and `summary` where the three readers find them. One
-publisher rather than three, because the readers are a tmux status line refreshing every
-five seconds, a pane, and a banner generator that can start at any moment -- three
-independent pollers would triple the load on an API server during the exact window the box
-is at its busiest, and the status line has to be a file read rather than a `kubectl`
-invocation or it would stall the whole tmux server on a cluster that is not answering.
+Runs as root out of `loom-ready.service` (ready.nix) with the operator's kubeconfig,
+polls the cluster, and writes `state.json` and `summary` where the three readers find
+them. One publisher rather than three, because the readers are a tmux status line
+refreshing every five seconds, a pane, and a banner generator that can start at any
+moment -- three independent pollers would triple the load on an API server during the
+exact window the box is at its busiest, and the status line has to be a file read rather
+than a `kubectl` invocation or it would stall the whole tmux server on a cluster that is
+not answering.
 
-The one thing this does beyond publishing is the banner. box.nix's `loom-info` renders the
-pre-login screen once per boot into /run/issue.d, so a box that came up an hour ago would
-otherwise still be telling whoever walks past that it is starting. On a *stage* change --
-never on a count change, which would repaint several times a minute -- this runs the
-command it was given, which on the appliance is `loom-banner-refresh`: rewrite the issue,
-and restart tty1's getty if and only if nobody has pressed a key yet. Same mechanism
-key-guard.nix uses to keep its own line honest.
+The one thing this does beyond publishing is the banner. box.nix's `loom-info` renders
+the pre-login screen once per boot into /run/issue.d, so a box that came up an hour ago
+would otherwise still be telling whoever walks past that it is starting. On a *stage*
+change -- never on a count change, which would repaint several times a minute -- this
+runs the command it was given, which on the appliance is `loom-banner-refresh`: rewrite
+the issue, and restart tty1's getty if and only if nobody has pressed a key yet. Same
+mechanism key-guard.nix uses to keep its own line honest.
 """
 
 import logging
@@ -42,7 +43,10 @@ class PublishSettings:
 
 
 class Publisher:
-    """Poll, decide, publish. Holds the only state a tick cannot derive for itself."""
+    """Poll, decide, publish.
+
+    Holds the only state a tick cannot derive for itself.
+    """
 
     def __init__(
         self,
@@ -58,7 +62,10 @@ class Publisher:
         self._changed = 0.0
 
     def tick(self, now: float | None = None) -> Readiness:
-        """One observation, published. Returns what it wrote, for the tests."""
+        """One observation, published.
+
+        Returns what it wrote, for the tests.
+        """
         now = time.time() if now is None else now
 
         observation = self._cluster.observe()
@@ -100,7 +107,10 @@ class Publisher:
         return readiness
 
     def run(self) -> int:
-        """Forever. The unit is what stops it."""
+        """Forever.
+
+        The unit is what stops it.
+        """
         while True:
             self.tick()
             time.sleep(self._settings.interval)

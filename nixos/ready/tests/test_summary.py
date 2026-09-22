@@ -1,9 +1,9 @@
 """The two plain-text renderings, and the characters they are not allowed to contain.
 
 Both of these leave Python and are interpreted by something else -- agetty, which reads
-the banner line out of an issue file, and tmux, which re-expands the status segment. Each
-has a character that would be silently eaten or silently misread, and neither failure
-shows up anywhere but on the screen of a box somebody has already driven to.
+the banner line out of an issue file, and tmux, which re-expands the status segment.
+Each has a character that would be silently eaten or silently misread, and neither
+failure shows up anywhere but on the screen of a box somebody has already driven to.
 """
 
 from loom_ready.state import Counts, Readiness, Stage
@@ -51,7 +51,7 @@ def test_the_status_line_still_speaks_while_the_cluster_does_not():
 
 
 def test_every_stage_has_a_status_segment_tmux_will_not_misread():
-    """tmux re-expands `#()` output, so a bare hash would start a format directive."""
+    """Tmux re-expands `#()` output, so a bare hash would start a format directive."""
     for stage in Stage:
         segment = oneline(readiness(stage, ready=3, total=7))
         assert segment

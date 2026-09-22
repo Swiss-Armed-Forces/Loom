@@ -1,9 +1,9 @@
 """Test doubles for the two seams this package has.
 
 Both are passed in rather than patched into place: `Cluster` takes a `Commands`, and
-`Publisher` takes a `Cluster`. Nothing here replaces anything at runtime behind the code's
-back, which is the repository's standing rule about monkeypatching -- and the reason the
-seams exist in the shape they do.
+`Publisher` takes a `Cluster`. Nothing here replaces anything at runtime behind the
+code's back, which is the repository's standing rule about monkeypatching -- and the
+reason the seams exist in the shape they do.
 """
 
 import json
@@ -57,7 +57,7 @@ def unit(state: str) -> Completed:
 
 
 def listing(*items: dict) -> Completed:
-    """A `kubectl get ... -o json` document."""
+    """A `kubectl get -o json` document, whatever the resources were."""
     return Completed(ok=True, stdout=json.dumps({"items": list(items)}), stderr="")
 
 

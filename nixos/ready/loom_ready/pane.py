@@ -69,7 +69,10 @@ class PaneSettings:
 
 
 class Pane:
-    """What runs in the pane. One object so the pieces can be exercised separately."""
+    """What runs in the pane.
+
+    One object so the pieces can be exercised separately.
+    """
 
     def __init__(
         self,
@@ -135,7 +138,7 @@ class Pane:
         return completed.stdout.strip() if completed.ok else "unknown"
 
     def _follow(self) -> subprocess.Popen:
-        """journalctl, read by this process rather than written straight to the pane.
+        """Journalctl, read by this process rather than written straight to the pane.
 
         Deliberately not `--boot`: in setup mode the run worth reading is usually the
         previous boot's, because this boot skipped the unit on its marker.
