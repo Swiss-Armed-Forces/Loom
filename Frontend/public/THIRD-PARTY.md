@@ -813,6 +813,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | crashtest                                | 0.4.1           | UNKNOWN                                                                          |
 | loom-console-mouse                       | 0.1.0           | UNKNOWN                                                                          |
 | loom-installer                           | 0.1.0           | UNKNOWN                                                                          |
+| loom-ready                               | 0.1.0           | UNKNOWN                                                                          |
 | loom-usb-ingest                          | 0.1.0           | UNKNOWN                                                                          |
 
 ## JavaScript
