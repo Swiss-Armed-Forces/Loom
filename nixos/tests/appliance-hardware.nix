@@ -70,9 +70,29 @@ let
     p: p.drvPath == pkgs.rocmPackages.rocm-smi.drvPath
   ) box.loom.toolchain;
 
+  # The nvidia counterpart, and the reason the two are spelled differently:
+  # rocm-smi is a standalone package, while nvidia-smi is an output of the
+  # driver the platform configured. So this compares against the box's own
+  # `hardware.nvidia.package` rather than against something from `pkgs` -- there
+  # is no second candidate it could accidentally match.
+  toolchainHasNvidiaSmi = lib.any (
+    p: p.drvPath == box.hardware.nvidia.package.bin.drvPath
+  ) box.loom.toolchain;
+
+  # A GPU platform needs the driver library in /run/opengl-driver/lib and must
+  # not pick up the EGL platform bindings behind it. Compared by store path
+  # rather than by list identity, because the ICD entry nixpkgs appends is a
+  # symlinkJoin built inline and there is nothing to compare it against by name.
+  graphicsIsDriverOnly =
+    cfg: driver: map (p: p.outPath) cfg.hardware.graphics.extraPackages == [ driver.outPath ];
+
   # True for every platform, including the one that imports nothing.
   shared = [
-    (check "box: hardware.graphics.extraPackages is empty" (box.hardware.graphics.extraPackages == [ ]))
+    # `extraPackages` is deliberately NOT here. Two platforms force it empty,
+    # and the Spark must not: it is what puts libnvidia-ml.so.1 where btop and
+    # the container toolkit look for it. Each platform states its own
+    # expectation below; what stays shared is the 32-bit half, which no
+    # appliance has any use for and which does not even exist on aarch64.
     (check "box: hardware.graphics.extraPackages32 is empty" (
       box.hardware.graphics.extraPackages32 == [ ]
     ))
@@ -80,9 +100,6 @@ let
 
     # The installer carries the same platform module, so the same must hold on
     # the stick. This is the half a VM test of the appliance could not see.
-    (check "installer: hardware.graphics.extraPackages is empty" (
-      installer.hardware.graphics.extraPackages == [ ]
-    ))
     (check "installer: hardware.graphics.extraPackages32 is empty" (
       installer.hardware.graphics.extraPackages32 == [ ]
     ))
@@ -95,8 +112,18 @@ let
     # common/* leaves rather than that profile, and our pin's default kernel is
     # newer than the gate anyway -- but if either of those facts changes, the
     # appliance would start building a second kernel without anyone deciding to.
+    #
+    # On the Spark this carries a second meaning. Every published route to
+    # running NixOS on that box goes through NVIDIA's kernel fork, and
+    # platforms/spark.nix explains at length why this image does not. This is
+    # the tripwire on that decision: an image that quietly acquired a
+    # from-source 6.17 aarch64 kernel would otherwise be discovered by whoever
+    # was waiting for the build.
     (check "box: kernel is still the nixpkgs default" (
       box.boot.kernelPackages.kernel.version == pkgs.linuxPackages.kernel.version
+    ))
+    (check "installer: kernel is still the nixpkgs default" (
+      installer.boot.kernelPackages.kernel.version == pkgs.linuxPackages.kernel.version
     ))
   ];
 
@@ -105,6 +132,10 @@ let
   perPlatform = {
     # platforms/nuc12.nix -> intel/nuc/12wshi7
     nuc12 = [
+      (check "nuc12: box graphics userspace is off" (box.hardware.graphics.extraPackages == [ ]))
+      (check "nuc12: installer graphics userspace is off" (
+        installer.hardware.graphics.extraPackages == [ ]
+      ))
       (check "nuc12: i915 in the box initrd (early KMS)" (elem "i915" box.boot.initrd.kernelModules))
       (check "nuc12: i915 in the installer initrd (early KMS)" (
         elem "i915" installer.boot.initrd.kernelModules
@@ -120,6 +151,10 @@ let
 
     # platforms/evo-x2.nix -> common/cpu/amd/pstate.nix, common/gpu/amd, common/pc/ssd
     "evo-x2" = [
+      (check "evo-x2: box graphics userspace is off" (box.hardware.graphics.extraPackages == [ ]))
+      (check "evo-x2: installer graphics userspace is off" (
+        installer.hardware.graphics.extraPackages == [ ]
+      ))
       (check "evo-x2: amdgpu in the box initrd (early KMS)" (elem "amdgpu" box.boot.initrd.kernelModules))
       (check "evo-x2: amdgpu in the installer initrd (early KMS)" (
         elem "amdgpu" installer.boot.initrd.kernelModules
@@ -139,23 +174,45 @@ let
       (check "evo-x2: btop's rocm-smi is the toolchain's" toolchainHasRocmSmi)
     ];
 
-    # platforms/spark.nix imports nothing: nixos-hardware has no DGX Spark, GB10,
-    # Grace or Tegra content at all (see issue #303). This is the control -- it
-    # catches a change that applies a profile to every platform rather than to
-    # the one that asked for it.
+    # platforms/spark.nix imports nothing from nixos-hardware, which has no DGX
+    # Spark, GB10, Grace or Tegra content at all. So this list is two things at
+    # once: the control that catches a profile applied to every platform rather
+    # than to the one that asked for it, and the assertions on the GPU
+    # configuration that file writes out by hand.
     spark = [
+      # The GB10, on the stock driver. `enabled` is nixpkgs' own read-only
+      # summary of "is NVIDIA support actually on", which is what makes it worth
+      # asserting rather than restating `services.xserver.videoDrivers` here:
+      # that option is the gate, this is the thing the gate controls.
+      (check "spark: hardware.nvidia is enabled" box.hardware.nvidia.enabled)
+      (check "spark: the open kernel modules are used" box.hardware.nvidia.open)
+      (check "spark: the container toolkit is on" box.hardware.nvidia-container-toolkit.enable)
+      # up.sh's validate_environment refuses to run without this whenever --gpus
+      # is set, and check_host_resources parses its output to count GPUs. Both
+      # run inside loom.service, so it has to be on the unit's PATH -- which is
+      # loom.toolchain, not systemPackages.
+      (check "spark: nvidia-smi is in the toolchain" toolchainHasNvidiaSmi)
+      (check "spark: btop is built for the GPU" (!btopIsPlain))
+
+      # The driver library is present and the EGL platform bindings behind it
+      # are not. Both halves matter: without the first there is no
+      # libnvidia-ml.so.1 for btop or the CDI generator to find, and the second
+      # is a compositor stack on a box with no compositor.
+      (check "spark: box graphics carries the driver and nothing else" (
+        graphicsIsDriverOnly box box.hardware.nvidia.package
+      ))
+      (check "spark: installer graphics carries the driver and nothing else" (
+        graphicsIsDriverOnly installer installer.hardware.nvidia.package
+      ))
+
+      (check "spark: nouveau is blacklisted" (elem "nouveau" box.boot.blacklistedKernelModules))
+
+      # The controls. Nothing from either x86 platform may leak here.
       (check "spark: no i915 in the initrd" (!elem "i915" box.boot.initrd.kernelModules))
       (check "spark: no amdgpu in the initrd" (!elem "amdgpu" box.boot.initrd.kernelModules))
       (check "spark: thermald is off" (!box.services.thermald.enable))
       (check "spark: no amd_pstate parameter" (!elem "amd_pstate=active" box.boot.kernelParams))
       (check "spark: no Strix Halo GTT parameters" (!hasParamPrefix "amdgpu.gttsize="))
-      # Deliberate, and the tripwire on it. This box is built around its GPU but
-      # declares no gpuVendor (platforms/spark.nix), so btop gets the plain
-      # build: cudaSupport would only prepend a driver directory that nothing
-      # here populates, no platform having hardware.nvidia yet. The day somebody
-      # settles that and sets gpuVendor = "nvidia", this fails -- which is the
-      # prompt to check the driver landed with it rather than to delete the line.
-      (check "spark: btop is the plain build" btopIsPlain)
     ];
   };
 

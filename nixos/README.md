@@ -85,7 +85,7 @@ Two of the three platforms are covered upstream, and the coverage is uneven enou
 | --- | --- | --- |
 | `nuc12` | `intel/nuc/12wshi7` — literally this box, down to the chassis letter | `thermald`, and `i915` in the initrd |
 | `evo-x2` | no EVO-X2; the `common/*` Strix Halo leaves that `framework/desktop/amd-ai-max-300-series` is built from | `amd_pstate=active`, and `amdgpu` in the initrd |
-| `spark` | **nothing.** No GB10, Grace or Tegra content exists upstream (issue #303) | — |
+| `spark` | **nothing.** No GB10, Grace or Tegra content upstream, and `common/gpu/nvidia/*` is desktop-dGPU and PRIME-laptop oriented | its GPU is configured by hand from plain nixpkgs — see below |
 
 `evo-x2` imports the leaves rather than the Framework profile on purpose: that profile also pulls
 `framework/framework-tool.nix`, which installs `pkgs.framework-tool` on a GMKtec box.
@@ -104,6 +104,26 @@ to both — which is also why no restructuring of `default.nix` was needed to ke
 `nixos-26.05`, and nothing in CI builds this image. `tests/appliance-hardware.nix` is the tripwire: it
 reads the evaluated configuration, costs seconds, needs no KVM, and runs for any platform on any host.
 Run it after every renovate bump of the pin.
+
+### And why no DGX Spark input
+
+The Spark is the one box with an obvious upstream to pin —
+[`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), MIT, actively maintained,
+exposing its module as a plain path import. `platforms/spark.nix` deliberately does not, and the full
+reasoning is in that file's header; the short version is that the GPU half is already in nixpkgs (595.71.05
+with the open modules, the same driver package upstream takes), and what the fork actually buys is the
+ConnectX-7 — at NV-Kernels 6.17.13 against our pin's 6.18.49, built from source on aarch64 with no cache
+hits, and with a kernel config that turns on IOMMU passthrough.
+
+The two asymmetries worth remembering if this is revisited:
+
+- The Spark's `gpuVendor` is asserted the same way the x86 platforms' overrides are, in
+  `tests/appliance-hardware.nix`. Its `kernel is still the nixpkgs default` check is what proves the fork
+  has not quietly arrived: an image that gained a from-source 6.17 aarch64 kernel would otherwise be
+  discovered by whoever was waiting for the build.
+- `hardware.graphics.extraPackages32` must be forced empty on that platform, not merely left at its
+  default. nixpkgs populates it from `pkgs.pkgsi686Linux`, which **throws** on aarch64, so anything that
+  reads the option — the test above does — fails to evaluate unless the platform file forces it.
 
 ## The two axes: `system` and `platform`
 
@@ -124,9 +144,11 @@ as with the Spark — it imports nothing, and that is the ordinary case rather t
 
 ### `gpuVendor`, and what follows from it
 
-A platform declares `gpuVendor = "amd"` (or `"nvidia"`, unused so far) when somebody has confirmed the box
-both binds the kernel driver *and* enumerates the device through the vendor's compute stack. The driver alone
-proves nothing — every platform here loads one, since that is what puts the installer menu on the monitor.
+A platform declares `gpuVendor = "amd"` or `"nvidia"` when somebody has confirmed the box both binds the
+kernel driver *and* enumerates the device through the vendor's compute stack. The driver alone proves
+nothing — every platform here loads one, since that is what puts the installer menu on the monitor.
+`loom-platform-info` is what confirms it: `/dev/kfd` or `/dev/nvidiactl`, the SMI tool's output, and
+whether a CDI spec exists for the container runtime to pass the device through with.
 
 Three things follow, and only the first is obvious:
 
@@ -137,8 +159,20 @@ Three things follow, and only the first is obvious:
 - `runsAiServices` defaults to `gpuVendor != null`, so a CPU-only platform also drops Ollama and open-webui.
   That is deliberate: the embedding step runs over every indexed file, and on a CPU the queue never drains.
 
+The second point is spelled differently per vendor, because the vendors package the tool differently:
+`rocm-smi` is a standalone package, while `nvidia-smi` is an output of the driver. So the nvidia branch in
+`box.nix` names `config.hardware.nvidia.package.bin` — a platform that declares the vendor without
+configuring `hardware.nvidia` gets an evaluation error rather than a `loom.service` that dies on
+`nvidia-smi: command not found`.
+
 `build-appliance-image --no-gpu` forces the vendor back to `null` through an `mkForce` in `default.nix`, which
 is why nothing else has to know the flag exists. Note that it takes the AI services with it, by the same rule.
+
+It does **not** take the driver with it. On the Spark `hardware.nvidia` is what puts the console on the
+monitor, so it is configured by the platform file rather than gated on `gpuVendor`, and `--no-gpu` there
+means "no offload" rather than "no NVIDIA". `loom-platform-info`'s `runtimeInputs` is keyed on
+`hardware.nvidia.enabled` for exactly that reason: a `--no-gpu` box is the box somebody is diagnosing, and
+the report needs `nvidia-smi` to say why the GPU did not enumerate.
 
 ### `runsAutoscaling`, and `loom.chartOverrides`
 

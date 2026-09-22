@@ -1037,17 +1037,18 @@ in
 
       Keyed on `loom.platform.gpuVendor` rather than on a second notion of
       "has a GPU", which also means `--no-gpu` gets the plain build for free
-      (nixos/default.nix forces gpuVendor to null there). The Spark therefore
-      gets the plain build today: cudaSupport would only prepend a driver
-      directory that nothing on that image populates, since no platform
-      configures hardware.nvidia yet, and btop would still fail the dlopen.
-      Settling that question sets gpuVendor and brings the driver along, and
-      this follows with no edit here.
+      (nixos/default.nix forces gpuVendor to null there). That is what happened
+      when the Spark gained its GPU: platforms/spark.nix set the vendor and
+      brought `hardware.nvidia` along with it, and the cuda build followed here
+      with no edit -- the dlopen resolves because that file keeps
+      `nvidia_x11.out` in `hardware.graphics.extraPackages`, which is what
+      populates /run/opengl-driver/lib.
 
       On the EVO-X2 the rocm path works despite that platform forcing
       `hardware.graphics.extraPackages` empty, because btop reaches
       librocm_smi64.so through its own rpath rather than through
-      /run/opengl-driver.
+      /run/opengl-driver. The two platforms therefore differ on purpose: the
+      Spark needs that directory populated and the EVO-X2 does not.
 
       An option rather than a literal in each place because there are two
       readers -- box.nix puts it on PATH, and loom-btop below runs it in the

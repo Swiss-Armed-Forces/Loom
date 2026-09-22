@@ -130,10 +130,10 @@ platform_system(){
 # without evaluating the closure to find out.
 platform_gpu(){
     case "${1}" in
-        spark)  printf ''     ;;
-        evo-x2) printf 'amd'  ;;
-        nuc12)  printf ''     ;;
-        *)      return 1      ;;
+        spark)  printf 'nvidia' ;;
+        evo-x2) printf 'amd'    ;;
+        nuc12)  printf ''       ;;
+        *)      return 1        ;;
     esac
 }
 

@@ -129,11 +129,12 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--platform` picks the box: `spark` (DGX Spark, aarch64), `evo-x2` (GMKtec EVO-X2, x86_64) or
   `nuc12` (Intel NUC 12 Pro, x86_64). The build host must match the platform's architecture unless
   `--allow-cross` is given. See `Documentation/appliance.md`
-- `build-appliance-image --no-gpu` - Build CPU-only for a platform that offloads to a GPU (today
-  only `evo-x2`, which runs Ollama on its Radeon 8060S via ROCm). There is no `--gpu`: the GPU is
-  declared per platform in `nixos/platforms/<id>.nix`. Use this when a box turns out not to
+- `build-appliance-image --no-gpu` - Build CPU-only for a platform that offloads to a GPU:
+  `evo-x2` (Radeon 8060S via ROCm) or `spark` (GB10 Blackwell via CUDA). There is no `--gpu`: the
+  GPU is declared per platform in `nixos/platforms/<id>.nix`. Use this when a box turns out not to
   enumerate its own GPU, which otherwise stops Loom from starting at all. Note it also drops the
-  AI services, since those follow the GPU
+  AI services, since those follow the GPU. On `spark` it keeps `hardware.nvidia` — that driver also
+  runs the box's console — so it means "no offload", not "no NVIDIA"
 - `build-appliance-image --interface NAME` - Pin the appliance NIC by the name the box reports
   (`enp2s0`, not `eth0`). Only needed when no platform matches the hardware; without it a wired
   port is claimed automatically
@@ -186,12 +187,16 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `appliance-eval` - Instantiates the stick image for all three platforms and the tests for this
   one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
   assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
-- `loom-platform-info` - Report this box's hardware — wired ports and their drivers, radios and
-  whether they do AP mode, GPU with the firmware VRAM carve-out beside the GTT pool, firmware
-  version — and, on an appliance, how that compares with what `nixos/platforms/<id>.nix` declared.
-  Plain bash with no Nix dependency (`nixos/scripts/platform_info.sh`), so it also runs on a box
-  that is not running Loom yet. This is how the guessed values in a platform file get checked
-  against real hardware. `--json`, `--output`
+- `loom-platform-info` - Report this box's hardware — wired ports with their drivers, PCI ids and
+  multi-port ids, radios and whether they do AP mode, GPU with the firmware VRAM carve-out beside
+  the GTT pool, whether the GPU reaches a container (CDI specs, `nvidia-ctk`, docker runtimes),
+  CPU frequency driver, firmware version with any pending `fwupd` update, and Secure Boot / Setup
+  Mode read from the EFI variables — and, on an appliance, how that compares with what
+  `nixos/platforms/<id>.nix` declared. Plain bash with no Nix dependency
+  (`nixos/scripts/platform_info.sh`), so it also runs on a box that is not running Loom yet — a
+  DGX Spark still on DGX OS included, which is where its firmware and Secure Boot checks have to
+  happen. This is how the guessed values in a platform file get checked against real hardware.
+  `--json` (everything but the `fwupd` block, which shells out to a daemon), `--output`
 
 **Utilities:**
 
