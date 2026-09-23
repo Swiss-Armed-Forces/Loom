@@ -127,6 +127,17 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
 - `generate-openapi-schema` - Print OpenAPI schema JSON
+- `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
+  exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
+  HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a
+  subset of its own rules. Runs as a git hook on any change under `charts/`, to the checker itself or
+  to `vars.sh`, and needs no cluster (`helm template` is client-side). **Adding a service with an
+  Ingress means adding its name to `hostnames.ingress`** - that list is what the pre-install Job puts
+  in the TLS certificate's `subjectAltName` and what `charts/templates/common/certificate.yaml`
+  renders into `dnsNames`, one entry per host, and a wildcard cannot stand in for it (`*.loom` has
+  one dot, and OpenSSL will not expand a wildcard under a single-label parent). A host served by
+  entrypoint rather than by a route that names it goes in `hostnames.extra` instead. See the
+  `## Hostnames and the self-signed certificate` section in `Documentation/installation.md`
 
 **AI developer tools (`aitools` subcommands):**
 
@@ -362,6 +373,13 @@ function, **stop and ask the user first** — there is almost certainly a better
 - Repository pattern for data access (see `common/models/`)
 - Dependency injection via FastAPI dependencies and Celery task context
 - Async/await where appropriate (FastAPI routes)
+- **Helm: a container's shell script belongs in `charts/files/<component>/*.sh`, not inline in the
+  template.** Anything past a couple of lines is a file mounted through a ConfigMap - see
+  `charts/templates/pre-install/` for the pattern (a short `until nc -vz ...; do sleep 2; done` wait
+  loop can stay inline). A script inlined into a template is a YAML string that shellcheck never
+  sees, and the repo runs shellcheck with `-o all`. Values reach the script through the container's
+  `args:` as long options, and the script parses them in a `while`/`case` loop and asserts each one
+  is set
 
 ## Additional Documentation
 

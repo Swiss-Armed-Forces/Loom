@@ -14,27 +14,16 @@ spec:
   secretName: {{ include "app.fullname" . }}-certificate
   # CommonName is mandatory
   commonName: {{ .Values.domain }}
-  # Optional additional dnsNames
+  # Optional additional dnsNames.
+  #
+  # Built from .Values.hostnames, the same source the pre-install Job's
+  # --hostname arguments come from: every Ingress points tls.secretName at the
+  # secret this Certificate produces, so on the cert-manager path this is the
+  # serving certificate and a host missing here is a host nothing can verify.
   dnsNames:
-    - traefik.{{ .Values.domain }}
-    - frontend.{{ .Values.domain }}
-    - api.{{ .Values.domain }}
-    - rabbit.{{ .Values.domain }}
-    - prometheus.{{ .Values.domain }}
-    - grafana.{{ .Values.domain }}
-    - elasticvue.{{ .Values.domain }}
-    - elasticsearch.{{ .Values.domain }}
-    - rspamd.{{ .Values.domain }}
-    - rspamd-worker.{{ .Values.domain }}
-    - open-webui.{{ .Values.domain }}
-    - ollama.{{ .Values.domain }}
-    - roundcube.{{ .Values.domain }}
-    - dovecot.{{ .Values.domain }}
-    - seaweedfs.{{ .Values.domain }}
-    - s3.{{ .Values.domain }}
-    - tika.{{ .Values.domain }}
-    - redisinsight.{{ .Values.domain }}
-    - gotenberg.{{ .Values.domain }}
+    {{- range concat (.Values.hostnames.ingress | default list) (.Values.hostnames.extra | default list) | sortAlpha | uniq }}
+    - {{ printf "%s.%s" . $.Values.domain | quote }}
+    {{- end }}
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:
     name: {{ default (printf "%s-selfsigned-issuer" (include "app.fullname" .)) .Values.certificate.issuerRef.name }}
