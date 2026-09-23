@@ -218,6 +218,40 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
 
+### Hostnames and the self-signed certificate
+
+Loom serves every service under one domain (`domain`, `loom` by default), and `hostnames` in
+`charts/values.yaml` lists every name it answers to — `ingress` for the services behind a route that
+names them, `extra` for the ones Traefik tells apart by entrypoint:
+
+```yaml
+domain: loom
+
+hostnames:
+  ingress:
+    - api
+    - frontend
+    # ...
+  extra:
+    - rabbit-amqp
+    # ...
+```
+
+Three things are built from that list: the self-signed certificate, which has to name each host individually
+(a `*.loom` wildcard is compared literally by OpenSSL and everything built on it, so it covers nothing), the
+`dnsNames` of the cert-manager `Certificate` used when `certificate.enabled` is set, and the `/etc/hosts`
+entries `up.sh` writes. **If you add your own Ingress to this chart, add its host here** — otherwise clients
+get a hostname mismatch on it.
+
+Overrides reach some of those and not others, and the gap is silent either way:
+
+- A `domain` overridden in `values-overwrites.yaml` reaches the chart but not `/etc/hosts`, and not the
+  Traefik dashboard route either — `traefik/values.yaml` hardcodes `Host("traefik.loom")`.
+- `hostnames` overridden the same way reaches the certificate Job, but not `/etc/hosts` and not the
+  `hostnames.ingress` check `cicd/check_chart_hostnames.sh` runs — both read `charts/values.yaml` directly.
+
+A certificate you installed yourself, including via `up.sh --certificate`, is never replaced.
+
 ### Crawling external S3 sources
 
 By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.

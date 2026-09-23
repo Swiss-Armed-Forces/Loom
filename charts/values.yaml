@@ -24,6 +24,58 @@ global:
 
 domain: &default-domain loom
 
+# Every name this deployment answers to, as a short label under `domain`.
+#
+# This exists because the certificate cannot be a wildcard. `*.loom` looks like
+# it covers `ollama.loom`, and it does not: a wildcard pattern needs at least
+# two dots, so OpenSSL and every client built on it -- curl, Node, Bun -- refuse
+# to expand a wildcard sitting directly under a single-label parent and compare
+# `*.loom` literally instead. A cert with `subjectAltName=DNS:*.loom` is
+# therefore rejected for every `*.loom` host there is, and the pre-install Job
+# below has to name them one by one.
+#
+# It is also the authority outside the chart: vars.sh reads `domain` and both
+# halves below with yq, so the /etc/hosts entries up.sh writes are exactly the
+# names the certificate carries.
+#
+# Split in two, because the two halves are checkable against different things:
+hostnames:
+  # Hosts this chart routes by name: one per Ingress rule, plus the Traefik
+  # IngressRouteTCP routes that match a HostSNI of their own. Those
+  # `spec.rules[].host` and HostSNI(`<name>.<domain>`) values are the authority
+  # here -- a Helm template cannot read what its siblings rendered, so the list
+  # is restated rather than derived, and `cicd/check_chart_hostnames.sh` fails
+  # if the two disagree.
+  ingress:
+    - api
+    - dovecot
+    - elasticsearch
+    - elasticvue
+    - frontend
+    - gotenberg
+    - grafana
+    - ollama
+    - open-webui
+    - prometheus
+    - rabbit
+    - redisinsight
+    - roundcube
+    - rspamd
+    - rspamd-worker
+    - s3
+    - seaweedfs
+    - tika
+  # Hosts no route here names. Traefik tells these apart by entrypoint -- their
+  # routes match HostSNI(`*`) -- so the name is a convention between whoever
+  # resolves it and whoever dials it, and nothing in the templates implies it.
+  # `rabbit-amqp` is in `backend/common/common/settings.py`, `traefik` is the
+  # dashboard from the Traefik chart.
+  extra:
+    - rabbit-amqp
+    - redis
+    - redis-cache
+    - traefik
+
 kubernetes:
   api: 192.168.49.2
 

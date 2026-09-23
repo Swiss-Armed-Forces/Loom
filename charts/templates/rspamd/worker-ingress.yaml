@@ -29,6 +29,6 @@ spec:
   tls:
     - secretName: {{ include "app.fullname" . }}-certificate
       hosts:
-        - rspamd.{{ .Values.domain }}
+        - rspamd-worker.{{ .Values.domain }}
   {{- end }}
 {{- end }}
