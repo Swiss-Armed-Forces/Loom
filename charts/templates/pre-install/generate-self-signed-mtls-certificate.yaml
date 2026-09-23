@@ -19,61 +19,21 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - bash
-            - -c
-            - |
-              set -euo pipefail
-
-              #
-              # Vars
-              #
-              export NAMESPACE="{{ .Release.Namespace }}"
-              export LOOM_DOMAIN="{{ .Values.domain }}"
-              export MTLS_CERT_SECRET_NAME="self-signed-mtls-cert"
-
-              CRT_FILE="$(mktemp)"
-              KEY_FILE="$(mktemp)"
-
-              #
-              # Functions
-              #
-
-              create_self_signed_mtls_cert() {
-                  if kubectl get secret "${MTLS_CERT_SECRET_NAME}" -n "${NAMESPACE}" &>/dev/null; then
-                      echo "[-] Certificate '${MTLS_CERT_SECRET_NAME}' already exists in namespace"
-                      return
-                  fi
-
-                  local common_name
-                  common_name="*.${LOOM_DOMAIN}"
-
-                  # Generate self-signed cert and key
-                  openssl req -x509 -nodes -days 365 \
-                      -newkey rsa:4096 \
-                      -keyout "${KEY_FILE}" \
-                      -out "${CRT_FILE}" \
-                      -subj "/CN=${common_name}/O=Wildcard Self-Signed MTLS"
-
-                  # Create the Kubernetes secret
-                  kubectl create secret generic "${MTLS_CERT_SECRET_NAME}" \
-                      --from-file=ca.crt="${CRT_FILE}" \
-                      --from-file=ca.key="${KEY_FILE}" \
-                      --namespace="${NAMESPACE}"
-              }
-
-              #
-              # Atexit
-              #
-              atexit(){
-                  rm -f \
-                      "${CRT_FILE}" \
-                      "${KEY_FILE}"
-              }
-              trap atexit EXIT
-
-              #
-              # Main
-              #
-              create_self_signed_mtls_cert
+            - /opt/loom/scripts/generate-self-signed-mtls-certificate.sh
+          args:
+            - --namespace
+            - {{ .Release.Namespace | quote }}
+            - --domain
+            - {{ .Values.domain | quote }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /opt/loom/scripts
+              readOnly: true
           {{- if .Values.preInstall.resources }}
           resources: {{- toYaml .Values.preInstall.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "app.fullname" $ }}-pre-install-scripts
+            defaultMode: 0555

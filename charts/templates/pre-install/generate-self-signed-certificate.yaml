@@ -19,61 +19,35 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - bash
-            - -c
-            - |
-              set -euo pipefail
-
-              #
-              # Vars
-              #
-              export NAMESPACE="{{ .Release.Namespace }}"
-              export LOOM_DOMAIN="{{ .Values.domain }}"
-              export CERT_SECRET_NAME="self-signed-cert"
-
-              CRT_FILE="$(mktemp)"
-              KEY_FILE="$(mktemp)"
-
-              #
-              # Functions
-              #
-
-              create_self_signed_cert() {
-                  if kubectl get secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}" &>/dev/null; then
-                      echo "[-] Certificate '${CERT_SECRET_NAME}' already exists in namespace"
-                      return
-                  fi
-
-                  local common_name
-                  common_name="*.${LOOM_DOMAIN}"
-
-                  # Generate self-signed cert and key
-                  openssl req -x509 -nodes -days 365 \
-                      -newkey rsa:4096 \
-                      -keyout "${KEY_FILE}" \
-                      -out "${CRT_FILE}" \
-                      -subj "/CN=${common_name}/O=Wildcard Self-Signed"
-
-                  # Create the Kubernetes TLS secret
-                  kubectl create secret tls "${CERT_SECRET_NAME}" \
-                      --cert="${CRT_FILE}" \
-                      --key="${KEY_FILE}" \
-                      --namespace="${NAMESPACE}"
-              }
-
-              #
-              # Atexit
-              #
-              atexit(){
-                  rm -f \
-                      "${CRT_FILE}" \
-                      "${KEY_FILE}"
-              }
-              trap atexit EXIT
-
-              #
-              # Main
-              #
-              create_self_signed_cert
+            - /opt/loom/scripts/generate-self-signed-certificate.sh
+          args:
+            - --namespace
+            - {{ .Release.Namespace | quote }}
+            - --domain
+            - {{ .Values.domain | quote }}
+            # Every name the certificate has to carry, from .Values.hostnames --
+            # see the comment there for why a wildcard cannot do this job.
+            #
+            # `default list` on each half: nulling a key is the only way Helm
+            # lets an operator drop list entries rather than merge them, and
+            # `concat` panics on a nil with a Go trace that names no value.
+            {{- $hostnames := concat (.Values.hostnames.ingress | default list) (.Values.hostnames.extra | default list) | sortAlpha | uniq }}
+            {{- if not $hostnames }}
+            {{- fail "hostnames.ingress and hostnames.extra are both empty: the certificate would name no host. See the comment on `hostnames` in values.yaml." }}
+            {{- end }}
+            {{- range $hostnames }}
+            - --hostname
+            - {{ . | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /opt/loom/scripts
+              readOnly: true
           {{- if .Values.preInstall.resources }}
           resources: {{- toYaml .Values.preInstall.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "app.fullname" $ }}-pre-install-scripts
+            defaultMode: 0555

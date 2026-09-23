@@ -574,6 +574,24 @@ in
       types = [ "dockerfile" ];
     };
 
+    # `hostnames.ingress` in charts/values.yaml against the hosts the chart's
+    # Ingress rules render. The list is what the TLS certificate is built from
+    # and a Helm template cannot enumerate its siblings' output, so a service
+    # added without an entry here gets an ingress nothing can verify.
+    #
+    # `pass_filenames = false`: the script checks the chart as a whole and
+    # rejects arguments it does not know.
+    #
+    # The checker itself and vars.sh are in the pattern alongside the chart:
+    # both participate in the invariant -- vars.sh reads the same list to write
+    # /etc/hosts -- so a regression in either would otherwise land unchecked.
+    "check-chart-hostnames" = {
+      enable = true;
+      entry = "${config.devenv.root}/cicd/check_chart_hostnames.sh";
+      files = "^(charts/|cicd/check_chart_hostnames\\.sh$|vars\\.sh$)";
+      pass_filenames = false;
+    };
+
     markdownlint = {
       enable = true;
       settings.configuration = {
