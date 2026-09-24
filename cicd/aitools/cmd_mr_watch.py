@@ -15,7 +15,7 @@ from ._common import (
     checkout_mr_branch,
     resolve_mr_from_args_or_branch,
 )
-from .claude import run_claude_agentic
+from .aitools import run_ai_agentic
 from .gitlab_api import (
     PIPELINE_WAITING_STATUSES,
     extract_job_artifacts,
@@ -35,7 +35,7 @@ POLL_INTERVAL = 180  # seconds
 def _fix_failing_job_and_push(
     project: Project, pipeline: ProjectPipeline, branch_name: str, repo: Repo
 ) -> None:
-    """Diagnose the first failing job via Claude and push any resulting commits."""
+    """Diagnose the first failing job via AI and push any resulting commits."""
     job = fetch_first_failing_job(project, pipeline)
     if not job:
         print("Pipeline failed but no failing job found.")
@@ -52,7 +52,10 @@ def _fix_failing_job_and_push(
         artifacts_dir = os.path.join(ctx, "artifacts")
         os.makedirs(artifacts_dir)
         extract_job_artifacts(job, artifacts_dir)
-        run_claude_agentic(build_watch_fix_prompt(job, ctx, pipeline.id), repo)
+        run_ai_agentic(
+            build_watch_fix_prompt(job, ctx, pipeline.id),
+            repo,
+        )
 
     try:
         ahead = list(repo.iter_commits(f"origin/{branch_name}..HEAD"))
@@ -127,7 +130,7 @@ def _watch_approved_mrs(project: Project, repo: Repo) -> None:
 
 
 def cmd_mr_watch(args: argparse.Namespace) -> None:
-    """Watch an MR pipeline; auto-fix CI failures using Claude."""
+    """Watch an MR pipeline; auto-fix CI failures using AI."""
     repo = Repo(os.getcwd())
 
     gl = _get_gitlab_client_or_exit()

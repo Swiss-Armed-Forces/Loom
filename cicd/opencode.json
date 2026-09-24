@@ -7,22 +7,21 @@
       "options": {
         "baseURL": "https://api.infomaniak.com/2/ai/{env:INFOMANIAK_PRODUCT_ID}/openai/v1",
         "apiKey": "{env:INFOMANIAK_API_KEY}"
+      }
+    },
+    "local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "locally hosted model",
+      "options": {
+        "baseURL": "http://localhost:5678/v1/",
+        "apiKey": "{env:AIMODEL_API_KEY}"
       },
       "models": {
-        "llama3": {
-          "name": "Llama 3 (Infomaniak)"
-        },
-        "mistral3": {
-          "name": "Mistral 3 (Infomaniak)"
-        },
-        "qwen3": {
-          "name": "Qwen 3 (Infomaniak)"
-        },
-        "gemma3n": {
-          "name": "Gemma 3n (Infomaniak)"
+        "qwen3.8": {
+          "name": "Qwen 3.8 (local)"
         }
       }
     }
   },
-  "model": "infomaniak/qwen3"
+  "model": "local/qwen3.8"
 }

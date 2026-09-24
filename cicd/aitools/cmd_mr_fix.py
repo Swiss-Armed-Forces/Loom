@@ -13,7 +13,7 @@ from ._common import (
     checkout_mr_branch,
     resolve_mr_from_args_or_branch,
 )
-from .claude import generate_discussion_reply, run_claude_agentic
+from .aitools import generate_discussion_reply, run_ai_agentic
 from .git_helpers import get_branch_diff
 from .gitlab_api import (
     extract_discussion_location,
@@ -49,7 +49,7 @@ def _generate_and_post_replies(
     updated_diff: str,
     repo: Repo,
 ) -> None:
-    """Generate Claude replies for all discussions, preview them, then post."""
+    """Generate AI replies for all discussions, preview them, then post."""
     replies: list[DiscussionReply] = []
     for i, discussion in enumerate(discussions, 1):
         location = extract_discussion_location(discussion)
@@ -84,7 +84,7 @@ def _generate_and_post_replies(
 
 
 def cmd_mr_fix(args: argparse.Namespace) -> None:
-    """Address unresolved MR review comments using Claude in agentic mode."""
+    """Address unresolved MR review comments using AI in agentic mode."""
     repo = Repo(os.getcwd())
     gl = _get_gitlab_client_or_exit()
     mr = resolve_mr_from_args_or_branch(gl, args, repo)
@@ -124,7 +124,7 @@ def cmd_mr_fix(args: argparse.Namespace) -> None:
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
             f.write(get_branch_diff(repo, target_branch=mr.target_branch))
         prompt = build_mr_fix_prompt(mr, context_dir)
-        run_claude_agentic(prompt, repo)
+        run_ai_agentic(prompt, repo)
 
     updated_diff = get_branch_diff(repo, target_branch=mr.target_branch)
     _generate_and_post_replies(mr, discussions, updated_diff, repo)

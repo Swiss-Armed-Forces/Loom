@@ -295,6 +295,7 @@ in
       # git
       git
       git-lfs
+      openssh
 
       bash-completion
       (pkgs.writeTextFile {
