@@ -7,7 +7,7 @@ import tempfile
 from git import Repo
 
 from ._common import _get_gitlab_client_or_exit
-from .claude import run_claude_agentic
+from .aitools import run_ai_agentic
 from .config import CI_PROJECT_ID
 from .gitlab_api import (
     extract_job_artifacts,
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def cmd_job_diagnose(args: argparse.Namespace) -> None:
-    """Diagnose a CI/CD job failure using Claude in agentic mode."""
+    """Diagnose a CI/CD job failure using AI in agentic mode."""
     repo = Repo(os.getcwd())
 
     try:
@@ -68,4 +68,4 @@ def cmd_job_diagnose(args: argparse.Namespace) -> None:
             logger.info("No artifacts found")
 
         prompt = build_diagnose_prompt(job, context_dir, job.pipeline["id"])
-        run_claude_agentic(prompt, repo)
+        run_ai_agentic(prompt, repo)

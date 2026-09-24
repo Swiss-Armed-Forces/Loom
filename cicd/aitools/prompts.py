@@ -154,7 +154,7 @@ When you have implemented all changes, commit them with a conventional commit me
 
 
 def build_comment_reply_prompt(location: str, thread: str, diff: str) -> str:
-    """Build the Claude prompt for generating a reply to a single review comment."""
+    """Build the AI prompt for generating a reply to a single review comment."""
     return f"""You just addressed a GitLab code review comment by modifying the source code.
 Write a concise reply to the reviewer explaining what you changed to address their feedback.
 
@@ -178,7 +178,7 @@ Instructions:
 def build_issue_note_reply_prompt(
     author: str, note_body: str, old_description: str, new_description: str
 ) -> str:
-    """Build the Claude prompt for generating a reply to a single issue comment."""
+    """Build the AI prompt for generating a reply to a single issue comment."""
     return f"""You just updated a GitLab issue description to address a comment left by a user.
 Write a concise reply to the commenter explaining how the description was updated to address
 their feedback.
@@ -208,7 +208,7 @@ def build_release_notes_prompt(
     milestone_info: str,
     diff: str,
 ) -> str:
-    """Build the Claude prompt for generating release notes."""
+    """Build the AI prompt for generating release notes."""
     prev_info = (
         f"Previous release: {previous_tag}"
         if previous_tag
@@ -381,7 +381,7 @@ def build_mr_review_prompt(
 ) -> str:
     """Build the prompt for the multi-agent MR review.
 
-    Claude is instructed to spawn five parallel review sub-agents covering the full
+    AI is instructed to spawn five parallel review sub-agents covering the full
     changeset, then write one JSON comment file per finding to comments_dir. It must not
     modify source files, commit, or push.
     """

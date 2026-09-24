@@ -14,7 +14,7 @@ from ._common import (
     _maybe_update_mr_description,
     checkout_and_update_branch,
 )
-from .claude import run_claude_agentic
+from .aitools import run_ai_agentic
 from .gitlab_api import (
     create_branch_and_mr_for_issue,
     fetch_issue_by_ref,
@@ -60,7 +60,10 @@ def _implement_issue(project: Project, issue: ProjectIssue, repo: Repo) -> None:
     ) as context_dir:
         with open(os.path.join(context_dir, "issue.md"), "w", encoding="utf-8") as f:
             f.write(f"# {issue.title}\n\n{issue.description or ''}")
-        run_claude_agentic(build_milestone_implement_prompt(issue, context_dir), repo)
+        run_ai_agentic(
+            build_milestone_implement_prompt(issue, context_dir),
+            repo,
+        )
 
     try:
         ahead = list(repo.iter_commits(f"origin/{result.branch_name}..HEAD"))
@@ -76,7 +79,7 @@ def _implement_issue(project: Project, issue: ProjectIssue, repo: Repo) -> None:
 
 
 def cmd_implement(args: argparse.Namespace) -> None:
-    """Implement a GitLab issue using Claude in agentic mode."""
+    """Implement a GitLab issue using AI in agentic mode."""
     try:
         ref = parse_issue_url_or_id(args.issue_number)
     except ValueError as e:
@@ -106,11 +109,11 @@ def cmd_implement(args: argparse.Namespace) -> None:
         with open(os.path.join(context_dir, "issue.md"), "w", encoding="utf-8") as f:
             f.write(f"# {issue.title}\n\n{issue.description or ''}")
         prompt = build_implement_prompt(issue, context_dir)
-        run_claude_agentic(prompt, repo)
+        run_ai_agentic(prompt, repo)
 
 
 def cmd_milestone_implement(args: argparse.Namespace) -> None:
-    """Implement all open issues in a GitLab milestone using Claude in agentic mode."""
+    """Implement all open issues in a GitLab milestone using AI in agentic mode."""
     try:
         ref = parse_milestone_url_or_id(args.milestone)
     except ValueError as e:

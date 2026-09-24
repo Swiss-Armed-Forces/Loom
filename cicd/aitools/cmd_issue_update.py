@@ -8,7 +8,7 @@ from git import Repo
 from gitlab.v4.objects import ProjectIssue, ProjectIssueDiscussion
 
 from ._common import _ask, _get_gitlab_client_or_exit
-from .claude import generate_issue_note_reply, run_claude_agentic
+from .aitools import generate_issue_note_reply, run_ai_agentic
 from .gitlab_api import (
     fetch_issue_by_ref,
     fetch_issue_discussions,
@@ -38,8 +38,7 @@ def _generate_and_post_note_replies(
     new_description: str,
     repo: Repo,
 ) -> None:
-    """Generate Claude replies for all issue comment threads, preview them, then
-    post."""
+    """Generate AI replies for all issue comment threads, preview them, then post."""
     replies: list[IssueNoteReply] = []
     for i, discussion in enumerate(discussions, 1):
         author = _get_discussion_author(discussion)
@@ -47,7 +46,10 @@ def _generate_and_post_note_replies(
             "Generating reply %d/%d for comment by @%s...", i, len(discussions), author
         )
         reply = generate_issue_note_reply(
-            discussion, old_description, new_description, repo
+            discussion,
+            old_description,
+            new_description,
+            repo,
         )
         if reply:
             replies.append(IssueNoteReply(discussion=discussion, reply=reply))
@@ -79,7 +81,7 @@ def _generate_and_post_note_replies(
 
 
 def cmd_issue_update(args: argparse.Namespace) -> None:
-    """Update a GitLab issue description interactively using Claude."""
+    """Update a GitLab issue description interactively using AI."""
     repo = Repo(os.getcwd())
 
     try:
@@ -112,7 +114,7 @@ def cmd_issue_update(args: argparse.Namespace) -> None:
             f.write(issue.description or "")
 
         prompt = build_issue_update_prompt(issue, context_dir)
-        run_claude_agentic(prompt, repo)
+        run_ai_agentic(prompt, repo)
 
         with open(proposed_path, encoding="utf-8") as f:
             new_description = f.read().strip()
@@ -137,5 +139,9 @@ def cmd_issue_update(args: argparse.Namespace) -> None:
     discussions = fetch_issue_discussions(issue)
     if discussions:
         _generate_and_post_note_replies(
-            issue, discussions, old_description, new_description, repo
+            issue,
+            discussions,
+            old_description,
+            new_description,
+            repo,
         )

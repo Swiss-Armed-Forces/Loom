@@ -7,11 +7,11 @@ from git import Repo
 from git.exc import GitCommandError
 
 from ._common import _ask, _get_gitlab_client_or_exit
-from .claude import (
-    generate_commit_message_via_claude,
-    is_claude_cli_installed,
+from .aitools import (
+    generate_commit_message_via_ai,
+    is_ai_cli_installed,
     parse_commit_message,
-    run_claude_agentic,
+    run_ai_agentic,
 )
 from .config import EXCLUDED_PATHSPECS, MAX_DIFF_CHARS
 from .git_helpers import load_mr_template
@@ -41,8 +41,8 @@ def cmd_mr_create(args: argparse.Namespace) -> None:
         logger.error("No changes to commit.")
         sys.exit(1)
 
-    if not is_claude_cli_installed():
-        logger.error("Claude CLI not installed.")
+    if not is_ai_cli_installed():
+        logger.error("AI CLI not installed.")
         sys.exit(1)
 
     gl = _get_gitlab_client_or_exit()
@@ -72,9 +72,9 @@ def cmd_mr_create(args: argparse.Namespace) -> None:
     )
 
     mr_template = load_mr_template(repo)
-    message = generate_commit_message_via_claude(staged_diff, mr_template, repo)
+    message = generate_commit_message_via_ai(staged_diff, mr_template, repo)
     if not message:
-        logger.error("Failed to generate commit message via Claude.")
+        logger.error("Failed to generate commit message via AI.")
         sys.exit(1)
 
     parsed = parse_commit_message(message)
@@ -90,7 +90,10 @@ def cmd_mr_create(args: argparse.Namespace) -> None:
         print("Aborted.")
         return
 
-    run_claude_agentic(build_mr_create_commit_prompt(parsed.title), repo)
+    run_ai_agentic(
+        build_mr_create_commit_prompt(parsed.title),
+        repo,
+    )
 
     try:
         committed = list(repo.iter_commits("origin/main..HEAD"))

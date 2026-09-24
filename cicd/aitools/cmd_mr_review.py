@@ -7,8 +7,12 @@ import tempfile
 from git import Repo
 from gitlab.v4.objects import ProjectMergeRequest
 
-from ._common import _ask, _get_gitlab_client_or_exit, resolve_mr_from_args_or_branch
-from .claude import run_claude_agentic
+from ._common import (
+    _ask,
+    _get_gitlab_client_or_exit,
+    resolve_mr_from_args_or_branch,
+)
+from .aitools import run_ai_agentic
 from .git_helpers import get_branch_diff
 from .gitlab_api import post_review_comment
 from .models import ReviewComment
@@ -18,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _read_comment_files(comments_dir: str) -> list[ReviewComment]:
-    """Read and parse all JSON comment files written by Claude."""
+    """Read and parse all JSON comment files written by AI."""
     if not os.path.isdir(comments_dir):
         logger.warning("Comments directory not found: %s", comments_dir)
         return []
@@ -31,7 +35,7 @@ def _read_comment_files(comments_dir: str) -> list[ReviewComment]:
         try:
             with open(filepath, encoding="utf-8") as f:
                 content = f.read().strip()
-            # Strip the outer markdown code fence in case Claude wrapped the JSON.
+            # Strip the outer markdown code fence in case AI wrapped the JSON.
             # Only the first and last lines are removed to avoid corrupting inner
             # fences that appear inside JSON string values.
             if content.startswith("```"):
@@ -109,8 +113,7 @@ def _fix_from_comments(
     branch_ref: str,
     target_branch: str,
 ) -> None:
-    """Run a Claude agent to fix all review findings without posting them as
-    comments."""
+    """Run a AI agent to fix all review findings without posting them as comments."""
     print(f"\nRunning fix agent for {len(comments)} finding(s)...")
     with tempfile.TemporaryDirectory(
         prefix=".loom_mrfix_", dir=repo.working_dir
@@ -122,7 +125,7 @@ def _fix_from_comments(
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
             f.write(get_branch_diff(repo, branch_ref, target_branch))
         prompt = build_mr_fix_prompt(mr, context_dir)
-        run_claude_agentic(prompt, repo)
+        run_ai_agentic(prompt, repo)
 
 
 def _resolve_branch_ref(mr: ProjectMergeRequest, repo: Repo) -> str:
@@ -160,7 +163,7 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
             f.write(get_branch_diff(repo, branch_ref, mr.target_branch))
 
         prompt = build_mr_review_prompt(mr, context_dir, comments_dir, branch_ref)
-        run_claude_agentic(prompt, repo)
+        run_ai_agentic(prompt, repo)
 
         comments = _read_comment_files(comments_dir)
 
@@ -175,6 +178,12 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
 
     print(f"\nFound {len(comments)} review comment(s) for MR !{mr.iid}.")
     if args.fix:
-        _fix_from_comments(mr, comments, repo, branch_ref, mr.target_branch)
+        _fix_from_comments(
+            mr,
+            comments,
+            repo,
+            branch_ref,
+            mr.target_branch,
+        )
     else:
         _review_comments_interactively(mr, comments)
