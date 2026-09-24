@@ -543,8 +543,21 @@ let
       # Both are tried for `ca.crt` first and `tls.crt` second: a `kubectl create
       # secret tls` secret -- which is how the pre-install Job stores its cert --
       # has no `ca.crt` at all. Trusting the leaf is right here rather than a
-      # fudge: `openssl req -x509` emits basicConstraints CA:TRUE, so that
-      # certificate genuinely is its own root.
+      # fudge: nothing issued that certificate, it signs itself, and it is the
+      # only anchor there is to trust.
+      #
+      # What that costs the chart is one line it must not have. A verifier
+      # handed a certificate to use as an anchor asks whether it was allowed to
+      # sign anything, so a critical `keyUsage` without `keyCertSign` bars it
+      # from the job. Bun's BoringSSL enforces that and fails the first request
+      # with "unable to verify the first certificate"; OpenSSL (so curl in
+      # `ready` below) and Go accept the certificate anyway, which is why such a
+      # box looks healthy right up to the point where this pane answers. So the
+      # Job emits no keyUsage and the cert-manager Certificate names `cert sign`
+      # -- see the comments in charts/files/pre-install/ and
+      # charts/templates/common/certificate.yaml. Releases that get this wrong
+      # (1.4.0-rc4 is the one) need their `self-signed-cert` secret replaced by
+      # hand.
       ca="$state/ollama-ca.crt"
       append_cert() {
         local secret key pem

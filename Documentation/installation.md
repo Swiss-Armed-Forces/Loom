@@ -260,6 +260,15 @@ Overrides reach some of those and not others, and the gap is silent either way:
 
 A certificate you installed yourself, including via `up.sh --certificate`, is never replaced.
 
+Nothing issues the generated certificate, so a client that trusts it trusts it as a root rather than
+following a chain to one — the appliance's assistant pane and its USB ingest both do exactly that. A root has
+to be allowed to have signed something, so the certificate carries **no `keyUsage`** at all, and the
+cert-manager `Certificate` used when `certificate.enabled` is set names `cert sign` among its `usages`,
+because cert-manager always emits a `keyUsage` extension and defaults it to one that disqualifies the
+certificate. Without that, OpenSSL-based clients (`curl`, Python) and Go accept the certificate while
+BoringSSL-based ones reject it with "unable to verify the first certificate" — so the breakage shows up in
+one client and nowhere else.
+
 ### Crawling external S3 sources
 
 By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.

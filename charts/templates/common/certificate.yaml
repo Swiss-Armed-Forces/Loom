@@ -24,6 +24,41 @@ spec:
     {{- range concat (.Values.hostnames.ingress | default list) (.Values.hostnames.extra | default list) | sortAlpha | uniq }}
     - {{ printf "%s.%s" . $.Values.domain | quote }}
     {{- end }}
+  # What the certificate is allowed to be used for, spelled out because the
+  # default is wrong for the issuer this chart ships.
+  #
+  # cert-manager always emits a keyUsage extension and defaults it to digital
+  # signature + key encipherment -- there is no way to ask it for a certificate
+  # without one. With the default `-selfsigned-issuer` ClusterIssuer the result
+  # is a self-signed certificate that no client can use as its own anchor, and
+  # every client that trusts this chart's certificate does exactly that:
+  # `loom-chat` in nixos/console.nix passes it to Bun in NODE_EXTRA_CA_CERTS,
+  # install_cluster_ca in nixos/usb-ingest/loom_usb_ingest/transfer.py writes it
+  # into mc's CA directory.
+  #
+  # Measured against a fake TLS server, with the certificate the only variable:
+  # a self-signed certificate whose critical keyUsage omits `cert sign` is
+  # refused as an anchor by Bun's BoringSSL ("unable to verify the first
+  # certificate") and accepted by OpenSSL and Go. The same rule, and the same
+  # reasoning, as the comment in
+  # charts/files/pre-install/generate-self-signed-certificate.sh, which fixes it
+  # the other way -- by emitting no keyUsage at all, which cert-manager cannot
+  # do. That cert-manager maps these names onto exactly those keyUsage bits is
+  # read off its API reference, not measured here: this path needs cert-manager
+  # in the cluster and `certificate.enabled`, and it is off by default.
+  #
+  # The first three restate cert-manager's own defaults plus the serverAuth this
+  # chart's Ingresses need, so naming `cert sign` does not quietly narrow the
+  # certificate to that one usage.
+  #
+  # `isCA` stays unset on purpose. Making this a CA would satisfy the same
+  # verifiers and turn the serving certificate into something that may sign
+  # others, which is not what it is for.
+  usages:
+    - server auth
+    - digital signature
+    - key encipherment
+    - cert sign
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:
     name: {{ default (printf "%s-selfsigned-issuer" (include "app.fullname" .)) .Values.certificate.issuerRef.name }}

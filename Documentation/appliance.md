@@ -920,15 +920,26 @@ CA bundle from the certificate secrets the cluster holds and passes it in `NODE_
 verification stays **on**: if the bundle cannot be built the pane says so and waits, rather than falling back
 to an unverified connection.
 
-It has to name `ollama.loom` explicitly, and this is the one thing that has to be true of the Loom release the
-box ships. A certificate carrying only `DNS:*.loom` does not work: a wildcard needs at least two dots, so
-OpenSSL refuses to expand one under a single-label parent and Bun — like curl — rejects the connection with
-"no alternative certificate subject name matches target hostname". Releases whose chart predates
-`hostnames` in `charts/values.yaml` (everything up to and including `1.4.0-rc2`) generate a certificate the
-assistant cannot verify, and the pane says exactly that while it waits. See
-[Hostnames and the self-signed certificate](installation.md#hostnames-and-the-self-signed-certificate);
-on a box already running such a release, replacing the `self-signed-cert` secret by hand is the only fix,
-and it sticks, because the Job never replaces a certificate that covers every host.
+Two things have to be true of that certificate, and they are the two things that have to be true of the Loom
+release the box ships.
+
+**It has to name `ollama.loom` explicitly.** A certificate carrying only `DNS:*.loom` does not work: a
+wildcard needs at least two dots, so OpenSSL refuses to expand one under a single-label parent and Bun — like
+curl — rejects the connection with "no alternative certificate subject name matches target hostname".
+Releases whose chart predates `hostnames` in `charts/values.yaml` (everything up to and including
+`1.4.0-rc2`) generate a certificate the assistant cannot verify, and the pane says exactly that while it
+waits.
+
+**It has to be usable as its own anchor.** Nothing issued it, so trusting it means trusting it as a root, and
+a verifier handed a root asks whether it was allowed to sign anything. A certificate whose critical
+`keyUsage` omits `keyCertSign` was not, and Bun refuses it with "unable to verify the first certificate" —
+after the pane has started, because the wait ahead of it uses `curl`, and OpenSSL accepts such a certificate
+without complaint. `1.4.0-rc4` is the one release that generates one; the chart now emits no `keyUsage` at
+all on that path, and names `cert sign` on the `certificate.enabled` one.
+
+See [Hostnames and the self-signed certificate](installation.md#hostnames-and-the-self-signed-certificate).
+On a box already running an affected release, replacing the `self-signed-cert` secret by hand is the only
+fix, and it sticks, because the Job never replaces a certificate that covers every host.
 
 The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which must name a model
 `ollama/Dockerfile` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the

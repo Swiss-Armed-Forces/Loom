@@ -161,12 +161,40 @@ create_self_signed_cert() {
     # Hence every host by name. The wildcard and the bare domain stay on the
     # list: they cost nothing and a browser dialog still shows them.
     #
-    # The three extensions below are what makes this a serving leaf rather than
-    # a CA: `openssl req -x509` with no -extensions picks up the stock `v3_ca`
-    # section, which sets `basicConstraints: critical, CA:TRUE` and no
+    # The two extensions after the SAN are what makes this a serving leaf rather
+    # than a CA: `openssl req -x509` with no -extensions picks up the stock
+    # `v3_ca` section, which sets `basicConstraints: critical, CA:TRUE` and no
     # extendedKeyUsage at all. A manually trusted leaf without `serverAuth` is
     # rejected outright by the macOS and iOS trust stores, so the names alone
     # would not finish the job there.
+    #
+    # There is deliberately no `keyUsage`, and that is not an oversight. Nothing
+    # issues this certificate, so every client that trusts it trusts it as its
+    # own anchor -- `loom-chat` in nixos/console.nix hands it to Bun in
+    # NODE_EXTRA_CA_CERTS, and install_cluster_ca in
+    # nixos/usb-ingest/loom_usb_ingest/transfer.py writes it into mc's CA
+    # directory. A verifier asked to use a certificate as an anchor checks
+    # whether it is allowed to have signed anything, and a critical `keyUsage`
+    # without `keyCertSign` says it is not.
+    #
+    # Measured, one fake TLS server per variant, the certificate the only thing
+    # that changed:
+    #
+    #   CA:FALSE, keyUsage w/o keyCertSign  Bun: unable to verify the first
+    #                                       certificate. curl, node and Go: ok
+    #   CA:TRUE, same keyUsage              Bun: same failure -- so this is the
+    #                                       keyUsage, not basicConstraints
+    #   CA:FALSE, no keyUsage               all four verify
+    #
+    # OpenSSL (so curl, and node) and Go accept a self-signed certificate found
+    # in their trust store whatever its keyUsage says; Bun's BoringSSL does not.
+    # That split is worth knowing when reading a bug report: on a box serving
+    # such a certificate the appliance's `curl` readiness probe passes and only
+    # opencode's own request fails.
+    #
+    # Adding `keyCertSign` instead would also work, and would be a lie: this
+    # certificate signs nothing, and CA:FALSE beside a keyCertSign bit is a
+    # contradiction some verifier is entitled to reject later.
     openssl req -x509 -nodes -days 365 \
         -newkey rsa:4096 \
         -keyout "${KEY_FILE}" \
@@ -174,7 +202,6 @@ create_self_signed_cert() {
         -subj "/CN=${common_name}/O=${CERT_ORG}" \
         -addext "subjectAltName=${san}" \
         -addext "basicConstraints=critical,CA:FALSE" \
-        -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
         -addext "extendedKeyUsage=serverAuth"
 
     # Written in one step rather than delete-then-create: this secret is the
