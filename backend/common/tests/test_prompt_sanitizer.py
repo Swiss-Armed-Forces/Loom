@@ -1,5 +1,6 @@
 import pytest
-from common.agent_builder import sanitize_document_text
+
+from common.llm.prompt_sanitizer import sanitize_document_text
 
 
 @pytest.mark.parametrize(

@@ -26,12 +26,18 @@ def vision_agent() -> MagicMock:
     vision agent as a ``MagicMock``; we fetch it through the public
     ``get_llm_vision_agent`` accessor and configure it.
 
-    Tests that care about the response override ``parse.return_value`` /
-    ``parse.side_effect``; tests that only assert on the request arguments can use it
+    Tests that care about the response override ``run_sync.return_value`` /
+    ``run_sync.side_effect``; tests that only assert on the request arguments can use it
     as-is.
+
+    The whole run result is replaced rather than only its ``output`` attribute: reading
+    ``run_sync.return_value`` off the cast makes pylint resolve ``run_sync`` to the real
+    ``Agent`` method, which has no such member.
     """
     agent = cast(MagicMock, get_llm_vision_agent())
-    agent.run_sync.return_value.output = SimpleNamespace(description="ok")
+    agent.run_sync.return_value = SimpleNamespace(
+        output=SimpleNamespace(description="ok")
+    )
     return agent
 
 
@@ -67,8 +73,8 @@ def test_is_image(extension: str, mimetype: str, expected: bool):
 
 
 def test_describe_image_returns_model_content(vision_agent: MagicMock):
-    vision_agent.run_sync.return_value.output = SimpleNamespace(
-        description="A photo of a cat."
+    vision_agent.run_sync.return_value = SimpleNamespace(
+        output=SimpleNamespace(description="A photo of a cat.")
     )
 
     result = describe_image(memoryview(IMAGE_BYTES))
@@ -103,7 +109,9 @@ def test_describe_image_wraps_api_error(vision_agent: MagicMock, api_error: APIE
 def test_describe_image_returns_empty_string_when_model_returns_no_content(
     vision_agent: MagicMock,
 ):
-    vision_agent.run_sync.return_value.output = SimpleNamespace(description="")
+    vision_agent.run_sync.return_value = SimpleNamespace(
+        output=SimpleNamespace(description="")
+    )
     result = describe_image(memoryview(IMAGE_BYTES))
 
     assert result == ""

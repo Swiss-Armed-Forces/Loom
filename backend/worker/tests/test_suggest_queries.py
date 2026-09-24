@@ -6,7 +6,7 @@ import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
 from common.ai_context.tool_models import QuerySuggestion, SuggestQueriesResult
-from common.dependencies import get_file_repository, get_llm_tool_agent
+from common.dependencies import get_file_repository, get_llm_suggest_queries_agent
 from common.models.es_repository import QueryScoreStats
 from openai import APIConnectionError, APITimeoutError, InternalServerError
 from pydantic import ValidationError
@@ -37,14 +37,14 @@ def _validation_error() -> ValidationError:
 
 
 @pytest.fixture
-def tool_agent() -> MagicMock:
-    """The tool LLM agent, mocked and pre-set with a successful response.
+def suggest_queries_agent() -> MagicMock:
+    """The suggest_queries LLM agent, mocked and pre-set with a successful response.
 
     ``mock_init`` (run by the autouse ``dependencies_init`` fixture) installs the global
-    tool agent as a ``MagicMock``; we fetch it through the public ``get_llm_tool_agent``
-    accessor and configure it.
+    agent as a ``MagicMock``; we fetch it through the public
+    ``get_llm_suggest_queries_agent`` accessor and configure it.
     """
-    agent = cast(MagicMock, get_llm_tool_agent())
+    agent = cast(MagicMock, get_llm_suggest_queries_agent())
     agent.run_sync.return_value = _tool_response("size:>1000000")
     return agent
 
@@ -147,14 +147,14 @@ def test_aggregate_unwraps_nested_list():
 
 
 def test_generate_returns_suggestion_on_success(
-    tool_agent: MagicMock, file_repository: MagicMock
+    suggest_queries_agent: MagicMock, file_repository: MagicMock
 ):
     result = suggest_queries_generate_task(QUERY_DESCRIPTION)
 
     assert result == QuerySuggestion(
         query="size:>1000000", matching_docs=42, max_score=3.5, avg_score=2.1
     )
-    tool_agent.run_sync.assert_called_once()
+    suggest_queries_agent.run_sync.assert_called_once()
     file_repository.count_and_score_stats_by_query.assert_called_once()
 
 
@@ -184,14 +184,14 @@ def test_generate_returns_suggestion_on_success(
     ],
 )
 def test_generate_drops_candidate_when_llm_fails(
-    tool_agent: MagicMock, error: Exception
+    suggest_queries_agent: MagicMock, error: Exception
 ):
     """A failing candidate must degrade, never raise.
 
     Regression test for #287: this task runs as a chord member, and a chord aborts as
     soon as any member raises -- discarding every sibling candidate that succeeded.
     """
-    tool_agent.run_sync.side_effect = error
+    suggest_queries_agent.run_sync.side_effect = error
 
     result = suggest_queries_generate_task(QUERY_DESCRIPTION)
 
@@ -199,10 +199,10 @@ def test_generate_drops_candidate_when_llm_fails(
 
 
 def test_generate_drops_candidate_without_querying_elasticsearch(
-    tool_agent: MagicMock, file_repository: MagicMock
+    suggest_queries_agent: MagicMock, file_repository: MagicMock
 ):
     """A dropped candidate has no query string, so it must not hit Elasticsearch."""
-    tool_agent.run_sync.side_effect = length_finish_reason_error()
+    suggest_queries_agent.run_sync.side_effect = length_finish_reason_error()
 
     suggest_queries_generate_task(QUERY_DESCRIPTION)
 

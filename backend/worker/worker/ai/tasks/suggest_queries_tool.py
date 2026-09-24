@@ -3,7 +3,11 @@ from uuid import UUID
 
 from celery import chord, group
 from common.ai_context.tool_models import QuerySuggestion, SuggestQueriesResult
-from common.dependencies import get_celery_app, get_file_repository, get_llm_tool_agent
+from common.dependencies import (
+    get_celery_app,
+    get_file_repository,
+    get_llm_suggest_queries_agent,
+)
 from common.file.file_repository import File
 from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
@@ -47,7 +51,7 @@ MUST: Do not give an explanation.
             f"are applied separately."
         )
 
-    agent = get_llm_tool_agent()
+    agent = get_llm_suggest_queries_agent()
 
     # This task is one candidate in a chord, and a chord aborts as soon as any
     # of its members fails. Degrade to an empty suggestion -- which
