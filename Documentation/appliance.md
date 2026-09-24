@@ -223,7 +223,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | Option | Meaning |
 | --- | --- |
 | `--platform PLATFORM` | Which box: `spark`, `evo-x2` or `nuc12`. Defaults to `spark`. |
-| `--tag TAG` | Loom release to embed. Defaults to the newest tag, with a confirmation prompt. |
+| `--tag TAG` | Loom release to embed. Must exist in this checkout — the image is built from a clone of it, not from the remote. Defaults to the newest tag, with a confirmation prompt; see [Which tag gets picked](#which-tag-gets-picked). |
 | `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
@@ -240,7 +240,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--nixpkgs PATH` | nixpkgs source. Required — `build-appliance-image` passes devenv's pinned nixpkgs for you, so you only need this when driving the script directly. |
 | `--nixos-hardware PATH` | [nixos-hardware](https://github.com/NixOS/nixos-hardware) source, which the x86 platforms take their hardware profile from. Required, and passed for you the same way. |
 | `--output DIR` | Where to put the image. Defaults to `.appliance-build/`. |
-| `--skip-STEP` | Skip a build step, by name. |
+| `--skip-STEP` | Skip a build step, by name — `--help` lists them in the order they run. A debugging escape hatch: later steps assume the earlier ones ran, so a stick built with one of these is not a stick anybody should ship. `--skip-validate_environment` is the one with a legitimate use, when the preflight's 20 GB store estimate is wrong for your host. |
 | `--yes` | Skip confirmation prompts. |
 | `--verbose` | Trace every command. |
 
@@ -257,6 +257,23 @@ added another ~1.5 GB image to the builder's Nix store for a release that had no
 Each stick gets a **random `10.<a>.<b>.0/24` subnet**. That keeps two boxes on one wire from colliding, and
 keeps the box from clashing with a visitor's own network. The chosen subnet is printed at the end of the build
 and shown on the console's login screen.
+
+### Which tag gets picked
+
+Without `--tag`, the build takes the newest tag in your checkout and asks you to confirm it. Two things make
+that answer trustworthy:
+
+- **It fetches first.** The local tag list is otherwise only as fresh as your last `git fetch`, and a stale
+  pick costs an hour of build and yields a stick indistinguishable from the right one until somebody boots it.
+  The fetch is best-effort: no `origin`, or no route to it, warns and carries on with the tags you have, since
+  building on a disconnected host is supported. `--skip-fetch_tags` turns it off.
+- **A release outranks its own release candidates.** Git's version sort would otherwise put `1.3.0-rc10` above
+  `1.3.0`, because a longer string sorts above the prefix it extends — so the default would never pick a
+  finished release at all. The build sets `versionsort.suffix=-rc` to correct that, which covers this
+  repository's two tag shapes, `X.Y.Z` and `X.Y.Z-rcN`.
+
+`--tag` skips both: it names the release outright, and the tag has to be in this checkout already, because the
+image is built from a clone of it rather than from the remote. If it is not, fetch and try again.
 
 ### Trying a stick without a box
 

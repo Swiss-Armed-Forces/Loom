@@ -78,6 +78,7 @@ LOOM_CHAT_MODEL=""
 
 STEPS=(
     validate_environment
+    fetch_tags
     resolve_tag
     resolve_subnet
     resolve_wifi
@@ -231,20 +232,61 @@ validate_environment(){
     fi
 }
 
+# Refresh the tag list the step below picks from. Without this the default is
+# only as fresh as whenever this checkout was last fetched, and a stale pick is
+# an expensive mistake to make quietly: an hour of build, and a stick that is
+# indistinguishable from the right one until somebody boots it and reads the
+# version off the console.
+#
+# Best-effort by design. A build host with no route to origin is a case this
+# script supports -- the tags it already has are real, and the image is built
+# from a local clone either way -- so an unreachable remote warns and carries
+# on. Pass --skip-fetch_tags to keep it from trying at all.
+fetch_tags(){
+    if [[ -n "${TAG}" ]]; then
+        # --tag already says which release this stick is. Fetching could not
+        # change that answer, only slow it down.
+        return
+    fi
+
+    if ! git -C "${CONTEXT_DIR}" remote get-url origin > /dev/null 2>&1; then
+        echo "[*] No 'origin' remote; using the tags in this checkout."
+        return
+    fi
+
+    echo "[*] Fetching tags from origin"
+    # No --prune-tags and no --force: a tag that moved or vanished upstream is
+    # not something to act on silently while preparing a release artefact.
+    if ! git -C "${CONTEXT_DIR}" fetch --tags --quiet origin; then
+        echo "[!] Could not reach origin. Falling back to the tags already in this"
+        echo "[!] checkout, which may be older than the newest release."
+    fi
+}
+
 resolve_tag(){
     local answer
 
     if [[ -n "${TAG}" ]]; then
         if ! git -C "${CONTEXT_DIR}" rev-parse --verify --quiet "refs/tags/${TAG}" > /dev/null; then
             echo >&2 "[!] Error: no such tag: ${TAG}"
+            echo >&2 "    prepare_repo clones this checkout, so the tag has to exist here and"
+            echo >&2 "    not only on the remote. Run: git -C '${CONTEXT_DIR}' fetch --tags"
             exit 1
         fi
         return
     fi
 
-    # Note: NOT `git describe`, which returns the nearest *ancestor* tag and so
-    # happily picks an ancient release when main has moved on.
-    TAG="$(git -C "${CONTEXT_DIR}" tag --list --sort=-v:refname | head --lines=1)"
+    # Two things about this listing:
+    #
+    #   * It is NOT `git describe`, which returns the nearest *ancestor* tag and
+    #     so happily picks an ancient release when main has moved on.
+    #   * versionsort.suffix is what stops 1.3.0-rc9 from outranking 1.3.0.
+    #     Git's version sort otherwise places a longer string above the prefix
+    #     it extends, so every release would be shadowed by its own last release
+    #     candidate and this default would never pick a finished release at all.
+    #     The repository's tags are exactly `X.Y.Z` and `X.Y.Z-rcN`, so one
+    #     suffix covers it.
+    TAG="$(git -C "${CONTEXT_DIR}" -c versionsort.suffix=-rc tag --list --sort=-v:refname | head --lines=1)"
     if [[ -z "${TAG}" ]]; then
         echo >&2 "[!] Error: this repository has no tags."
         echo >&2 "    The appliance runs Loom in offline mode, which requires a tagged checkout (up.sh:236)."
@@ -811,7 +853,13 @@ usage(){
     echo "  --nixos-hardware PATH         nixos-hardware source (required; passed the same way)"
     echo "  -y|--yes                      do not ask for confirmation"
     echo "  --allow-cross                 allow building for a system other than the host"
-    echo "  --skip-STEP                   skip step STEP"
+    echo "  --skip-STEP                   skip step STEP, e.g. --skip-validate_environment to build"
+    echo "                                past the preflight checks. Later steps assume the earlier"
+    echo "                                ones ran, so this is a debugging escape hatch, not a"
+    echo "                                supported way to build a stick. The steps, in order:"
+    printf '                                  %s\n' "${STEPS[@]}"
+    echo "                                and with --flash, between build_image and report:"
+    printf '                                  %s\n' "${FLASH_STEPS[@]}"
 }
 
 #
