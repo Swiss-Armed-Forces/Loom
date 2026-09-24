@@ -9,16 +9,23 @@
 #
 environment: development
 
+# `qwen2.5:0.5b` carries no thinking capability, and Ollama rejects a request that asks
+# one to reason: `reasoning_effort` above `none` becomes a native `think`, and the chat
+# handler answers `400 "<model>" does not support thinking` rather than ignoring it. So
+# every client whose `LLMClientSettings` subclass defaults `thinking` to `true` -- agent,
+# summarization, summarization_refine, rag_synthesize -- has to turn it off here to match
+# the model this profile swaps in. The other clients already default to `false`.
 llm:
   embedding:
     text_chunk_size: 250
     text_chunk_overlap: 25
 
-  tool:
+  suggest_queries:
     model: qwen2.5:0.5b
 
   agent:
     model: qwen2.5:0.5b
+    thinking: false
 
   summarization_key_points:
     model: qwen2.5:0.5b
@@ -27,20 +34,23 @@ llm:
 
   summarization:
     model: qwen2.5:0.5b
+    thinking: false
 
   summarization_refine:
     model: qwen2.5:0.5b
+    thinking: false
 
-  hyde:
+  rag_hyde:
     model: qwen2.5:0.5b
     num_documents: 1
 
-  rerank:
+  rag_rerank:
     model: qwen2.5:0.5b
     temperature: 0
 
-  synthesize:
+  rag_synthesize:
     model: qwen2.5:0.5b
+    thinking: false
 
   translation:
     model: qwen2.5:0.5b

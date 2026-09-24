@@ -78,11 +78,9 @@ load via `GET /v1/ai/{context_id}/history`.
 ### Agent and Tools
 
 `AgentService` wraps a single pydantic-ai `Agent` configured with an OpenAI-compatible LLM (served
-by Ollama or a compatible endpoint). The model profile honours `llm.agent.merge_system_messages`
-(Helm, default `true`): when enabled, consecutive leading system messages are merged into one
-and mid-conversation system messages (e.g. tool-availability announcements after
-`load_capability`) are demoted to user-role text. This is required for backends that enforce a
-single system message at the start of the conversation (vLLM/SGLang serving Qwen). The agent is initialised with `capabilities=tool_service.capabilities`, which
+by Ollama or a compatible endpoint). It is the only client whose prompt carries more than one system
+message, so it is the only one affected by the merging the self-hosted providers ask for (see
+[System message merging](#system-message-merging)). The agent is initialised with `capabilities=tool_service.capabilities`, which
 provides four `Capability` groups. Three are always active; `research_mode` is a dynamic capability
 whose activation callback checks `AgentDeps.active_capabilities` at runtime.
 
@@ -93,10 +91,89 @@ Tools are split into two tiers:
 - **Frontend tools** — TypeScript functions registered in the React frontend. The agent declares
   them as deferred tools; the frontend executes them after each agent run and re-submits results.
 
+### Provider
+
+Pointing a client at an endpoint takes one setting beyond the endpoint and the model name:
+
+| Setting                 | Answers                             | Values                                                |
+| ----------------------- | ----------------------------------- | ----------------------------------------------------- |
+| `llm.<client>.provider` | Which service answers at `endpoint` | `ollama` (default), `litellm`, `infomaniak`, `openai` |
+
+**`provider`** is pydantic-ai's term for the class handling authentication and the connection to one
+LLM service — one class per service, so one setting value per service. It is an enum: an unrecognised
+value fails at startup with the accepted options listed, rather than being silently ignored.
+
+The model class is always `OpenAIChatModel`; per pydantic-ai's guidance, an OpenAI-compatible API needs
+a custom *provider*, not a custom model class, and `common/llm/provider.py` is where each service's
+quirks live:
+
+| Value        | Class                 | Why it is not the stock one                                                                                                                                                                                                    |
+| ------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ollama`     | `LoomOllamaProvider`  | Matches the family off the re-uploaded name (below). Also withholds `max_completion_tokens`, which Ollama's request struct does not have, and claims `supports_thinking`.                                                      |
+| `litellm`    | `LoomLiteLLMProvider` | Upstream reads the family from a `vendor/model` prefix; fronting vLLM, the served name carries none. Matches it off the name instead, and claims `supports_thinking`.                                                          |
+| `infomaniak` | `InfomaniakProvider`  | Serves open-weight models under short slugs, and answers `422 validation_failed` for request fields it does not know — so `max_completion_tokens` is withheld. Claims `supports_thinking`, which was measured against the API. |
+| `openai`     | `OpenAIProvider`      | Stock. The one service whose own table knows its models, per model.                                                                                                                                                            |
+
+#### Model families
+
+A model family carries the request-construction rules for the weights — above all
+`json_schema_transformer`, which decides how JSON schemas are serialised for the `NativeOutput`
+structured-output calls (`$defs` inlined rather than referenced). Getting it wrong surfaces as the
+model failing to produce parseable output, not as an error.
+
+pydantic-ai infers the family from the model name by prefix, which misses two cases Loom hits:
+community re-uploads published under an author namespace (`huihui_ai/qwen3.5-abliterated:9b` matches
+nothing), and services whose own lookup table does not cover open weights at all. `_family_profile()`
+in `common/llm/provider.py` closes both — it drops the namespace, lowercases, and prefix-matches
+`llama`, `gemma`, `qwen`, `qwq`, `deepseek`, `mistral`, `mixtral` and `gpt-oss` — and every provider
+above except `openai` layers it in.
+
+There is no `family` setting: the name in `llm.<client>.model` is the claim. On LiteLLM/vLLM, where
+the served name is whatever the operator configured, **name the deployment after the weights** — a
+model served as `prod-deployment-1` matches nothing and gets no family rules.
+
+#### How the profile is layered
+
+Each provider's `model_profile` merges its own layers, lowest first:
+
+1. **Upstream's provider profile** — what the service accepts.
+2. **The family** — above the provider because it describes the *model*, and every provider claims
+    `json_schema_transformer` unconditionally; a generic OpenAI transformer applied to Qwen breaks
+    structured output.
+3. **Loom's claims** — `supports_thinking` for services where no lookup table recognises the model
+    name. Above the family because gemma and gpt-oss both set `supports_thinking=False`, which from any
+    lower layer would strip `thinking` from every request again (#307). That `False` is not knowledge
+    about the weights: gemma gets it from Google's `'gemini-2.5' in model_name` test and gpt-oss from
+    OpenAI's reasoning table, both of which only ever recognise that vendor's hosted models.
+
+4. **System message merging** — for the services that execute an open-weight chat template.
+
+The model is built with no `profile=` argument at all: every layer is a fact about the service or
+about the weights, and the provider is where both are known.
+
+#### System message merging
+
+`LoomOllamaProvider`, `LoomLiteLLMProvider` and `InfomaniakProvider` set
+`openai_chat_supports_multiple_system_messages=False` and `supports_inline_system_prompts=False`,
+which merge consecutive leading system messages into one and demote the ones that follow (e.g.
+tool-availability announcements after `load_capability`) to user-role text.
+
+This is required when the model's chat template accepts only a single leading system message and the
+service executes that template — vLLM behind LiteLLM, rendering Qwen's template, answers `System
+message must be at the beginning` as soon as a capability's instructions add a second
+`InstructionPart`. Ollama and Infomaniak run the same family of templates, so they claim it too;
+where it is not needed it costs nothing, being a no-op on the single leading instruction every client
+except `llm.agent` sends. `OpenAIProvider` does not claim it: the API takes repeated system messages
+at full weight, and demoting them would weaken instructions for no reason.
+
+There is no setting. Whether a service accepts more than one system message is a property of that
+service, not something an operator chooses.
+
 ### Thinking
 
-Every LLM client has a `thinking` setting (`llm.<client>.thinking` in Helm), which
-`AgentBuilder._build_model_settings` turns into pydantic-ai's unified `thinking` model setting:
+Every chat LLM client has a `thinking` setting (`llm.<client>.thinking` in Helm, where `<client>` is
+the same name the client carries in `LLMSettings`), which `build_agent` turns into pydantic-ai's
+unified `thinking` model setting:
 
 | Value   | Sent as                    | Effect                                                |
 | ------- | -------------------------- | ----------------------------------------------------- |
@@ -104,17 +181,32 @@ Every LLM client has a `thinking` setting (`llm.<client>.thinking` in Helm), whi
 | `false` | `reasoning_effort: none`   | Thinking off                                          |
 | `null`  | nothing                    | Parameter omitted — the model applies its own default |
 
-Both supported backends accept `reasoning_effort` on `/v1/chat/completions` and translate it
-themselves: Ollama converts it back into its native `think` value, and vLLM converts it into the
-`enable_thinking` chat-template variable that Qwen's template reads. Reasoning text comes back in a
-`reasoning` field on the message in both cases, which pydantic-ai turns into the `ThinkingPart`s
-that become `ReasoningActivityEntry` items.
+Ollama, LiteLLM/vLLM and Infomaniak all accept `reasoning_effort` on `/v1/chat/completions` and
+translate it themselves: Ollama converts it back into its native `think` value, and vLLM converts it
+into the `enable_thinking` chat-template variable that Qwen's template reads. Reasoning text comes
+back in a `reasoning` field on the message in every case, which pydantic-ai turns into the
+`ThinkingPart`s that become `ReasoningActivityEntry` items.
 
-Two things to know:
+Infomaniak was measured rather than assumed, against `Qwen/Qwen3.5-122B-A10B-FP8`: `none` and
+`medium` both answer 200, and `none` takes the model from 269 completion tokens to 4. It is the one
+service that validates request fields strictly, so `max_completion_tokens` stays withheld — that one
+is still unmeasured.
 
-- The translation only happens because `AgentBuilder._build_model_profile` sets
-  `supports_thinking` on the model profile. pydantic-ai defaults that to `False` and strips the
-  setting without warning, so removing it makes every `thinking` value silently inert.
+Three things to know:
+
+- The translation only happens because every provider except `openai` sets `supports_thinking` on the
+  model profile. pydantic-ai defaults that to `False` and strips the setting without warning, so
+  removing it makes every `thinking` value silently inert.
+- For the same reason the merge order inside `model_profile` matters: the family profile is merged
+  *under* that claim. The gemma and gpt-oss profiles set `supports_thinking=False` themselves, so
+  merging them on top would strip `thinking` again for those families.
+  `test_thinking_survives_every_family` guards this with one model name per family.
+- On Ollama the model has to *have* the thinking capability. `reasoning_effort` above `none` becomes
+  a native `think`, and the chat handler answers `400 "<model>" does not support thinking` rather
+  than ignoring it — so pointing a client with `thinking: true` at a non-reasoning checkpoint turns
+  every one of its calls into a hard failure. `none` is always accepted. This is why
+  `values-development.yaml` sets `thinking: false` on the four clients it swaps onto
+  `qwen2.5:0.5b`, which does not reason; the default `huihui_ai/qwen3.5-abliterated:9b` does.
 - The model's chat template has the final say. A checkpoint whose template ignores
   `enable_thinking`, or one that always reasons, will keep thinking no matter what is sent. Check a
   new model with:
@@ -126,9 +218,31 @@ Two things to know:
   ```
 
 Defaults are set per client in `LLMClientSettings` subclasses: on for `summarization`,
-`summarization_refine`, `rag_rerank`, `rag_synthesize`, `tool` and `agent`; off for `embedding`,
-`summarization_key_points`, `rag_hyde`, `vision`, `language_detection` and `translation`. Clients
-that reason spend part of `max_tokens` on reasoning tokens — see #287.
+`summarization_refine`, `rag_synthesize` and `agent`; off for `summarization_key_points`,
+`rag_hyde`, `rag_rerank`, `suggest_queries`, `vision`, `language_detection` and `translation`.
+Clients that reason spend part of `max_tokens` on reasoning tokens — see #287.
+
+`rag_rerank` and `suggest_queries` are the two defaults that are off for a cost reason rather than a
+quality one. Both fan out many calls per invocation against an inference server that answers them
+one at a time, and both spend that fan-out on a tiny answer.
+
+`rerank_and_synthesize` fans out one call per chunk, capped at
+`MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING` (50), and the inference server answers them one at a
+time — so a question's rerank wall-clock is the sum of all 50 generations, while the whole useful
+output is a single integer score. It also carries `max_tokens = 512` for the same reason: the
+inherited 128000 caps nothing that matters there, but lets one runaway generation consume the
+5-minute `timeout`, which `rerank` then retries up to `RAG_MAX_RETRIES` times on an already saturated
+queue. Turning thinking back on for ranking quality means keeping that cap, and either lowering the
+fan-out or giving the inference server real concurrency (`OLLAMA_NUM_PARALLEL`).
+
+`suggest_queries` is the same shape one level down: one invocation fans out
+`tool.suggest_queries.num_candidates` (10) generations, so a suggestion's wall-clock is the sum of
+all ten, and each one's whole useful output is a short Lucene query string. Unlike `rag_rerank` it
+keeps the inherited `max_tokens`, so turning thinking back on there — for a model that needs the
+budget to get Lucene syntax right — costs latency but nothing else.
+
+`embedding` has no `thinking` setting: the embeddings API has no reasoning to switch off, and
+`build_embedder` reads only `extra_headers`/`extra_body`.
 
 ### AG-UI Streaming Protocol
 

@@ -8,12 +8,10 @@ from celery import Celery
 from elasticsearch import Elasticsearch
 from elasticsearch.dsl.connections import create_connection
 from minio import Minio
-from openai import OpenAI
-from pydantic_ai import Agent
+from pydantic_ai import Agent, Embedder
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 
-from common.agent_builder import AgentBuilder
 from common.ai_context.ai_context_repository import AiContextRepository
 from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
@@ -21,6 +19,8 @@ from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.celery_app import BaseTask, init_celery_app
 from common.file.file_repository import DetectedLanguage, FileRepository
 from common.file.file_scheduling_service import FileSchedulingService
+from common.llm.agent import build_agent
+from common.llm.embedder import build_embedder
 from common.messages.pubsub_service import PubSubService
 from common.services.celery_inspect_service import CeleryInspectService
 from common.services.complete_estimate_service import CompleteEstimateService
@@ -73,8 +73,8 @@ _llm_summarization_refine_agent: Agent[None, str] | None = None
 _llm_hyde_agent: Agent[None, str] | None = None
 _llm_rag_rerank_agent: Agent[None, float] | None = None
 _llm_rag_synthesize_agent: Agent[None, str] | None = None
-_llm_embedding_client: OpenAI | None = None
-_llm_tool_agent: Agent[None, str] | None = None
+_llm_embedder: Embedder | None = None
+_llm_suggest_queries_agent: Agent[None, str] | None = None
 _llm_vision_agent: Agent[None, str] | None = None
 _llm_language_detection_agent: Agent[None, list[DetectedLanguage]] | None = None
 _llm_translation_agent: Agent[None, str] | None = None
@@ -252,55 +252,45 @@ def init():
     )
 
     global _llm_summarization_key_points_agent
-    _llm_summarization_key_points_agent = AgentBuilder(NoneType, str).build_agent(
-        settings.llm.summarization_key_points
+    _llm_summarization_key_points_agent = build_agent(
+        NoneType, str, settings.llm.summarization_key_points
     )
 
     global _llm_summarization_agent
-    _llm_summarization_agent = AgentBuilder(NoneType, str).build_agent(
-        settings.llm.summarization
-    )
+    _llm_summarization_agent = build_agent(NoneType, str, settings.llm.summarization)
 
     global _llm_summarization_refine_agent
-    _llm_summarization_refine_agent = AgentBuilder(NoneType, str).build_agent(
-        settings.llm.summarization_refine
+    _llm_summarization_refine_agent = build_agent(
+        NoneType, str, settings.llm.summarization_refine
     )
 
     global _llm_hyde_agent
-    _llm_hyde_agent = AgentBuilder(NoneType, str).build_agent(settings.llm.rag_hyde)
+    _llm_hyde_agent = build_agent(NoneType, str, settings.llm.rag_hyde)
 
     global _llm_rag_rerank_agent
-    _llm_rag_rerank_agent = AgentBuilder(NoneType, float).build_agent(
-        settings.llm.rag_rerank
-    )
+    _llm_rag_rerank_agent = build_agent(NoneType, float, settings.llm.rag_rerank)
 
     global _llm_rag_synthesize_agent
-    _llm_rag_synthesize_agent = AgentBuilder(NoneType, str).build_agent(
-        settings.llm.rag_synthesize
-    )
+    _llm_rag_synthesize_agent = build_agent(NoneType, str, settings.llm.rag_synthesize)
 
-    global _llm_embedding_client
-    _llm_embedding_client = OpenAI(
-        base_url=str(settings.llm.embedding.endpoint),
-        api_key=settings.llm.embedding.api_key,
-        timeout=settings.llm.embedding.timeout,
-    )
+    global _llm_embedder
+    _llm_embedder = build_embedder(settings.llm.embedding)
 
-    global _llm_tool_agent
-    _llm_tool_agent = AgentBuilder(NoneType, str).build_agent(settings.llm.tool)
+    global _llm_suggest_queries_agent
+    _llm_suggest_queries_agent = build_agent(
+        NoneType, str, settings.llm.suggest_queries
+    )
 
     global _llm_vision_agent
-    _llm_vision_agent = AgentBuilder(NoneType, str).build_agent(settings.llm.vision)
+    _llm_vision_agent = build_agent(NoneType, str, settings.llm.vision)
 
     global _llm_language_detection_agent
-    _llm_language_detection_agent = AgentBuilder(
-        NoneType, list[DetectedLanguage]
-    ).build_agent(settings.llm.language_detection)
+    _llm_language_detection_agent = build_agent(
+        NoneType, list[DetectedLanguage], settings.llm.language_detection
+    )
 
     global _llm_translation_agent
-    _llm_translation_agent = AgentBuilder(NoneType, str).build_agent(
-        settings.llm.translation
-    )
+    _llm_translation_agent = build_agent(NoneType, str, settings.llm.translation)
 
     global _celery_inspect_service
     _celery_inspect_service = CeleryInspectService(
@@ -405,12 +395,6 @@ def mock_init():
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
 
-    # OpenAI's sub-clients (chat, embeddings, ...) are set on the instance in
-    # __init__, not as class attributes, so `MagicMock(spec=OpenAI)` rejects them.
-    # Spec against a real instance instead -- no network calls happen at
-    # construction, the dummy api_key is just stored.
-    openai_spec = OpenAI(api_key="test")
-
     global _llm_summarization_key_points_agent
     _llm_summarization_key_points_agent = MagicMock(spec=Agent[NoneType, str])
 
@@ -429,11 +413,11 @@ def mock_init():
     global _llm_rag_synthesize_agent
     _llm_rag_synthesize_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_embedding_client
-    _llm_embedding_client = MagicMock(spec=openai_spec)
+    global _llm_embedder
+    _llm_embedder = MagicMock(spec=Embedder)
 
-    global _llm_tool_agent
-    _llm_tool_agent = MagicMock(spec=Agent[NoneType, str])
+    global _llm_suggest_queries_agent
+    _llm_suggest_queries_agent = MagicMock(spec=Agent[NoneType, str])
 
     global _llm_vision_agent
     _llm_vision_agent = MagicMock(spec=Agent[NoneType, str])
@@ -624,16 +608,16 @@ def get_llm_rag_synthesize_agent() -> Agent[None, str]:
     return _llm_rag_synthesize_agent
 
 
-def get_llm_embedding_client() -> OpenAI:
-    if _llm_embedding_client is None:
-        raise DependencyException("LLM embedding client missing")
-    return _llm_embedding_client
+def get_llm_embedder() -> Embedder:
+    if _llm_embedder is None:
+        raise DependencyException("LLM embedder missing")
+    return _llm_embedder
 
 
-def get_llm_tool_agent() -> Agent[None, str]:
-    if _llm_tool_agent is None:
-        raise DependencyException("LLM tool agent missing")
-    return _llm_tool_agent
+def get_llm_suggest_queries_agent() -> Agent[None, str]:
+    if _llm_suggest_queries_agent is None:
+        raise DependencyException("LLM suggest queries agent missing")
+    return _llm_suggest_queries_agent
 
 
 def get_llm_vision_agent() -> Agent[None, str]:

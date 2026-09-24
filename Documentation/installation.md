@@ -348,7 +348,7 @@ externalSecrets:
         property: secret_key
 
     # External LLM API key
-    llm__synthesize__api_key:
+    llm__rag_synthesize__api_key:
       enabled: true
       name: loom-llm-synthesize-api-key
       remoteRef:

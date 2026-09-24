@@ -1,12 +1,12 @@
 import logging
 from uuid import UUID
 
-from common.agent_builder import sanitize_document_text
 from common.ai_context.tool_models import (
     ExecuteQueryResult,
     ExecuteQueryResultFile,
 )
 from common.dependencies import get_celery_app, get_file_repository
+from common.llm.prompt_sanitizer import sanitize_document_text
 from common.models.es_repository import PaginationParameters
 from common.services.query_builder import QueryParameters
 from elasticsearch import BadRequestError

@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional
 
-from common.agent_builder import sanitize_document_text
+from common.llm.prompt_sanitizer import sanitize_document_text
 from pydantic import BaseModel, Field, computed_field
 
 from worker.ai.file_fields import iter_described_fields, serialize_field_value

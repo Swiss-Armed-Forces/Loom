@@ -251,9 +251,11 @@ data:
     {{- end }}
 
     {{- $ollamaEndpoint := printf "http://%s-ollama:%s/v1/" (include "app.fullname" .) (.Values.ollama.service.port | toString) }}
-    {{- $defaultBackend := "ollama" }}
 
     # llm embedding
+    {{- if ne .Values.llm.embedding.provider nil }}
+    llm__embedding__provider: {{ .Values.llm.embedding.provider | quote }}
+    {{- end }}
     llm__embedding__endpoint: {{ .Values.llm.embedding.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__embedding__api_key.enabled) (ne .Values.llm.embedding.api_key nil) }}
     llm__embedding__api_key: {{ .Values.llm.embedding.api_key | quote }}
@@ -264,9 +266,7 @@ data:
     {{- if ne .Values.llm.embedding.temperature nil }}
     llm__embedding__temperature: {{ .Values.llm.embedding.temperature | quote }}
     {{- end }}
-    {{- if ne .Values.llm.embedding.thinking nil }}
-    llm__embedding__thinking: {{ .Values.llm.embedding.thinking | quote }}
-    {{- end }}
+    {{- /* no llm__embedding__thinking: the embeddings API has no reasoning to switch off. */}}
     {{- if .Values.llm.embedding.extra_headers }}
     llm__embedding__extra_headers: {{ .Values.llm.embedding.extra_headers | toJson | quote }}
     {{- end }}
@@ -298,39 +298,43 @@ data:
     llm__embedding__max_sentences: {{ .Values.llm.embedding.max_sentences | quote }}
     {{- end }}
 
-    # llm tool
-    llm__tool__backend: {{ .Values.llm.tool.backend | default $defaultBackend | quote }}
-    llm__tool__endpoint: {{ .Values.llm.tool.endpoint | default $ollamaEndpoint | quote }}
-    {{- if and (not .Values.externalSecrets.secrets.llm__tool__api_key.enabled) (ne .Values.llm.tool.api_key nil) }}
-    llm__tool__api_key: {{ .Values.llm.tool.api_key | quote }}
+    # llm suggest_queries
+    {{- if ne .Values.llm.suggest_queries.provider nil }}
+    llm__suggest_queries__provider: {{ .Values.llm.suggest_queries.provider | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.model nil }}
-    llm__tool__model: {{ .Values.llm.tool.model | quote }}
+    llm__suggest_queries__endpoint: {{ .Values.llm.suggest_queries.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__suggest_queries__api_key.enabled) (ne .Values.llm.suggest_queries.api_key nil) }}
+    llm__suggest_queries__api_key: {{ .Values.llm.suggest_queries.api_key | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.temperature nil }}
-    llm__tool__temperature: {{ .Values.llm.tool.temperature | quote }}
+    {{- if ne .Values.llm.suggest_queries.model nil }}
+    llm__suggest_queries__model: {{ .Values.llm.suggest_queries.model | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.thinking nil }}
-    llm__tool__thinking: {{ .Values.llm.tool.thinking | quote }}
+    {{- if ne .Values.llm.suggest_queries.temperature nil }}
+    llm__suggest_queries__temperature: {{ .Values.llm.suggest_queries.temperature | quote }}
     {{- end }}
-    {{- if .Values.llm.tool.extra_headers }}
-    llm__tool__extra_headers: {{ .Values.llm.tool.extra_headers | toJson | quote }}
+    {{- if ne .Values.llm.suggest_queries.thinking nil }}
+    llm__suggest_queries__thinking: {{ .Values.llm.suggest_queries.thinking | quote }}
     {{- end }}
-    {{- if .Values.llm.tool.extra_body }}
-    llm__tool__extra_body: {{ .Values.llm.tool.extra_body | toJson | quote }}
+    {{- if .Values.llm.suggest_queries.extra_headers }}
+    llm__suggest_queries__extra_headers: {{ .Values.llm.suggest_queries.extra_headers | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.timeout nil }}
-    llm__tool__timeout: {{ .Values.llm.tool.timeout | quote }}
+    {{- if .Values.llm.suggest_queries.extra_body }}
+    llm__suggest_queries__extra_body: {{ .Values.llm.suggest_queries.extra_body | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.max_tokens nil }}
-    llm__tool__max_tokens: {{ .Values.llm.tool.max_tokens | quote }}
+    {{- if ne .Values.llm.suggest_queries.timeout nil }}
+    llm__suggest_queries__timeout: {{ .Values.llm.suggest_queries.timeout | quote }}
     {{- end }}
-    {{- if ne .Values.llm.tool.max_sentences nil }}
-    llm__tool__max_sentences: {{ .Values.llm.tool.max_sentences | quote }}
+    {{- if ne .Values.llm.suggest_queries.max_tokens nil }}
+    llm__suggest_queries__max_tokens: {{ .Values.llm.suggest_queries.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.suggest_queries.max_sentences nil }}
+    llm__suggest_queries__max_sentences: {{ .Values.llm.suggest_queries.max_sentences | quote }}
     {{- end }}
 
     # llm agent
-    llm__agent__backend: {{ .Values.llm.agent.backend | default $defaultBackend | quote }}
+    {{- if ne .Values.llm.agent.provider nil }}
+    llm__agent__provider: {{ .Values.llm.agent.provider | quote }}
+    {{- end }}
     llm__agent__endpoint: {{ .Values.llm.agent.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__agent__api_key.enabled) (ne .Values.llm.agent.api_key nil) }}
     llm__agent__api_key: {{ .Values.llm.agent.api_key | quote }}
@@ -359,15 +363,14 @@ data:
     {{- if ne .Values.llm.agent.max_sentences nil }}
     llm__agent__max_sentences: {{ .Values.llm.agent.max_sentences | quote }}
     {{- end }}
-    {{- if ne .Values.llm.agent.merge_system_messages nil }}
-    llm__agent__merge_system_messages: {{ .Values.llm.agent.merge_system_messages | quote }}
-    {{- end }}
     {{- if ne .Values.llm.agent.tool_timeout nil }}
     llm__agent__tool_timeout: {{ .Values.llm.agent.tool_timeout | quote }}
     {{- end }}
 
     # llm summarization key points
-    llm__summarization_key_points__backend: {{ .Values.llm.summarization_key_points.backend | default $defaultBackend | quote }}
+    {{- if ne .Values.llm.summarization_key_points.provider nil }}
+    llm__summarization_key_points__provider: {{ .Values.llm.summarization_key_points.provider | quote }}
+    {{- end }}
     llm__summarization_key_points__endpoint: {{ .Values.llm.summarization_key_points.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization_key_points__api_key.enabled) (ne .Values.llm.summarization_key_points.api_key nil) }}
     llm__summarization_key_points__api_key: {{ .Values.llm.summarization_key_points.api_key | quote }}
@@ -407,7 +410,9 @@ data:
     {{- end }}
 
     # llm summarization
-    llm__summarization__backend: {{ .Values.llm.summarization.backend | default $defaultBackend | quote }}
+    {{- if ne .Values.llm.summarization.provider nil }}
+    llm__summarization__provider: {{ .Values.llm.summarization.provider | quote }}
+    {{- end }}
     llm__summarization__endpoint: {{ .Values.llm.summarization.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization__api_key.enabled) (ne .Values.llm.summarization.api_key nil) }}
     llm__summarization__api_key: {{ .Values.llm.summarization.api_key | quote }}
@@ -441,7 +446,9 @@ data:
     {{- end }}
 
     # llm summarization refine
-    llm__summarization_refine__backend: {{ .Values.llm.summarization_refine.backend | default $defaultBackend | quote }}
+    {{- if ne .Values.llm.summarization_refine.provider nil }}
+    llm__summarization_refine__provider: {{ .Values.llm.summarization_refine.provider | quote }}
+    {{- end }}
     llm__summarization_refine__endpoint: {{ .Values.llm.summarization_refine.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__summarization_refine__api_key.enabled) (ne .Values.llm.summarization_refine.api_key nil) }}
     llm__summarization_refine__api_key: {{ .Values.llm.summarization_refine.api_key | quote }}
@@ -474,38 +481,40 @@ data:
     llm__summarization_refine__max_sentences: {{ .Values.llm.summarization_refine.max_sentences | quote }}
     {{- end }}
 
-    # llm hyde
-    llm__rag_hyde__backend: {{ .Values.llm.hyde.backend | default $defaultBackend | quote }}
-    llm__rag_hyde__endpoint: {{ .Values.llm.hyde.endpoint | default $ollamaEndpoint | quote }}
-    {{- if and (not .Values.externalSecrets.secrets.llm__hyde__api_key.enabled) (ne .Values.llm.hyde.api_key nil) }}
-    llm__rag_hyde__api_key: {{ .Values.llm.hyde.api_key | quote }}
+    # llm rag_hyde
+    {{- if ne .Values.llm.rag_hyde.provider nil }}
+    llm__rag_hyde__provider: {{ .Values.llm.rag_hyde.provider | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.model nil }}
-    llm__rag_hyde__model: {{ .Values.llm.hyde.model | quote }}
+    llm__rag_hyde__endpoint: {{ .Values.llm.rag_hyde.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__rag_hyde__api_key.enabled) (ne .Values.llm.rag_hyde.api_key nil) }}
+    llm__rag_hyde__api_key: {{ .Values.llm.rag_hyde.api_key | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.temperature nil }}
-    llm__rag_hyde__temperature: {{ .Values.llm.hyde.temperature | quote }}
+    {{- if ne .Values.llm.rag_hyde.model nil }}
+    llm__rag_hyde__model: {{ .Values.llm.rag_hyde.model | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.thinking nil }}
-    llm__rag_hyde__thinking: {{ .Values.llm.hyde.thinking | quote }}
+    {{- if ne .Values.llm.rag_hyde.temperature nil }}
+    llm__rag_hyde__temperature: {{ .Values.llm.rag_hyde.temperature | quote }}
     {{- end }}
-    {{- if .Values.llm.hyde.extra_headers }}
-    llm__rag_hyde__extra_headers: {{ .Values.llm.hyde.extra_headers | toJson | quote }}
+    {{- if ne .Values.llm.rag_hyde.thinking nil }}
+    llm__rag_hyde__thinking: {{ .Values.llm.rag_hyde.thinking | quote }}
     {{- end }}
-    {{- if .Values.llm.hyde.extra_body }}
-    llm__rag_hyde__extra_body: {{ .Values.llm.hyde.extra_body | toJson | quote }}
+    {{- if .Values.llm.rag_hyde.extra_headers }}
+    llm__rag_hyde__extra_headers: {{ .Values.llm.rag_hyde.extra_headers | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.timeout nil }}
-    llm__rag_hyde__timeout: {{ .Values.llm.hyde.timeout | quote }}
+    {{- if .Values.llm.rag_hyde.extra_body }}
+    llm__rag_hyde__extra_body: {{ .Values.llm.rag_hyde.extra_body | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.num_documents nil }}
-    llm__rag_hyde__num_documents: {{ .Values.llm.hyde.num_documents | quote }}
+    {{- if ne .Values.llm.rag_hyde.timeout nil }}
+    llm__rag_hyde__timeout: {{ .Values.llm.rag_hyde.timeout | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.max_tokens nil }}
-    llm__rag_hyde__max_tokens: {{ .Values.llm.hyde.max_tokens | quote }}
+    {{- if ne .Values.llm.rag_hyde.num_documents nil }}
+    llm__rag_hyde__num_documents: {{ .Values.llm.rag_hyde.num_documents | quote }}
     {{- end }}
-    {{- if ne .Values.llm.hyde.max_sentences nil }}
-    llm__rag_hyde__max_sentences: {{ .Values.llm.hyde.max_sentences | quote }}
+    {{- if ne .Values.llm.rag_hyde.max_tokens nil }}
+    llm__rag_hyde__max_tokens: {{ .Values.llm.rag_hyde.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rag_hyde.max_sentences nil }}
+    llm__rag_hyde__max_sentences: {{ .Values.llm.rag_hyde.max_sentences | quote }}
     {{- end }}
 
     # tool suggest_queries
@@ -516,70 +525,76 @@ data:
     tool__suggest_queries__max_results: {{ .Values.tool.suggest_queries.max_results | quote }}
     {{- end }}
 
-    # llm rerank
-    llm__rag_rerank__backend: {{ .Values.llm.rerank.backend | default $defaultBackend | quote }}
-    llm__rag_rerank__endpoint: {{ .Values.llm.rerank.endpoint | default $ollamaEndpoint | quote }}
-    {{- if and (not .Values.externalSecrets.secrets.llm__rerank__api_key.enabled) (ne .Values.llm.rerank.api_key nil) }}
-    llm__rerank__api_key: {{ .Values.llm.rerank.api_key | quote }}
+    # llm rag_rerank
+    {{- if ne .Values.llm.rag_rerank.provider nil }}
+    llm__rag_rerank__provider: {{ .Values.llm.rag_rerank.provider | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.model nil }}
-    llm__rag_rerank__model: {{ .Values.llm.rerank.model | quote }}
+    llm__rag_rerank__endpoint: {{ .Values.llm.rag_rerank.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__rag_rerank__api_key.enabled) (ne .Values.llm.rag_rerank.api_key nil) }}
+    llm__rag_rerank__api_key: {{ .Values.llm.rag_rerank.api_key | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.temperature nil }}
-    llm__rag_rerank__temperature: {{ .Values.llm.rerank.temperature | quote }}
+    {{- if ne .Values.llm.rag_rerank.model nil }}
+    llm__rag_rerank__model: {{ .Values.llm.rag_rerank.model | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.thinking nil }}
-    llm__rag_rerank__thinking: {{ .Values.llm.rerank.thinking | quote }}
+    {{- if ne .Values.llm.rag_rerank.temperature nil }}
+    llm__rag_rerank__temperature: {{ .Values.llm.rag_rerank.temperature | quote }}
     {{- end }}
-    {{- if .Values.llm.rerank.extra_headers }}
-    llm__rag_rerank__extra_headers: {{ .Values.llm.rerank.extra_headers | toJson | quote }}
+    {{- if ne .Values.llm.rag_rerank.thinking nil }}
+    llm__rag_rerank__thinking: {{ .Values.llm.rag_rerank.thinking | quote }}
     {{- end }}
-    {{- if .Values.llm.rerank.extra_body }}
-    llm__rag_rerank__extra_body: {{ .Values.llm.rerank.extra_body | toJson | quote }}
+    {{- if .Values.llm.rag_rerank.extra_headers }}
+    llm__rag_rerank__extra_headers: {{ .Values.llm.rag_rerank.extra_headers | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.timeout nil }}
-    llm__rag_rerank__timeout: {{ .Values.llm.rerank.timeout | quote }}
+    {{- if .Values.llm.rag_rerank.extra_body }}
+    llm__rag_rerank__extra_body: {{ .Values.llm.rag_rerank.extra_body | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.max_tokens nil }}
-    llm__rag_rerank__max_tokens: {{ .Values.llm.rerank.max_tokens | quote }}
+    {{- if ne .Values.llm.rag_rerank.timeout nil }}
+    llm__rag_rerank__timeout: {{ .Values.llm.rag_rerank.timeout | quote }}
     {{- end }}
-    {{- if ne .Values.llm.rerank.max_sentences nil }}
-    llm__rag_rerank__max_sentences: {{ .Values.llm.rerank.max_sentences | quote }}
+    {{- if ne .Values.llm.rag_rerank.max_tokens nil }}
+    llm__rag_rerank__max_tokens: {{ .Values.llm.rag_rerank.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rag_rerank.max_sentences nil }}
+    llm__rag_rerank__max_sentences: {{ .Values.llm.rag_rerank.max_sentences | quote }}
     {{- end }}
 
     # llm rag synthesize
-    llm__rag_synthesize__backend: {{ .Values.llm.synthesize.backend | default $defaultBackend | quote }}
-    llm__rag_synthesize__endpoint: {{ .Values.llm.synthesize.endpoint | default $ollamaEndpoint | quote }}
-    {{- if and (not .Values.externalSecrets.secrets.llm__synthesize__api_key.enabled) (ne .Values.llm.synthesize.api_key nil) }}
-    llm__rag_synthesize__api_key: {{ .Values.llm.synthesize.api_key | quote }}
+    {{- if ne .Values.llm.rag_synthesize.provider nil }}
+    llm__rag_synthesize__provider: {{ .Values.llm.rag_synthesize.provider | quote }}
     {{- end }}
-    {{- if ne .Values.llm.synthesize.model nil }}
-    llm__rag_synthesize__model: {{ .Values.llm.synthesize.model | quote }}
+    llm__rag_synthesize__endpoint: {{ .Values.llm.rag_synthesize.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__rag_synthesize__api_key.enabled) (ne .Values.llm.rag_synthesize.api_key nil) }}
+    llm__rag_synthesize__api_key: {{ .Values.llm.rag_synthesize.api_key | quote }}
     {{- end }}
-    {{- if ne .Values.llm.synthesize.temperature nil }}
-    llm__rag_synthesize__temperature: {{ .Values.llm.synthesize.temperature | quote }}
+    {{- if ne .Values.llm.rag_synthesize.model nil }}
+    llm__rag_synthesize__model: {{ .Values.llm.rag_synthesize.model | quote }}
     {{- end }}
-    {{- if ne .Values.llm.synthesize.thinking nil }}
-    llm__rag_synthesize__thinking: {{ .Values.llm.synthesize.thinking | quote }}
+    {{- if ne .Values.llm.rag_synthesize.temperature nil }}
+    llm__rag_synthesize__temperature: {{ .Values.llm.rag_synthesize.temperature | quote }}
     {{- end }}
-    {{- if .Values.llm.synthesize.extra_headers }}
-    llm__rag_synthesize__extra_headers: {{ .Values.llm.synthesize.extra_headers | toJson | quote }}
+    {{- if ne .Values.llm.rag_synthesize.thinking nil }}
+    llm__rag_synthesize__thinking: {{ .Values.llm.rag_synthesize.thinking | quote }}
     {{- end }}
-    {{- if .Values.llm.synthesize.extra_body }}
-    llm__rag_synthesize__extra_body: {{ .Values.llm.synthesize.extra_body | toJson | quote }}
+    {{- if .Values.llm.rag_synthesize.extra_headers }}
+    llm__rag_synthesize__extra_headers: {{ .Values.llm.rag_synthesize.extra_headers | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.synthesize.timeout nil }}
-    llm__rag_synthesize__timeout: {{ .Values.llm.synthesize.timeout | quote }}
+    {{- if .Values.llm.rag_synthesize.extra_body }}
+    llm__rag_synthesize__extra_body: {{ .Values.llm.rag_synthesize.extra_body | toJson | quote }}
     {{- end }}
-    {{- if ne .Values.llm.synthesize.max_tokens nil }}
-    llm__rag_synthesize__max_tokens: {{ .Values.llm.synthesize.max_tokens | quote }}
+    {{- if ne .Values.llm.rag_synthesize.timeout nil }}
+    llm__rag_synthesize__timeout: {{ .Values.llm.rag_synthesize.timeout | quote }}
     {{- end }}
-    {{- if ne .Values.llm.synthesize.max_sentences nil }}
-    llm__rag_synthesize__max_sentences: {{ .Values.llm.synthesize.max_sentences | quote }}
+    {{- if ne .Values.llm.rag_synthesize.max_tokens nil }}
+    llm__rag_synthesize__max_tokens: {{ .Values.llm.rag_synthesize.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.rag_synthesize.max_sentences nil }}
+    llm__rag_synthesize__max_sentences: {{ .Values.llm.rag_synthesize.max_sentences | quote }}
     {{- end }}
 
     # llm vision
-    llm__vision__backend: {{ .Values.llm.vision.backend | default $defaultBackend | quote }}
+    {{- if ne .Values.llm.vision.provider nil }}
+    llm__vision__provider: {{ .Values.llm.vision.provider | quote }}
+    {{- end }}
     llm__vision__endpoint: {{ .Values.llm.vision.endpoint | default $ollamaEndpoint | quote }}
     {{- if ne .Values.llm.vision.api_key nil }}
     llm__vision__api_key: {{ .Values.llm.vision.api_key | quote }}
@@ -612,8 +627,46 @@ data:
     llm__vision__max_sentences: {{ .Values.llm.vision.max_sentences | quote }}
     {{- end }}
 
+    # llm language_detection
+    {{- if ne .Values.llm.language_detection.provider nil }}
+    llm__language_detection__provider: {{ .Values.llm.language_detection.provider | quote }}
+    {{- end }}
+    llm__language_detection__endpoint: {{ .Values.llm.language_detection.endpoint | default $ollamaEndpoint | quote }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__language_detection__api_key.enabled) (ne .Values.llm.language_detection.api_key nil) }}
+    llm__language_detection__api_key: {{ .Values.llm.language_detection.api_key | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.model nil }}
+    llm__language_detection__model: {{ .Values.llm.language_detection.model | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.temperature nil }}
+    llm__language_detection__temperature: {{ .Values.llm.language_detection.temperature | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.thinking nil }}
+    llm__language_detection__thinking: {{ .Values.llm.language_detection.thinking | quote }}
+    {{- end }}
+    {{- if .Values.llm.language_detection.extra_headers }}
+    llm__language_detection__extra_headers: {{ .Values.llm.language_detection.extra_headers | toJson | quote }}
+    {{- end }}
+    {{- if .Values.llm.language_detection.extra_body }}
+    llm__language_detection__extra_body: {{ .Values.llm.language_detection.extra_body | toJson | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.timeout nil }}
+    llm__language_detection__timeout: {{ .Values.llm.language_detection.timeout | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.system_prompt nil }}
+    llm__language_detection__system_prompt: {{ .Values.llm.language_detection.system_prompt | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.max_tokens nil }}
+    llm__language_detection__max_tokens: {{ .Values.llm.language_detection.max_tokens | quote }}
+    {{- end }}
+    {{- if ne .Values.llm.language_detection.max_sentences nil }}
+    llm__language_detection__max_sentences: {{ .Values.llm.language_detection.max_sentences | quote }}
+    {{- end }}
+
     # llm translation
-    llm__translation__backend: {{ .Values.llm.translation.backend | default $defaultBackend | quote }}
+    {{- if ne .Values.llm.translation.provider nil }}
+    llm__translation__provider: {{ .Values.llm.translation.provider | quote }}
+    {{- end }}
     llm__translation__endpoint: {{ .Values.llm.translation.endpoint | default $ollamaEndpoint | quote }}
     {{- if and (not .Values.externalSecrets.secrets.llm__translation__api_key.enabled) (ne .Values.llm.translation.api_key nil) }}
     llm__translation__api_key: {{ .Values.llm.translation.api_key | quote }}

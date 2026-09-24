@@ -6,13 +6,13 @@ from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_embedding_client,
+    get_llm_embedder,
 )
 from common.file.file_repository import Embedding, File
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from openai import APIError
+from pydantic_ai.exceptions import ModelAPIError
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
@@ -94,18 +94,16 @@ class LLMError(Exception):
 )
 @cache()
 def embed_text(text: str) -> TempTypedLazyBytes[Embedding]:
-    client = get_llm_embedding_client()
     try:
-        response = client.embeddings.create(
-            model=settings.llm.embedding.model,
-            input=f"{settings.llm.embedding.document_prefix}{text}",
+        result = get_llm_embedder().embed_documents_sync(
+            f"{settings.llm.embedding.document_prefix}{text}"
         )
-    except APIError as ex:
+    except ModelAPIError as ex:
         raise LLMError() from ex
 
     embedding = Embedding(
         text=text,
-        vector=list(response.data[0].embedding),
+        vector=list(result.embeddings[0]),
     )
 
     return get_lazybytes_service().from_object(embedding)
