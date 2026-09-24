@@ -123,9 +123,88 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `kubernetes-fetch-all-pod-logs` - Dump all pod logs to `logs/` directory
 - `docker-minikube` - Docker CLI wrapper to communicate with minikube's Docker daemon
 
+**Appliance image:**
+
+- `build-appliance-image` - Build (and optionally flash) a NixOS appliance USB installer.
+  `--platform` picks the box: `spark` (DGX Spark, aarch64), `evo-x2` (GMKtec EVO-X2, x86_64) or
+  `nuc12` (Intel NUC 12 Pro, x86_64). The build host must match the platform's architecture unless
+  `--allow-cross` is given. See `Documentation/appliance.md`
+- `build-appliance-image --no-gpu` - Build CPU-only for a platform that offloads to a GPU:
+  `evo-x2` (Radeon 8060S via ROCm) or `spark` (GB10 Blackwell via CUDA). There is no `--gpu`: the
+  GPU is declared per platform in `nixos/platforms/<id>.nix`. Use this when a box turns out not to
+  enumerate its own GPU, which otherwise stops Loom from starting at all. Note it also drops the
+  AI services, since those follow the GPU. On `spark` it keeps `hardware.nvidia` — that driver also
+  runs the box's console — so it means "no offload", not "no NVIDIA"
+- `build-appliance-image --interface NAME` - Pin the appliance NIC by the name the box reports
+  (`enp2s0`, not `eth0`). Only needed when no platform matches the hardware; without it a wired
+  port is claimed automatically
+- `build-appliance-image --vm-serial` - Add a getty on ttyS0 to the installer and to the box it
+  installs, so a VM can be driven from a terminal that copies and pastes. For
+  `appliance-vm installer --serial`; refused alongside `--flash`, because the result is one unit
+  different from a real stick
+- `build-appliance-image --wifi` - Additionally run a bridged WiFi access point on the appliance.
+  Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
+  `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
+  `Documentation/appliance.md`
+- `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
+  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`; with no argument it
+  runs all seven, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
+  a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
+  `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
+  `nixos/README.md`
+- `appliance-test hardware --platform all` - The one test that boots nothing: it asserts what
+  `nixos-hardware` gives each platform and that the Loom overrides still take the desktop userspace
+  back off. Needs no KVM and is not bound to the host architecture, so `--platform all` checks all
+  three from one machine in seconds. Run it after every renovate bump of the `nixos-hardware` pin.
+  `all` is refused for any selection that includes a VM test
+- `appliance-test --no-kvm` - Build the VM tests without the `kvm` system feature, so qemu falls
+  back to software emulation — correct, and five to ten times slower. With neither this nor
+  `--kvm` (which fails rather than taking the slow path) the script probes `/dev/kvm` and says
+  which way it went. This is what lets the tests run on a CI runner with no nested virtualisation
+- `appliance-vm box` - Boot the appliance in a VM for manual testing. Fast (a minute, no tag, no
+  image build) and shows everything above the disk: the console session, the branding, the units,
+  the banner. Not the bootloader, the LUKS root or the installer — nixpkgs' qemu-vm module
+  overrides those away. Opens a window and exposes a serial socket
+- `appliance-vm installer` - The real stick image, virtually flashed onto a file and booted under
+  UEFI against emulated NVMe. Runs the actual installer onto an actual pool, reboots into what it
+  installed, and persists across runs. Needs a tag, since the image embeds a tagged checkout.
+  `--serial` adds a getty on ttyS0 so the VM can be driven from a terminal that copies and pastes —
+  one unit more than a real stick carries, so it refuses to be flashed. Related flags: `--disks`,
+  `--disk-size`, `--usb DIR`, `--memory`, `--cores`, `--no-gui`, `--force`
+- `appliance-vm attach` - Connect to a running VM's serial port. Lands in the same tmux session
+  tty1 is showing, as the only client
+- `appliance-vm reset` - Delete a platform's VM state (`.appliance-vm/<platform>/`): the disks, the
+  flashed stick and the UEFI variables. Gigabytes
+- `appliance-check` - The appliance checks that boot nothing, in about a minute: `appliance-pytest`
+  then `appliance-eval`, both of them below. Runs both even when the first fails. Needs neither KVM
+  nor a matching architecture, which is why this is the appliance job that runs on every CI pipeline
+  while the VM tests are gated on what the MR touched
+- `appliance-pytest` - The appliance's own pytest suites: `nixos/installer/tests`,
+  `nixos/ready/tests`, `nixos/usb-ingest/tests`, `nixos/console-mouse/tests` and
+  `nixos/tests/scripts/tests` (the VM tests' own helpers). Each also runs in its package's
+  `checkPhase`, so a mistake fails an image build too; running them here needs nothing built.
+  Extra arguments go to pytest
+- `appliance-eval` - Instantiates the stick image for all three platforms and the tests for this
+  one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
+  assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
+- `loom-platform-info` - Report this box's hardware — wired ports with their drivers, PCI ids and
+  multi-port ids, radios and whether they do AP mode, GPU with the firmware VRAM carve-out beside
+  the GTT pool, whether the GPU reaches a container (CDI specs, `nvidia-ctk`, docker runtimes),
+  CPU frequency driver, firmware version with any pending `fwupd` update, and Secure Boot / Setup
+  Mode read from the EFI variables — and, on an appliance, how that compares with what
+  `nixos/platforms/<id>.nix` declared. Plain bash with no Nix dependency
+  (`nixos/scripts/platform_info.sh`), so it also runs on a box that is not running Loom yet — a
+  DGX Spark still on DGX OS included, which is where its firmware and Secure Boot checks have to
+  happen. This is how the guessed values in a platform file get checked against real hardware.
+  `--json` (everything but the `fwupd` block, which shells out to a daemon), `--output`
+
 **Utilities:**
 
-- `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
+- `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`).
+  Discovers projects by walking every tracked `pyproject.toml`, so a newly added package is locked
+  without editing a list — `backend/common` first, the root project last, the rest in between.
+  This covers the four appliance packages under `nixos/` as well; see the lockfile section in
+  `nixos/README.md` for why their locks do not govern what an image ships
 - `generate-openapi-schema` - Print OpenAPI schema JSON
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
@@ -336,6 +415,12 @@ dependencies. This enables IDE tooling (Pylance) to see across packages.
 Each backend package has its own `pyproject.toml` and `poetry.lock`. After changing `common` dependencies,
 you **must** run `poetry-lock` to update all lockfiles.
 
+Editing the root `pyproject.toml` stales **two** lockfiles, not one: `integrationtest` takes the root
+project as a path dependency (`loom-overarching-dev = {path = "../"}`), so its lock carries the root
+manifest too. The `poetry-check_root` git hook checks both and fails the commit if either has drifted —
+`poetry-lock` is the fix. A stale lock is not cosmetic: `poetry install` refuses to run against one, so
+committing it breaks `devenv` for everyone until it is regenerated.
+
 ### File Processing Pipeline
 
 1. Files uploaded to SeaweedFS bucket (via S3 API)
@@ -384,5 +469,7 @@ function, **stop and ask the user first** — there is almost certainly a better
 ## Additional Documentation
 
 - `Documentation/devenv-setup.md` - Development environment setup
+- `Documentation/appliance.md` - NixOS appliance image and air-gapped deployment
+- `nixos/README.md` - The appliance Nix code and how to build/test it
 - `CONTRIBUTING.md` - Full Git workflow and collaboration guidelines
 - `README.md` - Project overview and features

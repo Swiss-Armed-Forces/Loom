@@ -66,6 +66,9 @@ You have a couple of options for deploying Loom, depending on your needs:
   using the `up.sh` script. It's perfect for evaluation or smaller setups.
 - **Multi Node Deployment:** For more extensive or production environments, you can deploy Loom
   on top of your existing Kubernetes cluster using our Helm chart.
+- **Appliance Deployment:** A standalone, air-gapped box provisioned from a single USB stick. It
+  serves its own network and resolves every `*.loom` name to itself, so a visitor plugs in a laptop
+  and browses Loom with nothing to configure. See [Appliance Deployment](appliance.md).
 
 ## Single Node Deployment
 
@@ -119,6 +122,11 @@ and re-start Loom in full offline mode: `./up.sh --offline`.
 
 If you want to access the loom UIs remotely, you need to start loom using `./up.sh --expose 0.0.0.0`.
 Note that with IP 0.0.0.0 loom will listen on all available network interfaces. Replace 0.0.0.0 with an IP of a specific network interfaces to make loom listen only on that interface.
+
+This flag runs `minikube tunnel`, which with the docker driver forwards each port over the system `ssh` client
+rather than installing a route — so an `ssh` binary has to be on the `PATH`. Without one the tunnel starts,
+logs `error starting ssh tunnel`, and binds nothing at all, which looks like a firewall problem rather than a
+missing package.
 
 On the remote machine you want to access loom from, you must make the `.loom` domain resolvable.
 For example, via setting in `/etc/hosts`:
@@ -365,36 +373,28 @@ The full list of supported keys is documented in `charts/values.yaml` under
 
 ### Ollama GPU Configuration
 
-Loom separates Ollama into runtime images (GPU-specific) and model images (GPU-agnostic):
+Ollama runs on the CPU unless you tell it otherwise. With `up.sh` there is nothing to configure —
+`--gpus nvidia` or `--gpus amd` applies the right values file, enables the matching device plugin
+and checks the host for you.
 
-- **Runtime images**: `ollama-runtime-nvidia`, `ollama-runtime-rocm` — contain Ollama server + wrapper, no models
-- **Model image**: `ollama-models` — contains pre-pulled models (dev/prod differentiation via Dockerfile target)
-
-This separation means:
-
-- Model images are built once and work with both NVIDIA and AMD GPUs
-- Switching GPU types doesn't re-download models
-- Runtime images are lightweight and fast to deploy
-- Development uses lightweight models (`qwen2.5:0.5b`, `moondream:1.8b`), production uses full models (`huihui_ai/qwen3.5-abliterated:9b`)
-
-**GPU selection:**
+Deploying the chart directly, set two things: the Ollama image for your GPU vendor, and the
+resource key its device plugin advertises. Your cluster needs that device plugin already installed.
 
 ```yaml
-# NVIDIA GPUs
+# NVIDIA GPUs -- charts/values-nvidia-gpu.yaml
 ollama:
   runtimeImage:
-    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia
   resources:
     requests:
       nvidia.com/gpu: 1
     limits:
       nvidia.com/gpu: 1
 
-# AMD GPUs (ROCm)
+# AMD GPUs (ROCm) -- charts/values-amd-gpu.yaml
 ollama:
   runtimeImage:
-    repository: ollama/ollama
-    tag: rocm
+    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
   resources:
     requests:
       amd.com/gpu: 1
@@ -402,25 +402,10 @@ ollama:
       amd.com/gpu: 1
 ```
 
-**Model selection (dev vs production):**
-
-Dev/prod differentiation is handled via Skaffold profiles which select the Dockerfile target:
-
-- `skaffold dev` → builds with `target: dev` (lightweight models)
-- `skaffold build` / production → builds with `target: production` (full models)
-
-```yaml
-ollama:
-  modelsImage:
-    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-models
-    tag: null  # tag injected by Skaffold
-```
-
-The initContainer copies models from the model image into the Ollama model storage at pod
-startup — the runtime image itself ships no models, so this copy always runs. With
-`ollama.pvc.enabled: true` (the default) the target is the PVC, and subsequent pods reuse the
-cached models there, avoiding repeated copies. With `ollama.pvc.enabled: false` (used by the
-development values) the target is an `emptyDir`, so models are re-copied on every pod start.
+Models are shipped in a separate image from the Ollama runtime and copied into Ollama's storage
+when the pod starts, so switching between CPU, NVIDIA and AMD never re-downloads them. Keep
+`ollama.pvc.enabled: true` (the default) and that copy happens once — with it off, every pod
+restart repeats it.
 
 ## Troubleshooting
 
