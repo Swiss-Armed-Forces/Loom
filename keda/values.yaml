@@ -1,6 +1,17 @@
 global:
   imageRegistry: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom
 
+# The upstream chart ships `Always` for every KEDA component, which makes the
+# kubelet contact the registry on each pod start even when the image is already
+# in the node's store. That breaks any offline run: the appliance pulls these
+# images during first-time setup and then never sees a network again, so
+# keda-operator and keda-operator-metrics-apiserver come up in ImagePullBackOff
+# on every boot afterwards. Both images are pinned to KEDA_IMAGE_VERSION
+# (vars.sh) and skaffold re-tags on rebuild, so nothing relies on a tag moving
+# under a running pod. Matches charts/values.yaml and the traefik chart.
+image:
+  pullPolicy: IfNotPresent
+
 # Admission webhooks validate/mutate ScaledObject specs at apply time.
 # All ScaledObjects are managed by this project and deployed by the same
 # pipeline, so admission-time validation adds no value.
