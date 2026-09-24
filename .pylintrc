@@ -266,7 +266,11 @@ defining-attr-methods=__init__,
 
 # List of member names, which should be excluded from the protected access
 # warning.
-exclude-protected=_asdict,_fields,_replace,_source,_make,os._exit
+# `_client` is the httpx client inside an `openai.AsyncOpenAI`. It is the only seam for
+# swapping in an `httpx.MockTransport` to assert on a request body, as pydantic-ai
+# exposes `OpenAIChatModel.client` read-only and the openai client takes `http_client`
+# at construction only.
+exclude-protected=_asdict,_fields,_replace,_source,_make,os._exit,_client
 
 # List of valid names for the first argument in a class method.
 valid-classmethod-first-arg=cls

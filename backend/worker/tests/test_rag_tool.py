@@ -8,12 +8,14 @@ import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
 from common.dependencies import (
-    get_llm_embedding_client,
+    get_llm_embedder,
     get_llm_hyde_agent,
     get_llm_rag_rerank_agent,
 )
 from common.services.lazybytes_service import InMemoryTempLazyBytesService, LazyBytes
 from openai import APIConnectionError
+from pydantic_ai.embeddings.result import EmbeddingResult, EmbedInputType
+from pydantic_ai.exceptions import ModelAPIError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.tasks.rag_tool import (
@@ -74,14 +76,23 @@ def hyde_agent() -> MagicMock:
     return agent
 
 
-@pytest.fixture
-def embedding_client() -> MagicMock:
-    """The embedding client, mocked and pre-set with a concrete vector."""
-    client = cast(MagicMock, get_llm_embedding_client())
-    client.embeddings.create.return_value = SimpleNamespace(
-        data=[SimpleNamespace(embedding=EMBEDDING)]
+def _embedding_result(input_type: EmbedInputType) -> EmbeddingResult:
+    return EmbeddingResult(
+        embeddings=[EMBEDDING],
+        inputs=["irrelevant"],
+        input_type=input_type,
+        model_name="test-embedding",
+        provider_name="test",
     )
-    return client
+
+
+@pytest.fixture
+def embedder() -> MagicMock:
+    """The embedder, mocked and pre-set with a concrete vector."""
+    embedder = cast(MagicMock, get_llm_embedder())
+    embedder.embed_query_sync.return_value = _embedding_result("query")
+    embedder.embed_documents_sync.return_value = _embedding_result("document")
+    return embedder
 
 
 @pytest.fixture
@@ -193,24 +204,24 @@ def test_generate_hypothetical_document_drops_empty_passage(hyde_agent: MagicMoc
     assert generate_hypothetical_document(_first_attempt(), QUESTION) is None
 
 
-def test_embed_document_skips_dropped_document(embedding_client: MagicMock):
+def test_embed_document_skips_dropped_document(embedder: MagicMock):
     """A dropped hypothetical document must not reach the embedding model."""
     assert embed_document(_first_attempt(), None) is None
-    embedding_client.embeddings.create.assert_not_called()
+    embedder.embed_documents_sync.assert_not_called()
 
 
-def test_embed_document_drops_document_when_exhausted(embedding_client: MagicMock):
-    embedding_client.embeddings.create.side_effect = APIConnectionError(
-        request=httpx.Request("POST", "http://embedding-llm")
+def test_embed_document_drops_document_when_exhausted(embedder: MagicMock):
+    embedder.embed_documents_sync.side_effect = ModelAPIError(
+        "test-embedding", "connection failed"
     )
 
     assert embed_document(_final_attempt(), "a passage") is None
 
 
-def test_embed_question_never_degrades(embedding_client: MagicMock):
+def test_embed_question_never_degrades(embedder: MagicMock):
     """Without the question embedding there is nothing to search: fail the chord."""
-    embedding_client.embeddings.create.side_effect = APIConnectionError(
-        request=httpx.Request("POST", "http://embedding-llm")
+    embedder.embed_query_sync.side_effect = ModelAPIError(
+        "test-embedding", "connection failed"
     )
 
     with pytest.raises(LLMError):

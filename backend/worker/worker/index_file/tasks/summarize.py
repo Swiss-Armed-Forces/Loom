@@ -2,7 +2,6 @@ import logging
 
 from celery import chain, chord
 from celery.canvas import Signature
-from common.agent_builder import sanitize_document_text
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
@@ -11,6 +10,7 @@ from common.dependencies import (
     get_llm_summarization_refine_agent,
 )
 from common.file.file_repository import File
+from common.llm.prompt_sanitizer import sanitize_document_text
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter

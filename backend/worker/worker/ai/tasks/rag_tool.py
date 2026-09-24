@@ -3,23 +3,23 @@ from typing import Annotated, Sequence
 from uuid import UUID
 
 from celery import chain, chord, group
-from common.agent_builder import sanitize_document_text
 from common.ai_context.tool_models import RagChunk, RagSearchResult
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
     get_lazybytes_service,
-    get_llm_embedding_client,
+    get_llm_embedder,
     get_llm_hyde_agent,
     get_llm_rag_rerank_agent,
     get_llm_rag_synthesize_agent,
 )
+from common.llm.prompt_sanitizer import sanitize_document_text
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from numpy import array, mean
-from openai import APIError
 from pydantic import BaseModel, Field, computed_field
 from pydantic_ai import NativeOutput
+from pydantic_ai.exceptions import ModelAPIError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.settings import settings
@@ -110,16 +110,14 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
     question embedding there is nothing to search for, so failing the chord is the
     honest outcome.
     """
-    client = get_llm_embedding_client()
     try:
-        response = client.embeddings.create(
-            model=settings.llm.embedding.model,
-            input=[f"{settings.llm.embedding.query_prefix}{question}"],
+        result = get_llm_embedder().embed_query_sync(
+            f"{settings.llm.embedding.query_prefix}{question}"
         )
-    except APIError as ex:
+    except ModelAPIError as ex:
         raise LLMError("Question embedding failed") from ex
 
-    embedding = response.data[0].embedding
+    embedding = list(result.embeddings[0])
     logger.debug("Embedded question into %d-dim vector", len(embedding))
     return get_lazybytes_service().from_object(embedding)
 
@@ -193,13 +191,11 @@ def embed_document(
     if not document:
         return None
 
-    client = get_llm_embedding_client()
     try:
-        response = client.embeddings.create(
-            model=settings.llm.embedding.model,
-            input=[f"{settings.llm.embedding.document_prefix}{document}"],
+        result = get_llm_embedder().embed_documents_sync(
+            f"{settings.llm.embedding.document_prefix}{document}"
         )
-    except APIError as ex:
+    except ModelAPIError as ex:
         if not self.is_last_attempt:
             raise LLMError("Document embedding failed") from ex
         logger.warning(
@@ -207,7 +203,7 @@ def embed_document(
         )
         return None
 
-    embedding = response.data[0].embedding
+    embedding = list(result.embeddings[0])
     logger.debug("Embedded document into %d-dim vector", len(embedding))
     return get_lazybytes_service().from_object(embedding)
 

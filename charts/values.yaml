@@ -143,9 +143,9 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__tool__api_key:
+    llm__suggest_queries__api_key:
       enabled: false
-      name: loom-llm-tool-api-key
+      name: loom-llm-suggest-queries-api-key
       remoteRef:
         key: ""
         property: ""
@@ -173,21 +173,27 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__hyde__api_key:
+    llm__rag_hyde__api_key:
       enabled: false
       name: loom-llm-hyde-api-key
       remoteRef:
         key: ""
         property: ""
-    llm__rerank__api_key:
+    llm__rag_rerank__api_key:
       enabled: false
       name: loom-llm-rerank-api-key
       remoteRef:
         key: ""
         property: ""
-    llm__synthesize__api_key:
+    llm__rag_synthesize__api_key:
       enabled: false
       name: loom-llm-synthesize-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__language_detection__api_key:
+      enabled: false
+      name: loom-llm-language-detection-api-key
       remoteRef:
         key: ""
         property: ""
@@ -323,11 +329,13 @@ pipeline:
 
 # Shared LLM defaults — override per sub-key via YAML anchors
 _llmDefaults: &llm-defaults
-  backend: null
+  # which service answers at `endpoint`: ollama | litellm | infomaniak | openai
+  provider: null
   endpoint: null      # set per sub-key in configmap when null
   api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
   temperature: null
+  thinking: null      # true/false; null leaves the model to its own default
   extra_headers: null
   extra_body: null
   timeout: null
@@ -336,20 +344,23 @@ _llmDefaults: &llm-defaults
 
 llm:
   embedding:
+    # NOTE: `thinking` comes from the shared anchor but is never emitted for embedding —
+    # the embeddings API has no reasoning to switch off.
     <<: *llm-defaults
     model: nomic-embed-text-v2-moe
+    # Sizes the Elasticsearch dense_vector field. Not sent to the embeddings API, so it
+    # must match what the model actually returns — a mismatch fails at index time.
     dimensions: null
     text_chunk_size: null
     text_chunk_overlap: null
     document_prefix: null
     query_prefix: null
 
-  tool:
+  suggest_queries:
     <<: *llm-defaults
 
   agent:
     <<: *llm-defaults
-    merge_system_messages: true
     tool_timeout: null
 
   summarization_key_points:
@@ -366,18 +377,22 @@ llm:
     <<: *llm-defaults
     system_prompt: null
 
-  hyde:
+  rag_hyde:
     <<: *llm-defaults
     num_documents: null
     max_tokens: null          # should match embedding.text_chunk_size (default: 400)
 
-  rerank:
+  rag_rerank:
     <<: *llm-defaults
 
-  synthesize:
+  rag_synthesize:
     <<: *llm-defaults
 
   vision:
+    <<: *llm-defaults
+    system_prompt: null
+
+  language_detection:
     <<: *llm-defaults
     system_prompt: null
 
