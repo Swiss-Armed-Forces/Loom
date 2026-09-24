@@ -1,0 +1,28 @@
+{{/*
+The scripts the pre-install Jobs run, mounted rather than inlined into their
+`command`. A script embedded in a template is a string as far as every tool is
+concerned: shellcheck, which the repo runs with `-o all`, never sees it, and
+`helm lint` only checks that the YAML around it parses. As files under
+charts/files/pre-install/ they are linted like any other script in the repo, and
+the templating stays where the chart can be read -- the Jobs pass their values
+as `args`, and the scripts assert each one is set.
+
+Hook weight: negative, so this ConfigMap is created before the Jobs that mount
+it. Its delete policy is only `before-hook-creation`, not `hook-succeeded` as
+the Jobs have: it has to outlive every Job that mounts it, and leaving it
+behind is what lets you read the script that a failed hook ran.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-pre-install-scripts
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" "preInstall") | nindent 4 }}
+    app.kubernetes.io/component: pre-install
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-5"
+    {{- include "app.annotations.custom" (dict "context" . "component" "preInstall") | nindent 4 }}
+data:
+  {{- (.Files.Glob "files/pre-install/*.sh").AsConfig | nindent 2 }}

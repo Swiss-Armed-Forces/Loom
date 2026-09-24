@@ -19,145 +19,35 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - bash
-            - -c
-            - |
-              set -euo pipefail
-
-              #
-              # Vars
-              #
-              export NAMESPACE="{{ .Release.Namespace }}"
-              export LOOM_DOMAIN="{{ .Values.domain }}"
-              export CERT_SECRET_NAME="self-signed-cert"
-              # Every name the certificate has to carry, from .Values.hostnames
-              # -- see the comment there for why a wildcard cannot do this job.
-              export LOOM_HOSTNAMES='{{ concat .Values.hostnames.ingress .Values.hostnames.extra | sortAlpha | uniq | join " " }}'
-              # The marker that says this Job made the certificate. Only a
-              # certificate carrying it is ever replaced below.
-              export CERT_ORG="Wildcard Self-Signed"
-
-              CRT_FILE="$(mktemp)"
-              KEY_FILE="$(mktemp)"
-
-              #
-              # Functions
-              #
-
-              # The subjectAltName argument: every declared host by name, plus
-              # the wildcard and the bare domain. The wildcard is kept for the
-              # browsers that still honour it in a warning dialog; nothing
-              # programmatic accepts it for a single-label parent, which is what
-              # the per-host entries are for.
-              san_argument() {
-                  local san name
-                  san="DNS:*.${LOOM_DOMAIN},DNS:${LOOM_DOMAIN}"
-                  for name in ${LOOM_HOSTNAMES}; do
-                      san="${san},DNS:${name}.${LOOM_DOMAIN}"
-                  done
-                  printf '%s' "${san}"
-              }
-
-              # Whether the certificate already in the cluster covers every name
-              # this deployment serves.
-              #
-              # A `true` here also covers "somebody else's certificate": an
-              # operator-supplied one (up.sh --certificate writes this same
-              # secret) has no reason to carry our Organization, and replacing
-              # it would throw away a real certificate for a real domain. So the
-              # marker is checked first, and anything without it is left alone.
-              cert_covers_all_hosts() {
-                  local pem san name
-                  pem="$(kubectl get secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}" \
-                      -o jsonpath='{.data.tls\.crt}' | base64 -d)" || return 0
-                  if ! openssl x509 -noout -subject <<< "${pem}" \
-                      | grep -F "${CERT_ORG}" > /dev/null; then
-                      return 0
-                  fi
-                  san="$(openssl x509 -noout -ext subjectAltName <<< "${pem}" 2>/dev/null || true)"
-                  for name in ${LOOM_HOSTNAMES}; do
-                      if ! grep -F "DNS:${name}.${LOOM_DOMAIN}" <<< "${san}" > /dev/null; then
-                          echo "[-] '${CERT_SECRET_NAME}' does not cover ${name}.${LOOM_DOMAIN}"
-                          return 1
-                      fi
-                  done
-                  return 0
-              }
-
-              create_self_signed_cert() {
-                  if kubectl get secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}" &>/dev/null; then
-                      # Regenerated rather than kept when it cannot verify. A
-                      # certificate this Job made that names none of the hosts
-                      # is not a certificate anything can use, and keeping it
-                      # means every programmatic client over `https://*.loom`
-                      # stays broken for the life of the cluster -- which is how
-                      # the appliance's console assistant came to hang on a box
-                      # whose Ollama was serving perfectly.
-                      if cert_covers_all_hosts; then
-                          echo "[-] Certificate '${CERT_SECRET_NAME}' already exists in namespace"
-                          return
-                      fi
-                      echo "[*] Replacing '${CERT_SECRET_NAME}' with one that names every host"
-                      kubectl delete secret "${CERT_SECRET_NAME}" -n "${NAMESPACE}"
-                  fi
-
-                  local common_name
-                  common_name="*.${LOOM_DOMAIN}"
-
-                  # Generate self-signed cert and key.
-                  #
-                  # -addext is not decoration, and a wildcard in it is not
-                  # enough. RFC 6125 deprecated matching the hostname against
-                  # CN, and every modern TLS client now ignores CN outright when
-                  # a subjectAltName is present -- so the SAN has to be right.
-                  #
-                  # Measured, against `openssl s_server` with each variant:
-                  #
-                  #   no SAN at all       curl: (60) SSL: certificate subject
-                  #                       name '*.loom' does not match target
-                  #                       hostname 'ollama.loom'
-                  #   SAN DNS:*.loom      curl: (60) SSL: no alternative
-                  #                       certificate subject name matches
-                  #                       target hostname 'ollama.loom'
-                  #   SAN DNS:ollama.loom verified
-                  #
-                  # A wildcard pattern needs at least two dots: OpenSSL will not
-                  # expand one that sits directly under a single-label parent,
-                  # so `*.loom` is compared literally and matches nothing. Node
-                  # and Bun inherit that rule, which is how the appliance's
-                  # console assistant came to sit forever on a connection to
-                  # ollama.loom it could not verify.
-                  #
-                  # Hence every host by name. The wildcard and the bare domain
-                  # stay on the list: they cost nothing and a browser dialog
-                  # still shows them.
-                  openssl req -x509 -nodes -days 365 \
-                      -newkey rsa:4096 \
-                      -keyout "${KEY_FILE}" \
-                      -out "${CRT_FILE}" \
-                      -subj "/CN=${common_name}/O=${CERT_ORG}" \
-                      -addext "subjectAltName=$(san_argument)"
-
-                  # Create the Kubernetes TLS secret
-                  kubectl create secret tls "${CERT_SECRET_NAME}" \
-                      --cert="${CRT_FILE}" \
-                      --key="${KEY_FILE}" \
-                      --namespace="${NAMESPACE}"
-              }
-
-              #
-              # Atexit
-              #
-              atexit(){
-                  rm -f \
-                      "${CRT_FILE}" \
-                      "${KEY_FILE}"
-              }
-              trap atexit EXIT
-
-              #
-              # Main
-              #
-              create_self_signed_cert
+            - /opt/loom/scripts/generate-self-signed-certificate.sh
+          args:
+            - --namespace
+            - {{ .Release.Namespace | quote }}
+            - --domain
+            - {{ .Values.domain | quote }}
+            # Every name the certificate has to carry, from .Values.hostnames --
+            # see the comment there for why a wildcard cannot do this job.
+            #
+            # `default list` on each half: nulling a key is the only way Helm
+            # lets an operator drop list entries rather than merge them, and
+            # `concat` panics on a nil with a Go trace that names no value.
+            {{- $hostnames := concat (.Values.hostnames.ingress | default list) (.Values.hostnames.extra | default list) | sortAlpha | uniq }}
+            {{- if not $hostnames }}
+            {{- fail "hostnames.ingress and hostnames.extra are both empty: the certificate would name no host. See the comment on `hostnames` in values.yaml." }}
+            {{- end }}
+            {{- range $hostnames }}
+            - --hostname
+            - {{ . | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /opt/loom/scripts
+              readOnly: true
           {{- if .Values.preInstall.resources }}
           resources: {{- toYaml .Values.preInstall.resources | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "app.fullname" $ }}-pre-install-scripts
+            defaultMode: 0555

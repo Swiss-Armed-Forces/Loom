@@ -19,12 +19,7 @@ let
     locales = [ "${use-locale}/UTF-8" ];
   };
 
-  # Python subdirectories managed by Poetry: the whole hook set, lockfile checks
-  # included. The appliance's own packages are here too -- Nix builds them, but it
-  # builds them through poetry-core and resolves their dependencies from nixpkgs,
-  # so the lockfile beside each one is what keeps `poetry lock` honest about the
-  # versions the devenv's virtualenv gets. nixos/tests/scripts is the VM tests,
-  # which the driver installs the same way (nixos/tests/scripts.nix).
+  # Python subdirectories
   pythonSubdirs = [
     "backend/api"
     "backend/common"
@@ -32,20 +27,6 @@ let
     "backend/worker"
     "integrationtest"
     "cicd/aitools"
-    "nixos/console-mouse"
-    "nixos/installer"
-    "nixos/ready"
-    "nixos/tests/scripts"
-    "nixos/usb-ingest"
-  ];
-
-  # Where the appliance's own pytest suites live, for `appliance-check`.
-  appliancePytestPaths = [
-    "nixos/console-mouse/tests"
-    "nixos/installer/tests"
-    "nixos/ready/tests"
-    "nixos/tests/scripts/tests"
-    "nixos/usb-ingest/tests"
   ];
 
   # JavaScript/TypeScript subdirectories
@@ -82,7 +63,7 @@ let
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
-    { subdir }:
+    subdir:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
       top_pyproject_toml = "${config.devenv.root}/pyproject.toml";
@@ -152,9 +133,7 @@ let
       "poetry-check_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir subdirName "check";
-        # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
-        # so the old spelling made every subdir's hook fire on any poetry.lock.
-        files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
+        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -162,9 +141,7 @@ let
       "poetry-lock_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir subdirName "lock";
-        # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
-        # so the old spelling made every subdir's hook fire on any poetry.lock.
-        files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
+        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -245,39 +222,8 @@ let
 
   # Merge all hooks
   pythonHooks = builtins.foldl' (
-    acc: subdir: acc // (createPythonHooksForSubdir { inherit subdir; })
+    acc: subdir: acc // (createPythonHooksForSubdir subdir)
   ) { } pythonSubdirs;
-  # The root project cannot go through createPythonHooksForSubdir: `subdir = "."`
-  # renders `files = "^./.*\.py$"`, where the dot is a regex wildcard, so the
-  # pattern would claim every Python file in the repository. Its lockfile check is
-  # spelled out here instead.
-  #
-  # integrationtest is checked alongside it, because it takes the root project as
-  # a path dependency (`loom-overarching-dev = {path = "../"}`). A change to the
-  # root manifest therefore stales two lockfiles, and its own hooks do not fire on
-  # a file outside its directory -- which is how both went stale at once when
-  # nixos/ready was added to the root pyproject.toml and neither was regenerated.
-  #
-  # `poetry check` reports a lockfile that no longer matches its manifest, so this
-  # fails the commit and points at `poetry-lock`; it deliberately does not
-  # regenerate anything itself, because the fix spans both projects.
-  rootPoetryHooks = {
-    poetry-check_root = {
-      enable = true;
-      entry = builtins.toString (
-        pkgs.writeShellScript "poetry-check-root" ''
-          set -euo pipefail
-          for dir in '${config.devenv.root}' '${config.devenv.root}/integrationtest'; do
-            cd "''${dir}"
-            poetry check
-          done
-        ''
-      );
-      files = "^(pyproject\\.toml|poetry\\.lock)$";
-      pass_filenames = false;
-    };
-  };
-
   jsHooks = builtins.foldl' (acc: subdir: acc // (createJsHooksForSubdir subdir)) { } jsSubdirs;
   helmHooks = builtins.foldl' (acc: subdir: acc // (createHelmHooksForSubdir subdir)) { } helmSubdirs;
 
@@ -374,23 +320,6 @@ in
 
       # testing
       bats
-
-      # appliance image building / flashing
-      gptfdisk
-      # `partprobe`, which build_appliance_image.sh's validate_environment
-      # requires and which util-linux does not carry.
-      parted
-
-      # appliance VMs (`appliance-vm`)
-      qemu
-      # The serial side-channel: `appliance-vm attach` speaks to a unix socket,
-      # and socat is what puts a terminal on the other end of one in raw mode.
-      socat
-      # `mkfs.vfat` and `mcopy`, for building the extra USB stick `--usb` hands
-      # to a VM. mtools writes into the image without mounting it, which is the
-      # only way to do this without root.
-      dosfstools
-      mtools
 
       # k8s
       minikube
@@ -652,10 +581,14 @@ in
     #
     # `pass_filenames = false`: the script checks the chart as a whole and
     # rejects arguments it does not know.
+    #
+    # The checker itself and vars.sh are in the pattern alongside the chart:
+    # both participate in the invariant -- vars.sh reads the same list to write
+    # /etc/hosts -- so a regression in either would otherwise land unchecked.
     "check-chart-hostnames" = {
       enable = true;
       entry = "${config.devenv.root}/cicd/check_chart_hostnames.sh";
-      files = "^charts/";
+      files = "^(charts/|cicd/check_chart_hostnames\\.sh$|vars\\.sh$)";
       pass_filenames = false;
     };
 
@@ -724,7 +657,6 @@ in
     };
   }
   // pythonHooks
-  // rootPoetryHooks
   // jsHooks
   // helmHooks;
 
@@ -1171,140 +1103,6 @@ in
         cd '${config.devenv.root}'
 
         ./cicd/docker_prune_stale_tags.py \
-          "''${@}"
-      )
-    '';
-  };
-
-  scripts.build-appliance-image = {
-    description = "Build and optionally flash a Loom appliance USB installer image";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # Hand the pinned sources to the build so nixos/ needs no flake and
-        # devenv.lock stays the only pin in this repository. Passed ahead of
-        # "$@" so an explicit --nixpkgs or --nixos-hardware still wins.
-        ./cicd/build_appliance_image.sh \
-          --nixpkgs '${inputs.nixpkgs-stable}' \
-          --nixos-hardware '${inputs.nixos-hardware}' \
-          "''${@}"
-      )
-    '';
-  };
-
-  scripts.appliance-test = {
-    description = "Run the NixOS appliance VM tests";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # As build-appliance-image: the pinned sources go in ahead of "$@", so
-        # an explicit --nixpkgs or --nixos-hardware still wins.
-        ./cicd/run_appliance_tests.sh \
-          --nixpkgs '${inputs.nixpkgs-stable}' \
-          --nixos-hardware '${inputs.nixos-hardware}' \
-          "''${@}"
-      )
-    '';
-  };
-
-  scripts.appliance-vm = {
-    description = "Boot a Loom appliance in a VM, for testing by hand";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # As appliance-test, plus the UEFI firmware the installer rig boots.
-        # `OVMF.fd` is the split CODE/VARS pair -- the script copies the vars
-        # half into its state directory so the firmware can keep the boot entry
-        # the installer writes. On aarch64 the same attribute produces AAVMF,
-        # which is why the script probes for both names rather than being told.
-        ./cicd/run_appliance_vm.sh \
-          --nixpkgs '${inputs.nixpkgs-stable}' \
-          --nixos-hardware '${inputs.nixos-hardware}' \
-          --firmware '${pkgs.OVMF.fd}/FV' \
-          "''${@}"
-      )
-    '';
-  };
-
-  scripts.appliance-pytest = {
-    description = "Run the appliance's own pytest suites (nixos/*/tests)";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # No PYTHONPATH: the top-level pyproject.toml depends on all three
-        # packages, so devenv's virtualenv already imports them by name. Run from
-        # the repository root so that pytest.ini applies -- above all
-        # `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
-        # One invocation, so the three suites share a session. Their module
-        # basenames are unique across all three for that reason: pytest imports
-        # them into one namespace.
-        python -m pytest ${lib.concatStringsSep " " appliancePytestPaths} "''${@}"
-      )
-    '';
-  };
-
-  scripts.appliance-eval = {
-    description = "Instantiate the appliance image for every platform, building nothing";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # As appliance-test, and for the same reason.
-        ./cicd/appliance_eval.sh \
-          --nixpkgs '${inputs.nixpkgs-stable}' \
-          --nixos-hardware '${inputs.nixos-hardware}' \
-          "''${@}"
-      )
-    '';
-  };
-
-  scripts.appliance-check = {
-    description = "Run the appliance checks that boot nothing: pytest, then evaluation";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # Both, whatever the first one does: a failing test suite and a module that
-        # no longer evaluates are different mistakes, and a run that stopped at the
-        # first would hide the second until the next pipeline.
-        failed=()
-
-        appliance-pytest || failed+=(pytest)
-        appliance-eval "''${@}" || failed+=(eval)
-
-        if [ "''${#failed[@]}" -gt 0 ]; then
-          echo >&2 "[!] appliance checks failed: ''${failed[*]}"
-          exit 1
-        fi
-        echo "[*] appliance checks passed: pytest, eval"
-      )
-    '';
-  };
-
-  scripts.loom-platform-info = {
-    description = "Report this box's hardware, and how it compares with its Loom platform";
-    exec = ''
-      (
-        set -euo pipefail
-        cd '${config.devenv.root}'
-
-        # No pinned inputs to hand over: this one is plain bash on purpose, so
-        # that it also runs on a box that is not running Loom yet -- a Spark on
-        # DGX OS, an EVO-X2 on whatever it shipped with. It lives beside the
-        # appliance rather than in cicd/ because that box is where it belongs;
-        # nixos/box.nix wraps the very same file, where it also knows what was
-        # declared.
-        ./nixos/scripts/platform_info.sh \
           "''${@}"
       )
     '';

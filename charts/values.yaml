@@ -34,14 +34,21 @@ domain: &default-domain loom
 # therefore rejected for every `*.loom` host there is, and the pre-install Job
 # below has to name them one by one.
 #
+# It is also the authority outside the chart: vars.sh reads `domain` and both
+# halves below with yq, so the /etc/hosts entries up.sh writes are exactly the
+# names the certificate carries.
+#
 # Split in two, because the two halves are checkable against different things:
 hostnames:
-  # Hosts this chart serves over HTTP, one per Ingress rule. The chart's own
-  # `spec.rules[].host` values are the authority here -- a Helm template cannot
-  # read what its siblings rendered, so the list is restated rather than
-  # derived, and `cicd/check_chart_hostnames.sh` fails if the two disagree.
+  # Hosts this chart routes by name: one per Ingress rule, plus the Traefik
+  # IngressRouteTCP routes that match a HostSNI of their own. Those
+  # `spec.rules[].host` and HostSNI(`<name>.<domain>`) values are the authority
+  # here -- a Helm template cannot read what its siblings rendered, so the list
+  # is restated rather than derived, and `cicd/check_chart_hostnames.sh` fails
+  # if the two disagree.
   ingress:
     - api
+    - dovecot
     - elasticsearch
     - elasticvue
     - frontend
@@ -58,13 +65,12 @@ hostnames:
     - s3
     - seaweedfs
     - tika
-  # Hosts with no Ingress rule to derive them from. Traefik tells these apart by
-  # entrypoint -- their routes match HostSNI(`*`) -- so the name is a convention
-  # between whoever resolves it and whoever dials it, and nothing in the
-  # templates implies it. `rabbit-amqp` is in `backend/common/settings.py`,
-  # `traefik` is the dashboard from the Traefik chart.
+  # Hosts no route here names. Traefik tells these apart by entrypoint -- their
+  # routes match HostSNI(`*`) -- so the name is a convention between whoever
+  # resolves it and whoever dials it, and nothing in the templates implies it.
+  # `rabbit-amqp` is in `backend/common/common/settings.py`, `traefik` is the
+  # dashboard from the Traefik chart.
   extra:
-    - dovecot
     - rabbit-amqp
     - redis
     - redis-cache
@@ -1417,6 +1423,7 @@ tika:
           cpu: "10m"
           memory: "16Mi"
         limits:
+          cpu: "100m"
           memory: "64Mi"
   # Custom labels specific to tika resources
   customLabels: {}

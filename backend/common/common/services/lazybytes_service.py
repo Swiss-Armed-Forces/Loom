@@ -424,12 +424,22 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
 
     def _load_to(self, service_id: Any, dst: IO):
         response = self._client.get_object(self._bucket, str(service_id))
-        for chunk in response.stream():
-            dst.write(chunk)
+        try:
+            for chunk in response.stream():
+                dst.write(chunk)
+        finally:
+            response.close()
+            response.release_conn()
 
     def _load_to_generator(self, service_id: Any) -> Generator[bytes, None, None]:
         response = self._client.get_object(self._bucket, str(service_id))
-        yield from response.stream()
+        try:
+            yield from response.stream()
+        finally:
+            # minio requires both calls, otherwise the buffered response and its
+            # connection stay alive when the generator is abandoned mid-stream.
+            response.close()
+            response.release_conn()
 
     def _load_seekable(self, service_id: Any) -> IO[bytes]:
         # One HEAD to learn the size. LazyBytes carries no size of its own and

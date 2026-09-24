@@ -5185,14 +5185,14 @@ testing = ["process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
 name = "pytest-memray"
-version = "1.10.0"
+version = "1.11.0"
 description = "A simple plugin to use with pytest"
 optional = false
 python-versions = ">=3.8"
 groups = ["test"]
 files = [
-    {file = "pytest_memray-1.10.0-py3-none-any.whl", hash = "sha256:eecdbad5c4df3c385892b1cfdde48266f21ae601a44c4fe6557b781d7d409b95"},
-    {file = "pytest_memray-1.10.0.tar.gz", hash = "sha256:38f1068aa8562887d452ae14f77509f138be1acc74542dd5fc41e74f651cf932"},
+    {file = "pytest_memray-1.11.0-py3-none-any.whl", hash = "sha256:33e45b77e984459c3792ef111c2142d9ca960c874c075f62349fdcee91509de6"},
+    {file = "pytest_memray-1.11.0.tar.gz", hash = "sha256:d40a7914f63cf53d9cd3d1ed5bdaeb9039dde4821d80054fd678f3d4f2c1f13d"},
 ]
 
 [package.dependencies]
