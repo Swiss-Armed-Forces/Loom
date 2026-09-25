@@ -7,7 +7,6 @@ from common.file.file_repository import FilePurePath
 from common.services.imap_service import (
     IMAPService,
     IMAPServiceError,
-    IMAPServiceErrorFolderNotSelectable,
 )
 
 from utils.consts import ASSETS_DIR
@@ -92,28 +91,6 @@ def test_imap_get_emails_raises_on_non_existing_folder(
             imap_service.get_emails(
                 folder=FilePurePath("this/folder/does/not/exist"), recurse=recurse
             )
-        )
-
-
-def test_imap_add_flags_to_emails_raises_on_non_existing_folder(
-    imap_service: IMAPService,
-):
-    with pytest.raises(IMAPServiceErrorFolderNotSelectable):
-        imap_service.add_flags_to_emails(
-            folder=FilePurePath("this/folder/does/not/exist"),
-            uids=[],
-            flags=[],
-        )
-
-
-def test_imap_remove_flags_from_emails_raises_on_non_existing_folder(
-    imap_service: IMAPService,
-):
-    with pytest.raises(IMAPServiceErrorFolderNotSelectable):
-        imap_service.remove_flags_from_emails(
-            folder=FilePurePath("this/folder/does/not/exist"),
-            uids=[],
-            flags=[],
         )
 
 
@@ -292,99 +269,6 @@ def test_imap_get_emails_correct_folder(imap_service: IMAPService):
 
     for info in infos:
         assert info in results, f"Missing email UID {info.uid} has folder {info.folder}"
-
-
-@pytest.mark.parametrize(
-    "folder_structure,get_emails_args,expected_matches",
-    [
-        (
-            {
-                FilePurePath("email_test"): [None, None, None],
-                FilePurePath("email_test/subfolder"): [None],
-                FilePurePath("email_test/subfolder/deep"): [None, None],
-            },
-            (
-                None,
-                FilePurePath("email_test"),
-                False,
-            ),
-            3,
-        ),
-        (
-            {
-                FilePurePath("email_test"): [None, None, None],
-                FilePurePath("email_test/subfolder"): [None],
-                FilePurePath("email_test/subfolder/deep"): [None, None],
-            },
-            (
-                None,
-                FilePurePath("email_test"),
-                True,
-            ),
-            6,
-        ),
-        # Get SEEN emails only (recursive)
-        (
-            {
-                FilePurePath("email_test"): [None, [b"\\Seen"], None],
-                FilePurePath("email_test/subfolder"): [None],
-                FilePurePath("email_test/subfolder/deep"): [[b"\\Seen"], None],
-            },
-            (
-                ["SEEN"],
-                None,
-                True,
-            ),
-            2,
-        ),
-        # Get FLAGGED emails only (recursive)
-        (
-            {
-                FilePurePath("email_test"): [None, [b"\\Flagged"], [b"\\Flagged"]],
-                FilePurePath("email_test/subfolder"): [[b"\\Flagged"]],
-            },
-            (
-                ["FLAGGED"],
-                None,
-                True,
-            ),
-            3,
-        ),
-        # Combined criteria - FLAGGED and SEEN
-        (
-            {
-                FilePurePath("email_test"): [None, [b"\\Seen", b"\\Flagged"], None],
-                FilePurePath("email_test/subfolder"): [None],
-                FilePurePath("email_test/subfolder/deep"): [[b"\\Seen"], None],
-            },
-            (
-                ["FLAGGED", "SEEN"],
-                FilePurePath("email_test"),
-                True,
-            ),
-            1,
-        ),
-    ],
-)
-def test_imap_get_emails(
-    imap_service: IMAPService,
-    folder_structure: dict[FilePurePath, list[list[bytes] | None]],
-    get_emails_args: tuple[list[str] | None, FilePurePath | None, bool],
-    expected_matches: int,
-):
-
-    for folder_path, emails in folder_structure.items():
-        for flags in emails:
-            info = imap_service.append_email(EMAIL_ASSETS[0], folder_path)
-            if flags is None:
-                continue
-            imap_service.add_flags_to_emails(info.folder, [info.uid], flags)
-
-    # Search for emails
-    results = list(imap_service.get_emails(*get_emails_args))
-
-    # Verify count
-    assert len(results) == expected_matches
 
 
 def test_get_latest_email_date_empty_folder(imap_service: IMAPService):

@@ -104,7 +104,6 @@ export const TriggerScheduledTaskV1BeatScheduleNamePostScheduleNameEnum = {
     HideOldUploadedFiles: "hide-old-uploaded-files",
     FlushRootTaskInfoOnIdle: "flush-root-task-info-on-idle",
     UnsubscribeOldImapFolders: "unsubscribe-old-imap-folders",
-    SyncImapFlags: "sync-imap-flags",
     SeaweedfsFixReplicationOnIdle: "seaweedfs-fix-replication-on-idle",
     SeaweedfsBalanceOnIdle: "seaweedfs-balance-on-idle",
     SeaweedfsScrubOnIdle: "seaweedfs-scrub-on-idle",

@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 class CrawlerType(StrEnum):
     S3_CRAWLER = "S3_CRAWLER"
-    NOTIFY_LISTENER = "NOTIFY_LISTENER"
 
 
 class Settings(CommonSettings):

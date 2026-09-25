@@ -67,14 +67,6 @@ def get_beat_schedule() -> dict:
             ),
             "schedule": crontab(minute="30", hour="0"),
         },
-        # Uses SCHEDULE_NEVER so it never fires automatically, but can still be
-        # triggered manually via the API when a full IMAP flag re-sync is needed.
-        "sync-imap-flags": {
-            "task": (
-                "worker.periodic.sync_imap_flags_periodically_task.sync_imap_flags_periodically_task"  # noqa: E501 pylint: disable=line-too-long
-            ),
-            "schedule": SCHEDULE_NEVER,
-        },
         # SeaweedFS Maintenance Tasks - frequent "on-idle" variants (check_idle=True)
         "seaweedfs-fix-replication-on-idle": {
             "task": (

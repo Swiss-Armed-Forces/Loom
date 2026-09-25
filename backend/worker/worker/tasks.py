@@ -52,7 +52,6 @@ from worker.periodic import (
     reindex_lost_files_on_idle_task,
     seaweedfs_maintenance_task,
     shrink_periodically_task,
-    sync_imap_flags_periodically_task,
     throttle_and_flush_lazybytes_task,
     unsubscribe_old_imap_folders_periodically_task,
 )
@@ -102,7 +101,6 @@ tasks = [
     sigkill_pgroup_task,
     image_description_task,
     hide_periodically_task,
-    sync_imap_flags_periodically_task,
     reindex_lost_files_on_idle_task,
     unsubscribe_old_imap_folders_periodically_task,
     seaweedfs_maintenance_task,
