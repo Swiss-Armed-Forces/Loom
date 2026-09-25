@@ -627,7 +627,8 @@
         "collapseContent": "Collapse content",
         "filterByParentPath": "Filter by parent path",
         "filterByFilename": "Filter by filename",
-        "filterByExtension": "Filter by extension"
+        "filterByExtension": "Filter by extension",
+        "collapseAllPaths": "Collapse all paths"
     },
     "emptySearch": {
         "title": {
