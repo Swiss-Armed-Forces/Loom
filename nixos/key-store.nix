@@ -204,8 +204,14 @@ in
         #   * --echo=masked would show asterisks, which confirms keystrokes
         #     register and says nothing about *which*. That is the one thing
         #     worth knowing here, so masked is the worst of the three.
+        #
+        # The keyboard is named in the prompt, and that is the other half of the
+        # echo. Echo shows an operator that `-` came out as `/`; this tells them
+        # why, and what to pass to `--keymap` to fix it. It is named even when it
+        # is the default `us`, because that is the case most likely to be wrong
+        # and the one nothing else on the screen would mention.
         passphrase="$(systemd-ask-password --echo=yes --id=loom-keystore \
-          "Loom key stick passphrase:")"
+          "Loom key stick passphrase [keyboard: ${config.loom.keymapLabel}]:")"
 
         # Through a pipe, so the passphrase is never a path in /proc and never
         # an argument any other process can read.

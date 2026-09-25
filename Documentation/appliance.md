@@ -228,7 +228,8 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | Option | Meaning |
 | --- | --- |
 | `--platform PLATFORM` | Which box: `spark`, `evo-x2` or `nuc12`. Defaults to `spark`. |
-| `--tag TAG` | Loom release to embed. Must exist in this checkout — the image is built from a clone of it, not from the remote. Defaults to the newest tag, with a confirmation prompt; see [Which tag gets picked](#which-tag-gets-picked). |
+| `--tag TAG` | Loom release to embed. Must exist in this checkout — the image is built from a clone of it, not from the remote. Defaults to the newest release, with a confirmation prompt; see [Which tag gets picked](#which-tag-gets-picked). |
+| `--include-rc` | Let that default consider release candidates too, so an `X.Y.Z-rcN` can win it. Without this the default skips them and fails outright if there is no release to fall back to. `--tag` takes any tag either way. |
 | `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
 | `--lock-key` | Put the key inside a passphrase-locked container on the stick instead of writing it raw, and generate the word passphrase. The stick stops being a bearer token; the box stops booting unattended. Read [Locking the stick's key](#locking-the-sticks-key) first. |
@@ -270,20 +271,28 @@ and shown on the console's login screen.
 
 ### Which tag gets picked
 
-Without `--tag`, the build takes the newest tag in your checkout and asks you to confirm it. Two things make
-that answer trustworthy:
+Without `--tag`, the build takes the newest **release** in your checkout and asks you to confirm it. Two things
+make that answer trustworthy:
 
 - **It fetches first.** The local tag list is otherwise only as fresh as your last `git fetch`, and a stale
   pick costs an hour of build and yields a stick indistinguishable from the right one until somebody boots it.
   The fetch is best-effort: no `origin`, or no route to it, warns and carries on with the tags you have, since
   building on a disconnected host is supported. `--skip-fetch_tags` turns it off.
-- **A release outranks its own release candidates.** Git's version sort would otherwise put `1.3.0-rc10` above
-  `1.3.0`, because a longer string sorts above the prefix it extends — so the default would never pick a
-  finished release at all. The build sets `versionsort.suffix=-rc` to correct that, which covers this
-  repository's two tag shapes, `X.Y.Z` and `X.Y.Z-rcN`.
+- **Release candidates are skipped.** This repository has two tag shapes, `X.Y.Z` and `X.Y.Z-rcN`, and between
+  releases an rc is the newest thing tagged — so "newest tag" would mean "an rc" most of the time. The default
+  matches the release shape and takes the newest of those, printing the rc it stepped over. Nothing falls back:
+  if there is no release at all, the build stops and names the rc it declined rather than shipping it. That
+  matters because the confirmation prompt is not a guard everywhere — `--yes` skips it, and
+  `appliance-vm installer` and CI always pass `--yes`.
 
-`--tag` skips both: it names the release outright, and the tag has to be in this checkout already, because the
-image is built from a clone of it rather than from the remote. If it is not, fetch and try again.
+`--include-rc` opts back into "newest tag of any shape", which is what this used to do unconditionally. That
+is the path where `versionsort.suffix=-rc` earns its keep: git's version sort would otherwise put `1.3.0-rc10`
+above `1.3.0`, because a longer string sorts above the prefix it extends, so every release would be shadowed
+by its own last candidate. `appliance-vm installer` takes the same flag and forwards it.
+
+`--tag` bypasses all of it: it names the release outright — an rc included, with no flag needed — and the tag
+has to be in this checkout already, because the image is built from a clone of it rather than from the remote.
+If it is not, fetch and try again.
 
 ### Trying a stick without a box
 
@@ -750,7 +759,13 @@ The name is whatever `loadkeys` accepts — `de_CH-latin1`, `de`, `fr`, `uk`, `e
 does not resolve fails the image build with a list of valid ones, rather than silently falling
 back to US on the box.
 
-Two things work regardless, so a stick built without `--keymap` is awkward rather than unusable:
+**Every prompt says which keyboard it is using.** Stage 1 asks
+`Loom key stick passphrase [keyboard: us]`, and the build prints the same name beside the
+passphrase you are writing down. That is deliberately shown even when it is the default `us` —
+that is the case most likely to be wrong, and the one nothing else on the screen would mention.
+
+Two more things work regardless, so a stick built without `--keymap` is awkward rather than
+unusable:
 
 - **The passphrase prompts echo what you type.** You can see `/` appear when you press `-` and
   work out the offset. This gives up nothing the design was defending: the box prints the LUKS

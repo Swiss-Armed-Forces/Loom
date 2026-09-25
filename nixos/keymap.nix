@@ -89,6 +89,24 @@ in
     '';
   };
 
+  options.loom.keymapLabel = lib.mkOption {
+    type = lib.types.str;
+    default = if cfg == "" then "us" else cfg;
+    defaultText = lib.literalExpression ''if keymap == "" then "us" else keymap'';
+    readOnly = true;
+    internal = true;
+    description = ''
+      The same thing, as a name to show somebody who is about to type. `us` when
+      nothing was set, because the empty string is not an answer to "which
+      keyboard is this?" -- and the unset case is exactly the one worth saying
+      out loud, since it is where the map is most likely to be wrong.
+
+      One definition rather than each prompt inventing its own wording, for the
+      same reason `loom.debug.warningLines` is one list: the box says this in
+      more than one place and they must not drift.
+    '';
+  };
+
   config = lib.mkIf (cfg != "") {
     console.keyMap = cfg;
 

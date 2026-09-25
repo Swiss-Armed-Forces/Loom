@@ -114,6 +114,13 @@ LOCK_KEY_MAX_DRAWS=100
 KEYMAP=""
 
 TAG=""
+# Let the default pick in resolve_tag consider `X.Y.Z-rcN` as well. Set by
+# --include-rc, and off by default because a release candidate is the normal top
+# of this repository's tag list between releases -- so "newest tag" would mean
+# "an rc" most of the time, and a stick built from one is indistinguishable from
+# the right one until somebody boots it and reads the version off the console.
+# Only the default pick is affected: --tag takes any tag that exists, rc or not.
+INCLUDE_RC=false
 SUBNET=""
 FLASH_DEVICE=""
 KEY_BACKUP=""
@@ -360,7 +367,7 @@ fetch_tags(){
 }
 
 resolve_tag(){
-    local answer
+    local answer tags newest
 
     if [[ -n "${TAG}" ]]; then
         if ! git -C "${CONTEXT_DIR}" rev-parse --verify --quiet "refs/tags/${TAG}" > /dev/null; then
@@ -376,20 +383,45 @@ resolve_tag(){
     #
     #   * It is NOT `git describe`, which returns the nearest *ancestor* tag and
     #     so happily picks an ancient release when main has moved on.
-    #   * versionsort.suffix is what stops 1.3.0-rc9 from outranking 1.3.0.
-    #     Git's version sort otherwise places a longer string above the prefix
-    #     it extends, so every release would be shadowed by its own last release
-    #     candidate and this default would never pick a finished release at all.
-    #     The repository's tags are exactly `X.Y.Z` and `X.Y.Z-rcN`, so one
-    #     suffix covers it.
-    TAG="$(git -C "${CONTEXT_DIR}" -c versionsort.suffix=-rc tag --list --sort=-v:refname | head --lines=1)"
-    if [[ -z "${TAG}" ]]; then
+    #   * versionsort.suffix puts 1.3.0 above 1.3.0-rc9. Git's version sort
+    #     otherwise places a longer string above the prefix it extends, so every
+    #     release would be shadowed by its own last release candidate. That only
+    #     matters on the --include-rc path below, where both shapes are in play;
+    #     it is set here because this is the one listing either path reads.
+    tags="$(git -C "${CONTEXT_DIR}" -c versionsort.suffix=-rc tag --list --sort=-v:refname)"
+    if [[ -z "${tags}" ]]; then
         echo >&2 "[!] Error: this repository has no tags."
         echo >&2 "    The appliance runs Loom in offline mode, which requires a tagged checkout (up.sh:236)."
         exit 1
     fi
+    newest="$(head --lines=1 <<< "${tags}")"
 
-    echo "[*] Newest tag: ${TAG}"
+    if [[ "${INCLUDE_RC}" = true ]]; then
+        TAG="${newest}"
+        echo "[*] Newest tag: ${TAG}"
+    else
+        # The filter, not the sort, is what keeps release candidates out of the
+        # default. Sorting only decides which rc wins among rcs; the default is
+        # supposed to pick no rc at all. The repository's tags are exactly
+        # `X.Y.Z` and `X.Y.Z-rcN`, so matching the release shape is enough, and
+        # anything unforeseen is excluded rather than silently shipped.
+        #
+        # `|| true` because grep exits 1 on no match, which set -e would take
+        # as a failure -- but "no release tag" is a case handled just below.
+        TAG="$(grep --extended-regexp '^[0-9]+\.[0-9]+\.[0-9]+$' <<< "${tags}" | head --lines=1 || true)"
+        if [[ -z "${TAG}" ]]; then
+            echo >&2 "[!] Error: no release tag in this checkout; the newest tag is a"
+            echo >&2 "    release candidate (${newest})."
+            echo >&2 "    Release candidates are not built by default. Pass --include-rc"
+            echo >&2 "    to take ${newest}, or --tag to name a release outright."
+            exit 1
+        fi
+        echo "[*] Newest release: ${TAG}"
+        if [[ "${TAG}" != "${newest}" ]]; then
+            echo "[*] Skipping ${newest}: a release candidate. --include-rc takes it."
+        fi
+    fi
+
     if [[ "${ASSUME_YES}" != true ]]; then
         read -r -p "[?] Build the appliance from ${TAG}? [y/N] " answer
         if [[ "${answer}" != "y" && "${answer}" != "Y" ]]; then
@@ -1280,6 +1312,18 @@ print_key_passphrase(){
     echo
     echo "        ${KEY_PASSPHRASE}"
     echo
+    # Beside the passphrase rather than only in the table above, because this is
+    # the line somebody copies onto a card that travels with the box -- and the
+    # keyboard the box expects is part of knowing how to type it. The box says
+    # the same thing at its own prompt (nixos/key-store.nix).
+    if [[ -n "${KEYMAP}" ]]; then
+        echo "    Typed on a '${KEYMAP}' keyboard: that is the layout this box loads."
+    else
+        echo "    Typed on a US keyboard -- no --keymap was given, so that is what the"
+        echo "    box loads. On a Swiss, German or French keyboard, rebuild with"
+        echo "    --keymap (see Documentation/appliance.md) or expect to hunt for keys."
+    fi
+    echo
     if [[ -n "${LOCK_KEY_OUT}" ]]; then
         echo "    Also written to ${LOCK_KEY_OUT}."
         echo "    Keep that file away from the stick."
@@ -1392,7 +1436,9 @@ usage(){
     echo "usage: $0 [<options>]"
     echo "  -h|--help                     show this help"
     echo "  -v|--verbose                  show verbose output"
-    echo "  -t|--tag TAG                  Loom tag to embed (default: the newest tag)"
+    echo "  -t|--tag TAG                  Loom tag to embed (default: the newest release)"
+    echo "  --include-rc                  let that default consider release candidates too,"
+    echo "                                so 'X.Y.Z-rcN' can win. --tag takes any tag either way."
     echo "  -o|--output OUTPUT_DIR        where to place the image (default: .appliance-build)"
     echo "  -f|--flash DEVICE             flash to DEVICE, destroying all data on it"
     echo "  -k|--key-backup FILE          also write the generated LUKS key to FILE"
@@ -1496,6 +1542,10 @@ while [[ $# -gt 0 ]]; do
         -t|--tag)
             shift
             TAG="${1?Missing TAG}"
+            shift
+        ;;
+        --include-rc)
+            INCLUDE_RC=true
             shift
         ;;
         -o|--output)
