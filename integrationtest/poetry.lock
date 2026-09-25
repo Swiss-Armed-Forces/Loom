@@ -2445,6 +2445,20 @@ type = "directory"
 url = "../nixos/installer"
 
 [[package]]
+name = "loom-ollama"
+version = "0.1.0"
+description = "Entrypoint wrapper for the Loom Ollama container image"
+optional = false
+python-versions = ">=3.12"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../ollama"
+
+[[package]]
 name = "loom-overarching-dev"
 version = "0.1.0"
 description = "Dev-only project to empower pylance to see all the subprojects"
@@ -2461,6 +2475,7 @@ crawler = {path = "backend/crawler", develop = true}
 integrationtest = {path = "integrationtest", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
+loom-ollama = {path = "ollama", develop = true}
 loom-ready = {path = "nixos/ready", develop = true}
 loom-tests = {path = "nixos/tests/scripts", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}

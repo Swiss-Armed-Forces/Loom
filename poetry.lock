@@ -3057,6 +3057,20 @@ type = "directory"
 url = "nixos/installer"
 
 [[package]]
+name = "loom-ollama"
+version = "0.1.0"
+description = "Entrypoint wrapper for the Loom Ollama container image"
+optional = false
+python-versions = ">=3.12"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "ollama"
+
+[[package]]
 name = "loom-ready"
 version = "0.1.0"
 description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
@@ -7478,4 +7492,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "f4920097d86b888e815be6c002b1860d40d632d2f8444117a8e5697c0f24889e"
+content-hash = "ba595b8abe61da5660f1e4a423534a107cb6e3f1b2fb0c92e5d4a410567e54f0"

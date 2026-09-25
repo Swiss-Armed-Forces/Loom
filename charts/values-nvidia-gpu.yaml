@@ -7,6 +7,9 @@
 # this file manually.
 #
 ollama:
+  # Tells the container to read its GPU memory from nvidia-smi, and to refuse to start
+  # if /dev/nvidiactl never arrived.
+  gpuVendor: nvidia
   runtimeImage:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia
   resources:

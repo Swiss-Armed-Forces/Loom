@@ -188,6 +188,13 @@ On the EVO-X2 specifically, check two more firmware settings before installing:
   This follows published measurement on this board rather than on our own unit. Confirm it after
   installing with `loom-platform-info`, which prints the firmware carve-out and the GTT ceiling side by
   side.
+
+  Ollama's own container makes the same distinction, which is the other half of this argument. Its
+  entrypoint (`ollama/ollama_wrapper.py`) reads `mem_info_vram_total` and `mem_info_gtt_total` from
+  amdgpu's sysfs and sizes `OLLAMA_NUM_PARALLEL` against the GTT pool, not the carve-out — while
+  leaving the host the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` guarantees the rest of the stack, since
+  GTT is host memory the GPU pins rather than memory of its own. So the carve-out is not merely
+  useless to Ollama; it is subtracted from the pool Ollama actually plans against.
 - **Disable the radios** in the AMI BIOS, for the same reason the threat model gives above.
 
 On the DGX Spark specifically, there is one step that has to happen **before** the box is disconnected
@@ -1346,7 +1353,10 @@ boxes ship Ollama at all.
 **On the EVO-X2** the appliance passes `--gpus amd` to `up.sh`, which selects `charts/values-amd-gpu.yaml`,
 enables minikube's `amd-gpu-device-plugin` addon and asks `minikube start` for the GPU. `amdgpu` is mainline
 and already loaded — it is what puts the installer menu on the monitor — and it is what exposes `/dev/kfd`
-for minikube's docker driver to pass into the node container. The ROCm userspace lives inside the
+for minikube's docker driver to pass into the node container. That values file also sets
+`ollama.gpuVendor: amd`, which is how the container knows to read its GPU memory from amdgpu's sysfs rather
+than shell out to an `nvidia-smi` that is not there — and how it knows to fail loudly, rather than quietly
+running on the CPU, if `/dev/kfd` never made it into the pod. The ROCm userspace lives inside the
 `ollama/ollama:rocm` image, so the box itself carries only `rocm-smi`, which `up.sh` needs for its preflight.
 That same `rocm-smi` is what puts the GPU readout in the console's `btop` pane: `btop` already knows how to
 read it and only needs pointing at the copy the box has, so the readout adds nothing beyond the link.
@@ -1370,7 +1380,14 @@ kernel modules, which is what a GB10 Blackwell needs, and `nixos/platforms/spark
 `hardware.nvidia-container-toolkit` so the device reaches the minikube node container through a CDI spec.
 As on the EVO-X2, none of the compute stack lives on the host — the CUDA userspace is inside the `ollama`
 image, and the box carries only `nvidia-smi`, which comes out of the driver itself and which `up.sh` needs
-for its preflight. That same driver puts the GPU readout in the console's `btop` pane.
+for its preflight. That same driver puts the GPU readout in the console's `btop` pane. The values file sets
+`ollama.gpuVendor: nvidia`, the mirror of the EVO-X2's declaration above.
+
+One thing about this box's memory is worth knowing before reading `OLLAMA_NUM_PARALLEL` in a log: the GB10's
+128 GB is **unified**, so the total `nvidia-smi` reports is host memory rather than a card's own VRAM. The
+wrapper treats any GPU total at or above 80% of `MemTotal` as exactly that, and holds back the same 25 GiB
+host reserve it does for the EVO-X2's GTT pool. A discrete card is spent in full instead; the ratio is what
+tells the two apart, without a list of board names to keep current.
 
 > **This has not been confirmed on hardware yet.** Nobody has booted this image on a Spark, so
 > `gpuVendor = "nvidia"` is a claim from documentation rather than a measurement. Run

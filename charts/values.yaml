@@ -1010,6 +1010,14 @@ ollama:
     minReplicas: 1
     targetQueueLength: 10
     queueToWatch: '(loom:default|loom:worker.+)'
+  # GPU vendor this deployment targets: "amd", "nvidia", or "" for CPU only.
+  # Must agree with runtimeImage.repository and the <vendor>.com/gpu resource key
+  # below; values-amd-gpu.yaml and values-nvidia-gpu.yaml set all three together.
+  # Reaches the container as LOOM_GPU_VENDOR, which is what ollama_wrapper.py
+  # dispatches its GPU probe on -- and, when the declared device is not there, what
+  # makes the pod fail loudly instead of quietly running on the CPU. Left empty the
+  # wrapper autodetects and falls back to CPU without complaint.
+  gpuVendor: ""
   # Runtime image (GPU-specific variants)
   runtimeImage:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia

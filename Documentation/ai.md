@@ -232,8 +232,18 @@ time — so a question's rerank wall-clock is the sum of all 50 generations, whi
 output is a single integer score. It also carries `max_tokens = 512` for the same reason: the
 inherited 128000 caps nothing that matters there, but lets one runaway generation consume the
 5-minute `timeout`, which `rerank` then retries up to `RAG_MAX_RETRIES` times on an already saturated
-queue. Turning thinking back on for ranking quality means keeping that cap, and either lowering the
-fan-out or giving the inference server real concurrency (`OLLAMA_NUM_PARALLEL`).
+queue. Turning thinking back on for ranking quality means keeping that cap, and lowering the
+fan-out.
+
+**Raising `OLLAMA_NUM_PARALLEL` is not the other option, on the production models.** Ollama's
+scheduler forces a single slot in two cases, whatever the variable says: a model without the
+completion capability — which covers `nomic-embed-text-v2-moe`, the embedding model — and an
+architecture on its no-parallel list. The production chat model is on that list: it reports
+`model_family` `qwen35`, and the server logs `model architecture does not currently support parallel
+requests` when it overrides the setting. So the serialisation above is the scheduler, not a missing
+knob, and the real options are a chat model whose architecture supports batching, more Ollama
+replicas, or a smaller fan-out. The dev models (`qwen2.5:0.5b`, `moondream`) are not on the list, so
+anything measured about concurrency in a dev cluster will not reproduce in production.
 
 `suggest_queries` is the same shape one level down: one invocation fans out
 `tool.suggest_queries.num_candidates` (10) generations, so a suggestion's wall-clock is the sum of

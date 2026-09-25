@@ -7,6 +7,10 @@
 # Model images are GPU-agnostic and work with both NVIDIA and AMD runtimes.
 #
 ollama:
+  # Tells the container to read its GPU memory from amdgpu sysfs rather than shell out
+  # to nvidia-smi, which the ROCm image does not carry -- and to refuse to start if
+  # /dev/kfd never arrived.
+  gpuVendor: amd
   runtimeImage:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
   resources:

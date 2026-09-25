@@ -22,6 +22,11 @@ loom-installer = {path = "nixos/installer", develop = true}
 loom-ready = {path = "nixos/ready", develop = true}
 loom-tests = {path = "nixos/tests/scripts", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
+# The Ollama image's entrypoint wrapper. Not the appliance and not a backend
+# package -- it ships inside a container -- but a path dependency for the same two
+# reasons as the block above: the git hooks lint and type-check it, and its tests
+# import it by name.
+loom-ollama = {path = "ollama", develop = true}
 types-docker = "^7.1.0.20240601"
 
 [tool.poetry.group.dev.dependencies]

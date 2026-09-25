@@ -32,6 +32,7 @@ let
     "backend/worker"
     "integrationtest"
     "cicd/aitools"
+    "ollama"
     "nixos/console-mouse"
     "nixos/installer"
     "nixos/ready"
@@ -674,6 +675,31 @@ in
       pass_filenames = false;
     };
 
+    # The Ollama image's entrypoint wrapper decides OLLAMA_NUM_PARALLEL from the
+    # GPU it finds, which is arithmetic no type can check. The suite is stdlib
+    # only and runs in well under a second, so it rides the hook set -- and so
+    # `devenv test` -- rather than earning a CI job of its own.
+    #
+    # `pass_filenames = false`: pytest gets the directory, because a change to
+    # ollama_wrapper.py has to run every test rather than none of them.
+    #
+    # Spelled out rather than calling the `ollama-test` script: devenv's scripts
+    # are not on PATH for a `git commit` run outside `devenv shell`, while the
+    # virtualenv's `python` is -- which is the same assumption every hook above
+    # makes about `isort`, `black` and the rest.
+    "ollama-test" = {
+      enable = true;
+      entry = builtins.toString (
+        pkgs.writeShellScript "ollama-test-hook" ''
+          cd '${config.devenv.root}'
+          exec python -m pytest ollama/tests
+        ''
+      );
+      files = "^ollama/.*\\.py$";
+      types = [ "python" ];
+      pass_filenames = false;
+    };
+
     markdownlint = {
       enable = true;
       settings.configuration = {
@@ -984,6 +1010,25 @@ in
           --cov-report=term \
           --cov-report=xml \
             "''${@}"
+      )
+    '';
+  };
+
+  scripts.ollama-test = {
+    description = "Test the Ollama container image's entrypoint wrapper";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Its own script rather than a line in backend-test (which cds into
+        # backend/ and so can never reach this) or in appliance-pytest (which is
+        # the appliance's suites, and shares one pytest session with them).
+        #
+        # No PYTHONPATH: the top-level pyproject.toml path-depends on ollama/, so
+        # devenv's virtualenv already imports ollama_wrapper by name. Run from the
+        # repository root so that pytest.ini applies.
+        python -m pytest ollama/tests "''${@}"
       )
     '';
   };

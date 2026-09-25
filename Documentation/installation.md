@@ -386,12 +386,13 @@ Ollama runs on the CPU unless you tell it otherwise. With `up.sh` there is nothi
 `--gpus nvidia` or `--gpus amd` applies the right values file, enables the matching device plugin
 and checks the host for you.
 
-Deploying the chart directly, set two things: the Ollama image for your GPU vendor, and the
+Deploying the chart directly, set three things: the GPU vendor, the Ollama image for it, and the
 resource key its device plugin advertises. Your cluster needs that device plugin already installed.
 
 ```yaml
 # NVIDIA GPUs -- charts/values-nvidia-gpu.yaml
 ollama:
+  gpuVendor: nvidia
   runtimeImage:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia
   resources:
@@ -402,6 +403,7 @@ ollama:
 
 # AMD GPUs (ROCm) -- charts/values-amd-gpu.yaml
 ollama:
+  gpuVendor: amd
   runtimeImage:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
   resources:
@@ -410,6 +412,20 @@ ollama:
     limits:
       amd.com/gpu: 1
 ```
+
+`gpuVendor` reaches the container as `LOOM_GPU_VENDOR` and does two jobs. It picks how the
+container reads the GPU's memory — `nvidia-smi` for NVIDIA, amdgpu's sysfs attributes for AMD,
+since the ROCm image carries no `rocm-smi` — and it makes a pod that was deployed as a GPU
+workload **refuse to start** when the device never arrived, rather than quietly falling back to
+the CPU. If the pod logs `LOOM_GPU_VENDOR=... but /dev/... is absent` and exits, the device plugin
+is missing or the wrong values file was applied. Leave `gpuVendor` empty and the container
+autodetects instead, with a silent CPU fallback.
+
+What it reads the memory _for_ is `OLLAMA_NUM_PARALLEL`, which Ollama defaults to 1 and which
+multiplies the context to give the KV cache — so the container sizes it against the memory it can
+actually see. Set `OLLAMA_NUM_PARALLEL` in the environment yourself and it is honoured untouched.
+`OLLAMA_CONTEXT_LENGTH` is deliberately left alone: Ollama sizes the context from its own VRAM
+measurement and will walk it back down if a load fails, and setting the variable turns that off.
 
 Models are shipped in a separate image from the Ollama runtime and copied into Ollama's storage
 when the pod starts, so switching between CPU, NVIDIA and AMD never re-downloads them. Keep

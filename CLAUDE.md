@@ -101,6 +101,19 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `backend-test worker/tests/test_bar.py::test_function` - Run specific test function
 - Scope tests to relevant packages/files when possible — e.g. `backend-test api/` to run only API tests
 
+**Ollama wrapper:**
+
+- `ollama-test` - Run the tests for `ollama/ollama_wrapper.py`, the entrypoint of the Ollama
+  container image (`ollama/tests`). Its own script because `backend-test` cds into `backend/` and
+  cannot reach it, and because `appliance-pytest` is the appliance's suites sharing one pytest
+  session. Also runs as a git hook on any change to `ollama/*.py`, so `devenv test` covers it and
+  there is no CI job of its own. Extra arguments go to pytest.
+  The wrapper decides `OLLAMA_NUM_PARALLEL` from the GPU it can see — `nvidia-smi` for NVIDIA,
+  amdgpu sysfs for AMD, since the ROCm image ships no `rocm-smi` — and **refuses to start** when
+  `LOOM_GPU_VENDOR` (set by `charts/values-{amd,nvidia}-gpu.yaml`) names a vendor whose device node
+  is absent. It deliberately never sets `OLLAMA_CONTEXT_LENGTH`; see the "Ollama GPU Configuration"
+  section in `Documentation/installation.md`
+
 **Frontend:**
 
 - `frontend-test` - Run frontend tests

@@ -1,0 +1,18 @@
+[project]
+name = "loom-ollama"
+version = "0.1.0"
+description = "Entrypoint wrapper for the Loom Ollama container image"
+# The runtime image installs python3=3.12.*; nothing here may need more than that.
+requires-python = ">=3.12"
+# Stdlib only. The image carries an interpreter and no pip packages, and adding one
+# would mean adding a pip layer to an image that has none.
+dependencies = []
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+# A flat module rather than a package directory, so Dockerfile.runtime keeps copying
+# one file to /bin/ollama_wrapper.py and the image gains no installed distribution.
+packages = [{ include = "ollama_wrapper.py" }]

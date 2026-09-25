@@ -57,6 +57,11 @@ spec:
               value: "0.0.0.0:{{ $values.service.port }}"
             - name: OLLAMA_MODELS
               value: /ollama-models
+            {{- with $values.gpuVendor }}
+            - name: LOOM_GPU_VENDOR
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           startupProbe:
             httpGet:
               path: /api/ps
