@@ -3,10 +3,9 @@ import random
 import zipfile
 from io import SEEK_END, BytesIO
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
-from minio import Minio
+from doubles import s3_serving
 from pydantic import BaseModel
 
 from common.services.lazybytes_service import (
@@ -169,29 +168,19 @@ def test_s3_load_seekable_reads_a_fraction_of_the_object():
         zip_file.writestr("big.bin", filler)
     payload = buffer.getvalue()
 
-    client = MagicMock(spec=Minio)
-    fetched = 0
-
-    def get_object(_bucket, _name, offset=0, length=0):
-        nonlocal fetched
-        end = offset + length if length else len(payload)
-        chunk = payload[offset:end]
-        fetched += len(chunk)
-        response = MagicMock()
-        response.read.return_value = chunk
-        return response
-
-    client.get_object.side_effect = get_object
-    client.stat_object.return_value = MagicMock(size=len(payload))
-
-    service = S3LazyBytesService(client, "bucket", threshold_bytes=64)
+    double = s3_serving(payload, "bucket", "an-object")
+    service = S3LazyBytesService(double.client, "bucket", threshold_bytes=64)
     lazy_bytes = LazyBytes(service_id="an-object")
 
     with service.load_seekable(lazy_bytes) as fd:
         with zipfile.ZipFile(fd) as zip_file:  # type: ignore[arg-type]
             assert zip_file.read("MANIFEST.json") == b'{"version": 2}'
 
+    fetched = double.store.fetched_bytes
     assert fetched < len(payload) // 4, f"read {fetched} of {len(payload)} bytes"
+    # Not incidental: a range read that leaks its urllib3 connection is invisible
+    # until the pool runs dry under load, and this path now runs per intake object.
+    assert double.store.every_response_was_released
 
 
 def test_from_generator(

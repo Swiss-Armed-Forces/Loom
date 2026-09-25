@@ -21,6 +21,15 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 
+# The helpers the appliance scripts share: `check_command`, `platform_system`
+# and `resolve_loom_values`. Sourced rather than restated, the same way
+# .gitlab-ci.yml sources cicd/ci_helpers.sh -- `platform_system` above all, so
+# that adding a platform is one edit rather than four with nothing to catch a
+# missed one.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=appliance_common.sh
+source "${SCRIPT_DIR}/appliance_common.sh"
+
 # As in cicd/run_appliance_tests.sh: both come from devenv's inputs, so
 # devenv.lock stays the only pin for either.
 NIXPKGS=""
@@ -49,31 +58,6 @@ LOOM_HOSTS_JSON=""
 
 # Appended to by instantiate, so one platform failing does not hide the next.
 FAILED=()
-
-#
-# Helpers
-#
-
-check_command(){
-    if ! command -v "${1}" > /dev/null; then
-        echo >&2 "[!] Error: required command not found: ${1}"
-        exit 1
-    fi
-}
-
-# Must agree with `platform_system` in cicd/run_appliance_tests.sh and
-# cicd/build_appliance_image.sh, which mirror `nixSystem` in
-# nixos/platforms/<id>.nix. No host-architecture check to go with theirs,
-# deliberately: evaluating aarch64 on x86_64 builds nothing, and it is the only
-# way the Spark is covered at all outside a Spark.
-platform_system(){
-    case "${1}" in
-        spark)  printf 'aarch64-linux' ;;
-        evo-x2) printf 'x86_64-linux'  ;;
-        nuc12)  printf 'x86_64-linux'  ;;
-        *)      return 1               ;;
-    esac
-}
 
 #
 # Steps
@@ -132,16 +116,6 @@ validate_environment(){
         kvm="not usable"
     fi
     echo "[*] Host: ${HOST_ARCH}, /dev/kvm ${kvm}, ${free_gb} GB free on ${store_dir}"
-}
-
-# Sourced from this checkout, which is also what the appliance embeds, so the
-# two cannot disagree. `box` throws without the host list.
-resolve_loom_values(){
-    # shellcheck disable=SC1091
-    # shellcheck source=../vars.sh
-    source "${CONTEXT_DIR}/vars.sh"
-    LOOM_HOSTS_JSON="$(printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" |
-        jq --raw-input . | jq --slurp --compact-output .)"
 }
 
 # One invocation per platform and attribute. The results are thrown away --

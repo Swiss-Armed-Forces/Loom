@@ -1299,13 +1299,14 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        # No PYTHONPATH: the top-level pyproject.toml depends on all three
-        # packages, so devenv's virtualenv already imports them by name. Run from
-        # the repository root so that pytest.ini applies -- above all
+        # No PYTHONPATH: the top-level pyproject.toml path-depends on every
+        # appliance package, so devenv's virtualenv already imports them by name.
+        # Run from the repository root so that pytest.ini applies -- above all
         # `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
-        # One invocation, so the three suites share a session. Their module
-        # basenames are unique across all three for that reason: pytest imports
-        # them into one namespace.
+        # One invocation, so the five suites in `appliancePytestPaths` share a
+        # session. Their module basenames are unique across all five for that
+        # reason: pytest imports them into one namespace, so a second
+        # `test_devices.py` anywhere in that list collides with the first.
         python -m pytest ${lib.concatStringsSep " " appliancePytestPaths} "''${@}"
       )
     '';

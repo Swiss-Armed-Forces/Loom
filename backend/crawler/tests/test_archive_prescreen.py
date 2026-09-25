@@ -50,6 +50,9 @@ def _loom_archive_bytes(comment: bytes = b"") -> bytes:
     )
 
 
+# The same pair as backend/common/tests/doubles.py, restated here rather than
+# imported: the crawler package cannot reach the common package's tests, and a path
+# hook in a conftest to make it possible would cost more than the duplication does.
 class _FakeResponse:
     """What minio's get_object hands back: a urllib3-ish response."""
 

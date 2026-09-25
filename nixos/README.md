@@ -47,6 +47,7 @@ this file is about the code.
 | `tests/appliance-debug.nix` | VM test for the `--debug` build: two nodes, and whether the generated key gets the second one in. The counterpart to `tests/appliance.nix`, which asserts no sshd for every other image. |
 | `tests/scripts.nix` | The tests as a Python package, built for the test driver's own interpreter and installed through its `extraPythonPackages`. |
 | `tests/scripts/` | The tests themselves (`loom_tests`), as Python the repository's own hooks lint and type-check. A module per test node, `vt.py` and `tmux.py` shared between them, `driver.py` the typing shim for what the driver hands them, and a pytest suite for the two helpers that parse something. |
+| `../cicd/appliance_common.sh` | Sourced by all four appliance scripts (`build_appliance_image.sh`, `appliance_eval.sh`, `run_appliance_tests.sh`, `run_appliance_vm.sh`): `check_command`, the platform-to-architecture table `platform_system`, and `resolve_loom_values`, which reads the host list, the namespace and the chat model out of `vars.sh`. The table is the reason it exists — a fourth platform is one edit here, not four with nothing to catch a missed one. |
 
 ## Why `default.nix` and not a flake
 
@@ -589,8 +590,9 @@ Two jobs in `.gitlab-ci.yml`, split along the same line as the two scripts:
   pipeline. Neither needs KVM nor a matching architecture, so it runs on any runner, and it is the
   only coverage the Spark image gets there — the runners are all x86_64.
 - `appliance_test` runs the VM tests on `evo-x2`, and is the one job in that file gated with
-  `rules: changes:` — `nixos/**/*`, `cicd/run_appliance_tests.sh`, `vars.sh`, `up.sh`, `devenv.nix`
-  and `devenv.lock`. It holds a shared runner for minutes with KVM and potentially hours without, and
+  `rules: changes:` — `nixos/**/*`, `cicd/run_appliance_tests.sh`, `vars.sh`, `up.sh`,
+  `charts/values.yaml` (which is where `vars.sh` reads the domain, the host list and the console's
+  chat model from), `devenv.nix` and `devenv.lock`. It holds a shared runner for minutes with KVM and potentially hours without, and
   those are the files that can change what it asserts. A path missing from that list is what
   `appliance_check` is there to catch; outside a merge request the job is `when: manual`, because
   GitLab counts every file as changed on a tag or a new branch.
@@ -680,7 +682,7 @@ run's disk images. A garbage collection clears those too.
   through at `up.sh:380` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold` reaches for
 - `NAMESPACE`, passed through the same way the host list is and consumed by `console.nix`'s `k9s` view
 - `LOOM_CHAT_MODEL`, the same route again, consumed by `console.nix`'s `loom-chat` pane. It has a harder
-  constraint than the rest: it must name a model `ollama/Dockerfile` bakes into the production image, because
+  constraint than the rest: it must name a model `ollama/Dockerfile.models` bakes into the production image, because
   an air-gapped box cannot pull one, and it should match `_llmDefaults.model` in `charts/values.yaml` so the
   pane does not make Ollama evict the model the workers are indexing with.
 

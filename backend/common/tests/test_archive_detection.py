@@ -8,6 +8,7 @@ import pytest
 from common.archive.archive_detection import (
     ENCRYPTED_ARCHIVE_MAGIC,
     MANIFEST_FILENAME,
+    MAX_MANIFEST_BYTES,
     ZIP_LOCAL_FILE_HEADER,
     decrypts_to_a_loom_zip,
     encrypted_probe_length,
@@ -51,6 +52,28 @@ def test_detects_a_loom_archive():
 
 def test_rejects_a_plain_zip():
     assert is_loom_archive(_zip({"report.pdf": b"not a manifest"})) is False
+
+
+def test_a_zip_bomb_dressed_as_a_manifest_is_refused_unread():
+    """This runs in the crawler on arbitrary zips off a stranger's USB stick.
+
+    Deflate reaches roughly 1000:1, so an unbounded read of any member that merely ends
+    in /MANIFEST.json inflates to gigabytes. MemoryError is not caught anywhere on that
+    path, the crawler pod dies, and because the object was never marked processed the
+    restarted pod picks the same one up again -- the whole intake path wedges, not just
+    the one file.
+    """
+    bomb = b"\0" * (MAX_MANIFEST_BYTES * 4)
+    archive = _zip({f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": bomb})
+
+    assert is_loom_archive(archive) is False
+
+
+def test_a_manifest_of_an_ordinary_size_is_still_read():
+    """The cap must not reject the real thing: a manifest is a few kilobytes."""
+    archive = _zip({f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest()})
+
+    assert is_loom_archive(archive) is True
 
 
 def test_rejects_a_manifest_at_the_archive_root():

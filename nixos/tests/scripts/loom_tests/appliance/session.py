@@ -232,7 +232,7 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     """What the bottom pane dials, and what it is not allowed to reach for."""
     # The assistant pane must dial the model the workers use. Same drift
     # argument as the namespace above, with a sharper failure: an
-    # air-gapped box only has what ollama/Dockerfile baked in, so a pane
+    # air-gapped box only has what ollama/Dockerfile.models baked in, so a pane
     # pinned to anything else warns and then fails every question the
     # operator asks it. The pane no longer *waits* on the model -- see
     # `ready` in console.nix -- which is what makes this assertion the only

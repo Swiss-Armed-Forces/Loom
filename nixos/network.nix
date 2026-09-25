@@ -669,11 +669,17 @@ in
           "systemd-udev-settle.service"
           "loom-interface-fallback.service"
         ];
-        before = [ "loom.service" ];
         # Same ordering trick as box.nix's loom-issue.service, and for the same
         # reason: the warning below is written as an issue fragment, so it has
         # to exist before any getty renders the issue. getty-pre.target is
-        # passive, hence `wants` as well as `before`.
+        # passive -- nothing else pulls it into the transaction -- hence `wants`
+        # as well as `before`, and the `before` has to name it: `wants` alone
+        # orders nothing at all, which left the only diagnostic an operator can
+        # see racing the login screen on the exact boot it exists to report.
+        before = [
+          "loom.service"
+          "getty-pre.target"
+        ];
         wants = [ "getty-pre.target" ];
         serviceConfig = {
           Type = "oneshot";

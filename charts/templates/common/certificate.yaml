@@ -51,9 +51,21 @@ spec:
   # chart's Ingresses need, so naming `cert sign` does not quietly narrow the
   # certificate to that one usage.
   #
-  # `isCA` stays unset on purpose. Making this a CA would satisfy the same
-  # verifiers and turn the serving certificate into something that may sign
-  # others, which is not what it is for.
+  # `isCA` is set because `cert sign` is. The openssl path above gets to say
+  # neither -- it emits no keyUsage at all, which is what actually fixes this
+  # and is what cert-manager cannot be asked for -- and its comment records why
+  # asserting one without the other is not an option: CA:FALSE beside a
+  # keyCertSign bit is a contradiction a verifier is entitled to reject later.
+  # So on this path the two agree, and the certificate really is what it claims
+  # to be: a self-signed certificate that is its own issuer and may sign itself.
+  #
+  # The cost is understood: a serving certificate that may sign others. It is
+  # bounded by what this is -- a certificate for `*.loom` hosts, generated per
+  # deployment, trusted only by clients that were handed it. The alternative is
+  # dropping `cert sign`, and that costs every BoringSSL client that uses it as
+  # an anchor, which on the appliance is `loom-chat` (nixos/console.nix) and
+  # `mc` (nixos/usb-ingest/loom_usb_ingest/transfer.py).
+  isCA: true
   usages:
     - server auth
     - digital signature

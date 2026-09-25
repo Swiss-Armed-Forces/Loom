@@ -59,6 +59,22 @@ def commands(state: str) -> FakeCommands:
     return FakeCommands({UNIT: unit(state)})
 
 
+def _turns_reach(pane: RecordingPane, turns: int) -> bool:
+    """Wait until the panel loop has gone round `turns` times, or give up.
+
+    A bound on an observable rather than a sleep: what a test about a loop that must
+    not end needs is proof that it went round, and how long that takes depends on the
+    machine. The deadline is generous because it is only reached when the behaviour
+    under test is broken.
+    """
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        if pane.turns >= turns:
+            return True
+        time.sleep(0.01)
+    return False
+
+
 def publish_stage(state_dir: str, stage: Stage = Stage.ROLLING_OUT) -> None:
     """What the publisher would have written this second.
 
@@ -149,7 +165,11 @@ def test_a_bring_up_that_failed_keeps_its_log_on_the_screen(tmp_path):
     thread = threading.Thread(target=pane.run, daemon=True)
     thread.start()
     assert drained.wait(timeout=5), "the journal was never read"
-    time.sleep(0.1)  # several refreshes at the timing RecordingPane runs with
+    # Waited for, not slept through: the assertion below is only worth anything
+    # once the loop has demonstrably gone round without handing over, and a fixed
+    # sleep proves that on a fast machine and nothing at all on a loaded one. Two
+    # turns is one full pass through the handover check and back.
+    assert _turns_reach(pane, 2), f"the panel loop stopped after {pane.turns} turns"
 
     assert pane.became is None
     assert "loom.service FAILED" in pane.printed()

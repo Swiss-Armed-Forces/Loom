@@ -12,6 +12,7 @@ from loom_usb_ingest.devices import (
     Volume,
     classify_disk,
     disk_from_lsblk,
+    disks_from_lsblk_inverse,
 )
 
 ARMED = KeyGuard(GuardState.ARMED, "sdb")
@@ -28,6 +29,11 @@ def _volume(path, partlabel=None, fstype="vfat", mountpoint=None):
         size=1024,
         mountpoint=mountpoint,
     )
+
+
+def _rows(rows):
+    """`lsblk --inverse --noheadings --output TYPE,KNAME` output, as text."""
+    return "".join(f"{row}\n" for row in rows)
 
 
 def _disk(kname, volumes=(), size=8_000_000_000):
@@ -55,7 +61,16 @@ def test_the_armed_key_disk_is_never_ingested():
 
 @pytest.mark.parametrize(
     "partlabel",
-    ["loom-key", "loom-esp", "loom-root-luks", "loom-live-esp", "loom-live-store"],
+    [
+        "loom-key",
+        "loom-esp",
+        "loom-live-esp",
+        "loom-live-store",
+        # `install.partition` writes `loom-pv<N>` onto every pool member, so on a
+        # two-NVMe box the second disk carries this and nothing else.
+        "loom-pv0",
+        "loom-pv1",
+    ],
 )
 def test_loom_media_is_excluded_even_when_the_guard_is_idle(partlabel):
     """A box booted on the recovery passphrase never arms the guard.
@@ -113,6 +128,40 @@ def test_guard_is_only_authoritative_when_armed_with_a_device():
     assert not KeyGuard(GuardState.DISARMED, "sdb").authoritative
 
 
+def test_a_device_mapper_root_resolves_to_the_disks_under_it():
+    """The protected-disk rule is only alive if this hop works.
+
+    The appliance installs LUKS on LVM, so `findmnt --target /` names a dm node and the
+    disk wanted is three hops down. Answering `dm-0` here would make `classify_disk`'s
+    first rule unable to match the box's own root, ever.
+    """
+    disks = disks_from_lsblk_inverse(
+        _rows(["lvm dm-2", "crypt dm-0", "part nvme0n1p2", "disk nvme0n1"])
+    )
+
+    assert disks == frozenset({"nvme0n1"})
+
+
+def test_a_whole_disk_resolves_to_itself():
+    assert disks_from_lsblk_inverse(_rows(["disk sdb"])) == frozenset({"sdb"})
+
+
+def test_a_root_spanning_two_disks_protects_both():
+    disks = disks_from_lsblk_inverse(
+        _rows(
+            [
+                "lvm dm-2",
+                "part nvme0n1p2",
+                "disk nvme0n1",
+                "part nvme1n1p1",
+                "disk nvme1n1",
+            ]
+        )
+    )
+
+    assert disks == frozenset({"nvme0n1", "nvme1n1"})
+
+
 def test_a_disk_is_read_off_lsblk_with_its_volumes():
     disk = disk_from_lsblk(
         [
@@ -153,19 +202,43 @@ def test_a_superfloppy_is_one_volume_covering_the_whole_device():
     assert [volume.path for volume in disk.volumes] == ["/dev/sdb"]
 
 
-def test_the_disk_is_found_even_when_lsblk_lists_a_holder_first():
-    # lsblk prints holders ahead of what they hold, so the device asked about
-    # is not reliably the head of the list.
+def test_a_holder_nested_under_a_partition_is_not_a_volume_of_the_stick():
+    # The shape `lsblk --tree` actually produces for a stick carrying a LUKS
+    # container: the crypt node is a child of the partition holding it, never a
+    # sibling. Only the partition is a volume; mounting the mapping would mean
+    # mounting a stranger's unlocked container.
     disk = disk_from_lsblk(
         [
-            {"path": "/dev/mapper/root", "kname": "dm-0", "type": "crypt"},
-            {"path": "/dev/sdb", "kname": "sdb", "type": "disk", "size": 1024},
+            {
+                "path": "/dev/sdb",
+                "kname": "sdb",
+                "type": "disk",
+                "size": 8_000_000_000,
+                "children": [
+                    {
+                        "path": "/dev/sdb1",
+                        "kname": "sdb1",
+                        "type": "part",
+                        "fstype": "crypto_LUKS",
+                        "size": 1024,
+                        "children": [
+                            {
+                                "path": "/dev/mapper/root",
+                                "kname": "dm-0",
+                                "type": "crypt",
+                                "fstype": "ext4",
+                            }
+                        ],
+                    }
+                ],
+            }
         ],
         "/dev/sdb",
         {},
     )
 
     assert disk.kernel_name == "sdb"
+    assert [volume.path for volume in disk.volumes] == ["/dev/sdb1"]
 
 
 def test_the_kernel_name_is_bare_even_when_lsblk_reports_a_path():

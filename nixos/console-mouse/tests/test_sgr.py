@@ -89,6 +89,21 @@ def test_release_reports_the_released_button() -> None:
     assert result.state.buttons == 0
 
 
+def test_releasing_one_button_of_a_chord_leaves_the_other_held() -> None:
+    """The mirror of the press case, and the one the naive `buttons=0` gets wrong.
+
+    Release right while left is still down, and what is still held has to survive: the
+    next GPM_DRAG is encoded from the remaining mask, so zeroing it here makes tmux see
+    button 3 -- "no buttons" -- and lose the drag halfway through.
+    """
+    held = PointerState(x=10, y=5, buttons=GPM_B_LEFT | GPM_B_RIGHT)
+
+    result = translate(event(kind=GPM_UP, buttons=GPM_B_RIGHT), held)
+
+    assert result.report == b"\033[<2;10;5m"
+    assert result.state.buttons == GPM_B_LEFT
+
+
 def test_click_flags_do_not_confuse_the_type() -> None:
     """GPM_SINGLE and friends ride in the same field as the event type."""
     result = translate(

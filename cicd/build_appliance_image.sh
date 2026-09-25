@@ -5,6 +5,15 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 
+# The helpers the appliance scripts share: `check_command`, `platform_system`
+# and `resolve_loom_values`. Sourced rather than restated, the same way
+# .gitlab-ci.yml sources cicd/ci_helpers.sh -- `platform_system` above all, so
+# that adding a platform is one edit rather than four with nothing to catch a
+# missed one.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=appliance_common.sh
+source "${SCRIPT_DIR}/appliance_common.sh"
+
 # nixpkgs comes from devenv's `inputs.nixpkgs-stable`, passed as --nixpkgs by
 # the build-appliance-image devenv script. That keeps devenv.lock the single
 # nixpkgs pin in this repository. No default: there is nothing sensible to fall
@@ -197,25 +206,6 @@ FLASH_STEPS=(
 #
 # Helpers
 #
-
-check_command(){
-    if ! command -v "${1}" > /dev/null; then
-        echo >&2 "[!] Error: required command not found: ${1}"
-        exit 1
-    fi
-}
-
-# The architecture each platform is. Must agree with `nixSystem` in the matching
-# nixos/platforms/<id>.nix -- nixos/default.nix asserts that they do, so a drift
-# here fails during evaluation rather than on the box.
-platform_system(){
-    case "${1}" in
-        spark)  printf 'aarch64-linux' ;;
-        evo-x2) printf 'x86_64-linux'  ;;
-        nuc12)  printf 'x86_64-linux'  ;;
-        *)      return 1               ;;
-    esac
-}
 
 # The GPU vendor each platform offloads Ollama to, empty for the CPU-only ones.
 # Mirrors `gpuVendor` in the matching nixos/platforms/<id>.nix, which is the

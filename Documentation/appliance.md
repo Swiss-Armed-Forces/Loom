@@ -89,12 +89,12 @@ the models in the image are sized for offload, and the embedding step runs over 
 CPU that does not slow the pipeline down, it stops it — an indexing run that should take an afternoon takes
 days and the queue never drains. A box that shipped it anyway would look like it was working.
 
-So `gpuVendor` in `nixos/platforms/<id>.nix` decides, and today only the EVO-X2 declares one. The other two
-pass `--disable-ai` to `up.sh`, which stops the service being deployed **and** stops the indexing pipeline
-calling it. Gone: summaries, translation, image descriptions, auto-tagging, embeddings, and with them
-semantic search and RAG. Kept: full-text search, OCR, metadata extraction and archive import. The console
-session also drops its assistant pane, because that pane is an `opencode` pointed at the cluster's own Ollama
-and would have nothing to talk to.
+So `gpuVendor` in `nixos/platforms/<id>.nix` decides: the Spark and the EVO-X2 declare one, and only the
+NUC 12 does not. That one passes `--disable-ai` to `up.sh`, which stops the service being deployed **and**
+stops the indexing pipeline calling it. Gone: summaries, translation, image descriptions, auto-tagging,
+embeddings, and with them semantic search and RAG. Kept: full-text search, OCR, metadata extraction and
+archive import. The console session also drops its assistant pane, because that pane is an `opencode`
+pointed at the cluster's own Ollama and would have nothing to talk to.
 
 It is stated on the login banner, so a box without AI is never a silent surprise. A platform can override the
 rule — a CPU-only box somebody has measured and is happy with sets `runsAiServices = true` — but nobody has.
@@ -252,13 +252,14 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--wifi-country CC` | ISO country code. Moves the AP to 5GHz; without it the AP stays on 2.4GHz. |
 | `--wifi-interface NAME` | Pin the radio by its **kernel** name (`wlan0`), not the predictable one — unlike `--interface`, this is still a `.link` match and carries the limitation described under [Pinning a port](#pinning-a-port). Rarely needed: the default claims any radio. Renamed to `loomwl0` either way. |
 | `--debug` | Run an SSH server on the box, keyed to a keypair generated for this image. Takes back the "no remote access" guarantee. Read [Debug images](#debug-images) before using it. |
+| `--vm-serial` | Add a getty on ttyS0 to the installer and to the box it installs, so a VM can be driven from a terminal that copies and pastes. For `appliance-vm installer --serial`; refused alongside `--flash`, because the result is one unit different from a real stick. |
 | `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
 | `--allow-cross` | Build for an architecture other than the host's. |
 | `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
 | `--nixpkgs PATH` | nixpkgs source. Required — `build-appliance-image` passes devenv's pinned nixpkgs for you, so you only need this when driving the script directly. |
 | `--nixos-hardware PATH` | [nixos-hardware](https://github.com/NixOS/nixos-hardware) source, which the x86 platforms take their hardware profile from. Required, and passed for you the same way. |
 | `--output DIR` | Where to put the image. Defaults to `.appliance-build/`. |
-| `--skip-STEP` | Skip a build step, by name — `--help` lists them in the order they run. A debugging escape hatch: later steps assume the earlier ones ran, so a stick built with one of these is not a stick anybody should ship. `--skip-validate_environment` is the one with a legitimate use, when the preflight's 20 GB store estimate is wrong for your host. |
+| `--skip-STEP` | Skip a build step, by name — `--help` lists them in the order they run. A debugging escape hatch: later steps assume the earlier ones ran, so a stick built with one of these is not a stick anybody should ship. `--skip-validate_environment` is the one with a legitimate use, when the preflight's 20 GB store estimate is wrong for your host, and `--skip-fetch_tags` is the other, on a host with no network. |
 | `--yes` | Skip confirmation prompts. |
 | `--verbose` | Trace every command. |
 
@@ -476,7 +477,9 @@ for pointing an AI agent at such a box. It is the only build where `services.ope
 
 The box makes this hard to forget. It says `DEBUG IMAGE — NEVER USE THIS IN PRODUCTION` in white on red at
 the bottom of its login screen, the message of the day repeats it, the console session's status line carries
-`DEBUG — SSH OPEN`, and the image file itself is named `loom-installer-debug_*.raw`. The boot menu carries it
+`DEBUG — SSH OPEN` (`DEBUG IMAGE` during first-time setup, where the SSH server deliberately does not run —
+that mode is a DHCP client on somebody else's network), and the image file itself is named
+`loom-installer-debug_*.raw`. The boot menu carries it
 too, on the entry's second line — `debug-<version>` rather than the plain version — for the box that never
 gets as far as a login screen; the title itself still reads `Loom`, exactly as it does for the
 `first-time-setup` entry.
@@ -1161,7 +1164,7 @@ interface has moved the most bytes so far and minikube's own loopback traffic wi
 also puts the box address in the pane's header. The pin is a starting point, not a lock: `b` and `n` still
 cycle interfaces in that box.
 
-On a box that declares a `gpuVendor` — today the EVO-X2 — the **cpu** box also carries the GPU, reading it
+On a box that declares a `gpuVendor` — the Spark and the EVO-X2 — the **cpu** box also carries the GPU, reading it
 through the same vendor library `up.sh` uses for its preflight. It rides inside the cpu box rather than
 taking a box of its own, which is why it survives every rung of that ladder down to the smallest: a pane
 this size has no room for a fifth box, and `btop` shows the GPU one way or the other but not both. It costs
@@ -1223,7 +1226,7 @@ On a box already running an affected release, replacing the `self-signed-cert` s
 fix, and it sticks, because the Job never replaces a certificate that covers every host.
 
 The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which must name a model
-`ollama/Dockerfile` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the
+`ollama/Dockerfile.models` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the
 pane at a tag the workers do not use would make Ollama load a second model and evict the one it is indexing
 with. **`loom-chat`** is the same screen as a command, for an `Alt-F2` console.
 

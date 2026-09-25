@@ -59,6 +59,20 @@ def test_ownerless_filesystems_are_given_an_owner():
     assert "umask=0077" in plan.options
 
 
+def test_iso9660_is_never_given_umask():
+    """Isofs has no `umask` token, and an unknown token fails the mount.
+
+    Every hybrid-ISO stick and every CD image would be rejected as broken media.
+    """
+    plan = _plan("iso9660")
+
+    assert f"uid={UID}" in plan.options
+    assert f"gid={GID}" in plan.options
+    assert not any(option.startswith("umask=") for option in plan.options)
+    assert "mode=0400" in plan.options
+    assert "dmode=0500" in plan.options
+
+
 def test_fat_family_is_told_to_read_names_as_utf8():
     assert "iocharset=utf8" in _plan("exfat").options
 

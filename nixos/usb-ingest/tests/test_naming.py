@@ -72,21 +72,43 @@ def test_identity_falls_back_to_vendor_and_model():
     assert identity.identifier == "ABCD-1234"
 
 
-def test_identity_of_a_nameless_stick_is_still_stable_and_unique():
-    """Cheap sticks report no serial and no label.
+def test_identity_of_a_nameless_stick_is_stable_across_reinsertions():
+    """Cheap sticks report no serial and no label, and must still be recognisable."""
+    properties = {"ID_VENDOR": "Generic", "ID_PATH": "pci-0000:00:14.0-usb-0:2:1.0"}
 
-    Two must not collide.
+    first = derive_identity(properties, size_bytes=8_000_000_000)
+    second = derive_identity(dict(properties), size_bytes=8_000_000_000)
+
+    assert first.identifier == second.identifier
+
+
+def test_two_identical_nameless_sticks_do_not_share_a_prefix():
+    """The case the fallback exists for, and the one that costs documents.
+
+    Same vendor, same model, same capacity -- everything a no-name stick reports.
+    Sharing an identifier means sharing a prefix, and `mc mirror` would then overwrite
+    one stick's DCIM/IMG_0001.JPG with the other's, silently.
     """
+    properties = {"ID_VENDOR": "Generic", "ID_MODEL": "Flash Disk"}
+
+    first = derive_identity(
+        dict(properties, ID_PATH="pci-0000:00:14.0-usb-0:2:1.0"),
+        size_bytes=8_000_000_000,
+    )
+    second = derive_identity(
+        dict(properties, ID_PATH="pci-0000:00:14.0-usb-0:3:1.0"),
+        size_bytes=8_000_000_000,
+    )
+
+    assert first.identifier != second.identifier
+    assert first.prefix_component != second.prefix_component
+
+
+def test_sticks_of_different_capacities_are_told_apart():
     first = derive_identity({"ID_VENDOR": "Generic"}, size_bytes=8_000_000_000)
     second = derive_identity({"ID_VENDOR": "Generic"}, size_bytes=16_000_000_000)
 
     assert first.identifier != second.identifier
-    assert (
-        first.identifier
-        == derive_identity(
-            {"ID_VENDOR": "Generic"}, size_bytes=8_000_000_000
-        ).identifier
-    )
 
 
 def test_volume_component_with_and_without_a_label():

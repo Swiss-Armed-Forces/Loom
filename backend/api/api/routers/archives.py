@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -156,7 +156,11 @@ def import_archive(
             file_content=file_content,
             full_name=file.filename if file.filename is not None else "",
             source_id=ARCHIVE_IMPORT_SOURCE_ID,
-            uploaded_datetime=datetime.now(),
+            # Aware, not naive. This is indexed as an Elasticsearch Date and used
+            # for ordering, and the crawler writes the same field from a box whose
+            # local zone is not UTC -- two writers disagreeing about what a bare
+            # timestamp means sort against each other wrongly.
+            uploaded_datetime=datetime.now(timezone.utc),
         )
     )
 

@@ -255,8 +255,16 @@ in
           "systemd-udev-settle.service"
           "hostapd.service"
         ];
+        # `before` names getty-pre.target as well as loom.service: `wants` pulls
+        # the target into the transaction but orders nothing against it, and the
+        # fragment written below is the one thing that corrects a login banner
+        # still printing an SSID and a QR code for an access point that never
+        # came up. See network.nix's loom-network-check.
         wants = [ "getty-pre.target" ];
-        before = [ "loom.service" ];
+        before = [
+          "loom.service"
+          "getty-pre.target"
+        ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;

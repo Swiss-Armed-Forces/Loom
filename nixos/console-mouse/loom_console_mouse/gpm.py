@@ -166,19 +166,23 @@ class GpmClient:
     def close(self) -> None:
         self._sock.close()
 
-    def read_events(self) -> list[GpmEvent]:
+    def read_events(self) -> list[GpmEvent] | None:
         """Drain whatever has arrived.
 
-        Returns an empty list when the daemon has closed the connection, which
-        the caller should treat as "no mouse from here on" rather than as an
-        error: gpm restarting is not a reason to take the console session down.
+        Returns None when the daemon has closed the connection, which the caller
+        should treat as "no mouse from here on" rather than as an error: gpm
+        restarting is not a reason to take the console session down.
 
-        Short reads are real -- this is a stream socket, not a datagram one --
-        so a partial struct is held over to the next call.
+        Short reads are real -- this is a stream socket, not a datagram one -- so a
+        partial struct is held over to the next call and an empty *list* comes back.
+        The two have to be distinguishable: answering both with `[]` meant the caller
+        closed the socket on a short read, threw the held-over bytes away, and cost
+        the operator the mouse for a reconnect interval -- and the carry-over below
+        could never actually be exercised.
         """
         chunk = self._sock.recv(_EVENT.size * 64)
         if not chunk:
-            return []
+            return None
         self._buffer += chunk
 
         events: list[GpmEvent] = []

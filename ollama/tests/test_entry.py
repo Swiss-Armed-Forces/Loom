@@ -64,12 +64,41 @@ def test_the_context_length_is_read_in_tokens() -> None:
     assert parse_context_length_tokens("  parameters   9.7B\n") is None
 
 
-def test_model_sizes_are_read_off_ollama_list() -> None:
-    """Both units Ollama prints, and a refusal for anything else."""
-    assert parse_size_to_bytes("6.0 GB") == 6 * (1024**3)
-    assert parse_size_to_bytes("512 MB") == 512 * (1024**2)
-    with pytest.raises(ValueError, match="1.2 TB"):
-        parse_size_to_bytes("1.2 TB")
+def test_model_sizes_are_read_as_the_decimal_units_ollama_prints() -> None:
+    """`format.HumanBytes` is decimal; its binary sibling prints GiB and MiB.
+
+    Reading "6.0 GB" as 6 * 1024**3 overstated every model by 7.4%, which reaches
+    `calculate_parallelism` and can cost a slot on a tight VRAM budget.
+    """
+    assert parse_size_to_bytes("6.0 GB") == 6 * (1000**3)
+    assert parse_size_to_bytes("512 MB") == 512 * (1000**2)
+
+
+def test_every_unit_ollama_can_print_is_understood() -> None:
+    """An unhandled suffix used to abort the container entrypoint outright."""
+    assert parse_size_to_bytes("900 B") == 900
+    assert parse_size_to_bytes("64 KB") == 64_000
+    assert parse_size_to_bytes("1.2 TB") == int(1.2 * 1000**4)
+
+    with pytest.raises(ValueError, match="six gigs"):
+        parse_size_to_bytes("six gigs")
+
+
+def test_a_row_with_an_unreadable_size_is_dropped_not_raised() -> None:
+    """The caller is on the path to `os.execvpe`.
+
+    Raising there gives a pod that neither serves nor crashes; dropping the row costs
+    the estimate one model, and the estimate has a floor.
+    """
+    table = (
+        "NAME                       ID              SIZE      MODIFIED\n"
+        "good:9b                    abc123          6.0 GB    2 days ago\n"
+        "odd:1b                     def456          ?? PB     2 days ago\n"
+    )
+
+    models = parse_model_list(table)
+
+    assert [model.name for model in models] == ["good:9b"]
 
 
 def test_the_model_table_is_parsed_past_its_header() -> None:
@@ -80,7 +109,7 @@ def test_the_model_table_is_parsed_past_its_header() -> None:
         "huihui_ai/qwen3.5:9b",
         "nomic-embed-text-v2-moe",
     ]
-    assert models[0].size_bytes == 6 * (1024**3)
+    assert models[0].size_bytes == 6 * (1000**3)
 
 
 def test_host_memory_is_read_in_kilobytes() -> None:

@@ -57,6 +57,40 @@ def lazybytes_service_inmemory() -> InMemoryTempLazyBytesService:
     return lazybytes_service
 
 
+# The dependency globals a test may need to stand in for, by name. Spelled as
+# strings so that installing one is `setattr` rather than an assignment to somebody
+# else's private, and so both sites cannot drift apart.
+FILE_STORAGE_SERVICE = "_file_storage_service"
+ARCHIVE_ENCRYPTION_SERVICE = "_archive_encryption_service"
+
+
+@pytest.fixture(name="install_services")
+def install_services_fixture():
+    """Put service doubles in place for one test, and take them out again afterwards.
+
+    The dependency globals are the seam the worker has -- a Celery task resolves its
+    services through `common.dependencies` when it runs, and takes no arguments -- so a
+    test that needs a real encryptor or an instrumented storage installs it through
+    here, and what was there before comes back whichever way the test ends.
+
+    Code under test that can take its services as arguments should be handed them
+    directly instead. See `index_archive.ArchiveServices`.
+    """
+    names = (FILE_STORAGE_SERVICE, ARCHIVE_ENCRYPTION_SERVICE)
+    saved = {name: getattr(dependencies, name) for name in names}
+
+    def install(*, file_storage=None, archive_encryption=None):
+        if file_storage is not None:
+            setattr(dependencies, FILE_STORAGE_SERVICE, file_storage)
+        if archive_encryption is not None:
+            setattr(dependencies, ARCHIVE_ENCRYPTION_SERVICE, archive_encryption)
+
+    yield install
+
+    for name, value in saved.items():
+        setattr(dependencies, name, value)
+
+
 @pytest.fixture()
 def file_storage_service_inmemory() -> InMemoryFileStorageLazyBytesService:
     file_storage_service = InMemoryFileStorageLazyBytesService(

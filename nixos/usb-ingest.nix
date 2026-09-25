@@ -189,9 +189,18 @@ in
 
     stateDir = lib.mkOption {
       type = lib.types.str;
-      default = "/run/loom/usb";
+      default = "/run/loom/usb-state";
       internal = true;
-      description = "Where the lock, the mc configuration and state.json live.";
+      description = ''
+        Where the lock, the mc configuration and state.json live.
+
+        Deliberately not `mountRoot`, which is the thing two options exist to keep
+        apart: the mount tree is `<mountRoot>/<kname>/pN`, so sharing a directory put
+        somebody else's filesystems beside this service's own `.lock`, `mc/` and
+        `state.json` -- and a stick whose kernel name happened to be `mc` would land
+        on top of them. It also made systemd-tmpfiles log a duplicate line for the
+        same path on every boot.
+      '';
     };
 
     progressDir = lib.mkOption {

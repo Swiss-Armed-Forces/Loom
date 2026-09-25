@@ -19,10 +19,11 @@ counts and device paths.
 import json
 import logging
 import os
-import tempfile
 import time
 from dataclasses import asdict, dataclass, field, replace
 from enum import StrEnum
+
+from loom_usb_ingest.jsonfile import Permissions, write_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -120,19 +121,15 @@ def path_for(progress_dir: str, kernel_name: str) -> str:
 def publish(progress_dir: str, kernel_name: str, progress: DeviceProgress) -> None:
     """Write one device's record, atomically.
 
-    Through a temporary file in the same directory so a reader can never catch a
-    half-written document -- the same way key-guard.nix writes its own state, and for
-    the same reason: the reader is a loop with a one-second period.
+    See `jsonfile.write_atomic` for why through a temporary file. The reader here is a
+    loop with a one-second period, so a half-written document is not a rare case.
     """
     try:
-        os.makedirs(progress_dir, mode=0o755, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            mode="w", dir=progress_dir, delete=False, encoding="utf-8"
-        ) as handle:
-            json.dump(asdict(progress), handle)
-            temporary = handle.name
-        os.chmod(temporary, 0o644)
-        os.replace(temporary, path_for(progress_dir, kernel_name))
+        write_atomic(
+            path_for(progress_dir, kernel_name),
+            asdict(progress),
+            Permissions(directory=0o755, file=0o644),
+        )
     except OSError as error:
         # Never fatal: this is a display, and the copy it describes matters more.
         logger.warning("Could not publish ingest progress: %s", error)

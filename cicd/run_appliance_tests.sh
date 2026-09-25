@@ -22,6 +22,15 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 
+# The helpers the appliance scripts share: `check_command`, `platform_system`
+# and `resolve_loom_values`. Sourced rather than restated, the same way
+# .gitlab-ci.yml sources cicd/ci_helpers.sh -- `platform_system` above all, so
+# that adding a platform is one edit rather than four with nothing to catch a
+# missed one.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=appliance_common.sh
+source "${SCRIPT_DIR}/appliance_common.sh"
+
 # As in cicd/build_appliance_image.sh: nixpkgs comes from devenv's
 # `inputs.nixpkgs-stable`, so devenv.lock stays the only nixpkgs pin here.
 NIXPKGS=""
@@ -91,24 +100,6 @@ LOOM_HOSTS_JSON=""
 #
 # Helpers
 #
-
-check_command(){
-    if ! command -v "${1}" > /dev/null; then
-        echo >&2 "[!] Error: required command not found: ${1}"
-        exit 1
-    fi
-}
-
-# Must agree with `platform_system` in cicd/build_appliance_image.sh, which in
-# turn mirrors `nixSystem` in nixos/platforms/<id>.nix.
-platform_system(){
-    case "${1}" in
-        spark)  printf 'aarch64-linux' ;;
-        evo-x2) printf 'x86_64-linux'  ;;
-        nuc12)  printf 'x86_64-linux'  ;;
-        *)      return 1               ;;
-    esac
-}
 
 # The attribute in nixos/default.nix behind each short name.
 test_attribute(){
@@ -216,17 +207,6 @@ validate_environment(){
         echo "[!] a ~3.5 GB appliance closure and writes its VM disks beside it."
         echo "[!] 'nix-collect-garbage -d' and 'nix store optimise' free what earlier runs left."
     fi
-}
-
-# Sourced from this checkout, which is also what the tests embed, so the two
-# cannot disagree. vars.sh is the single source of truth for all three values;
-# tests/appliance.nix asserts the appliance restates them correctly.
-resolve_loom_values(){
-    # shellcheck disable=SC1091
-    # shellcheck source=../vars.sh
-    source "${CONTEXT_DIR}/vars.sh"
-    LOOM_HOSTS_JSON="$(printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" |
-        jq --raw-input . | jq --slurp --compact-output .)"
 }
 
 # Records its own failure rather than being called in a condition, which would

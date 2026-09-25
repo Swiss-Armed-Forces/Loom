@@ -73,6 +73,21 @@ def find_manifest_entry(names: list[str]) -> str | None:
     return next((n for n in names if n.endswith(f"/{MANIFEST_FILENAME}")), None)
 
 
+# The most a MANIFEST.json is allowed to weigh before it is refused unread.
+#
+# A real one is a few kilobytes: `Archive` is a handful of scalar fields. The cap is
+# not about those -- it is about what this function is now pointed at. Since the
+# crawler prescreen (crawler/archive_prescreen.py) it runs on every intake object,
+# which on this appliance means arbitrary zips carried in on a stranger's USB stick.
+# Deflate reaches roughly 1000:1, so an unbounded `read` of a member that merely
+# *ends in* /MANIFEST.json inflates a 5 MB entry to ~5 GB. MemoryError is not an
+# OSError and not a ValueError, so neither this except clause nor the prescreen's
+# catches it: the crawler pod dies, the object was never marked processed, and the
+# restarted pod picks the same one up again -- a permanent wedge on the whole intake
+# path rather than one rejected file.
+MAX_MANIFEST_BYTES = 4 * 1024 * 1024
+
+
 def is_loom_archive(fd: IO[bytes]) -> bool:
     """True when `fd` is a zip carrying a valid loom MANIFEST.json.
 
@@ -83,9 +98,34 @@ def is_loom_archive(fd: IO[bytes]) -> bool:
             manifest_entry = find_manifest_entry(zip_file.namelist())
             if manifest_entry is None:
                 return False
-            return is_loom_archive_manifest(zip_file.read(manifest_entry))
-    except (BadZipFile, ValidationError, OSError):
+            return is_loom_archive_manifest(_read_manifest(zip_file, manifest_entry))
+    # RuntimeError covers two more things a stranger's stick routinely carries: a
+    # member that wants a password, and -- as NotImplementedError, a subclass -- a
+    # compression method zipfile has no decompressor for, which is what WinZip's AES
+    # ("method 99") is. Either would otherwise take the crawler pod down on an object
+    # it can simply decline.
+    except (BadZipFile, ValidationError, OSError, RuntimeError):
         return False
+
+
+def _read_manifest(zip_file: ZipFile, entry: str) -> bytes:
+    """The manifest member, or b"" when it is too big to be one.
+
+    The declared size is checked first -- it costs nothing and rejects the honest zip
+    bomb -- and then the read itself is bounded anyway, because the central directory is
+    attacker-controlled and may understate what the member inflates to.
+    """
+    if zip_file.getinfo(entry).file_size > MAX_MANIFEST_BYTES:
+        logger.warning("Ignoring oversized archive manifest: %s", entry)
+        return b""
+
+    with zip_file.open(entry) as member:
+        payload = member.read(MAX_MANIFEST_BYTES + 1)
+
+    if len(payload) > MAX_MANIFEST_BYTES:
+        logger.warning("Ignoring oversized archive manifest: %s", entry)
+        return b""
+    return payload
 
 
 # What a loom archive's *plaintext* opens with. compress_files.py writes every

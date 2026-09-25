@@ -27,7 +27,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Protocol
+from typing import Final, Protocol
 
 # --- Sizing constants ---
 # The floor, and a ceiling that stops an unexpected reading turning into an absurd
@@ -76,6 +76,11 @@ DEFAULT_CONTEXT_TOKENS = 4096
 OLLAMA_STARTUP_RETRIES = 10
 OLLAMA_RETRY_INTERVAL = 0.3
 OLLAMA_SHUTDOWN_TIMEOUT = 5.0
+# How long any one `ollama` query gets. Generous, because a cold server reading a
+# model directory off slow storage is legitimately slow -- but finite, because the
+# entrypoint runs these before `os.execvpe` and an unbounded wait there is a pod that
+# never starts and never fails.
+OLLAMA_COMMAND_TIMEOUT = 60.0
 NVIDIA_SMI_TIMEOUT = 10.0
 NVIDIA_SMI_ARGV = [
     "nvidia-smi",
@@ -302,15 +307,37 @@ def clamp(value: int, lowest: int, highest: int) -> int:
 
 
 # --- Parsing ---
+# The units `ollama list` prints, and what they are worth.
+#
+# Decimal, not binary, and this is not a matter of taste: ollama renders the SIZE
+# column with `format.HumanBytes`, whose thresholds are KiloByte = 1000,
+# MegaByte = 1000*1000 and GigaByte = 1000^3. The binary renderer in that same
+# package prints GiB and MiB, which is how the two are told apart. Reading "6.0 GB"
+# as 6 * 1024**3 overstated every model by 7.4%, and that number flows through
+# `build_memory_budget` into `calculate_parallelism`, where on a tight VRAM budget it
+# costs a parallel slot.
+SIZE_UNITS: Final[dict[str, int]] = {
+    "b": 1,
+    "kb": 1000,
+    "mb": 1000**2,
+    "gb": 1000**3,
+    "tb": 1000**4,
+}
+
+
 def parse_size_to_bytes(size_str: str) -> int:
-    """Convert a size as `ollama list` prints it ("6.5 GB") into bytes."""
-    match = re.match(r"([\d.]+)\s*(gb|mb)", size_str.lower())
+    """Convert a size as `ollama list` prints it ("6.5 GB") into bytes.
+
+    Every suffix `format.HumanBytes` can emit is covered. A model small enough to be
+    printed in KB is unusual but reachable -- a LoRA adapter -- and an unknown suffix
+    used to raise out of `get_installed_models`, past `run_entry_command`, and abort the
+    container entrypoint before `os.execvpe`: a pod that neither serves nor crashes. See
+    `parse_model_list` for what happens instead.
+    """
+    match = re.match(r"([\d.]+)\s*([kmgt]?b)\b", size_str.lower())
     if not match:
         raise ValueError(f"Invalid size string: {size_str}")
-    size = float(match.group(1))
-    if match.group(2) == "gb":
-        return int(size * 1024**3)
-    return int(size * 1024**2)
+    return int(float(match.group(1)) * SIZE_UNITS[match.group(2)])
 
 
 def parse_context_length_tokens(show_output: str) -> int | None:
@@ -343,7 +370,14 @@ def parse_nvidia_memory_totals_mib(stdout: str) -> list[int]:
 
 
 def parse_model_list(stdout: str) -> list[ModelInfo]:
-    """Parse `ollama list` output into models that have no context length yet."""
+    """Parse `ollama list` output into models that have no context length yet.
+
+    A row this cannot read is dropped with a warning rather than raising. The only
+    caller runs on the container entrypoint's path to `os.execvpe`, so an exception here
+    is a pod that never starts serving and never crashes either -- nothing Kubernetes
+    can act on. A model missing from the estimate costs a parallel slot at worst, and
+    `plan_entry_environment` already has a floor to fall back to.
+    """
     models: list[ModelInfo] = []
     for line in stdout.strip().splitlines()[1:]:
         stripped = line.strip()
@@ -351,11 +385,17 @@ def parse_model_list(stdout: str) -> list[ModelInfo]:
             continue
         parts = re.split(r"\s{2,}", stripped)
         if len(parts) < 3:
-            raise ValueError(f"Invalid model entry: {stripped}")
+            print(f"⚠️ Ignoring unreadable `ollama list` row: {stripped}")
+            continue
+        try:
+            size_bytes = parse_size_to_bytes(parts[2])
+        except ValueError:
+            print(f"⚠️ Ignoring model '{parts[0]}': unrecognised size '{parts[2]}'")
+            continue
         models.append(
             ModelInfo(
                 name=parts[0],
-                size_bytes=parse_size_to_bytes(parts[2]),
+                size_bytes=size_bytes,
                 context_length_tokens=None,
             )
         )
@@ -733,12 +773,27 @@ def plan_entry_environment(
 def wait_for_ollama_ready(
     retries: int = OLLAMA_STARTUP_RETRIES, interval: float = OLLAMA_RETRY_INTERVAL
 ) -> bool:
-    """Wait for `ollama ps` to respond, indicating the server is ready."""
+    """Wait for `ollama ps` to respond, indicating the server is ready.
+
+    Every call here is bounded. A server that is listening but not answering -- which is
+    precisely the state this loop exists to ride out -- would otherwise block in
+    `check_output` forever, and the container would never reach `os.execvpe`: no
+    service, no crash, and nothing for Kubernetes to restart. `TimeoutExpired` is a
+    `SubprocessError` rather than a `CalledProcessError`, so it has to be named.
+    """
     for _ in range(retries):
         try:
-            subprocess.check_output(["ollama", "ps"], stderr=subprocess.DEVNULL)
+            subprocess.check_output(
+                ["ollama", "ps"],
+                stderr=subprocess.DEVNULL,
+                timeout=OLLAMA_COMMAND_TIMEOUT,
+            )
             return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+        ):
             time.sleep(interval)
     return False
 
@@ -772,8 +827,12 @@ def temporary_ollama_serve() -> Generator[None, None, None]:
 def read_context_length_tokens(model_name: str) -> int | None:
     """Ask a running server for one model's trained context length."""
     try:
-        output = subprocess.check_output(["ollama", "show", model_name], text=True)
-    except subprocess.CalledProcessError:
+        output = subprocess.check_output(
+            ["ollama", "show", model_name],
+            text=True,
+            timeout=OLLAMA_COMMAND_TIMEOUT,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         print(f"❌ Failed to show model '{model_name}'")
         return None
     tokens = parse_context_length_tokens(output)
@@ -785,7 +844,9 @@ def read_context_length_tokens(model_name: str) -> int | None:
 def get_installed_models() -> ModelSet:
     """Every installed model, with its weight and its trained context length."""
     with temporary_ollama_serve():
-        output = subprocess.check_output(["ollama", "list"]).decode("utf-8")
+        output = subprocess.check_output(
+            ["ollama", "list"], timeout=OLLAMA_COMMAND_TIMEOUT
+        ).decode("utf-8")
         return ModelSet(
             models=[
                 ModelInfo(
@@ -848,7 +909,15 @@ def run_entry_command(ollama_args: list[str]) -> None:
 
     estimate: ParallelismEstimate | None = None
     if wants_estimate(env):
-        models = get_installed_models()
+        # Best effort, deliberately: this is a tuning number, and the fallback
+        # `plan_entry_environment` already has -- the floor -- is a working server.
+        # A temporary server that will not start, or a query that times out, must
+        # not stop the container becoming ollama.
+        try:
+            models = get_installed_models()
+        except (subprocess.SubprocessError, OSError, RuntimeError) as error:
+            print(f"⚠️ Could not read the installed models: {error}")
+            models = ModelSet(models=[])
         if models.count == 0:
             print("⚠️ No installed models found.")
         estimate = estimate_parallelism(detection, models, read_host_memory_bytes())

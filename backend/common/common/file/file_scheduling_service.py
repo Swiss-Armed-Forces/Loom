@@ -1,7 +1,7 @@
 """Service to schedule new files for processing."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from common.file.file_repository import (
@@ -96,7 +96,10 @@ class FileSchedulingService:
             parent_id=parent_id,
             sha256=data_hash.hexdigest(),
             size=data_hash.bytes_count,
-            uploaded_datetime=uploaded_datetime or datetime.now(),
+            # Aware, like every other writer of this field: it is an Elasticsearch
+            # Date that gets ordered on, and a naive local timestamp from a box in
+            # a non-UTC zone sorts wrongly against one that carries its offset.
+            uploaded_datetime=uploaded_datetime or datetime.now(timezone.utc),
             recursion_depth=recursion_depth,
         )
 

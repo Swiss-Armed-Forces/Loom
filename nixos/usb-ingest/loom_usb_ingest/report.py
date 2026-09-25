@@ -10,11 +10,13 @@ Deliberately not /dev/console. `modes.nix` and `network.nix` both explain why --
 operator's session.
 """
 
-import json
 import logging
 import os
 import subprocess
-import tempfile
+from dataclasses import asdict
+
+from loom_usb_ingest.jsonfile import Formatting, Permissions, write_atomic
+from loom_usb_ingest.manifest import Manifest
 
 logger = logging.getLogger(__name__)
 
@@ -81,23 +83,19 @@ def failure(headline: str, detail: str, console_socket: str) -> str:
     return reason
 
 
-def write_state(state_dir: str, state: dict) -> None:
+def write_state(state_dir: str, state: Manifest) -> None:
     """Publish what the service is doing, for `loom-usb-ingest status`.
 
-    Written through a temporary file in the same directory so a reader can never catch a
-    half-written document, the same way key-guard.nix writes its own state.
+    Indented and key-sorted, unlike the progress records: this one is read by people.
+    See `jsonfile.write_atomic` for why it goes through a temporary file.
     """
-    os.makedirs(state_dir, mode=0o700, exist_ok=True)
-    path = os.path.join(state_dir, "state.json")
-
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", dir=state_dir, delete=False, encoding="utf-8"
-        ) as handle:
-            json.dump(state, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-            temporary = handle.name
-        os.replace(temporary, path)
+        write_atomic(
+            os.path.join(state_dir, "state.json"),
+            asdict(state),
+            Permissions(directory=0o700, file=0o600),
+            Formatting(indent=2, sort_keys=True, trailing_newline=True),
+        )
     except OSError as error:
         logger.warning("Could not write ingest state: %s", error)
 

@@ -168,8 +168,8 @@ let
       # box that gets given away, silently.
       (check "evo-x2: IOMMU is not switched off" (!elem "amd_iommu=off" box.boot.kernelParams))
       (check "evo-x2: no thermald leaking from the Intel profile" (!box.services.thermald.enable))
-      # The one platform declaring a gpuVendor, so the one that gets a GPU row
-      # in the console's monitoring pane.
+      # One of the two platforms declaring a gpuVendor -- the Spark is the other
+      # -- so one of the two that get a GPU row in the console's monitoring pane.
       (check "evo-x2: btop is built for the GPU" (!btopIsPlain))
       (check "evo-x2: btop's rocm-smi is the toolchain's" toolchainHasRocmSmi)
     ];

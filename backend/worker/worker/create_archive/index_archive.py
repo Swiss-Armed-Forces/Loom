@@ -28,22 +28,48 @@ from common.archive.archive_detection import (
     is_encrypted_archive_header,
     is_loom_archive,
 )
+from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.dependencies import (
     get_archive_encryption_service,
     get_celery_app,
     get_file_storage_service,
     get_task_scheduling_service,
 )
-from common.services.lazybytes_service import FileStorageLazyBytes
+from common.services.lazybytes_service import (
+    FileStorageLazyBytes,
+    FileStorageLazyBytesService,
+)
 from common.services.task_scheduling_service import ArchiveImportRequest
 
+from worker.create_archive.decrypt_archive import decrypt_loom_archive
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks import unzip_loom_archive
-from worker.create_archive.tasks.load_loom_archive_encrypted import decrypt_loom_archive
 
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+
+@dataclass(frozen=True)
+class ArchiveServices:
+    """What deciding what a blob is takes from the outside world.
+
+    Passed in rather than looked up inside each helper, so that the routing can be
+    exercised against real services on a known key -- the undecryptable branch only
+    means anything against a real encryptor -- without any of it being patched into the
+    dependency globals behind the code's back.
+    """
+
+    file_storage: FileStorageLazyBytesService
+    encryption: ArchiveEncryptionService
+
+    @classmethod
+    def resolved(cls) -> "ArchiveServices":
+        """The deployment's own, read at call time rather than at import time."""
+        return cls(
+            file_storage=get_file_storage_service(),
+            encryption=get_archive_encryption_service(),
+        )
 
 
 class ArchiveDecision(StrEnum):
@@ -72,39 +98,45 @@ class EncryptedBlobVerdict(StrEnum):
 
 
 def _inspect_encrypted_header(
-    file_content: FileStorageLazyBytes,
+    file_content: FileStorageLazyBytes, services: ArchiveServices
 ) -> EncryptedBlobVerdict:
     """Answer both encryption questions from a single read of the header.
 
     Whether the blob is an encrypted container and whether this deployment's key opens
     it are settled from the same ~61 bytes, so they share one read rather than two.
     """
-    service = get_archive_encryption_service()
-    with get_file_storage_service().load_seekable(file_content) as fd:
-        head = fd.read(encrypted_probe_length(service))
+    with services.file_storage.load_seekable(file_content) as fd:
+        head = fd.read(encrypted_probe_length(services.encryption))
 
     if not is_encrypted_archive_header(head):
         return EncryptedBlobVerdict.NOT_ENCRYPTED
 
-    if not decrypts_to_a_loom_zip(service, head):
+    if not decrypts_to_a_loom_zip(services.encryption, head):
         return EncryptedBlobVerdict.FOREIGN_KEY
 
     return EncryptedBlobVerdict.DECRYPTS_TO_ZIP
 
 
-def _is_importable_archive(file_content: FileStorageLazyBytes) -> bool:
-    with get_file_storage_service().load_seekable(file_content) as fd:
+def _is_importable_archive(
+    file_content: FileStorageLazyBytes, services: ArchiveServices
+) -> bool:
+    with services.file_storage.load_seekable(file_content) as fd:
         return is_loom_archive(fd)
 
 
-def route_archive_blob(file_content: FileStorageLazyBytes) -> ArchiveRouting:
+def route_archive_blob(
+    file_content: FileStorageLazyBytes, services: ArchiveServices | None = None
+) -> ArchiveRouting:
     """Decide what a blob actually is, doing any decryption it takes to find out.
 
     Separate from the task so the decision can be tested on its own: everything
     below this line is Celery canvas plumbing, and everything above it is the
-    part that used to get this wrong.
+    part that used to get this wrong. `services` defaults to the deployment's own
+    and is a parameter so a caller can hand in doubles -- the same shape as
+    `loom_installer.install.run` taking its CommandRunner.
     """
-    verdict = _inspect_encrypted_header(file_content)
+    services = services or ArchiveServices.resolved()
+    verdict = _inspect_encrypted_header(file_content, services)
 
     if verdict is EncryptedBlobVerdict.FOREIGN_KEY:
         # Carries the archive magic but will not open with this deployment's key
@@ -117,7 +149,9 @@ def route_archive_blob(file_content: FileStorageLazyBytes) -> ArchiveRouting:
         )
 
     if verdict is EncryptedBlobVerdict.DECRYPTS_TO_ZIP:
-        decrypted = decrypt_loom_archive(file_content)
+        decrypted = decrypt_loom_archive(
+            file_content, services.file_storage, services.encryption
+        )
         if decrypted is None:
             # The header probe already said the key fits, so reaching here means
             # the body failed its MAC: truncation or corruption, not a foreign
@@ -129,7 +163,7 @@ def route_archive_blob(file_content: FileStorageLazyBytes) -> ArchiveRouting:
                 "encrypted, and decryption failed",
             )
 
-        if not _is_importable_archive(decrypted):
+        if not _is_importable_archive(decrypted, services):
             return ArchiveRouting(
                 ArchiveDecision.INDEX_AS_FILE,
                 None,
@@ -138,7 +172,7 @@ def route_archive_blob(file_content: FileStorageLazyBytes) -> ArchiveRouting:
 
         return ArchiveRouting(ArchiveDecision.IMPORT_DECRYPTED, decrypted, "")
 
-    if not _is_importable_archive(file_content):
+    if not _is_importable_archive(file_content, services):
         return ArchiveRouting(
             ArchiveDecision.INDEX_AS_FILE, None, "no valid MANIFEST.json"
         )
@@ -183,6 +217,23 @@ def index_archive_task(request: ArchiveImportRequest):
     # `route_archive_blob` has already read the zip's central directory and its
     # MANIFEST.json, so the canvas is handed the archive directly -- there is no
     # detection step left to put in front of it.
+    #
+    # What the canvas then does with it is *not* cheap, and this is the moment to
+    # say so rather than let the sentence above imply otherwise. `unzip_loom_archive`
+    # is a group of three branches -- restore_archive_metadata_task,
+    # store_raw_files_task, upsert_file_objects_task -- and each one independently
+    # calls `load_file(archive_zip)`: a full download plus a full second copy into
+    # `tempfile_dir`. Being a group they run concurrently, so a 300 GB archive wants
+    # up to three simultaneous 300 GB temp files, and `dispatch_archive_file_stats_task`
+    # streams the object end to end twice more for its checksum and its size.
+    #
+    # Pre-existing in unzip_loom_archive.py, which this MR does not touch -- but the
+    # crawler prescreen now reaches this path with no operator in it, so on a
+    # single-disk appliance it bites once an archive passes a third of the free
+    # space. The fix is a chain over one `load_file` (or one `load_file_named` path
+    # shared by the three passes), with checksum and size folded into the same pass;
+    # `calculate_size_task` in particular streams a whole object to learn a number
+    # `stat_object` already returns.
     unzip_loom_archive.signature(
         encrypted_archive_zip=encrypted_archive_zip
     ).apply_async(args=(routing.archive_zip,)).forget()

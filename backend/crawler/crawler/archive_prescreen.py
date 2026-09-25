@@ -54,16 +54,21 @@ def classify_intake_object(
     it is. Degrade towards the recoverable mistake.
     """
     try:
+        reader = S3RangeReader(client, bucket, object_name, size)
+
+        # Asked for exactly, not read through the reader. A seven-byte `read` pulls
+        # a whole 64 KiB block that the zip probe below then seeks away from -- and
+        # this runs on every object a USB mirror lands in the bucket, so at 300k
+        # objects that is ~19 GB of range reads fetched and thrown away.
+        if is_encrypted_archive_header(
+            reader.fetch_range(0, len(ENCRYPTED_ARCHIVE_MAGIC))
+        ):
+            return IntakeObjectKind.LOOM_ARCHIVE_ENCRYPTED
+
         # BufferedReader for two reasons: it coalesces zipfile's many tiny reads
         # on top of the reader's block cache, and it is what makes this a plain
         # binary file object as far as ZipFile and mypy are concerned.
-        with io.BufferedReader(
-            S3RangeReader(client, bucket, object_name, size)
-        ) as source:
-            if is_encrypted_archive_header(source.read(len(ENCRYPTED_ARCHIVE_MAGIC))):
-                return IntakeObjectKind.LOOM_ARCHIVE_ENCRYPTED
-
-            source.seek(0)
+        with io.BufferedReader(reader) as source:
             if is_loom_archive(source):
                 return IntakeObjectKind.LOOM_ARCHIVE
     # Deliberately not a bare `except Exception`: pylint's broad-exception-caught

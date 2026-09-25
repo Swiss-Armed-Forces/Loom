@@ -102,6 +102,19 @@ NEEDS_OWNER: frozenset[str] = frozenset(
     {"vfat", "exfat", "ntfs", "ntfs3", "hfs", "hfsplus", "iso9660", "udf"}
 )
 
+# What "only the owner may read it" is spelled as, per filesystem.
+#
+# Everything in NEEDS_OWNER but iso9660 takes `umask`. isofs does not: its token
+# table (fs/isofs/inode.c) knows uid=, gid=, mode= and dmode= and nothing else,
+# and parse_options() turning an unrecognised token into -EINVAL means the mount
+# FAILS rather than ignoring it. A hybrid ISO or a CD image is an ordinary thing
+# to hand an ingest box, so getting this wrong rejects the whole volume and
+# reports it as broken media.
+OWNER_MODE_OPTIONS: dict[str, tuple[str, ...]] = {
+    "iso9660": ("mode=0400", "dmode=0500"),
+}
+DEFAULT_OWNER_MODE_OPTIONS: tuple[str, ...] = ("umask=0077",)
+
 # Filesystems that store names in a legacy code page unless told otherwise.
 NEEDS_CHARSET: frozenset[str] = frozenset({"vfat", "exfat"})
 
@@ -169,7 +182,8 @@ def plan_mount(
     options.extend(JOURNAL_SAFE.get(fstype, ()))
 
     if fstype in NEEDS_OWNER:
-        options.extend([f"uid={uid}", f"gid={gid}", "umask=0077"])
+        options.extend([f"uid={uid}", f"gid={gid}"])
+        options.extend(OWNER_MODE_OPTIONS.get(fstype, DEFAULT_OWNER_MODE_OPTIONS))
     if fstype in NEEDS_CHARSET:
         options.append("iocharset=utf8")
 

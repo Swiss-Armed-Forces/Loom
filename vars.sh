@@ -16,19 +16,6 @@ KEDA_IMAGE_VERSION="2.20.1"
 
 NAMESPACE="loom"
 
-# The chat model the appliance console pins itself to (nixos/console.nix's
-# loom-chat, via cicd/build_appliance_image.sh). Not a free choice: an
-# air-gapped box only ever has the models baked into the ollama image, and the
-# production target of ollama/Dockerfile pulls exactly this one plus the
-# embedding model. Pointing the console at anything else gives a pane that
-# cannot answer.
-#
-# Naming a model the workers do not use would also be wrong even if it were
-# present -- ollama would load a second model and evict the one mid-index. So
-# this tracks `_llmDefaults.model` in charts/values.yaml, and the appliance test
-# asserts the value that reaches the image.
-LOOM_CHAT_MODEL="huihui_ai/qwen3.5-abliterated:9b"
-
 # The domain and every name under it, read out of the chart rather than
 # restated here. `hostnames` in charts/values.yaml is what the pre-install Job
 # names in the certificate's subjectAltName, and cicd/check_chart_hostnames.sh
@@ -55,6 +42,19 @@ if [[ ! -r "${LOOM_VALUES_FILE}" ]]; then
 fi
 
 LOOM_DOMAIN="$(yq --raw-output '.domain' "${LOOM_VALUES_FILE}")"
+
+# The chat model the appliance console pins itself to (nixos/console.nix's
+# loom-chat, via cicd/build_appliance_image.sh). Read out of the chart for the
+# same reason the hostnames above are: it is not a free choice, and a second
+# literal is a second thing to keep in step with nothing checking it.
+#
+# It has to be the model the workers use. An air-gapped box only ever has the
+# models baked into the ollama image, and the production target of
+# ollama/Dockerfile.models pulls exactly `_llmDefaults.model` plus the embedding
+# model -- so pointing the console anywhere else gives a pane that cannot
+# answer, and naming a second model that *is* present would be worse: ollama
+# would load it and evict the workers' one mid-index.
+LOOM_CHAT_MODEL="$(yq --raw-output '._llmDefaults.model' "${LOOM_VALUES_FILE}")"
 # Both halves of `hostnames`: they differ in how they are served -- `extra` has
 # no route naming it and is told apart by entrypoint -- but not in how they are
 # named, so both need a hosts entry. Read, then sorted, in two steps rather than
@@ -71,6 +71,15 @@ LOOM_HOSTS_RAW="$(sort --unique <<< "${LOOM_HOSTS_RAW}")"
 # resolves is worth failing on here rather than at the first curl.
 if [[ -z "${LOOM_DOMAIN}" || "${LOOM_DOMAIN}" == "null" || -z "${LOOM_HOSTS_RAW}" ]]; then
     echo >&2 "[!] Error: could not read 'domain' and 'hostnames' from"
+    echo >&2 "    ${LOOM_VALUES_FILE}"
+    exit 1
+fi
+
+# Same check, separately, because this one is only read by the appliance build
+# and the failure it produces there is a console pane that cannot answer rather
+# than anything that looks like a missing chart value.
+if [[ -z "${LOOM_CHAT_MODEL}" || "${LOOM_CHAT_MODEL}" == "null" ]]; then
+    echo >&2 "[!] Error: could not read '_llmDefaults.model' from"
     echo >&2 "    ${LOOM_VALUES_FILE}"
     exit 1
 fi

@@ -16,7 +16,7 @@ The passphrase itself goes in on a pipe, which is the property `FakeCall` record
 from collections.abc import Iterator
 
 import pytest
-from fakes import INSTALLER_ENVIRONMENT, FakeRunner, scripted_ui
+from fakes import FakeRunner, scripted_ui
 
 from loom_installer import constants, keystore
 from loom_installer.settings import settings
@@ -42,12 +42,10 @@ CLOSE = ["cryptsetup", "close", MAPPING]
 def _locked(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """A stick flashed with --lock-key.
 
-    The environment is how nixos/installer.nix configures this program, so setting it is
-    using the real interface rather than reaching past one. `cache_clear` is needed
-    because `settings()` is deliberately read once per process.
+    Only the two variables that differ: conftest.py's autouse fixture has already put
+    an ordinary stick's environment in place, and clears the `settings()` cache on the
+    way out.
     """
-    for name, value in INSTALLER_ENVIRONMENT.items():
-        monkeypatch.setenv(name, value)
     monkeypatch.setenv("LOOM_KEY_LOCKED", "true")
     monkeypatch.setenv("LOOM_KEYSTORE_MAPPING", MAPPING)
     settings.cache_clear()

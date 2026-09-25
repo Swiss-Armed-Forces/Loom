@@ -98,7 +98,14 @@ def test_a_loom_archive_in_the_intake_bucket_is_imported_not_indexed_as_a_zip():
 
     _put_in_intake(ARCHIVE_OBJECT_NAME, _download_archive(archive_id))
 
-    fetch_archives_from_api(expected_no_of_archives=1, expected_state="imported")
+    imported = fetch_archives_from_api(
+        expected_no_of_archives=1, expected_state="imported"
+    )
+    # Tied back to the archive that was actually put in the bucket. The helper
+    # only counts how many hits are in the expected state, so an importer that
+    # created a *second* archive row would satisfy the call above and nothing
+    # else here would notice.
+    assert imported[0].file_id == archive_id
 
     # Only now is this meaningful: the import above proves the object was seen.
     fetch_files_from_api(
@@ -150,5 +157,8 @@ def test_an_undecryptable_loom_archive_is_indexed_rather_than_dropped():
         == f"//{settings.intake_storage.bucket_name}/{ENCRYPTED_OBJECT_NAME}"
     )
     # Checked after the file appeared, so the pipeline has demonstrably run: it
-    # could not be opened, so no archive should have been created.
-    assert not fetch_archives_from_api(expected_no_of_archives=0, expected_state=None)
+    # could not be opened, so no archive should have been created. The call is
+    # the assertion -- it raises FetchException on the first non-empty poll and
+    # otherwise returns an empty list, so wrapping it in `assert not` would be
+    # dead code rather than a second check.
+    fetch_archives_from_api(expected_no_of_archives=0, expected_state=None)

@@ -6,6 +6,7 @@ These are cheap assertions about the values, so that the expensive way of findin
 stick plugged into a real box, and a journal line about `getent`) is not the way.
 """
 
+import base64
 import os
 import sys
 
@@ -13,12 +14,13 @@ from loom_usb_ingest.transfer import (
     ALIAS,
     WaitHooks,
     _stream_json,
+    install_cluster_ca,
     mc_env,
     mirror,
     wait_for_cluster,
 )
 
-CONFIG_DIR = "/run/loom/usb/mc"
+CONFIG_DIR = "/run/loom/usb-state/mc"
 ENDPOINT = "https://s3.loom"
 
 # What a root system service actually sees. Systemd sets `$HOME` only for units that
@@ -130,6 +132,12 @@ def test_the_endpoint_is_declared_in_the_environment() -> None:
     assert env[f"MC_HOST_{ALIAS}"] == ENDPOINT
 
 
+def _emits(*events: str) -> str:
+    """A fake mc body that streams these JSON events, one per line."""
+    quoted = " ".join(f"'{event}'" for event in events)
+    return f"printf '%s\\n' {quoted}"
+
+
 def _fake_mc(tmp_path, body: str) -> dict[str, str]:
     """An environment whose PATH holds an `mc` that does what the test wants.
 
@@ -227,3 +235,120 @@ def test_the_summary_event_is_not_a_file(tmp_path) -> None:
     assert result.objects == 1
     assert result.bytes_transferred == 6
     assert seen == [1]
+
+
+def test_a_failed_object_is_counted_and_its_reason_kept(tmp_path) -> None:
+    # The count and the reason are the whole of what reaches the operator when some
+    # of a stick does not copy: they drive Stage.FAILED and the row in the pane.
+    env = _fake_mc(
+        tmp_path, _emits('{"status":"error","error":{"message":"Access Denied."}}')
+    )
+
+    result = mirror("/mnt/stick", "loom-intake", "usb-crawled/x", env)
+
+    assert result.objects == 0
+    assert result.failures == 1
+    assert result.first_error == "Access Denied."
+
+
+def test_the_first_error_is_the_one_kept(tmp_path) -> None:
+    # Later ones are usually consequences of the first, and only one line fits.
+    env = _fake_mc(
+        tmp_path,
+        _emits(
+            '{"status":"error","error":{"message":"I/O error on page 3"}}',
+            '{"status":"error","error":{"message":"Access Denied."}}',
+        ),
+    )
+
+    result = mirror("/mnt/stick", "loom-intake", "usb-crawled/x", env)
+
+    assert result.failures == 2
+    assert result.first_error == "I/O error on page 3"
+
+
+def test_a_partly_failed_copy_reports_both_halves(tmp_path) -> None:
+    # The realistic shape: a stick with a few unreadable files. What went across has
+    # to be counted, and what did not has to be named.
+    env = _fake_mc(
+        tmp_path,
+        _emits(
+            '{"status":"success","target":"loom/b/a.txt","size":6}',
+            '{"status":"error","error":{"message":"Input/output error"}}',
+            '{"status":"success","target":"loom/b/c.txt","size":4}',
+            '{"status":"success","total":10,"transferred":10}',
+        ),
+    )
+
+    result = mirror("/mnt/stick", "loom-intake", "usb-crawled/x", env)
+
+    assert result.objects == 2
+    assert result.bytes_transferred == 10
+    assert result.failures == 1
+    assert result.first_error == "Input/output error"
+
+
+def test_an_error_event_with_nothing_in_it_still_counts(tmp_path) -> None:
+    # mc does not promise a message, and a failure that is not counted is a failure
+    # the operator is never told about.
+    env = _fake_mc(tmp_path, _emits('{"status":"error"}'))
+
+    result = mirror("/mnt/stick", "loom-intake", "usb-crawled/x", env)
+
+    assert result.failures == 1
+
+
+def _fake_kubectl(tmp_path, body: str) -> dict[str, str]:
+    binary = tmp_path / "bin" / "kubectl"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_text(f"#!/bin/sh\n{body}\n")
+    binary.chmod(0o755)
+    return {"PATH": str(binary.parent)}
+
+
+def test_the_cluster_ca_is_written_where_mc_looks_for_it(tmp_path) -> None:
+    # mc trusts what is in `<config-dir>/certs/CAs`, and nothing else: this is the
+    # difference between verifying the box's own certificate and skipping the check.
+    pem = b"-----BEGIN CERTIFICATE-----\nnot really\n"
+    encoded = base64.b64encode(pem).decode()
+    config_dir = tmp_path / "mc"
+
+    written = install_cluster_ca(
+        str(config_dir),
+        "loom",
+        "/dev/null",
+        _fake_kubectl(tmp_path, f"printf '%s' '{encoded}'"),
+    )
+
+    assert written
+    certs = config_dir / "certs" / "CAs"
+    assert (certs / "self-signed-cert.crt").read_bytes() == pem
+    # Both secrets, because which one Traefik presents depends on how the chart was
+    # deployed and a bundle costs nothing.
+    assert (certs / "loom-certificate.crt").read_bytes() == pem
+
+
+def test_no_certificate_yet_is_not_an_error(tmp_path) -> None:
+    # The ordinary case on a box still coming up, which is why the wait retries this.
+    written = install_cluster_ca(
+        str(tmp_path / "mc"),
+        "loom",
+        "/dev/null",
+        _fake_kubectl(tmp_path, "echo 'Error from server (NotFound)' >&2; exit 1"),
+    )
+
+    assert not written
+
+
+def test_a_secret_that_is_not_base64_is_skipped_rather_than_written(tmp_path) -> None:
+    config_dir = tmp_path / "mc"
+
+    written = install_cluster_ca(
+        str(config_dir),
+        "loom",
+        "/dev/null",
+        _fake_kubectl(tmp_path, "printf '%s' 'not base64 at all!'"),
+    )
+
+    assert not written
+    assert not list((config_dir / "certs" / "CAs").iterdir())

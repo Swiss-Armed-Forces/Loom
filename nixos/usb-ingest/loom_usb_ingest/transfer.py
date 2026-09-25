@@ -13,9 +13,12 @@ import json
 import logging
 import os
 import subprocess
+import threading
 import time
 from collections.abc import Callable, Iterator, Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+
+from loom_usb_ingest.manifest import Manifest
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +66,10 @@ class WaitHooks:
 # Shared safely because `WaitHooks` is frozen.
 NO_HOOKS = WaitHooks()
 
-
-class TransferError(RuntimeError):
-    pass
+# How long `mc pipe` gets to write a manifest of a few kilobytes. Unlike the mirror,
+# which is deliberately unbounded, this one has a right answer and a wedged gateway
+# must not hold the ingest lock behind it.
+MANIFEST_TIMEOUT_S = 120
 
 
 def _run(argv: list[str], env: Mapping[str, str], timeout: int = 300) -> str:
@@ -146,18 +150,27 @@ def mc_env(
     return env
 
 
-def install_cluster_ca(config_dir: str, namespace: str, kubeconfig: str) -> bool:
+def install_cluster_ca(
+    config_dir: str,
+    namespace: str,
+    kubeconfig: str,
+    environ: Mapping[str, str] | None = None,
+) -> bool:
     """Trust the cluster's self-signed certificate, rather than skipping checks.
 
     Same approach and same two secrets as console.nix's loom-chat: which one Traefik
     presents depends on how the chart was deployed, and a bundle costs nothing. Read
     through the API rather than off the wire -- pulling the chain from the server and
     then trusting it would verify nothing at all.
+
+    `environ` is the environment `kubectl` is run in, and defaults to this process's. A
+    parameter for the same reason `mc_env` has one: it lets a test hand in a PATH
+    without editing the one it is running in.
     """
     certs_dir = os.path.join(config_dir, "certs", "CAs")
     os.makedirs(certs_dir, mode=0o700, exist_ok=True)
 
-    env = dict(os.environ, KUBECONFIG=kubeconfig)
+    env = dict(os.environ if environ is None else environ, KUBECONFIG=kubeconfig)
     written = False
 
     for secret in ("self-signed-cert", "loom-certificate"):
@@ -294,6 +307,27 @@ def mirror(
     return TransferResult(objects, transferred, failures, first_error)
 
 
+def _drain_in_background(stream, sink: list[str]) -> threading.Thread:
+    """Read a pipe to exhaustion on a thread, appending what it said to `sink`.
+
+    Daemonised so a stream that never closes cannot keep the process alive; the caller
+    joins it after `wait()` has already proved the child is gone.
+    """
+
+    def pump() -> None:
+        if stream is None:
+            return
+        try:
+            for chunk in stream:
+                sink.append(chunk)
+        except (OSError, ValueError):
+            pass
+
+    thread = threading.Thread(target=pump, daemon=True)
+    thread.start()
+    return thread
+
+
 def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
     """Run a command and yield its newline-delimited JSON events as they arrive.
 
@@ -302,11 +336,22 @@ def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
     events -- yields one synthetic error event carrying its stderr. Otherwise such a
     run is indistinguishable from an empty volume, and the operator is told that a
     stick full of documents was copied successfully.
+
+    stderr is drained by a thread for the whole run, not read at the end. Reading it
+    afterwards deadlocks: a long mirror over media with many unreadable files writes
+    more than the 64 KiB pipe buffer, mc then blocks in write(2) on stderr, stops
+    producing stdout, and this loop blocks forever on a pipe that will never close --
+    while holding the ingest lock, since neither side has a timeout and deliberately
+    so. Redirecting stderr into stdout is not the alternative: it would interleave
+    plain text into the JSON stream.
     """
     with subprocess.Popen(
         argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=dict(env)
     ) as process:
         assert process.stdout is not None
+        captured: list[str] = []
+        drain = _drain_in_background(process.stderr, captured)
+
         for line in process.stdout:
             line = line.strip()
             if not line:
@@ -316,8 +361,9 @@ def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
             except json.JSONDecodeError:
                 logger.debug("Ignoring non-JSON output from mc: %s", line)
 
-        stderr = process.stderr.read() if process.stderr else ""
         process.wait()
+        drain.join()
+        stderr = "".join(captured)
 
         if process.returncode:
             yield {
@@ -332,15 +378,18 @@ def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
             }
 
 
-def put_manifest(manifest: dict, bucket: str, key: str, env: Mapping[str, str]) -> str:
+def put_manifest(
+    manifest: Manifest, bucket: str, key: str, env: Mapping[str, str]
+) -> str:
     """Write the provenance record next to the data it describes.
 
-    Returns why it could not be written, or an empty string. The caller reports it: a
-    manifest that did not land means the operator cannot later tell which stick the
-    documents in front of them came from, which is worth a line on the console rather
-    than a warning in a journal nobody opens.
+    Returns why it could not be written, or an empty string -- never raises, because
+    the caller reports the reason and then carries on: a manifest that did not land
+    means the operator cannot later tell which stick the documents in front of them
+    came from, which is worth a line on the console rather than a warning in a journal
+    nobody opens.
     """
-    payload = json.dumps(manifest, indent=2, sort_keys=True).encode()
+    payload = json.dumps(asdict(manifest), indent=2, sort_keys=True).encode()
 
     with subprocess.Popen(
         ["mc", "pipe", f"{ALIAS}/{bucket}/{key}"],
@@ -349,7 +398,21 @@ def put_manifest(manifest: dict, bucket: str, key: str, env: Mapping[str, str]) 
         stderr=subprocess.PIPE,
         env=dict(env),
     ) as process:
-        _, raw = process.communicate(payload, timeout=120)
+        try:
+            _, raw = process.communicate(payload, timeout=MANIFEST_TIMEOUT_S)
+        except subprocess.TimeoutExpired:
+            # The child has to be killed here. `Popen.__exit__` closes the pipes and
+            # then waits with no timeout and without killing anything, so a wedged
+            # `mc pipe` -- a half-up gateway, a stalled connection -- would block
+            # forever while holding the exclusive ingest lock, and every stick
+            # plugged in afterwards would queue behind it. The unit sets
+            # TimeoutStartSec=infinity, so nothing else would ever end it.
+            process.kill()
+            process.communicate()
+            reason = f"mc pipe did not finish within {MANIFEST_TIMEOUT_S}s"
+            logger.warning("Could not write manifest %s: %s", key, reason)
+            return reason
+
         if process.returncode == 0:
             return ""
 

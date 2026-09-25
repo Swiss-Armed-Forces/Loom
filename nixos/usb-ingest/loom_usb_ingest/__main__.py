@@ -13,6 +13,7 @@ import pwd
 import subprocess
 import sys
 import time
+from collections.abc import Mapping
 from typing import NamedTuple
 
 from loom_usb_ingest import (
@@ -25,6 +26,15 @@ from loom_usb_ingest import (
     report,
     transfer,
     watch,
+)
+from loom_usb_ingest.manifest import (
+    KeyGuardRecord,
+    Manifest,
+    Stick,
+    Totals,
+    VolumeMount,
+    VolumePlan,
+    annotate,
 )
 
 logger = logging.getLogger("loom-usb-ingest")
@@ -57,7 +67,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--namespace", default="loom")
     parser.add_argument("--kubeconfig", default="/home/loom/.kube/config")
     parser.add_argument("--mount-root", default="/run/loom/usb")
-    parser.add_argument("--state-dir", default="/run/loom/usb")
+    # Never the mount root: the lock, the mc configuration and state.json would
+    # then share a directory with somebody else's mounted filesystems.
+    parser.add_argument("--state-dir", default="/run/loom/usb-state")
     parser.add_argument("--key-guard-state-dir", default="/run/loom/key-guard")
     parser.add_argument("--console-socket", default="/run/loom/tmux.sock")
     parser.add_argument(
@@ -160,24 +172,28 @@ def _volume_prefix(
 
 
 def describe(
-    disk: devices.Disk, identity: naming.StickIdentity, supported
-) -> list[dict]:
+    disk: devices.Disk,
+    identity: naming.StickIdentity,
+    supported: frozenset[str],
+) -> list[VolumePlan]:
     """The per-volume plan, used by --dry-run and by the manifest alike."""
     rows = []
     for index, volume in enumerate(disk.volumes, start=1):
         plan = filesystems.plan_mount(volume.fstype, 0, 0, supported)
         rows.append(
-            {
-                "device": volume.path,
-                "fstype": volume.fstype,
-                "label": volume.label,
-                "size_bytes": volume.size,
-                "policy": str(plan.policy),
-                "mount_options": plan.option_string,
-                "driver": plan.helper or plan.fstype or "auto",
-                "reason": plan.reason,
-                "prefix": _volume_prefix(identity, index, volume, len(disk.volumes)),
-            }
+            VolumePlan(
+                device=volume.path,
+                prefix=_volume_prefix(identity, index, volume, len(disk.volumes)),
+                fstype=volume.fstype,
+                label=volume.label,
+                size_bytes=volume.size,
+                mount=VolumeMount(
+                    policy=str(plan.policy),
+                    options=plan.option_string,
+                    driver=plan.helper or plan.fstype or "auto",
+                    reason=plan.reason,
+                ),
+            )
         )
     return rows
 
@@ -286,7 +302,15 @@ def run(args: argparse.Namespace) -> int:
 
 
 def _ingest_volumes(
-    args, disk, identity, plan_rows, supported, env, guard, owner, reporter
+    args: argparse.Namespace,
+    disk: devices.Disk,
+    identity: naming.StickIdentity,
+    plan_rows: list[VolumePlan],
+    supported: frozenset[str],
+    env: Mapping[str, str],
+    guard: devices.KeyGuard,
+    owner: _Owner,
+    reporter: progress.Reporter,
 ) -> int:
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     total_objects = 0
@@ -307,7 +331,7 @@ def _ingest_volumes(
             volume, mountpoint, owner.uid, owner.gid, supported
         )
         if isinstance(mounted, mounts.SkippedVolume):
-            _annotate(plan_rows, volume.path, "skipped", mounted.reason)
+            plan_rows = annotate(plan_rows, volume.path, "skipped", mounted.reason)
             # A volume that could not be mounted is the commonest way for a stick to
             # produce fewer documents than the operator expected -- an encrypted
             # partition, a filesystem this box has no driver for -- and until now the
@@ -341,7 +365,7 @@ def _ingest_volumes(
         total_objects += result.objects
         total_bytes += result.bytes_transferred
         total_failures += result.failures
-        _annotate(
+        plan_rows = annotate(
             plan_rows,
             volume.path,
             "ingested",
@@ -361,22 +385,24 @@ def _ingest_volumes(
         else:
             report.announce(f"[loom] {uploaded}.", args.console_socket)
 
-    status = "complete" if total_failures == 0 else "partial"
-    manifest = {
-        "status": status,
-        "device": disk.path,
-        "prefix": f"{args.prefix}/{identity.prefix_component}",
-        "name": identity.name,
-        "identifier": identity.identifier,
-        "size_bytes": disk.size,
-        "objects": total_objects,
-        "bytes": total_bytes,
-        "failures": total_failures,
-        "key_guard_state": str(guard.state),
-        "key_guard_authoritative": guard.authoritative,
-        "udev": disk.properties,
-        "volumes": plan_rows,
-    }
+    manifest = Manifest(
+        status="complete" if total_failures == 0 else "partial",
+        prefix=f"{args.prefix}/{identity.prefix_component}",
+        stick=Stick(
+            device=disk.path,
+            name=identity.name,
+            identifier=identity.identifier,
+            size_bytes=disk.size,
+            udev=disk.properties,
+        ),
+        key_guard=KeyGuardRecord(
+            state=str(guard.state), authoritative=guard.authoritative
+        ),
+        totals=Totals(
+            objects=total_objects, bytes=total_bytes, failures=total_failures
+        ),
+        volumes=plan_rows,
+    )
 
     manifest_error = transfer.put_manifest(
         manifest,
@@ -414,24 +440,19 @@ def _ingest_volumes(
     return 0 if total_failures == 0 else 1
 
 
-def _annotate(rows: list[dict], device: str, outcome: str, detail: str) -> None:
-    for row in rows:
-        if row["device"] == device:
-            row["outcome"] = outcome
-            row["detail"] = detail
-
-
-def _print_dry_run(disk, identity, rows) -> None:
+def _print_dry_run(
+    disk: devices.Disk, identity: naming.StickIdentity, rows: list[VolumePlan]
+) -> None:
     print(f"device:     {disk.path} ({disk.size} bytes)")
     print(f"identity:   {identity.prefix_component}")
     for row in rows:
         print(
-            f"  {row['device']}  {row['fstype'] or '-'}  {row['policy']}  "
-            f"driver={row['driver']}  opts={row['mount_options'] or '-'}"
+            f"  {row.device}  {row.fstype or '-'}  {row.mount.policy}  "
+            f"driver={row.mount.driver}  opts={row.mount.options or '-'}"
         )
-        print(f"    -> {row['prefix']}")
-        if row["reason"]:
-            print(f"    ({row['reason']})")
+        print(f"    -> {row.prefix}")
+        if row.mount.reason:
+            print(f"    ({row.mount.reason})")
 
 
 def release(args: argparse.Namespace) -> int:

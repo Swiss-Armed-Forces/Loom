@@ -223,13 +223,23 @@ class Relay:
         # the old position may not even be on screen any more.
         self._state = PointerState.initial()
 
-    def _handle_gpm(self) -> None:
+    def handle_gpm(self) -> None:
+        """One read from gpm, and whatever it turns into.
+
+        Public where its siblings are not, because it is the step with a decision in
+        it -- a short read and a closed connection arrive the same way and mean
+        opposite things -- and that decision is worth driving from a test rather than
+        from a VM. See tests/test_relay.py.
+        """
         assert self._gpm.client is not None
         try:
             events = self._gpm.client.read_events()
         except OSError:
-            events = []
-        if not events:
+            events = None
+        # None is the daemon going away; an empty list is a short read whose bytes
+        # are held over in the client. Dropping the connection on the second would
+        # discard those bytes and cost the mouse a reconnect interval for nothing.
+        if events is None:
             self._drop_gpm()
             return
 
@@ -353,7 +363,7 @@ class Relay:
                 self._handle_console()
 
             if self._gpm.client is not None and self._gpm.client.fileno() in ready:
-                self._handle_gpm()
+                self.handle_gpm()
 
             if self._master in ready and not self._handle_master():
                 return

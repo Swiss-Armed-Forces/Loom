@@ -211,8 +211,9 @@ All values files are located in the [`./charts`](../charts) directory. They can 
   and service redundancy across nodes: Elasticsearch shard replicas, SeaweedFS volume replication,
   and Prometheus cluster-metrics handoff to central monitoring infrastructure.
 - **[`values-disable-ai-services.yaml`](../charts/values-disable-ai-services.yaml)** — Use this when
-  you want to provide external AI endpoints or skip AI features entirely. Note: AI-powered indexing
-  steps must also be disabled, otherwise they will fail at runtime.
+  you want to provide external AI endpoints or skip AI features entirely. It also skips the
+  AI-powered indexing steps (embedding, auto-tagging), so nothing retries against an Ollama that is
+  not deployed.
 - **[`values-external-tls-certificates.yaml`](../charts/values-external-tls-certificates.yaml)** —
   Use this when your cluster manages TLS certificates centrally via Vault and you do not
   want Loom to provision its own ClusterIssuer.
@@ -424,6 +425,13 @@ autodetects instead, with a silent CPU fallback.
 What it reads the memory _for_ is `OLLAMA_NUM_PARALLEL`, which Ollama defaults to 1 and which
 multiplies the context to give the KV cache — so the container sizes it against the memory it can
 actually see. Set `OLLAMA_NUM_PARALLEL` in the environment yourself and it is honoured untouched.
+
+Do not size a GPU node for that concurrency, though: on the two models the production image
+carries, Ollama's scheduler forces a single slot whatever this variable says — an embedding model
+has no completion capability, and the chat model's architecture is on the server's no-parallel
+list. The value computed here only buys anything for a model whose architecture supports batching.
+See [**Raising `OLLAMA_NUM_PARALLEL` is not the other option**](ai.md#thinking) in `ai.md` for what
+the real options are.
 `OLLAMA_CONTEXT_LENGTH` is deliberately left alone: Ollama sizes the context from its own VRAM
 measurement and will walk it back down if a load fails, and setting the variable turns that off.
 

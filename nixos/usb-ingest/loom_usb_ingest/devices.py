@@ -17,18 +17,44 @@ import os.path
 import subprocess
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import NotRequired, TypedDict
+
+
+class LsblkNode(TypedDict):
+    """One row of `lsblk --json --tree`, as the columns below ask for it.
+
+    Every key is optional because lsblk omits what does not apply: a disk has no
+    `partlabel`, an unformatted partition no `fstype`, a leaf no `children`.
+    """
+
+    path: NotRequired[str]
+    kname: NotRequired[str]
+    type: NotRequired[str]
+    fstype: NotRequired[str | None]
+    label: NotRequired[str | None]
+    partlabel: NotRequired[str | None]
+    size: NotRequired[int | None]
+    mountpoint: NotRequired[str | None]
+    children: NotRequired[list["LsblkNode"]]
+
 
 # Every partition label the appliance itself uses: the stick's, and the internal
-# disk's. installer/loom_installer/constants.py owns these names.
+# disk's. installer/loom_installer/constants.py owns these names -- restated here
+# rather than imported, because this package ships on the box and the installer
+# package ships only on the stick.
+#
+# The pool members are matched by prefix, not by name: `install.partition` writes
+# `loom-pv<N>` onto every member, so on a two-NVMe box the second disk carries
+# only `loom-pv1` and an exact-match list would let it through.
 LOOM_PARTLABELS: frozenset[str] = frozenset(
     {
         "loom-key",
         "loom-esp",
-        "loom-root-luks",
         "loom-live-esp",
         "loom-live-store",
     }
 )
+LOOM_PARTLABEL_PREFIXES: tuple[str, ...] = ("loom-pv",)
 
 
 class GuardState(StrEnum):
@@ -108,7 +134,11 @@ def classify_disk(
     # disk carrying an appliance partition label is Loom's own media. Catches
     # the installer stick, whose `loom-live-store` partition holds ~60 GB of
     # container images nobody wants indexed, and another box's key stick.
-    shared = disk.partlabels & LOOM_PARTLABELS
+    shared = frozenset(
+        label
+        for label in disk.partlabels
+        if label in LOOM_PARTLABELS or label.startswith(LOOM_PARTLABEL_PREFIXES)
+    )
     if shared:
         return Verdict(
             False, f"carries Loom partition labels ({', '.join(sorted(shared))})"
@@ -147,36 +177,63 @@ def _run(argv: list[str]) -> str:
     ).stdout
 
 
-def parent_disk(device: str) -> str | None:
-    """Map a partition node to the kernel name of the disk containing it.
+def parent_disks(device: str) -> frozenset[str]:
+    """Kernel names of every whole disk the given block node rests on.
 
     A device that is already a whole disk maps to itself, which is what makes this safe
-    to call on the guard's node without knowing which it is.
+    to call without knowing which kind of node it is. More than one comes back when the
+    node spans several -- an MD array, or an LVM volume group with two members.
     """
-    # `--nodeps` is what makes this a question about one device: without it
-    # lsblk prints the whole subtree, and the first row is not reliably the one
-    # asked about -- for a disk carrying a dm-crypt mapping it is the holder.
-    # With it there is exactly one row: "PKNAME KNAME" for a partition, and
-    # "KNAME" alone for anything with no parent, which is the disk mapping to
-    # itself.
+    # `--inverse` walks from the device towards the disks rather than away from
+    # them, so a device-mapper node resolves through its slaves. That is the whole
+    # point here: this appliance installs LUKS on LVM, so `findmnt --target /`
+    # yields /dev/mapper/<vg>-<lv> and the answer wanted is several hops down --
+    # dm-2 (lvm) -> dm-0 (crypt) -> nvme0n1p2 (part) -> nvme0n1 (disk).
+    #
+    # `--nodeps` is what must NOT be used: it builds no tree at all, so a dm node
+    # reports an empty PKNAME, the caller gets "dm-0" back as the "disk", and
+    # `classify_disk`'s protected-disk rule can then never match the box's own
+    # root -- the guard is dead exactly where it has to fire.
+    #
+    # The rows are read as a set rather than positionally: with no NAME column
+    # lsblk prints no tree decoration and does not promise tree order either.
     try:
         output = _run(
-            ["lsblk", "--nodeps", "--noheadings", "--output", "PKNAME,KNAME", device]
+            ["lsblk", "--inverse", "--noheadings", "--output", "TYPE,KNAME", device]
         )
     except (subprocess.SubprocessError, OSError):
-        return None
+        return frozenset()
 
+    return disks_from_lsblk_inverse(output)
+
+
+def disks_from_lsblk_inverse(output: str) -> frozenset[str]:
+    """Pick the whole disks out of `lsblk --inverse --output TYPE,KNAME`.
+
+    Testable.
+    """
+    found = set()
     for line in output.splitlines():
         fields = line.split()
-        if not fields:
+        if len(fields) < 2 or fields[0] != "disk":
             continue
-        return fields[0]
-    return None
+        found.add(os.path.basename(fields[1]))
+    return frozenset(found)
+
+
+def parent_disk(device: str) -> str | None:
+    """The one whole disk behind `device`, or None when that is not unambiguous.
+
+    The callers that want a single answer -- the key guard's armed node -- are asking
+    about a partition on a USB stick, which rests on exactly one disk.
+    """
+    disks = parent_disks(device)
+    return next(iter(disks)) if len(disks) == 1 else None
 
 
 def protected_disks() -> frozenset[str]:
     """Kernel names of the disks carrying the appliance's own root and boot."""
-    found = set()
+    found: set[str] = set()
     for mountpoint in ("/", "/boot", "/nix/store"):
         try:
             source = _run(
@@ -193,11 +250,10 @@ def protected_disks() -> frozenset[str]:
             continue
         if not source.startswith("/dev/"):
             continue
-        # A dm-crypt mapping resolves through its slave to the real disk.
-        disk = parent_disk(source)
-        if disk:
-            found.add(disk)
-            continue
+        # A dm-crypt mapping resolves through its slaves to the real disks -- all
+        # of them, since a root on LVM or MD can span more than one and every
+        # member has to be protected.
+        found.update(parent_disks(source))
     return frozenset(found)
 
 
@@ -215,7 +271,7 @@ def udev_properties(device: str) -> dict[str, str]:
     return properties
 
 
-def _node_for(nodes: list[dict], device: str) -> dict:
+def _node_for(nodes: list[LsblkNode], device: str) -> LsblkNode:
     name = os.path.basename(device)
     for node in nodes:
         if (
@@ -226,7 +282,7 @@ def _node_for(nodes: list[dict], device: str) -> dict:
     return nodes[0] if nodes else {}
 
 
-def _volume_from(entry: dict) -> Volume:
+def _volume_from(entry: LsblkNode) -> Volume:
     return Volume(
         path=entry.get("path", ""),
         fstype=entry.get("fstype"),
@@ -277,13 +333,16 @@ def inspect_disk(device: str) -> Disk:
     )
 
 
-def disk_from_lsblk(nodes: list[dict], device: str, properties: dict[str, str]) -> Disk:
+def disk_from_lsblk(
+    nodes: list[LsblkNode], device: str, properties: dict[str, str]
+) -> Disk:
     """Build a `Disk` from lsblk's `blockdevices`.
 
     Split out so it can be tested.
-        The node asked about is found by name rather than taken as the first one:
-        lsblk puts holders ahead of the device they hold, so a disk carrying a
-        dm-crypt mapping is not the head of its own listing.
+        The node asked about is found by name rather than taken as the first one,
+        and only its direct children become volumes: under `--tree` a dm-crypt
+        holder is nested inside the partition it holds, and a holder is not a
+        volume of the stick.
     """
     root = _node_for(nodes, device)
 

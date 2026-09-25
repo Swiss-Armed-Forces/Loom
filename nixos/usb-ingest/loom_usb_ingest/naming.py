@@ -69,8 +69,17 @@ def derive_identity(properties: dict[str, str], size_bytes: int) -> StickIdentit
 
     The identifier falls through four sources because cheap sticks routinely omit or
     duplicate a serial, and two unlabelled no-name sticks must not land in the same
-    prefix. The last resort hashes what little the device does report, which is at least
-    stable across re-insertions of the same one.
+    prefix.
+
+    The last resort hashes what little the device does report, and `ID_PATH` -- the
+    port it is plugged into -- is part of that on purpose. Vendor, model and capacity
+    alone are not per-device: two identical no-name sticks report exactly the same
+    three, would derive the same identifier, land under the same prefix, and `mc
+    mirror` would then overwrite one stick's `DCIM/IMG_0001.JPG` with the other's. On
+    a box whose job is evidence handling that is silent data loss, and it is worth
+    more than the property it costs -- the same stick moved to a different port is
+    identified as a new one and copied again, which is wasted time rather than lost
+    documents.
     """
     raw_name = (
         properties.get("ID_FS_LABEL")
@@ -92,6 +101,8 @@ def derive_identity(properties: dict[str, str], size_bytes: int) -> StickIdentit
                     properties.get("ID_VENDOR", ""),
                     properties.get("ID_MODEL", ""),
                     str(size_bytes),
+                    properties.get("ID_WWN", ""),
+                    properties.get("ID_PATH", ""),
                 ]
             )
         )

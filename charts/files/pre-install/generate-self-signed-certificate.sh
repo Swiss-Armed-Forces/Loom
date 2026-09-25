@@ -192,9 +192,13 @@ create_self_signed_cert() {
     # such a certificate the appliance's `curl` readiness probe passes and only
     # opencode's own request fails.
     #
-    # Adding `keyCertSign` instead would also work, and would be a lie: this
-    # certificate signs nothing, and CA:FALSE beside a keyCertSign bit is a
-    # contradiction some verifier is entitled to reject later.
+    # Adding `keyCertSign` beside CA:FALSE would also work, and would be a
+    # contradiction some verifier is entitled to reject later -- so it would
+    # have to come with CA:TRUE, which is a serving certificate that may sign
+    # others. Emitting no keyUsage avoids the question entirely, and is
+    # available here only because openssl will leave the extension out.
+    # cert-manager will not: charts/templates/common/certificate.yaml therefore
+    # takes the other branch -- `cert sign` *and* `isCA: true` -- and says so.
     openssl req -x509 -nodes -days 365 \
         -newkey rsa:4096 \
         -keyout "${KEY_FILE}" \

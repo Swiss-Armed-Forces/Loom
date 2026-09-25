@@ -1,17 +1,27 @@
+"""Opening an encrypted loom archive, when this deployment's key fits.
+
+Beside `index_archive.py` rather than in `tasks/`, where it used to live: every other
+module in that package is a registered Celery task, and this one deliberately is not
+-- see the docstring below. A plain function sitting among tasks is exactly what the
+next person will read as "a task somebody forgot to register".
+"""
+
 import logging
 
-from common.dependencies import (
-    get_archive_encryption_service,
-    get_file_storage_service,
-)
+from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.services.encryption_service import FileEncryptionServiceException
-from common.services.lazybytes_service import FileStorageLazyBytes
+from common.services.lazybytes_service import (
+    FileStorageLazyBytes,
+    FileStorageLazyBytesService,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def decrypt_loom_archive(
     encrypted_file: FileStorageLazyBytes,
+    file_storage_service: FileStorageLazyBytesService,
+    archive_encryption_service: ArchiveEncryptionService,
 ) -> FileStorageLazyBytes | None:
     """Decrypt an encrypted loom archive; return the plain zip, or None.
 
@@ -22,13 +32,14 @@ def decrypt_loom_archive(
     cannot be made inside a chain -- a task returning None there just makes every task
     after it do nothing, which is the bug this replaces.
 
+    The services are arguments rather than looked up here, so that the branch below can
+    be exercised against a real encryptor on a known key without anything being patched
+    into place. `index_archive.ArchiveServices` is what resolves them in production.
+
     Failure is expected rather than exceptional. `archive_enc_master_key` is unset by
     default and `FileEncryptionService` then invents a random key per process, so an
     archive from any other deployment arrives here.
     """
-    file_storage_service = get_file_storage_service()
-    archive_encryption_service = get_archive_encryption_service()
-
     try:
         encrypted_generator = file_storage_service.load_generator(encrypted_file)
         decrypted_stream = archive_encryption_service.get_decrypted_stream(

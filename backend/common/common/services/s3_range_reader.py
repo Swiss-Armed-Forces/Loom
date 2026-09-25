@@ -33,7 +33,9 @@ class S3RangeReader(io.RawIOBase):
 
     Only the handful of methods `zipfile` needs are implemented. Reads are served from a
     single cached block, which is what keeps the request count down without holding the
-    object in memory.
+    object in memory -- the cache is capped at `BLOCK_SIZE`, and a read larger than that
+    is passed straight through to the caller's buffer rather than cached, so the promise
+    above holds however large the object is.
     """
 
     def __init__(self, client: Minio, bucket: str, object_name: str, size: int):
@@ -71,7 +73,18 @@ class S3RangeReader(io.RawIOBase):
         self._pos = max(0, min(target, self._size))
         return self._pos
 
-    def _fetch(self, offset: int, length: int) -> bytes:
+    def fetch_range(self, offset: int, length: int) -> bytes:
+        """One range request, uncached.
+
+        Public because the head of an object is worth asking for exactly: a caller
+        testing a seven-byte magic number through `read` would pull -- and cache -- a
+        whole block it is about to seek away from. Clamped to the object's size,
+        because a range that starts past the end is a 416 rather than an empty read.
+        """
+        length = min(length, max(0, self._size - offset))
+        if length <= 0:
+            return b""
+
         response = self._client.get_object(
             self._bucket, self._object_name, offset=offset, length=length
         )
@@ -88,15 +101,32 @@ class S3RangeReader(io.RawIOBase):
 
         wanted = min(wanted, self._size - self._pos)
 
+        if wanted > BLOCK_SIZE:
+            # Straight into the caller's buffer, and never cached. A read larger
+            # than the block is a caller that already knows what it wants -- and it
+            # is not hypothetical: `zipfile._RealGetContents` reads the whole central
+            # directory in one call, and BufferedReader passes a read bigger than its
+            # own buffer through to here unchanged. Caching it would hold the entire
+            # central directory (~40 MB for a 200k-file archive), then copy it again
+            # into the slice and a third time into the caller's buffer -- in the
+            # crawler pod, for every zip-shaped intake object.
+            chunk = self.fetch_range(self._pos, wanted)
+            buffer[: len(chunk)] = chunk
+            self._pos += len(chunk)
+            return len(chunk)
+
         if not self._block_start <= self._pos < self._block_start + len(self._block):
-            block_length = min(max(wanted, BLOCK_SIZE), self._size - self._pos)
-            self._block = self._fetch(self._pos, block_length)
+            block_length = min(BLOCK_SIZE, self._size - self._pos)
+            self._block = self.fetch_range(self._pos, block_length)
             self._block_start = self._pos
             if not self._block:
                 return 0
 
         start = self._pos - self._block_start
-        chunk = self._block[start : start + wanted]
+        # A memoryview rather than a slice: slicing bytes copies, and this is the
+        # hot path -- every one of zipfile's tens-of-bytes reads would copy out of
+        # the block before copying into the buffer.
+        chunk = memoryview(self._block)[start : start + wanted]
         buffer[: len(chunk)] = chunk
         self._pos += len(chunk)
         return len(chunk)

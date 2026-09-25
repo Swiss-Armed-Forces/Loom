@@ -190,10 +190,18 @@ class RecordingPane(Pane):
         kwargs.setdefault("timing", PaneTiming(refresh=0.01, handover_grace=0.0))
         super().__init__(settings, journal=journal, **kwargs)
         self.became: str | None = None
+        # How many times the panel loop has gone round. The only observable a test
+        # has for "the loop is still running": the console here is a StringIO, so
+        # rich's Live draws once and never redraws.
+        self.turns = 0
 
     def _become(self, program: str) -> int:
         self.became = program
         return 0
+
+    def _panel_turn(self, live):
+        self.turns += 1
+        return super()._panel_turn(live)
 
     def printed(self) -> str:
         """Everything this pane put on the screen."""

@@ -1,8 +1,16 @@
-"""Mounting a volume read-only, and meaning it."""
+"""Mounting a volume read-only, and meaning it.
+
+Everything this module shells out to goes through an injected runner, the same way
+`transfer.WaitHooks` and `loom_installer.commands.CommandRunner` do. This is the one
+module that touches strangers' filesystems, so its failure paths -- a corrupt signature,
+a stick pulled mid-copy -- are the ones worth exercising, and they can only be exercised
+without patching if the commands come in from outside.
+"""
 
 import logging
 import os
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from loom_usb_ingest.devices import Volume
@@ -11,6 +19,42 @@ from loom_usb_ingest.filesystems import MountPlan, VolumePolicy, plan_mount
 logger = logging.getLogger(__name__)
 
 MOUNT_TIMEOUT_S = 120
+BLOCKDEV_TIMEOUT_S = 30
+UMOUNT_TIMEOUT_S = 60
+
+
+@dataclass(frozen=True)
+class CommandOutcome:
+    """How one command went.
+
+    A command that could not be run at all is a failure too.     `stderr` carries the
+    reason either way -- what the tool printed, or what Python     said about not being
+    able to start it -- because both end up in front of the     operator as the reason a
+    volume was skipped.
+    """
+
+    returncode: int
+    stderr: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.returncode == 0
+
+
+# `mount`, `blockdev` and `umount`, as this module reaches them.
+Runner = Callable[[list[str], int], CommandOutcome]
+
+
+def run_command(argv: list[str], timeout: int) -> CommandOutcome:
+    """The real runner."""
+    try:
+        completed = subprocess.run(
+            argv, check=False, capture_output=True, text=True, timeout=timeout
+        )
+    except (subprocess.SubprocessError, OSError) as error:
+        # 127 is the shell's "could not execute", which is what this is.
+        return CommandOutcome(127, str(error))
+    return CommandOutcome(completed.returncode, completed.stderr or "")
 
 
 @dataclass(frozen=True)
@@ -35,7 +79,7 @@ def kernel_filesystems() -> frozenset[str]:
         return frozenset()
 
 
-def set_block_read_only(device: str) -> bool:
+def set_block_read_only(device: str, run: Runner = run_command) -> bool:
     """Tell the block layer the device is read-only, before anything mounts it.
 
     Belt to the `ro` mount option's braces, and stronger than it: this is
@@ -43,21 +87,18 @@ def set_block_read_only(device: str) -> bool:
     anyway -- a journal replay, a dirty-bit clear -- is refused by the kernel
     rather than trusted not to try.
     """
-    try:
-        subprocess.run(
-            ["blockdev", "--setro", device],
-            check=True,
-            capture_output=True,
-            timeout=30,
-        )
+    outcome = run(["blockdev", "--setro", device], BLOCKDEV_TIMEOUT_S)
+    if outcome.ok:
         return True
-    except (subprocess.SubprocessError, OSError) as error:
-        # Not fatal. Some USB bridges reject the ioctl, and the mount options
-        # still stand; say so rather than refusing to read the stick at all.
-        logger.warning(
-            "Could not set %s read-only at the block layer: %s", device, error
-        )
-        return False
+
+    # Not fatal. Some USB bridges reject the ioctl, and the mount options
+    # still stand; say so rather than refusing to read the stick at all.
+    logger.warning(
+        "Could not set %s read-only at the block layer: %s",
+        device,
+        outcome.stderr.strip() or f"blockdev exited {outcome.returncode}",
+    )
+    return False
 
 
 def _mount_argv(device: str, mountpoint: str, plan: MountPlan) -> list[str]:
@@ -75,8 +116,14 @@ def _mount_argv(device: str, mountpoint: str, plan: MountPlan) -> list[str]:
 
 
 def mount_volume(
-    volume: Volume, mountpoint: str, uid: int, gid: int, supported: frozenset[str]
+    volume: Volume,
+    mountpoint: str,
+    uid: int,
+    gid: int,
+    supported: frozenset[str],
+    run: Runner = run_command,
 ) -> MountedVolume | SkippedVolume:
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Mount one volume read-only, or explain why it was not mounted."""
     plan = plan_mount(volume.fstype, uid, gid, supported)
 
@@ -87,26 +134,17 @@ def mount_volume(
     if plan.policy is VolumePolicy.GENERIC:
         logger.info("%s: %s", volume.path, plan.reason)
 
-    set_block_read_only(volume.path)
+    set_block_read_only(volume.path, run)
     os.makedirs(mountpoint, mode=0o700, exist_ok=True)
 
-    try:
-        subprocess.run(
-            _mount_argv(volume.path, mountpoint, plan),
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=MOUNT_TIMEOUT_S,
-        )
-    except subprocess.CalledProcessError as error:
-        reason = (error.stderr or "").strip() or f"mount exited {error.returncode}"
+    outcome = run(_mount_argv(volume.path, mountpoint, plan), MOUNT_TIMEOUT_S)
+    if not outcome.ok:
+        reason = outcome.stderr.strip() or f"mount exited {outcome.returncode}"
         logger.warning("Could not mount %s: %s", volume.path, reason)
+        # Left behind, an empty mountpoint under the device's directory is
+        # indistinguishable from a mounted volume to anything that walks the tree.
         _remove_mountpoint(mountpoint)
         return SkippedVolume(volume, reason)
-    except (subprocess.SubprocessError, OSError) as error:
-        logger.warning("Could not mount %s: %s", volume.path, error)
-        _remove_mountpoint(mountpoint)
-        return SkippedVolume(volume, str(error))
 
     logger.info(
         "Mounted %s at %s (%s, %s)",
@@ -118,7 +156,7 @@ def mount_volume(
     return MountedVolume(volume, mountpoint, plan)
 
 
-def unmount(mountpoint: str) -> None:
+def unmount(mountpoint: str, run: Runner = run_command) -> None:
     """Unmount, lazily if it comes to that.
 
     A lazy unmount is the right answer here rather than a failure: the usual
@@ -126,11 +164,8 @@ def unmount(mountpoint: str) -> None:
     mount behind would block the same device being ingested again later.
     """
     for argv in (["umount", mountpoint], ["umount", "--lazy", mountpoint]):
-        try:
-            subprocess.run(argv, check=True, capture_output=True, timeout=60)
+        if run(argv, UMOUNT_TIMEOUT_S).ok:
             break
-        except (subprocess.SubprocessError, OSError):
-            continue
     _remove_mountpoint(mountpoint)
 
 

@@ -93,7 +93,15 @@ let
   #
   # A literal rather than a `#()`, so it costs the tmux server nothing per tick
   # and cannot be wrong about the box it is running on.
-  debugSegment = lib.optionalString cfg.debug.enable "#[fg=red,bold]DEBUG -- SSH OPEN#[default]  ";
+  #
+  # Two wordings, because only one of them is true at a time: debug.nix gates
+  # `services.openssh` on `enable && mode == "run"`, since first-time setup is a
+  # DHCP client on a foreign network. Claiming SSH is open in the mode that holds
+  # the screen for hours -- and is therefore the one an operator reads -- would be
+  # the one place this marker says something false. What stays true in both is
+  # that this is not an ordinary image, and that is what setup mode says.
+  debugText = if cfg.mode == "run" then "DEBUG -- SSH OPEN" else "DEBUG IMAGE";
+  debugSegment = lib.optionalString cfg.debug.enable "#[fg=red,bold]${debugText}#[default]  ";
 
   # Taken from the host list rather than written out again, so the name the chat
   # pane dials is by construction one of the names box.nix pins in /etc/hosts.
@@ -475,7 +483,7 @@ let
   # `loginShellInit` at the bottom of this file) and which the status line names.
   #
   # The model is pinned rather than chosen at runtime. An air-gapped box only has
-  # what ollama/Dockerfile baked in, and pointing the pane at a tag the workers do
+  # what ollama/Dockerfile.models baked in, and pointing the pane at a tag the workers do
   # not use would make Ollama load a second model and evict the one mid-index.
   # `loomChatModel` comes from vars.sh via cicd/build_appliance_image.sh, the same
   # route as the namespace and the host list, so there is no second copy to drift.
@@ -680,7 +688,7 @@ let
       done
 
       # Said once, and not waited on. An air-gapped box only has the models
-      # ollama/Dockerfile baked in, and the one thing that cannot be fixed from
+      # ollama/Dockerfile.models baked in, and the one thing that cannot be fixed from
       # this pane is a model that is not on the box -- so name it here, where the
       # operator is already looking, rather than let opencode's first failure be
       # the only clue. /api/ps is what the chart probes, and it answers 200 on an

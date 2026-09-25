@@ -393,6 +393,10 @@ appliance_test:
         - cicd/run_appliance_tests.sh
         - vars.sh
         - up.sh
+        # vars.sh reads the domain, the host list and the console's chat model
+        # out of the chart, so a chart-side edit changes what the image is built
+        # with without touching anything else in this list.
+        - charts/values.yaml
         - devenv.nix
         - devenv.lock
       # TODO: drop once a run has been green end to end on a runner. Until then

@@ -40,9 +40,13 @@
   # ones it already takes.
   loomNamespace ? "loom",
   # The model the console's chat pane pins itself to -- `LOOM_CHAT_MODEL` in
-  # vars.sh, passed through the same way the namespace is. Defaulted for the same
-  # reason, and the default is the one model ollama/Dockerfile's production target
-  # bakes in, because an air-gapped box has no way to fetch another.
+  # vars.sh, passed through the same way the namespace is. vars.sh reads it out
+  # of `_llmDefaults.model` in charts/values.yaml, which is the authority: an
+  # air-gapped box has no way to fetch another model, and the production target
+  # of ollama/Dockerfile.models bakes in exactly that one.
+  #
+  # The default here is only so that `nix-build ./nixos -A tests.appliance`
+  # needs no arguments; every real build is given the chart's value.
   loomChatModel ? "huihui_ai/qwen3.5-abliterated:9b",
   minikubeIp ? "192.168.49.2",
   # First three octets of the appliance network. build-appliance-image
@@ -351,6 +355,13 @@ let
     ./console-mouse.nix
     ./debug.nix
     ./key-guard.nix
+    # Needed here as well as in evalConfig: it is the only module declaring
+    # `loom.keymapLabel`, and key-store.nix's stage-1 unlock script reads it.
+    # Every nixos/tests/*.nix node imports this list and bypasses evalConfig,
+    # so without it appliance-key-store.nix fails to evaluate -- which takes
+    # `appliance-eval`, `appliance-check` and the CI job with it, since those
+    # force every test derivation.
+    ./keymap.nix
     ./key-store.nix
     ./modes.nix
     ./network.nix

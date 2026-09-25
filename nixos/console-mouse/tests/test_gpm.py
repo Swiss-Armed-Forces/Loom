@@ -109,15 +109,26 @@ def test_a_split_record_is_held_over_to_the_next_read() -> None:
     whole = _packed(40, 12)
     client = GpmClient(_FakeSocket([whole[:10], whole[10:]]))
 
-    assert not client.read_events()  # nothing complete yet -- but not a close
+    # An empty list, never None: the caller drops the connection on a close, and
+    # doing that here would throw the ten held-over bytes away.
+    assert client.read_events() == []
     events = client.read_events()
+    assert events is not None
     assert len(events) == 1
     assert (events[0].x, events[0].y) == (40, 12)
+
+
+def test_a_closed_connection_is_distinguishable_from_a_short_read() -> None:
+    """The distinction the caller acts on: only one of them means "no mouse"."""
+    client = GpmClient(_FakeSocket([]))
+
+    assert client.read_events() is None
 
 
 def test_several_records_in_one_read_all_come_back() -> None:
     client = GpmClient(_FakeSocket([_packed(1, 2) + _packed(3, 4)]))
     events = client.read_events()
+    assert events is not None
     assert [(e.x, e.y) for e in events] == [(1, 2), (3, 4)]
 
 

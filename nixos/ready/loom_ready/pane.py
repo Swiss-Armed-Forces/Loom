@@ -274,11 +274,25 @@ class Pane:
             pump.start()
 
             while True:
-                readiness = read(self._settings.state_dir or "")
-                live.update(render.panel(readiness, time.time()))
-                if readiness is not None and readiness.settled and self._settings.k9s:
+                readiness = self._panel_turn(live)
+                if readiness is not None:
                     return readiness
                 time.sleep(self._timing.refresh)
+
+    def _panel_turn(self, live: Live) -> Readiness | None:
+        """One turn of the panel loop: re-read, redraw, and decide whether to stop.
+
+        A method rather than the body of the loop above so that the turn is a thing a
+        test can count -- the case that matters is a *failed* bring-up, where what has
+        to be shown is that the loop went round again instead of handing over, and there
+        is nothing on a non-terminal console to observe that by. See tests/doubles.py's
+        RecordingPane.
+        """
+        readiness = read(self._settings.state_dir or "")
+        live.update(render.panel(readiness, time.time()))
+        if readiness is not None and readiness.settled and self._settings.k9s:
+            return readiness
+        return None
 
     # ------------------------------------------------------------------------------
     # The handover

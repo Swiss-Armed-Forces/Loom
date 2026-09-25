@@ -13,11 +13,8 @@ disks are a `FakeRunner`: nothing here runs a command, so a mistake in this file
 cost anything, and a mistake in install.py shows up as a command that was issued.
 """
 
-from collections.abc import Iterator
-
 import pytest
 from fakes import (
-    INSTALLER_ENVIRONMENT,
     FakeRunner,
     printed,
     scripted_ui,
@@ -26,22 +23,11 @@ from fakes import (
 
 from loom_installer import constants, install
 from loom_installer.console import Aborted
-from loom_installer.settings import settings
 
 DISK = "/dev/nvme0n1"
 ZAP = ["sgdisk", "--zap-all", DISK]
 DEACTIVATE = ["vgchange", "--activate", "n", "loom"]
 UNMOUNT = ["umount", "--recursive", constants.MOUNT]
-
-
-@pytest.fixture(name="stick", autouse=True)
-def _stick(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """An ordinary stick, configured the way installer.nix configures one."""
-    for name, value in INSTALLER_ENVIRONMENT.items():
-        monkeypatch.setenv(name, value)
-    settings.cache_clear()
-    yield
-    settings.cache_clear()
 
 
 def test_ctrl_c_at_the_interlock_touches_no_disk() -> None:

@@ -42,6 +42,15 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 
+# The helpers the appliance scripts share: `check_command`, `platform_system`
+# and `resolve_loom_values`. Sourced rather than restated, the same way
+# .gitlab-ci.yml sources cicd/ci_helpers.sh -- `platform_system` above all, so
+# that adding a platform is one edit rather than four with nothing to catch a
+# missed one.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=appliance_common.sh
+source "${SCRIPT_DIR}/appliance_common.sh"
+
 # As in cicd/run_appliance_tests.sh: the pinned sources come from devenv's
 # inputs, so devenv.lock stays the only nixpkgs pin in this repository.
 NIXPKGS=""
@@ -154,25 +163,6 @@ USE_KVM=false
 # Helpers
 #
 
-check_command(){
-    if ! command -v "${1}" > /dev/null; then
-        echo >&2 "[!] Error: required command not found: ${1}"
-        exit 1
-    fi
-}
-
-# Must agree with `platform_system` in cicd/build_appliance_image.sh and with
-# `nixSystem` in nixos/platforms/<id>.nix. nixos/default.nix asserts the last
-# pair, so a drift here fails during evaluation rather than on the box.
-platform_system(){
-    case "${1}" in
-        spark)  printf 'aarch64-linux' ;;
-        evo-x2) printf 'x86_64-linux'  ;;
-        nuc12)  printf 'x86_64-linux'  ;;
-        *)      return 1               ;;
-    esac
-}
-
 qemu_binary(){
     case "${1}" in
         aarch64-linux) printf 'qemu-system-aarch64' ;;
@@ -248,19 +238,6 @@ validate_environment(){
         echo "[!] a ~3.5 GB appliance closure, and the installer rig copies the image beside it."
         echo "[!] 'nix-collect-garbage -d' and 'nix store optimise' free what earlier runs left."
     fi
-}
-
-# Sourced from this checkout, which is also what the VM embeds, so the two
-# cannot disagree. Same three values run_appliance_tests.sh resolves, for the
-# same reason: box.nix restates them and tests/appliance.nix asserts it did so
-# correctly, and passing defaults here would put a different box in the VM from
-# the one on the stick.
-resolve_loom_values(){
-    # shellcheck disable=SC1091
-    # shellcheck source=../vars.sh
-    source "${CONTEXT_DIR}/vars.sh"
-    LOOM_HOSTS_JSON="$(printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" |
-        jq --raw-input . | jq --slurp --compact-output .)"
 }
 
 prepare_state_dir(){

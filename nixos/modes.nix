@@ -46,10 +46,11 @@ let
   # What the platform says about this particular box, turned into up.sh flags.
   #
   # --disable-ai drops Ollama *and* the indexing steps that call it. Every
-  # platform without a GPU gets it, which today is all of them but
-  # the EVO-X2: runsAiServices defaults to `gpuVendor != null`, because the
-  # embedding step runs over every indexed file and a CPU never drains the
-  # queue. The NUC 12 also says it outright, for memory.
+  # platform without a GPU gets it, which today is the NUC 12 alone -- the
+  # Spark and the EVO-X2 both declare a `gpuVendor`, and runsAiServices defaults
+  # to `gpuVendor != null`, because the embedding step runs over every indexed
+  # file and a CPU never drains the queue. The NUC 12 also says it outright,
+  # for memory.
   #
   # --scaling is the other two: it defaults to `meetsResourceMinimum`, and up.sh
   # refuses the two together (see the assertion below). It installs KEDA and
