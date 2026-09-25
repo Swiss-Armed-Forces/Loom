@@ -146,9 +146,18 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
   `Documentation/appliance.md`
+- `build-appliance-image --debug` - Additionally run an SSH server on the box, keyed to an ed25519
+  pair generated for that image and left in a temp directory the build prints, along with two
+  ready-made `ssh_config` files. This is the one flag that takes back the appliance's "no remote
+  access" guarantee, so the box announces it in red at the bottom of its login screen, in the motd,
+  in the console status line and on the second line of its boot menu entry (the title stays `Loom`,
+  as it does for `first-time-setup`), and the image file is named `-debug`. It
+  also boots without the splash and downgrades the USB key guard to a warning, so it does not behave
+  like a real stick. Run mode only; refused when `$CI` is set; adds `loom-debug-bundle` to the box.
+  Read the threat-model section in `Documentation/appliance.md` before using it
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
-  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`; with no argument it
-  runs all seven, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
+  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`, `debug`; with no
+  argument it runs all eight, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
@@ -165,6 +174,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   image build) and shows everything above the disk: the console session, the branding, the units,
   the banner. Not the bootloader, the LUKS root or the installer — nixpkgs' qemu-vm module
   overrides those away. Opens a window and exposes a serial socket
+- `appliance-vm box --debug` - The same VM built with `--debug`'s sshd, forwarding `localhost:2222`
+  to the guest's port 22. The keypair lives in the VM's state directory rather than `/tmp`, so it is
+  the same key across runs and `appliance-vm reset` deletes it with the disks. The cheapest way to
+  try debug access, and the way to point an agent at an appliance with no hardware. `box` only
 - `appliance-vm installer` - The real stick image, virtually flashed onto a file and booted under
   UEFI against emulated NVMe. Runs the actual installer onto an actual pool, reboots into what it
   installed, and persists across runs. Needs a tag, since the image embeds a tagged checkout.
@@ -184,8 +197,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `nixos/tests/scripts/tests` (the VM tests' own helpers). Each also runs in its package's
   `checkPhase`, so a mistake fails an image build too; running them here needs nothing built.
   Extra arguments go to pytest
-- `appliance-eval` - Instantiates the stick image for all three platforms and the tests for this
-  one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
+- `appliance-eval` - Instantiates the stick image for all three platforms — twice each, once with
+  `--debug`, since `nixos/debug.nix` is inert otherwise and would rot unevaluated — and the tests for
+  this one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
   assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
 - `loom-platform-info` - Report this box's hardware — wired ports with their drivers, PCI ids and
   multi-port ids, radios and whether they do AP mode, GPU with the firmware VRAM carve-out beside

@@ -183,7 +183,13 @@ in
   # Stick layout
   # ---------------------------------------------------------------------------
   image.repart = {
-    name = "loom-installer";
+    # The `-debug` half is what the flashed file on somebody's disk is called,
+    # and it is the cheapest of the five markers nixos/debug.nix lists -- the
+    # other four are only visible once the stick has been booted, and the
+    # mistake worth catching is the one made at the drawer where two .raw files
+    # are sitting side by side. Read off the box's own configuration rather
+    # than taking a second flag, so the name cannot disagree with the closure.
+    name = "loom-installer" + lib.optionalString boxSystem.config.loom.debug.enable "-debug";
     partitions = {
       "10-esp" = {
         contents = {

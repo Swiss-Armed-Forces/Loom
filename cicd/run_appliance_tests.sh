@@ -45,7 +45,7 @@ HOST_ARCH=""
 # `hardware` is first because it is the only one that never boots anything: it
 # reads the evaluated configuration and exits, in seconds. A nixos-hardware bump
 # that broke every platform should be reported before the VM boots, not after.
-KNOWN_TESTS=(hardware install interface-fallback wifi mouse usb-ingest appliance)
+KNOWN_TESTS=(hardware install interface-fallback debug wifi mouse usb-ingest appliance)
 
 # Targets that only read the evaluated configuration -- no kernel, no VM, and
 # not even the appliance closure. The architecture check and the KVM and disk
@@ -120,6 +120,7 @@ test_attribute(){
         mouse)              printf 'tests.applianceMouse'             ;;
         usb-ingest)         printf 'tests.applianceUsbIngest'         ;;
         interface-fallback) printf 'tests.applianceInterfaceFallback' ;;
+        debug)              printf 'tests.applianceDebug'             ;;
         *)                  return 1                                  ;;
     esac
 }

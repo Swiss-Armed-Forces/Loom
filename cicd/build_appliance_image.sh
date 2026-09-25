@@ -63,6 +63,28 @@ DISABLE_GPU=false
 # --vm-serial, which exists for cicd/run_appliance_vm.sh and is refused
 # alongside --flash: an image built with this is for a VM, not for a stick.
 VM_SERIAL=false
+
+# Run an SSH server on the installed box, keyed to a keypair generated below.
+# Off by default and loudly announced when on: this is the one flag that takes
+# back "there is no remote access", which Documentation/appliance.md states as a
+# threat-model guarantee. See nixos/debug.nix.
+DEBUG_ACCESS=false
+# Where resolve_debug_key leaves the private half. Deliberately NOT cleaned up
+# by atexit -- see the comment there -- because it is the whole output of the
+# flag as far as the operator is concerned.
+DEBUG_KEY_DIR=""
+
+# The appliance's operator account. Must agree with `loomUser` in
+# nixos/default.nix, which is what decides the account that actually exists;
+# this is only what the generated ssh_config tells a client to ask for.
+LOOM_USER="loom"
+
+# Which out-link build_image writes and image_file then reads. A debug build
+# gets its own name so two images in one output directory cannot be confused,
+# and so `--out-link` never overwrites the other kind's symlink. Resolved in
+# Main, once --debug has been parsed.
+IMAGE_LINK=""
+
 ASSUME_YES=false
 ALLOW_CROSS=false
 VERBOSE=false
@@ -82,6 +104,7 @@ STEPS=(
     resolve_tag
     resolve_subnet
     resolve_wifi
+    resolve_debug_key
     prepare_workdir
     prepare_repo
     verify_repo
@@ -382,6 +405,89 @@ random_token(){
     printf '%s' "${raw:0:want}"
 }
 
+# The one key the debug image accepts, generated fresh for this image.
+#
+# Fresh rather than the build host's own ~/.ssh: an appliance key is a
+# throwaway, it should die with the image, and reusing a personal key would put
+# it in an authorized_keys file on a box that gets wiped and re-flashed by
+# people who never chose to trust it.
+#
+# Only the public half reaches Nix. The private half stays here, outside the
+# store and outside the repository, and the directory is deliberately left
+# behind when this script exits -- it is the output of the flag.
+#
+# The ssh_config files matter more than they look: resolve_subnet randomises the
+# /24 per image, so nothing downstream can hardcode the box's address. With
+# them, reaching the box is `ssh -F <dir>/ssh_config loom-appliance` and needs
+# no other knowledge -- which is the point, because the thing at the other end
+# of that command is as often an agent as a person.
+resolve_debug_key(){
+    if [[ "${DEBUG_ACCESS}" != true ]]; then
+        return
+    fi
+
+    check_command ssh-keygen
+
+    # Named for the image it belongs to, so a bench with three of these lying
+    # around says which stick each one opens. $TMPDIR rather than /run/user:
+    # unlike the LUKS key this is meant to outlive the run, and a tmpfs under
+    # /run/user is cleared when the session ends.
+    DEBUG_KEY_DIR="$(mktemp --directory "${TMPDIR:-/tmp}/loom-appliance-debug-${TAG}-${PLATFORM}.XXXXXX")"
+    chmod 0700 "${DEBUG_KEY_DIR}"
+
+    # ed25519: small enough to read off a screen if it ever comes to that, and
+    # the one algorithm every OpenSSH still in service accepts by default.
+    # -N '' because an agent cannot type a passphrase, which is the whole use
+    # case -- the key's protection is the 0700 directory and its short life.
+    ssh-keygen -t ed25519 -N '' -q \
+        -C "loom-appliance-debug ${TAG} ${PLATFORM}" \
+        -f "${DEBUG_KEY_DIR}/id_ed25519"
+
+    # Created empty rather than left to ssh, so the file exists with the right
+    # mode before the first connection writes the box's host key into it.
+    : > "${DEBUG_KEY_DIR}/known_hosts"
+    chmod 0600 "${DEBUG_KEY_DIR}/known_hosts"
+
+    # Two configs, because the same image is as likely to be booted in a VM as
+    # written to a stick. See write_debug_ssh_config for what is in them.
+    write_debug_ssh_config "${DEBUG_KEY_DIR}/ssh_config" "${SUBNET}.1" 22 \
+        "The box on its own network -- plug a laptop into the appliance port and take a DHCP lease."
+    write_debug_ssh_config "${DEBUG_KEY_DIR}/ssh_config.vm" localhost 2222 \
+        "The same image under 'appliance-vm box --debug', which forwards 2222 to the guest's 22."
+}
+
+# One ready-to-use ssh_config, so that reaching the box needs no knowledge the
+# build did not already have.
+#
+# `accept-new` rather than a baked host key. It is already non-interactive,
+# which is what an agent needs, and it keeps a second secret out of /nix/store:
+# a host private key passed through Nix would be world-readable on the stick,
+# and the WiFi passphrase is quite enough of that.
+#
+# `IdentitiesOnly` because a developer's ssh-agent will otherwise offer its own
+# keys first and the box -- which knows exactly one -- refuses the lot until
+# MaxAuthTries runs out, which reads as "the key did not work".
+write_debug_ssh_config(){
+    local file="${1}" host="${2}" port="${3}" note="${4}"
+
+    cat > "${file}" <<EOF
+# Generated by cicd/build_appliance_image.sh for the ${TAG} ${PLATFORM} debug image.
+# ${note}
+#
+# Use it with:  ssh -F ${file} loom-appliance
+# Delete this whole directory when you are done with the box.
+Host loom-appliance
+    HostName ${host}
+    Port ${port}
+    User ${LOOM_USER}
+    IdentityFile ${DEBUG_KEY_DIR}/id_ed25519
+    IdentitiesOnly yes
+    UserKnownHostsFile ${DEBUG_KEY_DIR}/known_hosts
+    StrictHostKeyChecking accept-new
+EOF
+    chmod 0600 "${file}"
+}
+
 prepare_workdir(){
     local uid
     uid="$(id -u)"
@@ -603,8 +709,15 @@ generate_loom_hosts(){
 }
 
 build_image(){
-    local hosts_json
+    local hosts_json debug_key=''
     hosts_json="$(cat "${WORK_DIR}/loom-hosts.json")"
+
+    # Only the public half, and only when --debug was given. Empty otherwise,
+    # which nixos/debug.nix reads as "no debug access" -- its assertion is what
+    # catches the case where the flag is on and this is empty anyway.
+    if [[ "${DEBUG_ACCESS}" = true ]]; then
+        debug_key="$(cat "${DEBUG_KEY_DIR}/id_ed25519.pub")"
+    fi
 
     echo "[*] Building the ${PLATFORM} (${NIX_SYSTEM}) appliance image for ${TAG} on ${SUBNET}.0/24"
     nix-build "${CONTEXT_DIR}/nixos" \
@@ -628,13 +741,15 @@ build_image(){
         --argstr wifiPsk "${WIFI_PSK}" \
         --argstr wifiCountry "${WIFI_COUNTRY}" \
         --argstr wifiInterface "${WIFI_INTERFACE}" \
-        --out-link "${OUTPUT_DIR}/appliance-image"
+        --arg debugAccess "${DEBUG_ACCESS}" \
+        --argstr debugSshAuthorizedKey "${debug_key}" \
+        --out-link "${IMAGE_LINK}"
 }
 
 image_file(){
     # -L is required: the out-link is a symlink into the Nix store, and find
     # does not follow symlinks by default.
-    find -L "${OUTPUT_DIR}/appliance-image" -name '*.raw' -type f | head --lines=1
+    find -L "${IMAGE_LINK}" -name '*.raw' -type f | head --lines=1
 }
 
 confirm_flash(){
@@ -774,6 +889,7 @@ report(){
     echo "      subnet    : ${SUBNET}.0/24 (box at ${SUBNET}.1, DHCP ${SUBNET}.100-200)"
     echo "      interface : loom0${LOOM_INTERFACE:+ (renamed from ${LOOM_INTERFACE})}"
     echo "      gpu       : ${gpu}"
+    echo "      debug     : ${DEBUG_ACCESS}"
     echo "      wifi      : ${ENABLE_WIFI}"
     if [[ "${ENABLE_WIFI}" = true ]]; then
         echo "      ssid      : ${WIFI_SSID}"
@@ -791,6 +907,25 @@ report(){
         echo "[!] the box's login screen, as a QR code, for anyone standing at the monitor."
         echo "[!] Do not cable a wifi-enabled box into a network you do not own: the radio"
         echo "[!] and the wired port are bridged, so it becomes an open door onto that LAN."
+    fi
+    if [[ "${DEBUG_ACCESS}" = true ]]; then
+        echo
+        echo "[*] Debug access. The key that opens this image:"
+        echo "      key dir   : ${DEBUG_KEY_DIR}"
+        echo "      on the box: ssh -F ${DEBUG_KEY_DIR}/ssh_config loom-appliance"
+        echo "      in a VM   : ssh -F ${DEBUG_KEY_DIR}/ssh_config.vm loom-appliance"
+        echo "      bundle    : ssh -F ... loom-appliance loom-debug-bundle"
+        echo
+        echo "[!] This image is NOT an appliance anybody may be handed. It runs an SSH"
+        echo "[!] server, and the key above is root on the box -- the operator account is"
+        echo "[!] in 'wheel' with passwordless sudo. Loom has no user management behind"
+        echo "[!] that, so whoever holds the key holds the indexed corpus."
+        echo "[!] The box says so itself, in red, on its login screen, in the motd and on"
+        echo "[!] the second line of its boot menu entry -- and this image file carries"
+        echo "[!] '-debug' in its name so two .raw files in a drawer cannot be mixed up."
+        echo "[!] It also boots without the splash and its USB key guard only warns"
+        echo "[!] instead of powering off, so it does not behave like a real stick."
+        echo "[!] Delete ${DEBUG_KEY_DIR} when you are done, and wipe the box."
     fi
     if [[ -n "${FLASH_DEVICE}" ]]; then
         echo "      flashed to: ${FLASH_DEVICE}"
@@ -828,6 +963,13 @@ usage(){
     echo "                                it installs, so a VM can be driven from a terminal that"
     echo "                                copies and pastes. For 'appliance-vm installer --serial';"
     echo "                                refused with --flash, because this is not a stick image."
+    echo "  --debug                       run an SSH server on the box, keyed to a keypair"
+    echo "                                generated here and left in a temp directory this"
+    echo "                                prints. Takes back the appliance's 'no remote access'"
+    echo "                                guarantee, so the box says DEBUG in red on its login"
+    echo "                                screen, in its boot menu and in the motd, and the"
+    echo "                                image file is named '-debug'. Never hand one to"
+    echo "                                anybody. Refused when \$CI is set."
     echo "  --no-gpu                      build CPU-only for a platform that offloads to a GPU."
     echo "                                There is no --gpu: the GPU is a property of the box and"
     echo "                                is declared per platform. Use this when the box turns out"
@@ -873,6 +1015,11 @@ atexit(){
     if [[ -n "${WORK_DIR}" && -d "${WORK_DIR}" ]]; then
         rm --recursive --force "${WORK_DIR}"
     fi
+    # DEBUG_KEY_DIR is deliberately absent from this list. Unlike the two above
+    # it is not scratch: it holds the only copy of the private key that opens
+    # the image this run just built, and deleting it here would make --debug a
+    # flag that produces an unreachable box. `report` prints where it is, and
+    # removing it is the operator's call.
     echo "[*] Exiting.."
 }
 trap atexit EXIT
@@ -915,6 +1062,10 @@ while [[ $# -gt 0 ]]; do
         ;;
         --vm-serial)
             VM_SERIAL=true
+            shift
+        ;;
+        --debug)
+            DEBUG_ACCESS=true
             shift
         ;;
         --no-gpu)
@@ -1056,6 +1207,39 @@ if [[ "${VM_SERIAL}" = true && -n "${FLASH_DEVICE}" ]]; then
     echo >&2 "    It adds a getty on ttyS0 to the installer and to the box it installs."
     echo >&2 "    Drop --flash to keep the image, or drop --vm-serial to flash one."
     exit 1
+fi
+
+# A pipeline has no business building an image with a way in, and no way to be
+# told about one: `report` prints the key directory to a log nobody reads, and
+# the runner deletes it minutes later -- so the artifact would be a stick that
+# is remotely accessible and that nobody holds the key to. Refused outright
+# rather than warned about, because there is no case where it is what was meant.
+if [[ "${DEBUG_ACCESS}" = true && -n "${CI:-}" ]]; then
+    echo >&2 "[!] Error: refusing to build a --debug image in CI (\$CI is set)."
+    echo >&2 "    A debug image runs an SSH server, and the key that opens it would be"
+    echo >&2 "    thrown away with the runner. Build one on the machine you will debug from."
+    exit 1
+fi
+
+# Unlike --vm-serial this IS allowed to be flashed -- debugging real hardware is
+# most of the point -- but not silently. Flashing is the step that turns a file
+# somebody can delete into a stick that walks out of the building.
+if [[ "${DEBUG_ACCESS}" = true && -n "${FLASH_DEVICE}" && "${ASSUME_YES}" != true ]]; then
+    echo "[!] --debug and --flash together: this writes a stick that runs an SSH server."
+    echo "[!] The key is generated here and is root on any box installed from it."
+    echo "[!] Do not let it leave the bench, and wipe the box afterwards."
+    read -r -p "[?] Flash a debug stick? [y/N] " answer
+    if [[ "${answer}" != "y" && "${answer}" != "Y" ]]; then
+        echo >&2 "[!] Aborted."
+        exit 1
+    fi
+fi
+
+# Resolved here rather than at declaration time, for the same reason NIX_SYSTEM
+# is: --debug and --output may be given in either order.
+IMAGE_LINK="${OUTPUT_DIR}/appliance-image"
+if [[ "${DEBUG_ACCESS}" = true ]]; then
+    IMAGE_LINK+="-debug"
 fi
 
 if [[ -n "${FLASH_DEVICE}" ]]; then

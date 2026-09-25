@@ -24,6 +24,12 @@ ISSUE = "/run/issue.d/50-loom.issue"
 
 def access_policy(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("appliance access policy"):
+        # The appliance's central promise, asserted on the box rather than read
+        # off the configuration. Its counterpart is loom_tests/debug.py, which
+        # boots the one build where this IS running -- `build-appliance-image
+        # --debug`. Neither assertion means much alone: "no sshd" is a guarantee
+        # only if the exception is exercised somewhere, and the exception is
+        # only safe if this line keeps failing for every other image.
         appliance.fail("systemctl is-active sshd.service")
 
         # The banner has to reach whoever never logs in at all, so it is

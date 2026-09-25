@@ -29,6 +29,7 @@ this file is about the code.
 | `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror`, and the console pane the copy is drawn in — with its own pytest suite, run at build time. |
 | `vm.nix` | VM-only overrides for the `boxVm` target: what to take off the appliance so it can be booted on a workstation. Never in the flashed closure. |
 | `vm-serial.nix` | A getty on `ttyS0`, so a VM's console session can be reached from a terminal that copies and pastes. Never on a real stick; see `--serial` below. |
+| `debug.nix` | The `--debug` build: an sshd keyed to one generated key, `loom-debug-bundle`, and the five places the box says what it is. Inert in every other image; see `--debug` below. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
 | `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
@@ -40,6 +41,7 @@ this file is about the code.
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 | `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
+| `tests/appliance-debug.nix` | VM test for the `--debug` build: two nodes, and whether the generated key gets the second one in. The counterpart to `tests/appliance.nix`, which asserts no sshd for every other image. |
 | `tests/scripts.nix` | The tests as a Python package, built for the test driver's own interpreter and installed through its `extraPythonPackages`. |
 | `tests/scripts/` | The tests themselves (`loom_tests`), as Python the repository's own hooks lint and type-check. A module per test node, `vt.py` and `tmux.py` shared between them, `driver.py` the typing shim for what the driver hands them, and a pytest suite for the two helpers that parse something. |
 
@@ -403,6 +405,39 @@ read it as text the way `tests/appliance-wifi.nix` does:
 ```bash
 cat /dev/vcsa1        # tty1's screen contents, from a serial shell
 ```
+
+### `--debug`, and what it costs
+
+`debug.nix` is the other module whose whole point is that it is not in a shipped image, and it is a
+larger deviation than `--serial`: it runs an sshd. The operator guide has the threat-model half
+([Documentation/appliance.md](../Documentation/appliance.md#debug-images)); what matters here is how
+the module hangs together.
+
+- **`box.nix` says `services.openssh.enable = lib.mkDefault false`**, and `debug.nix` is the one
+  thing allowed to define it as `true`. The `mkDefault` is deliberate over a `mkForce` on the other
+  side: the policy statement should stay readable as a policy, and the exception as an exception.
+- **The markers and the access are gated differently.** `system.nixos.tags`, the motd and
+  `loom-debug-bundle` key on `loom.debug.enable`, so a debug stick booted into first-time-setup
+  still says what it is for the hours that fetch takes. The sshd, the key-guard downgrade and the
+  missing splash key on `enable && mode == "run"` — setup mode is a DHCP client on somebody else's
+  network, which is the worst place to open a port that hands out root.
+- **`modes.nix` is where `quiet` is decided, not `debug.nix`.** A module can add a kernel parameter
+  and never subtract one, so a debug build has to *not acquire* `quiet` and `udev.log_level=3` in
+  the first place. `debug.nix` adds `plymouth.enable=0` on top, the same pair setup mode uses.
+- **The firewall hole is global, not `interfaces.loom0`.** In run mode the appliance segment is the
+  only network the box has, so the two are the same packets — but `--wifi` moves the address onto
+  the bridge, and `vm.nix` clears `networking.interfaces` entirely, so an interface-scoped rule
+  would silently exclude both the air and the VM.
+- **Only the public key crosses into Nix.** `cicd/build_appliance_image.sh` generates the pair into
+  a directory it prints and never cleans up, and passes `--argstr debugSshAuthorizedKey`. Unlike the
+  WiFi passphrase there is no secret in `/nix/store` and none on the stick.
+
+The banner block is rendered by `box.nix`, at the **end** of `loom-info`, and the position is load
+bearing: agetty writes the issue straight to the VT with no paging, so a banner taller than the
+console loses its *first* rows. The tail is the only place a warning cannot scroll away from.
+
+`appliance-vm box --debug` builds the same module and forwards `localhost:2222`, keeping its keypair
+in the VM's state directory so it survives a rebuild. `appliance-test debug` is the VM test.
 
 ## Running the tests
 

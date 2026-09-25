@@ -40,6 +40,42 @@ let
   # out of an issue file before anyone gets to see them.
   wifiUri = "WIFI:T:WPA;S:${config.loom.wifi.ssid};P:${config.loom.wifi.psk};;";
 
+  # The `--debug` warning, as a block of white-on-red, for the END of the
+  # banner. See nixos/debug.nix for what the flag does and what it costs.
+  #
+  # Three things about it are decided here rather than there:
+  #
+  #   * The position. It is printed last, and that is not a style choice: this
+  #     banner is written straight to the VT with no paging (see the comment on
+  #     the mark above), so a banner taller than the console loses its FIRST
+  #     rows. The tail is the only place that cannot scroll away, and a warning
+  #     that can scroll away is not one. (Last within this file, which is
+  #     50-loom.issue; network.nix's and wifi.nix's fragments sort after it and
+  #     land below. Both exist only when something is wrong, and both are meant
+  #     to be the most prominent thing on the screen when they do.)
+  #   * The colour. branding.nix redefines palette indices 3, B and 7 and leaves
+  #     1 alone, so `41` is still the console's own red and needs none of the
+  #     ESC]P redefinition the amber above does. `1;37` on top, because the
+  #     default index-7 foreground was redefined to pure white for the QR card.
+  #   * The rectangle. Each line is padded to a common width in Nix rather than
+  #     by the shell, so the background runs to the same column on every row.
+  #     The background is re-opened per line for the reason the QR code does it:
+  #     a terminal resets it at the newline, so one long run would paint a
+  #     staircase rather than a block.
+  debugBanner =
+    let
+      lines = config.loom.debug.warningLines;
+      width = 2 + lib.foldl' (widest: line: lib.max widest (lib.stringLength line)) 0 lines;
+      padded =
+        line: " ${line}" + lib.concatStrings (lib.genList (_: " ") (width - lib.stringLength line));
+    in
+    lib.optionalString config.loom.debug.enable ''
+      printf '\n'
+      ${lib.concatMapStrings (line: ''
+        printf '  %s%s%s\n' $'\033[1;37;41m' ${lib.escapeShellArg (padded line)} $'\033[0m'
+      '') lines}
+    '';
+
   # Ship a wrapper rather than only documenting the flags. Running bare `up.sh`
   # here is actively harmful: `setup_system` writes /etc/sysctl.d/99-loom.conf
   # that NixOS ignores, and `install_host_entries` replaces the /etc/hosts store
@@ -441,6 +477,9 @@ let
         printf '  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
         printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
       ''}
+      # Last, and last for a reason -- see `debugBanner` above. Empty in every
+      # image that was not built with --debug.
+      ${debugBanner}
       printf '\n'
     '';
   };
@@ -450,6 +489,12 @@ in
   # console.nix and set in modes.nix: the value belongs beside the thing it names, and
   # the one other module that runs it should not carry a second copy of the path.
   loom.bannerRefresh = loom-banner-refresh;
+
+  # Same arrangement, declared in debug.nix: `loom-debug-bundle` collects what
+  # this box thinks its own hardware is, and reaching it by store path rather
+  # than by name is what makes the bundle the same on a box where somebody has
+  # been editing their PATH.
+  loom.platformInfo = loom-platform-info;
 
   # ---------------------------------------------------------------------------
   # Host tuning -- mirrors up.sh `setup_system` (up.sh:616-684).
@@ -703,7 +748,13 @@ in
   };
 
   # Appliance policy: no remote access at all.
-  services.openssh.enable = false;
+  #
+  # `mkDefault` rather than a plain `false`, and the difference is one flag:
+  # nixos/debug.nix turns this on for an image built with
+  # `build-appliance-image --debug`, and that is the only thing in the tree
+  # allowed to. Everything else -- the threat model, the banner, the test in
+  # loom_tests/appliance/banner.py -- is written against this line being false.
+  services.openssh.enable = lib.mkDefault false;
 
   # ---------------------------------------------------------------------------
   # Loom entry point

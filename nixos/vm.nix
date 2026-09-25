@@ -18,7 +18,7 @@
   # answer is normally no.
   startLoom ? false,
 }:
-{ lib, ... }:
+{ config, lib, ... }:
 {
   virtualisation.vmVariant = {
     imports = [ ./vm-serial.nix ];
@@ -63,6 +63,24 @@
     loom.autoSelectInterface = lib.mkForce false;
     networking.interfaces = lib.mkForce { };
     services.dnsmasq.enable = lib.mkForce false;
+
+    # ...with one exception, and only for `appliance-vm box --debug`.
+    #
+    # Run mode sets `networking.useDHCP = false` (network.nix), because a real
+    # appliance holds a static address on loom0 and has nothing upstream to ask.
+    # In here that leaves qemu's own user-mode NIC with no address at all --
+    # which costs nothing while the VM is something you look at through a
+    # window, and costs everything the moment it is something you ssh into:
+    # `appliance-vm --debug` forwards a host port to the guest's 22, the
+    # connection is accepted by qemu and then reaches a stack with no address,
+    # and ssh reports a timeout during banner exchange with nothing in the
+    # guest's journal to explain it.
+    #
+    # `useDHCP` rather than naming the interface: `networking.interfaces` is
+    # forced empty just above, and a nested definition under a forced parent is
+    # discarded rather than merged. This is a different option, so it survives
+    # -- and with no interfaces declared, dhcpcd takes the NIC qemu provided.
+    networking.useDHCP = lib.mkIf config.loom.debug.enable (lib.mkForce true);
 
     # ------------------------------------------------------------------------
     # Loom itself

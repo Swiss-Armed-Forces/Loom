@@ -27,6 +27,9 @@ Read this before building anything; the design only makes sense if these hold.
   and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
   root-capable session with no password. Neither box is driven over a serial cable, and neither image
   configures one, so the monitor and keyboard are the whole attack surface.
+  **The one exception is an image built with `--debug`**, which runs an SSH server keyed to a keypair the
+  build generates — see [Debug images](#debug-images). Such an image announces itself in red on its own login
+  screen and is not something to hand to anybody.
 - **The console runs an AI agent that can act on the box.** The bottom pane is `opencode` wired to the
   cluster's own Ollama — it reads and writes files and runs commands as `loom`, which is in `wheel` and
   `docker`. It talks to nothing outside the box, so this adds no network exposure; what it adds is a way for
@@ -234,6 +237,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--wifi-psk PSK` | WPA passphrase. Defaults to a generated one. Letters, digits, `-` and `_` only. |
 | `--wifi-country CC` | ISO country code. Moves the AP to 5GHz; without it the AP stays on 2.4GHz. |
 | `--wifi-interface NAME` | Pin the radio by its **kernel** name (`wlan0`), not the predictable one — unlike `--interface`, this is still a `.link` match and carries the limitation described under [Pinning a port](#pinning-a-port). Rarely needed: the default claims any radio. Renamed to `loomwl0` either way. |
+| `--debug` | Run an SSH server on the box, keyed to a keypair generated for this image. Takes back the "no remote access" guarantee. Read [Debug images](#debug-images) before using it. |
 | `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
 | `--allow-cross` | Build for an architecture other than the host's. |
 | `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
@@ -423,6 +427,84 @@ journalctl -u loom-wifi-check
 
 If the radio is there but the platform's match did not select it, rebuild with
 `--wifi-interface <kernel name>`. It is renamed to `loomwl0` either way, and the bridge is `loombr0`.
+
+## Debug images
+
+```bash
+build-appliance-image --platform evo-x2 --debug
+```
+
+A **debug image** is an ordinary appliance that also runs an SSH server. It exists for the box that misbehaves
+in a way the console cannot answer — where everything has to be read off a monitor and typed back in — and
+for pointing an AI agent at such a box. It is the only build where `services.openssh.enable` is true.
+
+### Read this before building one
+
+`--debug` takes back the first line of the [threat model](#threat-model). Specifically:
+
+- **The generated key is root on the box.** It logs in as the operator account, which is in `wheel` with
+  passwordless `sudo`, because up.sh needs that. There is nothing behind it: Loom has no user management and
+  its frontend is not an authentication boundary.
+- **Port 22 is open on the whole appliance segment** — and on the WiFi bridge too, if the image was also
+  built with `--wifi`. Anyone who can plug a cable in can reach the port; only the key stops them.
+- **The image is not what a real stick is.** It boots without the splash so failures are readable, and its
+  [USB key guard](#the-usb-key-guard) only warns instead of powering the box off, so that a glitching port
+  on a bench does not take the session down. Do not use one to judge how a shipped stick behaves.
+- **Never hand one to anybody.** Wipe the box when you are done, and delete the key directory.
+
+The box makes this hard to forget. It says `DEBUG IMAGE — NEVER USE THIS IN PRODUCTION` in white on red at
+the bottom of its login screen, the message of the day repeats it, the console session's status line carries
+`DEBUG — SSH OPEN`, and the image file itself is named `loom-installer-debug_*.raw`. The boot menu carries it
+too, on the entry's second line — `debug-<version>` rather than the plain version — for the box that never
+gets as far as a login screen; the title itself still reads `Loom`, exactly as it does for the
+`first-time-setup` entry.
+
+`--debug` is refused outright when `$CI` is set: a pipeline would publish a remotely accessible artifact and
+throw the only key to it away with the runner.
+
+### Getting in
+
+The build generates a fresh ed25519 keypair per image, keeps the private half out of the Nix store entirely,
+and leaves it in a temp directory it prints at the end:
+
+```text
+[*] Debug access. The key that opens this image:
+      key dir   : /tmp/loom-appliance-debug-1.4.0-evo-x2.N35LEv
+      on the box: ssh -F /tmp/loom-appliance-debug-1.4.0-evo-x2.N35LEv/ssh_config loom-appliance
+```
+
+That directory holds `id_ed25519`, its `.pub`, a `known_hosts`, and two ready-made `ssh_config` files — one
+for the box on its own network, one for the same image under `appliance-vm box --debug`. Use them rather than
+assembling flags: each stick gets a [random subnet](#building-a-stick), so the box's address is not knowable
+in advance, and the config carries it along with `IdentitiesOnly` and an `accept-new` host-key policy that
+needs no interaction. That last part is what makes the directory usable by an agent as well as a person.
+
+The directory survives the build on purpose — it is the whole output of the flag — and nothing ever deletes
+it for you.
+
+### Collecting everything at once
+
+The debug image carries `loom-debug-bundle`, which tars up both boots' journals, the failed units,
+`loom-service` status, `loom-platform-info`, the login screen, the network configuration, and the cluster's
+pods, events and logs, then prints the path:
+
+```bash
+ssh -F <key dir>/ssh_config loom-appliance loom-debug-bundle
+scp -F <key dir>/ssh_config loom-appliance:/tmp/loom-debug-*.tar.gz .
+```
+
+Every collector in it is allowed to fail. The most likely thing to be debugging is a box whose cluster never
+came up, and a bundle that aborted on the first `kubectl` timeout would carry none of the journal that
+explains why — so a section that could not be read is an empty file rather than a missing bundle.
+
+### Without a box
+
+`appliance-vm box --debug` is the cheap way to use any of this: about a minute, no tag, no image build, and
+it forwards `localhost:2222` to the guest's sshd. Its keypair lives in the VM's state directory rather than
+in `/tmp`, so it is the same key across runs — and `appliance-vm reset` deletes it with the disks.
+
+It does not reach the installer. That half is driven with `appliance-vm installer --serial`; see
+[Trying a stick without a box](#trying-a-stick-without-a-box).
 
 ## Installing
 

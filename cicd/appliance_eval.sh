@@ -146,8 +146,18 @@ resolve_loom_values(){
 
 # One invocation per platform and attribute. The results are thrown away --
 # nothing is built, and the .drv paths are not the point.
+#
+# Takes a variant label and then any extra nix arguments, for the one case that
+# needs them: an option that changes which modules are active produces a
+# different evaluation, and evaluating only the default would let it rot. See
+# the --debug pass in evaluate_platforms.
+#
+# The label is separate from the arguments rather than derived from them so that
+# the progress line stays one readable line -- the --debug pass carries a whole
+# SSH public key, which is not something to print twice per platform.
 instantiate(){
-    local platform="${1}" attribute="${2}" system
+    local platform="${1}" attribute="${2}" variant="${3}" system label
+    shift 3
     system="$(platform_system "${platform}")"
 
     local args=(
@@ -165,16 +175,19 @@ instantiate(){
         # would be a gc root on every .drv this touches.
         --no-gc-warning
     )
+    args+=("${@}")
     if [[ "${VERBOSE}" = true ]]; then
         args+=(--show-trace)
     fi
 
-    echo "[*] Evaluating: ${attribute} (${platform}, ${system})"
+    label="${attribute} (${platform}, ${system})${variant:+ ${variant}}"
+
+    echo "[*] Evaluating: ${label}"
     if nix-instantiate "${args[@]}" > /dev/null; then
         return 0
     fi
-    FAILED+=("${attribute} (${platform})")
-    echo "[!] Failed: ${attribute} (${platform})"
+    FAILED+=("${attribute} (${platform})${variant:+ ${variant}}")
+    echo "[!] Failed: ${label}"
 }
 
 evaluate_platforms(){
@@ -184,14 +197,27 @@ evaluate_platforms(){
         # installerImage rather than box: installer.nix puts the appliance's own
         # toplevel into the stick's store image, so this covers both, plus the
         # installer and the cross-architecture image assembly.
-        instantiate "${platform}" installerImage
+        instantiate "${platform}" installerImage ''
+
+        # The --debug build, which the pass above does not cover: nixos/debug.nix
+        # is a whole module that is inert unless the flag is set, so without
+        # this an option renamed under it would evaluate cleanly here and fail
+        # the first time somebody actually needed a debug stick -- which is by
+        # definition a moment when something is already going wrong.
+        #
+        # The key is a throwaway with no private half anywhere: this evaluates
+        # the module, it does not build anything that could be booted.
+        instantiate "${platform}" installerImage '--debug' \
+            --arg debugAccess true \
+            --argstr debugSshAuthorizedKey \
+            'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEvaluationOnlyNotAKeyEvaluationOnlyNotA eval@loom'
 
         # The tests are evaluated for the platform that could run them. The
         # nodes import the same module list the image does, so evaluating them
         # for another platform re-checks what installerImage just checked; what
         # is wanted here is that tests/*.nix themselves still evaluate.
         if [[ "${platform}" = "${HOST_PLATFORM}" ]]; then
-            instantiate "${platform}" tests
+            instantiate "${platform}" tests ''
         fi
     done
 }

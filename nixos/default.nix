@@ -75,6 +75,22 @@
   # rather than the default, why `appliance-vm` prints it on every run, and why
   # build_appliance_image.sh refuses to combine it with --flash.
   vmSerialGetty ? false,
+  # Run an SSH server on the box, keyed to `debugSshAuthorizedKey`, and mark the
+  # image as a debug build everywhere an operator looks. See nixos/debug.nix.
+  #
+  # This is the one flag that takes back the appliance's central promise -- "no
+  # remote access" is a threat-model guarantee in Documentation/appliance.md,
+  # not a default. An image built with it is for a bench, never for a box that
+  # gets handed to anybody, which is why the box announces it on the login
+  # screen, in the boot menu, in the motd and in the image's own filename.
+  #
+  # Set by `build-appliance-image --debug` and `appliance-vm box --debug`, both
+  # of which generate the keypair and print where they left the private half.
+  debugAccess ? false,
+  # The single public key that image accepts, in `authorized_keys` format. Only
+  # the public half ever reaches Nix, so nothing secret lands in /nix/store --
+  # unlike the WiFi passphrase above, which has to.
+  debugSshAuthorizedKey ? "",
   # Leave `loom.service` wanted in the `boxVm` target. See nixos/vm.nix.
   startLoom ? false,
   # Whether the VM tests under tests/ may only be scheduled onto a builder that
@@ -240,6 +256,8 @@ let
       wifiPsk
       wifiCountry
       wifiInterface
+      debugAccess
+      debugSshAuthorizedKey
       ;
     loomUser = "loom";
     loomRepoDir = "/home/loom/loom";
@@ -309,6 +327,7 @@ let
     ./box.nix
     ./console.nix
     ./console-mouse.nix
+    ./debug.nix
     ./key-guard.nix
     ./modes.nix
     ./network.nix
@@ -549,6 +568,22 @@ in
         applianceModules
         loomSubnet
         ;
+    }
+  );
+
+  # `nix-build ./nixos -A tests.applianceDebug --argstr system x86_64-linux`
+  # The --debug build, which every other test deliberately does not cover:
+  # tests/appliance.nix asserts the opposite of it -- that no sshd is running --
+  # and that assertion means nothing unless the build where one *is* running is
+  # exercised somewhere else. This is somewhere else.
+  tests.applianceDebug = withKvmPolicy (
+    import ./tests/appliance-debug.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        ;
+      inherit (specialArgs) loomUser;
     }
   );
 }

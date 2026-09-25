@@ -363,7 +363,13 @@ in
       # Deliberately here rather than in box-hardware.nix: a specialisation
       # *adds* to its parent's kernel command line and cannot subtract from it,
       # so a `quiet` set for both modes could never be taken back for setup.
-      boot.kernelParams = [
+      #
+      # The same asymmetry is why --debug has to be asked about *here* rather
+      # than answered in debug.nix: a list element cannot be removed by a later
+      # module either, so a debug build has to never acquire these in the first
+      # place. debug.nix adds `plymouth.enable=0` on top, which is the other
+      # half of taking the splash off a boot that is going wrong.
+      boot.kernelParams = lib.mkIf (!cfg.debug.enable) [
         "quiet"
         "udev.log_level=3"
       ];

@@ -82,6 +82,19 @@ let
     "#(${lib.getExe cfg.ready.package} --oneline --state-dir ${cfg.ready.stateDir})  "
   );
 
+  # On a --debug box, the one thing the session must not let anyone forget.
+  #
+  # The pre-login banner says it at length (box.nix), and the console session is
+  # precisely what draws over that banner -- so without this the marker is gone
+  # from the moment somebody presses a key, on the screen they then spend all
+  # their time looking at. Short, because it shares `status-left-length` with
+  # the readiness segment; red, because it is the same signal as a degraded
+  # cluster and should read the same way from across a room.
+  #
+  # A literal rather than a `#()`, so it costs the tmux server nothing per tick
+  # and cannot be wrong about the box it is running on.
+  debugSegment = lib.optionalString cfg.debug.enable "#[fg=red,bold]DEBUG -- SSH OPEN#[default]  ";
+
   # Taken from the host list rather than written out again, so the name the chat
   # pane dials is by construction one of the names box.nix pins in /etc/hosts.
   # Spelling it "ollama.loom" here instead would be a second copy of the domain,
@@ -226,8 +239,10 @@ let
     # console is exactly the one this box shipped with before any of this.
     # -------------------------------------------------------------------------
     ${lib.optionalString readinessPublished "set -g status-interval 5"}
-    set -g status-left-length 60
-    set -g status-left "  LOOM  ${readinessSegment}"
+    # Widened from 60 for the debug marker, which is 17 characters plus its
+    # separator and would otherwise push the readiness segment off the end.
+    set -g status-left-length 80
+    set -g status-left "  LOOM  ${debugSegment}${readinessSegment}"
     # The two controls are last, so they sit flush against the right-hand edge
     # of the screen. That is deliberate on two counts: a target in the corner
     # of the display is the easiest one there is to hit with a mouse, and it
