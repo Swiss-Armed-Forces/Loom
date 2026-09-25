@@ -2,6 +2,7 @@ import type { AppDispatch } from "@app/store";
 
 import { createAddTagsToFileTool } from "./addTagsToFile";
 import { createAskUserTool } from "./askUser";
+import { createCloseFileTool } from "./closeFileTab";
 import { createDiscoverStateTool } from "./discoverState";
 import { createGetTheseFilesTool } from "./getTheseFiles";
 import { createGetThisFileTool } from "./getThisFile";
@@ -43,6 +44,7 @@ export const createFrontendTools = (
         createUpdateFileFlagsTool(getState, dispatch),
         createAddTagsToFileTool(getState, dispatch),
         createSetStatisticsViewTool(dispatch),
+        createCloseFileTool(dispatch),
     ];
     const registry: FrontendToolRegistry = {};
     for (const tool of tools) {

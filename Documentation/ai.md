@@ -335,6 +335,7 @@ re-runs immediately.
 | `get_these_files` | Returns the files currently visible in the search results |
 | `set_search_query` | Updates the search bar query string |
 | `navigate_to_file` | Opens a file in the detail pane |
+| `close_file` | Closes a file in the detail pane |
 | `highlight_file` | Highlights a file card in the search results |
 | `navigate_sidebar` | Opens a specific panel in the right sidebar (summary, translate, …) |
 | `update_file_flags` | Sets or clears a flag on a file |
@@ -426,6 +427,7 @@ toolset) so the agent focuses on research rather than UI control.
 | `get_these_files` | passive / state reading | Returns the files currently visible in the search results |
 | `set_search_query` | passive / action | Updates the search bar with a new query string |
 | `navigate_to_file` | passive / action | Opens a file in the detail pane |
+| `close_file` | passive / action | Closes a file in the detail pane |
 | `highlight_file` | passive / action | Highlights a file card in the results list |
 | `navigate_sidebar` | passive / action | Switches to a specific right-sidebar panel |
 | `update_file_flags` | passive / action | Sets or clears a flag on a file |

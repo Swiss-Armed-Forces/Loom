@@ -793,6 +793,7 @@
             "get_these_files": "Getting visible files",
             "set_search_query": "Updating search",
             "navigate_to_file": "Opening document",
+            "close_file": "Closing document",
             "highlight_file": "Highlighting document",
             "close_sidebar": "Closing sidebar",
             "open_bulk_actions_sidebar": "Opening bulk actions",
