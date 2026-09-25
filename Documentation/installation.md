@@ -141,7 +141,7 @@ with `<serverip>` replaced with the IP of the machine running loom, and doing so
 
 Note that the browser used to access loom running on the remote machine must support local domain resolution, under using `/etc/hosts` to define the `.loom` domain.
 
-Some browsers allow to set directly host resolution rules via command line arguments, see for example `cicd/chrome_wrapped.py` for chromium.
+Some browsers allow to set directly host resolution rules via command line arguments, see for example `cicd/chrome_wrapped.sh` for chromium.
 
 ### Overriding Helm Values
 

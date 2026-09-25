@@ -61,9 +61,9 @@ LOOM_DOMAIN="$(yq --raw-output '.domain' "${LOOM_VALUES_FILE}")"
 # a pipeline, so `set -e` still sees yq fail.
 #
 # Sorted, so the list is a set rather than an order somebody has to maintain.
-# The one place the order is visible is cicd/chrome_wrapped.sh, which opens a
-# tab per entry: the focused first tab is now api.loom, where the hand-written
-# array this replaced began with rabbit.loom.
+# Nothing depends on the order any more: cicd/chrome_wrapped.sh used to open a
+# tab per entry, which made the first one the focused tab, and now opens the
+# frontend alone.
 LOOM_HOSTS_RAW="$(yq --raw-output '.hostnames.ingress[], .hostnames.extra[]' "${LOOM_VALUES_FILE}")"
 LOOM_HOSTS_RAW="$(sort --unique <<< "${LOOM_HOSTS_RAW}")"
 

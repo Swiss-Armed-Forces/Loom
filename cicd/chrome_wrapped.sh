@@ -3,6 +3,10 @@
 # This script provides a way to locally test the infra with chrome
 # all known domains will be resolve to LOOM_SERVER
 #
+# Note that --host-rules maps *every* name to LOOM_SERVER regardless of which
+# tabs are opened, so the one default tab below costs nothing in reachability:
+# any *.loom link followed from it still lands on the same server.
+#
 set -euo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -10,12 +14,18 @@ DEFAULT_LOOM_SERVER="127.0.0.1"
 DEFAULT_LOOM_SERVER_PORT="8080"
 DEFAULT_LOOM_SERVER_PORT_SET="80"
 
+# The host to open. One tab, not one per entry in LOOM_HOSTS_FQDN: opening all
+# of them -- two dozen, and growing with every service added to the chart --
+# means two dozen self-signed certificate interstitials to click through before
+# reaching the one page anybody wanted.
+LOOM_HOST="frontend"
+
 #
 # Shared variables
 #
 
 # variables defined in vars.sh, here for shellcheck:
-LOOM_HOSTS_FQDN=()
+LOOM_DOMAIN=""
 
 VARS_FILE="${SCRIPT_DIR}/../vars.sh"
 # shellcheck disable=SC1091
@@ -61,7 +71,7 @@ is_ipv6() {
 #
 
 usage(){
-    echo "usage: ${0} [<options>] [LOOM_SERVER]"
+    echo "usage: ${0} [<options>] [LOOM_SERVER [LOOM_SERVER_PORT]]"
     echo "  -h|--help                         show this help"
     echo "  -v|--verbose                      show verbose output"
     echo
@@ -116,8 +126,24 @@ if ! is_ipv4 "${LOOM_SERVER}" && ! is_ipv6 "${LOOM_SERVER}"; then
     LOOM_SERVER_RESOLVED="$(resolve_dns "${LOOM_SERVER}")"
 fi
 
-echo "[*] LOOM_SERVER: ${LOOM_SERVER} -> ${LOOM_SERVER_RESOLVED}"
+# A URL rather than a bare hostname, because chromium decides for itself what
+# to do with `frontend.loom` on a command line and the answer is not stable.
+#
+# The scheme follows the port rather than being fixed: 8080 and 80, the two
+# defaults above, are the http that a local port-forward serves, while a box
+# reached on 443 serves only https -- every ingress in charts/values.yaml is
+# annotated `router.entrypoints: websecure` and only values-development widens
+# that to `web`, so http there reaches an entrypoint that routes nothing and
+# answers 404 on a stack that is perfectly healthy.
+if [[ "${LOOM_SERVER_PORT}" = 443 ]]; then
+    LOOM_URL="https://${LOOM_HOST}.${LOOM_DOMAIN}"
+else
+    LOOM_URL="http://${LOOM_HOST}.${LOOM_DOMAIN}"
+fi
+
+echo "[*] LOOM_SERVER: ${LOOM_SERVER} -> ${LOOM_SERVER_RESOLVED}:${LOOM_SERVER_PORT}"
+echo "[*] Opening: ${LOOM_URL}"
 chromium \
     --new-instance \
     --host-rules="MAP * ${LOOM_SERVER_RESOLVED}:${LOOM_SERVER_PORT}" \
-    "${LOOM_HOSTS_FQDN[@]}"
+    "${LOOM_URL}"
