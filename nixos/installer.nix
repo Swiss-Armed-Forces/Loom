@@ -6,7 +6,9 @@
 # x86-only. There would be no GPT to carve the key partition out of.
 #
 # repart gives a real, spec-valid GPT, so flashing is `dd` plus one `dd` of the
-# key -- and re-flashing is idempotent, which partition-table surgery never is.
+# key -- or, under `--lock-key`, plus one `cryptsetup luksFormat` and a `dd`
+# into what it opens -- and re-flashing is idempotent, which partition-table
+# surgery never is.
 { boxSystem }:
 {
   config,
@@ -129,6 +131,13 @@ let
       "--set LOOM_VG_NAME ${boxSystem.config.loom.storage.volumeGroup}"
       "--set LOOM_LV_NAME ${boxSystem.config.loom.storage.rootVolume}"
       "--set LOOM_ROOT_DEVICE ${boxSystem.config.loom.storage.rootDevice}"
+      # Whether this stick's key partition is a passphrase-locked container, and
+      # what to open it as. Read off the box's evaluation exactly as the storage
+      # names above are, and for the same reason: the installer and the box's
+      # stage 1 have to agree about what is on the stick, and a disagreement
+      # here produces a box that installs perfectly and then cannot be unlocked.
+      "--set LOOM_KEY_LOCKED ${lib.boolToString boxSystem.config.loom.keyStore.enable}"
+      "--set LOOM_KEYSTORE_MAPPING ${boxSystem.config.loom.keyStore.mapping}"
     ];
 
     meta.mainProgram = "loom-menu";
@@ -221,12 +230,19 @@ in
       # Deliberately unformatted: cicd/build_appliance_image.sh writes 4096
       # random bytes straight into it after flashing, one key per stick. The
       # label is constant so a single appliance closure serves every box.
+      #
+      # 32M for 4096 bytes, and not a rounding error. Under `--lock-key` the
+      # same partition holds a LUKS2 container with the key inside it, and a
+      # LUKS2 header plus its keyslot area is 16M. The size is the same in both
+      # modes on purpose: one layout means a stick can be re-flashed either way,
+      # and means run_appliance_vm.sh's sector arithmetic and verify_flash's
+      # partlabel loop do not have to ask which kind of image they are holding.
       "30-key" = {
         repartConfig = {
           Type = "linux-generic";
           Label = "loom-key";
-          SizeMinBytes = "1M";
-          SizeMaxBytes = "1M";
+          SizeMinBytes = "32M";
+          SizeMaxBytes = "32M";
         };
       };
     };

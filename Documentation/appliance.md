@@ -20,6 +20,8 @@ Read this before building anything; the design only makes sense if these hold.
   ten seconds later. See [The USB key guard](#the-usb-key-guard).
 - **Box and stick together are not protected.** If both are seized at once, the encryption buys you nothing.
   The design assumes the stick is removed, or travels separately, whenever the box is unattended.
+  **`--lock-key` changes this** — it puts a passphrase over the stick's key, so holding the stick stops being
+  enough. It costs unattended boot. See [Locking the stick's key](#locking-the-sticks-key).
 - **Lose the stick and the data is gone**, unless somebody wrote down the recovery passphrase that the
   installer prints and that the console shows on its login screen at every boot. Use `--key-backup` if you
   want a second copy.
@@ -229,6 +231,9 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--tag TAG` | Loom release to embed. Must exist in this checkout — the image is built from a clone of it, not from the remote. Defaults to the newest tag, with a confirmation prompt; see [Which tag gets picked](#which-tag-gets-picked). |
 | `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
 | `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
+| `--lock-key` | Put the key inside a passphrase-locked container on the stick instead of writing it raw, and generate the word passphrase. The stick stops being a bearer token; the box stops booting unattended. Read [Locking the stick's key](#locking-the-sticks-key) first. |
+| `--lock-key-words N` | How many words in that passphrase. Defaults to 7 (~90 bits); minimum 6. |
+| `--lock-key-out FILE` | Also write the key passphrase to `FILE`, mode 0400. Must not be the same file as `--key-backup`. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
 | `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — `spark` or `evo-x2`. There is no `--gpu`: the GPU is a property of the box. On the Spark this drops the offload but keeps the NVIDIA driver, which also runs that box's console. See [GPU support](#gpu-support) for when you need this. |
 | `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
@@ -639,6 +644,75 @@ under [Troubleshooting](#troubleshooting) — that command is the most likely wa
 reading it off the disk, so it survives, and the 30-second menu timeout stays generous partly to keep it
 reachable on boxes whose display wakes up late.
 
+## Locking the stick's key
+
+By default the stick is a **bearer token**: its `loom-key` partition holds 4096 random bytes, and whoever
+holds the stick unlocks the box. That is why the threat model above has to assume the stick travels
+separately from the box.
+
+`--lock-key` removes that assumption. The same 4096 bytes go inside a LUKS2 container on the same partition,
+and opening it costs a generated word passphrase that exists nowhere on the stick:
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.4.0 --flash /dev/sdX \
+    --lock-key --lock-key-out ~/loom-phrase-boxA.txt
+```
+
+The passphrase is printed at the end of the build, seven words joined by dashes:
+
+```text
+      key phrase: elaborate-hamper-duress-siesta-swimwear-client-stroller
+```
+
+**Write it down before that terminal scrolls.** It is generated at flash time, not stored on the stick, and
+`--lock-key-out` is the only thing that keeps a copy.
+
+### What it buys
+
+The stick becomes one factor of two — something you have plus something you know. Three situations stop being
+game over:
+
+- a stick lost, or left in a drawer, or found by somebody
+- a box and its stick seized together
+- a leaked `--key-backup` file _only if you did not make one_ (see the warning below)
+
+### What it costs
+
+**The box can no longer boot unattended.** Every boot stops in stage 1 and asks for the passphrase, so a box
+does not come back on its own after a power cut, and the key guard's poweroff needs somebody at the keyboard
+to undo. On a box you cannot reach, that is worse than the risk it removes.
+
+**The installer will not run unattended either.** The 60-second countdown does not happen on a locked stick —
+the menu waits, and Install asks for the passphrase before it touches a disk. A mistyped passphrase costs
+nothing, because it is asked for before anything is written; three wrong answers abort the install.
+
+### Two things it does not cover
+
+**The recovery passphrase is still a single-factor way in.** The installer enrols it as a second keyslot on
+the _root_, prints it, and the console shows it at every login — exactly as on an unlocked box. Anyone who
+saw it can unlock the disk with no stick and no stick passphrase. That is deliberate: without it, a dead
+stick would mean unrecoverable data. If that trade is wrong for your deployment, the passphrase is at
+`/var/lib/loom/recovery-passphrase` on the unlocked root, and `cryptsetup luksKillSlot` removes the keyslot.
+
+**`--key-backup` is a plaintext copy of the key.** It opens the box with no stick and no passphrase, so a
+backup file that leaks defeats `--lock-key` entirely. The build says so when you use both. `--lock-key-out`
+and `--key-backup` are refused if they name the same file — one file holding both factors is no better than
+neither.
+
+### Details worth knowing
+
+- The container is formatted with **argon2id**, pinned at 4 passes over 1 GiB. Pinned rather than
+  benchmarked, because cryptsetup would otherwise measure the build host and the container is opened on the
+  box: a roomy build host would pick a cost a smaller box cannot afford, and stage 1 would fail to unlock a
+  stick that verified perfectly.
+- The key partition is 32 MiB on **every** stick, locked or not. A LUKS2 header puts the payload at 16 MiB,
+  and one layout means a stick can be re-flashed either way.
+- The key guard still works, and still tells your stick from somebody else's — see the note under
+  [The USB key guard](#the-usb-key-guard).
+- **`appliance-vm installer` cannot boot a `--lock-key` image.** It writes the key partition with a plain
+  `dd`, which needs no root; formatting a container inside the virtual stick does. Use an unlocked image for
+  VM work.
+
 ## The USB key guard
 
 The stick is read once at boot, to unlock the disk. Without anything further, a running box would keep going
@@ -653,6 +727,13 @@ because tearing minikube and Docker down takes as long as it takes.
 What the guard checks is the key itself, not the presence of a stick: it reads the 4096 bytes and tests them
 against the disk's own LUKS header. A different stick carrying a partition named `loom-key` does not keep the
 box alive.
+
+On a [`--lock-key`](#locking-the-sticks-key) box it cannot run that test — the bytes are a container and the
+guard keeps no plaintext key, which is the point of the flag. It arms on the container being a container, and
+tells sticks apart by fingerprinting the first 4096 bytes of the header, which are unique per container. A
+different stick still does not keep the box alive. What is given up is the proof that this stick opens _this_
+disk, and stage 1 established that a few seconds earlier: the box is running, so the container on this stick
+yielded the key the root was formatted with.
 
 A few consequences worth knowing:
 

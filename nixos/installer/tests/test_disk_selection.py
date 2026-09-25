@@ -180,25 +180,47 @@ def test_an_unidentifiable_boot_medium_leaves_no_targets_at_all() -> None:
     assert devices.target_disks(runner) == []
 
 
+ZEROED = [
+    "cmp",
+    "--quiet",
+    f"--bytes={constants.KEY_BYTES}",
+    constants.KEY_DEVICE,
+    "/dev/zero",
+]
+IS_CONTAINER = ["cryptsetup", "isLuks", "--type", "luks2", constants.KEY_DEVICE]
+
+
 def test_key_state_distinguishes_missing_from_never_provisioned() -> None:
     runner = FakeRunner()
-    assert devices.key_state(runner, constants.KEY_DEVICE) is KeyState.MISSING
+    assert devices.key_state(runner, constants.KEY_DEVICE, False) is KeyState.MISSING
 
     runner.block_devices.add(constants.KEY_DEVICE)
     # `cmp` against /dev/zero succeeding means the partition is all zeroes.
-    runner.succeeds(
-        [
-            "cmp",
-            "--quiet",
-            f"--bytes={constants.KEY_BYTES}",
-            constants.KEY_DEVICE,
-            "/dev/zero",
-        ]
-    )
-    assert devices.key_state(runner, constants.KEY_DEVICE) is KeyState.EMPTY
+    runner.succeeds(ZEROED)
+    assert devices.key_state(runner, constants.KEY_DEVICE, False) is KeyState.EMPTY
 
     runner.commands.clear()
-    assert devices.key_state(runner, constants.KEY_DEVICE) is KeyState.PRESENT
+    assert devices.key_state(runner, constants.KEY_DEVICE, False) is KeyState.PRESENT
+
+
+def test_a_locked_stick_needs_a_container_rather_than_only_non_zero_bytes() -> None:
+    # On a --lock-key stick the partition holds a LUKS2 header, so "not all zeroes"
+    # would pass for any partition with anything on it at all -- including one a
+    # previous unlocked flash left full of key bytes, which stage 1 would then try to
+    # unlock and fail. Nothing else reports that, so it has to be caught here.
+    runner = FakeRunner()
+    runner.block_devices.add(constants.KEY_DEVICE)
+
+    assert devices.key_state(runner, constants.KEY_DEVICE, True) is KeyState.EMPTY
+
+    runner.succeeds(IS_CONTAINER)
+    assert devices.key_state(runner, constants.KEY_DEVICE, True) is KeyState.PRESENT
+
+    # An all-zero partition is EMPTY either way, and is answered before cryptsetup is
+    # asked anything -- that is the one diagnosis that sends an operator to --flash.
+    runner.commands.clear()
+    runner.succeeds(ZEROED)
+    assert devices.key_state(runner, constants.KEY_DEVICE, True) is KeyState.EMPTY
 
 
 def test_nvme_serials_lose_their_padding() -> None:

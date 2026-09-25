@@ -13,6 +13,11 @@
 #            p2 loom-pv0  ----+
 #   nvme1n1  p1 loom-pv1  ----+--> VG --> LV --> LUKS2 --> ext4
 #
+# The key that opens that LUKS2 container is on the stick, and `--lock-key`
+# (key-store.nix) puts a second container in front of it. Nothing in this file
+# changes either way: what varies is the path the key bytes are read from, never
+# the layout below.
+#
 # LUKS sits on *top* of LVM, which is the inverse of the usual NixOS recipe, and
 # the reason is the one invariant this whole directory is built around: a single
 # system closure serves every box. `boot.initrd.luks.devices` is static

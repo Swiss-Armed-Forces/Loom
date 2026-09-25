@@ -8,8 +8,23 @@ code under test, it is handed in.
 """
 
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from loom_installer.commands import CommandResult
+
+
+class FakeCall(NamedTuple):
+    """One command the code under test ran, and what it piped into it.
+
+    `stdin` is recorded rather than discarded because two things in this package
+    deliberately pass a secret that way -- the recovery passphrase into `luksAddKey`,
+    and the key-stick passphrase into `cryptsetup open`. A pipe is what keeps either out
+    of /proc, so "went in on stdin" is the property worth asserting, not an
+    implementation detail.
+    """
+
+    argv: list[str]
+    stdin: str | None
 
 
 @dataclass
@@ -27,13 +42,27 @@ class FakeRunner:
     block_devices: set[str] = field(default_factory=set)
     links: dict[str, str] = field(default_factory=dict)
     calls: list[list[str]] = field(default_factory=list)
+    # As `calls`, with the piped input beside each one. Kept separate rather than
+    # changing `calls`, which a dozen existing assertions index into by argv.
+    piped: list[FakeCall] = field(default_factory=list)
+    # Answers that are consumed rather than repeated, for the one thing on a box
+    # that legitimately gives a different answer to the same question twice: a
+    # passphrase prompt somebody got wrong and then got right.
+    queued: dict[str, list[CommandResult]] = field(default_factory=dict)
 
     def run(
         self, argv: list[str], *, stdin: str | None = None, timeout: int = 300
     ) -> CommandResult:
-        del stdin, timeout
+        del timeout
+        key = " ".join(argv)
         self.calls.append(list(argv))
-        return self.commands.get(" ".join(argv), CommandResult(1, "", "no such answer"))
+        self.piped.append(FakeCall(list(argv), stdin))
+
+        pending = self.queued.get(key)
+        if pending:
+            return pending.pop(0)
+
+        return self.commands.get(key, CommandResult(1, "", "no such answer"))
 
     def output(self, argv: list[str], *, timeout: int = 300) -> str:
         return self.run(argv, timeout=timeout).stdout
@@ -54,3 +83,11 @@ class FakeRunner:
 
     def succeeds(self, argv: list[str], stdout: str = "") -> None:
         self.commands[" ".join(argv)] = CommandResult(0, stdout, "")
+
+    def fails_then_succeeds(self, argv: list[str], failures: int) -> None:
+        """Refuse this command `failures` times, then behave like `succeeds`."""
+        self.queued[" ".join(argv)] = [
+            CommandResult(1, "", "No key available with this passphrase.")
+            for _ in range(failures)
+        ]
+        self.succeeds(argv)

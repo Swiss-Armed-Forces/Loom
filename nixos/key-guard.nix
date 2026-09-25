@@ -1,6 +1,7 @@
 # The USB key has to stay plugged in.
 #
 # The root is LUKS2 and its key is 4096 bytes on the stick's `loom-key`
+# partition -- under `--lock-key`, 4096 bytes inside a container on that
 # partition -- but that key is read exactly once, by systemd-cryptsetup in stage
 # 1 (box-hardware.nix). After switch-root nothing touches the stick again: the
 # ESP is on the internal disk, and the installer moves its own loader off the
@@ -50,6 +51,7 @@ let
       readonly INTERVAL=${toString cfg.intervalSec}
       readonly GRACE_TICKS=${toString cfg.graceTicks}
       readonly GRACE_SECONDS=${toString graceSeconds}
+      readonly KEY_ORACLE=${lib.boolToString cfg.requireKeyOracle}
       readonly ACTION=${lib.escapeShellArg cfg.action}
       readonly SOCKET=${lib.escapeShellArg config.loom.consoleSocket}
 
@@ -193,15 +195,38 @@ let
           # applies before it will install at all (common.sh `key_state`).
           [[ "''${fingerprint}" != "$(zero_fingerprint)" ]] || return 1
 
-          # The LUKS header is the oracle: this proves the stick still unlocks
-          # *this* disk. It is why no copy of the key has to be kept anywhere,
-          # and why a foreign stick carrying a partition named loom-key cannot
-          # keep the box alive. Cheap -- the installer formats with pbkdf2 at
-          # 1000 iterations.
-          cryptsetup luksOpen --test-passphrase \
-              --key-file "''${node}" \
-              --keyfile-size "''${KEY_BYTES}" \
-              "''${ROOT_DEVICE}" >/dev/null 2>&1 || return 1
+          if [[ "''${KEY_ORACLE}" = true ]]; then
+              # The LUKS header is the oracle: this proves the stick still
+              # unlocks *this* disk. It is why no copy of the key has to be kept
+              # anywhere, and why a foreign stick carrying a partition named
+              # loom-key cannot keep the box alive. Cheap -- the installer
+              # formats with pbkdf2 at 1000 iterations.
+              cryptsetup luksOpen --test-passphrase \
+                  --key-file "''${node}" \
+                  --keyfile-size "''${KEY_BYTES}" \
+                  "''${ROOT_DEVICE}" >/dev/null 2>&1 || return 1
+          else
+              # --lock-key: the bytes on the stick are a LUKS2 container, not the
+              # key, so the oracle above has nothing to authenticate with and the
+              # guard has no plaintext copy to authenticate with either -- by
+              # design, since holding one for the life of the box is the thing
+              # the flag exists to avoid.
+              #
+              # Losing it costs less than it looks. The oracle proves "this stick
+              # unlocks this disk", and under --lock-key stage 1 proved exactly
+              # that a few seconds ago: the box is running, so the container on
+              # this stick yielded the key this root was formatted with. What is
+              # left to establish here is that the thing plugged in is a key
+              # stick at all, and the fingerprint below carries the rest -- a
+              # different container has a different header, so a foreign stick
+              # still cannot keep the box alive.
+              #
+              # `--type luks2` rather than a bare isLuks, matching
+              # installer/loom_installer/devices.py `is_key_container`: LUKS1
+              # would answer yes, and nothing in Loom writes a LUKS1 container,
+              # so one here is a stick from somewhere else.
+              cryptsetup isLuks --type luks2 "''${node}" >/dev/null 2>&1 || return 1
+          fi
 
           put "''${DEVICE_FILE}" 0644 "''${node}"
           put "''${FINGERPRINT_FILE}" 0600 "''${fingerprint}"
@@ -432,6 +457,26 @@ in
         How many bytes of the key partition are the key. Must match what
         cicd/build_appliance_image.sh writes and what install.sh formatted
         with (`LOOM_KEY_BYTES`).
+
+        Under `--lock-key` the partition holds a LUKS2 container rather than the
+        key, and this many bytes of its header are what `read_fingerprint`
+        identifies the stick by instead.
+      '';
+    };
+
+    requireKeyOracle = lib.mkOption {
+      type = lib.types.bool;
+      default = !config.loom.keyStore.enable;
+      defaultText = lib.literalExpression "!config.loom.keyStore.enable";
+      internal = true;
+      description = ''
+        Whether arming has to prove the stick unlocks `rootDevice`, rather than
+        only that it carries key material.
+
+        True is the stronger check and the default. It goes false under
+        `--lock-key`, where the partition is a passphrase-locked container: the
+        guard has no plaintext key to authenticate with, and deliberately keeps
+        none. See `arm_once` for why the weaker check is enough there.
       '';
     };
 

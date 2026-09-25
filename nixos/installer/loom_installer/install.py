@@ -25,11 +25,12 @@ from enum import StrEnum
 from rich.table import Table
 from rich.text import Text
 
-from loom_installer import constants, devices, storage
+from loom_installer import constants, devices, keystore, storage
 from loom_installer.commands import CommandError, CommandRunner, Subprocess
 from loom_installer.console import Ui, build_ui
 from loom_installer.devices import KeyState
 from loom_installer.interlock import Aborted, confirm_destructive
+from loom_installer.keystore import KeystoreError
 from loom_installer.progress import CopyProgress
 from loom_installer.settings import Settings, SettingsError, settings
 
@@ -167,7 +168,11 @@ def encrypt(runner: CommandRunner, key_device: str, ui: Ui | None = None) -> Non
     """The LUKS2 container, on the logical volume.
 
     pbkdf2 with a low iteration count is deliberate: the key is 4096 bytes of
-    /dev/urandom, so stretching it buys nothing and only slows every boot.
+    /dev/urandom, so stretching it buys nothing and only slows every boot. That
+    argument holds whichever kind of stick this is -- `--lock-key` changes what
+    guards those bytes, not what they are, and its own container is the one that
+    takes a human passphrase and is formatted with argon2id to match
+    (cicd/build_appliance_image.sh `write_key_partition`).
     """
     root_device = settings().storage.root_device
     if ui is not None:
@@ -616,32 +621,39 @@ def run(runner: CommandRunner, ui: Ui, auto: bool) -> InstallReport:
 
     check_pool_size(runner, targets)
 
-    state = devices.key_state(runner, constants.KEY_DEVICE)
+    config = settings()
+    state = devices.key_state(runner, constants.KEY_DEVICE, config.key_store.locked)
     if state is not KeyState.PRESENT:
         raise InstallError(
             f"The {constants.KEY_LABEL} partition is {state}."
             " Re-flash with 'build-appliance-image --flash'."
         )
 
-    if not auto:
-        confirm_destructive(ui, runner, "INSTALL", boot, targets)
+    # Before the interlock, and before anything is written. On a `--lock-key` stick
+    # this prompts, and a mistyped passphrase should cost an operator nothing -- the
+    # same mistake discovered after `partition` would leave a box with no pool and no
+    # way to make one. On an ordinary stick it is not even a prompt: `unlocked_key`
+    # yields the key partition and does nothing else.
+    with keystore.unlocked_key(runner, ui) as key_device:
+        if not auto:
+            confirm_destructive(ui, runner, "INSTALL", boot, targets)
 
-    report = InstallReport()
+        report = InstallReport()
 
-    partition(runner, targets, ui)
-    create_pool(runner, len(targets), ui)
-    encrypt(runner, constants.KEY_DEVICE, ui)
-    make_filesystems(runner, ui)
-    mount_target(runner)
-    install_system(runner, ui)
-    select_setup_entry(runner, ui, report)
-    report.passphrase = enroll_recovery_passphrase(runner, constants.KEY_DEVICE)
-    # targets[0]: the ESP lives on the first pool member, and that is the disk the
-    # firmware has to be pointed at.
-    fix_boot_order(runner, ui, report, targets[0], boot)
-    unmount_target(runner)
+        partition(runner, targets, ui)
+        create_pool(runner, len(targets), ui)
+        encrypt(runner, key_device, ui)
+        make_filesystems(runner, ui)
+        mount_target(runner)
+        install_system(runner, ui)
+        select_setup_entry(runner, ui, report)
+        report.passphrase = enroll_recovery_passphrase(runner, key_device)
+        # targets[0]: the ESP lives on the first pool member, and that is the disk
+        # the firmware has to be pointed at.
+        fix_boot_order(runner, ui, report, targets[0], boot)
+        unmount_target(runner)
 
-    _completion_block(ui, report, settings())
+    _completion_block(ui, report, config)
     return report
 
 
@@ -657,11 +669,20 @@ def _completion_block(ui: Ui, report: InstallReport, config: Settings) -> None:
     recovery.add_row("Write this down now and keep it somewhere other than the box.")
     recovery.add_row("Without the USB stick it is the only way to unlock this disk.")
     recovery.add_row("It is also shown on every console login.")
+    if config.key_store.locked:
+        # Worth saying out loud on a locked stick, because it is the one way back
+        # in that the passphrase over the key does not cover. Somebody who reads
+        # this off the screen holds a single-factor unlock for the life of the box.
+        recovery.add_row("")
+        recovery.add_row("This works on its own -- no stick, no stick passphrase.")
     ui.show(ui.panel(recovery, "LUKS recovery passphrase", style="loom.warn"))
     ui.blank()
 
     ui.log("Leave the USB stick plugged in. The box cannot boot without it, and")
     ui.log("removing it from a running box powers that box off ten seconds later.")
+    if config.key_store.locked:
+        ui.log("This stick's key is passphrase-locked, so every boot stops and asks")
+        ui.log("for that passphrase. The box cannot come up unattended.")
     ui.blank()
 
     # What happens next, because nothing else says it: this box needs one boot on a
@@ -697,7 +718,13 @@ def main(argv: list[str] | None = None) -> int:
     except Aborted as error:
         ui.warn(str(error))
         return 1
-    except (InstallError, CommandError, SettingsError, OSError) as error:
+    except (
+        InstallError,
+        CommandError,
+        KeystoreError,
+        SettingsError,
+        OSError,
+    ) as error:
         ui.warn(str(error))
         return 1
 

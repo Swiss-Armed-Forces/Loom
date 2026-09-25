@@ -380,6 +380,11 @@ in
       # `partprobe`, which build_appliance_image.sh's validate_environment
       # requires and which util-linux does not carry.
       parted
+      # `--lock-key`: the container that goes on the stick's key partition, and
+      # the word passphrase over it. diceware carries its own EFF wordlist, which
+      # is why there is none in this repository.
+      cryptsetup
+      diceware
 
       # appliance VMs (`appliance-vm`)
       qemu

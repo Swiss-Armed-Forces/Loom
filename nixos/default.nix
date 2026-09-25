@@ -115,6 +115,16 @@
   wifiCountry ? "",
   # As `loomInterface`, but for the radio: empty means "use the platform's match".
   wifiInterface ? "",
+  # The optional passphrase over the stick's LUKS key (nixos/key-store.nix). Off
+  # unless build-appliance-image is given --lock-key, which also generates the
+  # word passphrase and prints it; unlike the WiFi credentials above, none of it
+  # reaches Nix -- what changes here is only *that* the key partition is a
+  # container, never what unlocks it.
+  #
+  # It makes the stick one factor of two instead of a bearer token, and it costs
+  # unattended boot: the box stops at a prompt in stage 1. See
+  # Documentation/appliance.md.
+  lockKey ? false,
 }:
 let
   nixpkgsConfig = {
@@ -258,6 +268,7 @@ let
       wifiInterface
       debugAccess
       debugSshAuthorizedKey
+      lockKey
       ;
     loomUser = "loom";
     loomRepoDir = "/home/loom/loom";
@@ -329,6 +340,7 @@ let
     ./console-mouse.nix
     ./debug.nix
     ./key-guard.nix
+    ./key-store.nix
     ./modes.nix
     ./network.nix
     ./ready.nix
@@ -584,6 +596,22 @@ in
         applianceModules
         ;
       inherit (specialArgs) loomUser;
+    }
+  );
+
+  # `nix-build ./nixos -A tests.applianceKeyStore --argstr system x86_64-linux`
+  # The --lock-key build's key guard. tests/appliance.nix covers the guard on an
+  # ordinary stick, where arming proves the stick opens the root; a locked stick
+  # has no plaintext key for that proof and arms on a weaker check. Getting that
+  # branch wrong leaves the guard idle for the life of the box, silently, which
+  # is the kind of thing only a booted machine notices.
+  tests.applianceKeyStore = withKvmPolicy (
+    import ./tests/appliance-key-store.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        ;
     }
   );
 }

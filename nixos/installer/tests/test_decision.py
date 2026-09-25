@@ -28,6 +28,7 @@ def inputs(**overrides: object) -> AutoInstallInputs:
         "attempted": False,
         "boot_disk": "/dev/sda",
         "key_state": KeyState.PRESENT,
+        "key_locked": False,
         "target_count": 1,
         "pool_bytes": ENOUGH,
         "claimed": False,
@@ -80,6 +81,21 @@ def test_a_stick_with_no_key_refuses(state: KeyState) -> None:
     # Installing from one produces a box that encrypts itself and then never boots
     # again.
     assert decide(inputs(key_state=state)) is AutoInstall.NO_KEY
+
+
+def test_a_passphrase_locked_key_refuses() -> None:
+    # --lock-key: the key needs a passphrase, and an unattended install is by
+    # definition the case where nobody is there to type one.
+    assert decide(inputs(key_locked=True)) is AutoInstall.KEY_LOCKED
+
+
+def test_a_locked_key_refuses_before_anything_reads_a_disk() -> None:
+    # Ordering, not taste. `pool_claimed_by_key` -- the probe behind
+    # ALREADY_INSTALLED -- opens the root with the key bytes this verdict says are
+    # unreachable, so a box where both apply has to come out KEY_LOCKED. menu.py
+    # leans on that to skip the probe entirely.
+    verdict = decide(inputs(key_locked=True, claimed=True, target_count=0))
+    assert verdict is AutoInstall.KEY_LOCKED
 
 
 def test_no_eligible_disk_refuses() -> None:

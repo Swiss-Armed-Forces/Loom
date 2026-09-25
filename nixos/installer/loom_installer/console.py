@@ -22,6 +22,7 @@ it, because the installed box prints the same pair in its login banner and two
 copies would drift.
 """
 
+import getpass
 import io
 import os
 import select
@@ -187,6 +188,23 @@ class Ui:
         self.out.print(message, end="")
         try:
             return input().strip()
+        except EOFError:
+            return ""
+
+    def prompt_secret(self, message: str) -> str:
+        """As `prompt`, for something that should not stay on the screen.
+
+        Not stripped, unlike `prompt`: a passphrase is bytes somebody chose, and
+        trimming whitespace out of one would quietly reject a correct answer. The only
+        thing removed is the newline `getpass` already leaves off.
+
+        Printed the same way as `prompt` and then handed `getpass` an empty prompt of
+        its own, for the same reason -- getpass writes to /dev/tty directly, outside the
+        palette and outside anything rich knows about.
+        """
+        self.out.print(message, end="")
+        try:
+            return getpass.getpass("")
         except EOFError:
             return ""
 

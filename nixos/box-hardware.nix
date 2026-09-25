@@ -13,6 +13,12 @@
 # systemd stage 1 falls back to prompting for the recovery passphrase that the
 # installer enrolled in keyslot 1.
 #
+# With `--lock-key` those 4096 bytes are not on the partition directly: the
+# partition is a LUKS2 container of its own, key-store.nix adds an initrd unit
+# that asks for its passphrase and leaves the bytes on a ramfs, and `keyFile`
+# below names that file instead. Everything else here is identical either way --
+# it is the same 4096 bytes at the same offset, reached by a different path.
+#
 # Stage 1 is the only place that *needs* the key, but it is no longer the only
 # place that looks at it: key-guard.nix keeps watching the same device for as
 # long as the box runs, and powers it off when the key goes away. The three
@@ -21,6 +27,7 @@
 { config, ... }:
 let
   guard = config.loom.keyGuard;
+  keyStore = config.loom.keyStore;
 in
 {
   # ---------------------------------------------------------------------------
@@ -34,7 +41,11 @@ in
   # ---------------------------------------------------------------------------
   boot.initrd.luks.devices."cryptroot" = {
     device = guard.rootDevice;
-    keyFile = guard.keyDevice;
+    # The stick's partition, or -- when it is a passphrase-locked container --
+    # the ramfs file key-store.nix's unit unlocks it into, ordered before this
+    # unit runs. Both hold the same 4096 bytes at offset 0, which is why the two
+    # lines below are the same either way.
+    keyFile = if keyStore.enable then keyStore.plainKeyFile else guard.keyDevice;
     keyFileSize = guard.keyBytes;
     keyFileOffset = 0;
     allowDiscards = true;

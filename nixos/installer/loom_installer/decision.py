@@ -21,6 +21,7 @@ class AutoInstall(StrEnum):
     ATTEMPTED = "attempted"
     NO_BOOT_MEDIUM = "no-boot-medium"
     NO_KEY = "no-key"
+    KEY_LOCKED = "key-locked"
     NO_TARGET = "no-target"
     TOO_SMALL = "too-small"
     ALREADY_INSTALLED = "already-installed"
@@ -36,6 +37,9 @@ class AutoInstallInputs:
     # The medium we booted from, or None when it could not be identified.
     boot_disk: str | None
     key_state: KeyState
+    # Whether the stick's key is behind a passphrase (`--lock-key`). Nobody can
+    # type one into an unattended install, so it is a refusal rather than a prompt.
+    key_locked: bool
     target_count: int
     pool_bytes: int
     # Whether this stick already installed this box.
@@ -50,6 +54,7 @@ REASONS: dict[AutoInstall, str] = {
     AutoInstall.ATTEMPTED: "an install was already attempted this boot",
     AutoInstall.NO_BOOT_MEDIUM: "the boot medium is ambiguous",
     AutoInstall.NO_KEY: "the stick carries no LUKS key",
+    AutoInstall.KEY_LOCKED: "the stick's key needs a passphrase",
     AutoInstall.NO_TARGET: "there is no eligible internal disk",
     AutoInstall.TOO_SMALL: "the disks are too small",
     AutoInstall.ALREADY_INSTALLED: "this stick already installed this box",
@@ -74,6 +79,12 @@ def _refusals(inputs: AutoInstallInputs) -> list[Refusal]:
         Refusal(inputs.attempted, AutoInstall.ATTEMPTED),
         Refusal(inputs.boot_disk is None, AutoInstall.NO_BOOT_MEDIUM),
         Refusal(inputs.key_state is not KeyState.PRESENT, AutoInstall.NO_KEY),
+        # Before the two disk questions below, because it is not a disk question:
+        # a locked key needs somebody at the keyboard, and once that is settled
+        # the state of the disks cannot change the answer. It is also what keeps
+        # `pool_claimed_by_key` -- which needs the plaintext key this refusal
+        # says nobody has -- from being asked at all (menu.py `inspect`).
+        Refusal(inputs.key_locked, AutoInstall.KEY_LOCKED),
         Refusal(inputs.target_count == 0, AutoInstall.NO_TARGET),
         Refusal(inputs.pool_bytes < constants.MIN_POOL_BYTES, AutoInstall.TOO_SMALL),
         Refusal(inputs.claimed, AutoInstall.ALREADY_INSTALLED),

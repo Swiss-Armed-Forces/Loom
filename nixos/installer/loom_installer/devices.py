@@ -174,7 +174,7 @@ def _has_mounted_partition(runner: CommandRunner, disk: str) -> bool:
     return any(line.strip() for line in mountpoints.splitlines())
 
 
-def key_state(runner: CommandRunner, key_device: str) -> KeyState:
+def key_state(runner: CommandRunner, key_device: str, locked: bool) -> KeyState:
     """What the stick's key partition holds.
 
     A stick that was never provisioned would install fine and then never boot, so this
@@ -182,14 +182,42 @@ def key_state(runner: CommandRunner, key_device: str) -> KeyState:
 
     Compared against /dev/zero by `cmp` rather than read here: the partition is 4096
     bytes of binary, and the answer wanted is one bit.
+
+    On a `--lock-key` stick those bytes are a LUKS2 header rather than the key, and
+    "not zeroes" stops being enough -- a partition holding anything at all would pass.
+    So `PRESENT` there means cryptsetup recognises a container. The zero check still
+    runs first either way, because an unprovisioned partition is the one failure this
+    exists to name precisely: `EMPTY` sends the operator to `--flash`, where
+    `MISSING` would send them looking for a stick that is already plugged in.
+
+    `locked` is passed in rather than read off `settings()` here, so that nothing in
+    this module depends on what the environment says -- every rule in it is answered
+    through the runner, which is what lets tests/test_disk_selection.py exercise them
+    against recorded answers.
     """
     if not runner.is_block_device(key_device):
         return KeyState.MISSING
 
-    result = runner.run(
+    zeroed = runner.run(
         ["cmp", "--quiet", f"--bytes={constants.KEY_BYTES}", key_device, "/dev/zero"]
     )
-    return KeyState.EMPTY if result.ok else KeyState.PRESENT
+    if zeroed.ok:
+        return KeyState.EMPTY
+
+    if locked and not is_key_container(runner, key_device):
+        return KeyState.EMPTY
+
+    return KeyState.PRESENT
+
+
+def is_key_container(runner: CommandRunner, key_device: str) -> bool:
+    """Whether the key partition holds a LUKS2 container rather than the key itself.
+
+    `--type luks2` rather than a bare `isLuks`: LUKS1 would answer yes, and a LUKS1
+    container here is not something this ever writes, so it is a stick from somewhere
+    else rather than one of ours.
+    """
+    return runner.run(["cryptsetup", "isLuks", "--type", "luks2", key_device]).ok
 
 
 def pool_bytes(runner: CommandRunner, disks: list[str]) -> int:

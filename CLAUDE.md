@@ -155,9 +155,20 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   also boots without the splash and downgrades the USB key guard to a warning, so it does not behave
   like a real stick. Run mode only; refused when `$CI` is set; adds `loom-debug-bundle` to the box.
   Read the threat-model section in `Documentation/appliance.md` before using it
+- `build-appliance-image --lock-key` - Put the stick's 4096 LUKS key bytes inside a LUKS2 container
+  on the same `loom-key` partition, under a generated word passphrase (`diceware`, EFF list) that is
+  printed once and stored nowhere else. The stick stops being a bearer token - holding it is no
+  longer enough - which is the one assumption `Documentation/appliance.md`'s threat model otherwise
+  has to make. It costs unattended boot: stage 1 stops at a prompt, so the box does not come back on
+  its own after a power cut, and the installer refuses to run unattended (`decision.py`'s
+  `KEY_LOCKED`). The recovery passphrase is deliberately unchanged and remains a single-factor way
+  in. Related flags: `--lock-key-words N` (default 7, minimum 6), `--lock-key-out FILE` (refused if
+  it names the same file as `--key-backup`). Only meaningful with `--flash`, and `appliance-vm
+  installer` cannot boot such an image - it writes the key partition with a plain `dd`. Read the
+  `## Locking the stick's key` section in `Documentation/appliance.md`
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
-  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`, `debug`; with no
-  argument it runs all eight, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
+  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`, `key-store`, `debug`;
+  with no argument it runs all nine, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
@@ -197,9 +208,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `nixos/tests/scripts/tests` (the VM tests' own helpers). Each also runs in its package's
   `checkPhase`, so a mistake fails an image build too; running them here needs nothing built.
   Extra arguments go to pytest
-- `appliance-eval` - Instantiates the stick image for all three platforms — twice each, once with
-  `--debug`, since `nixos/debug.nix` is inert otherwise and would rot unevaluated — and the tests for
-  this one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
+- `appliance-eval` - Instantiates the stick image for all three platforms — three times each, once
+  plain, once with `--debug` and once with `--lock-key`, since `nixos/debug.nix` and
+  `nixos/key-store.nix` are inert otherwise and would rot unevaluated — and the tests for this one,
+  building nothing. Catches a module that no longer evaluates, a renamed option, a failed
   assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
 - `loom-platform-info` - Report this box's hardware — wired ports with their drivers, PCI ids and
   multi-port ids, radios and whether they do AP mode, GPU with the firmware VRAM carve-out beside

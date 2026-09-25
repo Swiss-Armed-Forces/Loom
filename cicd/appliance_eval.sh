@@ -212,6 +212,15 @@ evaluate_platforms(){
             --argstr debugSshAuthorizedKey \
             'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEvaluationOnlyNotAKeyEvaluationOnlyNotA eval@loom'
 
+        # The --lock-key build, for the same reason as --debug above:
+        # nixos/key-store.nix is inert without it, and the module it adds is an
+        # initrd unit -- the one part of an appliance that nothing else here can
+        # check, and the worst place to find a mistake. Nothing secret is
+        # involved; the flag changes only *that* the key partition is a
+        # container, never what unlocks it.
+        instantiate "${platform}" installerImage '--lock-key' \
+            --arg lockKey true
+
         # The tests are evaluated for the platform that could run them. The
         # nodes import the same module list the image does, so evaluating them
         # for another platform re-checks what installerImage just checked; what

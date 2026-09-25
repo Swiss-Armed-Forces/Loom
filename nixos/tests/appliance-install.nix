@@ -56,7 +56,13 @@ pkgs.testers.runNixOSTest {
   extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
 
   nodes.installer = {
-    virtualisation.memorySize = 1024;
+    # 2G rather than the 1G the rest of this test needs, because of one subtest:
+    # the `--lock-key` key container is formatted with argon2id pinned at 1 GiB
+    # (cicd/build_appliance_image.sh `write_locked_key_partition`), and opening it
+    # costs that much again. Running the real parameters here rather than cheap
+    # ones is the point -- a pinned cost the box cannot afford would otherwise
+    # only show up in stage 1, on hardware, with no way to get in and look.
+    virtualisation.memorySize = 2048;
     virtualisation.emptyDiskImages = [
       diskMb
       diskMb

@@ -20,6 +20,7 @@ this file is about the code.
 | `console-mouse/` | The pty shim `loom-console` runs the tmux client under — the gpm client protocol, SGR translation and the pointer sequencing — with its own pytest suite, run at build time. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
+| `key-store.nix` | The `--lock-key` build: the stick's key inside a LUKS2 container, and the initrd unit that asks for its passphrase and unlocks it before the root is opened. Inert in every other image; see `--lock-key` below. |
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
 | `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
 | `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
@@ -41,6 +42,7 @@ this file is about the code.
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 | `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
+| `tests/appliance-key-store.nix` | VM test for the `--lock-key` build's key guard: it arms on a container rather than on a key it can test against the root, and still tells one stick from another. |
 | `tests/appliance-debug.nix` | VM test for the `--debug` build: two nodes, and whether the generated key gets the second one in. The counterpart to `tests/appliance.nix`, which asserts no sshd for every other image. |
 | `tests/scripts.nix` | The tests as a Python package, built for the test driver's own interpreter and installed through its `extraPythonPackages`. |
 | `tests/scripts/` | The tests themselves (`loom_tests`), as Python the repository's own hooks lint and type-check. A module per test node, `vt.py` and `tmux.py` shared between them, `driver.py` the typing shim for what the driver hands them, and a pytest suite for the two helpers that parse something. |
@@ -349,7 +351,10 @@ framework cannot supply". qemu can supply one. `target_disks` (`installer/loom_i
 
 Flashing onto a file needs no root either: it is the same two steps `build_appliance_image.sh`
 performs on a stick — write the image, then write 4096 bytes of key into the `loom-key` partition —
-and `sfdisk --json` reads a partition table out of an ordinary file. The firmware keeps its own
+and `sfdisk --json` reads a partition table out of an ordinary file. That is also the limit of it:
+an image built with `--lock-key` cannot be booted this way, because formatting a container inside
+the virtual stick needs `losetup` and `cryptsetup`, which need root. The locked path is covered by
+`tests/appliance-install.nix` and `tests/appliance-key-store.nix` instead, where root is free. The firmware keeps its own
 variables in the state directory, so the `Loom appliance` entry `fix_boot_order` writes at install
 time is still there on the next boot.
 
@@ -508,6 +513,7 @@ the two type checks can run, and the one that runs on every commit is worth more
 | `mouse` | `tests.applianceMouse` | Point-and-click, end to end: a `uinput` mouse in the guest, through mousedev and gpm and the pty shim, to the pane tmux focuses — plus the detach control and the unreachable prefix. |
 | `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |
 | `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, and the fallback switched off. |
+| `key-store` | `tests.applianceKeyStore` | The `--lock-key` build's key guard, which arms on a weaker check than every other image's: a locked stick carries no plaintext key to test against the root. Getting that branch wrong leaves the guard idle for the life of the box, silently. |
 
 The script picks the platform matching the host architecture, passes the `*.loom` host list, the
 namespace and the chat model from `vars.sh` — `tests/appliance.nix` asserts the appliance restates
@@ -614,6 +620,7 @@ A run costs disk in two ways, and both land on the filesystem holding `/nix`:
 | `wifi` | 1 | 19 MB |
 | `usb-ingest` | 1 | 28 MB, plus four 256 MB scratch disks it puts filesystems on |
 | `interface-fallback` | 3 | 20 MB each |
+| `key-store` | 1 | 96 MB — three 32 MB loop images, the same shape as `appliance`'s |
 
 A whole five-target run moved this host's free space by **2.8 GB**, nearly all of it closure and
 none of it VM disks. The guest's own `/nix/.rw-store` is a tmpfs, so what a node writes to the store
@@ -769,6 +776,35 @@ The stick side of the same numbers lives in `installer/loom_installer/constants.
 labels) and in `cicd/build_appliance_image.sh` (`KEY_BYTES`, `KEY_PARTLABEL`). Those cannot share the Nix
 options — they run from the stick, before any of this exists — so they are the one pair that still has to
 be kept in step by hand.
+
+### And a third place, under `--lock-key`
+
+`key-store.nix` adds a step in front of all of it: the partition holds a LUKS2 container, and an initrd unit
+unlocks it onto a ramfs before `systemd-cryptsetup@cryptroot` runs. What keeps that from multiplying the
+places that know about the key is a single invariant — **every consumer wants a path holding the 4096
+plaintext bytes at offset 0**, and only the path changes:
+
+| | Path |
+| --- | --- |
+| initrd | `loom.keyStore.plainKeyFile`, written by `key-store.nix`'s unit |
+| installer | `/dev/mapper/<loom.keyStore.mapping>`, opened by `installer/loom_installer/keystore.py` |
+| key guard | the partition itself, unchanged |
+
+So `install.encrypt`, `install.enroll_recovery_passphrase` and `storage.pool_claimed_by_key` are untouched
+by the flag: all three already took the key device as a parameter. `installer.nix` passes
+`loom.keyStore.enable` and `.mapping` through `wrapProgram` beside the storage names, for the same reason.
+
+The unit is shaped like nixpkgs' clevis unit (`luksroot.nix`, `cryptsetup-clevis-*`) rather than like a
+second `boot.initrd.luks.devices` entry, and that is not a style choice. nixpkgs renders every entry into one
+flat `/etc/crypttab` with no ordering between the lines, and systemd's generator derives dependencies from
+the *device* column, not the key file column — so a nested mapping would race the root that depends on it.
+
+The guard is the one consumer that does not follow the invariant, deliberately: it keeps reading the
+partition, because what it is watching is a stick being pulled. On a locked box it cannot run its
+`--test-passphrase` oracle — there is no plaintext key and it keeps none — so `loom.keyGuard.requireKeyOracle`
+goes false and it arms on `cryptsetup isLuks` plus the fingerprint. The first 4096 bytes of a LUKS2 header
+are unique per container and never zero, so identity and the "unprovisioned" sentinel both survive.
+`tests/appliance-key-store.nix` is that branch.
 
 ### Why USB ingest asks the guard rather than udev
 

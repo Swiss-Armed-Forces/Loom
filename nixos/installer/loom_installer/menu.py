@@ -84,8 +84,9 @@ class BoxState:
 
 
 def inspect(runner: CommandRunner) -> BoxState:
+    key_locked = settings().key_store.locked
     boot = devices.boot_disk(runner)
-    key_state = devices.key_state(runner, constants.KEY_DEVICE)
+    key_state = devices.key_state(runner, constants.KEY_DEVICE, key_locked)
     targets = devices.target_disks(runner)
     pool_bytes = devices.pool_bytes(runner, targets)
     attempted = os.path.exists(constants.AUTO_MARKER)
@@ -95,8 +96,14 @@ def inspect(runner: CommandRunner) -> BoxState:
     # and worse than meaningless once an install has been attempted this boot,
     # because then it would be reading a disk that is part way through being
     # written.
+    #
+    # `key_locked` is the fourth reason not to ask, and the hardest one: the probe
+    # unlocks the root with the stick's key bytes, and on a locked stick those are
+    # behind a passphrase nobody has typed yet. There is nothing to lose by
+    # skipping it, because a locked key refuses the unattended install outright
+    # (decision.py) and the probe exists only to gate that install.
     claimed = False
-    if not attempted and targets and key_state is KeyState.PRESENT:
+    if not attempted and not key_locked and targets and key_state is KeyState.PRESENT:
         claimed = storage.pool_claimed_by_key(runner, constants.KEY_DEVICE)
 
     return BoxState(
@@ -109,6 +116,7 @@ def inspect(runner: CommandRunner) -> BoxState:
                 attempted=attempted,
                 boot_disk=boot,
                 key_state=key_state,
+                key_locked=key_locked,
                 target_count=len(targets),
                 pool_bytes=pool_bytes,
                 claimed=claimed,
@@ -157,7 +165,14 @@ def show_status(ui: Ui, runner: CommandRunner, state: BoxState) -> None:
         table.add_row("", "Install and wipe will refuse to run.")
 
     if state.key_state is KeyState.PRESENT:
-        table.add_row("LUKS key", Text("present", style="loom.ok"))
+        if settings().key_store.locked:
+            # Said here rather than only at the prompt, because it is also the
+            # explanation for the missing countdown two rows down.
+            table.add_row(
+                "LUKS key", Text("present, passphrase-locked", style="loom.ok")
+            )
+        else:
+            table.add_row("LUKS key", Text("present", style="loom.ok"))
     else:
         # Not cosmetic: installing on a stick with no key produces a box that
         # partitions, encrypts, and then never boots again.

@@ -33,6 +33,16 @@ class Storage(NamedTuple):
 # vda is the node's own root and is never named below.
 DISKS = ["/dev/vdb", "/dev/vdc"]
 
+# What a `--lock-key` stick's key container is opened as. Only this file cares:
+# the box uses nixos/key-store.nix's `mapping` and the flash script uses a third
+# name, because none of the three is ever open at the same time as another.
+KEYSTORE_MAPPING = "loom-keystore"
+
+# The passphrase over that container in this test. A fixed string rather than a
+# generated one: what is being checked here is that a container works as a key
+# file, and generating the passphrase is cicd/build_appliance_image.sh's job.
+KEYSTORE_PASSPHRASE = "correct-horse-battery-staple-stick-key-phrase"
+
 
 class Installer:
     """The installer package, driven one step at a time on the node.
@@ -56,20 +66,27 @@ class Installer:
                 f"LOOM_VG_NAME={storage.volume_group}",
                 f"LOOM_LV_NAME={storage.root_volume}",
                 f"LOOM_ROOT_DEVICE={storage.root_device}",
+                # An ordinary stick, which is what every step below but the locked
+                # subtest is about. `locked=True` overrides it for that one.
+                "LOOM_KEY_LOCKED=false",
+                f"LOOM_KEYSTORE_MAPPING={KEYSTORE_MAPPING}",
             ]
         )
 
-    def step(self, statement: str) -> str:
+    def step(self, statement: str, locked: bool = False) -> str:
         """Run one statement with the installer's modules imported."""
         program = (
-            "from loom_installer import devices, install, storage, wipe;"
+            "from loom_installer import devices, install, keystore, storage, wipe;"
             "from loom_installer.commands import Subprocess;"
             "runner = Subprocess();"
             f"{statement}"
         )
-        return self.machine.succeed(
-            f"env {self.environment} python3 -c {_quote(program)}"
-        )
+        # Appended rather than substituted: `env` takes the last assignment of a
+        # name, so this overrides the default above without rebuilding the string.
+        environment = self.environment
+        if locked:
+            environment += " LOOM_KEY_LOCKED=true"
+        return self.machine.succeed(f"env {environment} python3 -c {_quote(program)}")
 
 
 def _quote(program: str) -> str:
@@ -125,6 +142,11 @@ def run(
 
     with subtest("a single-disk box gets the same layout"):
         _one_disk_gets_the_same_layout(installer, steps, volume_group, root_device)
+
+    with subtest("a passphrase-locked key container installs the same box"):
+        _a_locked_key_container_is_just_another_key(
+            installer, steps, volume_group, root_device
+        )
 
 
 def _pool_spans_every_disk(
@@ -279,3 +301,110 @@ def _one_disk_gets_the_same_layout(
     installer.succeed(f"test -b {root_device}")
     pv_count = installer.succeed(f"vgs --noheadings -o pv_count {volume_group}").strip()
     assert pv_count == "1", pv_count
+
+
+def _a_locked_key_container_is_just_another_key(
+    installer: "Machine", steps: Installer, volume_group: str, root_device: str
+) -> None:
+    """`--lock-key`, end to end below the prompt.
+
+    The claim the whole feature rests on is that nothing downstream of the key can
+    tell the two kinds of stick apart -- both are a path holding 4096 plaintext bytes
+    at offset 0, and `install.encrypt` and `enroll_recovery_passphrase` are handed
+    one without being told which. This builds the locked kind for real, with real
+    cryptsetup, and runs the same two steps against it.
+
+    Not covered here: the prompt that gets the container open on a real stick
+    (installer/tests/test_keystore.py) and the initrd unit that does the same job in
+    stage 1 (nixos/key-store.nix), which no VM test in this repository can reach.
+    """
+    # Start from a pool this subtest owns. The one above left a single-disk group.
+    installer.succeed(f"vgremove --force {volume_group}")
+    installer.succeed("pvscan --cache")
+    steps.step(f"install.partition(runner, [{DISKS[0]!r}])")
+    steps.step("install.create_pool(runner, 1)")
+
+    # The stick's key partition as it comes off `build-appliance-image --flash
+    # --lock-key`: 32M, a LUKS2 container, 4096 random bytes written inside it.
+    # 32M because a LUKS2 header puts the payload at 16M -- which is the whole
+    # reason nixos/installer.nix sizes the partition the way it does.
+    installer.succeed("truncate --size=32M /tmp/locked-key.img")
+    key_loop = installer.succeed("losetup --find --show /tmp/locked-key.img").strip()
+    installer.succeed(f"printf %s {KEYSTORE_PASSPHRASE} >/tmp/keystore-pass")
+    # The same KDF the flash script pins, so this also fails if that changes to
+    # something the box cannot afford.
+    installer.succeed(
+        "cryptsetup luksFormat --type luks2 --batch-mode --pbkdf argon2id"
+        " --pbkdf-force-iterations 4 --pbkdf-memory 1048576 --pbkdf-parallel 4"
+        f" --key-file /tmp/keystore-pass {key_loop}"
+    )
+
+    # A container is what a locked build calls PRESENT.
+    state = steps.step(
+        f"print(devices.key_state(runner, {key_loop!r}, True))", locked=True
+    ).strip()
+    assert state == "present", state
+
+    # And raw key bytes are what it calls EMPTY -- the case that matters, because a
+    # locked image flashed by something that wrote the key raw boots to a stage 1
+    # prompt no container can answer, with nothing on screen to say why. `EMPTY`
+    # rather than `MISSING` is deliberate: it is the word that sends an operator to
+    # --flash instead of hunting for a stick that is already plugged in.
+    installer.succeed("truncate --size=32M /tmp/raw-key.img")
+    installer.succeed(
+        "dd if=/dev/urandom of=/tmp/raw-key.img bs=4096 count=1"
+        " conv=notrunc status=none"
+    )
+    raw_loop = installer.succeed("losetup --find --show /tmp/raw-key.img").strip()
+    raw_state = steps.step(
+        f"print(devices.key_state(runner, {raw_loop!r}, True))", locked=True
+    ).strip()
+    assert raw_state == "empty", raw_state
+    # The same partition is PRESENT to an ordinary build, so this is the flag
+    # deciding, not the bytes.
+    unlocked_state = steps.step(
+        f"print(devices.key_state(runner, {raw_loop!r}, False))"
+    ).strip()
+    assert unlocked_state == "present", unlocked_state
+    installer.succeed(f"losetup --detach {raw_loop}")
+
+    installer.succeed(
+        f"cryptsetup open --type luks2 --key-file /tmp/keystore-pass {key_loop}"
+        f" {KEYSTORE_MAPPING}"
+    )
+    mapping = f"/dev/mapper/{KEYSTORE_MAPPING}"
+    installer.succeed(f"dd if=/dev/urandom of={mapping} bs=4096 count=1 status=none")
+
+    # From here on it is the ordinary install, handed the mapping instead of a
+    # partition. Nothing in these three calls knows the difference.
+    steps.step(f"install.encrypt(runner, {mapping!r})", locked=True)
+    installer.succeed(f"cryptsetup isLuks {root_device}")
+    installer.succeed("test -b /dev/mapper/cryptroot")
+
+    steps.step("install.make_filesystems(runner)", locked=True)
+    steps.step("install.mount_target(runner)", locked=True)
+    passphrase = steps.step(
+        f"print(install.enroll_recovery_passphrase(runner, {mapping!r}))", locked=True
+    ).strip()
+    assert len(passphrase.split("-")) == 6, passphrase
+    steps.step("install.unmount_target(runner)", locked=True)
+
+    # The box's half: stage 1 reads 4096 bytes out of the unlocked container and
+    # they have to open the root. Asserted through cryptsetup directly, which is
+    # what systemd-cryptsetup will do with box-hardware.nix's keyFile.
+    installer.succeed(f"vgchange --activate y {volume_group}")
+    installer.succeed(
+        "cryptsetup luksOpen --test-passphrase --keyfile-size 4096"
+        f" --key-file {mapping} {root_device}"
+    )
+
+    # And the recovery passphrase still works beside it, which is the promise that
+    # a lost stick passphrase is not a lost box.
+    installer.succeed(f"printf %s {passphrase} >/tmp/locked-recovery")
+    installer.succeed(
+        "cryptsetup luksOpen --test-passphrase"
+        f" --key-file /tmp/locked-recovery {root_device}"
+    )
+
+    installer.succeed(f"cryptsetup close {KEYSTORE_MAPPING}")
+    installer.succeed(f"losetup --detach {key_loop}")
