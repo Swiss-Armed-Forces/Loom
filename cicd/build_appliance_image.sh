@@ -1022,7 +1022,11 @@ wait_for_key_partition(){
 key_partition(){
     local number
 
-    number="$(sudo partx --show --noheadings --raw --output NR,NAME "${FLASH_DEVICE}" \
+    # No `--raw`: util-linux refuses it alongside `--show` ("options --show and
+    # --raw cannot be combined"), as it does `--pairs`. The default column
+    # output is padded, which costs nothing here because `awk` splits on
+    # whitespace either way.
+    number="$(sudo partx --show --noheadings --output NR,NAME "${FLASH_DEVICE}" \
         | awk --assign label="${KEY_PARTLABEL}" '$2 == label { print $1 }' \
         | head --lines=1)"
     if [[ -z "${number}" ]]; then
@@ -1127,7 +1131,9 @@ verify_flash(){
     # From the partition table, for the reason `key_partition` gives: `lsblk`'s
     # PARTLABEL column is udev's answer, and udev has not necessarily caught up
     # with a stick written seconds ago.
-    names="$(sudo partx --show --noheadings --raw --output NAME "${FLASH_DEVICE}")"
+    # As `key_partition`: no `--raw` with `--show`, and `awk` rather than a
+    # NAME-only column, so a padded field cannot defeat the `--line-regexp`.
+    names="$(sudo partx --show --noheadings --output NR,NAME "${FLASH_DEVICE}" | awk '{ print $2 }')"
 
     for label in loom-live-esp loom-live-store "${KEY_PARTLABEL}"; do
         if ! grep --quiet --line-regexp --fixed-strings "${label}" <<< "${names}"; then
