@@ -13,6 +13,10 @@ class Operator(NamedTuple):
 
     user: str
     repo_dir: str
+    # The account's home, which is *not* repo_dir's parent by definition and is not
+    # the same thing as SKAFFOLD_HOME. Read off the account in the .nix file so this
+    # and the tmpfiles rule in box.nix cannot disagree.
+    home: str
 
 
 class KeyGuardPaths(NamedTuple):

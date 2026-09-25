@@ -32,6 +32,36 @@ let
   # must not advertise one.
   showWifi = config.loom.wifi.enable && config.loom.mode == "run";
 
+  # Where the operator account actually lives, taken from the account rather than
+  # written out, so the two cannot drift.
+  operatorHome = config.users.users.${loomUser}.home;
+
+  # Skaffold's global config, seeded onto the box by the tmpfiles rules at the
+  # bottom of this file.
+  #
+  # `collect-metrics` is the reason it exists. Left unset, skaffold announces on
+  # its first run that it collects anonymized usage data, records `true` for
+  # itself, and reports to firebaselogging-pa.googleapis.com. An appliance is
+  # given away as a box that talks to nobody, and setup mode is the one boot it
+  # spends on somebody's office LAN -- which is also the boot where skaffold does
+  # hours of work. There is no environment variable for this: the one telemetry
+  # variable skaffold has is SKAFFOLD_UPDATE_CHECK, which nixpkgs' wrapper
+  # already sets to false, so the config file is the only lever.
+  #
+  # The survey prompt rides along because it is the same machinery, and because
+  # what it asks for -- open a Google form -- needs a browser and a network this
+  # box does not have.
+  #
+  # minikube needs no equivalent: nixpkgs' wrapper exports
+  # MINIKUBE_WANTUPDATENOTIFICATION=false before exec'ing the binary.
+  skaffoldGlobalConfig = (pkgs.formats.yaml { }).generate "skaffold-global-config" {
+    global = {
+      collect-metrics = false;
+      survey.disable-prompt = true;
+    };
+    kubeContexts = [ ];
+  };
+
   # What a phone's camera expects, and what Android and iOS both emit from their
   # own "share this network". No escaping here and none needed: wifi.nix asserts
   # that the SSID and the passphrase contain nothing outside [A-Za-z0-9_-], which
@@ -763,6 +793,16 @@ in
     # Mirrors devenv.nix:273,276 -- the layout every Loom code path is tested
     # against. Both directories are already in .gitignore, so the working tree
     # of the embedded checkout stays clean.
+    #
+    # The two are not the same kind of variable, which matters to anyone seeding
+    # a config file for either. MINIKUBE_HOME is minikube's own: it reads it and
+    # keeps everything under it. SKAFFOLD_HOME is ours -- the string does not
+    # appear in the skaffold binary at all. up.sh:17 reads it and turns it into
+    # `--cache-file` and `--remote-cache-dir` (up.sh:148-149,299-302), which
+    # moves skaffold's *caches* and nothing else. Skaffold's own paths are
+    # hardcoded under $HOME/.skaffold, so its global config is read from
+    # /home/loom/.skaffold/config -- see the tmpfiles rules at the bottom of
+    # this file, which is where that file comes from.
     MINIKUBE_HOME = "${loomRepoDir}/.minikube";
     SKAFFOLD_HOME = "${loomRepoDir}/.skaffold";
 
@@ -934,8 +974,25 @@ in
 
   # The installer writes the recovery passphrase here. wheel-readable so the
   # operator can see it without sudo; the disk it sits on is encrypted anyway.
+  #
+  # Then skaffold's global config -- `collect-metrics: false`, see
+  # skaffoldGlobalConfig above for why. `C` rather than `f`: it copies only when
+  # the destination is absent, so what lands is a writable regular file that
+  # skaffold goes on rewriting (kube-context entries, prompt timestamps) and an
+  # operator may edit, while the mode and ownership columns are re-applied on
+  # every boot.
+  #
+  # The path is deliberately outside the seeded checkout, and not only because
+  # that is where skaffold looks. A rule under ${loomRepoDir} would be a bug:
+  # tmpfiles runs at sysinit and creates leading directories, so it would
+  # materialise the repository directory hours before loom-seed-repo
+  # (repo.nix:74-119) reaches its `mv ${loomRepoDir}.tmp ${loomRepoDir}` -- which
+  # would then move the staging tree *inside* the directory instead of becoming
+  # it.
   systemd.tmpfiles.rules = [
     "d /var/lib/loom 0750 root wheel -"
+    "d ${operatorHome}/.skaffold 0755 ${loomUser} users -"
+    "C ${operatorHome}/.skaffold/config 0644 ${loomUser} users - ${skaffoldGlobalConfig}"
   ];
 
   system.stateVersion = "26.05";

@@ -154,6 +154,7 @@ pkgs.testers.runNixOSTest {
               operator=Operator(
                   user="${loomUser}",
                   repo_dir="${loomRepoDir}",
+                  home="${nodes.appliance.users.users.${loomUser}.home}",
               ),
               key_guard=KeyGuardPaths(
                   directory="${keyGuardDir}",

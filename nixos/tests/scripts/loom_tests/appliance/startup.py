@@ -89,6 +89,28 @@ def state_directories(appliance: "Machine", subtest: "Subtest", params: Params) 
             assert shell == want, f"{var}: unit says {want}, shell says {shell}"
 
 
+def skaffold_metrics(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
+    with subtest("skaffold reports no usage metrics from this box"):
+        # box.nix seeds skaffold's global config with `collect-metrics: false`.
+        # Without it skaffold announces on its first run that it collects anonymized
+        # usage data and then reports to firebaselogging-pa.googleapis.com -- during
+        # first-time setup, which is the one boot this box spends on a real network.
+        config = f"{params.operator.home}/.skaffold/config"
+        stat = appliance.succeed(f"stat -c '%U %a' {config}").strip()
+        assert stat == f"{params.operator.user} 644", stat
+
+        # The assertion that matters, and the reason it is made through skaffold
+        # rather than by reading the file: the path above is $HOME-derived, and
+        # SKAFFOLD_HOME -- which the box also sets, to somewhere else entirely -- has
+        # nothing to do with it (see box.nix's `environment.sessionVariables`). Asking
+        # skaffold re-derives the path the way skaffold does, so seeding the file
+        # under SKAFFOLD_HOME instead fails here rather than shipping.
+        listed = appliance.succeed(
+            f"runuser -l {params.operator.user} -c 'skaffold config list --all'"
+        )
+        assert "collect-metrics: false" in listed, listed
+
+
 def docker(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("docker is available for the minikube driver"):
         appliance.wait_for_unit("docker.service")

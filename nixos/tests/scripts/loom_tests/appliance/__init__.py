@@ -71,6 +71,7 @@ def run(
     startup.loom_up_flags(appliance, subtest, params)
     startup.loom_up_on_path(appliance, subtest)
     startup.state_directories(appliance, subtest, params)
+    startup.skaffold_metrics(appliance, subtest, params)
     startup.docker(appliance, subtest)
     startup.exposure(appliance, subtest, params)
     startup.interface_rename(appliance, subtest)

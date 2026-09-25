@@ -614,6 +614,11 @@ before that boot, and press a key at the console to watch: the first pane of the
 This takes a long time. It populates minikube's image store on the encrypted root and marks itself complete, so
 a reboot will not repeat it.
 
+This is also the only boot on which the box has internet, so it is the only one where its build tooling could
+report anything about itself. Skaffold's usage metrics are switched off before it ever runs — `nixos/box.nix`
+seeds `~loom/.skaffold/config` with `collect-metrics: false` — and minikube's update check is off as well. What
+the fetch reaches for beyond that is the container registries it is there to pull from.
+
 **When it finishes, the box powers itself off** — a minute after the last log line, so an unattended run ends
 with a box that is simply off. Before it goes down it promotes `Loom` back to being the boot default and
 removes the first-time-setup entry, so what comes back up is a single-entry menu.
