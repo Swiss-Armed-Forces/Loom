@@ -45,8 +45,8 @@ let
 
   # What the platform says about this particular box, turned into up.sh flags.
   #
-  # --disable-ai drops Ollama and open-webui *and* the indexing steps that call
-  # them. Every platform without a GPU gets it, which today is all of them but
+  # --disable-ai drops Ollama *and* the indexing steps that call it. Every
+  # platform without a GPU gets it, which today is all of them but
   # the EVO-X2: runsAiServices defaults to `gpuVendor != null`, because the
   # embedding step runs over every indexed file and a CPU never drains the
   # queue. The NUC 12 also says it outright, for memory.

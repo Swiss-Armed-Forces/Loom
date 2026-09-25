@@ -1119,9 +1119,9 @@ usage(){
     echo "  --trusted-ca-bundle PATH              inject CA certificate(s) from PEM bundle PATH as trusted roots into all pods"
     echo "  --archive-enc-key KEY                 use KEY (exactly 32 chars) as the archive encryption master key"
     echo "  --no-resources                        deploy without resource requests or limits (see charts/values-no-resources.yaml)"
-    echo "  --disable-ai                          disable AI services: ollama, open-webui, and the indexing steps"
-    echo "                                        that call them (see charts/values-disable-ai-services.yaml). No"
-    echo "                                        summaries, translation, embeddings, auto-tags or RAG."
+    echo "  --disable-ai                          disable AI services: ollama and the indexing steps that call"
+    echo "                                        it (see charts/values-disable-ai-services.yaml). No summaries,"
+    echo "                                        translation, embeddings, auto-tags or RAG."
     echo "  --scaling                             enable autoscaling (KEDA/HPA) for compute-intensive services (see charts/values-scaling.yaml)"
     echo "  --down                                tear down the deployment and exit
   --delete                              delete the deployment after startup"

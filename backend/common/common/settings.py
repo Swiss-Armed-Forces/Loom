@@ -64,13 +64,32 @@ LLMExtraHeaders = dict[str, str]
 LLMExtraBody = dict[str, object]
 
 
+class LLMProvider(StrEnum):
+    """Which service answers at ``endpoint``.
+
+    One value per service, each backed by one class in ``common.llm.provider`` -- that
+    module is where a service's quirks are written down, and where the model family is
+    matched off the name in ``model``.
+    """
+
+    # Ollama, spoken to directly.
+    OLLAMA = "ollama"
+    # LiteLLM proxy; in Loom's deployments it fronts vLLM.
+    LITELLM = "litellm"
+    # Infomaniak's OpenAI-compatible AI service.
+    INFOMANIAK = "infomaniak"
+    # Hosted OpenAI, or a gateway matching its behaviour exactly.
+    OPENAI = "openai"
+
+
 class LLMClientSettings(BaseModel):
-    backend: str = "ollama"
+    provider: LLMProvider = LLMProvider.OLLAMA
     endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
     api_key: str = "ollama"
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     temperature: float | None = None
-    thinking: bool = False
+    # None sends no reasoning_effort at all, leaving the model to its own default.
+    thinking: bool | None = None
     timeout: int = 5 * 60
     # NOTE: max_tokens can not exceed context window length of model
     max_tokens: int | None = 128000
@@ -78,6 +97,7 @@ class LLMClientSettings(BaseModel):
     extra_headers: LLMExtraHeaders | None = None
     extra_body: LLMExtraBody | None = None
     system_prompt: str | None = None
+    tool_timeout: int | None = None
 
 
 class LLMEmbeddingSettings(LLMClientSettings):
@@ -90,7 +110,10 @@ class LLMEmbeddingSettings(LLMClientSettings):
     text_chunk_overlap: int = 50
     document_prefix: str = "search_document:"
     query_prefix: str = "search_query:"
-    thinking: bool = False
+    # NOTE: no `thinking` override. The embedding path is `build_embedder`, which reads
+    # `extra_headers`/`extra_body` only -- pydantic-ai's `EmbeddingSettings` has no
+    # thinking key, and the embeddings API has no reasoning to switch off. The inherited
+    # `None` says that by omission; a `False` here would read as a setting that works.
 
 
 class LLMSummarizationBaseSettings(LLMClientSettings):
@@ -102,15 +125,15 @@ class LLMSummarizationKeyPointsSettings(LLMSummarizationBaseSettings):
     text_chunk_size: int = 3000
     text_chunk_overlap: int = 100
     max_sentences: int | None = 10
-    thinking: bool = False
+    thinking: bool | None = False
 
 
 class LLMSummarizationSettings(LLMSummarizationBaseSettings):
-    thinking: bool = True
+    thinking: bool | None = True
 
 
 class LLMSummarizationRefineSettings(LLMSummarizationBaseSettings):
-    thinking: bool = True
+    thinking: bool | None = True
     max_sentences: int | None = 30
 
 
@@ -119,39 +142,50 @@ class LLMRagHydeSettings(LLMClientSettings):
         5  # REMARK: No entirely happy with that parameter located here ...
     )
     temperature: float | None = 0.7
-    thinking: bool = False
+    thinking: bool | None = False
 
 
 class LLMRagRerankSettings(LLMClientSettings):
     system_prompt: str | None = "You are an expert reranking machine called Loom."
-    thinking: bool = True
+    # Off deliberately. `rerank_and_synthesize` fans out one call per chunk, capped at
+    # MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING (50), against an inference server that
+    # serves them one at a time -- so a question's rerank wall-clock is the sum of all
+    # 50 generations, and the whole useful output is a single integer score.
+    thinking: bool | None = False
+    # The answer is one number, so the inherited 128000 caps nothing that matters while
+    # letting a single runaway generation eat the 5-minute `timeout` -- which `rerank`
+    # then retries up to RAG_MAX_RETRIES times, on an already saturated queue.
+    max_tokens: int | None = 512
 
 
 class LLMRagSynthesizeSettings(LLMClientSettings):
     system_prompt: str | None = "You are an expert english chatbot called Loom."
-    thinking: bool = True
+    thinking: bool | None = True
 
 
-class LLMToolSettings(LLMClientSettings):
-    thinking: bool = True
+class LLMSuggestQueriesSettings(LLMClientSettings):
+    # Off for the same cost reason as `rag_rerank`. One invocation fans out
+    # `tool.suggest_queries.num_candidates` (10) generations against an inference server
+    # that answers them one at a time, so a suggestion's wall-clock is the sum of all
+    # ten -- and each one's whole useful output is a short Lucene query string.
+    thinking: bool | None = False
 
 
 class LLMAgentSettings(LLMClientSettings):
-    thinking: bool = True
-    merge_system_messages: bool = True
-    tool_timeout: int = 10 * 60
+    thinking: bool | None = True
+    tool_timeout: int | None = 10 * 60
 
 
 class LLMVisionSettings(LLMClientSettings):
     model: str = "huihui_ai/qwen3.5-abliterated:9b"
     system_prompt: str | None = "You are an expert at analysing what's in an image"
     max_sentences: int | None = 20
-    thinking: bool = False
+    thinking: bool | None = False
 
 
 class LLMLanguageDetectionSettings(LLMClientSettings):
     system_prompt: str | None = "You are a language detection service."
-    thinking: bool = False
+    thinking: bool | None = False
 
 
 class LLMTranslationSettings(LLMClientSettings):
@@ -160,7 +194,7 @@ You are a translation service.
 Output only the translated text.
 No explanations, no preamble, no commentary.
 """
-    thinking: bool = False
+    thinking: bool | None = False
 
 
 class SuggestQueriesToolSettings(BaseModel):
@@ -174,7 +208,7 @@ class ToolSettings(BaseModel):
 
 class LLMSettings(BaseModel):
     embedding: LLMEmbeddingSettings = LLMEmbeddingSettings()
-    tool: LLMToolSettings = LLMToolSettings()
+    suggest_queries: LLMSuggestQueriesSettings = LLMSuggestQueriesSettings()
     agent: LLMAgentSettings = LLMAgentSettings()
     summarization_key_points: LLMSummarizationKeyPointsSettings = (
         LLMSummarizationKeyPointsSettings()

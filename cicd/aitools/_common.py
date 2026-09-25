@@ -7,8 +7,8 @@ from git import Repo
 from gitlab.v4.objects import ProjectMergeRequest
 
 from . import config
-from .claude import (
-    generate_commit_message_via_claude,
+from .aitools import (
+    generate_commit_message_via_ai,
     parse_commit_message,
 )
 from .git_helpers import get_branch_diff, load_mr_template
@@ -114,16 +114,19 @@ def _get_mr_for_current_branch(repo: Repo) -> ProjectMergeRequest:
     return mr
 
 
-def _maybe_update_mr_description(mr: ProjectMergeRequest, repo: Repo) -> None:
-    """Generate a new MR title/description via Claude and optionally apply it."""
+def _maybe_update_mr_description(
+    mr: ProjectMergeRequest,
+    repo: Repo,
+) -> None:
+    """Generate a new MR title/description via AI and optionally apply it."""
     diff = get_branch_diff(repo, target_branch=mr.target_branch)
     mr_template = load_mr_template(repo)
-    message = generate_commit_message_via_claude(
+    message = generate_commit_message_via_ai(
         diff,
         mr_template,
         repo,
         MRContext(title=mr.title, description=mr.description or ""),
-        target_branch=mr.target_branch,
+        mr.target_branch,
     )
     if not message:
         logger.warning("Could not generate MR description for !%s — skipping", mr.iid)

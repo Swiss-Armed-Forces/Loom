@@ -84,14 +84,14 @@ unreachable, try the other port.
 
 ### AI services follow the GPU
 
-Only a platform with a working GPU ships Ollama and open-webui. This is a rule, not a coincidence per box:
+Only a platform with a working GPU ships Ollama. This is a rule, not a coincidence per box:
 the models in the image are sized for offload, and the embedding step runs over _every_ indexed file. On a
 CPU that does not slow the pipeline down, it stops it — an indexing run that should take an afternoon takes
-days and the queue never drains. A box that shipped them anyway would look like it was working.
+days and the queue never drains. A box that shipped it anyway would look like it was working.
 
 So `gpuVendor` in `nixos/platforms/<id>.nix` decides, and today only the EVO-X2 declares one. The other two
-pass `--disable-ai` to `up.sh`, which stops both services being deployed **and** stops the indexing pipeline
-calling them. Gone: summaries, translation, image descriptions, auto-tagging, embeddings, and with them
+pass `--disable-ai` to `up.sh`, which stops the service being deployed **and** stops the indexing pipeline
+calling it. Gone: summaries, translation, image descriptions, auto-tagging, embeddings, and with them
 semantic search and RAG. Kept: full-text search, OCR, metadata extraction and archive import. The console
 session also drops its assistant pane, because that pane is an `opencode` pointed at the cluster's own Ollama
 and would have nothing to talk to.
@@ -754,8 +754,8 @@ under `.loom`, so this just works:
 https://frontend.loom
 ```
 
-No hosts file, no configuration on the visitor's side. The other services — `grafana.loom`, `open-webui.loom`,
-`elasticvue.loom` and the rest — resolve the same way.
+No hosts file, no configuration on the visitor's side. The other services — `grafana.loom`, `elasticvue.loom`,
+`ollama.loom` and the rest — resolve the same way.
 
 The box is not a gateway and does not advertise itself as one: the lease carries an address, a netmask and a
 DNS server, and deliberately no default route. So a laptop that is also on wifi keeps reaching the internet
@@ -1303,8 +1303,8 @@ The way out is a new stick:
 build-appliance-image --platform evo-x2 --no-gpu --tag 1.4.0 --flash /dev/sdX
 ```
 
-That image is the CPU-only one this platform used to produce — which, by the rule above, also means no Ollama
-and no open-webui. Full-text search, OCR, metadata extraction and archive import all still work. The build
+That image is the CPU-only one this platform used to produce — which, by the rule above, also means no
+Ollama. Full-text search, OCR, metadata extraction and archive import all still work. The build
 prints what it decided:
 
 ```text

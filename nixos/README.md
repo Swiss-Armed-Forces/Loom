@@ -160,7 +160,7 @@ Three things follow, and only the first is obvious:
 - `box.nix` adds the vendor's SMI tool to `loom.toolchain`, because `up.sh` refuses to run without it once
   `--gpus` is set. `tests/appliance.nix` asserts this, so declaring a vendor and forgetting the tool fails in
   CI rather than on the box.
-- `runsAiServices` defaults to `gpuVendor != null`, so a CPU-only platform also drops Ollama and open-webui.
+- `runsAiServices` defaults to `gpuVendor != null`, so a CPU-only platform also drops Ollama.
   That is deliberate: the embedding step runs over every indexed file, and on a CPU the queue never drains.
 
 The second point is spelled differently per vendor, because the vendors package the tool differently:

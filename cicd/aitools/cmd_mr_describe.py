@@ -6,9 +6,9 @@ import sys
 from git import Repo
 
 from ._common import _ask, _get_mr_for_current_branch
-from .claude import (
-    generate_commit_message_via_claude,
-    is_claude_cli_installed,
+from .aitools import (
+    generate_commit_message_via_ai,
+    is_ai_cli_installed,
     parse_commit_message,
 )
 from .git_helpers import get_branch_diff, load_mr_template
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def cmd_mr_describe(args: argparse.Namespace) -> None:
-    """Update GitLab MR title and description using Claude."""
+    """Update GitLab MR title and description using AI."""
     user_instructions = " ".join(args.instructions) if args.instructions else ""
 
     if user_instructions:
@@ -35,11 +35,11 @@ def cmd_mr_describe(args: argparse.Namespace) -> None:
 
     mr_template = load_mr_template(repo)
 
-    if not is_claude_cli_installed():
-        logger.error("Claude CLI not installed.")
+    if not is_ai_cli_installed():
+        logger.error("AI CLI not installed.")
         sys.exit(1)
 
-    message = generate_commit_message_via_claude(
+    message = generate_commit_message_via_ai(
         diff,
         mr_template,
         repo,
@@ -51,7 +51,7 @@ def cmd_mr_describe(args: argparse.Namespace) -> None:
         target_branch=mr.target_branch,
     )
     if not message:
-        logger.error("Failed to generate commit message via Claude.")
+        logger.error("Failed to generate commit message via AI.")
         sys.exit(1)
 
     parsed = parse_commit_message(message)

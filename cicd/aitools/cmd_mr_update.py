@@ -8,7 +8,7 @@ from git import Repo
 from git.exc import GitCommandError
 
 from ._common import _get_mr_for_current_branch
-from .claude import is_claude_cli_installed, run_claude_agentic
+from .aitools import is_ai_cli_installed, run_ai_agentic
 from .prompts import build_merge_conflict_prompt
 
 logger = logging.getLogger(__name__)
@@ -24,8 +24,8 @@ def cmd_mr_update(_args: argparse.Namespace) -> None:
         logger.error("Cannot run mr-update on the main branch.")
         sys.exit(1)
 
-    if not is_claude_cli_installed():
-        logger.error("Claude CLI not installed.")
+    if not is_ai_cli_installed():
+        logger.error("AI CLI not installed.")
         sys.exit(1)
 
     mr = _get_mr_for_current_branch(repo)
@@ -72,8 +72,9 @@ def cmd_mr_update(_args: argparse.Namespace) -> None:
         ) as ctx:
             with open(os.path.join(ctx, "conflicts.txt"), "w", encoding="utf-8") as f:
                 f.write("\n".join(conflicting))
-            run_claude_agentic(
-                build_merge_conflict_prompt(branch_name, conflicting, ctx), repo
+            run_ai_agentic(
+                build_merge_conflict_prompt(branch_name, conflicting, ctx),
+                repo,
             )
         repo.git.add("-A")
         repo.git.commit(

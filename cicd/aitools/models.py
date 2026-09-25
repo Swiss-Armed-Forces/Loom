@@ -50,7 +50,7 @@ class MRRef(NamedTuple):
 
 
 class MRContext(NamedTuple):
-    """MR metadata passed to Claude for prompt generation."""
+    """MR metadata passed to AI for prompt generation."""
 
     title: str = ""
     description: str = ""

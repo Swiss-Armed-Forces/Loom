@@ -55,7 +55,6 @@ hostnames:
     - gotenberg
     - grafana
     - ollama
-    - open-webui
     - prometheus
     - rabbit
     - redisinsight
@@ -143,9 +142,9 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__tool__api_key:
+    llm__suggest_queries__api_key:
       enabled: false
-      name: loom-llm-tool-api-key
+      name: loom-llm-suggest-queries-api-key
       remoteRef:
         key: ""
         property: ""
@@ -173,21 +172,27 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__hyde__api_key:
+    llm__rag_hyde__api_key:
       enabled: false
       name: loom-llm-hyde-api-key
       remoteRef:
         key: ""
         property: ""
-    llm__rerank__api_key:
+    llm__rag_rerank__api_key:
       enabled: false
       name: loom-llm-rerank-api-key
       remoteRef:
         key: ""
         property: ""
-    llm__synthesize__api_key:
+    llm__rag_synthesize__api_key:
       enabled: false
       name: loom-llm-synthesize-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm__language_detection__api_key:
+      enabled: false
+      name: loom-llm-language-detection-api-key
       remoteRef:
         key: ""
         property: ""
@@ -323,11 +328,13 @@ pipeline:
 
 # Shared LLM defaults — override per sub-key via YAML anchors
 _llmDefaults: &llm-defaults
-  backend: null
+  # which service answers at `endpoint`: ollama | litellm | infomaniak | openai
+  provider: null
   endpoint: null      # set per sub-key in configmap when null
   api_key: null
   model: huihui_ai/qwen3.5-abliterated:9b
   temperature: null
+  thinking: null      # true/false; null leaves the model to its own default
   extra_headers: null
   extra_body: null
   timeout: null
@@ -336,20 +343,23 @@ _llmDefaults: &llm-defaults
 
 llm:
   embedding:
+    # NOTE: `thinking` comes from the shared anchor but is never emitted for embedding —
+    # the embeddings API has no reasoning to switch off.
     <<: *llm-defaults
     model: nomic-embed-text-v2-moe
+    # Sizes the Elasticsearch dense_vector field. Not sent to the embeddings API, so it
+    # must match what the model actually returns — a mismatch fails at index time.
     dimensions: null
     text_chunk_size: null
     text_chunk_overlap: null
     document_prefix: null
     query_prefix: null
 
-  tool:
+  suggest_queries:
     <<: *llm-defaults
 
   agent:
     <<: *llm-defaults
-    merge_system_messages: true
     tool_timeout: null
 
   summarization_key_points:
@@ -366,18 +376,22 @@ llm:
     <<: *llm-defaults
     system_prompt: null
 
-  hyde:
+  rag_hyde:
     <<: *llm-defaults
     num_documents: null
     max_tokens: null          # should match embedding.text_chunk_size (default: 400)
 
-  rerank:
+  rag_rerank:
     <<: *llm-defaults
 
-  synthesize:
+  rag_synthesize:
     <<: *llm-defaults
 
   vision:
+    <<: *llm-defaults
+    system_prompt: null
+
+  language_detection:
     <<: *llm-defaults
     system_prompt: null
 
@@ -634,36 +648,6 @@ beat:
   # Example:
   # app-tier: scheduler
   # service-type: beat
-
-notifyListener:
-  enabled: true
-  replicaCount: 1
-  priorityClass: null
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/crawler
-  initContainer:
-    enabled: true
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
-      tag: null
-      pullPolicy: null
-    resources:
-      requests:
-        cpu: "0.05"
-        memory: "50Mi"
-      limits:
-        cpu: "0.1"
-        memory: "100Mi"
-  resources:
-    requests:
-      cpu: "0.1"
-      memory: "200Mi"
-    limits:
-      cpu: "0.2"
-      memory: "500Mi"
-  # Custom labels specific to notify-listener resources
-  customLabels: {}
-  customAnnotations: {}
 
 crawler:
   enabled: true
@@ -1072,43 +1056,6 @@ ollama:
   # app-tier: ml
   # service-type: llm
 
-open_webui:
-  enabled: true
-  replicaCount: 1
-  priorityClass: null
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
-  env:
-    ENV: "prod"
-    WEBUI_AUTH: "false"
-    ENABLE_SIGNUP: "false"
-    USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED: "true"
-    OFFLINE_MODE: "true"
-    HF_HUB_OFFLINE: 1
-    RAG_EMBEDDING_MODEL_AUTO_UPDATE: "false"
-    RAG_RERANKING_MODEL_AUTO_UPDATE: "false"
-    WHISPER_MODEL_AUTO_UPDATE: "false"
-  service:
-    port: 8080
-  pvc:
-    storage: 10Gi
-    storageClass: null
-    customLabels: {}
-    customAnnotations: {}
-  ingress: *default-ingress-config
-  resources:
-    requests:
-      cpu: "0.05"
-      memory: "200Mi"
-    limits:
-      cpu: "1.5"
-      memory: "1500Mi"
-  # Custom labels specific to open_webui resources
-  customLabels: {}
-  customAnnotations: {}
-  # Example:
-  # app-tier: frontend
-  # service-type: chat-ui
 
 dovecot:
   replicaCount: 1

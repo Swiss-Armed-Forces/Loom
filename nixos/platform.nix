@@ -117,22 +117,22 @@
       default = config.loom.platform.gpuVendor != null;
       defaultText = lib.literalExpression "config.loom.platform.gpuVendor != null";
       description = ''
-        Whether this box deploys Ollama and open-webui.
+        Whether this box deploys Ollama.
 
-        Defaults to "only where there is a GPU to run them on", which is the
+        Defaults to "only where there is a GPU to run it on", which is the
         rule rather than a coincidence: every model in the image is sized for
         offload, and the embedding step runs over *every* indexed file. On a CPU
         that does not degrade the pipeline, it defines it -- an indexing run that
         would take an afternoon takes days, and the queue never drains. Shipping
-        the services and letting the operator discover that is worse than not
-        shipping them, because the box looks like it is working.
+        the service and letting the operator discover that is worse than not
+        shipping it, because the box looks like it is working.
 
         Set it explicitly to say something the GPU does not already say. The
         NUC 12 does, for memory; a CPU-only box that somebody has measured and
         is happy with would set it true.
 
-        False makes the appliance pass `--disable-ai` to up.sh, which stops both
-        services being deployed *and* stops the indexing pipeline calling them --
+        False makes the appliance pass `--disable-ai` to up.sh, which stops the
+        service being deployed *and* stops the indexing pipeline calling it --
         without the second half every indexed file would retry an embedding task
         fifteen times against a service that is not there
         (charts/values-disable-ai-services.yaml).

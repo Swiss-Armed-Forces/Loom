@@ -37,9 +37,20 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
         description="Loom AI developer tools.",
     )
     parser.add_argument(
+        "--backend",
+        choices=["claude", "opencode"],
+        default="claude",
+        help="Backend used by Loom AI tools (default: claude)",
+    )
+    parser.add_argument(
+        "--model",
+        default="none",
+        help="provider/model to use by opencode",
+    )
+    parser.add_argument(
         "--auto",
         action="store_true",
-        help="Non-interactive mode: skip all prompts and run Claude with auto-accept",
+        help="Non-interactive mode: skip all prompts and run AI with auto-accept",
     )
     subparsers = parser.add_subparsers(dest="subcommand")
     subparsers.required = True
@@ -82,7 +93,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # implement subcommand
     implement_parser = subparsers.add_parser(
         "implement",
-        help="Implement a GitLab issue using Claude in agentic mode",
+        help="Implement a GitLab issue using AI in agentic mode",
     )
     implement_parser.add_argument(
         "issue_number",
@@ -113,7 +124,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # mr-fix subcommand
     mr_fix_parser = subparsers.add_parser(
         "mr-fix",
-        help="Address unresolved MR review comments using Claude in agentic mode",
+        help="Address unresolved MR review comments using AI in agentic mode",
     )
     mr_fix_parser.add_argument(
         "mr",
@@ -135,7 +146,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # job-diagnose subcommand
     diagnose_parser = subparsers.add_parser(
         "job-diagnose",
-        help="Diagnose a CI/CD job failure using Claude in agentic mode",
+        help="Diagnose a CI/CD job failure using AI in agentic mode",
     )
     diagnose_parser.add_argument(
         "job",
@@ -146,7 +157,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # mr-watch subcommand
     mr_watch_parser = subparsers.add_parser(
         "mr-watch",
-        help="Watch an MR pipeline; auto-fix CI failures using Claude",
+        help="Watch an MR pipeline; auto-fix CI failures using AI",
     )
     mr_watch_parser.add_argument(
         "mr",
@@ -184,7 +195,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # issue-update subcommand
     issue_update_parser = subparsers.add_parser(
         "issue-update",
-        help="Update a GitLab issue description interactively using Claude",
+        help="Update a GitLab issue description interactively using AI",
     )
     issue_update_parser.add_argument(
         "issue",
@@ -214,5 +225,18 @@ def main() -> None:
     )
     parser, _ = build_parser()
     args = parser.parse_args()
+
+    if args.backend == "claude":
+        if args.model != "none":
+            parser.error("--model can only be set when --backend is set to opencode")
+    elif args.backend == "opencode":
+        config.BACKEND = args.backend
+        if args.model != "none":
+            provider_model = args.model.split("/")
+            if len(provider_model) != 2:
+                parser.error("--model argument needs to have the form provider/model")
+            config.MODEL = args.model
+
     config.AUTO_MODE = args.auto
+
     args.func(args)

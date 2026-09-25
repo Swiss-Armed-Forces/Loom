@@ -8,7 +8,7 @@ from gitlab.exceptions import GitlabGetError
 from gitlab.v4.objects import Project
 
 from ._common import _ask, _get_gitlab_client_or_exit
-from .claude import generate_release_notes_via_claude, is_claude_cli_installed
+from .aitools import generate_release_notes_via_ai, is_ai_cli_installed
 from .git_helpers import fetch_and_sort_tags, get_tag_diff
 from .gitlab_api import (
     fetch_milestone_for_tag,
@@ -83,15 +83,19 @@ def cmd_release(_args: argparse.Namespace) -> None:
         else "(No previous tag — this appears to be the first release.)"
     )
 
-    if not is_claude_cli_installed():
-        logger.error("Claude CLI not installed.")
+    if not is_ai_cli_installed():
+        logger.error("AI CLI not installed.")
         sys.exit(1)
 
-    release_notes = generate_release_notes_via_claude(
-        tag_name, previous_tag, milestone_info, diff, repo
+    release_notes = generate_release_notes_via_ai(
+        tag_name,
+        previous_tag,
+        milestone_info,
+        diff,
+        repo,
     )
     if not release_notes:
-        logger.error("Failed to generate release notes via Claude.")
+        logger.error("Failed to generate release notes via AI.")
         sys.exit(1)
 
     print("\n--- Release Notes Preview ---")

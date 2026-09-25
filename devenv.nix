@@ -349,6 +349,12 @@ in
       # git
       git
       git-lfs
+      # GSSAPI-enabled build: plain `openssh` is compiled without GSSAPI and
+      # aborts on the `GSSAPIKexAlgorithms` keyword that crypto-policies
+      # distributions (Fedora, RHEL, Qubes) put in
+      # /etc/crypto-policies/back-ends/openssh.config, breaking every ssh
+      # (and therefore every git-over-ssh) call inside the devenv shell.
+      openssh_gssapi
 
       bash-completion
       (pkgs.writeTextFile {

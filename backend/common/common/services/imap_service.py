@@ -474,26 +474,6 @@ class IMAPService:
                 for uid in searched_uids:
                     yield ImapInfo(folder=f, uid=uid)
 
-    def add_flags_to_emails(
-        self,
-        folder: FilePurePath | ImapPurePath | None,
-        uids: list[int],
-        flags: list[bytes],
-    ):
-        imap_folder = self.get_imap_folder(folder)
-        with self._imap_context() as client, self._select_folder(client, imap_folder):
-            client.add_flags(uids, flags)
-
-    def remove_flags_from_emails(
-        self,
-        folder: FilePurePath | ImapPurePath | None,
-        uids: list[int],
-        flags: list[bytes],
-    ):
-        imap_folder = self.get_imap_folder(folder)
-        with self._imap_context() as client, self._select_folder(client, imap_folder):
-            client.remove_flags(uids, flags)
-
     def subscribe_folder(
         self, folder: FilePurePath | ImapPurePath | None, recurse: bool = False
     ):

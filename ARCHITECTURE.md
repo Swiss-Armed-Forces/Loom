@@ -9,7 +9,6 @@ Multiple services that are useful for production and development purposes are st
 | Service       | Url                                                          | Description                         | Remarks                                        |
 |---------------|--------------------------------------------------------------|-------------------------------------|------------------------------------------------|
 | Frontend      | [https://frontend.loom](https://frontend.loom)               | The Loom frontend                   |                                                |
-| Open Webui    | [https://open-webui.loom](https://open-webui.loom)           | AI web interface                    |                                                |
 | Roundcube     | [https://roundcube.loom](https://roundcube.loom)             | Email web interface                 |                                                |
 | SeaweedFS     | [https://seaweedfs.loom](https://seaweedfs.loom)             | Admin UI for cluster management     |                                                |
 | S3            | [https://s3.loom](https://s3.loom)                           | S3-compatible storage API           |                                                |

@@ -113,7 +113,9 @@ def test_translate(
     text: str, expected_text: str, expected_language: str, expected_translate_calls: int
 ):
     agent = _llm_translate_agent()
-    agent.run_sync.return_value.output = SimpleNamespace(text=expected_text)
+    agent.run_sync.return_value = SimpleNamespace(
+        output=SimpleNamespace(text=expected_text)
+    )
 
     translation = translate(
         text, DetectedLanguage(confidence=1, language=expected_language)

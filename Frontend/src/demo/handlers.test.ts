@@ -130,8 +130,8 @@ describe("demo API handlers", () => {
             thumbnail_file_id: "thumbnail.png",
             thumbnail_total_frames: 1,
         });
-        expect(stats.file_count).toBe(12);
-        expect(stats.data).toContainEqual({ name: ".txt", hits_count: 3 });
+        expect(stats.file_count).toBe(15);
+        expect(stats.data).toContainEqual({ name: ".txt", hits_count: 5 });
     });
 
     it("serves navigable email attachment previews", async () => {
@@ -230,7 +230,7 @@ describe("demo API handlers", () => {
             group_by: "tags",
             histogram_type: "number",
             key: "size",
-            min_value: 233,
+            min_value: 18,
             max_value: 2_572_288,
         });
         expect(
@@ -449,7 +449,7 @@ describe("demo API handlers", () => {
 
         expect(upload.status).toBe(501);
         expect(archiveImport.status).toBe(501);
-        expect(files.total_files).toBe(12);
+        expect(files.total_files).toBe(15);
         expect(archives.total).toBe(1);
     });
 

@@ -29,7 +29,7 @@
     # runtime to hand the device to minikube with.
     #
     # `runsAiServices` follows from this, so setting it is also what brings back
-    # Ollama, open-webui and the console's assistant pane.
+    # Ollama and the console's assistant pane.
     gpuVendor = "nvidia";
 
     # ConnectX-7, claimed by mlx5_core.

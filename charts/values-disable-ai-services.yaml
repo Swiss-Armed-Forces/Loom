@@ -8,8 +8,6 @@
 #
 ollama:
   enabled: false
-open_webui:
-  enabled: false
 
 # Embedding defaults to on, so without this every indexed file would retry
 # against an Ollama that is not there until it lands in the graveyard queue.

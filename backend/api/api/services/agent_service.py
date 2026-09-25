@@ -3,8 +3,8 @@
 from datetime import datetime, timezone
 from typing import NamedTuple
 
-from common.agent_builder import AgentBuilder
 from common.ai_context.ai_context_repository import AiContext
+from common.llm.agent import build_agent
 from common.settings import settings
 from pydantic_ai import Agent
 from pydantic_ai.capabilities import Capability
@@ -36,13 +36,11 @@ class PreparedAgent(NamedTuple):
 class AgentService:
     def __init__(self, tool_service: ToolService) -> None:
         self._tool_service = tool_service
-        self._agent: Agent[AgentDeps, str | DeferredToolRequests] = AgentBuilder(
-            AgentDeps, [str, DeferredToolRequests]
-        ).build_agent(
+        self._agent: Agent[AgentDeps, str | DeferredToolRequests] = build_agent(
+            AgentDeps,
+            [str, DeferredToolRequests],
             settings.llm.agent,
             _build_instructions,
-            settings.llm.agent.tool_timeout,
-            settings.llm.agent.merge_system_messages,
         )
 
     def build_prepared_agent(self, context: AiContext) -> PreparedAgent:

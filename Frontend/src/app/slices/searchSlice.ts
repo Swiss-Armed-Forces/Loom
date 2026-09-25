@@ -254,7 +254,7 @@ export const SEARCH_STATE_DOCS = {
         "FileTabState[] — open file detail tabs ({fileId, detailTab})",
     activeTabFileId: "string | null — which file detail tab is active",
     expandFilePaths:
-        "boolean — whether file paths are expanded in the folder view",
+        "boolean — whether long file paths are shown in full on every result card",
     cardDensity:
         "CardDensity — card display density preset (auto|compact|standard|full|custom)",
     autoDetectedDensity:
