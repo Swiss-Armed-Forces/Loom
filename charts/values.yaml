@@ -650,36 +650,6 @@ beat:
   # app-tier: scheduler
   # service-type: beat
 
-notifyListener:
-  enabled: true
-  replicaCount: 1
-  priorityClass: null
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/crawler
-  initContainer:
-    enabled: true
-    image:
-      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
-      tag: null
-      pullPolicy: null
-    resources:
-      requests:
-        cpu: "0.05"
-        memory: "50Mi"
-      limits:
-        cpu: "0.1"
-        memory: "100Mi"
-  resources:
-    requests:
-      cpu: "0.1"
-      memory: "200Mi"
-    limits:
-      cpu: "0.2"
-      memory: "500Mi"
-  # Custom labels specific to notify-listener resources
-  customLabels: {}
-  customAnnotations: {}
-
 crawler:
   enabled: true
   replicaCount: 1
