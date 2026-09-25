@@ -145,11 +145,6 @@ ollama:
       requests: null
       limits: null
 
-open_webui:
-  resources:
-    requests: null
-    limits: null
-
 dovecot:
   resources:
     requests: null

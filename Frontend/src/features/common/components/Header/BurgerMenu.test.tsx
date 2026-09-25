@@ -107,9 +107,6 @@ describe("BurgerMenu", () => {
 
         openMenu();
 
-        expect(
-            screen.getByRole("menuitem", { name: "Open WebUI" }),
-        ).toBeVisible();
         expect(screen.getByRole("menuitem", { name: "Traefik" })).toBeVisible();
         expect(screen.getByRole("menuitem", { name: "About" })).toBeVisible();
         expect(
@@ -122,7 +119,7 @@ describe("BurgerMenu", () => {
         renderMenu();
         openMenu();
         const serviceLink = screen.getByRole("menuitem", {
-            name: "Open WebUI",
+            name: "Ollama",
         });
         const click = new MouseEvent("click", {
             bubbles: true,
@@ -136,7 +133,7 @@ describe("BurgerMenu", () => {
         );
         expect(click.defaultPrevented).toBe(true);
         expect(
-            screen.queryByRole("menuitem", { name: "Open WebUI" }),
+            screen.queryByRole("menuitem", { name: "Ollama" }),
         ).not.toBeInTheDocument();
     });
 

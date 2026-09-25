@@ -219,11 +219,6 @@ ollama:
     enabled: false
   ingress: *default-ingress-config
 
-open_webui:
-  env:
-    ENV: "dev"
-  ingress: *default-ingress-config
-
 dovecot:
   ingress:
     imap:

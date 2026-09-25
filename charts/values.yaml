@@ -55,7 +55,6 @@ hostnames:
     - gotenberg
     - grafana
     - ollama
-    - open-webui
     - prometheus
     - rabbit
     - redisinsight
@@ -1057,43 +1056,6 @@ ollama:
   # app-tier: ml
   # service-type: llm
 
-open_webui:
-  enabled: true
-  replicaCount: 1
-  priorityClass: null
-  image:
-    repository: swiss-armed-forces/cyber-command/cea/loom/open-webui
-  env:
-    ENV: "prod"
-    WEBUI_AUTH: "false"
-    ENABLE_SIGNUP: "false"
-    USER_PERMISSIONS_CHAT_TEMPORARY_ENFORCED: "true"
-    OFFLINE_MODE: "true"
-    HF_HUB_OFFLINE: 1
-    RAG_EMBEDDING_MODEL_AUTO_UPDATE: "false"
-    RAG_RERANKING_MODEL_AUTO_UPDATE: "false"
-    WHISPER_MODEL_AUTO_UPDATE: "false"
-  service:
-    port: 8080
-  pvc:
-    storage: 10Gi
-    storageClass: null
-    customLabels: {}
-    customAnnotations: {}
-  ingress: *default-ingress-config
-  resources:
-    requests:
-      cpu: "0.05"
-      memory: "200Mi"
-    limits:
-      cpu: "1.5"
-      memory: "1500Mi"
-  # Custom labels specific to open_webui resources
-  customLabels: {}
-  customAnnotations: {}
-  # Example:
-  # app-tier: frontend
-  # service-type: chat-ui
 
 dovecot:
   replicaCount: 1
