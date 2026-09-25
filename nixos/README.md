@@ -20,6 +20,7 @@ this file is about the code.
 | `console-mouse/` | The pty shim `loom-console` runs the tmux client under — the gpm client protocol, SGR translation and the pointer sequencing — with its own pytest suite, run at build time. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
 | `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
+| `keymap.nix` | `--keymap`: the console keymap for the box, the installer and stage 1, and the build-time check that the name resolves. Inert when unset, which means US QWERTY. |
 | `key-store.nix` | The `--lock-key` build: the stick's key inside a LUKS2 container, and the initrd unit that asks for its passphrase and unlocks it before the root is opened. Inert in every other image; see `--lock-key` below. |
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
 | `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
@@ -806,6 +807,15 @@ goes false and it arms on `cryptsetup isLuks` plus the fingerprint. The first 40
 are unique per container and never zero, so identity and the "unprovisioned" sentinel both survive.
 `tests/appliance-key-store.nix` is that branch.
 
+The unlock script itself is the one part of this appliance that no test can reach -- nixpkgs'
+qemu-vm module replaces the bootloader and the root device, so nothing under `tests/` ever runs an
+initrd of ours. Two things stand in for that. It is a named binding rather than an inline `script`
+string so that the same text can be handed to `shellcheck --enable=all` in a build check, with the
+`set -e` preamble `makeJobScript` wraps it in -- an inline unit script is linted by nothing, the
+same gap CLAUDE.md records for shell inlined into Helm templates. And `loom.keymap` is checked the
+same way, by resolving the name with `loadkeys` at build time: `systemd-vconsole-setup` falls back
+to US silently at boot, which is the precise failure the option exists to remove.
+
 ### Why USB ingest asks the guard rather than udev
 
 `usb-ingest.nix` has to know which disk is the key, and the obvious answer —
@@ -821,6 +831,99 @@ banner reads it: one path, not three copies.
 The fallback matters too. A box booted on the recovery passphrase never arms, so there is no proven key
 device, and the ingest service drops back to refusing any disk carrying a Loom partition label. That is
 weaker — it is the very thing the guard exists to improve on — so the console says so when it happens.
+
+## The USB ingest test stick
+
+`usb-ingest/loom_usb_ingest/filesystems.py` decides, per volume, whether the appliance mounts media
+someone handed it and with which driver and options: six container formats in `REFUSED`, fifteen
+filesystem types in `KNOWN`, and a generic `mount -t auto` for anything else the running kernel
+admits to supporting. `devices.py` then takes every partition on every USB disk.
+
+Almost none of that was ever exercised against real media. `tests/scripts/loom_tests/usb_ingest.py`
+makes four filesystems — vfat, ext4, ntfs and a LUKS container — on *virtio* disks, so even the
+`ID_BUS=="usb"` udev rule is bypassed.
+
+`build-ingest-test-stick` closes that gap. It turns any USB stick of 4 GiB or more into 26
+partitions, one filesystem each, so that plugging the result into an appliance takes every branch of
+`plan_mount` at once:
+
+It writes partition tables, so it runs under `sudo`. `sudo` resets `PATH`, and the devenv script is
+on the devenv profile's `PATH` rather than the system's — hence `command -v` to resolve it first:
+
+```bash
+# Prints the plan and the stick's serial; writes nothing.
+sudo "$(command -v build-ingest-test-stick)" \
+  --device /dev/disk/by-id/usb-<vendor>_<model>_<serial>-0:0
+
+# Builds it. The serial the plan printed has to be typed back.
+sudo "$(command -v build-ingest-test-stick)" \
+  --device /dev/disk/by-id/usb-<vendor>_<model>_<serial>-0:0 \
+  --i-know-this-erases <serial>
+```
+
+Without `--i-know-this-erases` nothing is written. Typing the serial back is what keeps a
+device-agnostic script safe: it cannot be satisfied without having looked at which disk is about to
+be erased. Before that point the script also refuses anything that is not a `/dev/disk/by-id/usb-*`
+whole disk, anything under 4 GiB, anything carrying `/`, `/boot` or `/nix/store`, anything mounted,
+and anything with a Loom partition label or a LUKS container on it.
+
+Nothing about the device is baked in: the table is a fixed 2976 MiB whatever the capacity, the
+remainder is left unallocated, and re-running it on another stick produces the identical layout.
+`--only N` reformats one partition without re-cutting the table, which is how you retry a single row.
+
+Partitions 1–15 are the `KNOWN` types (`vfat` twice, as FAT16 and FAT32), 17–19 are tier-3
+candidates, and 20–26 are the refusal signatures plus one deliberately blank partition. Each
+mountable one carries a copy of `integrationtest/assets`.
+
+Four things about it are worth knowing before reading the script:
+
+- **The filesystem label is what reaches the operator.** `__main__.py` feeds
+  `naming.volume_component` the *filesystem* label, not the partition label, so it becomes the S3
+  path component `p<N>-<LABEL>`. The labels are `LOOM<NN><FS>`: eleven characters is the FAT and
+  exFAT ceiling, and `[A-Z0-9]` passes `naming.sanitize_component` unchanged, so no hash suffix is
+  appended.
+- **The partition labels must never start with `loom-`.** A single `loom-esp` would make
+  `classify_disk` refuse the whole disk and the stick would test nothing. They are `fstestNN-<fs>`,
+  and the script refuses to touch a disk already carrying a Loom label — that is Loom's own media.
+- **Every partition gets GPT type `0700`.** `devices.py` never reads the type GUID, so a truthful
+  one buys nothing, while `8200`, `8E00`, `FD00` and `8309` would invite
+  `systemd-gpt-auto-generator`, lvm2 and mdadm udev rules to act on the stick on the build host.
+- **Two signatures cannot be made by a real tool.** BitLocker has no Linux creator: libblkid reads
+  eleven bytes at offset 0 and, for the Vista form, consults no FVE metadata, so
+  `\xeb\x52\x90-FVE-FS-` on a zeroed partition is the whole recipe. ZFS needs a pool, which needs the
+  kernel module, which a NixOS host routinely lacks — so `ingest_test_stick_zfs_label.bin` is 256 KiB
+  captured once from a real vdev label built by `ztest`, which runs libzpool entirely in userland
+  (`ztest -f DIR -p LOOM21ZFS -s 128m -v 1`). libblkid reads label L0 at a fixed offset 16384, which
+  is inside those 256 KiB, so the copy stands alone. Everything else uses the real tool — `mkswap`,
+  `pvcreate`, `mdadm --create --metadata=1.2`, `cryptsetup luksFormat`.
+- **MD RAID is built on a loop device and copied across.** `mdadm` opens its member `O_EXCL`, which
+  the `mkfs` tools do not, and on a stick that has just had 26 partitions written to it something
+  reliably holds that partition open — udev, udisks, whatever the desktop runs — so `mdadm --create`
+  aborts with "Device or resource busy" no matter how long it waits. The loop file is created at the
+  partition's exact size, and a 1.2 superblock sits at a fixed offset 4096 with `super_offset`
+  recorded as 8 sectors, so the copy is exact rather than an approximation.
+
+Each row asserts its own `blkid` type immediately after creation, and a row that fails is blanked
+rather than left half-written: a partial signature would report as neither the intended filesystem
+nor blank, which would corrupt the reading of partition 26 and of the "no recognisable filesystem"
+branch generally.
+
+### What the stick found
+
+Three things, before it was even built:
+
+- **`iso9660` cannot mount at all.** `filesystems.py` puts it in `NEEDS_OWNER`, so `plan_mount`
+  appends `umask=0077` — and isofs has no `umask` option. Its parameter table is `block check conv
+  cruft dmode hide interleave iocharset mode nocompress nojoliet norock overriderockperm sbsector
+  session showassoc unhide`; `udf.ko` next door does have `umask`. An unrecognised key makes
+  `mount(8)` return `-EINVAL`, so every ISO on every stick is skipped with "wrong fs type, bad
+  option". Partition 14 makes that reproducible. The fix is `mode=0400,dmode=0500` for iso9660 only.
+- **Tier 3 is effectively unreachable.** `mounts.kernel_filesystems()` reads `/proc/filesystems`,
+  which lists only *loaded* filesystems, and `run()` snapshots it once before the volume loop.
+  squashfs, erofs and minix are all modules, so an unknown type always takes the "the kernel has no
+  driver" branch. Partitions 17 and 18 exist to show it: stock they are refused, and after
+  `modprobe squashfs erofs` on the box they mount. The difference is the finding.
+- **`ntfs3` in `KNOWN` is unreachable from media.** libblkid's NTFS prober only ever emits `ntfs`.
 
 ## Readiness, in one place and three screens
 

@@ -223,6 +223,19 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   DGX Spark still on DGX OS included, which is where its firmware and Secure Boot checks have to
   happen. This is how the guessed values in a platform file get checked against real hardware.
   `--json` (everything but the `fwupd` block, which shells out to a daemon), `--output`
+- `build-ingest-test-stick --device /dev/disk/by-id/usb-...` - Prepare any USB stick of 4 GiB or
+  more as a USB-ingest test fixture: 26 partitions, one filesystem each, so that plugging it into an
+  appliance takes every branch of `nixos/usb-ingest`'s `plan_mount` at once — the fifteen `KNOWN`
+  types, the six `REFUSED` signatures, two tier-3 candidates and a deliberately blank partition —
+  with `integrationtest/assets` on every mountable one. Nothing about the device is baked in: the
+  table is a fixed 2976 MiB whatever the capacity, so any stick gives the identical layout and the
+  remainder is left unallocated. **Destructive, and runs under sudo**; `sudo` resets `PATH`, so
+  invoke it as `sudo "$(command -v build-ingest-test-stick)"`. Prints the plan and writes nothing
+  until `--i-know-this-erases <serial>` repeats the serial it printed, and refuses outright anything
+  that is not a `by-id` USB whole disk, is mounted, carries `/`, `/boot` or `/nix/store`, or holds a
+  Loom partition label. Related flags: `--only N[,N...]` / `--skip N[,N...]` (reformat some rows
+  without re-cutting the table), `--assets DIR`, `--keep-work`. See the ingest test stick section in
+  `nixos/README.md`, which also records the three bugs building it turned up
 
 **Utilities:**
 

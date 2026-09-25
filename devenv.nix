@@ -1325,6 +1325,65 @@ in
     '';
   };
 
+  scripts.build-ingest-test-stick = {
+    description = "Prepare a USB stick as a USB-ingest test fixture, one filesystem per partition";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Every mkfs the table needs, handed over as one environment rather than
+        # taken from the host's PATH -- the whole point of the stick is that two
+        # people building one get the same 26 filesystems. Passed ahead of "$@"
+        # so an explicit --tools still wins.
+        #
+        # udevadm is deliberately NOT in here: it talks to the running system's
+        # udevd, so it has to be that system's binary rather than a pinned one.
+        ./nixos/scripts/make_ingest_test_stick.sh \
+          --tools '${
+            pkgs.buildEnv {
+              name = "ingest-stick-tools";
+              paths = with pkgs; [
+                # Partitioning, probing and the payload copy.
+                gptfdisk
+                util-linux
+                coreutils
+                findutils
+                gnused
+                gnugrep
+                rsync
+                # The KNOWN filesystems, in filesystems.py's order.
+                dosfstools
+                exfatprogs
+                ntfs3g
+                e2fsprogs
+                xfsprogs
+                btrfs-progs
+                f2fs-tools
+                hfsutils
+                hfsprogs
+                xorriso
+                udftools
+                apfsprogs
+                # Tier 3, and the refusal signatures that have a real tool.
+                squashfsTools
+                erofs-utils
+                lvm2
+                mdadm
+                cryptsetup
+              ];
+              pathsToLink = [
+                "/bin"
+                "/sbin"
+              ];
+              ignoreCollisions = true;
+            }
+          }' \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.nix-dind = {
     description = "Build nix-dind image";
     exec = ''
