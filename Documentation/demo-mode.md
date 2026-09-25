@@ -55,6 +55,10 @@ failed test or deployment job leaves the previously published Pages site in plac
 - Safe text, email, image, Office, and archive fixtures come from `integrationtest/assets`.
   Credential values are redacted, and the executable test fixture is represented by
   metadata only instead of being published in the static bundle.
+- The bundled archive ships the documents Loom extracts from it, under the same nested
+  paths the extraction integration test pins. Nested extraction, folder-tree navigation
+  into an archive, and the result card's file-path collapse control are therefore all
+  demonstrable on sample data.
 - Document thumbnails and rendered downloads are captured from a real Loom stack. Files
   without a production preview, such as archives and failed imports, intentionally show
   no preview in the demo.
