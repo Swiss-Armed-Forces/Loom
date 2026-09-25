@@ -36,7 +36,6 @@ System_Boundary(loom, "") {
 
     'System_Boundary(frontend_services, "Frontend Services"){
         Container(frontend, "Frontend", "React, Material UI, Redux", "User interaction", $sprite="react", $tags="exposed")
-        Container(ai_ui, "AI User Interface", "Open Webui", "User Interaction with AI", $sprite="robot", $tags="exposed")
         Container(email_client, "Email Client", "Roundcube", "Visualizes Emails", $sprite="email", $tags="exposed")
 
         Container(api, "API", "Python FastAPI", "REST-API", $sprite="python", $tags="exposed")
@@ -69,7 +68,6 @@ System_Boundary(loom, "") {
         Container(prometheus, "Prometheus", "prometheus", "Collect System Statistics", $sprite="prometheus", $tags="exposed")
 
         Container(elasticvue, "Elasticvue", "Elasticvue", "Elasticsearch GUI", $sprite="elasticsearch", $tags="exposed")
-        Container(rediswebui, "Redis Admin UI", "Redis Insight", "GUI for Redis", $sprite="redis", $tags="exposed")
 
         Container(grafana, "Grafana", "grafana", "Visualizes: Logs, System, Queues", $sprite="grafana", $tags="exposed")
 
@@ -111,7 +109,6 @@ Rel(worker, rspamd, "")
 Rel(worker, seaweedfs_filer, "")
 
 Rel(elasticvue, es, "")
-Rel(rediswebui, redis, "")
 Rel(prometheus, grafana, "")
 Rel(es, grafana, "")
 

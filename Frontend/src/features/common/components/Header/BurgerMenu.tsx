@@ -2,7 +2,6 @@ import {
     ApiOutlined,
     CloudCircleOutlined,
     MailOutlineOutlined,
-    SmartToyOutlined,
     InfoOutlined,
     ExpandOutlined,
     PrecisionManufacturingOutlined,
@@ -30,7 +29,6 @@ import {
     elasticVueHost,
     grafanaHost,
     s3Host,
-    openWebuifrontendHost,
     prometheusHost,
     rabbitHost,
     roundcubeHost,
@@ -90,12 +88,6 @@ export const BurgerMenu = () => {
     };
 
     const menuItems = [
-        {
-            link: openWebuifrontendHost,
-            text: "Open WebUI",
-            icon: <SmartToyOutlined />,
-            params: { "temporary-chat": "true" },
-        },
         {
             link: roundcubeHost,
             text: "Roundcube",
@@ -203,11 +195,6 @@ export const BurgerMenu = () => {
                         component="a"
                         href={(() => {
                             const url = new URL(item.link.toString());
-                            if (item.params) {
-                                Object.entries(item.params).forEach(([k, v]) =>
-                                    url.searchParams.set(k, v),
-                                );
-                            }
                             return url.toString();
                         })()}
                         target="_blank"
