@@ -974,12 +974,12 @@ flash_image(){
     wait_for_key_partition
 }
 
-# Block until the partitions written above are visible, or say why they are not.
+# Block until the partition written above is there, or say why it is not.
 #
-# `udevadm settle` drains the queue that exists when it is called, which is not
-# the same as the queue a slow USB bridge is about to produce: the device nodes
-# can be there before `lsblk` can say what their PARTLABELs are. Polling for the
-# one partition that matters is the only honest way to know the write landed.
+# `key_partition` reads the table off the disk, so in practice this returns on
+# the first pass -- the kernel populates sysfs synchronously when it re-reads.
+# The loop is insurance against a USB bridge that is still settling, and it
+# costs nothing on the run where it is not needed.
 wait_for_key_partition(){
     local waited=0 found
 
@@ -996,21 +996,66 @@ wait_for_key_partition(){
     done
 
     echo >&2 "[!] Error: no '${KEY_PARTLABEL}' partition on ${FLASH_DEVICE}"
-    echo >&2 "    ${KEY_PARTITION_TIMEOUT}s after writing the image. The kernel is showing:"
-    lsblk --paths --output PATH,SIZE,PARTLABEL "${FLASH_DEVICE}" >&2 || true
+    echo >&2 "    ${KEY_PARTITION_TIMEOUT}s after writing the image."
+    echo >&2 "    The partition table on the device reads:"
+    sudo partx --show --output NR,SIZE,NAME "${FLASH_DEVICE}" >&2 || true
     echo >&2 "    Three partitions named loom-live-esp, loom-live-store and ${KEY_PARTLABEL} were"
-    echo >&2 "    just written. If the table above is the one this stick had before, the kernel"
-    echo >&2 "    never re-read it: unplug the stick, plug it back in, and run the same command"
+    echo >&2 "    just written. If the table above is the one this stick had before, the write"
+    echo >&2 "    did not land: unplug the stick, plug it back in, and run the same command"
     echo >&2 "    again -- the image is already built, so it will not be rebuilt."
     exit 1
 }
 
 # Resolved on the flashed device rather than through /dev/disk/by-partlabel, so
 # a second Loom stick in another port cannot be written to by mistake.
+#
+# Read off the partition table itself, NOT out of `lsblk`'s PARTLABEL column,
+# which is where this used to look. That column comes from udev's database, and
+# udev populates it asynchronously long after the kernel has the table: on a
+# freshly flashed stick the partitions are all correct and visible -- right
+# count, right sizes -- while every PARTLABEL is still empty, and they stay
+# empty for longer than any timeout worth having. Re-plugging the stick fixes
+# it, which is a fine diagnosis and a terrible build step.
+#
+# `partx --show` parses the GPT on the device, so it answers from the same bytes
+# `dd` just wrote and needs nothing to have settled.
 key_partition(){
-    lsblk --noheadings --raw --paths --output PATH,PARTLABEL "${FLASH_DEVICE}" \
+    local number
+
+    number="$(sudo partx --show --noheadings --raw --output NR,NAME "${FLASH_DEVICE}" \
         | awk --assign label="${KEY_PARTLABEL}" '$2 == label { print $1 }' \
-        | head --lines=1
+        | head --lines=1)"
+    if [[ -z "${number}" ]]; then
+        return 0
+    fi
+
+    partition_path "${number}"
+}
+
+# A partition number on FLASH_DEVICE, as a device node.
+#
+# Asked of the kernel rather than assembled, because the rule differs by
+# transport: /dev/sdb + 3 is /dev/sdb3, but /dev/nvme0n1 + 3 is /dev/nvme0n1p3
+# and /dev/mmcblk0 + 3 is /dev/mmcblk0p3. Every partition's own sysfs directory
+# already carries its number, so there is nothing here to encode and get wrong.
+#
+# Under the disk's own directory rather than /sys/class/block, where a glob on
+# the disk name would also match an unrelated disk (`sdb*` catches `sdba`) whose
+# partition numbers would collide.
+partition_path(){
+    local number="${1}" disk entry found
+    disk="$(basename "${FLASH_DEVICE}")"
+
+    for entry in "/sys/block/${disk}/${disk}"*/partition; do
+        if [[ ! -r "${entry}" ]]; then
+            continue
+        fi
+        read -r found < "${entry}"
+        if [[ "${found}" == "${number}" ]]; then
+            printf '/dev/%s' "$(basename "$(dirname "${entry}")")"
+            return 0
+        fi
+    done
 }
 
 write_key_partition(){
@@ -1077,11 +1122,18 @@ write_locked_key_partition(){
 }
 
 verify_flash(){
-    local key_part label
+    local key_part label names
+
+    # From the partition table, for the reason `key_partition` gives: `lsblk`'s
+    # PARTLABEL column is udev's answer, and udev has not necessarily caught up
+    # with a stick written seconds ago.
+    names="$(sudo partx --show --noheadings --raw --output NAME "${FLASH_DEVICE}")"
 
     for label in loom-live-esp loom-live-store "${KEY_PARTLABEL}"; do
-        if ! lsblk --noheadings --raw --output PARTLABEL "${FLASH_DEVICE}" | grep --quiet --line-regexp "${label}"; then
+        if ! grep --quiet --line-regexp --fixed-strings "${label}" <<< "${names}"; then
             echo >&2 "[!] Error: partition '${label}' is missing from ${FLASH_DEVICE}."
+            echo >&2 "    The partition table on the device reads:"
+            sudo partx --show --output NR,SIZE,NAME "${FLASH_DEVICE}" >&2 || true
             exit 1
         fi
     done
