@@ -1202,8 +1202,8 @@ backup_key_passphrase(){
 
     if [[ -z "${LOCK_KEY_OUT}" ]]; then
         echo
-        echo "[!] The key passphrase is printed below and stored nowhere. Write it"
-        echo "[!] down before this terminal scrolls: without it the stick is inert,"
+        echo "[!] The key passphrase is stored nowhere. It is printed at the very end"
+        echo "[!] of this run, in a block of its own: without it the stick is inert,"
         echo "[!] and the only way left into the box is the recovery passphrase the"
         echo "[!] installer prints after it runs."
         echo "[!] Pass --lock-key-out FILE to keep a copy."
@@ -1218,6 +1218,28 @@ backup_key_passphrase(){
     chmod 0400 "${LOCK_KEY_OUT}"
     echo "[*] Key passphrase written to ${LOCK_KEY_OUT} (mode 0400)."
     echo "[*] Keep it apart from the stick -- together they are one factor, not two."
+}
+
+# The one line of this whole run that exists nowhere else.
+#
+# Its own block, at the very end of the output, framed so it survives being
+# scrolled past in a terminal that has just printed two screens of warnings.
+print_key_passphrase(){
+    echo
+    echo "    +------------------------------------------------------------------+"
+    echo "    |  KEY STICK PASSPHRASE                                             |"
+    echo "    +------------------------------------------------------------------+"
+    echo
+    echo "        ${KEY_PASSPHRASE}"
+    echo
+    if [[ -n "${LOCK_KEY_OUT}" ]]; then
+        echo "    Also written to ${LOCK_KEY_OUT}."
+        echo "    Keep that file away from the stick."
+    else
+        echo "    This is the only copy. Write it down now -- re-running this script"
+        echo "    generates a different passphrase and re-flashes the stick, so there"
+        echo "    is no way back to this one."
+    fi
 }
 
 report(){
@@ -1278,16 +1300,21 @@ report(){
     if [[ -n "${FLASH_DEVICE}" ]] && [[ "${LOCK_KEY}" = true ]]; then
         echo "      flashed to: ${FLASH_DEVICE}"
         echo "      key sha256: ${checksum}"
-        echo "      key phrase: ${KEY_PASSPHRASE}"
         echo
         echo "[*] Boot the box from this stick. It will NOT install by itself: the key"
         echo "[*] is passphrase-locked, so the installer waits at its menu for somebody"
-        echo "[*] to choose Install and type the passphrase above."
+        echo "[*] to choose Install and type the passphrase below."
         echo "[*] The stick must stay plugged in afterwards -- it holds the disk key --"
         echo "[*] and every boot from then on stops and asks for that passphrase. This"
         echo "[*] box cannot come back on its own after a power cut."
         echo "[*] Keep the passphrase somewhere other than with the stick. Together they"
         echo "[*] are one factor; apart they are two, which is the point of --lock-key."
+        # Last, and on its own. Everything above is metadata that can be worked
+        # out again from the image; this line cannot. It used to sit in the block
+        # with `key sha256`, where --debug's warning pushed it a screen and a half
+        # below the "printed below" that announced it -- which is the exact thing
+        # that message exists to prevent.
+        print_key_passphrase
     elif [[ -n "${FLASH_DEVICE}" ]]; then
         echo "      flashed to: ${FLASH_DEVICE}"
         echo "      key sha256: ${checksum}"
