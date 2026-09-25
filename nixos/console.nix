@@ -239,9 +239,12 @@ let
     # console is exactly the one this box shipped with before any of this.
     # -------------------------------------------------------------------------
     ${lib.optionalString readinessPublished "set -g status-interval 5"}
-    # Widened from 60 for the debug marker, which is 17 characters plus its
+    # 80 only on a --debug box, where the marker is 17 characters plus its
     # separator and would otherwise push the readiness segment off the end.
-    set -g status-left-length 80
+    # Conditional rather than widened for everyone: an image built without the
+    # flag should get the status line it always had, not one that merely looks
+    # the same because the extra room happens to go unused.
+    set -g status-left-length ${if cfg.debug.enable then "80" else "60"}
     set -g status-left "  LOOM  ${debugSegment}${readinessSegment}"
     # The two controls are last, so they sit flush against the right-hand edge
     # of the screen. That is deliberate on two counts: a target in the corner
