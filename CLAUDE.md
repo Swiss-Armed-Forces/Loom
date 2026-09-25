@@ -129,6 +129,13 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--platform` picks the box: `spark` (DGX Spark, aarch64), `evo-x2` (GMKtec EVO-X2, x86_64) or
   `nuc12` (Intel NUC 12 Pro, x86_64). The build host must match the platform's architecture unless
   `--allow-cross` is given. See `Documentation/appliance.md`
+- `build-appliance-image --include-rc` - Let the default tag pick take a release candidate. Without
+  `--tag`, the build takes the newest `X.Y.Z` in the checkout and skips every `X.Y.Z-rcN` above it,
+  because between releases an rc is the newest thing tagged and a stick built from one looks exactly
+  like the right one until somebody boots it. With no release to fall back to the build stops and
+  names the rc it declined, rather than shipping it — the confirmation prompt is no guard here,
+  since `--yes` skips it and both CI and `appliance-vm installer` always pass `--yes`. `--tag` takes
+  any tag, rc included, with no flag needed. `appliance-vm installer` forwards this flag
 - `build-appliance-image --no-gpu` - Build CPU-only for a platform that offloads to a GPU:
   `evo-x2` (Radeon 8060S via ROCm) or `spark` (GB10 Blackwell via CUDA). There is no `--gpu`: the
   GPU is declared per platform in `nixos/platforms/<id>.nix`. Use this when a box turns out not to
@@ -162,10 +169,25 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   has to make. It costs unattended boot: stage 1 stops at a prompt, so the box does not come back on
   its own after a power cut, and the installer refuses to run unattended (`decision.py`'s
   `KEY_LOCKED`). The recovery passphrase is deliberately unchanged and remains a single-factor way
-  in. Related flags: `--lock-key-words N` (default 7, minimum 6), `--lock-key-out FILE` (refused if
-  it names the same file as `--key-backup`). Only meaningful with `--flash`, and `appliance-vm
-  installer` cannot boot such an image - it writes the key partition with a plain `dd`. Read the
-  `## Locking the stick's key` section in `Documentation/appliance.md`
+  in. Stage 1 asks three times (`loom.keyStore.attempts`, matching the installer's
+  `PASSPHRASE_ATTEMPTS`), echoes what it is given, folds the count into the next prompt because the
+  splash hides anything else, and offers a blank answer on the last try as the way to the recovery
+  passphrase - falling into that prompt silently is what made a mistyped passphrase unreadable.
+  Failures retyping cannot fix (not a container, busy, out of memory for argon2id) are named on the
+  spot and do not burn a try. Related flags: `--lock-key-words N` (default 7, minimum 6),
+  `--lock-key-out FILE` (refused if it names the same file as `--key-backup`). Only meaningful with
+  `--flash`, and `appliance-vm installer` cannot boot such an image - it writes the key partition
+  with a plain `dd`. Read the `## Locking the stick's key` section in `Documentation/appliance.md`
+- `build-appliance-image --keymap NAME` - Set the console keymap for the box, the installer **and
+  stage 1**, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Default is the kernel's built-in US
+  QWERTY, which is what every image was before this existed. It matters for the three prompts nobody
+  can see themselves type: the `--lock-key` passphrase and the LUKS recovery passphrase, both in
+  stage 1, and the installer's `INSTALL`/`WIPE` interlocks. Under a US map a Swiss `-` arrives as
+  `/` and `y`/`z` swap, so a generated passphrase was mistyped on QWERTZ hardware every time - hence
+  also the `.` separator and the y/z-free wordlist, which make a default stick typeable on QWERTZ
+  with no flag at all. AZERTY still needs this. A name that does not resolve fails the image build
+  with a list of valid ones, rather than falling back to US on the box. See the
+  `## Keyboard layout` section in `Documentation/appliance.md`
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
   `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`, `key-store`, `debug`;
   with no argument it runs all nine, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
@@ -191,7 +213,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   try debug access, and the way to point an agent at an appliance with no hardware. `box` only
 - `appliance-vm installer` - The real stick image, virtually flashed onto a file and booted under
   UEFI against emulated NVMe. Runs the actual installer onto an actual pool, reboots into what it
-  installed, and persists across runs. Needs a tag, since the image embeds a tagged checkout.
+  installed, and persists across runs. Needs a tag, since the image embeds a tagged checkout — the
+  newest release by default, or `--include-rc` to let a `-rcN` win, or `--tag` to name one.
   `--serial` adds a getty on ttyS0 so the VM can be driven from a terminal that copies and pastes —
   one unit more than a real stick carries, so it refuses to be flashed. Related flags: `--disks`,
   `--disk-size`, `--usb DIR`, `--memory`, `--cores`, `--no-gui`, `--force`

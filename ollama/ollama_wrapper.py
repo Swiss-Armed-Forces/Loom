@@ -84,8 +84,7 @@ class ModelInfo:
 
     @staticmethod
     def _get_context_length(model_name: str) -> int | None:
-        """
-        Parses the `context length` from `ollama show <model>` output.
+        """Parses the `context length` from `ollama show <model>` output.
 
         Args:
             model_name (str): The model name.

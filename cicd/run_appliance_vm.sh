@@ -108,6 +108,11 @@ USB_DIR=""
 
 START_LOOM=false
 TAG=""
+# Forwarded to build_appliance_image.sh, whose default tag pick skips release
+# candidates. The rig always passes --yes, so there is no prompt here to notice
+# that the newest tag was an rc and got left behind -- this is how the rig boots
+# one without pinning --tag by hand.
+INCLUDE_RC=false
 
 # Build the box VM with nixos/debug.nix on, generate a keypair for it, and
 # forward the guest's 22 to a host port. `box` only: the installer rig boots the
@@ -470,6 +475,9 @@ build_installer_image(){
     )
     if [[ -n "${TAG}" ]]; then
         args+=(--tag "${TAG}")
+    fi
+    if [[ "${INCLUDE_RC}" = true ]]; then
+        args+=(--include-rc)
     fi
     if [[ "${SERIAL}" = true ]]; then
         args+=(--vm-serial)
@@ -837,7 +845,10 @@ usage(){
     echo "  -v|--verbose                  pass --show-trace to nix-build"
     echo "  -p|--platform PLATFORM        box to build for: ${KNOWN_PLATFORMS[*]}"
     echo "                                (default: the one matching this machine)"
-    echo "  -t|--tag TAG                  Loom tag to embed (installer only; default: newest)"
+    echo "  -t|--tag TAG                  Loom tag to embed (installer only; default: the newest"
+    echo "                                release)"
+    echo "  --include-rc                  installer: let that default consider release candidates"
+    echo "                                too. Forwarded to build-appliance-image."
     echo "  --serial                      installer: add a getty on ttyS0 to the image, so the"
     echo "                                VM can be driven from a terminal that copies and"
     echo "                                pastes. One unit more than a real stick carries."
@@ -908,6 +919,10 @@ while [[ $# -gt 0 ]]; do
         -t|--tag)
             shift
             TAG="${1?Missing TAG}"
+            shift
+        ;;
+        --include-rc)
+            INCLUDE_RC=true
             shift
         ;;
         --serial)
