@@ -724,6 +724,33 @@ to undo. On a box you cannot reach, that is worse than the risk it removes.
 the menu waits, and Install asks for the passphrase before it touches a disk. A mistyped passphrase costs
 nothing, because it is asked for before anything is written; three wrong answers abort the install.
 
+### If the passphrase is refused
+
+Stage 1 asks three times, and says so as it goes:
+
+```text
+Loom key stick passphrase [keyboard: us]:
+Wrong passphrase, 2 left [keyboard: us]:
+Wrong passphrase, last try -- blank for recovery [keyboard: us]:
+```
+
+Leaving the last one blank, or getting it wrong three times, takes the splash down and prints:
+
+```text
+[loom] The key stick passphrase was wrong 3 times.
+[loom] The next prompt is the LUKS RECOVERY passphrase: the long
+[loom] dash-separated one the installer printed and the login
+[loom] screen shows -- NOT the words that came with this stick.
+```
+
+and the boot falls through to the recovery prompt. That fall-through is deliberate — a box whose
+stick is dead has no other way in — but it asks for a **different secret**, which is why it is
+announced rather than simply happening.
+
+Failures that retyping cannot fix do not burn the three tries. A key partition that is not a
+container (a stick flashed without `--lock-key`), a container that is busy, or too little memory to
+run argon2id are each named on the spot and go straight to the recovery prompt.
+
 ### Two things it does not cover
 
 **The recovery passphrase is still a single-factor way in.** The installer enrols it as a second keyslot on
