@@ -13,12 +13,19 @@ and weaker than a controller-level sanitize.
 import argparse
 import glob
 import os
+import signal
 import sys
 
-from loom_installer import devices, storage
+from loom_installer import constants, devices, storage
 from loom_installer.commands import CommandError, CommandRunner, Subprocess
-from loom_installer.console import Ui, build_ui
-from loom_installer.interlock import Aborted, confirm_destructive
+from loom_installer.console import (
+    Aborted,
+    Ui,
+    build_ui,
+    crash_handler,
+    ignoring_interrupts,
+)
+from loom_installer.interlock import confirm_destructive
 from loom_installer.settings import SettingsError, settings
 
 # Enough to flatten a LUKS2 header, its keyslot area and the header backup that
@@ -130,9 +137,11 @@ def _partitions_of(runner: CommandRunner, disk: str) -> list[str]:
 
 
 def run(runner: CommandRunner, ui: Ui) -> None:
-    if os.geteuid() != 0:
-        raise WipeError("The wipe must run as root.")
+    """The wipe, from preconditions to the last layer.
 
+    Running as root is asked by `main` rather than here, the same way `install.run`
+    does: it is a fact about this process rather than about this box.
+    """
     boot = devices.boot_disk(runner)
     if boot is None:
         raise WipeError(
@@ -145,15 +154,33 @@ def run(runner: CommandRunner, ui: Ui) -> None:
 
     confirm_destructive(ui, runner, "ERASE ALL DATA", boot, targets)
 
-    erase_pool_keys(runner, ui)
-    for disk in targets:
-        wipe_disk(runner, ui, disk)
+    # No teardown on the way out, unlike the install: the layers are ordered
+    # most-effective-first and each one tolerates failing, so a wipe that stops part
+    # way has destroyed key material and undone nothing. What it can leave behind is
+    # the volume group `erase_pool_keys` activated to reach the container inside it,
+    # and an active group keeps the partition tables busy -- which matters because the
+    # menu's next option may be another wipe.
+    try:
+        erase_pool_keys(runner, ui)
+        for disk in targets:
+            wipe_disk(runner, ui, disk)
+    except BaseException:
+        with ignoring_interrupts():
+            storage.deactivate(runner)
+        ui.blank()
+        ui.warn("Stopped part way. The keys may already be gone -- treat the data as")
+        ui.warn("unrecoverable -- but the disks are not clean. Run Erase again.")
+        raise
 
     ui.blank()
     ui.log("Wipe complete. The encryption keys are gone; the data is unrecoverable.")
 
 
 def main(argv: list[str] | None = None) -> int:
+    # First, and for the reason `install.main` gives: the menu ignores SIGINT while
+    # this runs, and SIG_IGN is inherited across exec.
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+
     parser = argparse.ArgumentParser(
         prog="loom-wipe",
         description="Destroy the data on this box's internal disks.",
@@ -161,11 +188,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     ui = build_ui()
+    sys.excepthook = crash_handler(ui, constants.CRASH_LOG)
+
+    if os.geteuid() != 0:
+        ui.warn("The wipe must run as root.")
+        return 1
+
     try:
         run(Subprocess(), ui)
     except Aborted as error:
+        # Before the tuple below: `Aborted` and `WipeError` are both RuntimeErrors.
         ui.warn(str(error))
-        return 1
+        return constants.EXIT_CANCELLED
+    except KeyboardInterrupt:
+        ui.warn("Cancelled.")
+        return constants.EXIT_CANCELLED
     except (WipeError, CommandError, SettingsError, OSError) as error:
         ui.warn(str(error))
         return 1

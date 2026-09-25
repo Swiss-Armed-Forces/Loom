@@ -540,8 +540,10 @@ happens on its own, and where you can still interrupt it.
     | --- | --- |
     | `this stick already installed this box` | The disks hold a Loom pool this stick's key opens. Refusing is the point: a firmware that re-scans removable media would otherwise reinstall over the indexed data. Choose Install from the menu to do it anyway. |
     | `an install was already attempted this boot` | Reboot to try again. |
+    | `the automatic install was stopped this boot` | Somebody pressed a key during the countdown. It does not come back — not after the menu restarts, and not after a trip through the rescue shell. Reboot, or choose Install from the menu. |
     | `the boot medium is ambiguous` | A second Loom stick is plugged in. Remove it. |
     | `the stick carries no LUKS key` | Re-flash with `build-appliance-image --flash`. |
+    | `the stick's key needs a passphrase` | A `--lock-key` stick. Nobody can type a passphrase into an unattended install, so it waits for you. |
     | `there is no eligible internal disk` | Nothing to install onto. |
     | `the disks are too small` | Under 250 GB across all of them. |
 
@@ -567,6 +569,26 @@ the one thing on that screen the installed box does not repeat. A wipe (menu opt
 The installer moves its own loader off the UEFI removable-media path afterwards. Without that, most firmware
 would boot the installer instead of the appliance on every restart, because the stick never leaves. The
 installer stays reachable from the firmware's own boot menu for reinstalls and wipes.
+
+### Changing your mind
+
+**Ctrl-C is an answer to every question the installer asks**, and what it costs depends entirely on when you
+press it:
+
+- **At a prompt** — the countdown, `Type INSTALL to proceed:`, a `--lock-key` stick's passphrase — nothing
+    has been written yet and nothing is. It is the same as typing the wrong word: the console says
+    `Cancelled.`, the menu says `Installation cancelled.`, and the disks are exactly as they were.
+- **Once the install has started** — anywhere from partitioning to the end of the copy — the disks have
+    already been rewritten and there is no undoing that. The installer unmounts what it mounted, closes the
+    LUKS container and releases the volume group so the menu can still reach the disks, and then says so:
+    _the internal disks have already been written to, this box will NOT boot_. Run **Install** again, or
+    **Erase**. The same applies to an install that fails on its own.
+- **During a wipe** the keys are destroyed first, so a wipe stopped part way has already made the data
+    unrecoverable — but the disks are not clean. Run **Erase** again.
+
+Ctrl-C at the menu itself just redraws it. Nothing in the installer prints a Python traceback: if something
+unexpected goes wrong it prints one line and puts the details in `/run/loom-installer-traceback.log`, which
+the rescue shell (menu option 5) can read.
 
 ### How the disks are used
 

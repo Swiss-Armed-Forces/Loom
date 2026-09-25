@@ -14,11 +14,44 @@ from loom_installer import constants
 from loom_installer.devices import KeyState
 
 
+class BootState(StrEnum):
+    """What has already happened on this boot, which no disk can be asked about.
+
+    One value rather than two flags because the two are mutually exclusive answers to
+    the same question, and because which of them outranks the other is a rule worth
+    writing down once -- `decide_boot_state` below -- rather than leaving to the order
+    two markers happen to be read in.
+    """
+
+    FRESH = "fresh"
+    # An install was started. The disks may be half written, and nothing read off
+    # them means anything.
+    ATTEMPTED = "attempted"
+    # Somebody stopped the countdown. Nothing was written, but a person was standing
+    # here and said no.
+    DECLINED = "declined"
+
+
+def decide_boot_state(attempted: bool, declined: bool) -> BootState:
+    """Which of the two markers the menu may have written wins.
+
+    `attempted` does, and it is not close: the two can both be there -- an operator who
+    stops one countdown and then chooses Install by hand -- and of the two, only that
+    one means the disks have been touched.
+    """
+    if attempted:
+        return BootState.ATTEMPTED
+    if declined:
+        return BootState.DECLINED
+    return BootState.FRESH
+
+
 class AutoInstall(StrEnum):
     """The verdict, or the reason there is not one."""
 
     ARMED = "armed"
     ATTEMPTED = "attempted"
+    DECLINED = "declined"
     NO_BOOT_MEDIUM = "no-boot-medium"
     NO_KEY = "no-key"
     KEY_LOCKED = "key-locked"
@@ -31,9 +64,8 @@ class AutoInstall(StrEnum):
 class AutoInstallInputs:
     """Everything the rule below is allowed to look at."""
 
-    # The per-boot marker. After one attempt the disks may be half-written, and
-    # probing them says nothing useful.
-    attempted: bool
+    # What the menu has already done this boot, from its markers in /run.
+    boot_state: BootState
     # The medium we booted from, or None when it could not be identified.
     boot_disk: str | None
     key_state: KeyState
@@ -52,6 +84,7 @@ class AutoInstallInputs:
 # an error report but an explanation of why the box is waiting for them.
 REASONS: dict[AutoInstall, str] = {
     AutoInstall.ATTEMPTED: "an install was already attempted this boot",
+    AutoInstall.DECLINED: "the automatic install was stopped this boot",
     AutoInstall.NO_BOOT_MEDIUM: "the boot medium is ambiguous",
     AutoInstall.NO_KEY: "the stick carries no LUKS key",
     AutoInstall.KEY_LOCKED: "the stick's key needs a passphrase",
@@ -76,7 +109,11 @@ def _refusals(inputs: AutoInstallInputs) -> list[Refusal]:
     boot the disks may be half-written and nothing read off them means anything.
     """
     return [
-        Refusal(inputs.attempted, AutoInstall.ATTEMPTED),
+        Refusal(inputs.boot_state is BootState.ATTEMPTED, AutoInstall.ATTEMPTED),
+        # Directly after it, and before anything looks at a disk, for the same
+        # reason: both are answers about this boot that no state on a disk can
+        # overrule.
+        Refusal(inputs.boot_state is BootState.DECLINED, AutoInstall.DECLINED),
         Refusal(inputs.boot_disk is None, AutoInstall.NO_BOOT_MEDIUM),
         Refusal(inputs.key_state is not KeyState.PRESENT, AutoInstall.NO_KEY),
         # Before the two disk questions below, because it is not a disk question:

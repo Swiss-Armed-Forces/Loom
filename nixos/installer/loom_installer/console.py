@@ -25,14 +25,17 @@ copies would drift.
 import io
 import os
 import select
+import signal
 import subprocess
 import sys
 import termios
+import traceback
 import tty
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import IO, Generator, TextIO
+from types import TracebackType
+from typing import IO, Callable, Generator, TextIO
 
 from rich.console import Console, RenderableType
 from rich.panel import Panel
@@ -51,6 +54,9 @@ AMBER_RGB = "f7b718"
 # no monitor attached at boot tends to be.
 MAX_WIDTH = 80
 
+# What `sys.excepthook` is: the three arguments of an exception, and no return.
+ExceptHook = Callable[[type[BaseException], BaseException, TracebackType | None], None]
+
 THEME = Theme(
     {
         "loom.brand": "bold yellow",
@@ -64,12 +70,31 @@ THEME = Theme(
 )
 
 
+class Aborted(RuntimeError):
+    """The operator stopped this.
+
+    One exception for every way of saying no: the wrong word at the interlock, an end
+    of file, or Ctrl-C at any prompt below. They are the same event to everything
+    downstream -- `loom-install` and `loom-wipe` exit `EXIT_CANCELLED` on it and the
+    menu says "cancelled" rather than "failed".
+
+    It lives here rather than in interlock.py, which is where a reader would look for
+    it, because `interlock` imports this module: the prompts are what turn a keypress
+    into this exception, so the dependency can only run one way.
+    """
+
+
 class Keypress(StrEnum):
     """How a wait for the operator ended."""
 
     PRESSED = "pressed"
     TIMEOUT = "timeout"
     CLOSED = "closed"
+    # Ctrl-C during a countdown. Distinct from PRESSED because the two callers want
+    # opposite things from it: stopping an unattended install is the same as any
+    # other key, whereas stopping the reboot after an install is the opposite of the
+    # enter that brings the reboot forward.
+    CANCELLED = "cancelled"
 
 
 @dataclass(frozen=True)
@@ -185,10 +210,7 @@ class Ui:
         sit inside the palette of whatever was drawn above it.
         """
         self.out.print(message, end="")
-        try:
-            return input().strip()
-        except EOFError:
-            return ""
+        return self._answer().strip()
 
     def prompt_passphrase(self, message: str) -> str:
         """Ask for a passphrase, and show it while it is typed.
@@ -205,10 +227,36 @@ class Ui:
         trimming whitespace out of one would quietly reject a correct answer.
         """
         self.out.print(message, end="")
+        return self._answer()
+
+    def _answer(self) -> str:
+        """A line from the operator, or however they refused to give one.
+
+        End of file is not a refusal: it is what a console with nothing attached to it
+        does, and every caller already treats "" as an answer that is not the one it
+        wanted. Ctrl-C is a refusal, and becomes the same exception as typing the wrong
+        word at the interlock.
+        """
         try:
-            return input()
+            return self._read_line()
         except EOFError:
             return ""
+        except KeyboardInterrupt:
+            # The tty has echoed `^C` and eaten the line, so the cursor is sitting at
+            # the end of the prompt with no newline of its own coming. Without this
+            # the abort message lands on the same line as the question.
+            self.out.file.write("\n")
+            self.out.file.flush()
+            raise Aborted("Cancelled.") from None
+
+    def _read_line(self) -> str:
+        """The blocking read itself, and one of the two places a keypress arrives.
+
+        Separate from the handling above so that it is a seam: a test overrides this
+        to be an operator pressing Ctrl-C, and everything that turns that into an
+        `Aborted` is still the real thing (tests/test_console.py).
+        """
+        return input()
 
     def wait_for_enter(self, message: str) -> None:
         self.prompt(message)
@@ -226,33 +274,50 @@ class Ui:
         takes enter, because a stray keypress there costs nothing. The unattended
         install takes any key at all, because a keypress that failed to register is a
         destroyed disk.
+
+        Ctrl-C is `CANCELLED` rather than an exception out of here: `tty.setcbreak`
+        leaves ISIG set, so it arrives as a signal and not as the byte the select below
+        is waiting for. Caught around the whole block so the terminal is handed back and
+        the trailing newline still written.
         """
         announced = False
         outcome = Keypress.TIMEOUT
 
-        # Whether the console can be drawn on changes what is printed and nothing
-        # else. The wait below is the same either way, because a caller that takes
-        # any key treats an unreadable stdin as "nobody can stop this" -- which is
-        # the last circumstance under which to go ahead and partition a disk.
-        with _cbreak(sys.stdin) if any_key else _passthrough():
-            for remaining in range(seconds, 0, -1):
-                if self.interactive:
-                    # A fixed width, so 9s does not leave behind the stray digit of
-                    # the 10s that came before it.
-                    self.out.file.write(f"\r  {message} in {remaining:2d}s. ")
-                    self.out.file.flush()
-                elif not announced:
-                    self.out.print(f"  {message} in {seconds}s.")
-                    announced = True
+        try:
+            # Whether the console can be drawn on changes what is printed and nothing
+            # else. The wait below is the same either way, because a caller that takes
+            # any key treats an unreadable stdin as "nobody can stop this" -- which is
+            # the last circumstance under which to go ahead and partition a disk.
+            with _cbreak(sys.stdin) if any_key else _passthrough():
+                for remaining in range(seconds, 0, -1):
+                    if self.interactive:
+                        # A fixed width, so 9s does not leave behind the stray digit
+                        # of the 10s that came before it.
+                        self.out.file.write(f"\r  {message} in {remaining:2d}s. ")
+                        self.out.file.flush()
+                    elif not announced:
+                        self.out.print(f"  {message} in {seconds}s.")
+                        announced = True
 
-                outcome = _wait_for_input(1.0, any_key)
-                if outcome is not Keypress.TIMEOUT:
-                    break
+                    outcome = self._wait(1.0, any_key)
+                    if outcome is not Keypress.TIMEOUT:
+                        break
+        except KeyboardInterrupt:
+            outcome = Keypress.CANCELLED
 
         if self.interactive:
             self.out.file.write("\n")
             self.out.file.flush()
         return outcome
+
+    def _wait(self, timeout: float, any_key: bool) -> Keypress:
+        """One second of a countdown, and the other place a keypress arrives.
+
+        A method for the same reason `_read_line` is one: it is where this program
+        blocks on a keyboard, so it is where a test puts a Ctrl-C without reaching past
+        the Ui it was handed.
+        """
+        return _wait_for_input(timeout, any_key)
 
     def status_table(self) -> Table:
         """The two-column block the menu's header is made of."""
@@ -347,6 +412,114 @@ def _on_virtual_terminal(stream: IO[str]) -> bool:
         )
     except (OSError, ValueError):
         return False
+
+
+@contextmanager
+def ignoring_interrupts() -> Generator[None]:
+    """SIGINT off for a stretch that has to finish once it has started.
+
+    The stretches are the teardowns: letting go of a half-written box, deactivating a
+    volume group. A flag would not do, because `KeyboardInterrupt` is raised at whatever
+    bytecode boundary the signal happens to land on -- every step would need its own try
+    block and the gaps between them would still be open.
+
+    Safe because what it wraps is bounded: everything inside goes through
+    `CommandRunner`, whose every call carries `DEFAULT_TIMEOUT_S`. The console cannot be
+    made unresponsive for longer than the commands themselves can run.
+
+    The previous handler is restored rather than the default one, so nesting -- or a
+    caller that has deliberately ignored SIGINT already -- comes out as it went in.
+    """
+    previous = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGINT, previous)
+
+
+@contextmanager
+def console_restored(ui: Ui) -> Generator[None]:
+    """Give the terminal back whatever a child left it in.
+
+    For the menu, around the installer and the wipe. Both are separate processes on the
+    menu's own tty, and a child that dies without unwinding -- SIGKILL from systemd, an
+    OOM, `subprocess.run` killing it on Ctrl-C -- leaves the terminal however it had it:
+    a rich progress display hides the cursor, and a prompt reading a line can leave the
+    line discipline anywhere. Nothing else repairs that. `Console.clear()` writes
+    `ESC[2J ESC[H` and no more, so redrawing the menu does not.
+
+    Everything here is best effort in the same way `_cbreak` is: off a real terminal
+    there is nothing to save and nothing to put back.
+    """
+    try:
+        descriptor = sys.stdin.fileno()
+        saved = termios.tcgetattr(descriptor)
+    except (OSError, ValueError, termios.error):
+        descriptor = -1
+        saved = None
+
+    try:
+        yield
+    finally:
+        if saved is not None:
+            try:
+                termios.tcsetattr(descriptor, termios.TCSADRAIN, saved)
+            except (OSError, termios.error):
+                pass
+        ui.out.show_cursor(True)
+
+
+def crash_handler(ui: Ui, path: str) -> ExceptHook:
+    """What to do with an exception nobody expected: not print it.
+
+    A traceback on an 80-column VT is dozens of lines of scroll over the disk list, the
+    warnings and the recovery passphrase. One line stays on screen instead, and the
+    traceback goes to a file the rescue shell can read.
+
+    Installed as `sys.excepthook` rather than written as an `except Exception` around
+    the body of a `main`, because that is the shape that catches everything -- including
+    whatever is raised on the way out of one -- without naming a base class broad enough
+    for the linter to object to. It never sees a `KeyboardInterrupt` or a `SystemExit`
+    that the caller has already handled.
+    """
+
+    def handle(
+        kind: type[BaseException],
+        error: BaseException,
+        tracing: TracebackType | None,
+    ) -> None:
+        del tracing
+        ui.warn(f"Unexpected error: {kind.__name__}: {error}")
+        written = write_traceback(path, error)
+        if written is not None:
+            ui.warn(f"The details are in {written} (menu option 5, the rescue shell).")
+
+    return handle
+
+
+def write_traceback(path: str, error: BaseException) -> str | None:
+    """Put the traceback being handled somewhere it can be read later.
+
+    The last resort behind `sys.excepthook`, and it writes to a file because there is
+    nowhere else: installer.nix gives this unit `StandardError = "tty"` rather than the
+    journal, so an unhandled exception's only home is the screen -- where it would
+    scroll away the disk list and the recovery passphrase that make an 80-column console
+    worth reading at all. /run, because the stick is a read-only squashfs.
+
+    Returns the path it wrote, or None when even that failed, which is the caller's cue
+    to say nothing about a file that is not there.
+
+    The exception is passed in rather than read from `sys.exc_info()`, because the one
+    caller is a `sys.excepthook`, which is handed the exception precisely because it
+    runs after the handling of it is over.
+    """
+    try:
+        with open(path, "w", encoding="ascii", errors="replace") as handle:
+            traceback.print_exception(error, file=handle)
+    except OSError:
+        return None
+    return path
 
 
 @contextmanager

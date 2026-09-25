@@ -43,12 +43,34 @@ MIN_POOL_BYTES: Final = 250 * 1000 * 1000 * 1000
 # reboot is how an operator retries.
 AUTO_MARKER: Final = "/run/loom-auto-install-attempted"
 
+# Set by the menu when somebody stops the countdown instead. Separate from the marker
+# above because the two mean different things: that one says the disks may be half
+# written, this one says a person was standing here and declined. What they have in
+# common is that neither may be counted down a second time -- not after systemd
+# restarts the menu, and not after a trip through the rescue shell. A reboot clears
+# it, which is how an operator changes their mind.
+AUTO_DECLINED: Final = "/run/loom-auto-install-declined"
+
 # `loom-install` exits with this when the install itself succeeded but the box may
 # not boot into it unattended -- see `fix_boot_order`. The menu holds the console
 # open on it rather than counting down, because the firmware fix it asks for is
 # printed nowhere else: the installed box's login banner repeats the recovery
 # passphrase, but not this.
+#
+# Shared with argparse, which exits 2 on a bad argument. Harmless: the menu is the
+# only caller and it composes the arguments itself.
 EXIT_BOOT_ORDER_DEGRADED: Final = 2
+
+# The operator said no -- Ctrl-C, or the action word not typed. 130 is the shell's
+# spelling of "killed by SIGINT", and the point of having it at all is that the menu
+# can say "cancelled" where it would otherwise say "failed".
+EXIT_CANCELLED: Final = 130
+
+# Where an unhandled exception's traceback goes, instead of over the disk list and
+# the recovery passphrase on an 80-column console. In /run because the stick is a
+# read-only squashfs, and because this unit has no journal to fall back on
+# (installer.nix gives it `StandardError = "tty"`).
+CRASH_LOG: Final = "/run/loom-installer-traceback.log"
 
 # Where the target filesystem is assembled.
 MOUNT: Final = "/mnt"

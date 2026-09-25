@@ -16,6 +16,7 @@ import argparse
 import os
 import re
 import secrets
+import signal
 import subprocess
 import sys
 import tempfile
@@ -27,9 +28,15 @@ from rich.text import Text
 
 from loom_installer import constants, devices, keystore, storage
 from loom_installer.commands import CommandError, CommandRunner, Subprocess
-from loom_installer.console import Ui, build_ui
+from loom_installer.console import (
+    Aborted,
+    Ui,
+    build_ui,
+    crash_handler,
+    ignoring_interrupts,
+)
 from loom_installer.devices import KeyState
-from loom_installer.interlock import Aborted, confirm_destructive
+from loom_installer.interlock import confirm_destructive
 from loom_installer.keystore import KeystoreError
 from loom_installer.progress import CopyProgress
 from loom_installer.settings import Settings, SettingsError, settings
@@ -344,7 +351,15 @@ def _closure_bytes(runner: CommandRunner, system: str) -> int | None:
 
 
 def _stream(argv: list[str], progress: CopyProgress) -> None:
-    """Run a command, printing its output above the progress display."""
+    """Run a command, printing its output above the progress display.
+
+    The kill on the way out is not tidiness. This is the longest step of the install and
+    therefore where a Ctrl-C actually lands, and `Popen.__exit__` deliberately does not
+    reap a child it was interrupted out of -- it waits a quarter second and returns. A
+    `nixos-install` that outlives the interrupt holds /mnt, and then the teardown in
+    `run` below cannot unmount it and the box is left worse than if nothing had been
+    attempted.
+    """
     with subprocess.Popen(
         argv,
         stdout=subprocess.PIPE,
@@ -353,9 +368,18 @@ def _stream(argv: list[str], progress: CopyProgress) -> None:
         errors="replace",
     ) as process:
         assert process.stdout is not None
-        for line in process.stdout:
-            progress.log(line.rstrip())
-        returncode = process.wait()
+        try:
+            for line in process.stdout:
+                progress.log(line.rstrip())
+            returncode = process.wait()
+        except BaseException:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+            raise
 
     if returncode != 0:
         raise InstallError(f"{argv[0]} failed with exit status {returncode}.")
@@ -605,10 +629,11 @@ def run(runner: CommandRunner, ui: Ui, auto: bool) -> InstallReport:
     `auto` skips the typed interlock and nothing else -- every refusal below still
     applies, because an unattended install is exactly when a bad precondition must stop
     the run rather than be confirmed away.
-    """
-    if os.geteuid() != 0:
-        raise InstallError("The installer must run as root.")
 
+    The one refusal that is not here is running as root, which `main` asks instead: it
+    is a fact about this process rather than about this box, and leaving it here is what
+    made everything below unreachable from a test that is not running as root.
+    """
     boot = devices.boot_disk(runner)
     if boot is None:
         raise InstallError(
@@ -640,21 +665,55 @@ def run(runner: CommandRunner, ui: Ui, auto: bool) -> InstallReport:
 
         report = InstallReport()
 
-        partition(runner, targets, ui)
-        create_pool(runner, len(targets), ui)
-        encrypt(runner, key_device, ui)
-        make_filesystems(runner, ui)
-        mount_target(runner)
-        install_system(runner, ui)
-        select_setup_entry(runner, ui, report)
-        report.passphrase = enroll_recovery_passphrase(runner, key_device)
-        # targets[0]: the ESP lives on the first pool member, and that is the disk
-        # the firmware has to be pointed at.
-        fix_boot_order(runner, ui, report, targets[0], boot)
-        unmount_target(runner)
+        # From here the disks are being written to, and every way out of this block
+        # leaves a box that cannot boot. The guard is inside `unlocked_key` so that
+        # closing the stick's key mapping stays the outermost teardown, and after the
+        # interlock so that declining it is still just a refusal -- nothing has been
+        # written at that point and the operator must not be told otherwise.
+        #
+        # `BaseException` rather than the two cancellations: an sgdisk that fails
+        # leaves the box in exactly the same state as a Ctrl-C, and saying so is the
+        # whole point of the block.
+        try:
+            partition(runner, targets, ui)
+            create_pool(runner, len(targets), ui)
+            encrypt(runner, key_device, ui)
+            make_filesystems(runner, ui)
+            mount_target(runner)
+            install_system(runner, ui)
+            select_setup_entry(runner, ui, report)
+            report.passphrase = enroll_recovery_passphrase(runner, key_device)
+            # targets[0]: the ESP lives on the first pool member, and that is the
+            # disk the firmware has to be pointed at.
+            fix_boot_order(runner, ui, report, targets[0], boot)
+            unmount_target(runner)
+        except BaseException:
+            _abandon_disks(runner, ui)
+            raise
 
     _completion_block(ui, report, config)
     return report
+
+
+def _abandon_disks(runner: CommandRunner, ui: Ui) -> None:
+    """Let go of a half-written box, and say out loud what it now is.
+
+    Letting go matters because the menu is still running and its next option may be a
+    wipe: a mounted /mnt, an open dm-crypt mapping or an active volume group all keep
+    the partition tables busy. `release_storage` is the same call both destructive paths
+    already begin with, so this leaves the box in the state a retry expects.
+
+    Saying so matters more. The install is the one operation here that is not atomic,
+    and "Installation failed." on its own reads like nothing happened.
+    """
+    with ignoring_interrupts():
+        storage.release_storage(runner)
+
+    # Outside the guard above: a second Ctrl-C may skip the text, which costs nothing,
+    # but must not land in the middle of the commands.
+    ui.blank()
+    ui.warn("The internal disks have already been written to. This box will NOT boot.")
+    ui.warn("Run Install again, or Erase, before using this box.")
 
 
 def _completion_block(ui: Ui, report: InstallReport, config: Settings) -> None:
@@ -699,6 +758,11 @@ def _completion_block(ui: Ui, report: InstallReport, config: Settings) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # First, and load-bearing: the menu ignores SIGINT while this runs, and SIG_IGN is
+    # inherited across exec. Without this line Ctrl-C never reaches this process at all
+    # and none of the handling below can happen. See menu.run_install.
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+
     parser = argparse.ArgumentParser(
         prog="loom-install", description="Install the Loom appliance onto this box."
     )
@@ -711,13 +775,26 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     ui = build_ui()
+    sys.excepthook = crash_handler(ui, constants.CRASH_LOG)
     runner = Subprocess()
+
+    if os.geteuid() != 0:
+        ui.warn("The installer must run as root.")
+        return 1
 
     try:
         report = run(runner, ui, auto=args.auto)
     except Aborted as error:
+        # Before the tuple below, which would otherwise swallow it: `Aborted` is a
+        # RuntimeError, and so is `InstallError`.
         ui.warn(str(error))
-        return 1
+        return constants.EXIT_CANCELLED
+    except KeyboardInterrupt:
+        # Ctrl-C somewhere that is not a prompt. Returned rather than re-raised under
+        # the default handler, because dying of SIGINT would reach the menu as
+        # `returncode == -2` -- a second spelling of the same thing for it to learn.
+        ui.warn("Cancelled.")
+        return constants.EXIT_CANCELLED
     except (
         InstallError,
         CommandError,

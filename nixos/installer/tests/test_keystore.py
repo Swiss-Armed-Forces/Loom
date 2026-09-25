@@ -13,16 +13,12 @@ Two properties matter here and neither is visible from anywhere else:
 The passphrase itself goes in on a pipe, which is the property `FakeCall` records.
 """
 
-import io
 from collections.abc import Iterator
-from dataclasses import dataclass, field
 
 import pytest
-from fakes import FakeRunner
-from rich.console import Console
+from fakes import INSTALLER_ENVIRONMENT, FakeRunner, scripted_ui
 
 from loom_installer import constants, keystore
-from loom_installer.console import Ui
 from loom_installer.settings import settings
 
 MAPPING = "loom-keystore"
@@ -42,34 +38,6 @@ OPEN = [
 CLOSE = ["cryptsetup", "close", MAPPING]
 
 
-@dataclass(frozen=True)
-class ScriptedUi(Ui):
-    """A `Ui` with answers queued up for `prompt_passphrase`.
-
-    A subclass rather than a patch: `unlocked_key` is handed its Ui, so the double
-    goes in the front door. Everything else about it is a real Ui writing into a
-    buffer, which is how test_console.py builds one too.
-    """
-
-    answers: list[str] = field(default_factory=list)
-
-    def prompt_passphrase(self, message: str) -> str:
-        del message
-        return self.answers.pop(0)
-
-
-def scripted_ui(answers: list[str]) -> ScriptedUi:
-    """A `ScriptedUi` over a throwaway buffer."""
-    console = Console(
-        file=io.StringIO(),
-        force_terminal=False,
-        markup=False,
-        highlight=False,
-        width=80,
-    )
-    return ScriptedUi(out=console, err=console, answers=list(answers))
-
-
 @pytest.fixture(name="locked")
 def _locked(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """A stick flashed with --lock-key.
@@ -78,19 +46,10 @@ def _locked(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     using the real interface rather than reaching past one. `cache_clear` is needed
     because `settings()` is deliberately read once per process.
     """
-    for name, value in {
-        "LOOM_EFI_ARCH": "x64",
-        "LOOM_TAG": "v0.0.0",
-        "LOOM_PLATFORM": "test",
-        "LOOM_AUTO_GRACE": "30",
-        "LOOM_VG_NAME": "loom",
-        "LOOM_LV_NAME": "root",
-        "LOOM_ROOT_DEVICE": "/dev/mapper/loom-root",
-        "LOOM_KEY_LOCKED": "true",
-        "LOOM_KEYSTORE_MAPPING": MAPPING,
-        "LOOM_INSTALLER_BIN": "/run/current-system/sw/bin",
-    }.items():
+    for name, value in INSTALLER_ENVIRONMENT.items():
         monkeypatch.setenv(name, value)
+    monkeypatch.setenv("LOOM_KEY_LOCKED", "true")
+    monkeypatch.setenv("LOOM_KEYSTORE_MAPPING", MAPPING)
     settings.cache_clear()
     yield
     settings.cache_clear()

@@ -13,7 +13,14 @@ covered by test_devices.py and by nixos/tests/appliance-install.nix.
 import pytest
 
 from loom_installer import constants
-from loom_installer.decision import AutoInstall, AutoInstallInputs, decide, reason
+from loom_installer.decision import (
+    AutoInstall,
+    AutoInstallInputs,
+    BootState,
+    decide,
+    decide_boot_state,
+    reason,
+)
 from loom_installer.devices import KeyState
 
 # Either side of MIN_POOL_BYTES (250 GB). NOT_ENOUGH is picked so that two of it
@@ -25,7 +32,7 @@ NOT_ENOUGH = 140 * constants.GIGABYTE
 def inputs(**overrides: object) -> AutoInstallInputs:
     """A box that would install by itself, minus whatever the caller breaks."""
     defaults: dict[str, object] = {
-        "attempted": False,
+        "boot_state": BootState.FRESH,
         "boot_disk": "/dev/sda",
         "key_state": KeyState.PRESENT,
         "key_locked": False,
@@ -51,7 +58,7 @@ def test_two_disks_too_small_alone_are_armed_once_pooled() -> None:
 def test_a_second_attempt_in_the_same_boot_never_starts() -> None:
     # Set by the menu before it hands over, so a service restart cannot count down
     # again onto a disk the first attempt already began partitioning.
-    assert decide(inputs(attempted=True)) is AutoInstall.ATTEMPTED
+    assert decide(inputs(boot_state=BootState.ATTEMPTED)) is AutoInstall.ATTEMPTED
 
 
 def test_the_marker_outranks_every_other_verdict() -> None:
@@ -59,7 +66,7 @@ def test_the_marker_outranks_every_other_verdict() -> None:
     # half written, and nothing read off them means anything.
     verdict = decide(
         inputs(
-            attempted=True,
+            boot_state=BootState.ATTEMPTED,
             boot_disk=None,
             key_state=KeyState.MISSING,
             target_count=0,
@@ -68,6 +75,23 @@ def test_the_marker_outranks_every_other_verdict() -> None:
         )
     )
     assert verdict is AutoInstall.ATTEMPTED
+
+
+def test_a_stopped_countdown_stays_stopped_for_the_rest_of_the_boot() -> None:
+    # Somebody was standing here and said no. Without this the menu re-arms the
+    # countdown the moment it is drawn again -- after a systemd restart, or after a
+    # trip through the rescue shell -- and the second one may expire with nobody
+    # still at the keyboard.
+    assert decide(inputs(boot_state=BootState.DECLINED)) is AutoInstall.DECLINED
+
+
+def test_an_attempt_outranks_a_refusal() -> None:
+    # Both markers can be there at once: an operator who stops one countdown and then
+    # chooses Install by hand. Only one of them means the disks may be half written,
+    # and that is the one that has to survive into the verdict.
+    assert decide_boot_state(attempted=True, declined=True) is BootState.ATTEMPTED
+    assert decide_boot_state(attempted=False, declined=True) is BootState.DECLINED
+    assert decide_boot_state(attempted=False, declined=False) is BootState.FRESH
 
 
 def test_an_ambiguous_boot_medium_refuses() -> None:

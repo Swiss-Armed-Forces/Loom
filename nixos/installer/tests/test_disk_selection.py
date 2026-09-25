@@ -6,7 +6,7 @@ on. The list `target_disks` returns is not a menu -- every disk in it is partiti
 in it is data loss, not a cosmetic bug.
 """
 
-from fakes import FakeRunner
+from fakes import FakeRunner, with_internal_nvme, with_label, with_stick
 
 from loom_installer import constants, devices
 from loom_installer.devices import KeyState
@@ -14,44 +14,6 @@ from loom_installer.devices import KeyState
 # Answered rather than restated: the fake box has to reply to the exact command
 # `devices.py` asks, so it is imported from there.
 LSBLK_DISKS = devices.LSBLK_WHOLE_DISKS
-
-
-def with_stick(runner: FakeRunner, disk: str = "/dev/sda") -> FakeRunner:
-    """A Loom stick, with all three of its labels on one device."""
-    for index, label in enumerate(
-        (constants.KEY_LABEL, constants.LIVE_STORE_LABEL, constants.LIVE_ESP_LABEL),
-        start=1,
-    ):
-        partition = f"{disk}{index}"
-        runner.links[f"{constants.BY_PARTLABEL}/{label}"] = partition
-        runner.block_devices.add(partition)
-        runner.succeeds(
-            [
-                "lsblk",
-                "--noheadings",
-                "--raw",
-                "--paths",
-                "--output",
-                "PKNAME",
-                partition,
-            ],
-            f"{disk}\n",
-        )
-    return runner
-
-
-def with_internal_nvme(runner: FakeRunner, disk: str) -> FakeRunner:
-    """An ordinary internal NVMe: not removable, not USB, nothing mounted."""
-    runner.files[f"/sys/block/{disk.removeprefix('/dev/')}/removable"] = "0\n"
-    runner.succeeds(
-        ["udevadm", "info", "--query=property", f"--name={disk}"],
-        "ID_MODEL=SAMSUNG\nID_BUS=nvme\n",
-    )
-    runner.succeeds(
-        ["lsblk", "--noheadings", "--raw", "--paths", "--output", "MOUNTPOINTS", disk],
-        "\n\n",
-    )
-    return runner
 
 
 def test_the_boot_medium_is_resolved_from_our_own_labels() -> None:
@@ -63,20 +25,8 @@ def test_a_second_loom_stick_makes_the_boot_medium_unanswerable() -> None:
     # The labels resolve to two disks, and guessing which one we booted from is how
     # the wrong device gets erased. Every caller treats None as fatal.
     runner = with_stick(FakeRunner())
-    runner.links[f"{constants.BY_PARTLABEL}/{constants.KEY_LABEL}"] = "/dev/sdb1"
-    runner.block_devices.add("/dev/sdb1")
-    runner.succeeds(
-        [
-            "lsblk",
-            "--noheadings",
-            "--raw",
-            "--paths",
-            "--output",
-            "PKNAME",
-            "/dev/sdb1",
-        ],
-        "/dev/sdb\n",
-    )
+    with_label(runner, constants.KEY_LABEL, "/dev/sdb1", "/dev/sdb")
+
     assert devices.boot_disk(runner) is None
 
 
