@@ -314,6 +314,13 @@ def _a_locked_key_container_is_just_another_key(
     one without being told which. This builds the locked kind for real, with real
     cryptsetup, and runs the same two steps against it.
 
+    The *order* below matters as much as the steps, and is the order `install.run`
+    uses: the container is opened first, and `partition` runs after it. That is
+    what caught the one bug this feature shipped with -- `release_storage` swept
+    every /dev/mapper node before repartitioning and closed the key store along
+    with them, so `encrypt` was handed a key that had stopped existing two steps
+    earlier. An earlier version of this subtest partitioned first and saw nothing.
+
     Not covered here: the prompt that gets the container open on a real stick
     (installer/tests/test_keystore.py) and the initrd unit that does the same job in
     stage 1 (nixos/key-store.nix), which no VM test in this repository can reach.
@@ -321,8 +328,6 @@ def _a_locked_key_container_is_just_another_key(
     # Start from a pool this subtest owns. The one above left a single-disk group.
     installer.succeed(f"vgremove --force {volume_group}")
     installer.succeed("pvscan --cache")
-    steps.step(f"install.partition(runner, [{DISKS[0]!r}])")
-    steps.step("install.create_pool(runner, 1)")
 
     # The stick's key partition as it comes off `build-appliance-image --flash
     # --lock-key`: 32M, a LUKS2 container, 4096 random bytes written inside it.
@@ -374,6 +379,13 @@ def _a_locked_key_container_is_just_another_key(
     )
     mapping = f"/dev/mapper/{KEYSTORE_MAPPING}"
     installer.succeed(f"dd if=/dev/urandom of={mapping} bs=4096 count=1 status=none")
+
+    # Now partition, with the key store already open -- `install.run`'s order. The
+    # sweep inside `partition` closes every other /dev/mapper node before it
+    # touches a table, and this one has to come out the far side of it.
+    steps.step(f"install.partition(runner, [{DISKS[0]!r}])", locked=True)
+    installer.succeed(f"test -b {mapping}")
+    steps.step("install.create_pool(runner, 1)", locked=True)
 
     # From here on it is the ordinary install, handed the mapping instead of a
     # partition. Nothing in these three calls knows the difference.
