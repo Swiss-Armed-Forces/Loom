@@ -221,6 +221,13 @@ evaluate_platforms(){
         instantiate "${platform}" installerImage '--lock-key' \
             --arg lockKey true
 
+        # And --keymap, which is inert without a value the same way the two above
+        # are. It also carries a build-time check that the name resolves, so this
+        # pass is where a nixpkgs bump that moved the keymaps would surface --
+        # rather than on a box whose stage 1 prompt has quietly gone back to US.
+        instantiate "${platform}" installerImage '--keymap' \
+            --argstr keymap de_CH-latin1
+
         # The tests are evaluated for the platform that could run them. The
         # nodes import the same module list the image does, so evaluating them
         # for another platform re-checks what installerImage just checked; what

@@ -22,7 +22,6 @@ it, because the installed box prints the same pair in its login banner and two
 copies would drift.
 """
 
-import getpass
 import io
 import os
 import select
@@ -191,20 +190,23 @@ class Ui:
         except EOFError:
             return ""
 
-    def prompt_secret(self, message: str) -> str:
-        """As `prompt`, for something that should not stay on the screen.
+    def prompt_passphrase(self, message: str) -> str:
+        """Ask for a passphrase, and show it while it is typed.
+
+        Echoed, which is not what a passphrase prompt usually does. The threat that
+        gives up is an observer at the monitor, and this program concedes that one
+        already: it prints the LUKS recovery passphrase to this same screen when it
+        finishes, and the console it draws on is a root shell. What it buys is the
+        only feedback there is about the keyboard map -- under a wrong one `-`
+        arrives as `/` and `y` as `z`, and a masked prompt makes that
+        indistinguishable from a passphrase that is simply wrong.
 
         Not stripped, unlike `prompt`: a passphrase is bytes somebody chose, and
-        trimming whitespace out of one would quietly reject a correct answer. The only
-        thing removed is the newline `getpass` already leaves off.
-
-        Printed the same way as `prompt` and then handed `getpass` an empty prompt of
-        its own, for the same reason -- getpass writes to /dev/tty directly, outside the
-        palette and outside anything rich knows about.
+        trimming whitespace out of one would quietly reject a correct answer.
         """
         self.out.print(message, end="")
         try:
-            return getpass.getpass("")
+            return input()
         except EOFError:
             return ""
 

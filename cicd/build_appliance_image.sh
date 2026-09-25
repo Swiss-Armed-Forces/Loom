@@ -86,6 +86,32 @@ KEYSTORE_MAPPING="loom-keystore-flash"
 # never written anywhere but --lock-key-out. Unlike the WiFi PSK next door it
 # never reaches Nix and never reaches the stick.
 KEY_PASSPHRASE=""
+# `.` rather than the `-` that reads more naturally, because this string is typed
+# blind at a stage 1 prompt on a keyboard nobody here chose. `.` is the same
+# unshifted key on QWERTY and QWERTZ and is at least labelled on AZERTY; `-` is
+# none of those -- under a US map a Swiss `-` arrives as `/`, and a French one as
+# `6`. Six separators in a seven-word passphrase, so this one character decides
+# whether a Swiss operator can type it at all.
+LOCK_KEY_DELIMITER="."
+# Letters that move between Latin layouts, as an ERE for `grep -v`.
+#
+# y and z swap on QWERTZ, and 71% of unfiltered seven-word passphrases contain
+# one. Dropping them costs 12.92 -> 12.67 bits per word, so seven words are still
+# 88.7 bits -- nothing, against a passphrase that cannot be typed.
+#
+# Deliberately NOT extended to a/q/w/m, which is what AZERTY additionally moves:
+# that filter keeps only a third of the list, and with rejection sampling below
+# it would need about 1700 draws rather than about 4. An AZERTY deployment should
+# use --keymap, which fixes the recovery passphrase and the console with it.
+LOCK_KEY_FORBIDDEN="[yz]"
+# How many draws before giving up. ~29% of draws survive the filter, so four is
+# typical and a hundred is unreachable unless something is broken.
+LOCK_KEY_MAX_DRAWS=100
+
+# The console keymap for the box, the installer and stage 1 (nixos/keymap.nix).
+# Empty is the kernel's built-in US QWERTY, which is what every image was before
+# this existed.
+KEYMAP=""
 
 TAG=""
 SUBNET=""
@@ -857,6 +883,7 @@ build_image(){
         --arg debugAccess "${DEBUG_ACCESS}" \
         --argstr debugSshAuthorizedKey "${debug_key}" \
         --arg lockKey "${LOCK_KEY}" \
+        --argstr keymap "${KEYMAP}" \
         --out-link "${IMAGE_LINK}"
 }
 
@@ -921,7 +948,28 @@ generate_luks_key(){
     #
     # `diceware` reads its own EFF list and draws from `SystemRandom`, so this is
     # neither a wordlist in this repository nor a hand-rolled index into one.
-    KEY_PASSPHRASE="$(diceware --no-caps --delimiter - --num "${LOCK_KEY_WORDS}")"
+    #
+    # Rejection sampling for the layout filter, rather than filtering the list and
+    # drawing from it: diceware only accepts wordlists by *name* from its own
+    # search directories, so drawing from a filtered copy would mean keeping one
+    # somewhere -- and the whole point of taking the list from a package is not to.
+    #
+    # Redrawing the entire passphrase keeps the result uniform over the passphrases
+    # that survive the filter, which is what makes the entropy exactly
+    # 7 * log2(6503) and not an argument.
+    local draw
+    for (( draw = 1; draw <= LOCK_KEY_MAX_DRAWS; draw++ )); do
+        KEY_PASSPHRASE="$(diceware --no-caps \
+            --delimiter "${LOCK_KEY_DELIMITER}" \
+            --num "${LOCK_KEY_WORDS}")"
+        if ! grep --quiet --extended-regexp "${LOCK_KEY_FORBIDDEN}" <<< "${KEY_PASSPHRASE}"; then
+            return
+        fi
+    done
+
+    echo >&2 "[!] Error: no passphrase without ${LOCK_KEY_FORBIDDEN} in ${LOCK_KEY_MAX_DRAWS} draws."
+    echo >&2 "[!] That should take about four, so diceware or its wordlist has changed."
+    exit 1
 }
 
 flash_image(){
@@ -1260,6 +1308,7 @@ report(){
     echo "      gpu       : ${gpu}"
     echo "      debug     : ${DEBUG_ACCESS}"
     echo "      key lock  : ${LOCK_KEY}"
+    echo "      keymap    : ${KEYMAP:-us (built-in default)}"
     echo "      wifi      : ${ENABLE_WIFI}"
     if [[ "${ENABLE_WIFI}" = true ]]; then
         echo "      ssid      : ${WIFI_SSID}"
@@ -1358,6 +1407,11 @@ usage(){
     echo "  --lock-key-out FILE           also write the key passphrase to FILE. Must not be"
     echo "                                the same file as --key-backup: one file holding both"
     echo "                                factors is no better than neither."
+    echo "  --keymap NAME                 console keymap for the box, the installer and stage 1,"
+    echo "                                as loadkeys names it ('de_CH-latin1', 'fr', 'uk')."
+    echo "                                Default is the kernel's US QWERTY. Set this when the"
+    echo "                                box has a keyboard that is not US: it is what makes the"
+    echo "                                --lock-key and recovery passphrase prompts typeable."
     echo "  --vm-serial                   add a getty on ttyS0 to the installer and to the box"
     echo "                                it installs, so a VM can be driven from a terminal that"
     echo "                                copies and pastes. For 'appliance-vm installer --serial';"
@@ -1471,6 +1525,11 @@ while [[ $# -gt 0 ]]; do
         --lock-key-out)
             shift
             LOCK_KEY_OUT="${1?Missing FILE}"
+            shift
+        ;;
+        --keymap)
+            shift
+            KEYMAP="${1?Missing NAME}"
             shift
         ;;
         --vm-serial)

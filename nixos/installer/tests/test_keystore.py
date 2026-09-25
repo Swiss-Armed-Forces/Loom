@@ -44,7 +44,7 @@ CLOSE = ["cryptsetup", "close", MAPPING]
 
 @dataclass(frozen=True)
 class ScriptedUi(Ui):
-    """A `Ui` with answers queued up for `prompt_secret`.
+    """A `Ui` with answers queued up for `prompt_passphrase`.
 
     A subclass rather than a patch: `unlocked_key` is handed its Ui, so the double
     goes in the front door. Everything else about it is a real Ui writing into a
@@ -53,7 +53,7 @@ class ScriptedUi(Ui):
 
     answers: list[str] = field(default_factory=list)
 
-    def prompt_secret(self, message: str) -> str:
+    def prompt_passphrase(self, message: str) -> str:
         del message
         return self.answers.pop(0)
 

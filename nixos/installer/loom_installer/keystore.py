@@ -84,7 +84,7 @@ def _open(runner: CommandRunner, ui: Ui) -> None:
     runner.run(["cryptsetup", "close", settings().key_store.mapping])
 
     for attempt in range(1, PASSPHRASE_ATTEMPTS + 1):
-        passphrase = ui.prompt_secret("  Key stick passphrase: ")
+        passphrase = ui.prompt_passphrase("  Key stick passphrase: ")
         # A pipe rather than a file or an argument, the same way the recovery
         # passphrase leaves `enroll_recovery_passphrase`: it never becomes a path
         # in /proc and never lands in anything another process can read.

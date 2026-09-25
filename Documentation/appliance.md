@@ -236,6 +236,7 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--lock-key-out FILE` | Also write the key passphrase to `FILE`, mode 0400. Must not be the same file as `--key-backup`. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
 | `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — `spark` or `evo-x2`. There is no `--gpu`: the GPU is a property of the box. On the Spark this drops the offload but keeps the NVIDIA driver, which also runs that box's console. See [GPU support](#gpu-support) for when you need this. |
+| `--keymap NAME` | Console keymap for the box, the installer and stage 1, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Defaults to the kernel's US QWERTY. Set this whenever the box has a non-US keyboard — see [Keyboard layout](#keyboard-layout). |
 | `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
 | `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
 | `--wifi-ssid SSID` | Network name. Defaults to a generated `loom-xxxx`. |
@@ -663,10 +664,11 @@ build-appliance-image --platform evo-x2 --tag 1.4.0 --flash /dev/sdX \
     --lock-key --lock-key-out ~/loom-phrase-boxA.txt
 ```
 
-The passphrase is printed at the end of the build, seven words joined by dashes:
+The passphrase is printed at the very end of the build, in a block of its own — seven words
+joined by dots:
 
 ```text
-      key phrase: elaborate-hamper-duress-siesta-swimwear-client-stroller
+      key phrase: hardware.flavorful.porridge.heaving.dreamt.reclining.preheated
 ```
 
 **Write it down before that terminal scrolls.** It is generated at flash time, not stored on the stick, and
@@ -714,9 +716,49 @@ neither.
   and one layout means a stick can be re-flashed either way.
 - The key guard still works, and still tells your stick from somebody else's — see the note under
   [The USB key guard](#the-usb-key-guard).
+- **The passphrase is typed on a US keyboard unless you said otherwise.** It is generated without
+  `y` or `z` and with `.` as its separator so that a Swiss or German keyboard can type it anyway,
+  and the prompt echoes what it receives — but on anything further from US, pass `--keymap`. See
+  [Keyboard layout](#keyboard-layout).
 - **`appliance-vm installer` cannot boot a `--lock-key` image.** It writes the key partition with a plain
   `dd`, which needs no root; formatting a container inside the virtual stick does. Use an unlocked image for
   VM work.
+
+## Keyboard layout
+
+Every prompt on this appliance is typed on a Linux console, and a Linux console with no keymap
+configured is **US QWERTY**. Three of those prompts matter:
+
+- the `--lock-key` passphrase, in stage 1, on every boot
+- the LUKS recovery passphrase, in stage 1, whenever the stick is absent
+- `INSTALL` and `WIPE`, the installer's typed interlocks
+
+On a Swiss or German keyboard under a US map, `-` comes out as `/` and `y` and `z` are swapped.
+On a French one, `-` comes out as `6` and `a`, `q`, `w` and `m` move. None of that is visible if
+the prompt is masked, so a correct passphrase looks exactly like a wrong one — on a box that will
+not boot.
+
+**`--keymap` is the fix.** It sets the map for the installer, the installed box's console _and_
+stage 1:
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.5.0 --flash /dev/sdX \
+    --lock-key --keymap de_CH-latin1
+```
+
+The name is whatever `loadkeys` accepts — `de_CH-latin1`, `de`, `fr`, `uk`, `es`. A name that
+does not resolve fails the image build with a list of valid ones, rather than silently falling
+back to US on the box.
+
+Two things work regardless, so a stick built without `--keymap` is awkward rather than unusable:
+
+- **The passphrase prompts echo what you type.** You can see `/` appear when you press `-` and
+  work out the offset. This gives up nothing the design was defending: the box prints the LUKS
+  recovery passphrase on its login screen at every boot, and the console is a root shell after one
+  keypress.
+- **Generated passphrases avoid `y` and `z`** and use `.` rather than `-` as the separator. `.` is
+  the same unshifted key on QWERTY and QWERTZ. That makes a default stick typeable on a Swiss or
+  German keyboard without any flag at all; AZERTY still needs `--keymap`.
 
 ## The USB key guard
 

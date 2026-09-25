@@ -156,7 +156,16 @@ in
       # into the recovery prompt. box-hardware.nix's DefaultDeviceTimeoutSec is
       # the budget; when it runs out, the recovery prompt is the right answer.
       requires = [ keyDeviceUnit ];
-      after = [ keyDeviceUnit ];
+      # systemd-vconsole-setup is what applies `--keymap` (keymap.nix), and it
+      # has to have run before anybody types: a prompt that came up first would
+      # be answered under the built-in US map, which on QWERTZ hardware turns
+      # every `-` into `/`. Ordering only -- the unit is present whenever
+      # console.enable is, and a box without a keymap simply finds it already
+      # done.
+      after = [
+        keyDeviceUnit
+        "systemd-vconsole-setup.service"
+      ];
 
       unitConfig.DefaultDependencies = "no";
       serviceConfig = {
@@ -180,7 +189,22 @@ in
         # the box asks for this exactly the way it asks for the recovery
         # passphrase -- through plymouth when run mode's splash is up, and on
         # the console when it is not (setup mode, --debug).
-        passphrase="$(systemd-ask-password --id=loom-keystore \
+        #
+        # --echo, which is not the obvious choice for a passphrase prompt. Three
+        # reasons it is the right one here:
+        #
+        #   * The threat it gives up is an observer at the monitor, and this box
+        #     concedes that one already: it prints the LUKS recovery passphrase
+        #     on its login screen at every boot (box.nix), and the console is a
+        #     root shell after one keypress.
+        #   * What it buys is the only feedback there is about the keyboard map.
+        #     Under a wrong map `-` arrives as `/` and `y` as `z`, and a masked
+        #     prompt makes that indistinguishable from a wrong passphrase -- on
+        #     a box that will not boot, with nothing else on screen to go on.
+        #   * --echo=masked would show asterisks, which confirms keystrokes
+        #     register and says nothing about *which*. That is the one thing
+        #     worth knowing here, so masked is the worst of the three.
+        passphrase="$(systemd-ask-password --echo=yes --id=loom-keystore \
           "Loom key stick passphrase:")"
 
         # Through a pipe, so the passphrase is never a path in /proc and never

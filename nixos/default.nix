@@ -125,6 +125,12 @@
   # unattended boot: the box stops at a prompt in stage 1. See
   # Documentation/appliance.md.
   lockKey ? false,
+  # The console keymap for the box, the installer and stage 1 (nixos/keymap.nix).
+  # Empty is the kernel's built-in US QWERTY, which is what every image was
+  # before this existed. It matters most for the prompts an operator has to type
+  # blind -- the `--lock-key` passphrase and the LUKS recovery passphrase, both
+  # of which happen in stage 1.
+  keymap ? "",
 }:
 let
   nixpkgsConfig = {
@@ -269,6 +275,7 @@ let
       debugAccess
       debugSshAuthorizedKey
       lockKey
+      keymap
       ;
     loomUser = "loom";
     loomRepoDir = "/home/loom/loom";
@@ -297,6 +304,10 @@ let
       modules = modules ++ [
         ./platform.nix
         platformModule
+        # Here rather than in `applianceModules`, because the keyboard is not a
+        # property of the box: the installer stick has the same three typed
+        # prompts the appliance does, and gets the same answer.
+        ./keymap.nix
         (
           { config, lib, ... }:
           {
