@@ -51,6 +51,10 @@ WIFI_INTERFACE=""
 # 4096 bytes of /dev/urandom, matching boot.initrd.luks.devices.keyFileSize.
 KEY_BYTES=4096
 KEY_PARTLABEL="loom-key"
+# How long flash_image waits for that partition to become visible before giving
+# up. Generous, because the cost of being impatient is a stick with no key on
+# it and the cost of waiting is a few seconds on the one run where it is slow.
+KEY_PARTITION_TIMEOUT=30
 
 # Put those 4096 bytes inside a LUKS2 container on the stick rather than writing
 # them raw, with a generated word passphrase over it (nixos/key-store.nix). Off
@@ -214,7 +218,10 @@ gpu_report(){
 validate_environment(){
     local command host_arch free_gb
 
-    for command in git git-lfs nix-build jq lsblk sgdisk dd sync udevadm partprobe sudo head cmp install file; do
+    # `partx` and `blockdev` rather than `partprobe`: see flash_image for why
+    # parted is the wrong tool for re-reading an image-sized GPT on a larger
+    # stick. Both are util-linux, which `lsblk` already requires.
+    for command in git git-lfs nix-build jq lsblk sgdisk dd sync udevadm partx blockdev sudo head cmp install file; do
         check_command "${command}"
     done
 
@@ -924,8 +931,78 @@ flash_image(){
     echo "[*] Writing ${image} to ${FLASH_DEVICE}"
     sudo dd if="${image}" of="${FLASH_DEVICE}" bs=4M status=progress conv=fsync oflag=direct
     sync
-    sudo partprobe "${FLASH_DEVICE}"
+
+    # Make the kernel adopt the table that was just written.
+    #
+    # Deliberately NOT `partprobe`, which is what this used to be. The image's
+    # GPT describes a disk exactly as large as the image, so on any stick
+    # bigger than that parted finds the backup header short of the end of the
+    # device and asks what to do about it:
+    #
+    #   Warning: Not all of the space available to /dev/sdX appears to be used,
+    #   you can fix the GPT to use all of the space (an extra N blocks) or
+    #   continue with the current setting?
+    #
+    # That is an interactive prompt in the middle of a step that has to be
+    # unattended, and taking its default leaves the kernel on whatever
+    # partition table the stick held BEFORE this write. The symptom is the next
+    # step reporting no `loom-key` partition on a stick that plainly has one
+    # the moment anybody looks at it by hand -- and it is not cosmetic: a stick
+    # that is flashed but never given its key installs a box that then never
+    # boots again.
+    #
+    # The backup header really is short of the end, and that is correct: the
+    # image is as large as its contents and the installer never uses the tail
+    # of the stick. There is nothing to fix, so the right tool is one with no
+    # opinion about it.
+    #
+    # BLKRRPART first: it is the kernel's own re-read of the whole table, it
+    # has no opinion about the backup header, and it cannot prompt. It is
+    # refused outright while anything still holds a partition, which is the one
+    # case `partx` covers -- it updates the kernel's view entry by entry
+    # instead. `confirm_flash` already refuses a device with anything mounted,
+    # so the fallback is for the holder nobody declared.
+    #
+    # Neither is trusted on its own. `wait_for_key_partition` below is what
+    # actually decides whether the write landed, because the only thing worth
+    # checking is that the partition this script is about to write the disk key
+    # to is the one that came off this image.
+    sudo blockdev --rereadpt "${FLASH_DEVICE}" 2> /dev/null \
+        || sudo partx --update "${FLASH_DEVICE}" > /dev/null
     sudo udevadm settle
+
+    wait_for_key_partition
+}
+
+# Block until the partitions written above are visible, or say why they are not.
+#
+# `udevadm settle` drains the queue that exists when it is called, which is not
+# the same as the queue a slow USB bridge is about to produce: the device nodes
+# can be there before `lsblk` can say what their PARTLABELs are. Polling for the
+# one partition that matters is the only honest way to know the write landed.
+wait_for_key_partition(){
+    local waited=0 found
+
+    # Assigned rather than tested inline, for the reason resolve_tag gives at
+    # the same place: a function called inside a condition runs with `set -e`
+    # switched off, and shellcheck's `-o all` says so.
+    while (( waited < KEY_PARTITION_TIMEOUT )); do
+        found="$(key_partition)"
+        if [[ -n "${found}" ]]; then
+            return 0
+        fi
+        sleep 1
+        waited=$(( waited + 1 ))
+    done
+
+    echo >&2 "[!] Error: no '${KEY_PARTLABEL}' partition on ${FLASH_DEVICE}"
+    echo >&2 "    ${KEY_PARTITION_TIMEOUT}s after writing the image. The kernel is showing:"
+    lsblk --paths --output PATH,SIZE,PARTLABEL "${FLASH_DEVICE}" >&2 || true
+    echo >&2 "    Three partitions named loom-live-esp, loom-live-store and ${KEY_PARTLABEL} were"
+    echo >&2 "    just written. If the table above is the one this stick had before, the kernel"
+    echo >&2 "    never re-read it: unplug the stick, plug it back in, and run the same command"
+    echo >&2 "    again -- the image is already built, so it will not be rebuilt."
+    exit 1
 }
 
 # Resolved on the flashed device rather than through /dev/disk/by-partlabel, so
