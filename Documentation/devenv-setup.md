@@ -7,6 +7,9 @@ covering prerequisites, initial configuration, and optional tooling for developm
 
 ## Prerequisites
 
+- An `x86_64` or `aarch64` Linux host. Both are fully supported for development; see
+  [Supported architectures](installation.md#supported-architectures) for the two features
+  that are degraded on `aarch64`.
 - `git` installed [official instructions](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - ssh and/or https access to git repository
 - Internet connection (for package/modules updates)

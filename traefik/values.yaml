@@ -33,8 +33,8 @@ ports:
       respondingTimeouts:
         readTimeout: "0s"
   imap:
-    port: 143
-    hostPort: 143
+    port: 31143
+    hostPort: 31143
   amqp:
     port: 5672
     hostPort: 5672
@@ -49,7 +49,7 @@ ports:
     port: 9090
 
 additionalArguments:
-  - "--entrypoints.imap.address=:143"
+  - "--entrypoints.imap.address=:31143"
   - "--entrypoints.amqp.address=:5672"
   - "--entrypoints.redis.address=:6379"
   - "--entrypoints.redis-cache.address=:6380"

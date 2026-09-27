@@ -186,6 +186,49 @@ default:
     - *cache_dependencies
     - *cache_build
 
+# Base for jobs that build images for an architecture the runner does not have.
+# The runners are amd64, so every foreign-arch `RUN` (apt-get, apk, poetry
+# install, pnpm build, elasticsearch-plugin install) needs QEMU user-mode
+# emulation registered in binfmt_misc first, otherwise it fails with
+# `exec format error`. Expect a 5-10x slowdown against RUNNER_SCRIPT_TIMEOUT.
+#
+# NOTE: skaffold builds each platform under its own "<tag>_linux_<arch>" tag and
+# pushes it, then assembles the manifest list registry-side. So .default-docker's
+# docker-cache keeps per-architecture entries rather than the base tag, and the
+# arm64 half starts cold the first time these jobs run.
+#
+# NOTE: binfmt_misc is kernel-global. Registering here changes the shared runner
+# host for every later job on it. It only ever adds the ability to run foreign
+# binaries, so it is additive rather than destructive - but if the runners grow a
+# permanent systemd-binfmt registration, delete this before_script rather than
+# leaving both in place: binfmt_misc resolves by first match, and a pre-existing
+# handler without the F (fix binary) flag silently wins and breaks the build.
+.default-docker-multiarch:
+  extends: .default-docker
+  variables:
+    SKAFFOLD_PLATFORM: "linux/amd64,linux/arm64"
+    BINFMT_IMAGE_VERSION: "qemu-v10.2.3-68"
+  before_script:
+    - !reference [.default-docker, before_script]
+    #
+    # START SECTION
+    #
+    - section_start .default-docker-multiarch-before_script
+    # Register QEMU handlers for foreign architectures.
+    - BINFMT_IMAGE="${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX:-docker.io}/tonistiigi/binfmt:${BINFMT_IMAGE_VERSION}"
+    - with_retry -- docker run --privileged --rm "${BINFMT_IMAGE}" --install arm64
+    # The install above cannot fail the job: binfmt's main() logs the error and
+    # returns without setting an exit code, so EPERM, "already registered" and an
+    # unmounted binfmt_misc all exit 0. This status probe is the real check - it
+    # reports linux/arm64 only when a handler is registered AND usable from
+    # another container, which is what the build needs. Without it the job would
+    # fail much later with a confusing `exec format error` mid-build.
+    - docker run --privileged --rm "${BINFMT_IMAGE}" | grep -q arm64
+    #
+    # END SECTION
+    #
+    - section_end .default-docker-multiarch-before_script
+
 .default-k8s:
   extends: .default-docker
   variables:
@@ -425,7 +468,7 @@ deploy_demo_pages_preview:
     url: $CI_PAGES_URL
 
 publish_images:
-  extends: .default-docker
+  extends: .default-docker-multiarch
   stage: publish
   only:
     - main
@@ -435,7 +478,7 @@ publish_images:
     - devenv shell -- build --profile prod --push --tag "${CI_COMMIT_TAG:-latest}"
 
 publish_dev_images:
-  extends: .default-docker
+  extends: .default-docker-multiarch
   stage: publish
   only:
     - main

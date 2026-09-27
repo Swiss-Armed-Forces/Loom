@@ -286,7 +286,7 @@ class Settings(BaseSettings):
     redis_cache_host: AnyUrl = AnyUrl(f"redis://redis-cache.{DOMAIN}:6380/0?protocol=3")
     lazy_threshold_bytes: int = 1024  # 1KiB
 
-    imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:143")
+    imap_host: AnyUrl = AnyUrl(f"imap://dovecot.{DOMAIN}:31143")
     imap_user: str = "user"
     imap_password: str = "pass"
 

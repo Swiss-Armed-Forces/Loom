@@ -21,6 +21,36 @@ This will help make the setup process smooth and easy!
 - `nvidia-smi` (for NVIDIA GPU users: part of NVIDIA CUDA toolkit)
 - `rocm-smi-lib` (for AMD GPU users: `sudo apt install rocm-smi-lib`)
 
+## Supported architectures
+
+Loom builds and runs on **`linux/amd64`** and **`linux/arm64`** (aarch64). `up.sh` detects the host
+architecture with `uname -m`, exports `DOCKER_DEFAULT_PLATFORM` and `SKAFFOLD_PLATFORM` to match,
+and aborts on anything else rather than silently producing images the host cannot run.
+
+Three environment variables control this and can be set before calling `up.sh` or `build`:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `SKAFFOLD_PLATFORM` | `linux/<host arch>` | Platforms skaffold builds for. Accepts a comma-separated list (`linux/amd64,linux/arm64`) for multi-platform publishes, which CI uses. Read by skaffold directly, so it applies to the application and third-party builds alike. |
+| `DOCKER_DEFAULT_PLATFORM` | `linux/<host arch>` | Platform Docker resolves base images to. `up.sh` overwrites whatever you had set. |
+| `DOCKER_BUILDKIT` | `1` | Forced on by `up.sh`; BuildKit is what resolves multi-arch base image manifests reliably. |
+
+Building for a platform the host cannot execute needs QEMU registered in `binfmt_misc`
+(`docker run --privileged --rm tonistiigi/binfmt --install arm64`) and is several times slower.
+`up.sh` never does this - it only ever builds for the host.
+
+### ARM64 feature gaps
+
+Everything Loom deploys works on ARM64 with two exceptions:
+
+- **ripsecrets is not available.** Upstream publishes no `linux/arm64` release artifact, so the
+  worker image cannot ship the binary. The worker detects this at startup, logs a warning, and
+  records every file as _not scanned by ripsecrets_ - distinct from _scanned, no secrets found_.
+  trufflehog runs normally, so secret scanning is degraded rather than absent.
+- **AMD/ROCm GPUs are not supported.** The `ollama/ollama:<version>-rocm` base image is amd64
+  only, so `ollama-runtime-rocm` is pinned to `linux/amd64` and `--gpus amd` cannot be used on an
+  ARM64 host. NVIDIA GPUs (`--gpus nvidia`) work on both architectures.
+
 ## System Requirements
 
 Loom's resource profile spans two boundaries: what it needs to start, and what it could consume at
@@ -379,28 +409,14 @@ This separation means:
 
 **GPU selection:**
 
-```yaml
-# NVIDIA GPUs
-ollama:
-  runtimeImage:
-    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime
-  resources:
-    requests:
-      nvidia.com/gpu: 1
-    limits:
-      nvidia.com/gpu: 1
+`./up.sh --gpus nvidia` and `./up.sh --gpus amd` apply
+[`values-nvidia-gpu.yaml`](../charts/values-nvidia-gpu.yaml) and
+[`values-amd-gpu.yaml`](../charts/values-amd-gpu.yaml) respectively. Those files are the single
+source of truth for what each GPU vendor needs.
 
-# AMD GPUs (ROCm)
-ollama:
-  runtimeImage:
-    repository: ollama/ollama
-    tag: rocm
-  resources:
-    requests:
-      amd.com/gpu: 1
-    limits:
-      amd.com/gpu: 1
-```
+> ⚠️ ROCm is **amd64 only**. Upstream publishes no `ollama/ollama:<version>-rocm` image for
+> arm64, so `ollama-runtime-rocm` is always built for `linux/amd64` and `--gpus amd` is not
+> usable on an ARM64 host. See [Supported architectures](#supported-architectures).
 
 **Model selection (dev vs production):**
 

@@ -6,7 +6,7 @@ from email.parser import BytesHeaderParser
 from itertools import chain
 from typing import Generator
 
-from imapclient import IMAPClient
+from imapclient import DELETED, IMAPClient
 from imapclient.exceptions import IMAPClientError
 from pydantic import AnyUrl, BaseModel
 
@@ -72,6 +72,30 @@ IMAP_DEDUPLICATION_HEADER = "X-Deduplication-Upload-Hash"
 IMAP_TIMEOUT = 1200
 IMAP_DIRECTORY_BASE = ImapPurePath("INBOX")
 IMAP_FOLDER_DELIMITER = "/"
+# Protocol default for a plaintext `imap://host` URL that carries no port. The
+# port Loom's Dovecot actually listens on is the chart's, and it always reaches
+# us explicitly in imap_host - see charts/values.yaml dovecot.service.port.imap.
+IMAP_DEFAULT_PORT = 143
+# Every message in the currently selected folder, as a sequence set.
+IMAP_ALL_MESSAGES = "1:*"
+
+
+def _expunge_all(client: IMAPClient) -> None:
+    """Permanently delete every message in the currently selected folder.
+
+    Flags the "1:*" sequence set rather than searching for UIDs and passing them
+    back: imapclient joins a UID list into a single command line, and a mailbox
+    mirroring one archive directory can hold six figures of messages - far past
+    Dovecot's 64 kB imap_max_line_length. A sequence set is O(1) in command size
+    and skips the SEARCH round-trip entirely.
+
+    silent=True is required, not just an optimisation: the non-silent path feeds
+    the message argument through imapclient's to_ints(), which cannot parse a
+    sequence set. An empty mailbox is fine - "a non-existent unique identifier is
+    not an error" (RFC 3501, 6.4.8).
+    """
+    client.add_flags(IMAP_ALL_MESSAGES, [DELETED], silent=True)
+    client.expunge()
 
 
 class IMAPService:
@@ -129,7 +153,7 @@ class IMAPService:
         # - https://imapclient.readthedocs.io/en/2.2.0/api.html#thread-safety
         with IMAPClient(
             host=self.host.host if self.host.host else "",
-            port=self.host.port if self.host.port else 143,
+            port=self.host.port if self.host.port else IMAP_DEFAULT_PORT,
             ssl=False,
             timeout=IMAP_TIMEOUT,
         ) as client:
@@ -233,6 +257,20 @@ class IMAPService:
                 raise IMAPServiceErrorFolderExists(f"Folder already exists: {e}") from e
             raise IMAPServiceError(f"Failed to create folder: {e}") from e
 
+    def _delete_folder(self, client: IMAPClient, folder: str):
+        """Delete a folder, treating an already vanished folder as success.
+
+        A folder listed as \\Noselect exists only to carry its children. Deleting its
+        last child makes the server drop the placeholder too, so a delete issued
+        afterwards hits a folder that is already gone.
+        """
+        try:
+            client.delete_folder(folder)
+        except IMAPClientError as e:
+            if "[NONEXISTENT]" in str(e):
+                return
+            raise IMAPServiceError(f"Failed to delete folder: {e}") from e
+
     def get_uid_of_email(
         self, raw_email: bytes, folder: FilePurePath | ImapPurePath | None = None
     ) -> int | None:
@@ -315,26 +353,18 @@ class IMAPService:
             for imap_folder in imap_folders:
                 try:
                     with self._select_folder(client, imap_folder, readonly=False):
-                        uids = client.search(["ALL"])  # type: ignore
-                        if uids:
-                            client.delete_messages(
-                                uids
-                            )  # sets \Deleted :contentReference[oaicite:4]{index=4}
-                            client.expunge()  # permanently removes
+                        _expunge_all(client)
                 except IMAPServiceErrorFolderNotSelectable:
                     continue
 
             # Delete folders (deepest-first)
             for imap_folder in imap_folders:
-                client.delete_folder(str(imap_folder))
+                self._delete_folder(client, str(imap_folder))
 
             # Ensure IMAP_DIRECTORY_BASE is empty at the end
             # (some servers auto-move things)
             with self._select_folder(client, IMAP_DIRECTORY_BASE, readonly=False):
-                uids = client.search(["ALL"])  # type: ignore
-                if uids:
-                    client.delete_messages(uids)
-                    client.expunge()
+                _expunge_all(client)
 
     def _iter_subfolders(
         self, client: IMAPClient, imap_folder: ImapPurePath
