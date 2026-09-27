@@ -315,6 +315,81 @@ in
     console.packages = [ pkgs.cozette ];
 
     # -------------------------------------------------------------------------
+    # The sixteen colours everything on this box is drawn in.
+    #
+    # A Linux VT has exactly sixteen, and every screen the appliance has ends up
+    # inside them: the banner, the installer menu, and each pane of the console
+    # session -- tmux reduces whatever a pane sends against a `TERM=linux`
+    # client, and `loom-btop` and the assistant pane are both configured to pick
+    # from these rather than to send colour that has to be approximated (see the
+    # `--tty` and `theme = "system"` notes in console.nix). So repainting the
+    # sixteen repaints all of it at once, and it is the only place where that is
+    # true.
+    #
+    # They are Loom's, taken from the frontend so the box and the web UI are
+    # recognisably the same product. Entry by entry, with its source:
+    #
+    #    0 black          000000  NOT the frontend's #1a1a17 background. Entry 0
+    #                             is what the VT paints the whole screen with,
+    #                             and a near-black there reads as grey rather
+    #                             than as a dark theme.
+    #    1 red            cc0000  theme.ts error.dark
+    #    2 green          007e33  theme.ts success.dark
+    #    3 yellow         f7b718  the logo amber -- see below
+    #    4 blue           0099cc  theme.ts info.dark
+    #    5 magenta        8f6f9e  derived; the frontend has no magenta
+    #    6 cyan           2f9c8f  derived; the frontend has no cyan
+    #    7 white          ffffff  see below
+    #    8 bright black   5a5a57  App.css, the warm grey nearest the console's
+    #                             own 555555 -- this is dim text and box rules,
+    #                             and the frontend's darker greys vanish here
+    #    9 bright red     ff4444  theme.ts error.main
+    #   10 bright green   00c851  theme.ts success.main
+    #   11 bright yellow  f7b718  the logo amber -- see below
+    #   12 bright blue    33b5e5  theme.ts info.main
+    #   13 bright magenta c9a0d8  derived, as 5
+    #   14 bright cyan    5fd6c4  derived, as 6
+    #   15 bright white   f5f5f2  main.css --color-layer
+    #
+    # Three of them are not free choices. box.nix's banner and the installer
+    # menu already redefine indices 3, B and 7 with `ESC ] P nrrggbb`, to the
+    # amber and to pure white, and deliberately never restore them -- so on any
+    # VT that has shown either of those screens, which is all of them, those
+    # three are already what is written above. Naming the same values here is
+    # what keeps one palette rather than two fighting over the same VT; it is
+    # also why yellow and bright yellow are one colour, as they have been since
+    # the banner existed.
+    #
+    # `console.colors` rather than a `setvtrgb` unit: nixpkgs turns this into
+    # `vt.default_red=` and friends on the kernel command line, so it is in force
+    # before the first getty and there is no window where a screen is drawn in
+    # the default palette and repainted afterwards.
+    #
+    # theme.ts is Frontend/src/app/theme.ts, main.css and App.css are beside it
+    # in Frontend/src. Nothing here is checked against them at build time -- the
+    # frontend is not in this closure -- so a brand change is a change in two
+    # places.
+    # -------------------------------------------------------------------------
+    console.colors = [
+      "000000"
+      "cc0000"
+      "007e33"
+      loomAmberRgb
+      "0099cc"
+      "8f6f9e"
+      "2f9c8f"
+      "ffffff"
+      "5a5a57"
+      "ff4444"
+      "00c851"
+      loomAmberRgb
+      "33b5e5"
+      "c9a0d8"
+      "5fd6c4"
+      "f5f5f2"
+    ];
+
+    # -------------------------------------------------------------------------
     # Setting the font once is not enough.
     #
     # `systemd-vconsole-setup.service` is DefaultDependencies=no and

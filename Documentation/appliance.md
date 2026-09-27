@@ -1042,6 +1042,23 @@ console that asks for yellow gets the amber too, which is the intent. The sequen
 it hangs an xterm until somebody presses return, so the panes of the console session get the colour without
 it, and come out amber anyway from the palette the banner already set underneath them.
 
+The amber sits in a palette that is Loom's the rest of the way as well. All sixteen entries are set from the
+frontend's own tokens — `error`, `success` and `info` in their light and dark shades, the frontend's greys for
+dim text and bright white — so the box and the web UI are recognisably one product. Entry 0 is the exception
+and stays pure black: it is what the VT paints the whole screen with, and the frontend's near-black background
+reads as grey at that size. This is `console.colors` in `nixos/branding.nix`, which nixpkgs turns into kernel
+command line parameters, so it is in force before the first getty rather than applied to a screen already
+drawn.
+
+Everything the console shows is then made to pick from those sixteen rather than to send colour of its own
+that something downstream has to approximate. `btop` runs with `--tty` and the assistant pane with opencode's
+`system` theme, both of which mean "use the terminal's palette". Without them each sends 24-bit colour into a
+tmux whose client is a `TERM=linux` with eight colours, and tmux's reduction lands most of it on the dim half:
+measured on a box by reading `/dev/vcsa`, the VT's attribute plane, 40% of the `btop` pane's inked cells came
+out with a black foreground — invisible — against 49% bright afterwards. Handing tmux the original colour
+instead is worse rather than better: the kernel's own reduction thresholds the channels, so a near-grey
+gradient goes to white and the screen brightens with the colour gone out of it.
+
 Both screens run in Cozette rather than a kernel built-in console font. What that displaces is coarser than it
 sounds: the kernel picks its font from the size of the framebuffer it is handed, and on a large panel it lands
 on Terminus 16x32. A 2560x1600 monitor therefore starts out with a 160x50 grid for a three-pane session with

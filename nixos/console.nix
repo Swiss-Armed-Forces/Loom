@@ -457,7 +457,7 @@ let
   #
   # `lsp` and `mcp` are emptied rather than left out: both default to sets that
   # download servers on demand.
-  opencodeConfig = pkgs.writeText "loom-opencode.json" (
+  opencodeConfig = pkgs.writeText "opencode.json" (
     builtins.toJSON {
       autoupdate = false;
       model = "ollama/${loomChatModel}";
@@ -476,6 +476,35 @@ let
       };
     }
   );
+
+  # The pane's colours, which are not a matter of taste here.
+  #
+  # opencode's own themes are written for a terminal with millions of colours.
+  # This one has sixteen, and everything between the pane and the screen is
+  # lossy: the pane sends 24-bit, tmux reduces it against a `TERM=linux` client
+  # that declares `colors#8`, and what lands is mostly the dim half of the
+  # palette. Measured on an appliance by reading /dev/vcsa, 2.4% of the pane's
+  # cells came out bright and 5% had a BLACK foreground -- the same failure
+  # `loom-btop` has below, for the same reason.
+  #
+  # `system` is opencode's name for "use the sixteen the terminal already has",
+  # and its own help text says so: `Use "theme": "system" to match your
+  # terminal's colors`. Those sixteen are Loom's palette on this box, because
+  # branding.nix sets `console.colors` from the frontend's tokens -- so the pane
+  # comes out in the same amber, green and red as the web UI rather than in
+  # whatever opencode shipped, and nothing has to be approximated on the way.
+  #
+  # A second file rather than a key in the one above: opencode 1.15 moved TUI
+  # settings out of `opencode.json` into a `tui.json` beside it, and warns about
+  # `tui keys in opencode config are deprecated`. Hence the directory -- the two
+  # files have to be siblings, which two `writeText` store paths are not.
+  opencodeTuiConfig = pkgs.writeText "tui.json" (builtins.toJSON { theme = "system"; });
+
+  opencodeConfigDir = pkgs.runCommand "loom-opencode-config" { } ''
+    mkdir -p "$out"
+    cp ${opencodeConfig} "$out/opencode.json"
+    cp ${opencodeTuiConfig} "$out/tui.json"
+  '';
 
   # The full-width pane along the bottom: an agent pointed at the Ollama the rest
   # of Loom already uses. The pane it replaced was a plain shell; the shell now lives on
@@ -506,7 +535,13 @@ let
       probe=${lib.escapeShellArg "https://${ollamaHost}/"}
       namespace=${lib.escapeShellArg loomNamespace}
 
-      export OPENCODE_CONFIG=${lib.escapeShellArg opencodeConfig}
+      # Both, because they answer different questions. `OPENCODE_CONFIG` names
+      # the server config outright, which is what pins the model and the
+      # provider; `OPENCODE_CONFIG_DIR` puts that same directory on the search
+      # path, which is the only way `tui.json` beside it is ever read. Setting
+      # just the first leaves the pane on opencode's own theme.
+      export OPENCODE_CONFIG=${lib.escapeShellArg "${opencodeConfigDir}/opencode.json"}
+      export OPENCODE_CONFIG_DIR=${lib.escapeShellArg opencodeConfigDir}
 
       # Both are runtime flags (packages/core/src/flag/flag.ts), and neither is
       # set by the binary's wrapper: nixpkgs bakes models.dev's catalogue into the
@@ -792,7 +827,42 @@ let
       # --force-utf: a Linux VT with no locale set otherwise drops btop back to
       # ASCII box drawing. Spelled --utf-force before btop 1.4, where it is now
       # an unknown argument and btop exits non-zero.
-      exec btop --force-utf --config "$conf"
+      #
+      # --tty: the pane is on a Linux console, and btop cannot tell. It decides
+      # by looking at its own tty name -- `Auto detect real TTY`, matching
+      # /dev/tty* -- which is true on an Alt-F2 shell and false for every pane
+      # here, because a pane is a /dev/pts/N. So the same btop that draws itself
+      # for a console on tty2 draws itself for a graphical terminal in this
+      # pane, and both halves of that are wrong on this box:
+      #
+      #   * The theme. Non-tty btop paints its Default theme in 24-bit colour,
+      #     which tmux -- whose client is `TERM=linux`, `colors#8` -- flattens
+      #     with `colour_256to16`. Measured by reading /dev/vcsa, the VT's
+      #     attribute plane, on an appliance: 40% of the pane's inked cells came
+      #     out with a BLACK foreground, i.e. invisible, and only 5.6% were
+      #     bright. The TTY theme is sixteen named colours instead, which tmux
+      #     passes through unchanged, and the same measurement reads 49.1%
+      #     bright and 36.9% carrying a hue -- within a point of what that btop
+      #     draws unaided on tty2.
+      #
+      #     Handing tmux the original colour instead was tried and is worse:
+      #     `terminal-features linux*:RGB` lets the kernel do the reduction, and
+      #     the kernel thresholds r/g/b, so btop's near-grey Default gradient
+      #     goes to white. 65.7% bright, 3.0% hued -- a brighter screen with the
+      #     colour gone out of it. What makes tty2 readable was never colour
+      #     depth; it is that its palette is named rather than approximated.
+      #
+      #   * The graph symbols. Non-tty btop draws with braille (U+28xx), which
+      #     is a way of getting sub-cell resolution out of a small font. This
+      #     console's font is 12x26 (branding.nix), where the dots are far apart
+      #     and the bars read as dotted rather than drawn. TTY mode uses the
+      #     three shaded blocks instead, which are solid at any cell size.
+      #
+      # It costs the serial client (vm-serial.nix, `TERM=xterm-256color`) the
+      # 24-bit theme it could have had. That is the right way round: those tools
+      # exist to show what the operator at the box sees, and a VM that looks
+      # better than the hardware is a VM that hides this exact bug.
+      exec btop --tty --force-utf --config "$conf"
     '';
   };
 
