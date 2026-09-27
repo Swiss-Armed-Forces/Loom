@@ -4323,24 +4323,24 @@ The complete source code for Traefik is publicly available at https://github.com
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| .otp-run-deps | 20260901.225221 |  | apk-db-cataloger |
+| .otp-run-deps | 20260922.191707 |  | apk-db-cataloger |
 | alpine-baselayout | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-baselayout-data | 3.7.2-r0 | GPL-2.0-only | apk-db-cataloger |
 | alpine-keys | 2.6-r0 | MIT | apk-db-cataloger |
-| alpine-release | 3.23.5-r0 | MIT | apk-db-cataloger |
-| apk-tools | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
+| alpine-release | 3.23.6-r0 | MIT | apk-db-cataloger |
+| apk-tools | 3.0.8-r0 | GPL-2.0-only | apk-db-cataloger |
 | bash | 5.3.3-r1 | GPL-3.0-or-later | apk-db-cataloger |
 | busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
-| ca-certificates-bundle | 20260611-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
-| erlang | 27.3.4.17 |  | binary-classifier-cataloger |
-| libapk | 3.0.6-r0 | GPL-2.0-only | apk-db-cataloger |
-| libcrypto3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| ca-certificates-bundle | 20260909-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| erlang | 27.3.4.18 |  | binary-classifier-cataloger |
+| libapk | 3.0.8-r0 | GPL-2.0-only | apk-db-cataloger |
+| libcrypto3 | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
 | libgcc | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | libintl | 0.24.1-r1 | LGPL-2.1-or-later | apk-db-cataloger |
 | libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
 | libproc2 | 4.0.5-r0 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
-| libssl3 | 3.5.7-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
 | libstdc++ | 15.2.0-r2 | GPL-2.0-or-later AND LGPL-2.1-or-later | apk-db-cataloger |
 | musl | 1.2.5-r23 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
@@ -4352,7 +4352,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | skalibs-libs | 2.14.4.0-r0 | ISC | apk-db-cataloger |
 | ssl_client | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | su-exec | 0.3-r0 | MIT | apk-db-cataloger |
-| tzdata | 2026c-r0 |  | apk-db-cataloger |
+| tzdata | 2026d-r0 |  | apk-db-cataloger |
 | utmps-libs | 0.1.3.1-r0 | ISC | apk-db-cataloger |
 | zlib | 1.3.2-r0 | Zlib | apk-db-cataloger |
 
