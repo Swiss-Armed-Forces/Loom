@@ -142,6 +142,17 @@ with `<serverip>` replaced with the IP of the machine running loom, and doing so
 Note that the browser used to access loom running on the remote machine must support local domain resolution, under using `/etc/hosts` to define the `.loom` domain.
 
 Some browsers allow to set directly host resolution rules via command line arguments, see for example `cicd/chrome_wrapped.sh` for chromium.
+It takes the IP of the machine running loom and needs no `/etc/hosts` entry at all:
+
+```bash
+chrome-loom-wrapped <serverip>
+```
+
+Note that it maps `http` and `https` separately, to the standard ports of `<serverip>`. Pass the ports
+explicitly — `chrome-loom-wrapped <serverip> <httpport> <httpsport>` — when loom is reached through a
+port-forward or a tunnel rather than directly. Mapping both schemes onto a single port does not work:
+every ingress is served on Traefik's `websecure` entrypoint, so the redirect out of `http` has to be
+able to land on the port that actually serves `https`.
 
 ### Overriding Helm Values
 

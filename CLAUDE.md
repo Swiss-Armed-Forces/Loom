@@ -281,6 +281,14 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   This covers the four appliance packages under `nixos/` as well; see the lockfile section in
   `nixos/README.md` for why their locks do not govern what an image ships
 - `generate-openapi-schema` - Print OpenAPI schema JSON
+- `chrome-loom-wrapped [SERVER [HTTP_PORT [HTTPS_PORT]]]` - Open the frontend in a chromium that
+  resolves every `*.loom` name to `SERVER` via `--host-rules`, so a remote Loom needs no `/etc/hosts`
+  entry. With no arguments it points at `127.0.0.1:8080`/`8443`, the pair `appliance-vm` forwards;
+  with a server named, at its `80`/`443`. The two ports are mapped **separately and must be given as
+  a pair** - a single catch-all rule rewrites the port as well as the host, so it sends the `https`
+  that every ingress redirects to (all of them are on Traefik's `websecure` entrypoint; only
+  `values-development` widens that to `web`) back at the http port, where Traefik answers 404 on a
+  perfectly healthy stack. Expect one self-signed certificate interstitial
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
   HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a
