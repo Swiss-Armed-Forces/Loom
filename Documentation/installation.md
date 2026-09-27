@@ -41,7 +41,7 @@ Building for a platform the host cannot execute needs QEMU registered in `binfmt
 
 ### ARM64 feature gaps
 
-Everything Loom deploys works on ARM64 with two exceptions:
+Everything Loom deploys works on ARM64 with three exceptions:
 
 - **ripsecrets is not available.** Upstream publishes no `linux/arm64` release artifact, so the
   worker image cannot ship the binary. The worker detects this at startup, logs a warning, and
@@ -50,6 +50,11 @@ Everything Loom deploys works on ARM64 with two exceptions:
 - **AMD/ROCm GPUs are not supported.** The `ollama/ollama:<version>-rocm` base image is amd64
   only, so `ollama-runtime-rocm` is pinned to `linux/amd64` and `--gpus amd` cannot be used on an
   ARM64 host. NVIDIA GPUs (`--gpus nvidia`) work on both architectures.
+- **Development images are published for amd64 only.** The frontend's node stages build for the
+  build host's architecture, because `pnpm install` dies under QEMU emulation, so a cross-built
+  `dev` image would hold amd64 binaries behind an ARM64 tag. `publish_dev_images` therefore builds
+  amd64 alone. This costs nothing in practice: `up --development` builds its images locally and
+  natively. The production images CI publishes are multi-platform as usual.
 
 ## System Requirements
 
