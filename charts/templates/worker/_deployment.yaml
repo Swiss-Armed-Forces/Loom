@@ -40,10 +40,24 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
-      {{- with include "app.trustedCerts.initContainer" . }}
       initContainers:
-        {{- . | nindent 8 }}
-      {{- end }}
+        - name: check-redis-ready
+          image: {{ .Values.image.registry }}/{{ $values.initContainer.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.initContainer.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -eu
+
+              until nc -vz {{ include "app.fullname" . }}-redis {{ .Values.redis.service.port }}; do
+                echo "Waiting for redis service";
+                sleep 1;
+              done;
+          {{- if $values.initContainer.resources }}
+          resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
+          {{- end }}
+        {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
       containers:
         - name: {{ $component }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ default (default .Chart.AppVersion .Values.image.tag) $values.image.tag }}
