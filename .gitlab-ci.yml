@@ -114,7 +114,7 @@ default:
     # enable CI/CD mode for the devenv
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
     # building shell
-    - devenv shell -- echo "[*] devenv shell ready"
+    - devenv_shell_ready
     # verify that the source tree is clean
     - devenv shell -- git-file-changed --no-update
     #
