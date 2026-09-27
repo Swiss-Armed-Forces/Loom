@@ -205,13 +205,45 @@ in
             # on one segment is not something to arrange on purpose.
             apIsolate = true;
 
-            # hostapd enslaves its own interface on startup. Doing it here rather
-            # than listing the radio in `networking.bridges` is deliberate: the
-            # scripted bridge BindsTo each member's .device unit, so naming a
-            # radio that has not appeared yet would take the whole bridge -- and
-            # with it the wired network -- down with it.
+            # This tells hostapd which bridge to use, but does NOT add the
+            # interface to the bridge. That is done by loom-wifi-bridge-attach
+            # below, because hostapd's bridge integration is driver-dependent
+            # and some drivers (including mt7925e on the Spark) do not
+            # automatically enslave the interface.
             settings.bridge = cfg.wifi.bridge;
           };
+        };
+      };
+
+      # Explicitly add the WiFi interface to the bridge. hostapd's settings.bridge
+      # only tells the daemon which bridge to use - it does not guarantee the
+      # interface is added, especially on drivers like mt7925e (Spark) that do not
+      # support automatic bridge enslavement. Without this, WiFi clients cannot
+      # reach DHCP or the Loom frontend.
+      #
+      # Safe on all platforms: if the interface is already bridged (EVO-X2's
+      # MediaTek card), the command succeeds silently. If it is not (Spark's
+      # mt7925e), it is added.
+      systemd.services.loom-wifi-bridge-attach = {
+        description = "Attach the WiFi radio to the appliance bridge";
+        wantedBy = [ "network.target" ];
+        after = [
+          "${cfg.wifi.bridge}-netdev.service"
+          "hostapd.service"
+          "systemd-udev-settle.service"
+        ];
+        before = [ "network-addresses-${cfg.wifi.bridge}.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          # Only add if not already in the bridge. The master check reads the
+          # kernel's view of the interface, so this is idempotent across re-runs.
+          # Never fails - a missing radio is already reported by loom-wifi-check.
+          ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.iproute2}/bin/ip link show ${wifiIface} | grep -q \"master ${cfg.wifi.bridge}\" || ${pkgs.iproute2}/bin/ip link set dev ${wifiIface} master ${cfg.wifi.bridge}'";
+          SuccessExitStatus = [
+            0
+            1
+          ];
         };
       };
 
