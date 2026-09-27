@@ -580,6 +580,16 @@ worker: &worker
       memory: "4Gi"
   minConcurrency: null
   maxConcurrency: null
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
   # Custom labels specific to worker resources
   customLabels: {}
   customAnnotations: {}
@@ -620,6 +630,16 @@ persister:
   sharding:
     # Total number of shards
     numShards: null
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
   customLabels: {}
   customAnnotations: {}
 
@@ -642,6 +662,16 @@ beat:
       cpu: "0.2"
       memory: "500Mi"
   heartbeatFileName: "/tmp/beat_heartbeat"
+  initContainer:
+    image:
+      repository: swiss-armed-forces/cyber-command/cea/loom/alpine
+    resources:
+      requests:
+        cpu: "0.05"
+        memory: "50Mi"
+      limits:
+        cpu: "0.1"
+        memory: "100Mi"
   # Custom labels specific to beat resources
   customLabels: {}
   customAnnotations: {}

@@ -11,6 +11,13 @@ from minio import Minio
 from pydantic_ai import Agent, Embedder
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
+from redis.asyncio.retry import Retry as RetryAsync
+from redis.backoff import ExponentialBackoff
+from redis.exceptions import BusyLoadingError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
+from redis.exceptions import TimeoutError as RedisTimeoutError
+from redis.retry import Retry
 
 from common.ai_context.ai_context_repository import AiContextRepository
 from common.archive.archive_encryption_service import ArchiveEncryptionService
@@ -85,6 +92,49 @@ _wipe_service: WipeService | None = None
 logger = logging.getLogger(__name__)
 
 
+# Redis accepts TCP connections before it can serve commands: while it loads its RDB
+# snapshot it answers every command with BusyLoadingError. The chart's check-redis-ready
+# init container only proves the port is open, so it does not cover that window - nor a
+# Redis that restarts while Loom is running.
+#
+# This matters most on startup: every Celery component (beat included) writes its task
+# group registry to Redis while importing its entry point, before Celery's own
+# connection handling is in place, so an unretried error there kills the process.
+#
+# The budget is deliberately small (~1.5s worst case). It turns a blip into a pause
+# without letting an API request hang on a Redis that is genuinely gone.
+REDIS_RETRY_ERRORS: tuple[type[RedisError], ...] = (
+    BusyLoadingError,
+    RedisConnectionError,
+    RedisTimeoutError,
+)
+_REDIS_RETRIES = 5
+_REDIS_BACKOFF_BASE_SECONDS = 0.05
+_REDIS_BACKOFF_CAP_SECONDS = 1.0
+
+
+def build_redis_retry() -> Retry:
+    """Retry policy for the synchronous Redis clients."""
+    return Retry(
+        ExponentialBackoff(
+            cap=_REDIS_BACKOFF_CAP_SECONDS, base=_REDIS_BACKOFF_BASE_SECONDS
+        ),
+        retries=_REDIS_RETRIES,
+        supported_errors=REDIS_RETRY_ERRORS,
+    )
+
+
+def build_redis_retry_async() -> RetryAsync:
+    """Retry policy for the asynchronous Redis client."""
+    return RetryAsync(
+        ExponentialBackoff(
+            cap=_REDIS_BACKOFF_CAP_SECONDS, base=_REDIS_BACKOFF_BASE_SECONDS
+        ),
+        retries=_REDIS_RETRIES,
+        supported_errors=REDIS_RETRY_ERRORS,
+    )
+
+
 # pylint: disable=too-many-statements
 def init():
     # pylint: disable=global-statement
@@ -103,13 +153,25 @@ def init():
     _query_builder = QueryBuilder()
 
     global _redis_client
-    _redis_client = StrictRedis.from_url(str(settings.celery_backend_host))
+    _redis_client = StrictRedis.from_url(
+        str(settings.celery_backend_host),
+        retry=build_redis_retry(),
+        retry_on_error=list(REDIS_RETRY_ERRORS),
+    )
 
     global _redis_client_async
-    _redis_client_async = StrictRedisAsync.from_url(str(settings.celery_backend_host))
+    _redis_client_async = StrictRedisAsync.from_url(
+        str(settings.celery_backend_host),
+        retry=build_redis_retry_async(),
+        retry_on_error=list(REDIS_RETRY_ERRORS),
+    )
 
     global _redis_cache_client
-    _redis_cache_client = StrictRedis.from_url(str(settings.redis_cache_host))
+    _redis_cache_client = StrictRedis.from_url(
+        str(settings.redis_cache_host),
+        retry=build_redis_retry(),
+        retry_on_error=list(REDIS_RETRY_ERRORS),
+    )
 
     global _pubsub_service
     _pubsub_service = PubSubService(_redis_client, _redis_client_async)
