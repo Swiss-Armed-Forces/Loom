@@ -652,6 +652,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | fastapi                                  | 0.141.1         | MIT                                                                              |
 | filelock                                 | 3.29.7          | MIT                                                                              |
 | findpython                               | 0.8.0           | MIT                                                                              |
+| flake8                                   | 7.4.1           | MIT                                                                              |
 | genai-prices                             | 0.1.7           | MIT                                                                              |
 | h2                                       | 4.4.1           | MIT                                                                              |
 | hpack                                    | 4.2.0           | MIT                                                                              |
@@ -683,7 +684,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | poetry                                   | 2.4.1           | MIT                                                                              |
 | poetry-core                              | 2.4.0           | MIT                                                                              |
 | pre_commit_hooks                         | 6.0.0           | MIT                                                                              |
-| pycodestyle                              | 2.14.0          | MIT                                                                              |
+| pycodestyle                              | 2.15.0          | MIT                                                                              |
 | pydantic                                 | 2.13.5          | MIT                                                                              |
 | pydantic-ai                              | 2.31.1          | MIT                                                                              |
 | pydantic-ai-slim                         | 2.31.1          | MIT                                                                              |
@@ -715,7 +716,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | docstring_parser                         | 0.18.0          | MIT License                                                                      |
 | exceptiongroup                           | 1.3.1           | MIT License                                                                      |
 | executing                                | 2.2.1           | MIT License                                                                      |
-| flake8                                   | 7.3.0           | MIT License                                                                      |
 | flake8-bugbear                           | 25.11.29        | MIT License                                                                      |
 | h11                                      | 0.16.0          | MIT License                                                                      |
 | hyperframe                               | 6.1.0           | MIT License                                                                      |
@@ -733,7 +733,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | mdurl                                    | 0.1.2           | MIT License                                                                      |
 | pkginfo                                  | 1.12.1.2        | MIT License                                                                      |
 | pluggy                                   | 1.6.0           | MIT License                                                                      |
-| pyflakes                                 | 3.4.0           | MIT License                                                                      |
+| pyflakes                                 | 4.0.0           | MIT License                                                                      |
 | pyproject_hooks                          | 1.2.0           | MIT License                                                                      |
 | pytest-mock                              | 3.15.1          | MIT License                                                                      |
 | pytest-random-order                      | 1.2.0           | MIT License                                                                      |
