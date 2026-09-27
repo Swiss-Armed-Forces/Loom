@@ -1,5 +1,6 @@
 import json
 import logging
+import shutil
 import subprocess
 
 from celery import chain, group
@@ -14,6 +15,16 @@ from worker.utils.persisting_task import persisting_task
 
 logger = logging.getLogger(__name__)
 app = get_celery_app()
+
+# Upstream ripsecrets publishes no linux/arm64 release artifact, so the worker
+# image cannot install it on ARM64. The answer is fixed for the lifetime of the
+# container, so resolve it once here rather than per indexed file.
+RIPSECRETS_AVAILABLE = shutil.which("ripsecrets") is not None
+if not RIPSECRETS_AVAILABLE:
+    logger.warning(
+        "ripsecrets is not installed; files will be reported as not scanned by "
+        "ripsecrets."
+    )
 
 
 def signature(file: File) -> Signature:
@@ -35,6 +46,12 @@ def ripsecrets_scan_task(
 ) -> list[Secret] | None:
     if tika_text is None:
         return None
+
+    # None, not [] - an empty list means "scanned, nothing found", which is not
+    # what happened here. persist_ripsecrets_scan_task skips persisting on None.
+    if not RIPSECRETS_AVAILABLE:
+        return None
+
     with get_lazybytes_service().load_file_named(
         lazy_bytes=tika_text, suffix=extension
     ) as fd:

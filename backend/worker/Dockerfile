@@ -63,6 +63,11 @@ ARG SEAWEEDFS_VERSION="4.17"
 
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
+# Target architecture of this build ("amd64", "arm64"). BuildKit populates the
+# predefined build arg; declaring it here makes it visible to the RUN below and
+# keeps it correct under cross-compilation, unlike `dpkg --print-architecture`.
+ARG TARGETARCH
+
 # install deps
 RUN set -exu \
     && apt-get update \
@@ -74,7 +79,11 @@ RUN set -exu \
     tshark=${TSHARK_VERSION} \
     curl=${CURL_VERSION} \
     binutils=${BINUTILS_VERSION} \
-    && curl -sSfL "https://github.com/trufflesecurity/trufflehog/releases/download/${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION#v}_linux_amd64.tar.gz" \
+    && TRUFFLEHOG_ARCH="" \
+    && if [ "${TARGETARCH}" = "amd64" ]; then TRUFFLEHOG_ARCH="linux_amd64"; fi \
+    && if [ "${TARGETARCH}" = "arm64" ]; then TRUFFLEHOG_ARCH="linux_arm64"; fi \
+    && if [ -z "${TRUFFLEHOG_ARCH}" ]; then echo "Unsupported architecture: ${TARGETARCH}" && exit 1; fi \
+    && curl -sSfL "https://github.com/trufflesecurity/trufflehog/releases/download/${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION#v}_${TRUFFLEHOG_ARCH}.tar.gz" \
         -o /tmp/trufflehog.tar.gz \
     && tar -xzf /tmp/trufflehog.tar.gz -C /usr/local/bin trufflehog \
     && mv /usr/local/bin/trufflehog /usr/local/bin/.trufflehog-wrapped \
@@ -82,16 +91,30 @@ RUN set -exu \
     && chmod +x /usr/local/bin/trufflehog \
     && rm /tmp/trufflehog.tar.gz \
     && trufflehog --version \
-    && curl -LO "https://github.com/sirwart/ripsecrets/releases/download/v${RIPSECRETS_VERSION}/ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-    && tar -xzf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-    && mv "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu/ripsecrets" /usr/local/bin/ripsecrets \
-    && rm "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-    && rm -rf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu" \
-    && curl -LO "https://github.com/seaweedfs/seaweedfs/releases/download/${SEAWEEDFS_VERSION}/linux_amd64.tar.gz" \
-    && tar -xzf linux_amd64.tar.gz \
+    && RIPSECRETS_INSTALLED="" \
+    && if [ "${TARGETARCH}" = "amd64" ]; then \
+        curl -LO "https://github.com/sirwart/ripsecrets/releases/download/v${RIPSECRETS_VERSION}/ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+        && tar -xzf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+        && mv "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu/ripsecrets" /usr/local/bin/ripsecrets \
+        && rm "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+        && rm -rf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu" \
+        && echo "ripsecrets installed for amd64" \
+        && RIPSECRETS_INSTALLED="yes"; \
+    fi \
+    && if [ -z "${RIPSECRETS_INSTALLED}" ]; then \
+        echo "WARNING: ripsecrets is not installed on ${TARGETARCH}: upstream publishes" \
+        "no linux ${TARGETARCH} release artifact. ripsecrets_scan_task detects the" \
+        "missing binary at runtime and reports 'not scanned' for every file."; \
+    fi \
+    && SW_ARCH="" \
+    && if [ "${TARGETARCH}" = "amd64" ]; then SW_ARCH="linux_amd64"; fi \
+    && if [ "${TARGETARCH}" = "arm64" ]; then SW_ARCH="linux_arm64"; fi \
+    && if [ -z "${SW_ARCH}" ]; then echo "Unsupported architecture: ${TARGETARCH}" && exit 1; fi \
+    && curl -LO "https://github.com/seaweedfs/seaweedfs/releases/download/${SEAWEEDFS_VERSION}/${SW_ARCH}.tar.gz" \
+    && tar -xzf "${SW_ARCH}.tar.gz" \
     && mv weed /usr/local/bin/weed \
     && chmod +x /usr/local/bin/weed \
-    && rm linux_amd64.tar.gz \
+    && rm "${SW_ARCH}.tar.gz" \
     && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 

@@ -6,9 +6,11 @@
 # For single-node deployments, pass --gpus nvidia to up.sh instead of applying
 # this file manually.
 #
+# ollama.runtimeImage.repository is deliberately not set here: values.yaml
+# already defaults it to ollama-runtime-nvidia, so an override would be a no-op.
+# The AMD counterpart (values-amd-gpu.yaml) does have to override it.
+#
 ollama:
-  runtimeImage:
-    repository: swiss-armed-forces/cyber-command/cea/loom/ollama-runtime
   resources:
     requests:
       nvidia.com/gpu: 1

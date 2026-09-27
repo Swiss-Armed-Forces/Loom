@@ -48,7 +48,12 @@ trap atexit EXIT
 # Argument parsing
 #
 
+# NOTE: SKAFFOLD_PLATFORM is deliberately not turned into a --platform flag here.
+# skaffold reads it from the environment on its own, and --platform only exists on
+# build/run/dev/debug - injecting it unconditionally breaks `cicd/skaffold <component>
+# delete`, which up.sh relies on to release Traefik's hold on ports 80/443.
 ARGS=()
+
 while [[ $# -gt 0 ]]; do
     case "${1}" in
     -t | --tag)

@@ -1064,7 +1064,7 @@ dovecot:
     repository: swiss-armed-forces/cyber-command/cea/loom/dovecot
   service:
     port:
-      imap: 143
+      imap: 31143
   pvc:
     storage: 10Gi
     storageClass: null

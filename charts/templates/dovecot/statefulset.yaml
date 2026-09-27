@@ -40,10 +40,16 @@ spec:
             - 'sh'
             - '-c'
             - |
-              chown 0:1000 /srv/mail;
-              chmod 0775 /srv/mail;
+              chown 0:1000 /srv/vmail;
+              chmod 0775 /srv/vmail;
           volumeMounts:
-            - mountPath: /srv/mail
+            # Dovecot 2.4 keeps mail under /srv/vmail (mail_home =
+            # /srv/vmail/%{user | lower}, and the image declares it as a VOLUME).
+            # gid 1000 is the image's `vmail` group, which matches fsGroup above.
+            # Only the mount point moved from /srv/mail - the volume contents are
+            # unchanged, and dovecot/storage.conf pins the layout inside the home
+            # directory so a PVC written by Dovecot 2.3 stays readable.
+            - mountPath: /srv/vmail
               name: dovecot
           {{- if .Values.dovecot.initContainer.resources }}
           resources: {{- toYaml .Values.dovecot.initContainer.resources | nindent 12 }}
@@ -83,7 +89,7 @@ spec:
             failureThreshold: {{ default 3 .Values.dovecot.readinessProbe.failureThreshold }}
           {{- end }}
           volumeMounts:
-            - mountPath: /srv/mail
+            - mountPath: /srv/vmail
               name: dovecot
             {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- if .Values.dovecot.resources }}

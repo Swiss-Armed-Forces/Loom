@@ -30,8 +30,8 @@ build_keda(){
 build_application(){
     (
         cd "${SCRIPT_DIR}/../"
-        skaffold build \
-            "${@}"
+        # SKAFFOLD_PLATFORM is read by skaffold directly, no flag needed here.
+        skaffold build "${@}"
     )
 }
 

@@ -1,5 +1,4 @@
 # pylint: disable=redefined-outer-name
-# typos: disable-file
 from email import message_from_bytes
 from email.message import EmailMessage
 from email.policy import default
