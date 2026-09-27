@@ -19,6 +19,19 @@ let
     locales = [ "${use-locale}/UTF-8" ];
   };
 
+  # btop with aarch64 GPU support - see the header of the patch for its origin,
+  # what each hunk does and when it can be dropped.
+  btop-with-gpu-patch =
+    (pkgs.btop.override {
+      cudaSupport = true;
+      rocmSupport = pkgs.stdenv.hostPlatform.isx86_64;
+    }).overrideAttrs
+      (old: {
+        patches = (old.patches or [ ]) ++ [
+          ./nixos/patches/btop-aarch64-gpu.patch
+        ];
+      });
+
   # Python subdirectories managed by Poetry: the whole hook set, lockfile checks
   # included. The appliance's own packages are here too -- Nix builds them, but it
   # builds them through poetry-core and resolves their dependencies from nixpkgs,
@@ -459,10 +472,7 @@ in
       dig
 
       # monitoring
-      (pkgs.btop.override {
-        cudaSupport = true;
-        rocmSupport = true;
-      })
+      btop-with-gpu-patch
 
       # for some reason, this is needed to make
       # the terminal in VScode work (or not ..)

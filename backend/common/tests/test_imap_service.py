@@ -1,15 +1,22 @@
 import hashlib
 from pathlib import PurePath
+from unittest.mock import MagicMock
 
 import pytest
+from imapclient import DELETED, IMAPClient
+from imapclient.exceptions import IMAPClientError
+from pydantic import AnyUrl
 
 from common.file.file_repository import FilePurePath, ImapPurePath
 from common.services.imap_service import (
     IMAP_DEDUPLICATION_HEADER,
+    IMAP_DEFAULT_PORT,
     IMAP_DIRECTORY_BASE,
     IMAP_FLAG_NOSELECT,
     ImapFolderInfo,
     IMAPService,
+    IMAPServiceError,
+    _expunge_all,
     _get_raw_email_with_deduplication_fingerprint,
 )
 
@@ -214,6 +221,78 @@ class TestGetRawEmailWithDeduplicationFingerprint:
         headers_only = b"From: sender@example.com\r\nSubject: No body"
         result = _get_raw_email_with_deduplication_fingerprint(headers_only)
         assert f"{IMAP_DEDUPLICATION_HEADER}:".encode() in result
+
+
+class TestDeleteFolder:
+    # pylint: disable=protected-access
+
+    @pytest.fixture(name="client")
+    def fixture_client(self) -> MagicMock:
+        """Spec'd against IMAPClient so a renamed client method fails loudly."""
+        return MagicMock(spec=IMAPClient)
+
+    @pytest.fixture(name="service")
+    def fixture_service(self) -> IMAPService:
+        return IMAPService(AnyUrl("imap://dovecot.loom:31143"), "user", "pass")
+
+    def test_delete_folder_forwards_to_client(
+        self, service: IMAPService, client: MagicMock
+    ):
+        service._delete_folder(client, "INBOX/Archive")
+        client.delete_folder.assert_called_once_with("INBOX/Archive")
+
+    def test_delete_folder_ignores_already_gone_folder(
+        self, service: IMAPService, client: MagicMock
+    ):
+        """Deleting the last child drops the \\Noselect parent along with it."""
+        client.delete_folder.side_effect = IMAPClientError(
+            "delete failed: [NONEXISTENT] Mailbox doesn't exist: INBOX/Archive"
+        )
+
+        service._delete_folder(client, "INBOX/Archive")
+
+        # Assert the call happened: without this the test would also pass if
+        # _delete_folder stopped calling delete_folder altogether, never arming
+        # the side effect it exists to exercise.
+        client.delete_folder.assert_called_once_with("INBOX/Archive")
+
+    def test_delete_folder_raises_on_other_errors(
+        self, service: IMAPService, client: MagicMock
+    ):
+        client.delete_folder.side_effect = IMAPClientError(
+            "delete failed: [CANNOT] INBOX can't be deleted"
+        )
+        with pytest.raises(IMAPServiceError):
+            service._delete_folder(client, "INBOX")
+
+
+class TestExpungeAll:
+    def test_flags_whole_mailbox_without_enumerating_uids(self):
+        """A sequence set keeps the command O(1) regardless of mailbox size.
+
+        imapclient joins an explicit UID list into one command line, which blows past
+        Dovecot's 64 kB imap_max_line_length somewhere around 8k messages.
+        """
+        client = MagicMock(spec=IMAPClient)
+
+        _expunge_all(client)
+
+        client.add_flags.assert_called_once_with("1:*", [DELETED], silent=True)
+        client.expunge.assert_called_once_with()
+        client.search.assert_not_called()
+
+
+class TestImapPort:
+    """The port must come from imap_host, not from a literal in the client."""
+
+    def test_uses_port_from_url(self):
+        service = IMAPService(AnyUrl("imap://dovecot.loom:31143"), "user", "pass")
+        assert service.host.port == 31143
+
+    def test_falls_back_to_protocol_default_without_port(self):
+        service = IMAPService(AnyUrl("imap://dovecot.loom"), "user", "pass")
+        assert service.host.port is None
+        assert IMAP_DEFAULT_PORT == 143
 
 
 class TestImapFolderInfo:

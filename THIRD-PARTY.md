@@ -7177,139 +7177,122 @@ The complete source code for Traefik is publicly available at https://github.com
 
 | Package | Version | License | Found by |
 | ------- | --------| ------- | -------- |
-| adduser | 3.118+deb11u1 |  | dpkg-db-cataloger |
-| apt | 2.2.4 | GPL-2.0-or-later | dpkg-db-cataloger |
-| base-files | 11.1+deb11u10 |  | dpkg-db-cataloger |
-| base-passwd | 3.5.51 | GPL-2.0-only | dpkg-db-cataloger |
-| bash | 5.1-2+deb11u1 |  | dpkg-db-cataloger |
-| bsdutils | 1:2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| ca-certificates | 20210119 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
-| coreutils | 8.32-4+b1 | BSD-3-Clause, GFDL-1.2-no-invariants-or-later, GPL-3.0-or-later, ISC | dpkg-db-cataloger |
-| dash | 0.5.11+git20200708+dd9ef66-5 | BSD-3-Clause, BSD-3-Clause, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| debconf | 1.5.77 | BSD-2-Clause | dpkg-db-cataloger |
-| debian-archive-keyring | 2021.1.1+deb11u1 |  | dpkg-db-cataloger |
-| debianutils | 4.11.2 |  | dpkg-db-cataloger |
-| diffutils | 1:3.7-5 |  | dpkg-db-cataloger |
-| dovecot-core | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-gssapi | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-imapd | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-ldap | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-lmtpd | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-lua | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-managesieved | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-mysql | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-pgsql | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-pop3d | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-sieve | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-solr | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-sqlite | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dovecot-submissiond | 2:2.3.21.1-2+debian11 |  | dpkg-db-cataloger |
-| dpkg | 1.20.13 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| e2fsprogs | 1.46.2-2 |  | dpkg-db-cataloger |
-| findutils | 4.8.0-1 |  | dpkg-db-cataloger |
-| gcc-10-base | 10.2.1-6 |  | dpkg-db-cataloger |
-| gcc-9-base | 9.3.0-22 |  | dpkg-db-cataloger |
-| gpgv | 2.2.27-2+deb11u2 | BSD-3-Clause, CC0-1.0, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| grep | 3.6-1+deb11u1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| gzip | 1.10-4+deb11u1 | GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| hostname | 3.23 | GPL-2.0-only | dpkg-db-cataloger |
-| init-system-helpers | 1.60 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libacl1 | 2.2.53-10 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
-| libapt-pkg6.0 | 2.2.4 | GPL-2.0-or-later | dpkg-db-cataloger |
-| libattr1 | 1:2.4.48-6 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
-| libaudit-common | 1:3.0-2 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libaudit1 | 1:3.0-2 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libblkid1 | 2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libbz2-1.0 | 1.0.8-4 | GPL-2.0-only | dpkg-db-cataloger |
-| libc-bin | 2.31-13+deb11u10 |  | dpkg-db-cataloger |
-| libc6 | 2.31-13+deb11u10 |  | dpkg-db-cataloger |
-| libcap-ng0 | 0.7.9-2.2+b1 |  | dpkg-db-cataloger |
-| libcom-err2 | 1.46.2-2 |  | dpkg-db-cataloger |
-| libcrypt1 | 1:4.4.18-4 |  | dpkg-db-cataloger |
-| libdb5.3 | 5.3.28+dfsg1-0.8 |  | dpkg-db-cataloger |
-| libdebconfclient0 | 0.260 | BSD-2-Clause | dpkg-db-cataloger |
-| libexpat1 | 2.2.10-2+deb11u5 | MIT | dpkg-db-cataloger |
-| libext2fs2 | 1.46.2-2 |  | dpkg-db-cataloger |
-| libexttextcat-2.0-0 | 3.4.5-1 | BSD-3-Clause | dpkg-db-cataloger |
-| libexttextcat-data | 3.4.5-1 | BSD-3-Clause | dpkg-db-cataloger |
-| libffi7 | 3.3-6 |  | dpkg-db-cataloger |
-| libgcc-s1 | 10.2.1-6 |  | dpkg-db-cataloger |
-| libgcrypt20 | 1.8.7-6 |  | dpkg-db-cataloger |
-| libgmp10 | 2:6.2.1+dfsg-1+deb11u1 |  | dpkg-db-cataloger |
-| libgnutls30 | 3.7.1-5+deb11u5 |  | dpkg-db-cataloger |
-| libgpg-error0 | 1.38-2 | BSD-3-Clause, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libgssapi-krb5-2 | 1.18.3-6+deb11u5 |  | dpkg-db-cataloger |
-| libhogweed6 | 3.7.3-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libidn2-0 | 2.3.0-5 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libk5crypto3 | 1.18.3-6+deb11u5 |  | dpkg-db-cataloger |
-| libkeyutils1 | 1.6.1-2 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
-| libkrb5-3 | 1.18.3-6+deb11u5 |  | dpkg-db-cataloger |
-| libkrb5support0 | 1.18.3-6+deb11u5 |  | dpkg-db-cataloger |
-| libldap-2.4-2 | 2.4.57+dfsg-3+deb11u1 |  | dpkg-db-cataloger |
-| libldap-common | 2.4.57+dfsg-3+deb11u1 |  | dpkg-db-cataloger |
-| liblua5.3-0 | 5.3.3-1.1+deb11u1 |  | dpkg-db-cataloger |
-| liblz4-1 | 1.9.3-2 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| liblzma5 | 5.2.5-2.1~deb11u1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libmariadb3 | 1:10.5.23-0+deb11u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libmount1 | 2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libnettle8 | 3.7.3-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libnsl2 | 1.3.0-2 | BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later, MIT | dpkg-db-cataloger |
-| libp11-kit0 | 0.23.22-1 | BSD-3-Clause, ISC | dpkg-db-cataloger |
-| libpam-modules | 1.4.0-9+deb11u1 |  | dpkg-db-cataloger |
-| libpam-modules-bin | 1.4.0-9+deb11u1 |  | dpkg-db-cataloger |
-| libpam-runtime | 1.4.0-9+deb11u1 |  | dpkg-db-cataloger |
-| libpam0g | 1.4.0-9+deb11u1 |  | dpkg-db-cataloger |
-| libpcre2-8-0 | 10.36-2+deb11u1 |  | dpkg-db-cataloger |
-| libpcre3 | 2:8.39-13 |  | dpkg-db-cataloger |
-| libpq5 | 13.16-0+deb11u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
-| libsasl2-2 | 2.1.27+dfsg-2.1+deb11u1 | BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libsasl2-modules | 2.1.27+dfsg-2.1+deb11u1 | BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libsasl2-modules-db | 2.1.27+dfsg-2.1+deb11u1 | BSD-4-Clause, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
-| libseccomp2 | 2.5.1-1+deb11u1 | LGPL-2.1-only | dpkg-db-cataloger |
-| libselinux1 | 3.1-3 |  | dpkg-db-cataloger |
-| libsemanage-common | 3.1-1 |  | dpkg-db-cataloger |
-| libsemanage1 | 3.1-1+b2 |  | dpkg-db-cataloger |
-| libsepol1 | 3.1-1 |  | dpkg-db-cataloger |
-| libsmartcols1 | 2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libsodium23 | 1.0.18-1 | BSD-2-Clause, CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, ISC, MIT | dpkg-db-cataloger |
-| libsqlite3-0 | 3.34.1-3 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| libss2 | 1.46.2-2 |  | dpkg-db-cataloger |
-| libssl1.1 | 1.1.1w-0+deb11u1 | OpenSSL | dpkg-db-cataloger |
-| libstdc++6 | 10.2.1-6 |  | dpkg-db-cataloger |
-| libstemmer0d | 2.1.0-1 |  | dpkg-db-cataloger |
-| libsystemd0 | 247.3-7+deb11u5 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libtasn1-6 | 4.16.0-2+deb11u1 |  | dpkg-db-cataloger |
-| libtinfo6 | 6.2+20201114-2+deb11u2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| libtirpc-common | 1.3.1-1+deb11u1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libtirpc3 | 1.3.1-1+deb11u1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
-| libudev1 | 247.3-7+deb11u5 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| libunistring2 | 0.9.10-4 |  | dpkg-db-cataloger |
-| libuuid1 | 2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libwrap0 | 7.6.q-31 |  | dpkg-db-cataloger |
-| libxxhash0 | 0.8.0-2 | BSD-2-Clause, GPL-2.0-only | dpkg-db-cataloger |
-| libzstd1 | 1.4.8+dfsg-2.1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
-| login | 1:4.8.1-1 |  | dpkg-db-cataloger |
-| logsave | 1.46.2-2 |  | dpkg-db-cataloger |
-| lsb-base | 11.1.0 | BSD-3-Clause, GPL-2.0-only | dpkg-db-cataloger |
-| mariadb-common | 1:10.5.23-0+deb11u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
-| mawk | 1.3.4.20200120-2 |  | dpkg-db-cataloger |
-| mount | 2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| mysql-common | 5.8+1.0.7 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| ncurses-base | 6.2+20201114-2+deb11u2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| ncurses-bin | 6.2+20201114-2+deb11u2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
-| openssl | 1.1.1w-0+deb11u1 | OpenSSL | dpkg-db-cataloger |
-| passwd | 1:4.8.1-1 |  | dpkg-db-cataloger |
-| perl-base | 5.32.1-4+deb11u3 | Artistic-2.0, Artistic-dist, BSD-3-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
-| sed | 4.7-1 |  | dpkg-db-cataloger |
-| sensible-utils | 0.0.14 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| ssl-cert | 1.1.0+nmu1 | BSD-3-Clause | dpkg-db-cataloger |
-| sysvinit-utils | 2.96-7+deb11u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| tar | 1.34+dfsg-1+deb11u1 |  | dpkg-db-cataloger |
-| tini | 0.19.0-1 |  | dpkg-db-cataloger |
-| tzdata | 2024a-0+deb11u1 |  | dpkg-db-cataloger |
-| ucf | 3.0043 | GPL-2.0-only | dpkg-db-cataloger |
-| util-linux | 2.36.1-8+deb11u2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| zlib1g | 1:1.2.11.dfsg-2+deb11u2 | Zlib | dpkg-db-cataloger |
+| adduser | 3.152 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| base-files | 13.8+deb13u6 | GPL-2.0-or-later | dpkg-db-cataloger |
+| base-passwd | 3.6.7 | GPL-2.0-only | dpkg-db-cataloger |
+| bsdutils | 1:2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| ca-certificates | 20250419 | GPL-2.0-only, GPL-2.0-or-later, MPL-2.0 | dpkg-db-cataloger |
+| curl | 8.14.1-2+deb13u4 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| dash | 0.5.12-12 | BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| debconf | 1.5.91 | BSD-2-Clause | dpkg-db-cataloger |
+| debian-archive-keyring | 2025.1 |  | dpkg-db-cataloger |
+| debianutils | 5.23.2 | GPL-2.0-only, GPL-2.0-or-later, SMAIL-GPL | dpkg-db-cataloger |
+| gcc-14-base | 14.2.0-19 |  | dpkg-db-cataloger |
+| hostname | 3.25 | GPL-2.0-only | dpkg-db-cataloger |
+| libacl1 | 2.3.2-2+b1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
+| libapt-pkg7.0 | 3.0.3 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, curl | dpkg-db-cataloger |
+| libattr1 | 1:2.5.2-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
+| libaudit-common | 1:4.0.2-2 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libaudit1 | 1:4.0.2-2+b2 | GPL-1.0-only, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libblkid1 | 2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libbrotli1 | 1.1.0-2+b7 | MIT | dpkg-db-cataloger |
+| libbsd0 | 0.12.2-2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
+| libbz2-1.0 | 1.0.8-6 | GPL-2.0-only | dpkg-db-cataloger |
+| libc6 | 2.41-12+deb13u3 | BSD-2-Clause, BSL-1.0, FSFAP, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libcap-ng0 | 0.8.5-4+b1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libcap2 | 1:2.75-10+deb13u1+b1 | BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libcom-err2 | 1.47.2-3+b11 | 0BSD, Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
+| libcrypt1 | 1:4.4.38-1 |  | dpkg-db-cataloger |
+| libcurl4t64 | 8.14.1-2+deb13u4 | BSD-3-Clause, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libdb5.3t64 | 5.3.28+dfsg2-9 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
+| libdebconfclient0 | 0.280 | BSD-2-Clause, BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libexpat1 | 2.8.3-1~deb13u1 | MIT | dpkg-db-cataloger |
+| libexttextcat-2.0-0 | 3.4.7-1+b1 | BSD-3-Clause | dpkg-db-cataloger |
+| libexttextcat-data | 3.4.7-1 | BSD-3-Clause | dpkg-db-cataloger |
+| libffi8 | 3.4.8-2 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
+| libgcc-s1 | 14.2.0-19 |  | dpkg-db-cataloger |
+| libgmp10 | 2:6.3.0+dfsg-3 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libgnutls30t64 | 3.8.9-3+deb13u4 |  | dpkg-db-cataloger |
+| libgssapi-krb5-2 | 1.21.3-5+deb13u1 |  | dpkg-db-cataloger |
+| libhogweed6t64 | 3.10.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libicu76 | 76.1-4 | GPL-3.0-only, MIT | dpkg-db-cataloger |
+| libidn2-0 | 2.3.8-2 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libk5crypto3 | 1.21.3-5+deb13u1 |  | dpkg-db-cataloger |
+| libkeyutils1 | 1.6.3-6 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libkrb5-3 | 1.21.3-5+deb13u1 |  | dpkg-db-cataloger |
+| libkrb5support0 | 1.21.3-5+deb13u1 |  | dpkg-db-cataloger |
+| liblastlog2-2 | 2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libldap-common | 2.6.10+dfsg-1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| libldap2 | 2.6.10+dfsg-1 | BSD-3-Clause, Beerware, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
+| liblua5.3-0 | 5.3.6-2+b4 |  | dpkg-db-cataloger |
+| liblz4-1 | 1.10.0-4 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| liblzma5 | 5.8.1-1+deb13u1 | 0BSD, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libmariadb3 | 1:11.8.6-0+deb13u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libmd0 | 1.1.0-2+b1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
+| libmount1 | 2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libncursesw6 | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libnettle8t64 | 3.10.1-1 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libnghttp2-14 | 1.64.0-1.1+deb13u1 | BSD-2-Clause, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libnghttp3-9 | 1.8.0-1 | FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, MIT | dpkg-db-cataloger |
+| libp11-kit0 | 0.25.5-3 | Apache-2.0, BSD-3-Clause, FSFAP, FSFULLR, GPL-2.0-or-later, GPL-3.0-or-later, ISC, LGPL-2.1-only, LGPL-2.1-or-later, X11 | dpkg-db-cataloger |
+| libpam-modules | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-modules-bin | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam-runtime | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpam0g | 1.7.0-5 | BSD-3-Clause, Beerware, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later | dpkg-db-cataloger |
+| libpcre2-32-0 | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libpcre2-8-0 | 10.46-1~deb13u1 | BSD-2-Clause, BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libpkgconf3 | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| libpq5 | 17.11-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-1.0-only, PostgreSQL, TCL | dpkg-db-cataloger |
+| libproc2-0 | 2:4.0.4-9 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libpsl5t64 | 0.21.2-1.1+b1 | MIT | dpkg-db-cataloger |
+| librtmp1 | 2.4+20151223.gitfa8646d.1-2+b5 |  | dpkg-db-cataloger |
+| libsasl2-2 | 2.1.28+dfsg1-9 | BSD-2-Clause, BSD-3-Clause-Attribution, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, RSA-MD | dpkg-db-cataloger |
+| libsasl2-modules | 2.1.28+dfsg1-9 | BSD-2-Clause, BSD-3-Clause-Attribution, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, RSA-MD | dpkg-db-cataloger |
+| libsasl2-modules-db | 2.1.28+dfsg1-9 | BSD-2-Clause, BSD-3-Clause-Attribution, BSD-3-Clause, BSD-4-Clause-UC, FSFULLR, GPL-3.0-only, GPL-3.0-or-later, MIT-CMU, RSA-MD | dpkg-db-cataloger |
+| libseccomp2 | 2.6.0-2 | LGPL-2.1-only | dpkg-db-cataloger |
+| libselinux1 | 3.8.1-1 | GPL-2.0-only | dpkg-db-cataloger |
+| libsemanage-common | 3.8.1-1 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsemanage2 | 3.8.1-1 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libsepol2 | 3.8.1-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
+| libsmartcols1 | 2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libsodium23 | 1.0.18-1+deb13u1 | BSD-2-Clause, CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, ISC, MIT | dpkg-db-cataloger |
+| libsqlite3-0 | 3.46.1-7+deb13u1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libssh2-1t64 | 1.11.1-1+deb13u1 | ISC | dpkg-db-cataloger |
+| libssl3t64 | 3.5.7-1~deb13u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libstdc++6 | 14.2.0-19 |  | dpkg-db-cataloger |
+| libstemmer0d | 2.2.0-4+b2 |  | dpkg-db-cataloger |
+| libsystemd0 | 257.13-1~deb13u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libtasn1-6 | 4.20.0-2+deb13u1 |  | dpkg-db-cataloger |
+| libtinfo6 | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| libtirpc-common | 1.3.6+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libtirpc3t64 | 1.3.6+ds-1 | BSD-3-Clause, GPL-2.0-only, LGPL-2.1-only | dpkg-db-cataloger |
+| libudev1 | 257.13-1~deb13u1 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| libunistring5 | 1.3-2 | BSD-3-Clause, GFDL-1.2-or-later, GFDL-1.3-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, Unicode-DFS-2016, X11, BSD-3-Clause, GFDL-1.2-or-later, GFDL-1.3-or-later, ISC, Unicode-DFS-2016 | dpkg-db-cataloger |
+| libunwind8 | 1.8.1-0.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libuuid1 | 2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| libwrap0 | 7.6.q-36 | BSD-3-Clause, TCP-wrappers | dpkg-db-cataloger |
+| libxapian30 | 1.4.29-3 | BSD-3-Clause, FSFAP, GPL-2.0-or-later, MIT | dpkg-db-cataloger |
+| libxxhash0 | 0.8.3-2 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libzstd1 | 1.5.7+dfsg-1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
+| login | 1:4.16.0-2+really2.41.5-0+deb13u1 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
+| login.defs | 1:4.17.4-2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| lua-bit32 | 5.3.0-6 |  | dpkg-db-cataloger |
+| lua-json | 1.3.4-3 |  | dpkg-db-cataloger |
+| lua-lpeg | 1.1.0-2 |  | dpkg-db-cataloger |
+| lua-posix | 36.3-1 | BSD-3-Clause | dpkg-db-cataloger |
+| mariadb-common | 1:11.8.6-0+deb13u1 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
+| mysql-common | 5.8+1.1.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| ncurses-base | 6.5+20250216-2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
+| netcat-traditional | 1.10-50 |  | dpkg-db-cataloger |
+| openssl | 3.5.7-1~deb13u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl-provider-legacy | 3.5.7-1~deb13u2 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| passwd | 1:4.17.4-2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| pkgconf | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| pkgconf-bin | 1.8.1-4 | GPL-2.0-only, GPL-2.0-or-later, ISC, X11 | dpkg-db-cataloger |
+| ssl-cert | 1.1.3 | BSD-3-Clause | dpkg-db-cataloger |
+| tini | 0.19.0-3+b7 |  | dpkg-db-cataloger |
+| tzdata | 2026b-0+deb13u1 |  | dpkg-db-cataloger |
+| zlib1g | 1:1.3.dfsg+really1.3.1-1+b1 | Zlib | dpkg-db-cataloger |
 
 ### registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube
 

@@ -44,6 +44,10 @@ spec:
           env:
             - name: ROUNDCUBEMAIL_DEFAULT_HOST
               value: {{ include "app.fullname" . }}-dovecot
+            # The image defaults to 143; Dovecot 2.4 runs rootless and listens on
+            # 31143, so the port has to be passed explicitly.
+            - name: ROUNDCUBEMAIL_DEFAULT_PORT
+              value: {{ .Values.dovecot.service.port.imap | quote }}
           volumeMounts:
             - name: roundcube-config
               mountPath: /usr/local/etc/php/conf.d/zzz_roundcube-custom.ini

@@ -93,6 +93,7 @@ source "${VARS_FILE}"
 # Steps which always run
 # some of these steps require root
 STEPS_SETUP_SYSTEM=(
+    set_docker_platform
     set_offline_mode
     set_skaffold_profile
     set_skaffold_command
@@ -148,6 +149,10 @@ SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
 CERTIFICATE=false
+# Host architecture in Docker/Go naming ("amd64", "arm64"). Set by
+# set_docker_platform(); initialised here so that --skip-set_docker_platform
+# does not leave it unbound for run_skaffold().
+TARGETARCH="amd64"
 MINIKUBE_MOUNT_STRING=""
 TRUSTED_CA_BUNDLE=""
 ARCHIVE_ENC_KEY=""
@@ -588,12 +593,16 @@ check_host_resources() {
     if [[ -n "${GPUS}" ]]; then
         local host_gpu
         case "${GPUS}" in
+            # A failing probe (no driver, no device) must report 0 GPUs through the
+            # errors counter below, not abort the script via `set -eo pipefail`.
+            # The `||` runs after the assignment, so it overwrites whatever partial
+            # output the failed pipeline produced.
             amd)
                 # Count AMD GPUs using rocm-smi
-                host_gpu="$(rocm-smi 2>/dev/null | grep -cE '^[0-9]+\s' || echo 0)"
+                host_gpu="$(rocm-smi 2>/dev/null | grep -cE '^[0-9]+\s')" || host_gpu=0
             ;;
             nvidia)
-                host_gpu="$(nvidia-smi --list-gpus | wc -l)"
+                host_gpu="$(nvidia-smi --list-gpus 2>/dev/null | wc -l)" || host_gpu=0
             ;;
             *)
                 echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
@@ -750,6 +759,42 @@ check_mount_string_disk_space() {
     fi
 }
 
+# Pin the Docker platform to the host architecture so that every `docker pull`
+# and `docker build` in this run resolves multi-arch manifests to the arch the
+# cluster actually runs on. TARGETARCH is the Docker/Go spelling of `uname -m`
+# and is reused by run_skaffold() as the default --platform.
+set_docker_platform(){
+    local host_arch
+    host_arch="$(uname -m)"
+    case "${host_arch}" in
+        aarch64|arm64)
+            TARGETARCH="arm64"
+        ;;
+        x86_64|amd64)
+            TARGETARCH="amd64"
+        ;;
+        *)
+            echo >&2 "[!] Error: Unsupported host architecture '${host_arch}'."
+            echo >&2 "[!] Loom images are only built for linux/amd64 and linux/arm64."
+            exit 1
+        ;;
+    esac
+    export TARGETARCH
+    export DOCKER_DEFAULT_PLATFORM="linux/${TARGETARCH}"
+    echo "[*] Detected ${host_arch}, setting DOCKER_DEFAULT_PLATFORM=${DOCKER_DEFAULT_PLATFORM}"
+
+    # BuildKit resolves the base image manifest per platform; the legacy builder
+    # does not honour DOCKER_DEFAULT_PLATFORM on every code path.
+    export DOCKER_BUILDKIT=1
+
+    # skaffold reads SKAFFOLD_PLATFORM from the environment on every subcommand
+    # that supports --platform, so exporting it here covers both the application
+    # build (run_skaffold) and the third-party ones (cicd/skaffold). A value
+    # already set by the caller - e.g. a multi-platform CI build - wins.
+    export SKAFFOLD_PLATFORM="${SKAFFOLD_PLATFORM:-linux/${TARGETARCH}}"
+    echo "[*] Building for platform: ${SKAFFOLD_PLATFORM}"
+}
+
 create_cluster(){
     echo "[*] Minikube resources:"
     echo "[*]   Host CPU reserve: ${MINIKUBE_HOST_CPU_RESERVE_CORES} -> using: ${MINIKUBE_CPUS}"
@@ -775,6 +820,7 @@ create_cluster(){
     fi
 
     # Enable GPU device plugin if GPUs are requested
+    local gpu_args=()
     if [[ -n "${GPUS}" ]]; then
         case "${GPUS}" in
             amd)
@@ -1075,6 +1121,8 @@ install_host_entries(){
 }
 
 run_skaffold(){
+    # The target platform comes from SKAFFOLD_PLATFORM, exported by
+    # set_docker_platform() and read by skaffold itself.
     skaffold "${SKAFFOLD_COMMAND}" \
         --profile "${SKAFFOLD_PROFILE}" \
         "${SKAFFOLD_ARGS[@]}" \

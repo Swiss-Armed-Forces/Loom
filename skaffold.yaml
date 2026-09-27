@@ -164,7 +164,7 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
-    # NOTE: index 14 — Ollama runtime (NVIDIA)
+    # NOTE: index 13 — Ollama runtime (NVIDIA)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia
       context: ollama
       docker:
@@ -176,9 +176,13 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
-    # NOTE: index 15 — Ollama runtime (ROCm/AMD)
+    # NOTE: index 14 — Ollama runtime (ROCm/AMD)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
       context: ollama
+      # ROCm base images (ollama/ollama:<ver>-rocm) are published for linux/amd64
+      # only, so this artifact is always built for amd64 regardless of the host
+      # architecture or the requested --platform.
+      platforms: ["linux/amd64"]
       docker:
         dockerfile: Dockerfile.runtime
         buildArgs:
@@ -189,7 +193,8 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
-    # NOTE: index 16 — Ollama models (single image, dev/prod via target)
+    # NOTE: index 15 — must stay here; patched by the dev profile (target)
+    # Ollama models (single image, dev/prod via target)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models
       context: ollama
       docker:

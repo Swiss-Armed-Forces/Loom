@@ -1,0 +1,86 @@
+From 01666d928c1be82e8005f801a9b475d522a65726 Mon Sep 17 00:00:00 2001
+From: gweber <webersheim@gmail.com>
+Date: Sat, 6 Jun 2026 23:14:33 +0000
+Subject: [PATCH] Enable NVIDIA (NVML) GPU support on Linux ARM (aarch64/arm64)
+
+Source: https://github.com/aristocratos/btop/pull/1698
+Applied to `pkgs.btop` by `btop-with-gpu-patch` in `devenv.nix`, written
+against btop 1.4.7. Delete this file once the PR is merged and the release
+carrying it reaches nixpkgs.
+
+The two hunks have different origins:
+
+1. `Makefile` - taken from the upstream PR. btop gates GPU support on
+   `linux` + `x86_64`; widening the architecture filter to
+   `x86_64 aarch64 arm64` is what makes the GPU panels build at all on
+   aarch64.
+2. `src/linux/btop_collect.cpp` - a Loom addition, not part of the upstream
+   PR. It `dlopen()`s `libnvidia-ml.so` from absolute system paths when the
+   plain name does not resolve, because a Nix build does not put the host's
+   driver libraries on the loader path, so the library is never found even
+   when a GPU is present. It deliberately keeps upstream's `Logger::info`
+   level on the "failed to load libnvidia-ml.so" message - lowering it would
+   silence that message on every architecture, not just aarch64. Do not use
+   this hunk to carry further unrelated behaviour changes.
+
+If the patch stops applying: btop is a convenience monitoring tool in the dev
+shell, not part of any build or deployment. Dropping `btop-with-gpu-patch`
+and setting `cudaSupport = pkgs.stdenv.hostPlatform.isx86_64;` alongside the
+existing `rocmSupport` line is a fine outcome - btop works without GPU
+panels. Do not delete the patch while leaving `cudaSupport = true`: on
+aarch64 that pulls the whole CUDA closure for panels that cannot build.
+---
+ Makefile                   |  4 +++-
+ src/linux/btop_collect.cpp | 23 ++++++++++++++++++++++-
+ 2 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -37,11 +37,13 @@
+ override PLATFORM_LC := $(shell echo $(PLATFORM) | tr '[:upper:]' '[:lower:]')
+
+ #? GPU Support
+-ifeq ($(PLATFORM_LC)$(ARCH),linuxx86_64)
++ifeq ($(PLATFORM_LC),linux)
++    ifneq ($(filter x86_64 aarch64 arm64, $(ARCH)),)
+ 	ifneq ($(STATIC),true)
+ 		GPU_SUPPORT := true
+ 		INTEL_GPU_SUPPORT := true
+ 	endif
++    endif
+ endif
+ ifeq ($(PLATFORM_LC),macos)
+ 	GPU_SUPPORT := true
+diff --git a/src/linux/btop_collect.cpp b/src/linux/btop_collect.cpp
+--- a/src/linux/btop_collect.cpp
++++ b/src/linux/btop_collect.cpp
+@@ -1244,7 +1244,28 @@
+ 				}
+ 			}
+  			if (!nvml_dl_handle) {
+-				Logger::info("Failed to load libnvidia-ml.so, NVIDIA GPUs will not be detected: {}", dlerror());
++				//? Fallback: Try absolute system paths for libnvidia-ml.so
++				//? This is needed for Nix builds and other isolated environments
++				const array libNvmlSystemPaths = {
++					"/usr/lib/aarch64-linux-gnu/libnvidia-ml.so.1",
++					"/usr/lib/aarch64-linux-gnu/libnvidia-ml.so",
++					"/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1",
++					"/usr/lib/x86_64-linux-gnu/libnvidia-ml.so",
++					"/usr/lib/libnvidia-ml.so.1",
++					"/usr/lib/libnvidia-ml.so",
++					"/usr/local/lib/libnvidia-ml.so.1",
++					"/usr/local/lib/libnvidia-ml.so",
++				};
++
++				for (const auto& path : libNvmlSystemPaths) {
++					nvml_dl_handle = dlopen(path, RTLD_LAZY);
++					if (nvml_dl_handle != nullptr) {
++						break;
++					}
++				}
++			}
++ 			if (!nvml_dl_handle) {
++				Logger::info("Failed to load libnvidia-ml.so, NVIDIA GPUs will not be detected: {}", dlerror());
+  				return false;
+  			}
