@@ -195,6 +195,23 @@ wait_for(){
     echo "${check_function} is ready!"
 }
 
+# Wait for every background job in turn and report the first failure.
+#
+# `wait pid1 pid2` returns the status of the *last* pid alone, so a job that
+# fails anywhere else in the list is taken for a success and whatever depends on
+# it runs anyway.
+wait_all(){
+    local status
+    status=0
+
+    local pid
+    for pid in "${@}"; do
+        wait "${pid}" || status=$?
+    done
+
+    return "${status}"
+}
+
 namespace_exists() {
     kubectl \
         get namespace \
@@ -867,24 +884,36 @@ install_keda(){
     (
         cd "${KEDA_DIR}"
 
-        # Delete both profiles before redeploying so that switching between
-        # `up -d` and `up` does not leave a stale release behind.
-        "${CICD_SKAFFOLD}" keda delete --profile prod || true &
-        "${CICD_SKAFFOLD}" keda delete --profile dev  || true &
-        wait
+        # Remove the release for the profile we are *not* deploying: `up` and
+        # `up -d` each install their own KEDA operator (keda/skaffold.yaml
+        # renames the release in the dev profile), and two of them in one
+        # cluster fight over the same ScaledObjects.
+        #
+        # The release we *are* deploying needs no delete: `helm upgrade
+        # --install` replaces it in place, where a delete would cost an operator
+        # restart on every bring-up.
+        #
+        # Housekeeping rather than safety -- keda/values.yaml is what keeps an
+        # uninstall from taking the CRDs, and every ScaledObject, with it.
+        if [[ "${SKAFFOLD_PROFILE}" = "dev" ]]; then
+            "${CICD_SKAFFOLD}" keda delete --profile prod || true
+        else
+            "${CICD_SKAFFOLD}" keda delete --profile dev || true
+        fi
 
         "${CICD_SKAFFOLD}" keda run \
             --profile "${SKAFFOLD_PROFILE}" \
             "${THIRD_PARTY_SKAFFOLD_ARGS[@]}" \
             "${@}"
 
-        # Wait for all CRDs to be established.
-        # KEDA deploys its CRDs via helm templates (not the chart-level crds/ dir),
-        # so they are installed as part of the helm release above, not before it.
+        # Wait for the CRD the main deploy applies its ScaledObjects into.
+        # Named rather than `crd --all`, which asserts nothing about this one:
+        # the Traefik and Calico CRDs in the cluster satisfy a blanket wait on
+        # their own, and install_traefik is adding more of them in parallel with
+        # this.
         kubectl wait \
             --for condition=established \
-                crd \
-                    --all
+                crd/scaledobjects.keda.sh
     )
 }
 
@@ -899,7 +928,7 @@ install_third_party(){
         pids+=($!)
     fi
 
-    wait "${pids[@]}"
+    wait_all "${pids[@]}"
 }
 
 install_certificate(){
@@ -1071,7 +1100,7 @@ teardown(){
         --profile "${SKAFFOLD_PROFILE}" &
     pids+=($!)
 
-    wait "${pids[@]}"
+    wait_all "${pids[@]}"
 
     minikube ssh \
         -- \

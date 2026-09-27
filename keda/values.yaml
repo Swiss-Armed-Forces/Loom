@@ -12,6 +12,32 @@ global:
 image:
   pullPolicy: IfNotPresent
 
+# Put KEDA's CRDs out of reach of `helm uninstall`, which is the property the
+# traefik chart gets for free and this one does not.
+#
+# Traefik ships its CRDs in the chart-level `crds/` directory, so helm never
+# installs or deletes them -- up.sh applies them with kubectl (install_traefik)
+# and an uninstall leaves them standing. KEDA ships them as ordinary templates,
+# so they belong to the release: uninstalling it deletes
+# `scaledobjects.keda.sh`, and deleting a CRD deletes every ScaledObject in it.
+# Each ScaledObject carries `finalizer.keda.sh` that only the KEDA operator
+# clears, and helm takes the operator down before it reaches the CRD -- so the
+# ScaledObjects become unremovable, the CRD never leaves `Terminating`, it stops
+# serving, and the next install adopts the dying object rather than creating a
+# new one (`--take-ownership` in skaffold.yaml). It disappears again seconds
+# later, once a fresh operator clears those finalizers, and the main deploy dies
+# on it: "the server could not find the requested resource
+# (post scaledobjects.keda.sh)". On the appliance that is a box that does not
+# come up, with no remote access to find out why.
+#
+# `keep` only affects deletion: a `helm upgrade` still updates these CRDs on a
+# chart bump, which is more than the traefik arrangement manages. What it costs
+# is that `up.sh --down` leaves six CRDs behind -- exactly what traefik already
+# does with its own.
+crds:
+  additionalAnnotations:
+    helm.sh/resource-policy: keep
+
 # Admission webhooks validate/mutate ScaledObject specs at apply time.
 # All ScaledObjects are managed by this project and deployed by the same
 # pipeline, so admission-time validation adds no value.
