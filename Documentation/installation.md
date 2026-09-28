@@ -398,11 +398,14 @@ The full list of supported keys is documented in `charts/values.yaml` under
 Loom separates Ollama into runtime images (GPU-specific) and model images (GPU-agnostic):
 
 - **Runtime images**: `ollama-runtime-nvidia`, `ollama-runtime-rocm` — contain Ollama server + wrapper, no models
-- **Model image**: `ollama-models` — contains pre-pulled models (dev/prod differentiation via Dockerfile target)
+- **Model image**: `ollama-models` — contains pre-pulled models on a minimal alpine base (dev/prod differentiation via Dockerfile target)
 
 This separation means:
 
 - Model images are built once and work with both NVIDIA and AMD GPUs
+- The model image carries the model blobs and nothing else: `ollama` is only a build-time
+  dependency used to pull them, so no GPU runtime ships twice — on ROCm hosts that saves ~5 GiB
+  of CUDA userspace the box could never execute
 - Switching GPU types doesn't re-download models
 - Runtime images are lightweight and fast to deploy
 - Development uses lightweight models (`qwen2.5:0.5b`, `moondream:1.8b`), production uses full models (`huihui_ai/qwen3.5-abliterated:9b`)
