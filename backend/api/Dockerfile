@@ -54,12 +54,6 @@ RUN set -exu \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone
 
-RUN set -exu \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 ENV BUILDER_VIRTUAL_ENV=/code/api/.venv \
     VIRTUAL_ENV=/code/.venv \
     PATH="/code/.venv/bin:$PATH"
