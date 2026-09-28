@@ -138,6 +138,11 @@ export interface CustomQuery {
     id: string;
     query: SearchQuery;
     fileCount: number;
+    // Baseline the "new files" badge compares against. It only ever moves when
+    // the user opens the query (markCustomQueryAsRead); a poll reporting a
+    // *lower* count must not move it, or deleting files silently rebaselines
+    // and hides subsequent genuine matches.
+    lastSeenCount: number;
     hasNewFiles: boolean;
     name: string;
     icon: string;
@@ -153,10 +158,51 @@ export const initCustomQuery = (
         id: uuidv4(),
         query,
         fileCount,
+        lastSeenCount: fileCount,
         hasNewFiles: false,
         name,
         icon,
     };
+};
+
+/**
+ * Coerce persisted saved queries back into the current shape.
+ *
+ * `loadPersistedSearchState` is a bare `JSON.parse` cast, so entries written
+ * before `lastSeenCount` existed arrive without it. Seeding the baseline from
+ * `fileCount` is what stops every existing browser lighting up every badge on
+ * the first load after deploy.
+ */
+export const normalizeCustomQueries = (raw: unknown): CustomQuery[] => {
+    if (!Array.isArray(raw)) return [];
+    return raw.flatMap((entry): CustomQuery[] => {
+        if (entry === null || typeof entry !== "object") return [];
+        const candidate = entry as Partial<CustomQuery>;
+        if (
+            typeof candidate.id !== "string" ||
+            typeof candidate.name !== "string" ||
+            candidate.query === null ||
+            typeof candidate.query !== "object"
+        ) {
+            return [];
+        }
+        const fileCount =
+            typeof candidate.fileCount === "number" ? candidate.fileCount : 0;
+        return [
+            {
+                id: candidate.id,
+                query: candidate.query,
+                fileCount,
+                lastSeenCount:
+                    typeof candidate.lastSeenCount === "number"
+                        ? candidate.lastSeenCount
+                        : fileCount,
+                hasNewFiles: candidate.hasNewFiles === true,
+                name: candidate.name,
+                icon: typeof candidate.icon === "string" ? candidate.icon : "",
+            },
+        ];
+    });
 };
 
 export interface AutoActionsPreferences {
@@ -247,7 +293,7 @@ export const SEARCH_STATE_DOCS = {
     filesInView: "string[] — ordered file IDs visible in the result list",
     tags: "string[] — available tags",
     customQueries:
-        "CustomQuery[] — saved queries ({id, query, fileCount, name, icon})",
+        "CustomQuery[] — saved queries ({id, query, fileCount, lastSeenCount, hasNewFiles, name, icon})",
     highlightedQueryId:
         "string | null — which custom query is highlighted in the sidebar",
     openFileTabs:
@@ -325,7 +371,12 @@ export const loadPersistedSearchState = (): Partial<SearchState> => {
     const data = window.localStorage.getItem(SEARCH_STATE_LOCAL_STORAGE_KEY);
     if (!data) return {};
     try {
-        return JSON.parse(data) as Partial<SearchState>;
+        const parsed = JSON.parse(data) as Partial<SearchState>;
+        if (!("customQueries" in parsed)) return parsed;
+        return {
+            ...parsed,
+            customQueries: normalizeCustomQueries(parsed.customQueries),
+        };
     } catch {
         return {};
     }
@@ -547,18 +598,30 @@ export const fetchFilesCountForCustomQuery = createAsyncThunk(
     "fetchFilesCountForCustomQueryThunk",
     async (
         {
-            customQuery,
+            customQueryId,
         }: {
-            customQuery: CustomQuery;
+            customQueryId: string;
         },
         thunkAPI,
     ) => {
+        // Resolve from state rather than taking the object: the poll loop runs
+        // independently of the sidebar, so a query can be deleted between one
+        // round being scheduled and this call running.
+        const { search } = thunkAPI.getState() as RootState;
+        const customQuery = search.customQueries.find(
+            (cq) => cq.id === customQueryId,
+        );
+        if (!customQuery) {
+            return thunkAPI.rejectWithValue({
+                error: `Unknown custom query: ${customQueryId}`,
+            });
+        }
         try {
             const response = await getFilesCount({
                 ...customQuery.query,
                 id: null,
             });
-            return { response, customQueryId: customQuery.id };
+            return { response, customQueryId };
         } catch (err: any) {
             return thunkAPI.rejectWithValue({
                 error: err.detail ? err.detail : err.toString(),
@@ -738,7 +801,11 @@ export const searchSlice = createSlice({
             const query = state.customQueries.find(
                 (cq) => cq.id === action.payload.id,
             );
-            if (query) query.hasNewFiles = false;
+            if (!query) return;
+            query.hasNewFiles = false;
+            // Read fileCount from state, not from the payload: call sites hold
+            // a render-time snapshot that a poll may already have superseded.
+            query.lastSeenCount = query.fileCount;
         },
         clearStats: (state) => {
             state.stats.termsData = null;
@@ -976,8 +1043,11 @@ export const searchSlice = createSlice({
                     if (!customQuery) return;
 
                     const newFileCount = action.payload.response.totalFiles;
+                    // Compare against lastSeenCount, not fileCount: fileCount
+                    // tracks every poll, so comparing against it would let a
+                    // drop in matches quietly raise the bar for the next badge.
                     customQuery.hasNewFiles =
-                        newFileCount > customQuery.fileCount ||
+                        newFileCount > customQuery.lastSeenCount ||
                         customQuery.hasNewFiles; // has new files or already had new files
                     customQuery.fileCount = newFileCount;
                 },

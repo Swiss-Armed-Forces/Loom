@@ -19,7 +19,6 @@ import {
     updateQuery,
     selectCustomQueries,
     selectQuery,
-    fetchFilesCountForCustomQuery,
     markCustomQueryAsRead,
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
@@ -30,8 +29,6 @@ import {
     availableCustomQueryIcons,
 } from "./AddCustomQueryDialog";
 import styles from "./CustomQueries.module.css";
-
-const CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL_MS = 30_000;
 
 interface SavedQueryItemProps {
     customQuery: CustomQuery;
@@ -79,16 +76,6 @@ const CustomQueryItem = ({
         },
         [dispatch, customQuery],
     );
-
-    useEffect(() => {
-        const customQueryFilesCountInterval = setInterval(async () => {
-            await dispatch(fetchFilesCountForCustomQuery({ customQuery }));
-        }, CUSTOM_QUERY_FILES_COUNT_POLL_INTERVAL_MS);
-
-        return () => {
-            clearInterval(customQueryFilesCountInterval);
-        };
-    }, [customQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (iconOnly) {
         return (

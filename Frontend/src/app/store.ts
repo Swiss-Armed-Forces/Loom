@@ -7,6 +7,7 @@ import searchReducer from "@app/slices/searchSlice";
 import socketMiddleware from "../middleware/SocketMiddleware";
 
 import SocketApi from "./api/socketApi";
+import { savedQueryListenerMiddleware } from "./listeners/savedQueryListener";
 import { localStorageSearchStateMiddleware } from "./middlewares";
 
 export const store = configureStore({
@@ -25,6 +26,7 @@ export const store = configureStore({
             },
         })
             .prepend(localStorageSearchStateMiddleware.middleware)
+            .prepend(savedQueryListenerMiddleware.middleware)
             .concat(socketMiddleware(new SocketApi())),
 });
 
