@@ -462,7 +462,7 @@ let
             if [ -r ${config.loom.keyGuard.stateDir}/deadline ]; then
               printf '  This box powers off %s seconds after boot unless the key\n' \
                 ${toString config.loom.keyGuard.armDeadlineSec}
-              printf '  arms. Run `loom-key-guard disarm` to keep it up.\n'
+              printf "  arms. Run 'loom-key-guard disarm' to keep it up.\n"
             fi
             ;;
         esac
