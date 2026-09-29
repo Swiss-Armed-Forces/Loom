@@ -79,6 +79,22 @@ let
     p: p.drvPath == box.hardware.nvidia.package.bin.drvPath
   ) box.loom.toolchain;
 
+  # Whether the container toolkit's `tools` output is on the PATH systemd gives
+  # dockerd -- which is what decides, in moby's daemon/devices_linux.go, whether
+  # docker registers an NVIDIA GPU driver or falls through to an AMD one that
+  # then refuses the request. Read off `systemd.services.docker.path`, the list
+  # NixOS turns into that PATH, rather than off the `extraPackages` the platform
+  # sets: an upstream change that stopped feeding one into the other would leave
+  # the option set and the daemon just as blind.
+  #
+  # `toString` rather than `.outPath`, because that list's type admits plain
+  # strings and one would throw here before it could fail honestly.
+  dockerSeesCdiHook =
+    let
+      tools = lib.getOutput "tools" box.hardware.nvidia-container-toolkit.package;
+    in
+    lib.any (p: toString p == toString tools) box.systemd.services.docker.path;
+
   # A GPU platform needs the driver library in /run/opengl-driver/lib and must
   # not pick up the EGL platform bindings behind it. Compared by store path
   # rather than by list identity, because the ICD entry nixpkgs appends is a
@@ -187,6 +203,13 @@ let
       (check "spark: hardware.nvidia is enabled" box.hardware.nvidia.enabled)
       (check "spark: the open kernel modules are used" box.hardware.nvidia.open)
       (check "spark: the container toolkit is on" box.hardware.nvidia-container-toolkit.enable)
+      # Enabling it is half the job; the other half is the one nixpkgs leaves
+      # out. Without this docker matches `--gpus all` -- which is what minikube
+      # sends for `--gpus nvidia` -- against its AMD driver and answers "AMD CDI
+      # spec not found" on a box that has never had an AMD anything in it. See
+      # the comment on `virtualisation.docker.extraPackages` in
+      # platforms/spark.nix.
+      (check "spark: dockerd can see the nvidia CDI hook" dockerSeesCdiHook)
       # up.sh's validate_environment refuses to run without this whenever --gpus
       # is set, and check_host_resources parses its output to count GPUs. Both
       # run inside loom.service, so it has to be on the unit's PATH -- which is

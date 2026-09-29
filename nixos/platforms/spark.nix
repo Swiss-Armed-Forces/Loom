@@ -132,6 +132,40 @@
   # advertises no nvidia.com/gpu at all.
   hardware.nvidia-container-toolkit.enable = true;
 
+  # And the half of it nixpkgs leaves out, without which the box gets all the
+  # way to `minikube start` and then dies on `Error response from daemon: AMD
+  # CDI spec not found` -- on a machine with no AMD anything.
+  #
+  # docker 29 decides which GPU driver to register by looking for a binary on
+  # *dockerd's own* PATH (moby's daemon/devices_linux.go):
+  #
+  #   * `getNVIDIADeviceDrivers` registers the `nvidia` driver only if
+  #     `nvidia-cdi-hook` or `nvidia-container-runtime-hook` resolves there.
+  #   * failing that, `getAMDDeviceDrivers` registers an `amd` driver whenever a
+  #     CDI cache exists at all -- which the option above guarantees, since it
+  #     turns on `features.cdi` -- and claims the generic `gpu` capability.
+  #
+  # `--gpus nvidia` reaches docker as `--gpus all` (minikube rewrites it in
+  # pkg/drivers/kic/oci/oci.go), which is a request for the `gpu` capability and
+  # nothing more specific, so the AMD driver is the one that matches. It then
+  # reads the one vendor we do have, `nvidia.com`, decides it is not `amd.com`,
+  # and refuses.
+  #
+  # The missing link is only the PATH: NixOS builds docker.service's as
+  # `[ kmod ] ++ virtualisation.docker.extraPackages` and nothing else, and the
+  # nvidia-container-toolkit module adds the `tools` output to the *rootless*
+  # daemon's copy of that list while never adding it here. So the hook the spec
+  # generator already points at by absolute path is invisible to the daemon that
+  # has to decide whether NVIDIA exists.
+  #
+  # Done here rather than by teaching up.sh to pass minikube's `--gpus
+  # nvidia.com` (which would emit `--device nvidia.com/gpu=all` and skip driver
+  # selection entirely): that flag is four `case` arms in up.sh, on every host
+  # Loom runs on, to work around something that is this box's business.
+  virtualisation.docker.extraPackages = [
+    (lib.getOutput "tools" config.hardware.nvidia-container-toolkit.package)
+  ];
+
   # The same trade platforms/evo-x2.nix and platforms/nuc12.nix make with their
   # nixos-hardware GPU profiles: keep the driver library, drop the desktop
   # userspace.

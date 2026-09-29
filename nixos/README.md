@@ -171,6 +171,17 @@ The second point is spelled differently per vendor, because the vendors package 
 configuring `hardware.nvidia` gets an evaluation error rather than a `loom.service` that dies on
 `nvidia-smi: command not found`.
 
+An `nvidia` platform owes docker one more thing, and it is not discoverable from the option that looks like it
+covers it. `hardware.nvidia-container-toolkit.enable` generates the CDI spec and switches on docker's
+`features.cdi`, but moby decides *which* GPU driver to register by looking for `nvidia-cdi-hook` or
+`nvidia-container-runtime-hook` on the daemon's own `PATH` (`daemon/devices_linux.go`); NixOS builds that
+`PATH` as `[ kmod ] ++ virtualisation.docker.extraPackages`, and the toolkit module fills that list in for the
+rootless daemon only. With neither binary on it docker registers an *AMD* driver instead — it registers one
+whenever a CDI cache exists at all — which then matches `--gpus all`, the form minikube forwards `--gpus
+nvidia` in, and fails with `AMD CDI spec not found`. So `platforms/spark.nix` adds the toolkit's `tools`
+output to `virtualisation.docker.extraPackages`, and `tests/appliance-hardware.nix` asserts it is still
+reaching `systemd.services.docker.path`.
+
 `build-appliance-image --no-gpu` forces the vendor back to `null` through an `mkForce` in `default.nix`, which
 is why nothing else has to know the flag exists. Note that it takes the AI services with it, by the same rule.
 

@@ -1398,6 +1398,9 @@ it. Set the firmware's VRAM split to its _minimum_ to go with them, and see
 `minikube start` for the GPU. The driver is stock nixpkgs: the pin carries NVIDIA 595.71.05 with the open
 kernel modules, which is what a GB10 Blackwell needs, and `nixos/platforms/spark.nix` adds
 `hardware.nvidia-container-toolkit` so the device reaches the minikube node container through a CDI spec.
+That file also puts the toolkit on the docker daemon's own `PATH`, which is a second thing and not a
+tidiness one: it is how docker decides that NVIDIA is what this box has, and without it `minikube start`
+fails outright — see [Troubleshooting](#troubleshooting) for the error, which names the wrong vendor.
 As on the EVO-X2, none of the compute stack lives on the host — the CUDA userspace is inside the `ollama`
 image, and the box carries only `nvidia-smi`, which comes out of the driver itself and which `up.sh` needs
 for its preflight. That same driver puts the GPU readout in the console's `btop` pane. The values file sets
@@ -1530,6 +1533,22 @@ anywhere goes to a box with no upstream. Confirm it with `ip route` (`route prin
 of its own accord unless one is explicitly suppressed, so leaving it unconfigured was not the same as leaving
 it out. Build a new stick. To finish a session on the stick in hand, delete that route on the laptop
 (`sudo ip route del default via <box address>`); it comes back at the next lease renewal.
+
+**On the Spark, `minikube start` fails with `Error response from daemon: AMD CDI spec not found`.** On a box
+with no AMD anything in it. Sticks built before this was fixed all do it, and the fix is a new stick — with
+`--no-gpu` as the way to get a working CPU-only box out of the one in hand meanwhile. What happens is that
+docker 29 picks its GPU driver by looking for a binary on the daemon's own `PATH` — `nvidia-cdi-hook` or
+`nvidia-container-runtime-hook` — and, finding neither, registers an AMD driver instead. That driver claims
+the generic `gpu` capability, which is all `--gpus nvidia` amounts to by the time minikube has forwarded it to
+docker as `--gpus all`, and it then refuses the only CDI vendor the box has. `nixos/platforms/spark.nix` puts
+the container toolkit on that `PATH` with `virtualisation.docker.extraPackages`, which nixpkgs does for the
+rootless daemon and not for this one.
+
+The message is worth reading precisely, because it says more than it appears to: the AMD driver only gets as
+far as naming AMD once it has found _some_ vendor in the CDI cache and seen that it is not `amd.com`. So the
+error is itself proof that the driver loaded, the GPU enumerated and `nvidia-ctk` wrote a valid spec — all of
+what `loom-platform-info`'s **GPU** and **GPU in containers** sections exist to check. `no known GPU vendor
+found` in the same position is the other failure and a real one: nothing generated a spec at all.
 
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
