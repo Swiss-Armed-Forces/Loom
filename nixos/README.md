@@ -182,6 +182,15 @@ nvidia` in, and fails with `AMD CDI spec not found`. So `platforms/spark.nix` ad
 output to `virtualisation.docker.extraPackages`, and `tests/appliance-hardware.nix` asserts it is still
 reaching `systemd.services.docker.path`.
 
+And once the spec does reach the node, one of its mounts has to come back out. `platforms/spark.nix` restates
+`hardware.nvidia-container-toolkit.mounts` to drop upstream's `/run/opengl-driver` entry, because that path is
+shadowed inside any systemd container — the node's own `tmpfs` over `/run` covers it — while the mount stays
+in `mountinfo` as the first one on the root device. cadvisor keeps only the first mount per device, `statfs`es
+a path that is no longer there, and hands kubelet an `ephemeral-storage` capacity of 0, which is below
+`up.sh`'s reservations and stops the cluster from starting at all. Two assertions guard it: no `containerPath`
+under `/run`, and the driver and glibc mounts still present, since the list is a `mkForce` and could as easily
+be emptied by accident as repopulated by a bump.
+
 `build-appliance-image --no-gpu` forces the vendor back to `null` through an `mkForce` in `default.nix`, which
 is why nothing else has to know the flag exists. Note that it takes the AI services with it, by the same rule.
 

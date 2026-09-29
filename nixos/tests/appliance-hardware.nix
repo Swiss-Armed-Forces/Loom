@@ -100,6 +100,27 @@ let
     in
     lib.elem "${tools}/bin" (lib.splitString ":" box.systemd.services.docker.environment.PATH);
 
+  # The CDI mount list, which platforms/spark.nix restates to drop upstream's
+  # /run/opengl-driver entry. Two assertions rather than one, because the list
+  # is a `mkForce` over nixpkgs and can therefore fail in both directions:
+  #
+  #   * A containerPath under /run is shadowed by the container's own tmpfs, so
+  #     cadvisor records the root device at a path that does not exist, reads an
+  #     ephemeral-storage capacity of 0 and stops kubelet from starting at all.
+  #     This is what upstream's first entry does; see the comment there.
+  #   * Forcing the list also means a careless edit could empty it. The driver
+  #     and glibc mounts are what the CDI hook needs to run inside a container,
+  #     so their presence is the floor.
+  cdiMounts = box.hardware.nvidia-container-toolkit.mounts;
+  cdiMountUnderRun = lib.any (m: lib.hasPrefix "/run/" m.containerPath) cdiMounts;
+  cdiMountsHaveDriver =
+    let
+      paths = map (m: m.containerPath) cdiMounts;
+      driver = "${lib.getLib box.hardware.nvidia.package}";
+      glibc = "${lib.getLib pkgs.glibc}/lib";
+    in
+    lib.elem driver paths && lib.elem glibc paths;
+
   # A GPU platform needs the driver library in /run/opengl-driver/lib and must
   # not pick up the EGL platform bindings behind it. Compared by store path
   # rather than by list identity, because the ICD entry nixpkgs appends is a
@@ -215,6 +236,11 @@ let
       # the comment on `virtualisation.docker.extraPackages` in
       # platforms/spark.nix.
       (check "spark: dockerd can see the nvidia CDI hook" dockerSeesCdiHook)
+      # The other half of making the GPU reach the node: what the CDI spec
+      # mounts into it. A /run path here is shadowed inside the container and
+      # takes the node's whole ephemeral-storage capacity down with it.
+      (check "spark: no CDI mount lands under /run" (!cdiMountUnderRun))
+      (check "spark: the CDI mounts still carry driver and glibc" cdiMountsHaveDriver)
       # up.sh's validate_environment refuses to run without this whenever --gpus
       # is set, and check_host_resources parses its output to count GPUs. Both
       # run inside loom.service, so it has to be on the unit's PATH -- which is

@@ -1555,6 +1555,22 @@ error is itself proof that the driver loaded, the GPU enumerated and `nvidia-ctk
 what `loom-platform-info`'s **GPU** and **GPU in containers** sections exist to check. `no known GPU vendor
 found` in the same position is the other failure and a real one: nothing generated a spec at all.
 
+**On the Spark, the cluster never starts and the kubelet log says `invalid Node Allocatable configuration`.**
+In full: `Resource "ephemeral-storage" has a reservation of {{18253611008 0}} but capacity of {{0 0}}`. The
+reservation is ours — `up.sh`'s 10Gi `system-reserved` plus 5Gi `kube-reserved` plus the 2Gi `nodefs`
+eviction threshold, which kubelet folds in. The capacity is the node saying it has no disk at all, and it is
+read once at startup and never revisited, so the cluster cannot recover on its own.
+
+The cause is the GPU, by a long route. The CDI spec binds the driver, glibc and every `libnvidia-*.so` into
+the node container — some fifty mounts, all on the box's single ext4 root. cadvisor, inside kubelet, keys its
+partition table by device and keeps only the **first** mount it sees per device, assuming the rest are binds
+of it. Upstream's first entry binds `/run/opengl-driver`, which docker applies at container creation and the
+node's own systemd then covers with a `tmpfs` over `/run` — so the mount stays in `mountinfo` while the path
+disappears. cadvisor `statfs`es a path that no longer exists, returns a zero-valued filesystem rather than an
+error, and kubelet refuses to start without logging anything about why. `nixos/platforms/spark.nix` drops
+that one mount, which nothing inside a container could read anyway; cadvisor then lands on the driver's store
+path and reports the whole disk. Sticks built before this fix all do it, and the fix is a new stick.
+
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
 

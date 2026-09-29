@@ -11,6 +11,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -165,6 +166,94 @@
   virtualisation.docker.extraPackages = [
     (lib.getOutput "tools" config.hardware.nvidia-container-toolkit.package)
   ];
+
+  # nixpkgs' mount list, minus the one entry that stops Kubernetes from
+  # starting. Upstream's first mount is
+  #
+  #   { hostPath = /run/opengl-driver; containerPath = /run/opengl-driver; }
+  #
+  # and on a box where that reaches the minikube node, kubelet dies on
+  #
+  #   invalid Node Allocatable configuration. Resource "ephemeral-storage" has
+  #   a reservation of {{18253611008 0}} but capacity of {{0 0}}
+  #
+  # The chain is worth writing out, because nothing in it is local to NVIDIA and
+  # every link was confirmed on a Spark:
+  #
+  #   * The CDI spec binds the driver, glibc and every libnvidia-*.so into the
+  #     node container -- 51 mounts, all of them on the box's one ext4 root.
+  #   * cadvisor, inside kubelet, builds its partition table keyed by device and
+  #     keeps only the FIRST mount it sees per device; its comment says "Avoid
+  #     bind mounts", on the assumption that the first is the filesystem and the
+  #     rest are binds of it. Here the first is a bind and the real one, /var,
+  #     is 47 lines further down /proc/self/mountinfo.
+  #   * So the root device is recorded as living at /run/opengl-driver -- which
+  #     does not exist in the container. docker applies the bind at creation and
+  #     the node's own systemd then mounts a tmpfs over /run, shadowing it. The
+  #     mount stays in mountinfo; the path is gone.
+  #   * cadvisor statfs's that path, gets ENOENT, and returns a zero-valued
+  #     filesystem rather than an error -- so kubelet reports an
+  #     ephemeral-storage capacity of 0, logs nothing about why, and refuses to
+  #     start because up.sh's 17 GiB of reservations exceed it.
+  #
+  # Dropping the mount costs nothing that works today: it is shadowed in every
+  # systemd-based container image, so nothing inside has ever been able to read
+  # it. What it buys is the correct number rather than merely a non-zero one --
+  # cadvisor falls through to the driver's own store path, which is reachable,
+  # and reports the whole disk. Creating the missing directory by hand also
+  # starts kubelet, but then the node advertises /run's tmpfs as its disk.
+  #
+  # Restated rather than filtered because the option is built with `mkMerge`
+  # upstream, and a definition that read it in order to filter it would be
+  # circular. The two toggles are honoured so they keep meaning what they say; a
+  # bump that adds a mount up there will not carry into this list, which is what
+  # tests/appliance-hardware.nix's two assertions on it are for.
+  hardware.nvidia-container-toolkit.mounts =
+    let
+      driver = config.hardware.nvidia.package;
+      toolkit = config.hardware.nvidia-container-toolkit;
+      executable = name: {
+        hostPath = lib.getExe' driver name;
+        containerPath = "/usr/bin/${name}";
+      };
+    in
+    lib.mkForce (
+      [
+        {
+          hostPath = "${lib.getLib driver}";
+          containerPath = "${lib.getLib driver}";
+        }
+        {
+          hostPath = "${lib.getLib pkgs.glibc}/lib";
+          containerPath = "${lib.getLib pkgs.glibc}/lib";
+        }
+        {
+          hostPath = "${lib.getLib pkgs.glibc}/lib64";
+          containerPath = "${lib.getLib pkgs.glibc}/lib64";
+        }
+      ]
+      ++ lib.optionals toolkit.mount-nvidia-executables (
+        map executable [
+          "nvidia-cuda-mps-control"
+          "nvidia-cuda-mps-server"
+          "nvidia-debugdump"
+          "nvidia-powerd"
+          "nvidia-smi"
+        ]
+      )
+      # nvidia-docker 1.0 paths, kept because the images that look for them are
+      # not ours to change.
+      ++ lib.optionals toolkit.mount-nvidia-docker-1-directories [
+        {
+          hostPath = "${lib.getLib driver}/lib";
+          containerPath = "/usr/local/nvidia/lib";
+        }
+        {
+          hostPath = "${lib.getLib driver}/lib";
+          containerPath = "/usr/local/nvidia/lib64";
+        }
+      ]
+    );
 
   # The same trade platforms/evo-x2.nix and platforms/nuc12.nix make with their
   # nixos-hardware GPU profiles: keep the driver library, drop the desktop
