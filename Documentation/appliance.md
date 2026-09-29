@@ -1571,6 +1571,15 @@ error, and kubelet refuses to start without logging anything about why. `nixos/p
 that one mount, which nothing inside a container could read anyway; cadvisor then lands on the driver's store
 path and reports the whole disk. Sticks built before this fix all do it, and the fix is a new stick.
 
+**On the Spark, setup stops with `build target platforms "linux/arm64" do not match platform constraints`.**
+The artifact named is `ollama-runtime-rocm`, which has no arm64 build: ROCm base images are published for
+amd64 only, and the Spark is an NVIDIA box that would never want it. skaffold checks that constraint while
+_creating its runner_, before the `--build-image=[]` that offline mode passes to build nothing at all can
+matter — so on an arm64 host it stops every skaffold invocation rather than just a build. `skaffold.yaml`'s
+`arm64` profile drops that one artifact, activated on the `TARGETARCH` that `up.sh` already exports. Unlike
+the two failures above, this one lives in the **tagged** tree rather than in the Nix code, so a stick only
+picks the fix up once it embeds a tag that contains it.
+
 **`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
 `192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
 
