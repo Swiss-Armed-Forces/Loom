@@ -280,6 +280,17 @@ set_offline_mode(){
 set_skaffold_profile(){
     if [[ "${DEVELOPMENT}" = true ]] || [[ "${INTEGRATIONTEST}" = true ]]; then
         SKAFFOLD_PROFILE="dev"
+        # The dev profile is served over plain http as well as https, and that
+        # decision lives in one file rather than being restated in
+        # values-development.yaml -- so cicd/check_http_values.sh covers the dev
+        # deployment too, and a component added to the chart cannot be widened
+        # for `--enable-http` and forgotten here.
+        #
+        # Appended where the profile is chosen rather than in the flag cases,
+        # because both flags arrive here and the integration tests are the half
+        # that actually depends on it: they reach Loom over http://rabbit.loom
+        # and http://elasticsearch.loom throughout.
+        UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
     fi
     if [[ "${OFFLINE_MODE}" = true ]]; then
         SKAFFOLD_PROFILE="offline"

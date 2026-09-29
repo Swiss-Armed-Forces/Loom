@@ -7,6 +7,9 @@
 #
 # Not suitable for production use.
 #
+# Plain http is not here: up.sh adds charts/values-http.yaml wherever it selects
+# the dev profile, so this file on its own still renders the https redirect.
+#
 environment: development
 
 # `qwen2.5:0.5b` carries no thinking capability, and Ollama rejects a request that asks
@@ -58,15 +61,7 @@ llm:
   vision:
     model: moondream:1.8b
 
-ingress: &default-ingress-config
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
-
-globalHttpRedirect:
-  enabled: false
-
 api:
-  ingress: *default-ingress-config
   # yamllint disable rule:indentation
   command: [
     "python", "-Xfrozen_modules=off",
@@ -84,7 +79,6 @@ api:
   # yamllint enable rule:indentation
 
 frontend:
-  ingress: *default-ingress-config
   # The dev-Server needs a bit more resources
   resources:
     requests:
@@ -187,7 +181,6 @@ beat:
   # yamllint enable rule:indentation
 
 elasticsearch:
-  ingress: *default-ingress-config
   resources:
     requests:
       cpu: "0.5"
@@ -196,57 +189,22 @@ elasticsearch:
       cpu: "4"
       memory: "4Gi"
 
-elasticvue:
-  ingress: *default-ingress-config
-
-grafana:
-  ingress: *default-ingress-config
-
-seaweedfs:
-  s3:
-    ingress: *default-ingress-config
-  admin:
-    ingress: *default-ingress-config
-
 rabbit:
   ingress:
-    http: *default-ingress-config
     amqp:
       enabled: true
 
 ollama:
   pvc:
     enabled: false
-  ingress: *default-ingress-config
 
 dovecot:
   ingress:
     imap:
       enabled: true
 
-roundcube:
-  ingress: *default-ingress-config
-
-prometheus:
-  ingress: *default-ingress-config
-
 redis: &redis
   ingress:
     enabled: true
 
 redis-cache: *redis
-
-redisinsight:
-  ingress: *default-ingress-config
-
-rspamd:
-  worker:
-    ingress: *default-ingress-config
-  controller:
-    ingress: *default-ingress-config
-
-tika:
-  ingress: *default-ingress-config
-
-gotenberg:
-  ingress: *default-ingress-config

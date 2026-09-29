@@ -54,6 +54,14 @@ Read this before building anything; the design only makes sense if these hold.
   this from eating a working box: it refuses when the disks already hold a Loom pool that _this_ stick's
   key unlocks, and it refuses a second attempt in the same boot. Neither covers a stick pointed at
   somebody else's hardware — treat a Loom stick as a device that erases whatever it is booted on.
+- **The appliance serves everything in cleartext as well as over TLS.** Every image passes `up.sh`'s
+  `--enable-http`, so `http://frontend.loom` answers directly and so do `grafana.loom`,
+  `elasticvue.loom`, `s3.loom`, `prometheus.loom` and the Traefik dashboard. Anyone who can see the
+  appliance segment can read what crosses it without having to intercept anything. This buys the captive
+  portal — see [Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is) —
+  and it is a smaller change than it sounds, because the certificate on the https side is self-signed and
+  no visitor's browser can verify it anyway. It is still a real loss, and it matters most with `--wifi`,
+  where "can see the segment" means everyone in radio range holding the passphrase.
 - **Bluetooth is disabled** by module blacklist and `rfkill`, in every image. **WiFi is disabled the same way
   unless the image was built with `--wifi`**, which turns the box into an access point — read
   [The WiFi access point](#the-wifi-access-point) before using it, because it changes most of the bullets
@@ -391,7 +399,10 @@ The driver is what a new platform should match on; the name is what `--interface
 
 Off by default. `--wifi` builds an image whose installed appliance also runs an access point on the box's own
 radio, **bridged onto the wired port**, so it does not matter how a visitor arrives: the same DHCP pool, the
-same resolver, the same `https://frontend.loom`, whether they joined over the air or plugged a cable in.
+same resolver, the same `http://frontend.loom`, whether they joined over the air or plugged a cable in. The
+captive portal reaches them the same way — see
+[Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is), which is mostly
+written for the phone that joins over the air.
 
 ```bash
 build-appliance-image --platform evo-x2 --tag 1.4.0 --wifi --flash /dev/sdX
@@ -890,11 +901,47 @@ Plug a laptop into the box's ethernet port. It gets an address by DHCP, and `dns
 under `.loom`, so this just works:
 
 ```text
-https://frontend.loom
+http://frontend.loom
 ```
 
 No hosts file, no configuration on the visitor's side. The other services — `grafana.loom`, `elasticvue.loom`,
 `ollama.loom` and the rest — resolve the same way.
+
+`https://frontend.loom` works too and always has. Plain `http` is written above because the certificate is
+self-signed, so the https spelling costs the visitor a browser warning to click through and gains them
+nothing they can verify. Both are served — see the cleartext bullet in [Threat model](#threat-model) for
+what that costs.
+
+### Finding Loom without being told where it is
+
+A visitor who has not been told the name gets nowhere on their own, and a phone makes it worse: it joins,
+decides the network has no internet, and quietly keeps using mobile data — so even a typed `frontend.loom`
+is resolved by the mobile network, which has never heard of `.loom`.
+
+The box answers the question the phone actually asks. Every operating system probes a URL it knows the
+answer to — `connectivitycheck.gstatic.com/generate_204` on Android, `captive.apple.com` on iOS — to decide
+whether a network reaches the internet. `dnsmasq` points those four names at a second address the box holds,
+where a small nginx answers `302` to `http://frontend.loom/`. The phone reads that as a captive portal,
+offers **"Sign in to network"**, and opens Loom.
+
+Three things are worth knowing:
+
+- **The "no internet" warning does not go away.** It becomes "Sign in to network". There is no honest way to
+  claim internet connectivity; the box is an island with no upstream and advertises no default route.
+- **Only those four names are intercepted.** `connectivitycheck.gstatic.com`, `captive.apple.com`,
+  `www.msftconnecttest.com` and `detectportal.firefox.com`. Everything else outside `.loom` is still
+  refused, so a visitor's mail client fails cleanly instead of being handed this box.
+- **Android's Private DNS defeats it.** If the phone is set to a DNS-over-TLS provider — the default is
+  "Automatic", but a configured hostname is common — every lookup bypasses the appliance's resolver and
+  `.loom` can never resolve. Set Private DNS to Off while on the appliance network. Nothing on the box can
+  work around this.
+
+The standards-based alternative, RFC 8910's DHCP option 114, is deliberately not used: the API it points at
+is governed by RFC 8908, which requires an HTTPS endpoint with a certificate the client can validate and
+revocation-check. `.loom` is not a real TLD, so no public CA can ever issue for it, and a conforming client
+aborts at the handshake. The probe redirect needs no certificate, which is why it is the mechanism that
+works — and why the frontend has to be reachable over plain http, since a portal webview refuses an
+untrusted certificate outright with no way to click through.
 
 The box is not a gateway and does not advertise itself as one: the lease carries an address, a netmask and a
 DNS server, and deliberately no default route. So a laptop that is also on wifi keeps reaching the internet

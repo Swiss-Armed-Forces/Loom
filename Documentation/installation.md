@@ -272,6 +272,18 @@ All values files are located in the [`./charts`](../charts) directory. They can 
 - **[`values-development.yaml`](../charts/values-development.yaml)** — Use this when actively
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
+- **[`values-http.yaml`](../charts/values-http.yaml)** — Use this when the deployment's network is
+  already trusted and a self-signed certificate is more trouble than it is worth. Every ingress is
+  served on Traefik's `web` entrypoint as well as `websecure`, and the global http-to-https
+  redirect is switched off, so `http://frontend.loom/` answers directly. Use with `up
+  --enable-http`.
+
+  **This gives up transport security for the whole stack** — Elasticsearch, Grafana, RedisInsight,
+  S3, Prometheus and the Traefik dashboard included — so anyone who can see the network can read
+  what is on it. It exists because a phone's captive-portal webview refuses a self-signed
+  certificate outright and offers no way to click through; the appliance uses it for exactly that
+  (see [appliance.md](appliance.md)). HTTPS keeps working either way; this only adds the plain-http
+  route beside it.
 
 ### Hostnames and the self-signed certificate
 

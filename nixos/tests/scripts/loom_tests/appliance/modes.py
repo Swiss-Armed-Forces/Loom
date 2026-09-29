@@ -51,6 +51,7 @@ def boot_modes(appliance: "Machine", subtest: "Subtest", params: Params) -> str:
 
         _setup_mode_powers_off(appliance, setup_sys)
         _platform_flags(appliance, setup_sys, start_script, params)
+        _http_flag(appliance, setup_sys, start_script)
         _kernel_command_lines(appliance, setup_sys)
 
     return setup_sys
@@ -74,6 +75,22 @@ def _platform_flags(
         # future flag starts contributing --no-resources of its own.
         if "--scaling" in script:
             assert "--no-resources" not in script, f"{mode}: {script}"
+
+
+def _http_flag(appliance: "Machine", setup_sys: str, start_script: str) -> None:
+    """--enable-http is unconditional, and reaches both modes."""
+    # Unlike --scaling next door it is not platform-derived: every box serves the
+    # same visitors, and the captive portal redirects all of them to a plain-http
+    # frontend because a portal webview will not accept the appliance's
+    # self-signed certificate (portal.nix).
+    #
+    # Both modes, so the two invocations describe one deployment. Asserted rather
+    # than assumed because the failure is silent: run mode would come up with every
+    # ingress back on `websecure` alone, and the portal would land a visitor on a
+    # Traefik 404 that looks exactly like a broken box.
+    fetch_script = _fetch_script(appliance, setup_sys)
+    for mode, script in [("run", start_script), ("setup", fetch_script)]:
+        assert "--enable-http" in script, f"{mode}: {script}"
 
 
 def _fetch_script(appliance: "Machine", setup_sys: str) -> str:

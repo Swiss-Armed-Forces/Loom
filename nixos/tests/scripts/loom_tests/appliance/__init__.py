@@ -4,7 +4,8 @@ This is the big one: one machine, and everything about it that can be asserted w
 cluster. It is split by subject rather than left as the thousand-line file it grew into
 -- `upstream` for what box.nix restates from up.sh, `banner` for the screen a passer-by
 sees, `session` for tty1, `readiness` for how far a bring-up has got, `startup` for what
-Loom is launched through, `modes` for the two boot entries, and `guard` for the USB key.
+Loom is launched through, `portal` for how a visitor is pointed at the frontend, `modes`
+for the two boot entries, and `guard` for the USB key.
 
 `run()` below is the table of contents, and the one thing in this package whose order
 matters: everything under the key guard manipulates its devices, and the last subtest
@@ -17,6 +18,7 @@ from loom_tests.appliance import (
     banner,
     guard,
     modes,
+    portal,
     readiness,
     session,
     startup,
@@ -81,6 +83,12 @@ def run(
     startup.exposure(appliance, subtest, params)
     startup.interface_rename(appliance, subtest)
     startup.radios(appliance, subtest)
+
+    # How a visitor who has never heard of frontend.loom is told where it is.
+    portal.addresses(appliance, subtest, params)
+    portal.probe_names(appliance, subtest, params)
+    portal.redirect(appliance, subtest, params)
+    portal.http_entrypoint(appliance, subtest)
 
     # The two boot modes, and the branding both of them wear.
     setup_sys = modes.boot_modes(appliance, subtest, params)
