@@ -535,14 +535,6 @@ let
       probe=${lib.escapeShellArg "https://${ollamaHost}/"}
       namespace=${lib.escapeShellArg loomNamespace}
 
-      # Both, because they answer different questions. `OPENCODE_CONFIG` names
-      # the server config outright, which is what pins the model and the
-      # provider; `OPENCODE_CONFIG_DIR` puts that same directory on the search
-      # path, which is the only way `tui.json` beside it is ever read. Setting
-      # just the first leaves the pane on opencode's own theme.
-      export OPENCODE_CONFIG=${lib.escapeShellArg "${opencodeConfigDir}/opencode.json"}
-      export OPENCODE_CONFIG_DIR=${lib.escapeShellArg opencodeConfigDir}
-
       # Both are runtime flags (packages/core/src/flag/flag.ts), and neither is
       # set by the binary's wrapper: nixpkgs bakes models.dev's catalogue into the
       # closure and sets OPENCODE_DISABLE_MODELS_FETCH while *building*, which
@@ -568,6 +560,31 @@ let
       export XDG_DATA_HOME="$state/data"
       export XDG_STATE_HOME="$state/state"
       export XDG_CACHE_HOME="$state/cache"
+
+      # opencode writes inside its own config directory while it starts -- a
+      # `.gitignore`, and `opencode.json` itself -- so that directory is a
+      # writable copy on the tmpfs above rather than the store path that holds
+      # the pinned configuration. Pointed at a read-only one, every startup
+      # request that reaches `Config.get` -- `config.providers`, `provider.list`,
+      # `app.agents`, `config.get` -- fails with EROFS and the pane exits before
+      # it draws a prompt.
+      #
+      # Re-seeded on each start rather than created once: the store copy is what
+      # pins the model and the provider, so restarting the pane is also the way
+      # back to a known configuration.
+      #
+      # Both variables, because they answer different questions.
+      # `OPENCODE_CONFIG` names the server config outright, which is what pins
+      # the model and the provider; `OPENCODE_CONFIG_DIR` puts that same
+      # directory on the search path, which is the only way `tui.json` beside it
+      # is ever read. Setting just the first leaves the pane on opencode's own
+      # theme.
+      config="$state/config"
+      rm --recursive --force "$config"
+      mkdir -p "$config"
+      cp --no-preserve=mode ${lib.escapeShellArg opencodeConfigDir}/* "$config/"
+      export OPENCODE_CONFIG="$config/opencode.json"
+      export OPENCODE_CONFIG_DIR="$config"
 
       printf '  Loom assistant on %s.\n' "$model"
 
