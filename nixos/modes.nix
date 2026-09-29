@@ -406,11 +406,6 @@ in
       # setup entry left to promote.
       environment.systemPackages = [ loom-promote-boot-entry ];
 
-      # Warn only. This mode runs once, in the lab, with internet and nothing
-      # secret on the box yet, and loom-fetch below takes hours -- a trip on a
-      # glitching USB port would throw all of it away for no security gain.
-      loom.keyGuard.action = "warn";
-
       # No splash in this mode, and no `quiet` either (the run-mode branch above
       # is what sets that). Fetching every container image takes hours, and a
       # still logo over all of it would be actively misleading. What actually

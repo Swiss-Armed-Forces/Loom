@@ -866,8 +866,13 @@ A few consequences worth knowing:
 - **It arms itself, once, after a key has been seen.** A box booted with the recovery passphrase has no stick
   at all, so the guard never arms there and the box stays up for repairs. The login banner says which of the
   two states the box is in.
-- **First-time setup only warns.** That mode pulls every container image over several hours, on a box that is
-  still in the lab with nothing on it yet; a flaky USB port must not throw all of it away.
+- **It does not care which mode the box is in.** First-time setup arms and powers off exactly as run mode
+  does. That mode pulls every container image over several hours, so a flaky port costs a long fetch — but
+  the stick is what the box is entitled to run from, and a long fetch is not a reason to suspend that.
+- **A `--debug` image is the one exception.** There, and only there, a removed key warns and leaves the box
+  up: that image has already traded the appliance's guarantees for hands-on access, and the box says so on
+  screen. The console message names the debug image as the reason, so it is never ambiguous which exception
+  is in play.
 - **To swap sticks deliberately**, run `loom-key-guard disarm` at the console first. It stays disarmed until
   the next boot; `loom-key-guard arm` re-enables it, and `loom-key-guard status` prints the current state.
 

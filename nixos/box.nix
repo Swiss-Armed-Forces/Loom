@@ -427,8 +427,22 @@ let
       if [ -r ${config.loom.keyGuard.stateDir}/state ]; then
         case "$(cat ${config.loom.keyGuard.stateDir}/state)" in
           armed)
-            printf '\n  USB key guard: armed. Removing the USB key powers this\n'
-            printf '  box off after %s seconds.\n' ${toString keyGuardGrace}
+            ${
+              # What the guard will actually do, not what the usual image does.
+              # A banner promising a poweroff on an image whose guard only warns
+              # is the one claim on this screen an operator can disprove by
+              # pulling the stick.
+              if config.loom.keyGuard.action == "poweroff" then
+                ''
+                  printf '\n  USB key guard: armed. Removing the USB key powers this\n'
+                  printf '  box off after %s seconds.\n' ${toString keyGuardGrace}
+                ''
+              else
+                ''
+                  printf '\n  USB key guard: armed, but this --debug image only warns.\n'
+                  printf '  Removing the USB key leaves the box up.\n'
+                ''
+            }
             ;;
           disarmed)
             printf '\n  USB key guard: disarmed until the next boot.\n'

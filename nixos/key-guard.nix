@@ -264,7 +264,7 @@ let
       action_phrase() {
           case "''${ACTION}" in
           poweroff) printf 'powers this box off after %ss' "''${GRACE_SECONDS}" ;;
-          *) printf 'only warns (first-time setup does not power off)' ;;
+          *) printf 'only warns (this --debug image does not power off)' ;;
           esac
       }
 
@@ -330,11 +330,12 @@ let
           clear_alarm
 
           if [[ "''${ACTION}" != "poweroff" ]]; then
-              # Warn-only, which is what first-time setup gets: that mode pulls
-              # every container image over hours, on a box that is still in the
-              # lab with nothing secret on it yet.
+              # Warn-only, which only a `--debug` image gets: that image has
+              # already traded the appliance's guarantees for hands-on access,
+              # and a box being driven by hand is one where a pulled stick is
+              # usually the operator's own doing.
               set_state idle
-              announce "[loom] USB key gone for ''${GRACE_SECONDS}s. First-time setup only warns; the box stays up."
+              announce "[loom] USB key gone for ''${GRACE_SECONDS}s. This --debug image only warns; the box stays up."
               return 0
           fi
 
@@ -388,10 +389,14 @@ in
       description = ''
         What happens once the key has been gone for the whole grace window.
 
-        Set by modes.nix, beside the mode it describes, for the same reason as
-        `loom.progressUnit`: `poweroff` in run mode, `warn` in first-time setup,
-        where a trip would throw away hours of container pulls on a box that is
-        still in the lab with nothing secret on it.
+        `poweroff` in every mode, first-time setup included: the stick is what
+        the box is entitled to run from, and which mode it happens to be in
+        does not change that.
+
+        `debug.nix` forces `warn`, and is the only thing that does. Such an
+        image has already traded the appliance's guarantees for hands-on
+        access, and powering a box off under the operator driving it is not
+        protecting anything that image still claims to protect.
 
         The default is the safe one, so a new mode that forgets to set this
         gets the protection rather than silently losing it.
