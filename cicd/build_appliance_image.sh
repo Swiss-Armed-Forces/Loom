@@ -1369,6 +1369,10 @@ report(){
         echo "      in a VM   : ssh -F ${DEBUG_KEY_DIR}/ssh_config.vm loom-appliance"
         echo "      bundle    : ssh -F ... loom-appliance loom-debug-bundle"
         echo
+        echo "[*] The sshd runs in first-time setup too, but the addresses above do not"
+        echo "[*] apply there: that mode is a DHCP client, so the box answers on whatever"
+        echo "[*] its lease gave it. Use 'ssh -i ${DEBUG_KEY_DIR}/id_ed25519 ${LOOM_USER}@<lease>'."
+        echo
         echo "[!] This image is NOT an appliance anybody may be handed. It runs an SSH"
         echo "[!] server, and the key above is root on the box -- the operator account is"
         echo "[!] in 'wheel' with passwordless sudo. Loom has no user management behind"

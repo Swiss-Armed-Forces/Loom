@@ -11,6 +11,10 @@ machine. A login over loopback would prove the sshd configuration and nothing ab
 firewall -- `nixos-fw` accepts `lo` unconditionally, so it is the one path that cannot
 fail.
 
+The node boots run mode, which is the only mode this framework can boot. First-time setup
+is checked by reading its closure instead -- see `_setup_mode_gets_in_too`, which is what
+holds the sshd to both modes.
+
 What this deliberately does not cover: the console session's status marker and the boot
 menu entry. The first belongs to the tmux configuration and is checked by reading it,
 not by booting; the second is a string in the bootloader entry, which the VM test
@@ -47,6 +51,10 @@ class Params:
 
 # Where the client keeps the key once it has been given a mode ssh accepts.
 KEY = "/root/loom-debug-key"
+
+# The other boot mode, as a directory rather than as a boot. See
+# `_setup_mode_gets_in_too`.
+SETUP = "/run/current-system/specialisation/first-time-setup"
 
 # Non-interactive to the last: an ssh that falls back to asking for a password
 # would hang the driver until its timeout rather than fail with a reason.
@@ -114,6 +122,38 @@ def _sshd_is_running(appliance: "Machine", subtest: "Subtest") -> None:
         # `nixos-fw` is the thing that decides whether the client below gets in.
         rules = appliance.succeed("iptables --list-rules nixos-fw")
         assert "--dport 22" in rules, rules
+
+
+def _setup_mode_gets_in_too(
+    appliance: "Machine", params: Params, subtest: "Subtest"
+) -> None:
+    with subtest("first-time setup runs the same sshd, on the same key"):
+        # Read out of the specialisation's closure rather than by booting it.
+        # The other mode is a second system closure sitting under the running
+        # one (`specialisation/<name>` is a symlink to its toplevel, and a
+        # toplevel carries its own `etc`), and booting it is not available here:
+        # the framework starts the kernel directly and never runs the bootloader
+        # that would offer the entry.
+        #
+        # This is what fails if the sshd ever goes back behind a
+        # `mode == "run"` gate -- which is how debug.nix was written once, and
+        # what console.nix's `DEBUG -- SSH OPEN` marker now has to agree with in
+        # both modes.
+        appliance.succeed(
+            f"test -e {SETUP}/etc/systemd/system/multi-user.target.wants/sshd.service"
+        )
+
+        config = appliance.succeed(f"cat {SETUP}/etc/ssh/sshd_config")
+        assert f"AllowUsers {params.user}" in config, config
+
+        # The same key, not merely a key. Compared against the running system's
+        # copy rather than against a literal, because that copy is the one the
+        # subtests below actually get in with -- so this cannot pass against a
+        # setup mode wired to something nobody holds.
+        authorized = f"etc/ssh/authorized_keys.d/{params.user}"
+        running = appliance.succeed(f"cat /run/current-system/{authorized}")
+        assert running.strip() != "", "the running system has no authorized key"
+        assert appliance.succeed(f"cat {SETUP}/{authorized}") == running
 
 
 def _the_key_gets_in(client: "Machine", params: Params, subtest: "Subtest") -> None:
@@ -272,6 +312,7 @@ def run(
     client.wait_for_unit("multi-user.target")
 
     _sshd_is_running(appliance, subtest)
+    _setup_mode_gets_in_too(appliance, params, subtest)
     _the_banner_says_so(appliance, params, subtest)
     _the_key_gets_in(client, params, subtest)
     _the_session_is_a_plain_shell(client, params, subtest)

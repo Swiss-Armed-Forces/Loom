@@ -470,6 +470,12 @@ for pointing an AI agent at such a box. It is the only build where `services.ope
   its frontend is not an authentication boundary.
 - **Port 22 is open on the whole appliance segment** — and on the WiFi bridge too, if the image was also
   built with `--wifi`. Anyone who can plug a cable in can reach the port; only the key stops them.
+- **In first-time setup it is open on somebody else's network.** Both boot modes run the sshd, because a
+  fetch that goes wrong is exactly the thing worth reading from somewhere other than the monitor in front of
+  the box — but that mode is a DHCP client on whatever network you plugged the box into to reach the
+  internet, so the port is open there rather than on a segment this appliance owns. Take that into account
+  when choosing which network to run the setup on. The address is the one that network's DHCP server handed
+  out; `ip addr` on the box, or an Alt-F2 console, is how you find it.
 - **The image is not what a real stick is.** It boots without the splash so failures are readable, and its
   [USB key guard](#the-usb-key-guard) only warns instead of powering the box off, so that a glitching port
   on a bench does not take the session down. Do not use one to judge how a shipped stick behaves.
@@ -477,8 +483,7 @@ for pointing an AI agent at such a box. It is the only build where `services.ope
 
 The box makes this hard to forget. It says `DEBUG IMAGE — NEVER USE THIS IN PRODUCTION` in white on red at
 the bottom of its login screen, the message of the day repeats it, the console session's status line carries
-`DEBUG — SSH OPEN` (`DEBUG IMAGE` during first-time setup, where the SSH server deliberately does not run —
-that mode is a DHCP client on somebody else's network), and the image file itself is named
+`DEBUG — SSH OPEN` in both boot modes, and the image file itself is named
 `loom-installer-debug_*.raw`. The boot menu carries it
 too, on the entry's second line — `debug-<version>` rather than the plain version — for the box that never
 gets as far as a login screen; the title itself still reads `Loom`, exactly as it does for the

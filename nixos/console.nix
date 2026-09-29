@@ -94,13 +94,13 @@ let
   # A literal rather than a `#()`, so it costs the tmux server nothing per tick
   # and cannot be wrong about the box it is running on.
   #
-  # Two wordings, because only one of them is true at a time: debug.nix gates
-  # `services.openssh` on `enable && mode == "run"`, since first-time setup is a
-  # DHCP client on a foreign network. Claiming SSH is open in the mode that holds
-  # the screen for hours -- and is therefore the one an operator reads -- would be
-  # the one place this marker says something false. What stays true in both is
-  # that this is not an ordinary image, and that is what setup mode says.
-  debugText = if cfg.mode == "run" then "DEBUG -- SSH OPEN" else "DEBUG IMAGE";
+  # One wording, and it is true in both modes: debug.nix gates
+  # `services.openssh` on `loom.debug.enable` alone, so first-time setup runs
+  # the sshd too. This used to say `DEBUG IMAGE` in setup mode, because the port
+  # was not open there; the marker has to keep following that gate, since the
+  # mode that holds the screen for hours is the one an operator actually reads
+  # and the one place it must not say something false.
+  debugText = "DEBUG -- SSH OPEN";
   debugSegment = lib.optionalString cfg.debug.enable "#[fg=red,bold]${debugText}#[default]  ";
 
   # Taken from the host list rather than written out again, so the name the chat

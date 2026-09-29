@@ -173,7 +173,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   in the console status line and on the second line of its boot menu entry (the title stays `Loom`,
   as it does for `first-time-setup`), and the image file is named `-debug`. It
   also boots without the splash and downgrades the USB key guard to a warning, so it does not behave
-  like a real stick. Run mode only; refused when `$CI` is set; adds `loom-debug-bundle` to the box.
+  like a real stick. Both boot modes run the sshd, first-time setup included - that mode is the one
+  most worth reaching remotely, since its fetch needs the internet and takes hours, and the cost is
+  that the port is then open on whatever network the box was plugged into rather than on the
+  appliance segment. Refused when `$CI` is set; adds `loom-debug-bundle` to the box.
   Read the threat-model section in `Documentation/appliance.md` before using it
 - `build-appliance-image --lock-key` - Put the stick's 4096 LUKS key bytes inside a LUKS2 container
   on the same `loom-key` partition, under a generated word passphrase (`diceware`, EFF list) that is

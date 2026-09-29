@@ -434,11 +434,19 @@ the module hangs together.
 - **`box.nix` says `services.openssh.enable = lib.mkDefault false`**, and `debug.nix` is the one
   thing allowed to define it as `true`. The `mkDefault` is deliberate over a `mkForce` on the other
   side: the policy statement should stay readable as a policy, and the exception as an exception.
-- **The markers and the access are gated differently.** `system.nixos.tags`, the motd and
-  `loom-debug-bundle` key on `loom.debug.enable`, so a debug stick booted into first-time-setup
-  still says what it is for the hours that fetch takes. The sshd, the key-guard downgrade and the
-  missing splash key on `enable && mode == "run"` — setup mode is a DHCP client on somebody else's
-  network, which is the worst place to open a port that hands out root.
+- **The markers and the sshd both key on `loom.debug.enable`, in both modes.** A debug stick booted
+  into first-time-setup still says what it is for the hours that fetch takes, and is still reachable
+  during them — which is the mode most worth reaching, since the fetch needs the internet and takes
+  hours. What that costs is that setup mode is a DHCP client on somebody else's network, so there
+  the port is open on a network this project does not own; the operator guide states it as a bullet
+  of its own. Only the key-guard downgrade and the missing splash are `enable && mode == "run"`, and
+  only because setup mode already does both for its own reasons — restating them would mean a
+  duplicated kernel parameter and a `mkForce` over a value nobody disagreed about.
+- **`console.nix`'s status marker has to follow that gate.** It reads `DEBUG — SSH OPEN` in both
+  modes now; it used to say `DEBUG IMAGE` in setup mode, precisely because the port was not open
+  there. `loom_tests/debug.py` pins the gate by reading the specialisation's closure
+  (`/run/current-system/specialisation/first-time-setup/etc`), since the VM framework boots the
+  kernel directly and can never boot the other entry.
 - **`modes.nix` is where `quiet` is decided, not `debug.nix`.** A module can add a kernel parameter
   and never subtract one, so a debug build has to *not acquire* `quiet` and `udev.log_level=3` in
   the first place. `debug.nix` adds `plymouth.enable=0` on top, the same pair setup mode uses.

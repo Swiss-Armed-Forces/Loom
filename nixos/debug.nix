@@ -20,16 +20,26 @@
 #   * the console session's status line (console.nix)
 #   * the image filename (installer.nix)
 #
-# The two halves are gated differently, and the difference is deliberate:
+# What the image IS -- the tags, the motd, the bundle -- and the way IN both
+# follow the flag into both boot modes. A debug stick booted into
+# first-time-setup is still a debug stick, and that mode holds the screen for
+# hours; it is also the mode most worth reaching remotely, since the fetch it
+# runs takes hours, needs the internet, and fails in ways that are tedious to
+# read off a monitor.
 #
-#   * What the image IS -- the tags, the motd, the bundle -- follows the flag
-#     into both boot modes. A debug stick booted into first-time-setup is still
-#     a debug stick, and that mode holds the screen for hours.
-#   * The way IN follows the flag only into run mode. First-time setup is a DHCP
-#     client on whatever network somebody plugged it into (network.nix), which
-#     is the worst place to open a port that hands out root, and it powers the
-#     box off when it finishes. The installer stick never imports this module at
-#     all; `appliance-vm installer --serial` is what reaches that half.
+# The cost of that is real and is stated in the operator guide: first-time setup
+# is a DHCP client on whatever network somebody plugged the box into
+# (network.nix), so in that mode port 22 is open on a network this project does
+# not own, rather than on the appliance segment it does. It is only ever open on
+# an image that already says "never hand this to anybody" in five places, and
+# the key that opens it exists in one directory on one build host.
+#
+# Two things stay run-mode only, and only because setup mode already does both
+# of them for its own reasons (modes.nix): the key-guard downgrade and the
+# missing splash.
+#
+# The installer stick never imports this module at all; `appliance-vm installer
+# --serial` is what reaches that half.
 {
   config,
   lib,
@@ -43,7 +53,10 @@
 let
   cfg = config.loom;
 
-  active = cfg.debug.enable && cfg.mode == "run";
+  # The two behaviours below that setup mode already arranges for itself, so
+  # that adding them a second time would mean a duplicated kernel parameter and
+  # a `mkForce` restating a value nobody disagreed about.
+  runOnly = cfg.debug.enable && cfg.mode == "run";
 
   # Collect everything that explains a misbehaving box into one file, because
   # the interesting cases are the ones where reading it off a monitor is exactly
@@ -227,14 +240,18 @@ in
     }
 
     # -------------------------------------------------------------------------
-    # What this image IS -- both modes.
+    # What this image IS, and the way in -- both modes.
     #
-    # Keyed on the flag rather than on `active`, unlike the access below. A
-    # debug stick booted into first-time-setup is still a debug stick, and the
-    # one screen it shows for the hours that fetch takes should say so. It is
-    # also where `system.nixos.tags` has to be set for the specialisation to
-    # inherit it: the run-mode entry and the first-time-setup entry both carry
-    # `debug`, which is the whole point of putting it in the boot loader.
+    # Keyed on the flag alone rather than on `runOnly`. A debug stick booted
+    # into first-time-setup is still a debug stick: the one screen it shows for
+    # the hours that fetch takes should say so, and the port should be there,
+    # because a fetch that goes wrong is exactly the thing worth reading from
+    # somewhere other than the monitor in front of the box.
+    #
+    # This is also where `system.nixos.tags` has to be set for the
+    # specialisation to inherit it: the run-mode entry and the first-time-setup
+    # entry both carry `debug`, which is the whole point of putting it in the
+    # boot loader.
     # -------------------------------------------------------------------------
     (lib.mkIf cfg.debug.enable {
       # The marker that is visible before anything has booted at all, which on
@@ -275,17 +292,7 @@ in
       users.motdFile = "/etc/motd";
 
       environment.systemPackages = [ loom-debug-bundle ];
-    })
 
-    # -------------------------------------------------------------------------
-    # The way in, and the two behaviours that follow from it -- run mode only.
-    #
-    # First-time setup is a DHCP client on whatever network somebody plugged it
-    # into (network.nix), which is the worst place to open a port that hands out
-    # root. It also powers the box off when it finishes, so there would be
-    # little to reach. The installer stick never imports this module at all.
-    # -------------------------------------------------------------------------
-    (lib.mkIf active {
       # -----------------------------------------------------------------------
       # The way in.
       # -----------------------------------------------------------------------
@@ -336,11 +343,21 @@ in
         #     materialises in `appliance-vm box` -- an interface-scoped rule
         #     would make the VM, which is the cheapest way to use this feature
         #     at all, the one place it does not work.
+        #   * In setup mode the address comes from somebody else's DHCP server
+        #     on an interface whose name this module cannot know, so there is no
+        #     interface to scope to in the first place.
         openFirewall = true;
       };
 
       users.users.${loomUser}.openssh.authorizedKeys.keys = [ cfg.debug.authorizedKey ];
+    })
 
+    # -------------------------------------------------------------------------
+    # The two behaviours that only run mode needs -- setup mode already arranges
+    # both for its own reasons, and restating them here would mean a duplicated
+    # kernel parameter and a `mkForce` over a value nobody disagreed about.
+    # -------------------------------------------------------------------------
+    (lib.mkIf runOnly {
       # Never power the box off under somebody who is debugging it.
       #
       # modes.nix sets `poweroff` for run mode and explains why: a box holding
