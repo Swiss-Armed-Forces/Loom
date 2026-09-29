@@ -392,7 +392,12 @@ let
         . /etc/loom/network.conf
         # The wired port, which is not the same thing as the interface holding
         # the address once the access point bridges the two. See network.nix.
-        printf '  Plug a laptop into %s and browse https://frontend.loom\n' \
+        # http rather than https, and it is the friendlier of the two now that
+        # both work (modes.nix passes --enable-http): the certificate is
+        # self-signed, so the https spelling costs whoever reads this an
+        # interstitial. It is also the URL the captive portal sends a phone to,
+        # and the banner should not name a second one.
+        printf '  Plug a laptop into %s and browse http://frontend.loom\n' \
           "''${LOOM_WIRED_INTERFACE}"
         printf '  This box serves DHCP on %s and answers for *.loom\n' \
           "''${LOOM_SUBNET}"

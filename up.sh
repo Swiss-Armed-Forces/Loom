@@ -33,6 +33,7 @@ NVIDIA_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-nvidia-gpu.yaml"
 AMD_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-amd-gpu.yaml"
 DISABLE_AI_VALUES_FILE="${SCRIPT_DIR}/charts/values-disable-ai-services.yaml"
 SCALING_VALUES_FILE="${SCRIPT_DIR}/charts/values-scaling.yaml"
+HTTP_VALUES_FILE="${SCRIPT_DIR}/charts/values-http.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
@@ -1200,6 +1201,11 @@ usage(){
     echo "                                        it (see charts/values-disable-ai-services.yaml). No summaries,"
     echo "                                        translation, embeddings, auto-tags or RAG."
     echo "  --scaling                             enable autoscaling (KEDA/HPA) for compute-intensive services (see charts/values-scaling.yaml)"
+    echo "  --enable-http                         also serve every ingress over plain http, without the"
+    echo "                                        redirect to https (see charts/values-http.yaml). Gives up"
+    echo "                                        transport security for the whole stack, Elasticsearch,"
+    echo "                                        Grafana, S3 and the Traefik dashboard included. Only for a"
+    echo "                                        deployment whose network is already trusted."
     echo "  --down                                tear down the deployment and exit
   --delete                              delete the deployment after startup"
     echo "  --skip-STEP                           skip step STEP"
@@ -1311,6 +1317,10 @@ while [[ $# -gt 0 ]]; do
         --scaling)
             SCALING=true
             UP_FLAG_VALUES+=("${SCALING_VALUES_FILE}")
+            shift
+        ;;
+        --enable-http)
+            UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
             shift
         ;;
         --down)

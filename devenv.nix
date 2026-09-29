@@ -685,6 +685,26 @@ in
       pass_filenames = false;
     };
 
+    # charts/values-http.yaml has to name every component carrying an ingress,
+    # and nothing about adding one to values.yaml points at it. A component
+    # missed there stays on `websecure` alone, so `--enable-http` never reaches
+    # it and the service 404s over http for no visible reason -- and the
+    # appliance's captive portal is built on that flag.
+    #
+    # Renders the chart and reads the annotation each Ingress ends up with,
+    # rather than comparing key sets: rabbit's path is a level deeper than the
+    # rest and dovecot shares the same values anchor while rendering a TCP
+    # route, so a textual comparison has to special-case both.
+    #
+    # `pass_filenames = false`: the script checks the chart as a whole and
+    # rejects arguments it does not know.
+    "check-http-values" = {
+      enable = true;
+      entry = "${config.devenv.root}/cicd/check_http_values.sh";
+      files = "^(charts/|cicd/check_http_values\\.sh$)";
+      pass_filenames = false;
+    };
+
     # The Ollama image's entrypoint wrapper decides OLLAMA_NUM_PARALLEL from the
     # GPU it finds, which is arithmetic no type can check. The suite is stdlib
     # only and runs in well under a second, so it rides the hook set -- and so

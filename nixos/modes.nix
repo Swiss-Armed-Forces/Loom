@@ -79,6 +79,23 @@ let
     + lib.optionalString cfg.platform.runsAutoscaling " --scaling"
     + lib.optionalString (!cfg.platform.meetsResourceMinimum) " --no-resources";
 
+  # Serve every ingress over plain http as well as https.
+  #
+  # This is what makes the captive portal land somewhere (portal.nix). A phone's
+  # portal webview refuses the appliance's self-signed certificate and offers no
+  # way to click through, so the page the probe is redirected to has to be
+  # reachable without TLS or the portal dead-ends on a certificate error.
+  #
+  # Unconditional rather than platform-derived: every box serves the same
+  # visitors, and the appliance segment is the trusted network the flag asks
+  # for. What it gives up is in Documentation/appliance.md's threat model.
+  #
+  # Both modes, so the two invocations describe one deployment. It is the flag
+  # that *disables* the global http-to-https redirect, so run mode never needs
+  # an image a setup run without it would have skipped -- the asymmetry that
+  # makes --scaling load-bearing in both does not arise here.
+  httpArgs = " --enable-http";
+
   # How long setup mode leaves its closing message on screen before powering the
   # box off. Long enough for whoever walks past to read why the box is going
   # down and to cancel it if they want the box up, short enough that nobody
@@ -389,7 +406,7 @@ in
           # would hand a packet to a local listener, so a tunnel socket on the
           # appliance address would never see one.
           script = ''
-            exec loom-up --offline${gpuArgs}${platformArgs}
+            exec loom-up --offline${gpuArgs}${platformArgs}${httpArgs}
           '';
         }
       ];
@@ -430,7 +447,7 @@ in
             # --delete tears the deployment down again afterwards: the goal here
             # is a warm image store, not a running stack. Documentation/
             # installation.md:107 prescribes exactly this before going offline.
-            loom-up --offline --delete${gpuArgs}${platformArgs}
+            loom-up --offline --delete${gpuArgs}${platformArgs}${httpArgs}
 
             touch ${loomRepoDir}/.loom-setup-complete
 

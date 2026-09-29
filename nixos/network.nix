@@ -20,6 +20,21 @@ let
   boxAddress = "${loomSubnet}.1";
   poolStart = "${loomSubnet}.100";
   poolEnd = "${loomSubnet}.200";
+
+  # A second address on the same interface, for the captive portal responder
+  # (portal.nix) and nothing else.
+  #
+  # It exists because `loom-expose` below DNATs ports 80 and 443 on `boxAddress`
+  # to the minikube node, wholesale and before the routing decision -- so a
+  # listener of our own on that address can never see a packet, and a probe sent
+  # to it reaches Traefik, which answers 404 for a Host it does not route. The
+  # DNAT rules match `--destination ${BOX}` explicitly, so a different address
+  # is simply not covered by them and port 80 on it is free.
+  #
+  # Derived, never written out: `loomSubnet` is randomised per image by
+  # resolve_subnet in cicd/build_appliance_image.sh. `.2` is below the pool.
+  portalAddress = "${loomSubnet}.2";
+
   isRun = config.loom.mode == "run";
 
   # The appliance never refers to a kernel-assigned interface name. Predictable
@@ -295,6 +310,20 @@ in
     '';
   };
 
+  # Exported for the same reason serviceInterface is: portal.nix binds it and
+  # the tests assert it, and neither should be recomputing a subnet.
+  options.loom.portalAddress = lib.mkOption {
+    type = lib.types.str;
+    default = portalAddress;
+    readOnly = true;
+    internal = true;
+    description = ''
+      The address the captive portal responder listens on, beside the appliance
+      address on the same interface. Carries nothing else, and is not in the
+      DHCP pool.
+    '';
+  };
+
   options.loom.autoSelectInterface = lib.mkOption {
     type = lib.types.bool;
     default = true;
@@ -329,6 +358,14 @@ in
       networking.interfaces.${serviceInterface}.ipv4.addresses = [
         {
           address = boxAddress;
+          prefixLength = 24;
+        }
+        # On the same interface as the appliance address, so it follows the
+        # bridge in a --wifi build and loom0 otherwise with no second code path,
+        # and so both appear in one unit -- dnsmasq binds addresses rather than
+        # an interface name (bind-interfaces) and must not start between them.
+        {
+          address = portalAddress;
           prefixLength = 24;
         }
       ];
@@ -377,7 +414,19 @@ in
 
           # Wildcard, so this covers every name under .loom rather than just
           # the 22 currently in vars.sh.
-          address = "/loom/${boxAddress}";
+          #
+          # The rest are the captive-portal probes (portal.nix), pointed at the
+          # responder's own address rather than at the box: port 80 on the box
+          # is DNAT'd to Traefik, which would answer 404 and leave the phone
+          # showing a 404 in its portal webview.
+          #
+          # Named one at a time rather than with a wildcard. Every other name
+          # keeps being REFUSED, so a visitor's mail client fails cleanly
+          # instead of being handed this box.
+          address = [
+            "/loom/${boxAddress}"
+          ]
+          ++ map (host: "/${host}/${portalAddress}") config.loom.portal.probeHosts;
 
           no-resolv = true;
           no-hosts = true;
@@ -442,6 +491,7 @@ in
         LOOM_WIRED_INTERFACE=${applianceInterface}
         LOOM_SUBNET=${loomSubnet}.0/24
         LOOM_BOX_ADDRESS=${boxAddress}
+        LOOM_PORTAL_ADDRESS=${portalAddress}
         LOOM_DHCP_POOL=${poolStart}-${poolEnd}
       ''
       + lib.optionalString wifiEnabled ''

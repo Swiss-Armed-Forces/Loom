@@ -1,0 +1,85 @@
+# Plain HTTP
+#
+# Serve every ingress on Traefik's `web` entrypoint alongside `websecure`, so
+# `http://frontend.loom/` answers directly instead of redirecting to a
+# self-signed `https://`.
+#
+# Pass --enable-http to up.sh to apply this file automatically.
+#
+# This gives up transport security for the whole stack: Elasticsearch, Grafana,
+# RedisInsight, S3, Prometheus and the Traefik dashboard included. Only for a
+# deployment whose network is already trusted -- on the appliance that is the
+# appliance segment, which with --wifi is everyone in radio range holding the
+# PSK. See the threat model in Documentation/appliance.md.
+#
+# Both halves below are required. Widening the entrypoints alone changes
+# nothing a client can see, because templates/global-http-redirect/ingress.yaml
+# matches `*.<domain>` on `web` and 302s the request back to https before any
+# of these routers is consulted.
+#
+# Every component carrying an ingress in values.yaml is listed. That set is
+# asserted by cicd/check_http_values.sh, which fails the commit when the two
+# drift apart.
+#
+# The IngressRoute CRDs -- dovecot (IMAPS), rabbit (AMQP), redis -- are absent
+# on purpose: they carry TCP rather than HTTP and pin `entryPoints` in their own
+# templates, so a values override cannot move them and moving them would mean
+# nothing. `dovecot.ingress.imaps` shares the anchor in values.yaml and is
+# nonetheless one of these.
+ingress: &default-ingress-config
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+
+globalHttpRedirect:
+  enabled: false
+
+api:
+  ingress: *default-ingress-config
+
+frontend:
+  ingress: *default-ingress-config
+
+elasticsearch:
+  ingress: *default-ingress-config
+
+elasticvue:
+  ingress: *default-ingress-config
+
+grafana:
+  ingress: *default-ingress-config
+
+seaweedfs:
+  s3:
+    ingress: *default-ingress-config
+  admin:
+    ingress: *default-ingress-config
+
+ollama:
+  ingress: *default-ingress-config
+
+roundcube:
+  ingress: *default-ingress-config
+
+prometheus:
+  ingress: *default-ingress-config
+
+# One level deeper than the rest: `http` is the management UI, beside the
+# `amqp` IngressRoute that carries no HTTP.
+rabbit:
+  ingress:
+    http: *default-ingress-config
+
+redisinsight:
+  ingress: *default-ingress-config
+
+rspamd:
+  worker:
+    ingress: *default-ingress-config
+  controller:
+    ingress: *default-ingress-config
+
+tika:
+  ingress: *default-ingress-config
+
+gotenberg:
+  ingress: *default-ingress-config

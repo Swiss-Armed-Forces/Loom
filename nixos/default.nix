@@ -365,6 +365,7 @@ let
     ./key-store.nix
     ./modes.nix
     ./network.nix
+    ./portal.nix
     ./ready.nix
     ./repo.nix
     ./storage.nix

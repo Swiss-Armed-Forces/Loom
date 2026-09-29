@@ -441,13 +441,14 @@ let
   # npm registry, which this box has no route to. Any other adapter name would be
   # looked up there the first time the operator asks a question.
   #
-  # https, not http. Every ingress in charts/values.yaml is annotated
-  # `router.entrypoints: websecure` and nothing else -- only values-development
-  # widens that to `web, websecure` -- so on a box running production values
-  # there is no router on port 80 for this host and plain HTTP gets a Traefik
-  # 404 without ever reaching TLS. The certificate is cert-manager's, from a
-  # selfSigned ClusterIssuer (charts/templates/common/certificate.yaml), which
-  # is why loom-chat below has to hand Bun the CA.
+  # https, not http. The appliance serves both -- modes.nix passes up.sh's
+  # --enable-http, which widens every ingress to `web, websecure` so the captive
+  # portal has a page it can reach without TLS (portal.nix) -- but that exists
+  # for visitors, whose phones cannot be handed a CA. This pane runs on the box,
+  # where the certificate is verifiable, so it stays on the path that is
+  # authenticated. The certificate is cert-manager's, from a selfSigned
+  # ClusterIssuer (charts/templates/common/certificate.yaml), which is why
+  # loom-chat below has to hand Bun the CA.
   #
   # apiKey restates backend/common/common/settings.py's LLMClientSettings. The
   # endpoint deliberately does NOT: settings.py's `http://ollama.loom/v1/` is a
