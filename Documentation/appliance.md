@@ -17,7 +17,8 @@ Read this before building anything; the design only makes sense if these hold.
 - **The USB stick is the key.** The internal disk is LUKS2, and the key is 4096 random bytes on the stick. Pull
   the stick and the box will not boot. Every stick gets its own key.
 - **The stick has to stay plugged in.** A running box is watched: remove the key and it powers itself off
-  ten seconds later. See [The USB key guard](#the-usb-key-guard).
+  ten seconds later, and a box that booted from a stick it can no longer read powers off after three
+  minutes. See [The USB key guard](#the-usb-key-guard).
 - **Box and stick together are not protected.** If both are seized at once, the encryption buys you nothing.
   The design assumes the stick is removed, or travels separately, whenever the box is unattended.
   **`--lock-key` changes this** — it puts a passphrase over the stick's key, so holding the stick stops being
@@ -477,8 +478,9 @@ for pointing an AI agent at such a box. It is the only build where `services.ope
   when choosing which network to run the setup on. The address is the one that network's DHCP server handed
   out; `ip addr` on the box, or an Alt-F2 console, is how you find it.
 - **The image is not what a real stick is.** It boots without the splash so failures are readable, and its
-  [USB key guard](#the-usb-key-guard) only warns instead of powering the box off, so that a glitching port
-  on a bench does not take the session down. Do not use one to judge how a shipped stick behaves.
+  [USB key guard](#the-usb-key-guard) only warns instead of powering the box off — on a removed key and on
+  a key that never armed alike — so that a glitching port on a bench does not take the session down. Do not
+  use one to judge how a shipped stick behaves.
 - **Never hand one to anybody.** Wipe the box when you are done, and delete the key directory.
 
 The box makes this hard to forget. It says `DEBUG IMAGE — NEVER USE THIS IN PRODUCTION` in white on red at
@@ -866,6 +868,12 @@ A few consequences worth knowing:
 - **It arms itself, once, after a key has been seen.** A box booted with the recovery passphrase has no stick
   at all, so the guard never arms there and the box stays up for repairs. The login banner says which of the
   two states the box is in.
+- **A box that booted from the stick and cannot arm powers off after three minutes.** Not arming means
+  running an unlocked disk with nothing watching the key, and that is not a state to leave a box in
+  indefinitely — a stick that is plugged in but unreadable is the case this catches. The countdown is
+  announced on the console and named on the login banner, and `loom-key-guard disarm` stops it for the rest
+  of the boot. This is the deadline the recovery boot above is exempt from: stage 1 records which of the two
+  ways in was taken, so a box with no stick is never held to a deadline it cannot meet.
 - **It does not care which mode the box is in.** First-time setup arms and powers off exactly as run mode
   does. That mode pulls every container image over several hours, so a flaky port costs a long fetch — but
   the stick is what the box is entitled to run from, and a long fetch is not a reason to suspend that.

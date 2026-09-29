@@ -124,6 +124,27 @@ pkgs.testers.runNixOSTest {
     };
   };
 
+  # A second box, for the one thing the node above cannot show: what happens to
+  # a box that booted from a stick and never arms. That ends in a poweroff, and
+  # `appliance` already spends its own poweroff on the removal path.
+  #
+  # Nothing here has a LUKS root, so no stage 1 ever writes the witness that
+  # arms the deadline -- which is exactly why every other node in the suite is
+  # unaffected by it. The test writes the witness itself.
+  nodes.deadline = {
+    imports = applianceModules;
+    virtualisation.memorySize = 1024;
+    virtualisation.diskSize = 2048;
+    services.dnsmasq.enable = pkgs.lib.mkForce false;
+    networking.interfaces = pkgs.lib.mkForce { };
+    loom.autoSelectInterface = pkgs.lib.mkForce false;
+    systemd.services.loom.wantedBy = pkgs.lib.mkForce [ ];
+
+    # Long enough to watch a countdown arrive, short enough to wait for. The
+    # shipped value is 180.
+    loom.keyGuard.armDeadlineSec = 60;
+  };
+
   # The test itself is loom_tests/appliance/, so that the repository's Python hooks
   # reach it -- see loom_tests/driver.py for why, and for why `skipTypeCheck` is set
   # above. It is a package of its own because it is the big one: a module per subject,
@@ -140,6 +161,7 @@ pkgs.testers.runNixOSTest {
 
       run(
           appliance,
+          deadline,
           start_all=start_all,
           subtest=subtest,
           params=Params(

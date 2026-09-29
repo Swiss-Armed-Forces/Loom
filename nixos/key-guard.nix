@@ -44,6 +44,7 @@ let
       readonly DEVICE_FILE="''${STATE_DIR}/device"
       readonly FINGERPRINT_FILE="''${STATE_DIR}/fingerprint"
       readonly DISARM_FILE="''${STATE_DIR}/disarmed"
+      readonly DEADLINE_FILE="''${STATE_DIR}/deadline"
 
       readonly KEY_DEVICE=${lib.escapeShellArg cfg.keyDevice}
       readonly ROOT_DEVICE=${lib.escapeShellArg cfg.rootDevice}
@@ -54,6 +55,19 @@ let
       readonly KEY_ORACLE=${lib.boolToString cfg.requireKeyOracle}
       readonly ACTION=${lib.escapeShellArg cfg.action}
       readonly SOCKET=${lib.escapeShellArg config.loom.consoleSocket}
+      readonly WITNESS_FILE=${lib.escapeShellArg cfg.witnessFile}
+      readonly ARM_DEADLINE=${toString cfg.armDeadlineSec}
+      readonly SETTLE_TICKS=${toString cfg.armSettleTicks}
+      readonly BANNER_REFRESH=${lib.getExe config.loom.bannerRefresh}
+
+      # Why the last arm attempt failed, and the last reason logged, so a box
+      # stuck on one cause says so once and a flapping one stays visible.
+      ARM_REASON=""
+      REPORTED_REASON=""
+      # The smallest countdown notice already given, 0 for none yet, and
+      # whether the deadline is settled for this boot.
+      NOTIFIED=0
+      DEADLINE_RETIRED=0
 
       main() {
           local command="''${1:-watch}"
@@ -123,10 +137,12 @@ let
 
       set_state() {
           put "''${STATE_FILE}" 0644 "''${1}"
-          # The banner is generated once per boot into /run/issue.d and is the
-          # only thing an operator who never logs in ever sees, so it has to
-          # follow the guard rather than report whatever was true at boot.
-          systemctl restart loom-issue.service >/dev/null 2>&1 || true
+          # The banner is the only thing an operator who never logs in ever
+          # sees, so it has to follow the guard. Rewriting the issue file is
+          # half of that: agetty paints it once and then blocks on a keypress,
+          # so tty1 has to be redrawn as well, which is what this command does
+          # (box.nix). It exits 1 when it declined to redraw over a session.
+          "''${BANNER_REFRESH}" >/dev/null 2>&1 || true
       }
 
       # ---------------------------------------------------------------------
@@ -137,15 +153,18 @@ let
           # iflag=direct is not a micro-optimisation. Without O_DIRECT the page
           # cache happily hands the same 4096 bytes back long after the stick
           # has physically left, and the guard never fires at all.
+          # Errors are swallowed because the caller reports them: a read that
+          # keeps failing is named once, by `ARM_REASON`, rather than every
+          # two seconds for the life of the box.
           if ! digest="$(dd if="''${device}" bs="''${KEY_BYTES}" count=1 \
-              iflag=direct status=none | sha256sum)"; then
+              iflag=direct status=none 2>/dev/null | sha256sum)"; then
               # Not every USB bridge accepts O_DIRECT, and a guard that quietly
               # never armed would be worse than the cache it is avoiding.
               # BLKFLSBUF invalidates this device's buffer cache, which buys the
               # same guarantee the long way round.
               blockdev --flushbufs "''${device}" 2>/dev/null || return 1
               digest="$(dd if="''${device}" bs="''${KEY_BYTES}" count=1 \
-                  status=none | sha256sum)" || return 1
+                  status=none 2>/dev/null | sha256sum)" || return 1
           fi
           printf '%s' "''${digest%% *}"
       }
@@ -188,12 +207,22 @@ let
           local node fingerprint
 
           node="$(readlink --canonicalize "''${KEY_DEVICE}" 2>/dev/null || true)"
-          [[ -b "''${node}" ]] || return 1
+          if [[ ! -b "''${node}" ]]; then
+              ARM_REASON="no block device at ''${KEY_DEVICE}"
+              return 1
+          fi
 
-          fingerprint="$(read_fingerprint "''${node}")" || return 1
+          if ! fingerprint="$(read_fingerprint "''${node}")"; then
+              ARM_REASON="''${node} could not be read"
+              return 1
+          fi
+
           # A wiped key partition is a missing key. Same rule the installer
           # applies before it will install at all (common.sh `key_state`).
-          [[ "''${fingerprint}" != "$(zero_fingerprint)" ]] || return 1
+          if [[ "''${fingerprint}" == "$(zero_fingerprint)" ]]; then
+              ARM_REASON="''${node} is blank"
+              return 1
+          fi
 
           if [[ "''${KEY_ORACLE}" = true ]]; then
               # The LUKS header is the oracle: this proves the stick still
@@ -201,10 +230,13 @@ let
               # anywhere, and why a foreign stick carrying a partition named
               # loom-key cannot keep the box alive. Cheap -- the installer
               # formats with pbkdf2 at 1000 iterations.
-              cryptsetup luksOpen --test-passphrase \
+              if ! cryptsetup luksOpen --test-passphrase \
                   --key-file "''${node}" \
                   --keyfile-size "''${KEY_BYTES}" \
-                  "''${ROOT_DEVICE}" >/dev/null 2>&1 || return 1
+                  "''${ROOT_DEVICE}" >/dev/null 2>&1; then
+                  ARM_REASON="the key on ''${node} does not open ''${ROOT_DEVICE}"
+                  return 1
+              fi
           else
               # --lock-key: the bytes on the stick are a LUKS2 container, not the
               # key, so the oracle above has nothing to authenticate with and the
@@ -225,7 +257,10 @@ let
               # installer/loom_installer/devices.py `is_key_container`: LUKS1
               # would answer yes, and nothing in Loom writes a LUKS1 container,
               # so one here is a stick from somewhere else.
-              cryptsetup isLuks --type luks2 "''${node}" >/dev/null 2>&1 || return 1
+              if ! cryptsetup isLuks --type luks2 "''${node}" >/dev/null 2>&1; then
+                  ARM_REASON="''${node} carries no LUKS2 key store"
+                  return 1
+              fi
           fi
 
           put "''${DEVICE_FILE}" 0644 "''${node}"
@@ -269,10 +304,69 @@ let
       }
 
       # ---------------------------------------------------------------------
+      # The arm deadline
+      #
+      # A box that cannot arm is a box running an unlocked dm-crypt mapping
+      # with nothing watching the key, so it does not get to run indefinitely.
+      #
+      # It applies only where stage 1 left `WITNESS_FILE` behind, which says
+      # the key partition was present when the root was unlocked
+      # (box-hardware.nix). A box booted on the recovery passphrase has no
+      # stick, never arms by design, and is left up for repairs -- the console
+      # is the only way into it.
+      # ---------------------------------------------------------------------
+      deadline_applies() {
+          [[ "''${DEADLINE_RETIRED}" -eq 0 ]] || return 1
+          [[ "''${ARM_DEADLINE}" -gt 0 ]] || return 1
+          # Same exception as `trip`: a --debug image warns rather than acts.
+          [[ "''${ACTION}" == "poweroff" ]] || return 1
+          [[ -e "''${WITNESS_FILE}" ]] || return 1
+      }
+
+      # Settled for this boot, by arming or by an operator saying the key may
+      # be absent. Neither is reopened by anything short of a reboot.
+      retire_deadline() {
+          DEADLINE_RETIRED=1
+          rm --force "''${DEADLINE_FILE}"
+      }
+
+      countdown() {
+          local now expires left boundary
+          deadline_applies || return 0
+
+          now="$(date +%s)"
+          # Absolute, and written once: a guard that systemd restarted must not
+          # hand the box a fresh window. It is also what `status` reads.
+          if [[ ! -e "''${DEADLINE_FILE}" ]]; then
+              put "''${DEADLINE_FILE}" 0644 "$((now + ARM_DEADLINE))"
+          fi
+          expires="$(cat "''${DEADLINE_FILE}")"
+          left=$((expires - now))
+
+          if [[ "''${left}" -le 0 ]]; then
+              power_off_now \
+                  "[loom] No usable USB key ''${ARM_DEADLINE}s after boot. Powering off now."
+          fi
+
+          # Loud, and rarely: nobody is watching the screen for the first
+          # minute of a boot, and the notice has to arrive while there is
+          # still time to act on it.
+          for boundary in 120 60 30 10; do
+              if [[ "''${left}" -le "''${boundary}" ]] &&
+                  [[ "''${NOTIFIED}" -eq 0 || "''${boundary}" -lt "''${NOTIFIED}" ]]; then
+                  NOTIFIED="''${boundary}"
+                  alarm
+                  announce "[loom] No usable USB key -- this box powers off in ''${left}s. Plug the key in, or run 'loom-key-guard disarm'."
+                  break
+              fi
+          done
+      }
+
+      # ---------------------------------------------------------------------
       # The loop
       # ---------------------------------------------------------------------
       watch() {
-          local misses=0 idle_logged=0
+          local misses=0 failures=0
 
           trap 'exit 0' TERM INT
 
@@ -289,20 +383,35 @@ let
                   if [[ "$(current_state)" != "disarmed" ]]; then
                       misses=0
                       clear_alarm
+                      retire_deadline
                       set_state disarmed
                       announce "[loom] Key guard disarmed. Removing the USB key will not power this box off."
                   fi
               elif [[ "$(current_state)" != "armed" ]]; then
                   if arm_once; then
                       misses=0
-                      idle_logged=0
-                  elif [[ "''${idle_logged}" -eq 0 ]]; then
-                      # Once, not every two seconds for the life of the box.
-                      # This is the ordinary state of a box booted with the
-                      # recovery passphrase, and it is not an error.
-                      idle_logged=1
-                      set_state idle
-                      printf '[loom] No usable key at %s; the guard stays idle.\n' "''${KEY_DEVICE}"
+                      failures=0
+                      REPORTED_REASON=""
+                      retire_deadline
+                  else
+                      failures=$((failures + 1))
+                      # Not on the first failure: the key device is still
+                      # enumerating for the first seconds after a switch-root,
+                      # and publishing `idle` redraws the login screen with it.
+                      if [[ "''${failures}" -eq "''${SETTLE_TICKS}" ]]; then
+                          REPORTED_REASON="''${ARM_REASON}"
+                          set_state idle
+                          # Once, not every two seconds for the life of the
+                          # box. This is the ordinary state of a box booted
+                          # with the recovery passphrase, and it is not an
+                          # error.
+                          printf '[loom] No usable key at %s; the guard stays idle (%s).\n' \
+                              "''${KEY_DEVICE}" "''${ARM_REASON}"
+                      elif [[ "''${failures}" -gt "''${SETTLE_TICKS}" && "''${ARM_REASON}" != "''${REPORTED_REASON}" ]]; then
+                          REPORTED_REASON="''${ARM_REASON}"
+                          printf '[loom] Key guard still cannot arm: %s.\n' "''${ARM_REASON}"
+                      fi
+                      countdown
                   fi
               elif key_present; then
                   if [[ "''${misses}" -gt 0 ]]; then
@@ -315,7 +424,7 @@ let
                   if [[ "''${misses}" -ge "''${GRACE_TICKS}" ]]; then
                       trip
                       misses=0
-                      idle_logged=0
+                      failures=0
                   else
                       alarm
                       announce "[loom] USB KEY REMOVED -- $(((GRACE_TICKS - misses) * INTERVAL))s left. Plug it back in to cancel."
@@ -339,7 +448,11 @@ let
               return 0
           fi
 
-          announce "[loom] USB key gone for ''${GRACE_SECONDS}s. Powering off now."
+          power_off_now "[loom] USB key gone for ''${GRACE_SECONDS}s. Powering off now."
+      }
+
+      power_off_now() {
+          announce "''${1}"
           set_state tripped
           # A clean poweroff, not a forced one: unit teardown is bounded by
           # DefaultTimeoutStopSec, and the indexed data is worth more than the
@@ -349,7 +462,7 @@ let
       }
 
       status() {
-          local state device
+          local state device expires left
           state="$(current_state)"
           device="$(cat "''${DEVICE_FILE}" 2>/dev/null || true)"
 
@@ -359,6 +472,12 @@ let
               printf '  resolved to: %s\n' "''${device}"
           fi
           printf '  on removal:  %s after %ss\n' "''${ACTION}" "''${GRACE_SECONDS}"
+          if [[ -e "''${DEADLINE_FILE}" ]]; then
+              expires="$(cat "''${DEADLINE_FILE}")"
+              left=$((expires - $(date +%s)))
+              [[ "''${left}" -ge 0 ]] || left=0
+              printf '  arm deadline: powers off in %ss unless the key arms\n' "''${left}"
+          fi
       }
 
       main "''${@}"
@@ -421,6 +540,55 @@ in
         read must not hard-stop a box that is mid-index. Five ticks at two
         seconds rides out a glitch and still leaves a ten-second window for an
         operator who pulled the wrong stick to put it back.
+      '';
+    };
+
+    armSettleTicks = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 5;
+      internal = true;
+      description = ''
+        Consecutive failed arm attempts before the guard publishes `idle`.
+
+        Not zero on purpose: nothing orders this unit after the key's .device
+        unit, so the first ticks of a boot routinely run before udev has
+        recreated the partlabel link. Publishing `idle` redraws the login
+        screen, and a box that armed two seconds later would have left that
+        screen contradicting itself until something else repainted it.
+      '';
+    };
+
+    armDeadlineSec = lib.mkOption {
+      type = lib.types.ints.unsigned;
+      default = 180;
+      internal = true;
+      description = ''
+        How long a box that booted from the stick may run without the guard
+        arming before it powers itself off. `0` disables the deadline.
+
+        Enforced only where `action` is `poweroff` -- so a `--debug` image is
+        exempt, as it is on removal -- and only where stage 1 left
+        `witnessFile` behind. A box booted on the recovery passphrase has no
+        stick to arm on and is left up for repairs.
+
+        `loom-key-guard disarm` settles it for the rest of the boot, and is
+        what an operator who means to run without a key reaches for.
+      '';
+    };
+
+    witnessFile = lib.mkOption {
+      type = lib.types.str;
+      default = "${cfg.stateDir}/booted-with-key";
+      defaultText = lib.literalExpression ''"''${config.loom.keyGuard.stateDir}/booted-with-key"'';
+      readOnly = true;
+      internal = true;
+      description = ''
+        Where stage 1 records that the key partition was present when the root
+        was unlocked. Written by box-hardware.nix, read by `armDeadlineSec`.
+
+        In /run, which is carried across the switch-root, and an option rather
+        than a literal in two files so the initrd and the guard cannot name
+        different paths.
       '';
     };
 

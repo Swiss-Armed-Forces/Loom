@@ -423,7 +423,7 @@ let
       # Read at print time, not baked in: a box booted with the recovery
       # passphrase has no key at all and its guard never arms, and a banner
       # that claimed otherwise would be promising protection the box does not
-      # have. key-guard.nix restarts loom-issue.service whenever this changes.
+      # have. key-guard.nix redraws this screen whenever the state changes.
       if [ -r ${config.loom.keyGuard.stateDir}/state ]; then
         case "$(cat ${config.loom.keyGuard.stateDir}/state)" in
           armed)
@@ -449,6 +449,16 @@ let
             ;;
           *)
             printf '\n  USB key guard: idle -- no USB key present.\n'
+            # Only while a deadline is actually running. The file exists on a
+            # box that booted from the stick and has not armed, which is the
+            # one case where this screen has seconds left on it -- and the
+            # number is the budget, not a countdown, because the banner is
+            # painted once and a countdown on it would go stale.
+            if [ -r ${config.loom.keyGuard.stateDir}/deadline ]; then
+              printf '  This box powers off %s seconds after boot unless the key\n' \
+                ${toString config.loom.keyGuard.armDeadlineSec}
+              printf '  arms. Run `loom-key-guard disarm` to keep it up.\n'
+            fi
             ;;
         esac
       fi

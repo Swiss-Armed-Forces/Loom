@@ -32,6 +32,7 @@ __all__ = ["KeyGuardPaths", "Operator", "Params", "run"]
 
 def run(
     appliance: "Machine",
+    deadline_box: "Machine",
     *,
     start_all: "StartAll",
     subtest: "Subtest",
@@ -42,9 +43,13 @@ def run(
     The order is load-bearing at one end only: everything under "the USB key guard"
     manipulates the guard's devices, and the last of them really does power the
     machine off. Nothing may be added after it.
+
+    `deadline_box` is a second machine for the guard's arm deadline, which also ends
+    in a poweroff and so cannot share the one above.
     """
     start_all()
     appliance.wait_for_unit("multi-user.target")
+    deadline_box.wait_for_unit("multi-user.target")
 
     # What up.sh and vars.sh say this box has to be.
     upstream.sysctls(appliance, subtest)
@@ -86,6 +91,8 @@ def run(
     # because a re-inserted stick can come back on a different node, and each of
     # these leaves the box on whichever one it last attached.
     guard.idle(appliance, subtest)
+    guard.recovery_boot_stays_up(appliance, subtest)
+    guard.deadline(deadline_box, subtest)
     key_loop = guard.arms(appliance, subtest, params)
     key_loop = guard.cancels(appliance, subtest, params, key_loop)
     key_loop = guard.foreign_key(appliance, subtest, params, key_loop)

@@ -19,7 +19,7 @@ this file is about the code.
 | `console-mouse.nix` | The mouse on a console that has none: `gpm`, the ordering that keeps its one-shot console measurement honest, and the `loom-console-mouse` package. See the section below. |
 | `console-mouse/` | The pty shim `loom-console` runs the tmux client under — the gpm client protocol, SGR translation and the pointer sequencing — with its own pytest suite, run at build time. |
 | `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
-| `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves. |
+| `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves, or when a box that booted from a stick has not armed within its deadline. |
 | `keymap.nix` | `--keymap`: the console keymap for the box, the installer and stage 1, and the build-time check that the name resolves. Inert when unset, which means US QWERTY. |
 | `key-store.nix` | The `--lock-key` build: the stick's key inside a LUKS2 container, and the initrd unit that asks for its passphrase and unlocks it before the root is opened. Inert in every other image; see `--lock-key` below. |
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
@@ -537,7 +537,7 @@ the two type checks can run, and the one that runs on every commit is worth more
 | Name | Attribute | What it asserts |
 | --- | --- | --- |
 | `hardware` | `tests.applianceHardware` | What nixos-hardware gives this platform, and that the Loom overrides still take the desktop userspace back off. **Not a VM test** — see below. |
-| `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. |
+| `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. Two nodes: the second exists for the guard's arm deadline, which ends in a poweroff of its own. |
 | `install` | `tests.applianceInstall` | The disk layout: the pool, the container where stage 1 expects it, and the wipe. |
 | `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. Being the only test where dnsmasq runs, it is also where the DHCP offer itself is read — a lease that names a default gateway would take a visitor's laptop off the internet. |
 | `mouse` | `tests.applianceMouse` | Point-and-click, end to end: a `uinput` mouse in the guest, through mousedev and gpm and the pty shim, to the pane tmux focuses — plus the detach control and the unreachable prefix. |
@@ -646,7 +646,7 @@ A run costs disk in two ways, and both land on the filesystem holding `/nix`:
 
 | Test | Nodes | Written by the guest |
 | --- | --- | --- |
-| `appliance` | 1 | 165 MB — the heaviest, and mostly the key guard's loop images |
+| `appliance` | 2 | 165 MB — the heaviest, and mostly the key guard's loop images; the deadline node writes nothing |
 | `install` | 1 | the two 2 GB scratch disks it partitions, sparsely |
 | `wifi` | 1 | 19 MB |
 | `usb-ingest` | 1 | 28 MB, plus four 256 MB scratch disks it puts filesystems on |
@@ -798,10 +798,14 @@ and `4096`. A box whose initrd and whose guard disagreed about which device is t
 and then power itself off ten seconds later, which is not a failure anybody would enjoy diagnosing in the
 field. The same three options are what let `tests/appliance.nix` point the guard at loop devices.
 
-`loom.keyGuard.action` follows `loom.progressUnit`: declared here, set in `modes.nix` next to the mode it
-belongs to — `poweroff` in run mode, `warn` in first-time setup. `loom.consoleSocket` is the same idea in
-the other direction: `console.nix` owns the operator's tmux session, and the guard writes its countdown
-into it.
+`loom.keyGuard.witnessFile` runs the other way: `box-hardware.nix` adds an initrd unit that writes it when
+the key partition was present as the root was unlocked, and the guard reads it to decide whether this box is
+one that should have armed. Without it there is no way to tell a stick that failed from a recovery boot that
+never had one, and only the first of those may be powered off.
+
+`loom.keyGuard.action` is declared here and forced to `warn` by `debug.nix`, which is the only thing that
+selects it; every mode otherwise powers off. `loom.consoleSocket` is the same idea in the other direction:
+`console.nix` owns the operator's tmux session, and the guard writes its countdown into it.
 
 The stick side of the same numbers lives in `installer/loom_installer/constants.py` (`KEY_BYTES`, the partition
 labels) and in `cicd/build_appliance_image.sh` (`KEY_BYTES`, `KEY_PARTLABEL`). Those cannot share the Nix

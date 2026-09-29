@@ -100,7 +100,9 @@
     # neither `/dev/disk/by-partlabel/loom-key` nor a LUKS root present,
     # `arm_once` (key-guard.nix) fails both its block-device test and its
     # `cryptsetup --test-passphrase` oracle, so the guard stays idle for the
-    # life of the VM and powers nothing off. Watching it actually fire needs a
-    # real key partition, which is what the installer rig has.
+    # life of the VM and powers nothing off. Its arm deadline is inert here for
+    # the same reason a recovery boot's is: the qemu-vm module clears the LUKS
+    # devices, so stage 1 never witnesses a key stick. Watching either fire
+    # needs a real key partition, which is what the installer rig has.
   };
 }

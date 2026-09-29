@@ -4,6 +4,9 @@ Everything here manipulates the guard's devices, and the last subtest really doe
 the machine power itself off -- which is the only way to know that half works. So these
 run last, and nothing may be added after `powers_off`.
 
+`deadline` spends a poweroff of its own, on the guard's arm deadline rather than on a
+removal, so it runs against the second machine tests/appliance.nix boots for it.
+
 There is no USB stick and no LUKS root in a VM, so the key and the root are loop devices
 the test builds and points the guard at through symlinks. That is also what the box sees
 after a re-insert: a stick can come back on a different node.
@@ -42,6 +45,62 @@ def idle(appliance: "Machine", subtest: "Subtest") -> None:
             "journalctl --unit loom-key-guard.service | grep -c 'the guard stays idle'"
         )
         assert idle_lines.strip() == "1", idle_lines
+
+
+def deadline(box: "Machine", subtest: "Subtest") -> None:
+    with subtest("a box that booted from a stick and cannot arm powers off"):
+        # On its own machine: this ends in a poweroff, and the appliance node
+        # spends its own on the removal path at the end of this file.
+        box.wait_for_unit("loom-key-guard.service")
+
+        # The witness stage 1 writes on a box whose key partition was present
+        # when the root was unlocked (box-hardware.nix). There is no LUKS root
+        # in a VM, so the deadline is inert until this exists -- which is what
+        # keeps it away from every other node in the suite.
+        witness = "/run/loom/key-guard/booted-with-key"
+        box.succeed(f"test ! -e {witness}")
+
+        # Nobody has pressed a key on this machine, so tty1 is still at the
+        # banner and a state change has to redraw it. Rewriting the issue file
+        # is not enough: agetty paints it once and then blocks (box.nix), so
+        # the getty being restarted is what proves the screen followed.
+        getty = "autovt@tty1.service"
+        painted = box.succeed(
+            f"systemctl show --property=MainPID --value {getty}"
+        ).strip()
+
+        box.succeed(f"mkdir -p $(dirname {witness}) && touch {witness}")
+        box.succeed("systemctl restart loom-key-guard.service")
+
+        box.wait_until_succeeds(
+            f'test "$(systemctl show --property=MainPID --value {getty})" '
+            f'!= "{painted}"'
+        )
+
+        box.wait_until_succeeds(
+            "loom-key-guard status | grep 'arm deadline' >/dev/null"
+        )
+        box.wait_until_succeeds(
+            "journalctl --unit loom-key-guard.service | grep 'powers off in' >/dev/null"
+        )
+        # The banner says so too, on the screen an operator who never logs in
+        # is looking at.
+        box.succeed(
+            "grep -q 'powers off 60 seconds after boot' /run/issue.d/50-loom.issue"
+        )
+
+        box.wait_for_shutdown()
+
+
+def recovery_boot_stays_up(appliance: "Machine", subtest: "Subtest") -> None:
+    with subtest("a box booted on the recovery passphrase is left up"):
+        # The same clock the machine above dies on, on a box with no witness.
+        # Nothing to wait for but the absence of an event, so this asserts the
+        # guard's own reasoning rather than sitting out a deadline: no witness,
+        # no deadline, and `status` never grows the line the other box grew.
+        appliance.succeed("test ! -e /run/loom/key-guard/booted-with-key")
+        appliance.succeed("test ! -e /run/loom/key-guard/deadline")
+        appliance.fail("loom-key-guard status | grep 'arm deadline' >/dev/null")
 
 
 def arms(appliance: "Machine", subtest: "Subtest", params: Params) -> str:
@@ -141,13 +200,14 @@ def foreign_key(
 
 
 def action_per_mode(appliance: "Machine", subtest: "Subtest", setup_sys: str) -> None:
-    with subtest("first-time setup warns where run mode powers off"):
+    with subtest("both boot modes power off, on the same deadline"):
         # Asserted from the two generated scripts rather than by booting the
-        # specialisation: hours of container pulls must not be thrown away by a
-        # glitching USB port, and run mode must not be merely advisory. Same
-        # ExecStart indirection as loom.service above -- the value is baked into
-        # the script, not visible in the unit.
-        def guard_action(system_path):
+        # specialisation: the stick is what the box is entitled to run from,
+        # and neither mode may be merely advisory. Only a `--debug` image warns
+        # instead, which tests/appliance-debug.nix covers. Same ExecStart
+        # indirection as loom.service above -- the values are baked into the
+        # script, not visible in the unit.
+        def guard_constant(system_path, name):
             unit = appliance.succeed(
                 f"cat {system_path}/etc/systemd/system/loom-key-guard.service"
             )
@@ -155,12 +215,13 @@ def action_per_mode(appliance: "Machine", subtest: "Subtest", setup_sys: str) ->
             assert exec_start, unit
             script = appliance.succeed(f"cat {exec_start.group(1)}")
             # Tolerates the quotes lib.escapeShellArg adds only when it has to.
-            action = re.search(r"^readonly ACTION='?(\w+)'?$", script, re.M)
-            assert action, script
-            return action.group(1)
+            value = re.search(rf"^readonly {name}='?(\w+)'?$", script, re.M)
+            assert value, script
+            return value.group(1)
 
-        assert guard_action("/run/current-system") == "poweroff"
-        assert guard_action(setup_sys) == "warn"
+        for system in ("/run/current-system", setup_sys):
+            assert guard_constant(system, "ACTION") == "poweroff"
+            assert guard_constant(system, "ARM_DEADLINE") == "180"
 
 
 def powers_off(appliance: "Machine", subtest: "Subtest", key_loop: str) -> None:

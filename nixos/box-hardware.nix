@@ -24,7 +24,7 @@
 # long as the box runs, and powers it off when the key goes away. The three
 # values below come from there so the initrd and the guard cannot name
 # different devices.
-{ config, ... }:
+{ config, lib, ... }:
 let
   guard = config.loom.keyGuard;
   keyStore = config.loom.keyStore;
@@ -60,6 +60,46 @@ in
   # USB enumeration is slow; this is the budget before boot gives up and asks
   # for the recovery passphrase instead.
   boot.initrd.systemd.settings.Manager.DefaultDeviceTimeoutSec = "60s";
+
+  # Which of the two ways in was taken, recorded where stage 2 can read it.
+  #
+  # key-guard.nix powers a box off that cannot arm within its deadline, and
+  # that must not catch a box unlocked by the recovery passphrase: such a box
+  # has no stick, never arms by design, and the console is the only way into
+  # it. A stick that opened the root is still enumerated once it has, so
+  # looking for the node after the unlock tells the two apart.
+  #
+  # Ordering only, never `requires`: waiting on the key's .device unit would
+  # cost a recovery boot the whole device timeout above.
+  boot.initrd.systemd.services.loom-key-witness = {
+    description = "Record that the key stick unlocked this boot";
+    wantedBy = [ "initrd.target" ];
+    after = [ "systemd-cryptsetup@cryptroot.service" ];
+    # A DefaultDependencies=no unit has to name both shutdown targets in
+    # `before` and `conflicts` or it is left running into the switch-root.
+    before = [
+      "initrd-switch-root.target"
+      "shutdown.target"
+    ];
+    conflicts = [
+      "initrd-switch-root.target"
+      "shutdown.target"
+    ];
+    unitConfig.DefaultDependencies = "no";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    # PATH is /bin:/sbin in the initrd, which carries coreutils. /run is kept
+    # across the switch-root, which is what makes this readable in stage 2.
+    script = ''
+      node="$(readlink --canonicalize ${lib.escapeShellArg guard.keyDevice} 2>/dev/null || true)"
+      if [ -b "$node" ]; then
+          mkdir --parents ${lib.escapeShellArg (builtins.dirOf guard.witnessFile)}
+          : >${lib.escapeShellArg guard.witnessFile}
+      fi
+    '';
+  };
 
   fileSystems."/" = {
     device = "/dev/mapper/cryptroot";
