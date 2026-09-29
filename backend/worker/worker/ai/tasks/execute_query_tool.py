@@ -8,7 +8,7 @@ from common.ai_context.tool_models import (
 from common.dependencies import get_celery_app, get_file_repository
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.models.es_repository import PaginationParameters
-from common.services.query_builder import QueryParameters
+from common.services.query_builder import QueryBuilderException, QueryParameters
 from elasticsearch import BadRequestError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
@@ -40,7 +40,11 @@ def execute_query_work_task(
             query=query,
             pagination_params=PaginationParameters(page_size=EXECUTE_QUERY_MAX_RESULTS),
         )
-    except BadRequestError as exc:
+    # A malformed query string fails in the local Lucene parser
+    # (QueryBuilderException); one that parses but that Elasticsearch rejects fails
+    # as BadRequestError. Both are the agent's mistake, so both must reach it as a
+    # ValueError it can recover from rather than as an opaque backend error.
+    except (QueryBuilderException, BadRequestError) as exc:
         logger.warning("execute_query: invalid query '%s': %s", query_string, exc)
         raise ValueError(
             f"Invalid Lucene query '{query_string}': {exc}. "
