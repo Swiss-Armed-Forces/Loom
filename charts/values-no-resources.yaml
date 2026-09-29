@@ -64,6 +64,10 @@ worker: &worker
   resources:
     requests: null
     limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
 
 reaper: *worker
 
@@ -71,11 +75,19 @@ persister:
   resources:
     requests: null
     limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
 
 beat:
   resources:
     requests: null
     limits: null
+  initContainer:
+    resources:
+      requests: null
+      limits: null
 
 crawler:
   resources:

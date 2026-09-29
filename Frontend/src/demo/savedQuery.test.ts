@@ -57,6 +57,28 @@ describe("demo saved query", () => {
         });
     });
 
+    it("keeps saved queries stored before lastSeenCount existed", () => {
+        const { lastSeenCount, ...legacyQuery } = {
+            ...DEMO_SAVED_QUERY,
+            id: "visitor-query",
+            name: "Mine",
+        };
+        void lastSeenCount;
+        window.localStorage.setItem(
+            SEARCH_STATE_LOCAL_STORAGE_KEY,
+            JSON.stringify({ customQueries: [legacyQuery] }),
+        );
+
+        seedDemoSavedQuery(window.localStorage);
+
+        // Seeding runs before the store rehydrates, so it must not discard
+        // entries that normalizeCustomQueries would happily backfill.
+        expect(loadSearchState().customQueries).toEqual([
+            legacyQuery,
+            DEMO_SAVED_QUERY,
+        ]);
+    });
+
     it("recovers from malformed persisted state", () => {
         window.localStorage.setItem(SEARCH_STATE_LOCAL_STORAGE_KEY, "not-json");
 

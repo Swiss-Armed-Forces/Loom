@@ -1,16 +1,29 @@
 # Ollama Models Image
 # Contains pre-pulled models only, used as initContainer source
 # GPU-agnostic - works with both NVIDIA and ROCm runtime images
+#
+# The ollama binary is a build-time dependency only: it runs `ollama pull` and
+# is never executed from the shipped image. The initContainer in
+# charts/templates/ollama/_deployment.yaml needs nothing but a shell and `cp`,
+# so the published targets are alpine plus the model blobs and the ~5 GiB CUDA
+# runtime of ollama/ollama stays behind in the pull stages.
 
 ARG OLLAMA_IMAGE_VERSION="0.34.4"
-ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION} AS base
 
-# Dev target - lightweight models for development
-FROM base AS dev
+# Image version
+ARG ALPINE_IMAGE_VERSION="3.23.6"
+ARG ALPINE_IMAGE_DIGEST="sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0"
+
+ARG DOCKER_REGISTRY="docker.io"
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION} AS puller
+ENV OLLAMA_HOST="127.0.0.1"
+
+FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}@${ALPINE_IMAGE_DIGEST} AS models-base
+
+# Dev models - lightweight models for development
+FROM puller AS pull-dev
 ARG LLM_MODELS="qwen2.5:0.5b moondream:1.8b nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
-ENV OLLAMA_HOST="127.0.0.1"
 RUN set -exu; \
   ollama serve & \
   sleep 5; \
@@ -19,11 +32,14 @@ RUN set -exu; \
   done; \
   pkill ollama || true
 
-# Production target - full models for production use
-FROM base AS production
+# Dev target
+FROM models-base AS dev
+COPY --from=pull-dev /root/.ollama/models /root/.ollama/models
+
+# Production models - full models for production use
+FROM puller AS pull-production
 ARG LLM_MODELS="huihui_ai/qwen3.5-abliterated:9b nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
-ENV OLLAMA_HOST="127.0.0.1"
 RUN set -exu; \
   ollama serve & \
   sleep 5; \
@@ -31,3 +47,7 @@ RUN set -exu; \
     ollama pull "${llm_model}"; \
   done; \
   pkill ollama || true
+
+# Production target
+FROM models-base AS production
+COPY --from=pull-production /root/.ollama/models /root/.ollama/models
