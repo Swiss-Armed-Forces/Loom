@@ -82,18 +82,23 @@ let
   # Whether the container toolkit's `tools` output is on the PATH systemd gives
   # dockerd -- which is what decides, in moby's daemon/devices_linux.go, whether
   # docker registers an NVIDIA GPU driver or falls through to an AMD one that
-  # then refuses the request. Read off `systemd.services.docker.path`, the list
-  # NixOS turns into that PATH, rather than off the `extraPackages` the platform
-  # sets: an upstream change that stopped feeding one into the other would leave
-  # the option set and the daemon just as blind.
+  # then refuses the request.
   #
-  # `toString` rather than `.outPath`, because that list's type admits plain
-  # strings and one would throw here before it could fail honestly.
+  # Asserted against the PATH string the unit will actually carry, rather than
+  # against the `extraPackages` the platform sets or even the `path` list that
+  # feeds it. Two hops separate the option from the daemon -- extraPackages into
+  # `systemd.services.docker.path`, that list into `environment.PATH` through
+  # `makeBinPath` -- and an upstream change to either would leave the option set
+  # and the daemon just as blind. `exec.LookPath` reads exactly this string.
+  #
+  # Split on `:` and compared element-wise rather than with `lib.hasInfix`,
+  # which is `builtins.match` underneath and refuses a pattern carrying a store
+  # path -- which is the whole of what is being looked for here.
   dockerSeesCdiHook =
     let
       tools = lib.getOutput "tools" box.hardware.nvidia-container-toolkit.package;
     in
-    lib.any (p: toString p == toString tools) box.systemd.services.docker.path;
+    lib.elem "${tools}/bin" (lib.splitString ":" box.systemd.services.docker.environment.PATH);
 
   # A GPU platform needs the driver library in /run/opengl-driver/lib and must
   # not pick up the EGL platform bindings behind it. Compared by store path
