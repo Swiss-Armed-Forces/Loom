@@ -79,7 +79,7 @@ differs between them.
 | Architecture | `aarch64-linux` | `x86_64-linux` | `x86_64-linux` |
 | Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine | any ordinary x86_64 machine |
 | Console | monitor and USB keyboard | monitor and USB keyboard | monitor and USB keyboard |
-| Network | ConnectX-7, expected to present four `mlx5` ports, plus a 10GbE RJ45 — see below | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
+| Network | the 10GbE RJ45 (Realtek RTL8127, `r8169`); the ConnectX-7's four `mlx5` ports are left unmatched — see below | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
 | WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
 | GPU | **GB10 Blackwell via CUDA** — not yet confirmed on hardware, see below | **Radeon 8060S via ROCm** | not supported (see below) |
 | AI services | yes | yes | **no** — no GPU, and not the memory either |
@@ -1476,31 +1476,37 @@ wrapper treats any GPU total at or above 80% of `MemTotal` as exactly that, and 
 host reserve it does for the EVO-X2's GTT pool. A discrete card is spent in full instead; the ratio is what
 tells the two apart, without a list of board names to keep current.
 
-> **This has not been confirmed on hardware yet.** Nobody has booted this image on a Spark, so
-> `gpuVendor = "nvidia"` is a claim from documentation rather than a measurement. Run
-> `loom-platform-info` on the box before relying on it — its **GPU** and **GPU in containers** sections
-> exist for exactly this, and [When the GPU does not come up](#when-the-gpu-does-not-come-up) is the way
-> back if the claim turns out wrong.
+> **The driver is confirmed on hardware; the offload is not.** A Spark has now booted this image, and
+> `loom-platform-info` there reports the GB10 (`10de:2e12`) on the open kernel modules at 595.71.05, all six
+> `/dev/nvidia*` nodes, and `nvidia-smi` naming the board — so `gpuVendor = "nvidia"` is a measurement.
+> What that run did **not** establish is the half beyond the driver: whether the GPU is usable from inside
+> the Ollama pod. Run `loom-platform-info` on your own box before relying on it — its **GPU** and
+> **GPU in containers** sections exist for exactly this — and read
+> [When the GPU does not come up](#when-the-gpu-does-not-come-up) first.
+>
+> One measured quirk to expect: `nvidia-smi --query-gpu=memory.total` returns `[N/A]` on a GB10, because
+> the 128 GB is unified rather than a card's own. Nothing in the appliance fails over it, but the wrapper's
+> unified-memory heuristic below cannot fire without a number, and Ollama falls back to its minimum
+> parallelism.
 
-Two things about this box are genuinely unsettled, and neither is the GPU.
+**The network port is settled, and it is the RJ45.** `loom-platform-info` on a Spark reports the 10GbE
+management port as a Realtek RTL8127 (`10ec:8127`) claimed by `r8169` — the only interface that driver
+matches, which is why `netMatch` in `nixos/platforms/spark.nix` pins it. The ConnectX-7 does present four
+`mlx5` interfaces, two per QSFP cage across PCI domains `0000` and `0002`, and all four are left unmatched:
+they need transceivers, and a cable in the RJ45 is what an operator has. To serve the appliance network off
+a QSFP port instead, build with `--interface enp1s0f0np0` — using the name `loom-platform-info` reports,
+which carries the PCI domain on this box. See
+[The appliance network interface](#the-appliance-network-interface).
 
-The first is **the network port**. The ConnectX-7 presents two QSFP cages with two 100G MACs each, so Linux
-is expected to show four `mlx5` interfaces — `netMatch` in `nixos/platforms/spark.nix` matches the driver
-and therefore matches all four, and whichever udev processes first becomes `loom0`. There is also a 10GbE
-RJ45 that NVIDIA's documentation calls the management port, which is the more natural thing to hand an
-operator a cable for. `loom-platform-info` prints the PCI ids and port ids for every interface and warns
-when more than one matches; use `--interface NAME` to pin the right one until the platform file can be
-narrowed. See [The appliance network interface](#the-appliance-network-interface).
-
-The second is **the kernel**. Every published route to NixOS on this box goes through NVIDIA's kernel fork
-via [`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), and this image deliberately
-does not use it. Their own USB image offers both kernels and describes the difference as _Ethernet_, not
-GPU; their fork is NV-Kernels 6.17.13 where our pin ships 6.18.49, so taking it means going back a major
-version on the one subsystem in question; and it would be built from source on aarch64 with no cache hits.
-What it would buy, besides possibly the NIC, is `cppc_cpufreq.auto_sel_mode=1`, which upstream measures at
-roughly 3× single-thread memory bandwidth and which needs their kernel to work — a real cost of the choice
-made here. If `loom-platform-info` shows no usable wired NIC on a Spark, that report is the evidence for
-reopening this.
+What is still unsettled is **the kernel**. Every published route to NixOS on this box goes through NVIDIA's
+kernel fork via [`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), and this image
+deliberately does not use it. Their own USB image offers both kernels and describes the difference as
+_Ethernet_, not GPU; their fork is NV-Kernels 6.17.13 where our pin ships 6.18.49, so taking it means going
+back a major version on the one subsystem in question; and it would be built from source on aarch64 with no
+cache hits. That Ethernet concern does not apply to the port this appliance uses: the pin's `r8169` carries
+the RTL8127 id, and the RJ45 comes up and carries traffic on it. What the fork would still buy is
+`cppc_cpufreq.auto_sel_mode=1`, which upstream measures at roughly 3× single-thread memory bandwidth and
+which needs their kernel to work — a real cost of the choice made here.
 
 **On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU, and neither has `btop`.
 
@@ -1509,8 +1515,8 @@ reopening this.
 `up.sh` counts GPUs through the vendor's SMI tool — `rocm-smi` or `nvidia-smi` — and hard-exits below
 `LOOM_MIN_GPU`. So a box where the GPU does not enumerate does not quietly fall back to the CPU: it serves
 nothing, and there is no remote access to repair it with. Worth watching for on first boot on both GPU
-platforms — Strix Halo is recent enough on the EVO-X2, and on the Spark nothing has been confirmed on
-hardware at all.
+platforms — Strix Halo is recent enough on the EVO-X2, and on the Spark only the driver has been confirmed
+on hardware, not the offload reaching a pod.
 
 The way out is a new stick:
 

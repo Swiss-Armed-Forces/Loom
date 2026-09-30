@@ -33,19 +33,23 @@
     # Ollama and the console's assistant pane.
     gpuVendor = "nvidia";
 
-    # The 10GbE RJ45 management port, claimed by r8169.
+    # The 10GbE RJ45 management port: a Realtek RTL8127 at 0007:01:00.0
+    # (10ec:8127), claimed by r8169 -- the pin's kernel carries that id -- and
+    # the only interface on the box that driver matches. Measured with
+    # `loom-platform-info` on a Spark, as is everything else here.
     #
-    # The Spark also carries two QSFP cages with ConnectX-7 (mlx5_core), presenting
-    # four 100G MACs across two PCIe Gen5 x4 links. Those ports are left unmatched:
-    # they require QSFP modules and are not the intended operator access path.
+    # The two QSFP cages behind it are a ConnectX-7 presenting four 100G MACs
+    # (mlx5_core), two per cage across PCI domains 0000 and 0002. They are left
+    # unmatched deliberately: each needs a transceiver to carry anything, while
+    # the RJ45 takes the cable an operator already has. Matching the driver
+    # instead -- as this did until a box was available -- claims all four and
+    # hands loom0 to whichever udev reaches first, which on the hardware was a
+    # dark cage sitting beside a live port.
     #
-    # The Realtek management port is the correct default: it is always populated,
-    # requires no transceiver, and is what NVIDIA documents for out-of-band access.
-    # An operator can plug a standard ethernet cable directly into the RJ45 port
-    # and reach the appliance without additional hardware.
-    #
-    # If you need to use the QSFP ports instead, rebuild with
-    # `--interface enp1s0f0np0` (or the name `loom-platform-info` reports).
+    # To serve the appliance network off a QSFP port instead, build with
+    # `--interface enp1s0f0np0`, using the name `loom-platform-info` reports:
+    # only the domain-0000 pair is named that way, and the rest of this box
+    # carries the PCI domain in the name (the RJ45 is enP7p1s0).
     netMatch = {
       Driver = "r8169";
     };
@@ -90,11 +94,12 @@
   #     touching a kernel config they generate and test.
   #
   # So this is the cheap path, and `loom-platform-info` on a real Spark is what
-  # decides whether it is enough. If it shows no usable wired NIC, that report
-  # is the evidence for pinning their input -- as its own issue, and worth it
-  # then. What their kernel would also bring is `cppc_cpufreq.auto_sel_mode=1`,
-  # which they measure at ~3x single-thread memory bandwidth and which is inert
-  # without it; on this image that is a real and accepted cost.
+  # decided that it is enough: the RJ45 this box serves from comes up on the
+  # pin's own r8169 and carries traffic, so the Ethernet claim above does not
+  # reach the port the appliance uses. Their kernel would still bring
+  # `cppc_cpufreq.auto_sel_mode=1`, which they measure at ~3x single-thread
+  # memory bandwidth and which is inert without it; on this image that is a real
+  # and accepted cost.
   # ---------------------------------------------------------------------------
 
   # NOT the desktop stack, and it must not be forced off the way the graphics

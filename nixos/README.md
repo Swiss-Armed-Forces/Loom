@@ -10,7 +10,7 @@ this file is about the code.
 | --- | --- |
 | `default.nix` | Entry point. Takes `nixpkgs` and `nixosHardware` as arguments and returns the build targets. |
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
-| `platforms/spark.nix` | DGX Spark: aarch64, ConnectX-7. No upstream hardware profile exists. |
+| `platforms/spark.nix` | DGX Spark: aarch64, 10GbE RJ45 (`r8169`) beside an unmatched ConnectX-7. No upstream hardware profile exists. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. Imports the nixos-hardware Strix Halo leaves, and sets the iGPU's GTT ceiling. |
 | `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). Imports `intel/nuc/12wshi7`. |
 | `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
@@ -119,7 +119,9 @@ exposing its module as a plain path import. `platforms/spark.nix` deliberately d
 reasoning is in that file's header; the short version is that the GPU half is already in nixpkgs (595.71.05
 with the open modules, the same driver package upstream takes), and what the fork actually buys is the
 ConnectX-7 — at NV-Kernels 6.17.13 against our pin's 6.18.49, built from source on aarch64 with no cache
-hits, and with a kernel config that turns on IOMMU passthrough.
+hits, and with a kernel config that turns on IOMMU passthrough. The appliance does not serve its network
+from the ConnectX-7 at all: `netMatch` pins the 10GbE RJ45, which the pin's own `r8169` claims and which
+has been measured carrying traffic on a Spark.
 
 The two asymmetries worth remembering if this is revisited:
 
