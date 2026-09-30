@@ -33,29 +33,21 @@
     # Ollama and the console's assistant pane.
     gpuVendor = "nvidia";
 
-    # ConnectX-7, claimed by mlx5_core.
+    # The 10GbE RJ45 management port, claimed by r8169.
     #
-    # THIS MATCH IS AMBIGUOUS AND KNOWN TO BE SO. The Spark carries two QSFP
-    # cages, and each presents two 100G MACs on its own PCIe Gen5 x4 link, so
-    # Linux is expected to show *four* mlx5 interfaces rather than the one this
-    # used to claim. systemd renames whichever it matches first to loom0 and the
-    # other three keep kernel names -- the same ambiguity platforms/evo-x2.nix
-    # documents for its Realtek pair.
+    # The Spark also carries two QSFP cages with ConnectX-7 (mlx5_core), presenting
+    # four 100G MACs across two PCIe Gen5 x4 links. Those ports are left unmatched:
+    # they require QSFP modules and are not the intended operator access path.
     #
-    # It is left as the driver alone because nobody has run this on the hardware
-    # yet, and a phys_port_name or PCI path invented from a spec sheet would be
-    # a guess wearing the costume of a fact. Run `loom-platform-info` on the
-    # box: it prints the pci ids and the port/switch ids for every interface,
-    # and warns when more than one matches. Then either pin this to the right
-    # port or build the stick with `--interface NAME`.
+    # The Realtek management port is the correct default: it is always populated,
+    # requires no transceiver, and is what NVIDIA documents for out-of-band access.
+    # An operator can plug a standard ethernet cable directly into the RJ45 port
+    # and reach the appliance without additional hardware.
     #
-    # The box also has a 10GbE RJ45, which NVIDIA's documentation calls the
-    # management port and which is the more natural thing to hand an operator a
-    # cable for. Moving loom0 there is a live option -- but it is also a
-    # decision about r8169, which graham33/nixos-dgx-spark blacklists on this
-    # box, and that trade cannot be made before the report above exists.
+    # If you need to use the QSFP ports instead, rebuild with
+    # `--interface enp1s0f0np0` (or the name `loom-platform-info` reports).
     netMatch = {
-      Driver = "mlx5_core";
+      Driver = "r8169";
     };
 
     # Whatever radio the box carries, matched by type rather than by driver --
@@ -254,6 +246,20 @@
         }
       ]
     );
+
+  # Override the CDI spec to allow containers to access GPUs.
+  # The default nvidia-container-toolkit module generates a spec with
+  # NVIDIA_VISIBLE_DEVICES=void which blocks GPU access. This fix sets it to "all".
+  systemd.services.nvidia-cdi-fix = {
+    description = "Fix NVIDIA CDI spec to allow GPU access in containers";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "nvidia-container-toolkit-cdi-generator.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/sh -c 'sed -i \"s/NVIDIA_VISIBLE_DEVICES=void/NVIDIA_VISIBLE_DEVICES=all/g\" /etc/cdi/nvidia.yaml && systemctl restart containerd'";
+    };
+  };
 
   # The same trade platforms/evo-x2.nix and platforms/nuc12.nix make with their
   # nixos-hardware GPU profiles: keep the driver library, drop the desktop
