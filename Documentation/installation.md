@@ -504,8 +504,8 @@ ollama:
 > usable on an ARM64 host. See [Supported architectures](#supported-architectures).
 
 `gpuVendor` reaches the container as `LOOM_GPU_VENDOR` and does two jobs. It picks how the
-container reads the GPU's memory — `nvidia-smi` for NVIDIA, amdgpu's sysfs attributes for AMD,
-since the ROCm image carries no `rocm-smi` — and it makes a pod that was deployed as a GPU
+container reads the GPU's memory — NVML for NVIDIA, amdgpu's sysfs attributes for AMD, since the
+ROCm image carries no `rocm-smi` — and it makes a pod that was deployed as a GPU
 workload **refuse to start** when the device never arrived, rather than quietly falling back to
 the CPU. If the pod logs `LOOM_GPU_VENDOR=... but /dev/... is absent` and exits, the device plugin
 is missing or the wrong values file was applied. Leave `gpuVendor` empty and the container

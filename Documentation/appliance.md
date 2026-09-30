@@ -1470,11 +1470,16 @@ image, and the box carries only `nvidia-smi`, which comes out of the driver itse
 for its preflight. That same driver puts the GPU readout in the console's `btop` pane. The values file sets
 `ollama.gpuVendor: nvidia`, the mirror of the EVO-X2's declaration above.
 
-One thing about this box's memory is worth knowing before reading `OLLAMA_NUM_PARALLEL` in a log: the GB10's
-128 GB is **unified**, so the total `nvidia-smi` reports is host memory rather than a card's own VRAM. The
+Two things about this box's memory are worth knowing before reading `OLLAMA_NUM_PARALLEL` in a log. The
+GB10's 128 GB is **unified**, so a total reported for it is host memory rather than a card's own VRAM: the
 wrapper treats any GPU total at or above 80% of `MemTotal` as exactly that, and holds back the same 25 GiB
 host reserve it does for the EVO-X2's GTT pool. A discrete card is spent in full instead; the ratio is what
 tells the two apart, without a list of board names to keep current.
+
+And a GB10 reports **no total at all** — measured on hardware, NVML answers `NVML_ERROR_NOT_SUPPORTED` and
+`nvidia-smi --query-gpu=memory.total` prints `[N/A]`, because the memory it would report is the host's. That
+is the driver's own answer rather than a missing reading, so the wrapper books host `MemTotal` as unified
+memory and plans against it under the same reserve, instead of falling back to the minimum parallelism.
 
 > **The driver is confirmed on hardware; the offload is not.** A Spark has now booted this image, and
 > `loom-platform-info` there reports the GB10 (`10de:2e12`) on the open kernel modules at 595.71.05, all six
@@ -1484,10 +1489,11 @@ tells the two apart, without a list of board names to keep current.
 > **GPU in containers** sections exist for exactly this — and read
 > [When the GPU does not come up](#when-the-gpu-does-not-come-up) first.
 >
-> One measured quirk to expect: `nvidia-smi --query-gpu=memory.total` returns `[N/A]` on a GB10, because
-> the 128 GB is unified rather than a card's own. Nothing in the appliance fails over it, but the wrapper's
-> unified-memory heuristic below cannot fire without a number, and Ollama falls back to its minimum
-> parallelism.
+> A second measured fact shapes what the box injects into containers: a NixOS host's `nvidia-smi` cannot
+> run inside one. The toolkit binds the binary in, but its ELF interpreter lives under `/nix/store` and the
+> node's toolkit does not carry that path into a pod, so `exec` fails. `nixos/platforms/spark.nix`
+> therefore stops injecting the driver's executables at all, and the Ollama wrapper reads NVML instead —
+> a library, which loads against the container's own glibc.
 
 **The network port is settled, and it is the RJ45.** `loom-platform-info` on a Spark reports the 10GbE
 management port as a Realtek RTL8127 (`10ec:8127`) claimed by `r8169` — the only interface that driver

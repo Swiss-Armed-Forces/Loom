@@ -130,6 +130,22 @@
   # advertises no nvidia.com/gpu at all.
   hardware.nvidia-container-toolkit.enable = true;
 
+  # And do not hand a container this box's own nvidia executables. nixpkgs mounts
+  # nvidia-smi and its four siblings into everything that gets the GPU, but a NixOS
+  # binary's ELF interpreter lives under /nix/store, and the toolkit inside the
+  # minikube node re-injects the binary into a pod without it -- glibc is not an
+  # nvidia library, so it is not part of what that step carries. The file arrives,
+  # `exec` answers ENOENT, and anything that shells out to nvidia-smi reads that as a
+  # box with no GPU. The driver's *libraries* are unaffected, because they resolve
+  # against the container's own glibc, which is why ollama/ollama_wrapper.py reads
+  # NVML rather than running nvidia-smi.
+  #
+  # Dropping them costs the pods nothing that worked: the five have never been
+  # runnable in a container on this platform. `loom-platform-info` and up.sh's
+  # preflight both run nvidia-smi on the host, where it is the driver's own binary
+  # beside its own interpreter, and are unaffected.
+  hardware.nvidia-container-toolkit.mount-nvidia-executables = false;
+
   # And the half of it nixpkgs leaves out, without which the box gets all the
   # way to `minikube start` and then dies on `Error response from daemon: AMD
   # CDI spec not found` -- on a machine with no AMD anything.

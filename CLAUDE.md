@@ -113,8 +113,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   cannot reach it, and because `appliance-pytest` is the appliance's suites sharing one pytest
   session. Also runs as a git hook on any change to `ollama/*.py`, so `devenv test` covers it and
   there is no CI job of its own. Extra arguments go to pytest.
-  The wrapper decides `OLLAMA_NUM_PARALLEL` from the GPU it can see — `nvidia-smi` for NVIDIA,
-  amdgpu sysfs for AMD, since the ROCm image ships no `rocm-smi` — and **refuses to start** when
+  The wrapper decides `OLLAMA_NUM_PARALLEL` from the GPU it can see — NVML through `ctypes` for
+  NVIDIA, amdgpu sysfs for AMD, since the ROCm image ships no `rocm-smi`; NVML rather than
+  `nvidia-smi` because the container toolkit injects a NixOS host's driver executables without the
+  ELF interpreter they need, so they cannot exec in a pod — and **refuses to start** when
   `LOOM_GPU_VENDOR` (set by `charts/values-{amd,nvidia}-gpu.yaml`) names a vendor whose device node
   is absent. It deliberately never sets `OLLAMA_CONTEXT_LENGTH`; see the "Ollama GPU Configuration"
   section in `Documentation/installation.md`

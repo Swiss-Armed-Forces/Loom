@@ -1,14 +1,18 @@
-"""The two vendor probes: amdgpu sysfs, and nvidia-smi."""
+"""The two vendor probes: amdgpu sysfs, and NVML."""
 
 from pathlib import Path
 
-from doubles import GIB, MIB, FakeCard, FakeCommandRunner, make_sysfs
+from doubles import (
+    GIB,
+    MIB,
+    FakeCard,
+    make_sysfs,
+    nvml_reading,
+    nvml_totals,
+    nvml_without_totals,
+)
 
-from ollama_wrapper import CommandResult, GpuVendor, probe_amd, probe_nvidia
-
-
-def _ok(stdout: str) -> FakeCommandRunner:
-    return FakeCommandRunner(CommandResult(ok=True, stdout=stdout, stderr=""))
+from ollama_wrapper import GpuVendor, NvmlReading, probe_amd, probe_nvidia
 
 
 # --- AMD ---
@@ -115,7 +119,7 @@ def test_no_drm_tree_at_all(tmp_path: Path) -> None:
 # --- NVIDIA ---
 def test_single_discrete_card() -> None:
     """A card well below host RAM is dedicated VRAM."""
-    result = probe_nvidia(_ok("24576\n"), host_memory_bytes=128 * GIB)
+    result = probe_nvidia(nvml_totals(24576 * MIB), host_memory_bytes=128 * GIB)
 
     assert result.memory is not None
     assert result.memory.dedicated_bytes == 24576 * MIB
@@ -123,18 +127,23 @@ def test_single_discrete_card() -> None:
     assert result.memory.device_count == 1
 
 
-def test_nvidia_smi_reporting_no_devices() -> None:
-    """Exit 0 with empty output means no GPU, not a GPU of unknown size."""
-    assert probe_nvidia(_ok(""), host_memory_bytes=128 * GIB).memory is None
+def test_nvml_reporting_no_devices() -> None:
+    """NVML that initialised and found nothing means no GPU, not one of unknown size."""
+    assert probe_nvidia(nvml_totals(), host_memory_bytes=128 * GIB).memory is None
 
 
-def test_nvidia_smi_missing_carries_its_error() -> None:
-    """The ROCm image has no nvidia-smi; the reason has to reach the log."""
-    runner = FakeCommandRunner(
-        CommandResult(ok=False, stdout="", stderr="No such file or directory")
+def test_nvml_missing_carries_its_error() -> None:
+    """The ROCm image has no NVML; the reason has to reach the log."""
+    nvml = nvml_reading(
+        NvmlReading(
+            available=False,
+            device_count=0,
+            totals_bytes=(),
+            detail="libnvidia-ml.so.1 did not load: No such file or directory",
+        )
     )
 
-    result = probe_nvidia(runner, host_memory_bytes=128 * GIB)
+    result = probe_nvidia(nvml, host_memory_bytes=128 * GIB)
 
     assert result.memory is None
     assert "No such file or directory" in result.detail
@@ -142,27 +151,18 @@ def test_nvidia_smi_missing_carries_its_error() -> None:
 
 def test_smallest_of_several_devices_wins() -> None:
     """A model has to fit on whichever device it lands on."""
-    result = probe_nvidia(_ok("24576\n12288\n"), host_memory_bytes=128 * GIB)
+    result = probe_nvidia(
+        nvml_totals(24576 * MIB, 12288 * MIB), host_memory_bytes=128 * GIB
+    )
 
     assert result.memory is not None
     assert result.memory.dedicated_bytes == 12288 * MIB
     assert result.memory.device_count == 2
 
 
-def test_non_numeric_lines_are_dropped() -> None:
-    """MIG and unsupported devices report `[N/A]`, which must not abort the probe."""
-    runner = _ok("[N/A]\n24576\nNot Supported\n")
-
-    result = probe_nvidia(runner, host_memory_bytes=128 * GIB)
-
-    assert result.memory is not None
-    assert result.memory.dedicated_bytes == 24576 * MIB
-    assert result.memory.device_count == 1
-
-
 def test_unified_memory_is_not_booked_as_vram() -> None:
-    """A GB10 reports most of host RAM; spending that as VRAM would starve the box."""
-    result = probe_nvidia(_ok("121856\n"), host_memory_bytes=125 * GIB)
+    """A GPU reporting most of host RAM would starve the box if spent as VRAM."""
+    result = probe_nvidia(nvml_totals(121856 * MIB), host_memory_bytes=125 * GIB)
 
     assert result.memory is not None
     assert result.memory.dedicated_bytes == 0
@@ -171,8 +171,29 @@ def test_unified_memory_is_not_booked_as_vram() -> None:
 
 def test_a_big_discrete_card_is_still_dedicated() -> None:
     """80 GiB on a 125 GiB host is a card, not unified memory."""
-    result = probe_nvidia(_ok("81920\n"), host_memory_bytes=125 * GIB)
+    result = probe_nvidia(nvml_totals(81920 * MIB), host_memory_bytes=125 * GIB)
 
     assert result.memory is not None
     assert result.memory.dedicated_bytes == 81920 * MIB
     assert result.memory.shared_bytes == 0
+
+
+def test_device_without_a_total_is_booked_as_unified_host_memory() -> None:
+    """A GB10 answers NVML_ERROR_NOT_SUPPORTED: its memory is the host's.
+
+    Failing the probe here would plan a 120 GiB box at the minimum parallelism.
+    """
+    result = probe_nvidia(nvml_without_totals(), host_memory_bytes=125 * GIB)
+
+    assert result.memory is not None
+    assert result.memory.vendor is GpuVendor.NVIDIA
+    assert result.memory.dedicated_bytes == 0
+    assert result.memory.shared_bytes == 125 * GIB
+    assert result.memory.device_count == 1
+
+
+def test_no_total_and_no_host_memory_is_still_a_failure() -> None:
+    """With neither number there is nothing to plan against, and guessing is worse."""
+    result = probe_nvidia(nvml_without_totals(), host_memory_bytes=None)
+
+    assert result.memory is None

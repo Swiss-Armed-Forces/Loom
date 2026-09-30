@@ -16,6 +16,7 @@ Two things this deliberately does NOT do:
 """
 
 import argparse
+import ctypes
 import os
 import re
 import signal
@@ -27,7 +28,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Final, Protocol
+from typing import Final
 
 # --- Sizing constants ---
 # The floor, and a ceiling that stops an unexpected reading turning into an absurd
@@ -81,12 +82,11 @@ OLLAMA_SHUTDOWN_TIMEOUT = 5.0
 # entrypoint runs these before `os.execvpe` and an unbounded wait there is a pod that
 # never starts and never fails.
 OLLAMA_COMMAND_TIMEOUT = 60.0
-NVIDIA_SMI_TIMEOUT = 10.0
-NVIDIA_SMI_ARGV = [
-    "nvidia-smi",
-    "--query-gpu=memory.total",
-    "--format=csv,nounits,noheader",
-]
+# NVML rather than `nvidia-smi`: on a NixOS host the container toolkit injects the
+# driver's executables without the ELF interpreter they need, so nvidia-smi cannot exec
+# in a container at all, while NVML is a library and loads.
+NVML_LIBRARY = "libnvidia-ml.so.1"
+NVML_SUCCESS: Final = 0
 
 # --- Filesystem roots ---
 # Parameterised everywhere below so the probes can be pointed at a fixture tree,
@@ -135,46 +135,59 @@ AUTODETECT_ORDER = (GpuVendor.NVIDIA, GpuVendor.AMD)
 
 
 @dataclass(frozen=True)
-class CommandResult:
-    """The outcome of running something outside this process."""
+class NvmlReading:
+    """What NVML said about the GPUs it found.
 
-    ok: bool
-    stdout: str
-    stderr: str
-
-
-class CommandRunner(Protocol):
-    """Everything that leaves this process.
-
-    A seam rather than a direct `subprocess` call, so a test can hand the probes another
-    implementation instead of patching subprocess out from under them.
+    `available` separates "no NVML here" from "NVML answered": only the second is
+    evidence about the hardware. `totals_bytes` is empty for a part reporting no total
+    -- a GB10 answers `NVML_ERROR_NOT_SUPPORTED`.
     """
 
-    def run(self, argv: list[str], timeout_s: float) -> CommandResult:
-        """Run a command, capturing both streams and never raising."""
-        raise NotImplementedError
+    available: bool
+    device_count: int
+    totals_bytes: tuple[int, ...]
+    detail: str
 
 
-class SubprocessCommandRunner:
-    """The real CommandRunner."""
+def nvml_unavailable(detail: str) -> NvmlReading:
+    """A reading that says nothing about the hardware, and why."""
+    return NvmlReading(False, device_count=0, totals_bytes=(), detail=detail)
 
-    def run(self, argv: list[str], timeout_s: float) -> CommandResult:
-        """Run a command, capturing both streams and never raising."""
-        try:
-            completed = subprocess.run(
-                argv,
-                capture_output=True,
-                text=True,
-                timeout=timeout_s,
-                check=False,
-            )
-        except (OSError, subprocess.SubprocessError) as error:
-            return CommandResult(ok=False, stdout="", stderr=str(error))
-        return CommandResult(
-            ok=completed.returncode == 0,
-            stdout=completed.stdout,
-            stderr=completed.stderr,
+
+def nvml_device_total_bytes(nvml: ctypes.CDLL, index: int) -> int:
+    """One device's total, or 0 if it reports none or cannot be read at all."""
+    handle = ctypes.c_void_p()
+    if nvml.nvmlDeviceGetHandleByIndex_v2(index, ctypes.byref(handle)) != NVML_SUCCESS:
+        return 0
+    # nvmlMemory_t is three unsigned long longs: total, free, used.
+    memory = (ctypes.c_ulonglong * 3)()
+    if nvml.nvmlDeviceGetMemoryInfo(handle, ctypes.byref(memory)) != NVML_SUCCESS:
+        return 0
+    return int(memory[0])
+
+
+def read_nvml() -> NvmlReading:
+    """Ask the real NVML about every device, never raising."""
+    try:
+        nvml = ctypes.CDLL(NVML_LIBRARY)
+    except OSError as error:
+        return nvml_unavailable(f"{NVML_LIBRARY} did not load: {error}")
+    if nvml.nvmlInit_v2() != NVML_SUCCESS:
+        return nvml_unavailable("nvmlInit failed")
+    try:
+        count = ctypes.c_uint()
+        if nvml.nvmlDeviceGetCount_v2(ctypes.byref(count)) != NVML_SUCCESS:
+            return nvml_unavailable("nvmlDeviceGetCount failed")
+        reported = (nvml_device_total_bytes(nvml, i) for i in range(count.value))
+        totals = [total for total in reported if total > 0]
+        return NvmlReading(
+            available=True,
+            device_count=count.value,
+            totals_bytes=tuple(totals),
+            detail=f"{count.value} device(s), {len(totals)} with a memory total",
         )
+    finally:
+        nvml.nvmlShutdown()
 
 
 @dataclass(frozen=True)
@@ -356,19 +369,6 @@ def parse_meminfo_total_bytes(meminfo_text: str) -> int | None:
     return int(match.group(1)) * 1024 if match else None
 
 
-def parse_nvidia_memory_totals_mib(stdout: str) -> list[int]:
-    """Read one memory total per visible device, dropping anything non-numeric.
-
-    MIG slices and unsupported devices come back as `[N/A]` or `Not Supported`; they are
-    skipped rather than allowed to abort the probe.
-    """
-    return [
-        int(stripped)
-        for line in stdout.splitlines()
-        if (stripped := line.strip()).isdigit()
-    ]
-
-
 def parse_model_list(stdout: str) -> list[ModelInfo]:
     """Parse `ollama list` output into models that have no context length yet.
 
@@ -494,25 +494,45 @@ def probe_amd(sysfs_root: Path) -> GpuProbeResult:
 
 
 def probe_nvidia(
-    runner: CommandRunner,
+    nvml: Callable[[], NvmlReading],
     host_memory_bytes: int | None,
 ) -> GpuProbeResult:
-    """Read NVIDIA GPU memory out of nvidia-smi.
+    """Read NVIDIA GPU memory out of NVML.
 
     Across several visible devices the smallest wins: a model has to fit on whichever
     one it lands on. A total that is most of host RAM is unified memory rather than a
     card's own, and is booked as shared so the host reserve applies to it.
+
+    A device reporting no total at all is unified memory too, and the only number left
+    is the host's -- the driver's own answer rather than a guess, since NVML returns
+    `NVML_ERROR_NOT_SUPPORTED` on a GB10 whose memory *is* host memory. NVML that will
+    not load says nothing, and still fails.
     """
-    result = runner.run(NVIDIA_SMI_ARGV, NVIDIA_SMI_TIMEOUT)
-    if not result.ok:
+    reading = nvml()
+    if not reading.available:
+        return GpuProbeResult(memory=None, detail=f"NVML unavailable: {reading.detail}")
+    if reading.device_count == 0:
+        return GpuProbeResult(memory=None, detail="NVML reported no devices")
+    if not reading.totals_bytes:
+        if host_memory_bytes is None:
+            return GpuProbeResult(
+                memory=None,
+                detail="no device reports a total, and /proc/meminfo is unreadable",
+            )
         return GpuProbeResult(
-            memory=None,
-            detail=f"nvidia-smi unavailable: {result.stderr.strip() or 'no output'}",
+            memory=GpuMemory(
+                vendor=GpuVendor.NVIDIA,
+                dedicated_bytes=0,
+                shared_bytes=host_memory_bytes,
+                device_count=reading.device_count,
+                source="nvml (no frame-buffer total)",
+            ),
+            detail=(
+                f"{reading.device_count} device(s) reporting no memory total, booked"
+                f" as {size_bytes_to_human(host_memory_bytes)} unified memory"
+            ),
         )
-    totals = parse_nvidia_memory_totals_mib(result.stdout)
-    if not totals:
-        return GpuProbeResult(memory=None, detail="nvidia-smi reported no devices")
-    total_bytes = min(totals) * (1024**2)
+    total_bytes = min(reading.totals_bytes)
     unified = (
         host_memory_bytes is not None
         and total_bytes >= UNIFIED_MEMORY_RATIO * host_memory_bytes
@@ -523,10 +543,13 @@ def probe_nvidia(
             vendor=GpuVendor.NVIDIA,
             dedicated_bytes=0 if unified else total_bytes,
             shared_bytes=total_bytes if unified else 0,
-            device_count=len(totals),
-            source="nvidia-smi",
+            device_count=len(reading.totals_bytes),
+            source="nvml",
         ),
-        detail=f"{len(totals)} device(s), {size_bytes_to_human(total_bytes)} {kind}",
+        detail=(
+            f"{len(reading.totals_bytes)} device(s),"
+            f" {size_bytes_to_human(total_bytes)} {kind}"
+        ),
     )
 
 
@@ -610,7 +633,7 @@ def decide_detection(
 
 def detect_gpu_memory(
     environ: Mapping[str, str],
-    runner: CommandRunner,
+    nvml: Callable[[], NvmlReading],
     sysfs_root: Path = SYSFS_ROOT,
     proc_root: Path = PROC_ROOT,
     dev_root: Path = DEV_ROOT,
@@ -621,7 +644,7 @@ def detect_gpu_memory(
     def probe(vendor: GpuVendor) -> GpuProbeResult:
         if vendor is GpuVendor.AMD:
             return probe_amd(sysfs_root)
-        return probe_nvidia(runner, host_memory_bytes)
+        return probe_nvidia(nvml, host_memory_bytes)
 
     return decide_detection(
         declared=declared_vendor(environ),
@@ -902,7 +925,7 @@ def run_entry_command(ollama_args: list[str]) -> None:
 
     # Before anything expensive: a container deployed as a GPU workload that cannot
     # reach a GPU should fail in milliseconds, not after a whole server cycle.
-    detection = detect_gpu_memory(environ=env, runner=SubprocessCommandRunner())
+    detection = detect_gpu_memory(environ=env, nvml=read_nvml)
     report_detection(detection)
     if detection.status is GpuStatus.DECLARED_BUT_MISSING:
         sys.exit(1)

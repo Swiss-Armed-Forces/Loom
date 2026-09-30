@@ -1,33 +1,47 @@
 """Test doubles and fixture builders for the Ollama wrapper's tests.
 
 The sysfs builder writes a real directory tree under pytest's `tmp_path` rather than
-faking the filesystem, so the probes exercise their real globbing, their real reads
-and their real error branches. Only the one thing that genuinely leaves the process --
-`nvidia-smi` -- gets a double.
+faking the filesystem, so the probes exercise their real globbing, their real reads and
+their real error branches. Only what genuinely leaves the process gets a double: NVML.
 """
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ollama_wrapper import CommandResult, GpuProbeResult, GpuVendor
+from ollama_wrapper import GpuProbeResult, GpuVendor, NvmlReading
 
 GIB = 1024**3
 MIB = 1024**2
 
 
-@dataclass
-class FakeCommandRunner:
-    """A CommandRunner that answers from a canned result and records its calls."""
+def nvml_reading(reading: NvmlReading) -> Callable[[], NvmlReading]:
+    """An NVML seam that answers with a canned reading."""
+    return lambda: reading
 
-    result: CommandResult
-    calls: list[list[str]] = field(default_factory=list)
 
-    def run(self, argv: list[str], timeout_s: float) -> CommandResult:
-        """Record the call and hand back the canned answer."""
-        del timeout_s
-        self.calls.append(argv)
-        return self.result
+def nvml_totals(*totals_bytes: int) -> Callable[[], NvmlReading]:
+    """An NVML that found one device per total given, each reporting it."""
+    return nvml_reading(
+        NvmlReading(
+            available=True,
+            device_count=len(totals_bytes),
+            totals_bytes=totals_bytes,
+            detail="fake",
+        )
+    )
+
+
+def nvml_without_totals(device_count: int = 1) -> Callable[[], NvmlReading]:
+    """An NVML that found devices, none of which reports a frame-buffer total."""
+    return nvml_reading(
+        NvmlReading(
+            available=True,
+            device_count=device_count,
+            totals_bytes=(),
+            detail="fake",
+        )
+    )
 
 
 @dataclass
