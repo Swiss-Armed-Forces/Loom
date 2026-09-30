@@ -184,6 +184,13 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   most worth reaching remotely, since its fetch needs the internet and takes hours, and the cost is
   that the port is then open on whatever network the box was plugged into rather than on the
   appliance segment. Refused when `$CI` is set; adds `loom-debug-bundle` to the box.
+  It also makes the box a **nix remote builder** - the operator account goes into
+  `nix.settings.trusted-users`, without which the daemon refuses `nix-store --serve --write` - so an
+  aarch64 appliance can build for an x86_64 host natively where `--allow-cross` would mean qemu (47
+  minutes against hours, for a kernel). The build writes the invocation to `nix-builder` beside the
+  ssh configs; `NIX_SSHOPTS=-F <dir>/ssh_config` is the part that is not guessable. Debug images run
+  `nix.gc` daily with a 7-day window, because an appliance disk is sized for Loom and a full one is
+  not recoverable from the console.
   Read the threat-model section in `Documentation/appliance.md` before using it
 - `build-appliance-image --lock-key` - Put the stick's 4096 LUKS key bytes inside a LUKS2 container
   on the same `loom-key` partition, under a generated word passphrase (`diceware`, EFF list) that is

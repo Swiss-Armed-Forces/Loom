@@ -491,6 +491,12 @@ for pointing an AI agent at such a box. It is the only build where `services.ope
   [USB key guard](#the-usb-key-guard) only warns instead of powering the box off — on a removed key and on
   a key that never armed alike — so that a glitching port on a bench does not take the session down. Do not
   use one to judge how a shipped stick behaves.
+- **The box will build for you, and that is a second thing the port opens.** A debug image puts the
+  operator account in `nix.settings.trusted-users`, which is what lets nix use the box as a remote builder
+  (`nix-store --serve --write` is refused to anyone else). It grants no authority that account did not
+  already have — it is root there, as the first bullet says — but it means whoever holds the key can build
+  and install arbitrary store paths, not merely read the box. See
+  [Building on the box](#building-on-the-box).
 - **Never hand one to anybody.** Wipe the box when you are done, and delete the key directory.
 
 The box makes this hard to forget. It says `DEBUG IMAGE — NEVER USE THIS IN PRODUCTION` in white on red at
@@ -547,6 +553,36 @@ in `/tmp`, so it is the same key across runs — and `appliance-vm reset` delete
 
 It does not reach the installer. That half is driven with `appliance-vm installer --serial`; see
 [Trying a stick without a box](#trying-a-stick-without-a-box).
+
+### Building on the box
+
+A debug appliance is a nix remote builder, which matters most where it is the only native hardware of its
+architecture you have. `build-appliance-image --allow-cross` builds an aarch64 image on an x86_64 host
+through qemu; a kernel that takes **47 minutes natively on a DGX Spark** takes hours that way. Pointing nix
+at the box instead removes the emulation entirely.
+
+The build writes the recipe next to the ssh config, as `nix-builder` in the same key directory:
+
+```bash
+export NIX_SSHOPTS="-F /tmp/loom-appliance-debug-*/ssh_config"
+nix store ping --store 'ssh://loom-appliance'          # check the connection first
+nix-build ... --builders 'ssh://loom-appliance aarch64-linux <keydir>/id_ed25519 - 1 big-parallel'
+```
+
+`NIX_SSHOPTS` is the part that is not guessable: nix runs ssh non-interactively, so without the generated
+config it has no key, no username and no answer for an unknown host key — and the failure reads as though
+the builder rejected it. The fields after the system are the key, max-jobs (`-` keeps the box's own
+setting), a speed factor, and required features.
+
+Two things to know before leaning on it:
+
+- **The store grows and nobody else collects it.** An appliance's disk is sized for Loom, not for a build
+  farm, and a full disk on a box with no remote access is not recoverable from the console. Debug images
+  run `nix.gc` daily with a seven-day window, and `loom-debug-bundle` reports disk use and store path count
+  in `disk.txt`.
+- **The box has no substituters at all** — it is air-gapped by design, so `nix.settings.substituters` is
+  empty on every appliance. Everything a remote build needs is copied from the machine that asked for it,
+  which is the right behaviour here but means the first build of a large closure moves real bytes.
 
 ## Installing
 

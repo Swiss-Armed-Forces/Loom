@@ -757,6 +757,20 @@ in
     loom-down
   ];
 
+  # The same offline guarantee installer.nix states for the stick, for the same
+  # reason: this box has no route off its own segment, so a substituter is a
+  # name that cannot resolve.
+  #
+  # Not cosmetic. A substituter query failure is fatal rather than a fallback,
+  # so nix on this box does not merely waste five retries per path -- it
+  # *fails*, and the first thing it queries is the output it is about to build.
+  # That turns any nix command here into an error that reads like a network
+  # problem, which is the least useful thing to hand someone at a console with
+  # no way out. With the list empty nix builds, which is the only thing it
+  # could ever have done here.
+  nix.settings.substituters = lib.mkForce [ ];
+  nix.settings.trusted-substituters = lib.mkForce [ ];
+
   virtualisation.docker = {
     enable = true;
     daemon.settings = {

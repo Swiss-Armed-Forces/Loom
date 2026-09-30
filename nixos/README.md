@@ -461,6 +461,19 @@ the module hangs together.
   of its own. Only the key-guard downgrade and the missing splash are `enable && mode == "run"`, and
   only because setup mode already does both for its own reasons — restating them would mean a
   duplicated kernel parameter and a `mkForce` over a value nobody disagreed about.
+- **It also makes the box a nix remote builder**, by putting the operator account in
+  `nix.settings.trusted-users` — a builder is `nix-store --serve --write`, which the daemon refuses
+  to anyone else. This is the one part of `--debug` that exists for the developer rather than for
+  the misbehaving box: on a DGX Spark it is the difference between a 47-minute native kernel build
+  and hours of qemu under `--allow-cross`. It grants no authority the account lacked (it is in
+  `wheel` with `wheelNeedsPassword = false`, so `sudo nix-store` always worked), which is the whole
+  argument for it being acceptable here and nowhere else. `resolve_debug_key` writes the invocation
+  to `nix-builder` in the key directory, because the `NIX_SSHOPTS` half is not guessable. The same
+  block turns on `nix.gc`: an appliance disk is sized for Loom, and a store nobody collects fills it.
+- **Substituters are empty on every appliance**, not just debug ones — `box.nix` forces the list the
+  way `installer.nix` already did for the stick. The box is air-gapped, so a substituter is a name
+  that cannot resolve, and nix treats that query failure as fatal rather than falling back to
+  building. Before this, any nix command on a box answered with a DNS error about `cache.nixos.org`.
 - **`console.nix`'s status marker has to follow that gate.** It reads `DEBUG — SSH OPEN` in both
   modes now; it used to say `DEBUG IMAGE` in setup mode, precisely because the port was not open
   there. `loom_tests/debug.py` pins the gate by reading the specialisation's closure

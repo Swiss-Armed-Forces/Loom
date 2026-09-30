@@ -114,6 +114,25 @@ let
       cat /etc/loom/network.conf >"$root/network.conf" 2>&1 || true
       ip addr >"$root/ip-addr.txt" 2>&1 || true
 
+      # Disk, and the store's share of it. This mode lets the box be used as a
+      # remote builder, which is the one thing that grows /nix/store without
+      # anybody deciding to -- and a full disk here is not recoverable from a
+      # console. `du` is deliberately not used: it would walk millions of files
+      # to answer a question `df` answers instantly.
+      {
+        df --human-readable /nix /
+        echo
+        echo "store paths: $(ls /nix/store | wc --lines)"
+        echo "(this mode enables nix.gc: daily, --delete-older-than 7d)"
+      } >"$root/disk.txt" 2>&1 || true
+
+      # Where the console session lives, for anyone who wants to watch a long
+      # command on the box's own screen:
+      #   tmux -S /run/loom/tmux.sock split-window -v -l 40% '<command>'
+      # Its config unbinds the prefix (console.nix), so a new *window* would be
+      # unreachable from the box's keyboard -- split a pane instead.
+      ls -la /run/loom/tmux.sock >"$root/tmux-socket.txt" 2>&1 || true
+
       # The cluster. Every one of these is a timeout waiting to happen on a box
       # where minikube never started, which is why they are last and why the
       # deadline is short.
@@ -292,6 +311,45 @@ in
       users.motdFile = "/etc/motd";
 
       environment.systemPackages = [ loom-debug-bundle ];
+
+      # -----------------------------------------------------------------------
+      # The box as a build machine.
+      #
+      # An aarch64 appliance is the only native aarch64 hardware most of this
+      # project's developers have, and `build-appliance-image --allow-cross`
+      # otherwise means qemu: a kernel that takes 47 minutes here took hours
+      # emulated. Nix can drive it directly --
+      #
+      #   NIX_SSHOPTS="-F <the ssh_config the build printed>" \
+      #     nix-build ... --builders 'ssh://loom-appliance aarch64-linux'
+      #
+      # -- but only if the account it connects as is trusted, because a remote
+      # builder is `nix-store --serve --write` and the daemon refuses that to
+      # anyone else.
+      #
+      # This grants no authority the account does not already hold.
+      # `${loomUser}` is in `wheel` with `wheelNeedsPassword = false`
+      # (box.nix), so it is root on this box today; `sudo nix-store` was always
+      # available and this only removes the detour. What it does do is turn an
+      # ssh port that is already open in this mode into a build endpoint, which
+      # is why it lives here rather than in box.nix and why it is named in the
+      # threat model in Documentation/appliance.md.
+      nix.settings.trusted-users = [
+        "root"
+        loomUser
+      ];
+
+      # Building on a box sized for Loom, not for a build farm. A few image
+      # builds put gigabytes of intermediates in /nix/store, and a full disk on
+      # an appliance with no remote access is not a recoverable state. The
+      # window is deliberately wider than the default: this store is a cache
+      # for a machine somebody is actively building against, so collecting an
+      # hour-old path would cost more than it saves.
+      nix.gc = {
+        automatic = true;
+        dates = "daily";
+        options = "--delete-older-than 7d";
+      };
 
       # -----------------------------------------------------------------------
       # The way in.
