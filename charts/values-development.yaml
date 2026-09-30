@@ -15,6 +15,13 @@ environment: development
 # every client whose `LLMClientSettings` subclass defaults `thinking` to `true` -- agent,
 # summarization, summarization_refine, rag_synthesize -- has to turn it off here to match
 # the model this profile swaps in. The other clients already default to `false`.
+#
+# The small models also change how structured output comes back, with no setting saying so:
+# `common/llm/provider.py` reads the parameter count out of the tag and claims
+# `default_structured_output_mode: native` below 4B, because a 0.5B checkpoint cannot be
+# trusted to emit a well-formed tool call and Ollama's grammar-constrained decoder does not
+# need it to. Renaming these to something that does not state its size (`qwen-dev`, say)
+# silently takes that away.
 llm:
   embedding:
     text_chunk_size: 250

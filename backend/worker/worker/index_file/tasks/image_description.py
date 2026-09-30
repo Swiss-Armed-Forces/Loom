@@ -5,16 +5,14 @@ from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_vision_agent,
 )
 from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes
 from common.settings import settings
 from common.utils.cache import cache
-from pydantic import BaseModel
-from pydantic_ai import NativeOutput
 from pydantic_ai.messages import BinaryContent
 
+from worker.dependencies import get_llm_vision_agent
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.settings import settings as worker_settings
@@ -40,10 +38,6 @@ IMAGE_MIMETYPES = [
 
 class LLMError(Exception):
     pass
-
-
-class _ImageDescriptionResult(BaseModel):
-    description: str
 
 
 def is_image(extension: str, mimetype: str) -> bool:
@@ -92,7 +86,6 @@ DESCRIPTION:"""
                     media_type="image/jpeg",
                 ),
             ],
-            output_type=NativeOutput(_ImageDescriptionResult),
         )
 
     except Exception as ex:

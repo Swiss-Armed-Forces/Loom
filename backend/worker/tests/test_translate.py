@@ -4,13 +4,13 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from common.dependencies import (
+from common.llm.return_types import DetectedLanguage
+from openai import APIConnectionError
+
+from worker.dependencies import (
     get_llm_language_detection_agent,
     get_llm_translation_agent,
 )
-from common.file.file_repository import DetectedLanguage
-from openai import APIConnectionError
-
 from worker.index_file.tasks.translate import (
     MAX_CHARACTERS_PER_CHUNK,
     LLMError,

@@ -5,17 +5,18 @@ from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_language_detection_agent,
-    get_llm_translation_agent,
 )
-from common.file.file_repository import DetectedLanguage, File, TranslatedLanguage
+from common.file.file_repository import File, TranslatedLanguage
 from common.llm.prompt_sanitizer import sanitize_document_text
+from common.llm.return_types import DetectedLanguage
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
-from pydantic import BaseModel
-from pydantic_ai import NativeOutput
 
+from worker.dependencies import (
+    get_llm_language_detection_agent,
+    get_llm_translation_agent,
+)
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
@@ -30,10 +31,6 @@ TRANSLATE_MAX_RETRIES = 15
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
-
-
-class _TranslationResult(BaseModel):
-    text: str
 
 
 class LLMError(Exception):
@@ -195,7 +192,7 @@ def translate(text: str, detected_language: DetectedLanguage) -> str:
     agent = get_llm_translation_agent()
 
     try:
-        result = agent.run_sync(prompt, output_type=NativeOutput(_TranslationResult))
+        result = agent.run_sync(prompt)
 
     except Exception as ex:
         raise LLMError("Translation failed") from ex
