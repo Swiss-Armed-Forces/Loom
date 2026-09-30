@@ -6,24 +6,18 @@ from common.ai_context.tool_models import QuerySuggestion, SuggestQueriesResult
 from common.dependencies import (
     get_celery_app,
     get_file_repository,
-    get_llm_suggest_queries_agent,
 )
 from common.file.file_repository import File
 from common.services.query_builder import QueryParameters
-from pydantic import BaseModel
-from pydantic_ai import NativeOutput
 
 from worker.ai.file_fields import iter_described_fields
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
+from worker.dependencies import get_llm_suggest_queries_agent
 from worker.settings import settings
 
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
-
-
-class _ElasticsearchQuery(BaseModel):
-    query_string: str
 
 
 @app.task(base=AiContextProcessingTask)
@@ -58,7 +52,7 @@ MUST: Do not give an explanation.
     # suggest_queries_aggregate_task filters out -- so that one bad candidate
     # cannot discard the results of all the others.
     try:
-        result = agent.run_sync(prompt, output_type=NativeOutput(_ElasticsearchQuery))
+        result = agent.run_sync(prompt)
 
     except Exception:  # pylint: disable=broad-except
         logger.warning(

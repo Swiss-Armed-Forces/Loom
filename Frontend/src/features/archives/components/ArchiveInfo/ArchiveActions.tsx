@@ -23,7 +23,7 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const matchMedia = useMediaQuery("(max-width: 1300px)");
+    const matchMedia = useMediaQuery("(max-width: 800px)");
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {

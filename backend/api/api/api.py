@@ -11,7 +11,6 @@ from api.metrics import init_metrics
 from api.patch_openapi_schema import patch_openapi_schema_for_app
 from api.routers import (
     ai,
-    aitools,
     archives,
     beat,
     caching,
@@ -96,7 +95,6 @@ def init_api(collect_metrics=True) -> FastAPI:
         tags=["image_description"],
     )
     api.include_router(ai.router, prefix="/v1/ai", tags=["ai"])
-    api.include_router(aitools.router, prefix="/v1/aitools", tags=["aitools"])
     api.include_router(files.router, prefix="/v1/files", tags=["files"])
     api.include_router(imap.router, prefix="/v1/imap", tags=["imap"])
     api.include_router(beat.router, prefix="/v1/beat", tags=["beat"])

@@ -6,7 +6,6 @@ from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_embedder,
 )
 from common.file.file_repository import Embedding, File
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
@@ -14,6 +13,7 @@ from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic_ai.exceptions import ModelAPIError
 
+from worker.dependencies import get_llm_embedder
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.index_file.tasks.auto_tag_file import signature as auto_tag_file_signature

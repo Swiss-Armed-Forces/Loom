@@ -12,7 +12,7 @@ import { TableView } from "./views/TableView";
 export const Archives = () => {
     const dispatch = useAppDispatch();
     const matchMedia = useMediaQuery("(max-width: 2200px)");
-    const smallMatchMedia = useMediaQuery("(max-width: 1100px)");
+    const isMobile = useMediaQuery("(max-width: 600px)");
 
     getAll()
         .then((result) => {
@@ -24,21 +24,18 @@ export const Archives = () => {
 
     return (
         <div className={styles.archivesWrapper}>
-            <ArchivesActivityBar />
+            {!isMobile && <ArchivesActivityBar position="top" />}
             <Container className={styles.archivesContainer} maxWidth={false}>
                 <div
                     className={styles.archivesContent}
                     style={{
-                        width: smallMatchMedia
-                            ? "100%"
-                            : matchMedia
-                              ? "95%"
-                              : "80%",
+                        width: isMobile ? "100%" : matchMedia ? "95%" : "80%",
                     }}
                 >
                     <TableView />
                 </div>
             </Container>
+            {isMobile && <ArchivesActivityBar position="bottom" />}
         </div>
     );
 };

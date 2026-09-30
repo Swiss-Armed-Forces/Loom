@@ -7,11 +7,6 @@ from uuid import uuid4
 import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
-from common.dependencies import (
-    get_llm_embedder,
-    get_llm_hyde_agent,
-    get_llm_rag_rerank_agent,
-)
 from common.services.lazybytes_service import InMemoryTempLazyBytesService, LazyBytes
 from openai import APIConnectionError
 from pydantic_ai.embeddings.result import EmbeddingResult, EmbedInputType
@@ -32,6 +27,11 @@ from worker.ai.tasks.rag_tool import (
     filter_ranked_search_embeddings,
     generate_hypothetical_document,
     rerank,
+)
+from worker.dependencies import (
+    get_llm_embedder,
+    get_llm_hyde_agent,
+    get_llm_rag_rerank_agent,
 )
 
 # pylint: disable=redefined-outer-name

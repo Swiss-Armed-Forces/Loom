@@ -1,4 +1,5 @@
 import logging
+from types import NoneType
 from unittest.mock import MagicMock
 
 from common import dependencies as common_dependencies
@@ -9,8 +10,18 @@ from common.dependencies import (
     get_celery_inspect_service,
     get_lazybytes_service,
 )
+from common.llm.agent import build_agent
+from common.llm.embedder import build_embedder
+from common.llm.return_types import (
+    DetectedLanguage,
+    ElasticsearchQuery,
+    ImageDescriptionResult,
+    SummarizationResult,
+    TranslationResult,
+)
 from common.models.base_repository import REPOSITORY_INSTANCES, BaseRepository
 from gotenberg_client import GotenbergClient
+from pydantic_ai import Agent, Embedder
 
 from worker.services.rspamd_service import RspamdService
 from worker.services.seaweedfs_shell_service import SeaweedFSShellService
@@ -27,6 +38,19 @@ _seaweedfs_shell_service: SeaweedFSShellService | None = None
 # Task info persisters - cached per repository type to avoid creating new classes per call
 _task_info_persisters: dict[type[BaseRepository], type[TaskInfoPersister]] = {}
 _tasks_registered: bool = False
+
+# Agents
+_llm_hyde_agent: Agent[None, str] | None = None
+_llm_rag_rerank_agent: Agent[None, float] | None = None
+_llm_rag_synthesize_agent: Agent[None, str] | None = None
+_llm_vision_agent: Agent[None, ImageDescriptionResult] | None = None
+_llm_suggest_queries_agent: Agent[None, ElasticsearchQuery] | None = None
+_llm_translation_agent: Agent[None, TranslationResult] | None = None
+_llm_language_detection_agent: Agent[None, list[DetectedLanguage]] | None = None
+_llm_summarization_key_points_agent: Agent[None, SummarizationResult] | None = None
+_llm_summarization_agent: Agent[None, SummarizationResult] | None = None
+_llm_summarization_refine_agent: Agent[None, SummarizationResult] | None = None
+_llm_embedder: Embedder | None = None
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +101,54 @@ def init():
         timeout=settings.seaweedfs_shell_timeout,
     )
 
+    # Agents
+    global _llm_hyde_agent
+    _llm_hyde_agent = build_agent(NoneType, str, settings.llm.rag_hyde)
+
+    global _llm_rag_rerank_agent
+    _llm_rag_rerank_agent = build_agent(NoneType, float, settings.llm.rag_rerank)
+
+    global _llm_rag_synthesize_agent
+    _llm_rag_synthesize_agent = build_agent(NoneType, str, settings.llm.rag_synthesize)
+
+    global _llm_vision_agent
+    _llm_vision_agent = build_agent(
+        NoneType, ImageDescriptionResult, settings.llm.vision
+    )
+
+    global _llm_suggest_queries_agent
+    _llm_suggest_queries_agent = build_agent(
+        NoneType, ElasticsearchQuery, settings.llm.suggest_queries
+    )
+
+    global _llm_translation_agent
+    _llm_translation_agent = build_agent(
+        NoneType, TranslationResult, settings.llm.translation
+    )
+
+    global _llm_language_detection_agent
+    _llm_language_detection_agent = build_agent(
+        NoneType, list[DetectedLanguage], settings.llm.language_detection
+    )
+
+    global _llm_summarization_key_points_agent
+    _llm_summarization_key_points_agent = build_agent(
+        NoneType, SummarizationResult, settings.llm.summarization_key_points
+    )
+
+    global _llm_summarization_agent
+    _llm_summarization_agent = build_agent(
+        NoneType, SummarizationResult, settings.llm.summarization
+    )
+
+    global _llm_summarization_refine_agent
+    _llm_summarization_refine_agent = build_agent(
+        NoneType, SummarizationResult, settings.llm.summarization_refine
+    )
+
+    global _llm_embedder
+    _llm_embedder = build_embedder(settings.llm.embedding)
+
 
 def mock_init():
     # pylint: disable=global-statement
@@ -96,6 +168,46 @@ def mock_init():
     # Initialize repository instances with mocks for fresh test state
     for repo_type in REPOSITORY_INSTANCES:
         REPOSITORY_INSTANCES[repo_type] = MagicMock(spec=repo_type)
+
+    # Agents
+    global _llm_hyde_agent
+    _llm_hyde_agent = MagicMock(spec=Agent[NoneType, str])
+
+    global _llm_rag_rerank_agent
+    _llm_rag_rerank_agent = MagicMock(spec=Agent[NoneType, float])
+
+    global _llm_rag_synthesize_agent
+    _llm_rag_synthesize_agent = MagicMock(spec=Agent[NoneType, str])
+
+    global _llm_vision_agent
+    _llm_vision_agent = MagicMock(spec=Agent[NoneType, ImageDescriptionResult])
+
+    global _llm_suggest_queries_agent
+    _llm_suggest_queries_agent = MagicMock(spec=Agent[NoneType, ElasticsearchQuery])
+
+    global _llm_translation_agent
+    _llm_translation_agent = MagicMock(spec=Agent[NoneType, TranslationResult])
+
+    global _llm_language_detection_agent
+    _llm_language_detection_agent = MagicMock(
+        spec=Agent[NoneType, list[DetectedLanguage]]
+    )
+
+    global _llm_summarization_key_points_agent
+    _llm_summarization_key_points_agent = MagicMock(
+        spec=Agent[NoneType, SummarizationResult]
+    )
+
+    global _llm_summarization_agent
+    _llm_summarization_agent = MagicMock(spec=Agent[NoneType, SummarizationResult])
+
+    global _llm_summarization_refine_agent
+    _llm_summarization_refine_agent = MagicMock(
+        spec=Agent[NoneType, SummarizationResult]
+    )
+
+    global _llm_embedder
+    _llm_embedder = MagicMock(spec=Embedder)
 
 
 def get_tika_service() -> TikaService:
@@ -129,3 +241,69 @@ def get_task_info_persister(
     if repository_type not in _task_info_persisters:
         raise DependencyException(f"No task info persister for {repository_type}")
     return _task_info_persisters[repository_type]
+
+
+def get_llm_hyde_agent() -> Agent[None, str]:
+    if _llm_hyde_agent is None:
+        raise DependencyException("LLM hyde agent missing")
+    return _llm_hyde_agent
+
+
+def get_llm_rag_rerank_agent() -> Agent[None, float]:
+    if _llm_rag_rerank_agent is None:
+        raise DependencyException("LLM rerank agent missing")
+    return _llm_rag_rerank_agent
+
+
+def get_llm_rag_synthesize_agent() -> Agent[None, str]:
+    if _llm_rag_synthesize_agent is None:
+        raise DependencyException("LLM rag synthesize agent missing")
+    return _llm_rag_synthesize_agent
+
+
+def get_llm_vision_agent() -> Agent[None, ImageDescriptionResult]:
+    if _llm_vision_agent is None:
+        raise DependencyException("LLM vision agent missing")
+    return _llm_vision_agent
+
+
+def get_llm_suggest_queries_agent() -> Agent[None, ElasticsearchQuery]:
+    if _llm_suggest_queries_agent is None:
+        raise DependencyException("LLM suggest queries agent missing")
+    return _llm_suggest_queries_agent
+
+
+def get_llm_translation_agent() -> Agent[None, TranslationResult]:
+    if _llm_translation_agent is None:
+        raise DependencyException("LLM translation agent missing")
+    return _llm_translation_agent
+
+
+def get_llm_language_detection_agent() -> Agent[None, list[DetectedLanguage]]:
+    if _llm_language_detection_agent is None:
+        raise DependencyException("LLM language detection agent missing")
+    return _llm_language_detection_agent
+
+
+def get_llm_summarization_key_points_agent() -> Agent[None, SummarizationResult]:
+    if _llm_summarization_key_points_agent is None:
+        raise DependencyException("LLM summarization key points agent missing")
+    return _llm_summarization_key_points_agent
+
+
+def get_llm_summarization_agent() -> Agent[None, SummarizationResult]:
+    if _llm_summarization_agent is None:
+        raise DependencyException("LLM summarization agent missing")
+    return _llm_summarization_agent
+
+
+def get_llm_summarization_refine_agent() -> Agent[None, SummarizationResult]:
+    if _llm_summarization_refine_agent is None:
+        raise DependencyException("LLM summarization refine agent missing")
+    return _llm_summarization_refine_agent
+
+
+def get_llm_embedder() -> Embedder:
+    if _llm_embedder is None:
+        raise DependencyException("LLM embedder missing")
+    return _llm_embedder

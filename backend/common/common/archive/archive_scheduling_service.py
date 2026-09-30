@@ -29,11 +29,11 @@ class ArchiveSchedulingService:
         self._task_scheduling_service = task_scheduling_service
         self._file_storage_service = file_storage_service
 
-    def create_archive(self, query: QueryParameters) -> Archive:
+    def create_archive(
+        self, query: QueryParameters, note: str | None = None
+    ) -> Archive:
         """Create an archive that will contain all files that match the query."""
-        archive = Archive(
-            query=query,
-        )
+        archive = Archive(query=query, note=note)
 
         self._archive_repository.save(archive)
         self._task_scheduling_service.create_archive(archive)

@@ -48,10 +48,12 @@ def _add_tags(file_id: str, tags: list[str]):
     response.raise_for_status()
 
 
-def create_archive(query: QueryParameters) -> ArchiveCreatedResponse:
+def create_archive(
+    query: QueryParameters, note: str | None = None
+) -> ArchiveCreatedResponse:
     response = requests.post(
         f"{ARCHIVE_ENDPOINT}",
-        json=ArchiveRequest(query=query).model_dump(),
+        json=ArchiveRequest(query=query, note=note).model_dump(),
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
@@ -244,3 +246,17 @@ def test_import_archive_overwrites_existing_file():
         "empty_file.txt", checker=lambda f: not f.tags
     )
     assert not overwritten_file.tags
+
+
+def test_archive_contains_note():
+    # Note is attached at scheduling time, independent of archive contents
+    test_note = 'Zurich - "quoted" :)) 🎉\nsecond line\ttab'
+
+    create_archive(
+        query=QueryParameters(search_string="*", query_id=fetch_query_id()),
+        note=test_note,
+    )
+
+    archives = fetch_archives_from_api(expected_no_of_archives=1)
+    assert len(archives) == 1
+    assert archives[0].meta.note == test_note

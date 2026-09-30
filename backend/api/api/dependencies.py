@@ -73,12 +73,6 @@ def get_websocket_service() -> WebsocketService:
     return _websocket_service
 
 
-def get_task_call_service() -> TaskCallService:
-    if _task_call_service is None:
-        raise DependencyException("Task call service is missing")
-    return _task_call_service
-
-
 def get_tool_service() -> ToolService:
     if _tool_service is None:
         raise DependencyException("Tool service is missing")

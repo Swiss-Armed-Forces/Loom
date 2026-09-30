@@ -32,6 +32,7 @@ const listHandler = http.get(/\/api\/v1\/archive$/, () => {
                 shortName: archive.name,
                 query: { searchString: archive.query },
                 updatedDatetime: archive.updatedAt,
+                note: archive.note,
             },
             content: {
                 state: "created",
@@ -57,8 +58,10 @@ const createHandler = http.post(/\/api\/v1\/archive$/, async ({ request }) => {
     const query = objectValue(parsed.value.query);
     if (!query || typeof query.search_string !== "string")
         return error("query.search_string is required", 422);
+    const note =
+        typeof parsed.value.note === "string" ? parsed.value.note : undefined;
     try {
-        const archive = addArchive(query.search_string);
+        const archive = addArchive(query.search_string, note);
         return json({ archive_id: archive.id }, 201);
     } catch (reason) {
         return error(

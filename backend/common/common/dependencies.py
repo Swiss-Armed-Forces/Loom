@@ -1,5 +1,4 @@
 import logging
-from types import NoneType
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -8,7 +7,6 @@ from celery import Celery
 from elasticsearch import Elasticsearch
 from elasticsearch.dsl.connections import create_connection
 from minio import Minio
-from pydantic_ai import Agent, Embedder
 from redis import StrictRedis
 from redis.asyncio import StrictRedis as StrictRedisAsync
 from redis.asyncio.retry import Retry as RetryAsync
@@ -24,10 +22,10 @@ from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.archive.archive_repository import ArchiveRepository
 from common.archive.archive_scheduling_service import ArchiveSchedulingService
 from common.celery_app import BaseTask, init_celery_app
-from common.file.file_repository import DetectedLanguage, FileRepository
+from common.file.file_repository import (
+    FileRepository,
+)
 from common.file.file_scheduling_service import FileSchedulingService
-from common.llm.agent import build_agent
-from common.llm.embedder import build_embedder
 from common.messages.pubsub_service import PubSubService
 from common.services.celery_inspect_service import CeleryInspectService
 from common.services.complete_estimate_service import CompleteEstimateService
@@ -74,17 +72,7 @@ _task_scheduling_service: TaskSchedulingService | None = None
 _file_scheduling_service: FileSchedulingService | None = None
 _archive_scheduling_service: ArchiveSchedulingService | None = None
 _archive_encryption_service: ArchiveEncryptionService | None = None
-_llm_summarization_key_points_agent: Agent[None, str] | None = None
-_llm_summarization_agent: Agent[None, str] | None = None
-_llm_summarization_refine_agent: Agent[None, str] | None = None
-_llm_hyde_agent: Agent[None, str] | None = None
-_llm_rag_rerank_agent: Agent[None, float] | None = None
-_llm_rag_synthesize_agent: Agent[None, str] | None = None
-_llm_embedder: Embedder | None = None
-_llm_suggest_queries_agent: Agent[None, str] | None = None
-_llm_vision_agent: Agent[None, str] | None = None
-_llm_language_detection_agent: Agent[None, list[DetectedLanguage]] | None = None
-_llm_translation_agent: Agent[None, str] | None = None
+
 _celery_inspect_service: CeleryInspectService | None = None
 _complete_estimate_service: CompleteEstimateService | None = None
 _wipe_service: WipeService | None = None
@@ -313,47 +301,6 @@ def init():
         settings.archive_enc_master_key
     )
 
-    global _llm_summarization_key_points_agent
-    _llm_summarization_key_points_agent = build_agent(
-        NoneType, str, settings.llm.summarization_key_points
-    )
-
-    global _llm_summarization_agent
-    _llm_summarization_agent = build_agent(NoneType, str, settings.llm.summarization)
-
-    global _llm_summarization_refine_agent
-    _llm_summarization_refine_agent = build_agent(
-        NoneType, str, settings.llm.summarization_refine
-    )
-
-    global _llm_hyde_agent
-    _llm_hyde_agent = build_agent(NoneType, str, settings.llm.rag_hyde)
-
-    global _llm_rag_rerank_agent
-    _llm_rag_rerank_agent = build_agent(NoneType, float, settings.llm.rag_rerank)
-
-    global _llm_rag_synthesize_agent
-    _llm_rag_synthesize_agent = build_agent(NoneType, str, settings.llm.rag_synthesize)
-
-    global _llm_embedder
-    _llm_embedder = build_embedder(settings.llm.embedding)
-
-    global _llm_suggest_queries_agent
-    _llm_suggest_queries_agent = build_agent(
-        NoneType, str, settings.llm.suggest_queries
-    )
-
-    global _llm_vision_agent
-    _llm_vision_agent = build_agent(NoneType, str, settings.llm.vision)
-
-    global _llm_language_detection_agent
-    _llm_language_detection_agent = build_agent(
-        NoneType, list[DetectedLanguage], settings.llm.language_detection
-    )
-
-    global _llm_translation_agent
-    _llm_translation_agent = build_agent(NoneType, str, settings.llm.translation)
-
     global _celery_inspect_service
     _celery_inspect_service = CeleryInspectService(
         _celery_app, _queues_service, _redis_client
@@ -456,41 +403,6 @@ def mock_init():
 
     global _archive_encryption_service
     _archive_encryption_service = MagicMock(spec=ArchiveEncryptionService)
-
-    global _llm_summarization_key_points_agent
-    _llm_summarization_key_points_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_summarization_agent
-    _llm_summarization_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_summarization_refine_agent
-    _llm_summarization_refine_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_hyde_agent
-    _llm_hyde_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_rag_rerank_agent
-    _llm_rag_rerank_agent = MagicMock(spec=Agent[NoneType, float])
-
-    global _llm_rag_synthesize_agent
-    _llm_rag_synthesize_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_embedder
-    _llm_embedder = MagicMock(spec=Embedder)
-
-    global _llm_suggest_queries_agent
-    _llm_suggest_queries_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_vision_agent
-    _llm_vision_agent = MagicMock(spec=Agent[NoneType, str])
-
-    global _llm_language_detection_agent
-    _llm_language_detection_agent = MagicMock(
-        spec=Agent[NoneType, list[DetectedLanguage]]
-    )
-
-    global _llm_translation_agent
-    _llm_translation_agent = MagicMock(spec=Agent[NoneType, str])
 
     global _celery_inspect_service
     _celery_inspect_service = MagicMock(spec=CeleryInspectService)
@@ -632,72 +544,6 @@ def get_archive_encryption_service() -> ArchiveEncryptionService:
     if _archive_encryption_service is None:
         raise DependencyException("Archive Encryption Service missing")
     return _archive_encryption_service
-
-
-def get_llm_summarization_key_points_agent() -> Agent[None, str]:
-    if _llm_summarization_key_points_agent is None:
-        raise DependencyException("LLM summarization key points agent missing")
-    return _llm_summarization_key_points_agent
-
-
-def get_llm_summarization_agent() -> Agent[None, str]:
-    if _llm_summarization_agent is None:
-        raise DependencyException("LLM summarization agent missing")
-    return _llm_summarization_agent
-
-
-def get_llm_summarization_refine_agent() -> Agent[None, str]:
-    if _llm_summarization_refine_agent is None:
-        raise DependencyException("LLM summarization refine agent missing")
-    return _llm_summarization_refine_agent
-
-
-def get_llm_hyde_agent() -> Agent[None, str]:
-    if _llm_hyde_agent is None:
-        raise DependencyException("LLM hyde agent missing")
-    return _llm_hyde_agent
-
-
-def get_llm_rag_rerank_agent() -> Agent[None, float]:
-    if _llm_rag_rerank_agent is None:
-        raise DependencyException("LLM rerank agent missing")
-    return _llm_rag_rerank_agent
-
-
-def get_llm_rag_synthesize_agent() -> Agent[None, str]:
-    if _llm_rag_synthesize_agent is None:
-        raise DependencyException("LLM rag synthesize agent missing")
-    return _llm_rag_synthesize_agent
-
-
-def get_llm_embedder() -> Embedder:
-    if _llm_embedder is None:
-        raise DependencyException("LLM embedder missing")
-    return _llm_embedder
-
-
-def get_llm_suggest_queries_agent() -> Agent[None, str]:
-    if _llm_suggest_queries_agent is None:
-        raise DependencyException("LLM suggest queries agent missing")
-    return _llm_suggest_queries_agent
-
-
-def get_llm_vision_agent() -> Agent[None, str]:
-    if _llm_vision_agent is None:
-        raise DependencyException("LLM vision agent missing")
-    return _llm_vision_agent
-
-
-def get_llm_language_detection_agent() -> Agent[None, list[DetectedLanguage]]:
-    if _llm_language_detection_agent is None:
-        raise DependencyException("LLM language detection agent missing")
-    return _llm_language_detection_agent
-
-
-def get_llm_translation_agent() -> Agent[None, str]:
-    if _llm_translation_agent is None:
-        raise DependencyException("LLM translation agent missing")
-    return _llm_translation_agent
 
 
 def get_celery_inspect_service() -> CeleryInspectService:

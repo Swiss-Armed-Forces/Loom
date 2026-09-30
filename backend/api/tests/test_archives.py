@@ -29,7 +29,8 @@ def test_create_archive(
     client: TestClient,
 ):
     query = QueryParameters(query_id="0123456789", search_string="*")
-    archive_request = ArchiveRequest(query=query)
+    test_note = 'Berlin - "quoted" :)) 😂\nsecond line\ttab'
+    archive_request = ArchiveRequest(query=query, note=test_note)
 
     archive = Archive(query=query)
     get_archive_scheduling_service().create_archive.return_value = archive
@@ -40,11 +41,16 @@ def test_create_archive(
     archive_create_response = ArchiveCreatedResponse.model_validate(response.json())
     assert archive_create_response.archive_id == archive.id_
 
+    get_archive_scheduling_service().create_archive.assert_called_once_with(
+        query=query, note=test_note
+    )
+
 
 def test_archive_get_all(client: TestClient):
     query = QueryParameters(query_id="0123456789", search_string="*")
+    test_note = 'Berlin - "quoted" :)) 😂\nsecond line\ttab'
 
-    archive1 = Archive(query=query)
+    archive1 = Archive(query=query, note=test_note)
     archive2 = Archive(query=query)
     get_archive_repository().get_generator_by_query.return_value = [archive1, archive2]
     get_archive_repository().open_point_in_time.return_value = "0123456789"
@@ -57,6 +63,7 @@ def test_archive_get_all(client: TestClient):
     assert archives.total == 2
     assert archives.hits[0].file_id == archive1.id_
     assert archives.hits[1].file_id == archive2.id_
+    assert archives.hits[0].meta.note == test_note
 
 
 def test_download_archive(client: TestClient):

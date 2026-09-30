@@ -23,6 +23,7 @@ class UpdateFileRequest(BaseModel):
 
 class UpdateArchiveRequest(BaseModel):
     hidden: bool | None = None
+    note: str | None = None
 
 
 class ArchiveImportRequest(BaseModel):

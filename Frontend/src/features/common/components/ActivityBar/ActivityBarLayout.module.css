@@ -42,3 +42,12 @@
     width: 2px;
     background-color: currentColor;
 }
+
+.activityBarBottom {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 3rem;
+    flex-shrink: 0;
+    background-color: inherit;
+}

@@ -5,18 +5,18 @@ from celery.canvas import Signature
 from common.dependencies import (
     get_celery_app,
     get_lazybytes_service,
-    get_llm_summarization_agent,
-    get_llm_summarization_key_points_agent,
-    get_llm_summarization_refine_agent,
 )
 from common.file.file_repository import File
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic import BaseModel
-from pydantic_ai import NativeOutput
 
+from worker.dependencies import (
+    get_llm_summarization_agent,
+    get_llm_summarization_key_points_agent,
+    get_llm_summarization_refine_agent,
+)
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.infra.indexing_persister import IndexingPersister
 from worker.services.tika_service import TIKA_MAX_TEXT_SIZE
@@ -95,10 +95,6 @@ class LLMError(Exception):
     pass
 
 
-class _SummarizationResult(BaseModel):
-    text: str
-
-
 @app.task(
     base=FileIndexingTask,
     autoretry_for=tuple([LLMError]),
@@ -125,7 +121,7 @@ KEY POINTS:"""
     try:
 
         result = agent.run_sync(
-            extract_prompt, output_type=NativeOutput(_SummarizationResult)
+            extract_prompt,
         )
 
     except Exception as ex:
@@ -167,7 +163,7 @@ SUMMARY:"""
     try:
 
         result = agent.run_sync(
-            summarize_prompt, output_type=NativeOutput(_SummarizationResult)
+            summarize_prompt,
         )
 
     except Exception as ex:
@@ -209,7 +205,7 @@ SUMMARY:"""
     try:
 
         result = agent.run_sync(
-            refine_prompt, output_type=NativeOutput(_SummarizationResult)
+            refine_prompt,
         )
 
     except Exception as ex:

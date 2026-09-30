@@ -78,6 +78,11 @@ def build_agent[T, U](
     `dependency_format` and `output_format` are passed rather than inferred because
     `Agent[T, U]` has no other way to learn them.
 
+    `output_format` is passed unmarked, without a `NativeOutput`/`PromptedOutput`
+    wrapper. That leaves the output schema's mode at `auto`, which pydantic-ai resolves
+    per request against the profile's `default_structured_output_mode` -- so which mode
+    a client uses follows from the model it runs, decided in `common.llm.provider`.
+
     The model takes no `profile=` argument: everything the profile needs is a fact about
     the service or about the weights, and both are resolved by the provider
     (`common.llm.provider`).

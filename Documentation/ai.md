@@ -117,9 +117,9 @@ quirks live:
 #### Model families
 
 A model family carries the request-construction rules for the weights — above all
-`json_schema_transformer`, which decides how JSON schemas are serialised for the `NativeOutput`
-structured-output calls (`$defs` inlined rather than referenced). Getting it wrong surfaces as the
-model failing to produce parseable output, not as an error.
+`json_schema_transformer`, which decides how JSON schemas are serialised for structured-output calls
+(`$defs` inlined rather than referenced). Getting it wrong surfaces as the model failing to produce
+parseable output, not as an error.
 
 pydantic-ai infers the family from the model name by prefix, which misses two cases Loom hits:
 community re-uploads published under an author namespace (`huihui_ai/qwen3.5-abliterated:9b` matches
@@ -147,6 +147,9 @@ Each provider's `model_profile` merges its own layers, lowest first:
     OpenAI's reasoning table, both of which only ever recognise that vendor's hosted models.
 
 4. **System message merging** — for the services that execute an open-weight chat template.
+5. **The parameter floor** — `default_structured_output_mode: native` for a model whose name states a
+    size below 4B. Topmost because a provider-level `default_structured_output_mode` (upstream sets one
+    for Snowflake) describes a vendor's API rather than the size of the checkpoint being served.
 
 The model is built with no `profile=` argument at all: every layer is a fact about the service or
 about the weights, and the provider is where both are known.
@@ -168,6 +171,39 @@ at full weight, and demoting them would weaken instructions for no reason.
 
 There is no setting. Whether a service accepts more than one system message is a property of that
 service, not something an operator chooses.
+
+#### Structured output
+
+Clients whose agent returns a model rather than a string — summarization, translation, vision,
+`suggest_queries`, `rag_rerank`, `language_detection` — need the answer to arrive in a shape that can
+be validated. pydantic-ai offers two channels for that, and `common/llm/provider.py` picks between
+them from the model name:
+
+| Model | Mode | Where |
+| ----- | ---- | ----- |
+| `huihui_ai/qwen3.5-abliterated:9b` | `tool` | production default |
+| `qwen2.5:0.5b`, `moondream:1.8b` | `native` | `values-development.yaml` |
+| `Qwen/Qwen3.5-122B-A10B-FP8`, `mixtral:8x7b`, `prod-deployment-1` | `tool` | no size stated |
+
+**Tool output** (pydantic-ai's default) asks the model to answer with a well-formed call to an output
+tool, emitted from its own chat template. Nothing between the sampler and the parser checks the
+shape, so it is only as good as the weights. **Native output** compiles the JSON schema into a
+grammar and decodes under it — llama.cpp behind Ollama, XGrammar behind the vLLM LiteLLM fronts — so
+the schema holds whatever the model would rather have said.
+
+`_structured_output_profile()` claims native below a 4B parameter floor, read off the `:0.5b` tag.
+Below it a checkpoint cannot be trusted with the tool channel — `qwen2.5:0.5b`, which the development
+profile and the integration tests run, answers prose where a call was required. Above it tool output
+is worth more: it keeps the output schema out of the prompt and is what instruction tuning expects.
+The floor is the one number in that module that is a judgement rather than a measurement.
+
+Clients whose agent returns a `str` are untouched — `rag_hyde`, `rag_synthesize` and the chat agent's
+`[str, DeferredToolRequests]` build a text schema, whose mode is never `auto`, so no profile key
+reaches it. `build_agent` passes every output type through unmarked; no call site names a mode.
+
+There is no setting, for the same reason as above. Note that this makes **name the deployment after
+the weights** load-bearing for a second key: renaming a small model to something stating no size
+(`qwen-dev`) silently returns it to tool output.
 
 ### Thinking
 

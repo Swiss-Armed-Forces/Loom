@@ -34,6 +34,12 @@ export interface ArchiveRequest {
      * @memberof ArchiveRequest
      */
     query: QueryParameters;
+    /**
+     *
+     * @type {string}
+     * @memberof ArchiveRequest
+     */
+    note?: string;
 }
 
 /**
@@ -59,6 +65,7 @@ export function ArchiveRequestFromJSONTyped(
     }
     return {
         query: QueryParametersFromJSON(json["query"]),
+        note: json["note"] == null ? undefined : json["note"],
     };
 }
 
@@ -76,5 +83,6 @@ export function ArchiveRequestToJSONTyped(
 
     return {
         query: QueryParametersToJSON(value["query"]),
+        note: value["note"],
     };
 }

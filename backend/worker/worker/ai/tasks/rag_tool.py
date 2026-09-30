@@ -8,20 +8,21 @@ from common.dependencies import (
     get_celery_app,
     get_file_repository,
     get_lazybytes_service,
-    get_llm_embedder,
-    get_llm_hyde_agent,
-    get_llm_rag_rerank_agent,
-    get_llm_rag_synthesize_agent,
 )
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from numpy import array, mean
 from pydantic import BaseModel, Field, computed_field
-from pydantic_ai import NativeOutput
 from pydantic_ai.exceptions import ModelAPIError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
+from worker.dependencies import (
+    get_llm_embedder,
+    get_llm_hyde_agent,
+    get_llm_rag_rerank_agent,
+    get_llm_rag_synthesize_agent,
+)
 from worker.settings import settings
 from worker.utils.clustering import kde_filter_highest_cluster
 
@@ -309,9 +310,7 @@ RANK:"""
     agent = get_llm_rag_rerank_agent()
 
     try:
-        result_agent = agent.run_sync(
-            rerank_prompt, output_type=NativeOutput(_RerankResult)
-        )
+        result_agent = agent.run_sync(rerank_prompt, output_type=_RerankResult)
 
     except Exception as ex:
         raise LLMError("Reranking document failed") from ex

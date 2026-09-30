@@ -539,7 +539,8 @@
             "uploaded_datetime": "Last modified",
             "checksumZip": "ZIP (sha256)",
             "checksumEncrypted": "Encrypted (sha256)",
-            "actions": "Actions"
+            "actions": "Actions",
+            "note": "Note"
         },
         "actions": {
             "download": "Download",
@@ -774,7 +775,8 @@
         "encryptionKeyInfoTitle": "Archive Encryption Key",
         "encryptionKeyInfoDescription": "This is the master key used to encrypt all .loom archive files created by this Loom instance.",
         "encryptionKeyInfoSyncNote": "To seamlessly import archives between two Loom instances, both must share the same master key. Set the ARCHIVE_ENC_MASTER_KEY environment variable to this value on the other instance.",
-        "tasksDialogTitle": "Tasks — {{name}}"
+        "tasksDialogTitle": "Tasks — {{name}}",
+        "noteLabel": "Note (optional)"
     },
     "chatbot": {
         "modeTooltip_chat": "Pure conversation — the AI answers from its own knowledge without accessing any documents or tools.",
