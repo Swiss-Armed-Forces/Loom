@@ -102,6 +102,44 @@
   # and accepted cost.
   # ---------------------------------------------------------------------------
 
+  # The one thing the stock kernel does not already give this box, and without
+  # it CUDA does not initialise at all: cuInit() returns 3
+  # (CUDA_ERROR_NOT_INITIALIZED) as root on the bare host, and Ollama falls
+  # back to `inference compute id=cpu` with `ggml_cuda_init: failed to
+  # initialize CUDA`. nvidia-smi and NVML are healthy throughout, which is what
+  # makes it look like anything but a kernel config.
+  #
+  # GB10 has no framebuffer. lspci shows one 64 MiB register BAR and no other,
+  # NVML reports FB total as N/A, and the GPU has no NUMA node of its own.
+  # Every byte it touches is the box's own LPDDR5X, reached over NVLink-C2C
+  # through the SMMU using PCIe ATS and PASID -- both `Enable+` in the device's
+  # config space, so the firmware has done its half. The UVM driver binds those
+  # PASIDs with iommu_sva_bind_device() and gates its whole ATS path on
+  # CONFIG_IOMMU_SVA (UVM_ATS_SVA_SUPPORTED() in uvm_ats_sva.h), which on arm64
+  # is selected only by ARM_SMMU_V3_SVA. HMM cannot stand in: it is compiled
+  # out of the arm64 driver build, as `modinfo nvidia-uvm` says in so many
+  # words. So with this off the driver has neither mechanism, `nvidia-smi -q`
+  # reports `Addressing Mode: None` rather than `ATS`, the GPU has no
+  # addressable memory, and no context can be created.
+  #
+  # nixpkgs sets this for every aarch64 kernel since c2ff225a3419
+  # ("linux/common-config: enable ARM_SMMU_V3_SVA on aarch64"), written against
+  # this same chip in an ASUS Ascent GX10 -- autoModules does not pick it up
+  # because it is a bool. That commit is in nixpkgs-unstable but not in the
+  # nixos-26.05 branch this image builds from, so it has to be stated here.
+  # Delete this block when that pin carries the option itself; the cost of
+  # keeping it is a kernel built from source, since structuredExtraConfig
+  # changes the kernel derivation and nothing in the binary cache matches.
+  boot.kernelPatches = [
+    {
+      name = "arm-smmu-v3-sva";
+      patch = null;
+      structuredExtraConfig = {
+        ARM_SMMU_V3_SVA = lib.kernel.yes;
+      };
+    }
+  ];
+
   # NOT the desktop stack, and it must not be forced off the way the graphics
   # userspace is below. nixpkgs' hardware/video/nvidia.nix gates the entire
   # module on `lib.elem "nvidia"` here -- so dropping this takes the driver, the

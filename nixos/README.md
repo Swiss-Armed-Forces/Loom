@@ -123,12 +123,20 @@ hits, and with a kernel config that turns on IOMMU passthrough. The appliance do
 from the ConnectX-7 at all: `netMatch` pins the 10GbE RJ45, which the pin's own `r8169` claims and which
 has been measured carrying traffic on a Spark.
 
+There is one thing the stock kernel does not already give the box: `CONFIG_ARM_SMMU_V3_SVA`. GB10 has no
+framebuffer, so everything CUDA touches is the box's own memory, reached over NVLink-C2C through the SMMU
+using PCIe ATS and PASID; the UVM driver gates that whole path on `CONFIG_IOMMU_SVA`, which on arm64 only
+`ARM_SMMU_V3_SVA` selects. Without it `nvidia-smi` is perfectly healthy, `cuInit()` returns 3 and Ollama
+runs on the CPU. `platforms/spark.nix` sets it through `boot.kernelPatches`, which does mean this one
+platform builds its kernel from source. nixpkgs enables it for every aarch64 kernel on unstable but not on
+`nixos-26.05`, so the block goes away when the pin catches up.
+
 The two asymmetries worth remembering if this is revisited:
 
 - The Spark's `gpuVendor` is asserted the same way the x86 platforms' overrides are, in
   `tests/appliance-hardware.nix`. Its `kernel is still the nixpkgs default` check is what proves the fork
-  has not quietly arrived: an image that gained a from-source 6.17 aarch64 kernel would otherwise be
-  discovered by whoever was waiting for the build.
+  has not quietly arrived: it compares the kernel *version*, so the SVA config override above leaves it
+  holding, while an image that gained NV-Kernels 6.17 would fail it.
 - `hardware.graphics.extraPackages32` must be forced empty on that platform, not merely left at its
   default. nixpkgs populates it from `pkgs.pkgsi686Linux`, which **throws** on aarch64, so anything that
   reads the option — the test above does — fails to evaluate unless the platform file forces it.

@@ -161,6 +161,11 @@ let
     # the tripwire on that decision: an image that quietly acquired a
     # from-source 6.17 aarch64 kernel would otherwise be discovered by whoever
     # was waiting for the build.
+    #
+    # It compares the version, not the derivation, which is deliberate. That
+    # platform already builds its own kernel -- platforms/spark.nix turns on
+    # ARM_SMMU_V3_SVA, without which CUDA cannot initialise at all -- so
+    # "from source" cannot be the signal here. The fork's version can.
     (check "box: kernel is still the nixpkgs default" (
       box.boot.kernelPackages.kernel.version == pkgs.linuxPackages.kernel.version
     ))
