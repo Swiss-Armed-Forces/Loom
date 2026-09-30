@@ -271,6 +271,7 @@ export const getFilePreview = async (
 
 export const scheduleArchiveCreation = async (
     query: SearchQuery,
+    note?: string,
 ): Promise<ArchiveCreatedResponse> => {
     return archivesApi.createNewArchiveV1ArchivePost({
         archiveRequest: {
@@ -279,6 +280,7 @@ export const scheduleArchiveCreation = async (
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
+            note,
         },
     });
 };

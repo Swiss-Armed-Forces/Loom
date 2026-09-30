@@ -46,6 +46,12 @@ export interface ArchiveMeta {
      * @memberof ArchiveMeta
      */
     updatedDatetime: string;
+    /**
+     *
+     * @type {string}
+     * @memberof ArchiveMeta
+     */
+    note?: string;
 }
 
 /**
@@ -85,6 +91,7 @@ export function ArchiveMetaFromJSONTyped(
         shortName: json["short_name"],
         query: QueryParametersFromJSON(json["query"]),
         updatedDatetime: json["updated_datetime"],
+        note: json["note"] == null ? undefined : json["note"],
     };
 }
 
@@ -104,5 +111,6 @@ export function ArchiveMetaToJSONTyped(
         short_name: value["shortName"],
         query: QueryParametersToJSON(value["query"]),
         updated_datetime: value["updatedDatetime"],
+        note: value["note"],
     };
 }

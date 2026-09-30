@@ -6,6 +6,12 @@
     max-height: 100%;
 }
 
+@media (max-width: 600px) {
+    .archivesWrapper {
+        flex-direction: column;
+    }
+}
+
 .archivesContainer {
     margin-top: 2rem;
     overflow-y: auto;

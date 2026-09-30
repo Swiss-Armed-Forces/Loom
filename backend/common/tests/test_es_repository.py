@@ -615,6 +615,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     size=TestValueDefaults.test_long,
                 ),
                 created_at=TestValueDefaults.test_datetime,
+                note=TestValueDefaults.test_str,
             ),
             document=_EsArchive(
                 {
@@ -708,6 +709,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     f"{TestValueDefaults.test_datetime.strftime('%Y-%m-%d_%H_%M_%S.%f')}"
                     ".loom"
                 ),
+                note=TestValueDefaults.test_str,
             ),
         )
     ],

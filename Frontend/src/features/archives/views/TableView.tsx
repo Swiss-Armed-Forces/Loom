@@ -1,12 +1,11 @@
-import { Box, Skeleton, Typography, useMediaQuery } from "@mui/material";
+import { Box, Paper, Skeleton, Typography, useMediaQuery } from "@mui/material";
 import {
     Table,
-    TableBody,
     TableCell,
+    TableBody,
     TableHead,
     TableRow,
 } from "@mui/material";
-import { tableCellClasses } from "@mui/material/TableCell";
 import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@app/hooks";
@@ -26,7 +25,6 @@ export const TableView = () => {
     const archives = useAppSelector(selectArchives);
     const isLoading = useAppSelector(selectIsLoading);
     const { t } = useTranslation();
-    const matchMedia = useMediaQuery("(max-width: 800px)");
     const isSmallScreen = useMediaQuery("(max-width: 600px)");
 
     if (isLoading) {
@@ -75,79 +73,196 @@ export const TableView = () => {
                             border: 1,
                             borderColor: "divider",
                             borderRadius: 1,
-                            p: 1.5,
+                            p: 1,
+                            width: "100%",
+                            boxSizing: "border-box",
                         }}
                     >
                         <Typography
                             variant="subtitle2"
-                            sx={{ fontWeight: "bold" }}
+                            sx={{
+                                fontWeight: "bold",
+                                mb: 1,
+                                wordBreak: "break-word",
+                            }}
                         >
                             {archive.meta.shortName}
                         </Typography>
+
                         {archive.sha256 != null && (
-                            <Typography
-                                variant="caption"
-                                component="div"
+                            <Box
                                 sx={{
-                                    fontFamily: "monospace",
-                                    wordBreak: "break-all",
+                                    mb: 0.5,
+                                    p: 0.5,
+                                    bgcolor: "action.hover",
+                                    borderRadius: 0.5,
                                 }}
                             >
-                                <b>{t("tableView.header.checksumZip")}:</b>{" "}
-                                {archive.sha256}
-                            </Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        fontFamily: "monospace",
+                                        wordBreak: "break-all",
+                                        fontSize: "0.65rem",
+                                        color: "text.secondary",
+                                    }}
+                                >
+                                    <b>{t("tableView.header.checksumZip")}:</b>{" "}
+                                    {archive.sha256}
+                                </Typography>
+                            </Box>
                         )}
                         {archive.sha256Encrypted != null && (
-                            <Typography
-                                variant="caption"
-                                component="div"
+                            <Box
                                 sx={{
-                                    fontFamily: "monospace",
-                                    wordBreak: "break-all",
+                                    mb: 0.5,
+                                    p: 0.5,
+                                    bgcolor: "action.hover",
+                                    borderRadius: 0.5,
                                 }}
                             >
-                                <b>
-                                    {t("tableView.header.checksumEncrypted")}:
-                                </b>{" "}
-                                {archive.sha256Encrypted}
-                            </Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        fontFamily: "monospace",
+                                        wordBreak: "break-all",
+                                        fontSize: "0.65rem",
+                                        color: "text.secondary",
+                                    }}
+                                >
+                                    <b>
+                                        {t(
+                                            "tableView.header.checksumEncrypted",
+                                        )}
+                                        :
+                                    </b>{" "}
+                                    {archive.sha256Encrypted}
+                                </Typography>
+                            </Box>
                         )}
+
+                        <Box sx={{ mb: 1 }}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight: "bold",
+                                    display: "block",
+                                    mb: 0.25,
+                                }}
+                            >
+                                {t("tableView.header.note")}
+                            </Typography>
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    width: "100%",
+                                    p: 0.5,
+                                    minHeight: 50,
+                                    maxHeight: 50,
+                                    overflow: "auto",
+                                    bgcolor: "action.hover",
+                                    boxSizing: "border-box",
+                                }}
+                            >
+                                <Typography
+                                    component="pre"
+                                    variant="caption"
+                                    sx={{
+                                        fontFamily: "monospace",
+                                        whiteSpace: "pre-wrap",
+                                        wordBreak: "break-word",
+                                        m: 0,
+                                        fontSize: "0.7rem",
+                                        color: archive.meta.note
+                                            ? "text.secondary"
+                                            : "text.disabled",
+                                    }}
+                                >
+                                    {archive.meta.note || ""}
+                                </Typography>
+                            </Paper>
+                        </Box>
+
                         <Box
                             sx={{
                                 display: "flex",
-                                gap: 2,
-                                mt: 1,
+                                gap: 1,
+                                mb: 1,
                                 flexWrap: "wrap",
+                                alignItems: "center",
                             }}
                         >
                             <Box
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: 0.5,
+                                    gap: 0.25,
                                 }}
                             >
-                                <Typography variant="body2">
-                                    <b>{t("tableView.header.state")}:</b>
+                                <Typography
+                                    variant="caption"
+                                    sx={{ fontWeight: "bold" }}
+                                >
+                                    {t("tableView.header.state")}:
                                 </Typography>
                                 <ArchiveStateChip archive={archive} />
                             </Box>
-                            <Typography variant="body2">
+                            <Typography variant="caption">
                                 <b>{t("tableView.header.size")}:</b>{" "}
                                 {formatFileSize(archive.content.size)}
                             </Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+
+                        <Typography
+                            variant="caption"
+                            sx={{ mb: 0.5, display: "block" }}
+                        >
                             <b>{t("tableView.header.uploaded_datetime")}:</b>{" "}
                             {getFormattedDateTime(archive.meta.updatedDatetime)}
                         </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            <b>{t("tableView.header.query")}:</b>{" "}
-                            {archive.meta.query.searchString}
-                        </Typography>
+
+                        <Box sx={{ mb: 1 }}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight: "bold",
+                                    display: "block",
+                                    mb: 0.25,
+                                }}
+                            >
+                                {t("tableView.header.query")}
+                            </Typography>
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    width: "100%",
+                                    p: 0.5,
+                                    minHeight: 50,
+                                    maxHeight: 50,
+                                    overflow: "auto",
+                                    bgcolor: "action.hover",
+                                    boxSizing: "border-box",
+                                }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        fontFamily: "monospace",
+                                        whiteSpace: "pre-wrap",
+                                        wordBreak: "break-word",
+                                        m: 0,
+                                        fontSize: "0.7rem",
+                                        color: "text.secondary",
+                                    }}
+                                >
+                                    {archive.meta.query.searchString}
+                                </Typography>
+                            </Paper>
+                        </Box>
+
                         <Box
                             sx={{
-                                mt: 1,
+                                mt: 0.5,
                                 display: "flex",
                                 justifyContent: "flex-end",
                             }}
@@ -164,17 +279,22 @@ export const TableView = () => {
         <Table className={styles.resultTable} data-tour="archives-list">
             <TableHead>
                 <TableRow>
-                    {!matchMedia ? (
+                    {!isSmallScreen ? (
                         <>
-                            <TableCell style={{ width: "35%" }}>
+                            <TableCell style={{ width: "30%" }}>
                                 {t("tableView.header.short_name")}
+                            </TableCell>
+                            <TableCell className={styles.noteCell}>
+                                {t("tableView.header.note")}
                             </TableCell>
                             <TableCell>{t("tableView.header.state")}</TableCell>
                             <TableCell>{t("tableView.header.size")}</TableCell>
                             <TableCell>
                                 {t("tableView.header.uploaded_datetime")}
                             </TableCell>
-                            <TableCell>{t("tableView.header.query")}</TableCell>
+                            <TableCell className={styles.queryCell}>
+                                {t("tableView.header.query")}
+                            </TableCell>
                             <TableCell>
                                 {t("tableView.header.actions")}
                             </TableCell>
@@ -212,45 +332,8 @@ export const TableView = () => {
                                     </>
                                 )}
                             </small>
-                            {matchMedia && (
-                                <Table sx={{ marginTop: "0.5rem" }}>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>
-                                                {t("tableView.header.state")}
-                                            </TableCell>
-                                            <TableCell>
-                                                {t("tableView.header.size")}
-                                            </TableCell>
-                                            <TableCell>
-                                                {t(
-                                                    "tableView.header.uploaded_datetime",
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                {t("tableView.header.query")}
-                                            </TableCell>
-                                            <TableCell>
-                                                {t("tableView.header.actions")}
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        <TableRow
-                                            sx={{
-                                                [`& .${tableCellClasses.root}`]:
-                                                    {
-                                                        borderBottom: "none",
-                                                    },
-                                            }}
-                                        >
-                                            <ArchiveInfo archive={archive} />
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            )}
                         </TableCell>
-                        {!matchMedia && <ArchiveInfo archive={archive} />}
+                        <ArchiveInfo archive={archive} />
                     </TableRow>
                 ))}
             </TableBody>

@@ -12,6 +12,7 @@ interface ConfirmDialogProps extends DialogProps {
     onConfirm: () => void;
     icon: React.ReactNode;
     loading: boolean;
+    children?: React.ReactNode;
 }
 
 export const ConfirmDialog = ({
@@ -23,6 +24,7 @@ export const ConfirmDialog = ({
     onConfirm,
     icon,
     loading,
+    children,
 }: ConfirmDialogProps) => {
     const { t } = useTranslation();
 
@@ -40,6 +42,7 @@ export const ConfirmDialog = ({
                         variant="outlined"
                         color="secondary"
                         onClick={onClose}
+                        disabled={loading}
                     >
                         {t("common.cancel")}
                     </Button>
@@ -55,6 +58,7 @@ export const ConfirmDialog = ({
             }
         >
             <div>{text}</div>
+            {children}
         </DialogBase>
     );
 };

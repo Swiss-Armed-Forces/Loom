@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Annotated
 
 from elasticsearch.dsl import Date, InnerDoc, Integer, Keyword, Long, Object, Text
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, StringConstraints, computed_field
 
 from common.file.file_repository import _EsLazyBytes
 from common.models.es_repository import BaseEsRepository
@@ -13,6 +14,9 @@ from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 LOOM_ARCHIVE_VERSION = 2
 ARCHIVE_STATE_CREATED = "created"
 ARCHIVE_STATE_IMPORTED = "imported"
+
+ARCHIVE_NOTE_LEN_MAX = 1000
+ArchiveNote = Annotated[str, StringConstraints(max_length=ARCHIVE_NOTE_LEN_MAX)]
 
 
 class ArchiveNotFoundException(Exception):
@@ -31,6 +35,7 @@ class Archive(RepositoryTaskObject):
     plain_file: StoredArchive = Field(default_factory=StoredArchive)
     encrypted_file: StoredArchive = Field(default_factory=StoredArchive)
     created_at: datetime = Field(default_factory=datetime.now)
+    note: ArchiveNote | None = None
 
     @computed_field  # type: ignore[misc]
     @property
@@ -65,6 +70,7 @@ class _EsArchive(_EsTaskDocument):
     created_at = Date()
     name = Text()
     name_encrypted = Text()
+    note = Text()
 
     class Index:  # pylint: disable=too-few-public-methods
         """The index."""

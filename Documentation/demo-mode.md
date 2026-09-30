@@ -48,8 +48,8 @@ failed test or deployment job leaves the previously published Pages site in plac
 - The demo introduction opens automatically on the first visit. Dismissing it stores an
   acknowledgement in the browser, and the **DEMO** ribbon can reopen it at any time.
   Clearing the site's browser data makes the introduction appear automatically again.
-- Search, statistics, folder navigation, archives, downloads, tagging, visibility,
-  flags, task scheduling, and document chat operate on bundled sample data.
+- Search, statistics, folder navigation, archives (create with notes, list, download, export),
+  downloads, tagging, visibility, flags, and document chat operate on bundled sample data.
 - The saved-query list includes an **Interesting documents** fixture using
   `tags:interesting`; deleting it lasts until the demo page is reloaded.
 - Safe text, email, image, Office, and archive fixtures come from `integrationtest/assets`.
@@ -65,6 +65,8 @@ failed test or deployment job leaves the previously published Pages site in plac
 - Changes remain in memory and reset when the page reloads.
 - File uploads and archive imports are unavailable because they require ingestion
   services. Task execution links are unavailable because there is no Celery service.
+  Archive note updates via API (PUT /api/v1/archive/{id}) are unavailable because
+  the demo handler does not support partial updates.
 - Backend service links remain visible in the burger menu, but selecting one shows an
   unavailable notification instead of navigating away from the demo.
 - The search emulator supports every query shown in the frontend search tips,

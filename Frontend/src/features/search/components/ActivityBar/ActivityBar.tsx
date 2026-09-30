@@ -158,8 +158,13 @@ export const ActivityBar = () => {
         return (
             <>
                 <div
-                    className={styles.activityBarBottom}
+                    className={activityBarStyles.activityBarBottom}
                     data-tour="activity-bar"
+                    style={{
+                        borderTop: "1px solid",
+                        borderColor: "var(--mui-palette-divider)",
+                        overflowX: "auto",
+                    }}
                 >
                     <div
                         className={styles.mobileLeftGroup}

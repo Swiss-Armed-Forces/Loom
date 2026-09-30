@@ -10,6 +10,7 @@ class ArchiveMeta(BaseModel):
     short_name: str
     query: QueryParameters
     updated_datetime: str
+    note: str | None = None
 
     @staticmethod
     def from_archive(archive: Archive):
@@ -17,6 +18,7 @@ class ArchiveMeta(BaseModel):
             short_name=archive.name,
             query=archive.query,
             updated_datetime=archive.created_at.isoformat(timespec="milliseconds"),
+            note=archive.note,
         )
 
 
