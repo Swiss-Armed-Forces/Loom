@@ -48,6 +48,14 @@
   # The default here is only so that `nix-build ./nixos -A tests.appliance`
   # needs no arguments; every real build is given the chart's value.
   loomChatModel ? "huihui_ai/qwen3.5-abliterated:9b",
+  # The address the minikube node comes up on, and so what `*.loom` resolves to
+  # here and what the DNAT chain sends a visitor at. The authority is
+  # `kubernetes.api` in the embedded tag's charts/values.yaml, which is also the
+  # ipBlock in that tag's `-allow-k8s-api` NetworkPolicy;
+  # cicd/build_appliance_image.sh reads it there and passes it in.
+  #
+  # The default here is only so that `nix-build ./nixos -A tests.appliance`
+  # needs no arguments; every real build is given the chart's value.
   minikubeIp ? "192.168.49.2",
   # First three octets of the appliance network. build-appliance-image
   # randomises the middle two so two boxes on one wire cannot collide, and so a

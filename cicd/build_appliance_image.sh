@@ -37,7 +37,13 @@ NIX_SYSTEM=""
 # each use: calling platform_gpu inside a condition would disable `set -e` in
 # it, the same trap --platform avoids by matching against KNOWN_PLATFORMS.
 PLATFORM_GPU=""
-MINIKUBE_IP="192.168.49.2"
+# The address the minikube node comes up on, and so what every `*.loom` name
+# resolves to on the box and what the DNAT chain sends a visitor at. Filled in by
+# generate_loom_hosts from `kubernetes.api` in the *embedded tag's*
+# charts/values.yaml -- the same file whose `-allow-k8s-api` NetworkPolicy allows
+# pods to reach the API server on that address. Not a flag: the three have to
+# agree, and only the chart can make them.
+MINIKUBE_IP=""
 
 # Empty means "let the platform's netMatch pick the interface, and rename it to
 # loom0". Only set by --interface, to override that match with a literal name.
@@ -174,6 +180,7 @@ KEY_DIR=""
 LOOM_HOSTS_FQDN=()
 NAMESPACE=""
 LOOM_CHAT_MODEL=""
+LOOM_MINIKUBE_IP=""
 
 STEPS=(
     validate_environment
@@ -828,8 +835,9 @@ normalize_git_config(){
 
 # Sourced from the embedded checkout rather than this one, so the host list
 # always matches the tag being shipped. vars.sh stays the single source of truth.
-# This is also where ${NAMESPACE} and ${LOOM_CHAT_MODEL} come from -- `source` at
-# function scope still assigns globally, and build_image runs after this step.
+# This is also where ${NAMESPACE}, ${LOOM_CHAT_MODEL} and ${MINIKUBE_IP} come
+# from -- `source` at function scope still assigns globally, and build_image runs
+# after this step.
 #
 # A value this script wants but the tag's vars.sh has never heard of is a real
 # case, not a hypothetical: the stick's Nix code comes from *this* checkout
@@ -866,6 +874,31 @@ generate_loom_hosts(){
         echo "      ${LOOM_CHAT_MODEL}"
         echo "[!] That has to be a model the tag's ollama image bakes in. Check it"
         echo "    against '_llmDefaults.model' in the embedded charts/values.yaml."
+    fi
+
+    # The node address comes straight out of the tag's chart rather than through
+    # its vars.sh, unlike everything else here. `kubernetes.api` is what that
+    # tag's `-allow-k8s-api` NetworkPolicy renders into an ipBlock, so the chart
+    # is both the authority and the thing that has to agree with what gets baked
+    # into /etc/hosts and the DNAT chain below. Every tag carries the key.
+    MINIKUBE_IP="$(yq --raw-output '.kubernetes.api' "${WORK_DIR}/loom/charts/values.yaml")"
+    if [[ -z "${MINIKUBE_IP}" || "${MINIKUBE_IP}" == "null" ]]; then
+        echo >&2 "[!] Error: ${TAG} defines no 'kubernetes.api' in charts/values.yaml."
+        echo >&2 "    /etc/hosts and the DNAT chain on the box cannot be pinned without"
+        echo >&2 "    it, and the box would serve nothing."
+        exit 1
+    fi
+
+    # Whether the tag can hold itself to that address is a separate question from
+    # what the address is, so it is asked separately. A tag whose vars.sh has no
+    # LOOM_MINIKUBE_IP has an up.sh that starts minikube without --static-ip, so
+    # the node can still land somewhere else and nothing on the box will say so.
+    if [[ -z "${LOOM_MINIKUBE_IP}" ]]; then
+        echo "[!] ${TAG}'s vars.sh defines no LOOM_MINIKUBE_IP -- its up.sh does not pin"
+        echo "    the minikube node. This image bakes ${MINIKUBE_IP} into /etc/hosts and"
+        echo "    into the DNAT chain from that tag's charts/values.yaml, but the node"
+        echo "    can still come up elsewhere, and then the box serves nothing and every"
+        echo "    pod is denied the API server. Watch the first boot."
     fi
 }
 
@@ -1483,7 +1516,6 @@ usage(){
     echo "                                beacon on with no country code set."
     echo "  --wifi-interface INTERFACE    pin the radio by name instead of letting the"
     echo "                                platform match it (renamed to loomwl0 either way)"
-    echo "  --minikube-ip MINIKUBE_IP     address '*.loom' resolves to on the box (default: ${MINIKUBE_IP})"
     echo "  --nixpkgs NIXPKGS             nixpkgs source (required; 'build-appliance-image' passes it)"
     echo "  --nixos-hardware PATH         nixos-hardware source (required; passed the same way)"
     echo "  -y|--yes                      do not ask for confirmation"
@@ -1653,11 +1685,6 @@ while [[ $# -gt 0 ]]; do
         --wifi-interface)
             shift
             WIFI_INTERFACE="${1?Missing INTERFACE}"
-            shift
-        ;;
-        --minikube-ip)
-            shift
-            MINIKUBE_IP="${1?Missing MINIKUBE_IP}"
             shift
         ;;
         --nixpkgs)

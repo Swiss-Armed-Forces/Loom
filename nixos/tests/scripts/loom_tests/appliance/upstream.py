@@ -41,6 +41,23 @@ def host_resolution(appliance: "Machine", subtest: "Subtest", params: Params) ->
             ), f"{host}: expected {params.minikube_ip}, got {got}"
 
 
+def minikube_pin(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
+    with subtest("the chart allows the API server at the address this box pins"):
+        # `kubernetes.api` is the ipBlock in the seeded checkout's `-allow-k8s-api`
+        # NetworkPolicy, and it is what up.sh gives `minikube start --static-ip`.
+        # /etc/hosts and the DNAT chain here are built from the same value. A stick
+        # whose Nix side and embedded checkout disagree deploys a Loom whose pods
+        # are denied their own control plane -- and because the policy is matched
+        # after kube-proxy rewrites the ClusterIP, nothing in the failure names an
+        # address.
+        values = f"{params.operator.repo_dir}/charts/values.yaml"
+        got = appliance.succeed(f"yq --raw-output '.kubernetes.api' {values}").strip()
+        assert got == params.minikube_ip, (
+            f"charts/values.yaml pins the API server at {got}, "
+            f"but this box is built for {params.minikube_ip}"
+        )
+
+
 def hosts_file(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("/etc/hosts is still a store symlink"):
         # up.sh install_host_entries would have replaced it with a mutable copy.

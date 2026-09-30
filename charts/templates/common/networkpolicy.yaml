@@ -54,7 +54,10 @@ spec:
     - to:
       # Allow access to kubernetes-api
       - ipBlock:
-          # Hard coded cluster ip - might break if changed
+          # The node's own address, not the API server's ClusterIP: this policy
+          # is matched after kube-proxy has rewritten 10.96.0.1:443 to the node,
+          # so the ClusterIP never reaches it. up.sh pins the node to this value
+          # and asserts it after `minikube start`.
           # see better version below..
           cidr: {{ .Values.kubernetes.api }}/32
     - ports:

@@ -90,7 +90,12 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Application lifecycle:**
 
-- `up` - Start Loom (wraps `./up.sh`)
+- `up` - Start Loom (wraps `./up.sh`). `kubernetes.api` in `charts/values.yaml` is the minikube node
+  address and the single authority for it: `vars.sh` reads it as `LOOM_MINIKUBE_IP`, `up.sh` pins the node
+  with `minikube start --static-ip` and stops if the node lands elsewhere, and the same value is the
+  `ipBlock` in the `-allow-k8s-api` NetworkPolicy. It has to be the *node's* address, not the API server's
+  ClusterIP, because a NetworkPolicy is matched after kube-proxy has rewritten `10.96.0.1:443` to the node.
+  Overriding it in `values-overwrites.yaml` moves the policy but not the node
 - `down` - Stop Loom
 - `build` - Build all Docker images
 

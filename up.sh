@@ -81,6 +81,7 @@ KEDA_HELM_VERSION=""
 LOOM_MIN_CPU=""
 LOOM_MIN_MEMORY=""
 LOOM_MIN_GPU=""
+LOOM_MINIKUBE_IP=""
 
 VARS_FILE="${SCRIPT_DIR}/vars.sh"
 # shellcheck disable=SC1091
@@ -851,6 +852,7 @@ create_cluster(){
 
     minikube start \
         --driver docker \
+        --static-ip "${LOOM_MINIKUBE_IP}" \
         --wait all \
         --registry-mirror "${REGISTRY_MIRROR}" \
         --memory "${MINIKUBE_MEMORY_KIB}" \
@@ -864,6 +866,51 @@ create_cluster(){
         --extra-config="kubelet.eviction-soft-grace-period=memory.available=${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY}" \
         "${gpu_args[@]}" \
         "${mount_args[@]}"
+
+    assert_minikube_ip
+}
+
+# What --static-ip asked for, against what the node actually got.
+#
+# minikube treats the flag as advice in three cases: a cluster that already
+# exists keeps its address and only warns, a docker network already carrying the
+# profile's name wins over it, and a non-kic driver ignores it outright. None of
+# those is survivable here. `kubernetes.api` in charts/values.yaml is an ipBlock
+# in the `-allow-k8s-api` NetworkPolicy, matched after kube-proxy has rewritten
+# 10.96.0.1:443 to the node -- so a node anywhere else leaves every pod in the
+# namespace denied its own API server, and the deployment then fails in a dozen
+# places that never mention an address.
+#
+# Called from create_cluster rather than listed in STEPS_SETUP_SYSTEM: it is an
+# assertion about the command directly above it and must not be skippable on its
+# own. It runs before skaffold puts an image in the node, so the fix it names is
+# still free -- `minikube delete` costs the whole image store once the images are
+# there, and on an appliance that is not recoverable.
+assert_minikube_ip(){
+    local minikube_ip
+
+    if ! minikube_ip="$(minikube ip)"; then
+        echo >&2 "[!] Error: the cluster started but 'minikube ip' has no address for it."
+        echo >&2 "    Run 'minikube delete' and try again."
+        exit 1
+    fi
+
+    if [[ "${minikube_ip}" != "${LOOM_MINIKUBE_IP}" ]]; then
+        echo >&2 "[!] Error: the minikube node is at ${minikube_ip}, not at the"
+        echo >&2 "    ${LOOM_MINIKUBE_IP} that 'kubernetes.api' in charts/values.yaml names."
+        echo >&2 "    That address is the only egress to the API server every pod has, so"
+        echo >&2 "    this cluster would deploy a Loom that cannot reach its own control"
+        echo >&2 "    plane."
+        echo >&2 ""
+        echo >&2 "    --static-ip cannot move a cluster that already exists, and a leftover"
+        echo >&2 "    docker network of the same name wins over it:"
+        echo >&2 "      minikube delete && docker network rm minikube"
+        echo >&2 "    and run this again. If ${LOOM_MINIKUBE_IP} is already routed on this"
+        echo >&2 "    host, change 'kubernetes.api' in charts/values.yaml instead."
+        exit 1
+    fi
+
+    echo "[*] Minikube node is at ${minikube_ip}, as pinned"
 }
 
 default_use_csi-hostpath-driver(){

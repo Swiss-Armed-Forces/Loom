@@ -56,6 +56,7 @@ def run(
     # What up.sh and vars.sh say this box has to be.
     upstream.sysctls(appliance, subtest)
     upstream.host_resolution(appliance, subtest, params)
+    upstream.minikube_pin(appliance, subtest, params)
     upstream.hosts_file(appliance, subtest)
     upstream.unit_path(appliance, subtest, params)
     upstream.yq_flavour(appliance, subtest)

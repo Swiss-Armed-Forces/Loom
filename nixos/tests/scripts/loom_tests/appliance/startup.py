@@ -52,6 +52,12 @@ def loom_up_flags(appliance: "Machine", subtest: "Subtest", params: Params) -> N
     with subtest("loom-up reaches up.sh with the skip flags"):
         out = appliance.succeed(f"runuser -u {params.operator.user} -- loom-up --help")
         assert "--skip-STEP" in out, out
+        # There is no cluster on this box, so `minikube ip` fails. That answer
+        # means "nothing to compare yet", and the wrapper has to say so and carry
+        # on: the boot that creates the cluster is the one no pre-flight can
+        # check, and folding the failure into the comparison makes the guard pass
+        # silently on exactly that boot.
+        assert "No minikube cluster" in out, out
 
 
 def loom_up_on_path(appliance: "Machine", subtest: "Subtest") -> None:

@@ -316,6 +316,9 @@ Overrides reach some of those and not others, and the gap is silent either way:
   Traefik dashboard route either — `traefik/values.yaml` hardcodes `Host("traefik.loom")`.
 - `hostnames` overridden the same way reaches the certificate Job, but not `/etc/hosts` and not the
   `hostnames.ingress` check `cicd/check_chart_hostnames.sh` runs — both read `charts/values.yaml` directly.
+- `kubernetes.api` overridden the same way reaches the NetworkPolicy but not `up.sh`, which pins the
+  minikube node from `charts/values.yaml` — so the policy moves and the node does not, and `up.sh` stops
+  right after `minikube start` saying the two disagree.
 
 A certificate you installed yourself, including via `up.sh --certificate`, is never replaced.
 
@@ -327,6 +330,28 @@ because cert-manager always emits a `keyUsage` extension and defaults it to one 
 certificate. Without that, OpenSSL-based clients (`curl`, Python) and Go accept the certificate while
 BoringSSL-based ones reject it with "unable to verify the first certificate" — so the breakage shows up in
 one client and nowhere else.
+
+### The minikube node address
+
+`kubernetes.api` in `charts/values.yaml` is the address the minikube node itself comes up on — not the
+API server's ClusterIP. Two things read it, and they have to agree:
+
+- `up.sh` pins the node to it (`minikube start --static-ip`) and then checks `minikube ip` against it,
+  stopping if they differ. The check runs before any image is pulled into the node, so the `minikube delete`
+  it suggests is still cheap at that point.
+- The chart renders it into the `-allow-k8s-api` NetworkPolicy as an `ipBlock`. A NetworkPolicy is matched
+  _after_ kube-proxy has rewritten `10.96.0.1:443` to the node, so the node's own address — not the
+  ClusterIP — is what a pod's packet carries by the time the policy sees it.
+
+If the two disagree, every pod in the namespace is denied the API server. Calico drops rather than
+rejects, so the symptoms are timeouts far downstream: secret-generation Jobs that never finish, and the
+pods waiting on those secrets stuck in `CreateContainerConfigError`. Nothing in the failure names an
+address.
+
+Minikube's docker driver defaults to `192.168.49.0/24` and silently steps the third octet by 9 when that
+subnet is taken, which is why the node is pinned rather than discovered. **On a host that already routes
+`192.168.49.0/24`, change the value in `charts/values.yaml`** — an override in `values-overwrites.yaml`
+moves the policy but not the node, and `up.sh` will stop on the disagreement.
 
 ### Crawling external S3 sources
 

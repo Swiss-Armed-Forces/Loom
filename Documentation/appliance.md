@@ -264,7 +264,6 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--vm-serial` | Add a getty on ttyS0 to the installer and to the box it installs, so a VM can be driven from a terminal that copies and pastes. For `appliance-vm installer --serial`; refused alongside `--flash`, because the result is one unit different from a real stick. |
 | `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
 | `--allow-cross` | Build for an architecture other than the host's. |
-| `--minikube-ip IP` | Address `*.loom` resolves to on the box. Defaults to `192.168.49.2`. |
 | `--nixpkgs PATH` | nixpkgs source. Required — `build-appliance-image` passes devenv's pinned nixpkgs for you, so you only need this when driving the script directly. |
 | `--nixos-hardware PATH` | [nixos-hardware](https://github.com/NixOS/nixos-hardware) source, which the x86 platforms take their hardware profile from. Required, and passed for you the same way. |
 | `--output DIR` | Where to put the image. Defaults to `.appliance-build/`. |
@@ -1640,8 +1639,35 @@ matter — so on an arm64 host it stops every skaffold invocation rather than ju
 the two failures above, this one lives in the **tagged** tree rather than in the Nix code, so a stick only
 picks the fix up once it embeds a tag that contains it.
 
-**`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names are pinned to
-`192.168.49.2` in `/etc/hosts` and minikube came up somewhere else. `minikube delete` and retry.
+**`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names, and the DNAT
+chain that fronts the box, are pinned to `kubernetes.api` from the embedded tag's `charts/values.yaml`
+(`192.168.49.2` by default) and minikube came up somewhere else. The same address is the `ipBlock` in the
+`-allow-k8s-api` NetworkPolicy, so a node anywhere else also denies every pod its own API server.
+
+`up.sh` makes the same check itself, immediately after `minikube start` and **before any image is pulled
+into the node** — at that point the cluster is empty and `minikube delete` costs nothing. The warning below
+applies to a box that has already fetched.
+
+Move the node rather than deleting it. The image store is a docker _volume_, which survives everything here;
+only `minikube delete` removes it:
+
+```bash
+minikube stop
+docker network rm minikube
+docker network create --driver bridge \
+    --subnet 192.168.49.0/24 --gateway 192.168.49.1 \
+    --label created_by.minikube.sigs.k8s.io=true \
+    minikube
+# The container still names the old network, and its stored IPAM address is the
+# old one; connecting it replaces both.
+docker network connect --ip 192.168.49.2 minikube minikube
+minikube start
+```
+
+`minikube start` then regenerates the API server certificate for the new address and rewrites the
+kubeconfig, `--advertise-address` and the kubelet's `--node-ip`. Confirm with `minikube ip` before running
+`loom-up` again. Note that `minikube start --static-ip` cannot do this on its own: on a cluster that already
+exists it prints a warning, discards the flag and carries on.
 
 > **`minikube delete` destroys the container images, and on an appliance that is not recoverable.** The images
 > live inside the minikube container's own storage, and nothing on the box keeps a second copy — so deleting

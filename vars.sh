@@ -55,6 +55,21 @@ LOOM_DOMAIN="$(yq --raw-output '.domain' "${LOOM_VALUES_FILE}")"
 # answer, and naming a second model that *is* present would be worse: ollama
 # would load it and evict the workers' one mid-index.
 LOOM_CHAT_MODEL="$(yq --raw-output '._llmDefaults.model' "${LOOM_VALUES_FILE}")"
+
+# The address the minikube node has to come up on. up.sh pins the node to it
+# with `minikube start --static-ip` and asserts it afterwards; the appliance
+# build bakes the same value into /etc/hosts and into the DNAT chain that fronts
+# the box.
+#
+# Read out of the chart because `kubernetes.api` is what
+# charts/templates/common/networkpolicy.yaml renders into the `-allow-k8s-api`
+# ipBlock, and that policy is matched after kube-proxy has rewritten
+# 10.96.0.1:443 to the node. The node address is therefore already stated in the
+# policy literally, and a second statement of it here would be a way for a
+# cluster and its own egress rules to disagree -- which costs every pod in the
+# namespace its API server, silently, because Calico drops rather than rejects.
+LOOM_MINIKUBE_IP="$(yq --raw-output '.kubernetes.api' "${LOOM_VALUES_FILE}")"
+
 # Both halves of `hostnames`: they differ in how they are served -- `extra` has
 # no route naming it and is told apart by entrypoint -- but not in how they are
 # named, so both need a hosts entry. Read, then sorted, in two steps rather than
@@ -80,6 +95,15 @@ fi
 # than anything that looks like a missing chart value.
 if [[ -z "${LOOM_CHAT_MODEL}" || "${LOOM_CHAT_MODEL}" == "null" ]]; then
     echo >&2 "[!] Error: could not read '_llmDefaults.model' from"
+    echo >&2 "    ${LOOM_VALUES_FILE}"
+    exit 1
+fi
+
+# Again separately, because an empty value does not look like a missing chart
+# value where it lands: it starts minikube with an empty --static-ip and renders
+# an ipBlock of `/32`.
+if [[ -z "${LOOM_MINIKUBE_IP}" || "${LOOM_MINIKUBE_IP}" == "null" ]]; then
+    echo >&2 "[!] Error: could not read 'kubernetes.api' from"
     echo >&2 "    ${LOOM_VALUES_FILE}"
     exit 1
 fi

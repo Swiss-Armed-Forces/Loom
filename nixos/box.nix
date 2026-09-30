@@ -123,10 +123,21 @@ let
 
       # networking.hosts pins *.loom at a fixed address; if minikube ever lands
       # somewhere else, fail loudly instead of serving a silently broken stack.
-      if ip="$(minikube ip 2>/dev/null)" && [ "$ip" != ${lib.escapeShellArg minikubeIp} ]; then
-        echo >&2 "[!] minikube is at $ip but *.loom is pinned to ${minikubeIp} in /etc/hosts."
-        echo >&2 "[!] Run 'minikube delete' and retry, or rebuild the image with a matching IP."
-        exit 1
+      #
+      # The two answers `minikube ip` can give are told apart rather than folded
+      # into one condition. A failure means there is no cluster yet -- the first
+      # boot, and the only moment the address is chosen at all -- which is up.sh's
+      # job: it starts minikube with --static-ip on this same address and stops if
+      # the node lands elsewhere. A probe that cannot answer is not agreement.
+      if ip="$(minikube ip 2>/dev/null)"; then
+        if [ "$ip" != ${lib.escapeShellArg minikubeIp} ]; then
+          echo >&2 "[!] minikube is at $ip but *.loom is pinned to ${minikubeIp} in /etc/hosts."
+          echo >&2 "[!] Run 'minikube delete' and retry, or flash a stick built from a tag"
+          echo >&2 "[!] whose charts/values.yaml names this address."
+          exit 1
+        fi
+      else
+        echo "[*] No minikube cluster yet; up.sh pins the one it creates to ${minikubeIp}."
       fi
 
       exec ./up.sh --skip-setup_system --skip-install_host_entries "$@"

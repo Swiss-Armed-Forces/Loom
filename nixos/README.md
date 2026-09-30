@@ -713,8 +713,15 @@ run's disk images. A garbage collection clears those too.
   constraint than the rest: it must name a model `ollama/Dockerfile.models` bakes into the production image, because
   an air-gapped box cannot pull one, and it should match `_llmDefaults.model` in `charts/values.yaml` so the
   pane does not make Ollama evict the model the workers are indexing with.
+- the minikube node address, consumed by `box.nix`'s `networking.hosts` and by the DNAT chain in
+  `network.nix`. `build_appliance_image.sh` reads it from `kubernetes.api` in the **embedded tag's**
+  `charts/values.yaml` rather than through that tag's `vars.sh`, because it has to equal the `ipBlock` in
+  that tag's `-allow-k8s-api` NetworkPolicy — a node the policy does not name leaves every pod denied the
+  API server. `vars.sh` states it as `LOOM_MINIKUBE_IP` for `up.sh`, which pins the node to it with
+  `minikube start --static-ip` and stops if the node lands elsewhere; a tag whose `vars.sh` lacks the
+  variable cannot pin, and the build says so.
 
-`tests/appliance.nix` asserts all five, so a change on either side is caught rather than shipped. If you
+`tests/appliance.nix` asserts all six, so a change on either side is caught rather than shipped. If you
 add a `check_command` to `up.sh`, add the package to `loom.toolchain` in `box.nix` and the name to the test.
 
 `loom.toolchain` is one list on purpose. It feeds both `environment.systemPackages` and the `path` of the
