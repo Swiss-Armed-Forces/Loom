@@ -75,19 +75,6 @@ MIN_CAPACITY_BYTES=$(( 4 * 1024 * 1024 * 1024 ))
 # asserted in make_fat32.
 FAT32_MIN_CLUSTERS=65525
 
-# Partition labels the appliance itself uses, copied from
-# nixos/usb-ingest/loom_usb_ingest/devices.py, which owns them. A disk carrying
-# any of these is Loom's own media -- a key stick or an installer stick -- and
-# erasing one is not a cosmetic mistake: nixos/key-guard.nix powers the box off
-# ten seconds after its key stick stops reading.
-LOOM_PARTLABELS=(loom-key loom-esp loom-root-luks loom-live-esp loom-live-store)
-
-# What this script's own partition labels look like. A stick it already built
-# has to be rebuildable, and partition 20 of that stick is a LUKS container by
-# design -- so the "this might be a key stick" refusal below has to be able to
-# tell the fixture's LUKS apart from everybody else's.
-OWN_PARTLABEL_PATTERN='^fstest[0-9][0-9]-'
-
 # One writer at a time, in a root-owned directory rather than /tmp.
 #
 # /tmp is sticky and world-writable, and this host -- like any recent NixOS --
@@ -342,7 +329,6 @@ preflight(){
 
     assert_not_system_disk
     assert_nothing_mounted
-    assert_not_loom_media
     assert_assets_present
     return 0
 }
@@ -383,35 +369,6 @@ assert_nothing_mounted(){
     if grep -q "^${DEVICE_NODE}" /proc/swaps; then
         die "A partition on ${DEVICE} is in use as swap"
     fi
-    return 0
-}
-
-assert_not_loom_media(){
-    local partlabels loom
-    partlabels=$(lsblk --noheadings --output PARTLABEL "${DEVICE_NODE}")
-    for loom in "${LOOM_PARTLABELS[@]}"; do
-        if grep -qx -- "${loom}" <<< "${partlabels}"; then
-            die "${DEVICE} carries the Loom partition label '${loom}'; this is Loom's own media"
-        fi
-    done
-
-    # A LUKS container is the shape a key stick has, so one is refused -- unless
-    # it sits on a partition this script itself labelled. Checking the label
-    # rather than merely "is there any LUKS here" is what lets a fixture be
-    # rebuilt while still refusing a real key stick, whose partition is called
-    # loom-key and is caught above in any case.
-    local pairs line label
-    pairs=$(lsblk --noheadings --pairs --output PARTLABEL,FSTYPE "${DEVICE_NODE}")
-    while IFS= read -r line; do
-        [[ "${line}" == *'FSTYPE="crypto_LUKS"'* ]] || continue
-
-        label=${line#PARTLABEL=\"}
-        label=${label%%\"*}
-
-        if ! grep -qE -- "${OWN_PARTLABEL_PATTERN}" <<< "${label}"; then
-            die "${DEVICE} carries a LUKS container on '${label:-an unlabelled partition}'; refusing in case it is a key stick"
-        fi
-    done <<< "${pairs}"
     return 0
 }
 

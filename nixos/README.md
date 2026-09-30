@@ -905,8 +905,11 @@ sudo "$(command -v build-ingest-test-stick)" \
 Without `--i-know-this-erases` nothing is written. Typing the serial back is what keeps a
 device-agnostic script safe: it cannot be satisfied without having looked at which disk is about to
 be erased. Before that point the script also refuses anything that is not a `/dev/disk/by-id/usb-*`
-whole disk, anything under 4 GiB, anything carrying `/`, `/boot` or `/nix/store`, anything mounted,
-and anything with a Loom partition label or a LUKS container on it.
+whole disk, anything under 4 GiB, anything carrying `/`, `/boot` or `/nix/store`, and anything
+mounted. It does not look at what is already on the stick: a retired key or installer stick is a
+perfectly good fixture, and the serial is the authorisation. On a stick still in service that is
+destructive in more than the obvious way — `key-guard.nix` powers the appliance off ten seconds
+after its key stops reading.
 
 Nothing about the device is baked in: the table is a fixed 2976 MiB whatever the capacity, the
 remainder is left unallocated, and re-running it on another stick produces the identical layout.
@@ -924,8 +927,7 @@ Four things about it are worth knowing before reading the script:
   exFAT ceiling, and `[A-Z0-9]` passes `naming.sanitize_component` unchanged, so no hash suffix is
   appended.
 - **The partition labels must never start with `loom-`.** A single `loom-esp` would make
-  `classify_disk` refuse the whole disk and the stick would test nothing. They are `fstestNN-<fs>`,
-  and the script refuses to touch a disk already carrying a Loom label — that is Loom's own media.
+  `classify_disk` refuse the whole disk and the stick would test nothing. They are `fstestNN-<fs>`.
 - **Every partition gets GPT type `0700`.** `devices.py` never reads the type GUID, so a truthful
   one buys nothing, while `8200`, `8E00`, `FD00` and `8309` would invite
   `systemd-gpt-auto-generator`, lvm2 and mdadm udev rules to act on the stick on the build host.

@@ -276,8 +276,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   remainder is left unallocated. **Destructive, and runs under sudo**; `sudo` resets `PATH`, so
   invoke it as `sudo "$(command -v build-ingest-test-stick)"`. Prints the plan and writes nothing
   until `--i-know-this-erases <serial>` repeats the serial it printed, and refuses outright anything
-  that is not a `by-id` USB whole disk, is mounted, carries `/`, `/boot` or `/nix/store`, or holds a
-  Loom partition label. Related flags: `--only N[,N...]` / `--skip N[,N...]` (reformat some rows
+  that is not a `by-id` USB whole disk, is mounted, or carries `/`, `/boot` or `/nix/store`. It does
+  not inspect what is already on the stick — a retired Loom key or installer stick is a valid
+  fixture, and the serial is the authorisation. Related flags: `--only N[,N...]` / `--skip N[,N...]` (reformat some rows
   without re-cutting the table), `--assets DIR`, `--keep-work`. See the ingest test stick section in
   `nixos/README.md`, which also records the three bugs building it turned up
 
