@@ -33,8 +33,15 @@
     }
 }
 
-@media only screen and (min-width: 1000px) {
+@media only screen and (min-width: 1501px) {
     .nameChecksumCell {
-        width: 35%;
+        width: 30%;
+    }
+}
+
+/* Vertikale Darstellung (601-1500px) */
+@media only screen and (min-width: 601px) and (max-width: 1500px) {
+    .nameChecksumCell {
+        width: 100%;
     }
 }

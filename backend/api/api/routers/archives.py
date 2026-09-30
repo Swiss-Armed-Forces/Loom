@@ -3,6 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 from common.archive.archive_repository import (
+    ArchiveNote,
     ArchiveNotFoundException,
     ArchiveRepository,
 )
@@ -48,6 +49,7 @@ class ArchiveRequest(BaseModel):
     """Query to filter archives."""
 
     query: QueryParameters
+    note: ArchiveNote | None = None
 
 
 class EncryptionKeyResponse(BaseModel):
@@ -87,7 +89,9 @@ def create_new_archive(
     archive_scheduling_service: ArchiveSchedulingService = default_archive_scheduling_service,
 ) -> ArchiveCreatedResponse:
     """Create a new archive containing all files that match the query."""
-    archive = archive_scheduling_service.create_archive(query=archive_request.query)
+    archive = archive_scheduling_service.create_archive(
+        query=archive_request.query, note=archive_request.note
+    )
 
     return ArchiveCreatedResponse(archive_id=archive.id_)
 

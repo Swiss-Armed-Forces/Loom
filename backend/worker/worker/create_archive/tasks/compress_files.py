@@ -157,7 +157,7 @@ def _readme_content(archive_name: str) -> bytes:
         ## Archive contents
 
         {lbl_entrypoint:<{col}} — run this to browse and extract files (`python cli.py`)
-        {lbl_manifest:<{col}} — archive metadata and search parameters (JSON)
+        {lbl_manifest:<{col}} — archive metadata, search params, and user annotations (JSON)
         {lbl_files:<{col}} — original file contents, one file per entry
         {lbl_index:<{col}} — extracted metadata for each file (JSON), used for search
         {lbl_cli:<{col}} — support files for `{CLI_ENTRYPOINT_FILENAME}`{vendor_row}

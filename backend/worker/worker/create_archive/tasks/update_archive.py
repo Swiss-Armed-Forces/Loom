@@ -13,3 +13,5 @@ app = get_celery_app()
 def update_archive(persister: ArchiveCreationPersister, request: UpdateArchiveRequest):
     if request.hidden is not None:
         persister.set_hidden(request.hidden)
+    if request.note is not None:
+        persister.set_note(request.note)

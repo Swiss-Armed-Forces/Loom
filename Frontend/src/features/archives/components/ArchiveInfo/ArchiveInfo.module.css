@@ -1,0 +1,23 @@
+/* Standard (1501-2560px) - Horizontal Tabelle */
+.noteCell {
+    width: 25%;
+    max-width: 500px;
+}
+
+.queryCell {
+    width: 25%;
+    max-width: 500px;
+}
+
+/* Ultrawide (>2560px) */
+@media (min-width: 2560px) {
+    .noteCell {
+        width: 28%;
+        max-width: 800px;
+    }
+
+    .queryCell {
+        width: 28%;
+        max-width: 800px;
+    }
+}

@@ -26,6 +26,12 @@ export interface UpdateArchiveRequest {
      * @memberof UpdateArchiveRequest
      */
     hidden?: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof UpdateArchiveRequest
+     */
+    note?: string;
 }
 
 /**
@@ -50,6 +56,7 @@ export function UpdateArchiveRequestFromJSONTyped(
     }
     return {
         hidden: json["hidden"] == null ? undefined : json["hidden"],
+        note: json["note"] == null ? undefined : json["note"],
     };
 }
 
@@ -67,5 +74,6 @@ export function UpdateArchiveRequestToJSONTyped(
 
     return {
         hidden: value["hidden"],
+        note: value["note"],
     };
 }

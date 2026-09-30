@@ -10,7 +10,12 @@ import {
     vi,
 } from "vitest";
 
-import { ArchivesApi, Configuration, FilesApi } from "@app/api/generated";
+import {
+    ArchivesApi,
+    ArchivesModel,
+    Configuration,
+    FilesApi,
+} from "@app/api/generated";
 
 import { ATTACHMENT_EMAIL_ID, PDF_ATTACHMENT_ID } from "./fixtures";
 import { handlers, resetDemoHandlerState } from "./handlers";
@@ -374,6 +379,32 @@ describe("demo API handlers", () => {
 
         expect(created.status).toBe(201);
         expect(files.total_files).toBe(1);
+    });
+
+    it("creates archives with notes that round-trip through GET", async () => {
+        const testNote = "This is a test note for the archive";
+        const created = await fetch("http://loom.test/api/v1/archive", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: { search_string: "tags:security" },
+                note: testNote,
+            }),
+        });
+        const body = await responseJson<{ archive_id: string }>(created);
+
+        expect(created.status).toBe(201);
+        expect(body.archive_id).toBeDefined();
+
+        const archives = await fetch("http://loom.test/api/v1/archive").then(
+            (response) => responseJson<ArchivesModel>(response),
+        );
+
+        const createdArchive = archives.hits.find(
+            (hit) => (hit as any).file_id === body.archive_id,
+        );
+        expect(createdArchive).toBeDefined();
+        expect(createdArchive?.meta.note).toBe(testNote);
     });
 
     it("applies bulk tasks to every document matching the request query", async () => {

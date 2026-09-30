@@ -85,6 +85,7 @@ export interface DemoArchive {
     sha256: string;
     sha256Encrypted: string;
     tasks?: TaskRecord[];
+    note?: string;
 }
 
 export type DemoTask =
@@ -175,6 +176,7 @@ const createInitialArchives = (): DemoArchive[] => [
         sha256: DEMO_ARCHIVE_SHA256,
         sha256Encrypted: DEMO_ARCHIVE_SHA256_ENCRYPTED,
         tasks: createInitialArchiveTasks(),
+        note: "These files seemed important for the current project.",
     },
 ];
 
@@ -252,7 +254,7 @@ export const getArchives = (): DemoArchive[] =>
 export const getArchive = (id: string): DemoArchive | undefined =>
     archives.find((item) => item.id === id);
 
-export const addArchive = (query: string): DemoArchive => {
+export const addArchive = (query: string, note?: string): DemoArchive => {
     const matchingDocuments = searchDocuments(query);
     const archive: DemoArchive = {
         id: crypto.randomUUID(),
@@ -263,6 +265,7 @@ export const addArchive = (query: string): DemoArchive => {
         hidden: false,
         sha256: DEMO_ARCHIVE_SHA256,
         sha256Encrypted: DEMO_ARCHIVE_SHA256_ENCRYPTED,
+        note,
     };
     matchingDocuments.forEach((document) =>
         document.archiveIds.push(archive.id),
