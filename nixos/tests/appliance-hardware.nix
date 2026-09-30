@@ -233,6 +233,21 @@ let
       # that option is the gate, this is the thing the gate controls.
       (check "spark: hardware.nvidia is enabled" box.hardware.nvidia.enabled)
       (check "spark: the open kernel modules are used" box.hardware.nvidia.open)
+      # Everything above is about the driver; this is about whether it can
+      # address any memory. A GB10 has no framebuffer, so CUDA reaches host RAM
+      # through the SMMU over ATS, and the UVM driver compiles that path in only
+      # when CONFIG_IOMMU_SVA is set -- which on arm64 nothing but this option
+      # selects. Without it `cuInit` returns 3 and Ollama runs on the CPU while
+      # nvidia-smi stays perfectly healthy, which is a failure nobody reads off
+      # a booting box.
+      #
+      # Asserted on the config that lands rather than on the `boot.kernelPatches`
+      # entry in platforms/spark.nix, so that this keeps holding on the day the
+      # nixpkgs pin carries the option itself and that block is deleted -- and
+      # fails if the block is deleted before then, or if a pin bump drops it.
+      (check "spark: the kernel enables ARM_SMMU_V3_SVA" (
+        (box.boot.kernelPackages.kernel.configfile.structuredConfig.ARM_SMMU_V3_SVA.tristate or null) == "y"
+      ))
       (check "spark: the container toolkit is on" box.hardware.nvidia-container-toolkit.enable)
       # Enabling it is half the job; the other half is the one nixpkgs leaves
       # out. Without this docker matches `--gpus all` -- which is what minikube
