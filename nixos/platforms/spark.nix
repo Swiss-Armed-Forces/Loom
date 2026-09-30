@@ -11,6 +11,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -122,12 +123,20 @@
   # up.sh's own preflight only checks that nvidia-smi counts a GPU, so without
   # this the box passes validation and then schedules Ollama onto a node that
   # advertises no nvidia.com/gpu at all.
-  hardware.nvidia-container-toolkit = {
-    enable = true;
-    # Allow containers to access GPUs. The default "void" blocks all GPU access
-    # from containers, which breaks Ollama's GPU probe. Setting this to "all"
-    # lets pods that request nvidia.com/gpu resources actually use the device.
-    cdi.defaultVisibleDevices = "all";
+  hardware.nvidia-container-toolkit.enable = true;
+
+  # Override the CDI spec to allow containers to access GPUs.
+  # The default nvidia-container-toolkit module generates a spec with
+  # NVIDIA_VISIBLE_DEVICES=void which blocks GPU access. This fix sets it to "all".
+  systemd.services.nvidia-cdi-fix = {
+    description = "Fix NVIDIA CDI spec to allow GPU access in containers";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "nvidia-container-toolkit-cdi-generator.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/sh -c 'sed -i \"s/NVIDIA_VISIBLE_DEVICES=void/NVIDIA_VISIBLE_DEVICES=all/g\" /etc/cdi/nvidia.yaml && systemctl restart containerd'";
+    };
   };
 
   # The same trade platforms/evo-x2.nix and platforms/nuc12.nix make with their
