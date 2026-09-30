@@ -5,7 +5,7 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
-from common.file.file_repository import DetectedLanguage
+from common.llm.return_types import DetectedLanguage
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.index_file.tasks.translate import translate_task

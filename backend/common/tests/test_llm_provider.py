@@ -65,7 +65,7 @@ def test_services_running_open_weight_templates_withhold_strict_tools(
     `InlineDefsJsonSchemaTransformer` and `GoogleJsonSchemaTransformer` both leave
     `is_strict_compatible` at its `True` default without emitting `additionalProperties:
     false`, and pydantic-ai reads the tool's `strict` flag straight off that -- so a
-    backend honouring the flag would reject every tool and every `NativeOutput` schema.
+    backend honouring the flag would reject every tool and every native-output schema.
     Upstream withholds it for Ollama; the other two must too.
     """
     profile = _profile(LLMClientSettings(provider=provider))
@@ -169,3 +169,80 @@ def test_litellm_leaves_a_vendors_own_thinking_knowledge_alone(
     profile = _profile(LLMClientSettings(provider=LLMProvider.LITELLM, model=model))
 
     assert profile.get("supports_thinking", False) is claims_thinking
+
+
+# The checkpoints `values-development.yaml` swaps in, both far below the floor.
+_DEVELOPMENT_MODELS = ["qwen2.5:0.5b", "moondream:1.8b"]
+
+
+@pytest.mark.parametrize("model", _DEVELOPMENT_MODELS)
+@pytest.mark.parametrize("provider", _OPEN_WEIGHT_PROVIDERS)
+def test_weights_below_the_floor_get_grammar_constrained_output(
+    provider: LLMProvider, model: str
+) -> None:
+    """Tool output is only as good as the weights; native output is not.
+
+    A tool call has to come back well-formed from the model's own chat template, and
+    nothing between the sampler and the parser checks its shape -- which `qwen2.5:0.5b`,
+    the model the development profile and the integration tests run, cannot manage.
+    Native output compiles the schema into a grammar in the service and decodes under
+    it, so the schema holds whatever the weights would rather have said.
+
+    Asserted for all three services because each merges the claim in its own chain.
+    """
+    profile = _profile(LLMClientSettings(provider=provider, model=model))
+
+    assert profile.get("default_structured_output_mode") == "native"
+
+
+@pytest.mark.parametrize("provider", _OPEN_WEIGHT_PROVIDERS)
+def test_the_production_model_keeps_tool_output(provider: LLMProvider) -> None:
+    """The floor is a claim about small weights, not a preference for grammars.
+
+    Tool output has the broader support and keeps the output schema out of the prompt,
+    so a model large enough to follow its own template keeps pydantic-ai's default. Also
+    pins that the author namespace does not confuse the tag read.
+    """
+    profile = _profile(
+        LLMClientSettings(provider=provider, model="huihui_ai/qwen3.5-abliterated:9b")
+    )
+
+    assert profile.get("default_structured_output_mode", "tool") == "tool"
+
+
+@pytest.mark.parametrize(
+    ("model", "mode"),
+    [
+        pytest.param("qwen2.5:0.5b", "native", id="half-a-billion"),
+        pytest.param("qwen2.5:3b", "native", id="just-under-the-floor"),
+        pytest.param("gemma3:4b", "tool", id="on-the-floor"),
+        pytest.param("llama3.3:70b-instruct-q4_K_M", "tool", id="quantisation-suffix"),
+        pytest.param("mixtral:8x7b", "tool", id="expert-layout-not-a-size"),
+        pytest.param("Qwen/Qwen3.5-122B-A10B-FP8", "tool", id="no-tag"),
+        pytest.param("prod-deployment-1", "tool", id="opaque-alias"),
+        pytest.param("qwen3.5:latest", "tool", id="unhelpful-tag"),
+    ],
+)
+def test_the_parameter_tag_decides_the_output_mode(model: str, mode: str) -> None:
+    """The tag is the claim, and the floor is exclusive.
+
+    `8x7b` is an expert layout rather than a parameter count, and a name stating no size
+    states nothing -- both fall back to `tool`, which is the mode every other layer in
+    the provider is already written for.
+    """
+    profile = _profile(LLMClientSettings(provider=LLMProvider.OLLAMA, model=model))
+
+    assert profile.get("default_structured_output_mode", "tool") == mode
+
+
+def test_hosted_openai_decides_its_own_output_mode() -> None:
+    """`OpenAIProvider` is left exactly as pydantic-ai ships it.
+
+    The deliberately absurd model name is the point: it proves the floor is not merged
+    into that branch at all, rather than merely never firing there.
+    """
+    profile = _profile(
+        LLMClientSettings(provider=LLMProvider.OPENAI, model="qwen2.5:0.5b")
+    )
+
+    assert profile.get("default_structured_output_mode", "tool") == "tool"

@@ -6,16 +6,17 @@ import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
 from common.ai_context.tool_models import QuerySuggestion, SuggestQueriesResult
-from common.dependencies import get_file_repository, get_llm_suggest_queries_agent
+from common.dependencies import get_file_repository
+from common.llm.return_types import ElasticsearchQuery
 from common.models.es_repository import QueryScoreStats
 from openai import APIConnectionError, APITimeoutError, InternalServerError
 from pydantic import ValidationError
 
 from worker.ai.tasks.suggest_queries_tool import (
-    _ElasticsearchQuery,
     suggest_queries_aggregate_task,
     suggest_queries_generate_task,
 )
+from worker.dependencies import get_llm_suggest_queries_agent
 
 # pylint: disable=redefined-outer-name
 
@@ -24,16 +25,16 @@ QUERY_DESCRIPTION = "largest files by size"
 
 def _tool_response(query_string: str) -> SimpleNamespace:
     """Build a minimal stand-in for an ``Agent.run_sync`` result."""
-    return SimpleNamespace(output=_ElasticsearchQuery(query_string=query_string))
+    return SimpleNamespace(output=ElasticsearchQuery(query_string=query_string))
 
 
 def _validation_error() -> ValidationError:
     """What a provider ignoring the strict JSON schema would surface as."""
     try:
-        _ElasticsearchQuery.model_validate({"query_string": None})
+        ElasticsearchQuery.model_validate({"query_string": None})
     except ValidationError as e:
         return e
-    raise AssertionError("expected _ElasticsearchQuery validation to fail")
+    raise AssertionError("expected ElasticsearchQuery validation to fail")
 
 
 @pytest.fixture

@@ -17,6 +17,7 @@ settings, which is why `model_profile` can stay the plain static hook pydantic-a
 declares it as.
 """
 
+import re
 from typing import Callable, assert_never
 
 from openai import AsyncOpenAI
@@ -94,7 +95,7 @@ _MERGES_SYSTEM_MESSAGES = OpenAIModelProfile(
 # without emitting `additionalProperties: false` or promoting optional properties into
 # `required`. pydantic-ai reads the tool's `strict` flag straight off that
 # (`strict=schema_transformer.is_strict_compatible if tool_def.strict is None`), so every
-# tool and every `NativeOutput` schema would be declared strict while being nothing of the
+# tool and every native-output schema would be declared strict while being nothing of the
 # sort -- and a backend that honours the flag answers "'additionalProperties' is required
 # to be supplied and to be false", or builds a guided-decoding grammar off the wrong
 # schema. Upstream's Ollama profile withholds it for exactly this reason; the other two
@@ -107,6 +108,41 @@ _MERGES_SYSTEM_MESSAGES = OpenAIModelProfile(
 _WITHHOLDS_STRICT_TOOL_DEFINITIONS = OpenAIModelProfile(
     openai_supports_strict_tool_definition=False,
 )
+
+# The parameter count below which tool output stops being reliable, and the tag it is read
+# from. Unlike everything else in this module, `4` is a judgement rather than a measured
+# limit: it sits above the 1.8B and 0.5B weights `values-development.yaml` runs and below
+# the 9B one production runs, and nothing in between has been tried.
+_MIN_PARAMS_B_FOR_TOOL_OUTPUT = 4.0
+_MODEL_SIZE_RE = re.compile(r":(\d+(?:\.\d+)?)b\b")
+
+
+def _structured_output_profile(model_name: str) -> ModelProfile | None:
+    """Native structured output for weights too small to be trusted with a tool call.
+
+    Tool output asks the model to emit a well-formed call from its own chat template, and
+    that is the model's work alone. Native output is grammar-constrained decoding in the
+    service -- llama.cpp's GBNF under Ollama, XGrammar under the vLLM LiteLLM fronts -- so
+    the schema holds whatever the weights are capable of. Below this size only the second
+    one works: `qwen2.5:0.5b`, which the development profile and the integration tests with
+    it run, answers prose where an output tool call was required.
+
+    Left at upstream's `tool` default everywhere else, which is the mode with the broader
+    support and the one that keeps the output schema out of the prompt. A model large
+    enough to follow its own template should use it.
+
+    The size is read off the `:9b` tag, which is where Ollama publishes it. A name carrying
+    no such tag keeps the default, and that is the right answer for both ways it happens:
+    `Qwen/Qwen3.5-122B-A10B-FP8`, as Infomaniak serves it, is far above the threshold, and
+    an opaque LiteLLM alias like `prod-deployment-1` says nothing about the weights behind
+    it either way.
+    """
+    match = _MODEL_SIZE_RE.search(model_name.lower())
+
+    if match is None or float(match.group(1)) >= _MIN_PARAMS_B_FOR_TOOL_OUTPUT:
+        return None
+
+    return ModelProfile(default_structured_output_mode="native")
 
 
 def _family_profile(model_name: str) -> ModelProfile | None:
@@ -157,6 +193,7 @@ class LoomOllamaProvider(OllamaProvider):
                 # release from inverting the precedence later.
                 openai_chat_thinking_field="reasoning",
             ),
+            _structured_output_profile(model_name),
         )
 
 
@@ -185,6 +222,7 @@ class LoomLiteLLMProvider(LiteLLMProvider):
             None if vendor_prefixed else _CLAIMS_THINKING_SUPPORT,
             _MERGES_SYSTEM_MESSAGES,
             _WITHHOLDS_STRICT_TOOL_DEFINITIONS,
+            _structured_output_profile(model_name),
         )
 
 
@@ -230,6 +268,7 @@ class InfomaniakProvider(OpenAIProvider):
             _MERGES_SYSTEM_MESSAGES,
             _WITHHOLDS_STRICT_TOOL_DEFINITIONS,
             OpenAIModelProfile(openai_chat_supports_max_completion_tokens=False),
+            _structured_output_profile(model_name),
         )
 
 
@@ -256,8 +295,10 @@ def build_provider(client_settings: LLMClientSettings) -> Provider[AsyncOpenAI]:
             return InfomaniakProvider(openai_client=client)
         case LLMProvider.OPENAI:
             # Left as pydantic-ai ships it: hosted OpenAI is the one service whose model
-            # names its own table knows, per model. Both a blanket thinking claim and a
-            # prefix-matched family profile would replace that knowledge with a guess.
+            # names its own table knows, per model. A blanket thinking claim, a
+            # prefix-matched family profile and a size-derived output mode would each
+            # replace that knowledge with a guess -- and the last would never fire anyway,
+            # as no hosted OpenAI name carries an Ollama parameter tag.
             return OpenAIProvider(openai_client=client)
         case _:
             assert_never(client_settings.provider)
