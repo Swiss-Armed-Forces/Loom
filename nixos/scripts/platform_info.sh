@@ -287,16 +287,18 @@ section_cpu_memory(){
     field "MemTotal" "${mem_human}"
     note "what Linux sees -- on an APU the firmware's VRAM carve-out is already gone"
 
-    # Which cpufreq driver bound, and -- on the DGX Spark -- whether autonomous
-    # CPPC was asked for.
+    # Which cpufreq driver bound, and -- on the DGX Spark -- whether the
+    # platform is choosing its own performance level rather than the kernel.
     #
     # The GB10's memory fabric only enters autonomous performance management
-    # when `cppc_cpufreq.auto_sel_mode=1` is set, and without it single-thread
-    # memory bandwidth is reported at roughly a third of stock DGX OS. The
-    # parameter needs a cppc_cpufreq that carries the autonomous-mode series,
-    # which the stock kernel does not -- so on our image this is expected to
-    # read "not requested", and that is a known cost rather than a fault. See
-    # the GPU section of Documentation/appliance.md.
+    # when CPPC's AutonomousSelectionEnable register is set; upstream measures
+    # roughly 3x single-thread memory bandwidth from it.
+    #
+    # Read where the kernel puts that register, not off the command line.
+    # `auto_select` is the cpufreq attribute mainline has carried since 6.16;
+    # `cppc_cpufreq.auto_sel_mode=` is an out-of-tree parameter NVIDIA's own
+    # kernel adds on top of it, which no stock kernel parses -- so grepping
+    # /proc/cmdline for it answered "not requested" whatever the register held.
     scaling_driver="$(slurp /sys/devices/system/cpu/cpufreq/policy0/scaling_driver)"
     governor="$(slurp /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
     if [[ -n "${scaling_driver}" ]]; then
@@ -305,9 +307,16 @@ section_cpu_memory(){
     else
         note "no cpufreq policy0 -- frequency scaling is firmware-managed or absent"
     fi
-    cppc="$(tr ' ' '\n' < /proc/cmdline 2>/dev/null |
-        grep --extended-regexp '^cppc_cpufreq\.auto_sel_mode=' || true)"
-    field "CPPC autonomous mode" "${cppc:-not requested}"
+    cppc="$(slurp /sys/devices/system/cpu/cpufreq/policy0/auto_select)"
+    case "${cppc}" in
+        1 | y | on) cppc="enabled -- the firmware is choosing" ;;
+        0 | n | off) cppc="disabled -- the kernel's governor is choosing" ;;
+        '') cppc="no auto_select attribute -- not cppc_cpufreq, or a kernel before 6.16" ;;
+        # Anything else is the kernel's own word for it -- `<unsupported>` is
+        # what a box whose _CPC lacks the register reads -- so pass it through.
+        *) ;;
+    esac
+    field "CPPC autonomous mode" "${cppc}"
 }
 
 section_network(){
@@ -799,8 +808,8 @@ emit_json(){
     gtt="$(slurp /sys/class/drm/card0/device/mem_info_gtt_total)"
 
     scaling_driver="$(slurp /sys/devices/system/cpu/cpufreq/policy0/scaling_driver)"
-    cppc="$(tr ' ' '\n' < /proc/cmdline 2>/dev/null |
-        grep --extended-regexp '^cppc_cpufreq\.auto_sel_mode=' || true)"
+    # The register itself, for the same reason the text report reads it there.
+    cppc="$(slurp /sys/devices/system/cpu/cpufreq/policy0/auto_select)"
     dt_model="$(devicetree_string /sys/firmware/devicetree/base/model)"
     secure_boot="$(efivar_flag \
         /sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c)"

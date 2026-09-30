@@ -1507,12 +1507,19 @@ which carries the PCI domain on this box. See
 What is still unsettled is **the kernel**. Every published route to NixOS on this box goes through NVIDIA's
 kernel fork via [`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), and this image
 deliberately does not use it. Their own USB image offers both kernels and describes the difference as
-_Ethernet_, not GPU; their fork is NV-Kernels 6.17.13 where our pin ships 6.18.49, so taking it means going
-back a major version on the one subsystem in question; and it would be built from source on aarch64 with no
-cache hits. That Ethernet concern does not apply to the port this appliance uses: the pin's `r8169` carries
-the RTL8127 id, and the RJ45 comes up and carries traffic on it. What the fork would still buy is
-`cppc_cpufreq.auto_sel_mode=1`, which upstream measures at roughly 3× single-thread memory bandwidth and
-which needs their kernel to work — a real cost of the choice made here.
+_Ethernet_, not GPU; and it would be built from source on aarch64 with no cache hits. That Ethernet concern
+is most likely their own doing rather than a mainline defect — their module blacklists `r8169`
+unconditionally in favour of NVIDIA's out-of-tree `r8127`, which no stock kernel has, so their
+standard-kernel option leaves the RJ45 with no driver at all. On this image the pin's own `r8169` claims
+the RTL8127 and the port carries traffic.
+
+Nor does the fork hold `cppc_cpufreq.auto_sel_mode=1` hostage, as this page used to claim. That is an
+out-of-tree module parameter wrapping a register mainline has exposed since 6.16 as the cpufreq attribute
+`/sys/devices/system/cpu/cpufreq/policy*/auto_select` — present and writable on all twenty policies of a
+Spark running this image, currently reading `0`. `loom-platform-info` reports its state under **CPPC
+autonomous mode**. Turning it on is a decision for this image rather than a reason to change kernels, and
+worth weighing on the right numbers: the widely-quoted ~3× is single-thread _sysbench_ memory bandwidth,
+while the same source measures llama.cpp at +5.5% prompt processing and flat token generation.
 
 **On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU, and neither has `btop`.
 

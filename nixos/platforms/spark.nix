@@ -83,9 +83,13 @@
   #     "Ethernet has problems", saying nothing about the GPU; and their
   #     `hardware.nvidia` block is not gated on the kernel choice.
   #   * That Ethernet claim is one README bullet with no issue, no commit
-  #     message and no symptom behind it, written when mainline was ~6.11. Their
-  #     fork is NV-Kernels 6.17.13; our pin is 6.18.49. Taking it means going
-  #     back a major version on the box where NIC support is the open question.
+  #     message and no symptom behind it -- and what it describes is most
+  #     likely their own doing. `modules/dgx-spark.nix` blacklists `r8169`
+  #     unconditionally, outside the `useNvidiaKernel` gate that picks their
+  #     kernel, in favour of NVIDIA's out-of-tree `r8127`. No stock kernel has
+  #     `r8127`, so on their standard-kernel option the RJ45 is left with no
+  #     driver at all. Nothing about mainline is implicated, and this box is
+  #     the counter-example: `r8169` claims the port and carries traffic.
   #   * Its kernel config also sets IOMMU_DEFAULT_PASSTHROUGH=y,
   #     IOMMU_DEFAULT_DMA_STRICT=n and ARM_SMMU_DISABLE_BYPASS_BY_DEFAULT=n,
   #     against the position platforms/evo-x2.nix takes explicitly about
@@ -95,11 +99,18 @@
   #
   # So this is the cheap path, and `loom-platform-info` on a real Spark is what
   # decided that it is enough: the RJ45 this box serves from comes up on the
-  # pin's own r8169 and carries traffic, so the Ethernet claim above does not
-  # reach the port the appliance uses. Their kernel would still bring
-  # `cppc_cpufreq.auto_sel_mode=1`, which they measure at ~3x single-thread
-  # memory bandwidth and which is inert without it; on this image that is a real
-  # and accepted cost.
+  # pin's own r8169 and carries traffic.
+  #
+  # `cppc_cpufreq.auto_sel_mode=1` is not a reason to take the fork either, and
+  # this file used to say it was. That is an out-of-tree module parameter their
+  # kernel adds; mainline gives the identical register write a sysfs name,
+  # `/sys/devices/system/cpu/cpufreq/policy*/auto_select`, and has since 6.16.
+  # Measured on a Spark running this image: present and writable on all twenty
+  # policies, reading 0. So the capability is here and switched off, which is a
+  # decision this image can revisit on its own -- not a property of their
+  # kernel. What their numbers actually show is ~3x single-thread *sysbench*
+  # memory bandwidth, against +5.5% prompt processing and flat token generation
+  # on llama.cpp, which is the half that matters to Ollama.
   # ---------------------------------------------------------------------------
 
   # The one thing the stock kernel does not already give this box, and without
