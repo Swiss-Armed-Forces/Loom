@@ -4,11 +4,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Callable, Iterable
 
-from common.dependencies import (
-    get_file_repository,
-    get_imap_service,
-    get_redis_cache_client,
-)
+from common.dependencies import get_file_repository, get_redis_cache_client
 from common.services.query_builder import QueryParameters
 from common.utils.cache import cache_get, cache_set, get_cache_statistics
 from fastapi import FastAPI
@@ -207,26 +203,6 @@ def count_files_hidden(_: CallbackOptions) -> Iterable[Observation]:
 
 
 @with_adaptive_cache()
-def count_emails(_: CallbackOptions) -> Iterable[Observation]:
-    file_repository = get_file_repository()
-    query_id = file_repository.open_point_in_time()
-    count = file_repository.count_by_query(
-        query=QueryParameters(
-            query_id=query_id,
-            search_string='(extension:".eml" OR file_type:"message/rfc822") AND hidden:*',
-        )
-    )
-    yield Observation(value=count)
-
-
-@with_adaptive_cache()
-def count_imap_emails(_: CallbackOptions) -> Iterable[Observation]:
-    imap_service = get_imap_service()
-    email_count = imap_service.count_messages(recurse=True)
-    yield Observation(value=email_count)
-
-
-@with_adaptive_cache()
 def observe_cache_mem_size(_: CallbackOptions) -> Iterable[Observation]:
     stats = get_cache_statistics(get_redis_cache_client())
     for namespace, entry in stats.root.items():
@@ -303,18 +279,6 @@ def init_metrics(api: FastAPI):
         callbacks=[count_files_hidden],
         unit="file",
         description="Number of hidden files",
-    )
-    data_meter.create_observable_up_down_counter(
-        name="data.emails",
-        callbacks=[count_emails],
-        unit="email",
-        description="Number of emails",
-    )
-    data_meter.create_observable_up_down_counter(
-        name="data.imap.emails",
-        callbacks=[count_imap_emails],
-        unit="email",
-        description="Number of emails in IMAP inbox",
     )
 
     # add cache metrics
