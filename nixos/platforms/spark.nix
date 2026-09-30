@@ -247,20 +247,6 @@
       ]
     );
 
-  # Override the CDI spec to allow containers to access GPUs.
-  # The default nvidia-container-toolkit module generates a spec with
-  # NVIDIA_VISIBLE_DEVICES=void which blocks GPU access. This fix sets it to "all".
-  systemd.services.nvidia-cdi-fix = {
-    description = "Fix NVIDIA CDI spec to allow GPU access in containers";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "nvidia-container-toolkit-cdi-generator.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/sh -c 'sed -i \"s/NVIDIA_VISIBLE_DEVICES=void/NVIDIA_VISIBLE_DEVICES=all/g\" /etc/cdi/nvidia.yaml && systemctl restart containerd'";
-    };
-  };
-
   # The same trade platforms/evo-x2.nix and platforms/nuc12.nix make with their
   # nixos-hardware GPU profiles: keep the driver library, drop the desktop
   # userspace.

@@ -1458,7 +1458,7 @@ it. Set the firmware's VRAM split to its _minimum_ to go with them, and see
 [What you need](#what-you-need) for why that is the right way round.
 
 **On the DGX Spark** the appliance passes `--gpus nvidia` to `up.sh`, which selects
-`charts/values-nvidia-gpu.yaml`, enables minikube's `nvidia-gpu-device-plugin` addon and asks
+`charts/values-nvidia-gpu.yaml`, enables minikube's `nvidia-device-plugin` addon and asks
 `minikube start` for the GPU. The driver is stock nixpkgs: the pin carries NVIDIA 595.71.05 with the open
 kernel modules, which is what a GB10 Blackwell needs, and `nixos/platforms/spark.nix` adds
 `hardware.nvidia-container-toolkit` so the device reaches the minikube node container through a CDI spec.

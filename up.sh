@@ -840,7 +840,10 @@ create_cluster(){
                 addons="${addons},amd-gpu-device-plugin"
             ;;
             nvidia)
-                addons="${addons},nvidia-gpu-device-plugin"
+                # NVIDIA's own plugin, not minikube's `nvidia-gpu-device-plugin`:
+                # that one is deprecated upstream and ships a single amd64 image,
+                # which cannot run on an aarch64 node such as the DGX Spark.
+                addons="${addons},nvidia-device-plugin"
             ;;
             *)
                 echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
