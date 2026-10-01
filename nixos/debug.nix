@@ -122,7 +122,10 @@ let
       {
         df --human-readable /nix /
         echo
-        echo "store paths: $(ls /nix/store | wc --lines)"
+        # `find -printf` rather than `ls`, which shellcheck refuses: one line
+        # per entry whatever the name, and the top level only. `! -name '.*'`
+        # drops /nix/store/.links, which is not a store path.
+        echo "store paths: $(find /nix/store -mindepth 1 -maxdepth 1 ! -name '.*' -printf '\n' | wc --lines)"
         echo "(this mode enables nix.gc: daily, --delete-older-than 7d)"
       } >"$root/disk.txt" 2>&1 || true
 
