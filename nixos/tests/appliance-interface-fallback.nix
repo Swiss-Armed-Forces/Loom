@@ -75,14 +75,36 @@ pkgs.testers.runNixOSTest {
       imports = [ common ];
       loom.autoSelectInterface = pkgs.lib.mkForce false;
     };
+
+    # A platform that declines the driver behind the only wired port there is.
+    # The fallback is on, runs, and must come up with nothing rather than claim
+    # a port the platform said not to -- which on the Spark is a QSFP cage that
+    # sorts ahead of the RJ45 and carries nothing without a transceiver.
+    #
+    # `mkForce` because platforms/<id>.nix may define this already; the Spark
+    # does. Without it `appliance-test interface-fallback --platform spark`
+    # would be a definition conflict rather than a test.
+    excluded = {
+      imports = [ common ];
+      loom.platform.netExcludeDrivers = pkgs.lib.mkForce [ "virtio_net" ];
+    };
   };
 
   # The test itself is loom_tests/interface_fallback.py, so that the repository's
   # Python hooks reach it -- see loom_tests/driver.py for why, and for why
   # `skipTypeCheck` is set above.
   testScript = ''
-    from loom_tests.interface_fallback import run
+    from loom_tests.interface_fallback import Nodes, run
 
-    run(single, dual, disabled, start_all=start_all, subtest=subtest)
+    run(
+        Nodes(
+            single=single,
+            dual=dual,
+            disabled=disabled,
+            excluded=excluded,
+        ),
+        start_all=start_all,
+        subtest=subtest,
+    )
   '';
 }

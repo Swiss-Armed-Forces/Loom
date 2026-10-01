@@ -55,6 +55,39 @@
       };
     };
 
+    netExcludeDrivers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        Kernel drivers whose interfaces `loom-interface-fallback` may never claim
+        as `loom0`, by the name in `/sys/class/net/<iface>/device/driver`.
+
+        This is the negative half of `netMatch`, and it exists because the two
+        are consulted in different circumstances. `netMatch` says which port
+        serves the appliance network; the fallback runs only when that match
+        found nothing, and then picks from every wired port on the box sorted by
+        PCI path. A port the platform deliberately declined to match is still in
+        that list -- so a box whose RJ45 is claimed by a driver this platform did
+        not name gets a `loom0` on something nobody wanted, chosen by PCI
+        address.
+
+        That is not hypothetical on the Spark: its ConnectX-7 cages present four
+        MACs in PCI domains 0000 and 0002, ahead of the RJ45 at 0007, and they
+        carry nothing without a transceiver. Listing the driver here keeps the
+        fallback off them, so it claims the port an operator actually cabled.
+
+        Drivers rather than a `[Match]` block, because this is read by
+        `loom-wired-nics`, a shell script walking sysfs on the box -- nothing
+        there can evaluate a systemd match.
+
+        Excluding every candidate is allowed and leaves the box with no `loom0`,
+        which `loom-network-check` reports on the login screen. That is the right
+        outcome: a loud box is recoverable with `--interface`, a box quietly
+        serving a dark port is not.
+      '';
+      example = [ "mlx5_core" ];
+    };
+
     wifiMatch = lib.mkOption {
       type = lib.types.nullOr (lib.types.attrsOf lib.types.str);
       default = null;

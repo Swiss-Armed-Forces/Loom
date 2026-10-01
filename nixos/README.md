@@ -10,7 +10,7 @@ this file is about the code.
 | --- | --- |
 | `default.nix` | Entry point. Takes `nixpkgs` and `nixosHardware` as arguments and returns the build targets. |
 | `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
-| `platforms/spark.nix` | DGX Spark: aarch64, 10GbE RJ45 (`r8169`) beside an unmatched ConnectX-7. No upstream hardware profile exists. |
+| `platforms/spark.nix` | DGX Spark: aarch64, 10GbE RJ45 (`r8169`) beside a ConnectX-7 that is neither matched nor claimable by the fallback. No upstream hardware profile exists. |
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. Imports the nixos-hardware Strix Halo leaves, and sets the iGPU's GTT ceiling. |
 | `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). Imports `intel/nuc/12wshi7`. |
 | `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
@@ -45,7 +45,7 @@ this file is about the code.
 | `tests/appliance-dhcp.nix` | VM test for the default build's DHCP server: dnsmasq on a `loom0` renamed during boot, the lease a client gets, the captive-portal probe names, and that a missing interface no longer kills the daemon. |
 | `tests/dhcp-probe.nix` | The DHCP client the lease subtests run inside the guest, shared by the `wifi` and `dhcp` tests. Guest code, which is why it is not under `tests/scripts/`. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
-| `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
+| `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, the fallback switched off, and a platform that excludes the only port's driver. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
 | `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
 | `tests/appliance-key-store.nix` | VM test for the `--lock-key` build's key guard: it arms on a container rather than on a key it can test against the root, and still tells one stick from another. |
@@ -248,13 +248,22 @@ another stick. `loom-interface-fallback` closes that: when the match selected no
 itself and renames it before `network-pre.target`, which puts it ahead of every address, bridge and dnsmasq
 unit without naming any of them.
 
-Two things about it are worth knowing before changing it.
+Three things about it are worth knowing before changing it.
 
 **It picks rather than refuses when there are several.** That looks reckless and is the opposite:
 `platforms/evo-x2.nix` already makes the argument, because both its Realtek ports match `r8169` and udev
 decides between them. A box that came up on the wrong port is fixed by moving the cable. A box with no
 `loom0` at all is not fixable at the console. Picking is strictly the better failure, and the pick is by PCI
 path so it is at least the same port on every boot.
+
+**A platform can take ports out of that pick, and the Spark does.** By PCI path alone the Spark's
+ConnectX-7 cages — domains 0000 and 0002 — rank ahead of its RJ45 at 0007, and they carry nothing without a
+transceiver. `netMatch` declining to name them is not enough, because the fallback only runs when `netMatch`
+matched nothing: the realistic trigger is the RJ45 being claimed by a driver other than `r8169`, which leaves
+the port enumerated and the cages ranked above it. `loom.platform.netExcludeDrivers` is what the fallback
+reads, by the name in `/sys/class/net/<iface>/device/driver`, and `loom-wired-nics` names what it skipped on
+stderr so the journal keeps it. Excluding every candidate is allowed and leaves no `loom0`, which
+`loom-network-check` reports — a loud box beats one quietly serving a dark port.
 
 **`--interface` is applied by the same unit, not by the `.link` file**, even though the `.link` file still
 carries an `OriginalName` match for it. `OriginalName=` matches the udev `INTERFACE` property *while* the
@@ -572,7 +581,7 @@ the two type checks can run, and the one that runs on every commit is worth more
 | `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. The lease it reads is the one served over the bridge; `dhcp` reads the one served over the wire. A lease that names a default gateway would take a visitor's laptop off the internet. |
 | `mouse` | `tests.applianceMouse` | Point-and-click, end to end: a `uinput` mouse in the guest, through mousedev and gpm and the pty shim, to the pane tmux focuses — plus the detach control and the unreachable prefix. |
 | `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |
-| `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, and the fallback switched off. |
+| `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, the fallback switched off, and a platform that excludes the driver behind the only wired port. |
 | `key-store` | `tests.applianceKeyStore` | The `--lock-key` build's key guard, which arms on a weaker check than every other image's: a locked stick carries no plaintext key to test against the root. Getting that branch wrong leaves the guard idle for the life of the box, silently. |
 
 The script picks the platform matching the host architecture, passes the `*.loom` host list, the
@@ -685,7 +694,7 @@ A run costs disk in two ways, and both land on the filesystem holding `/nix`:
 | `wifi` | 1 | 19 MB |
 | `dhcp` | 1 | 20 MB |
 | `usb-ingest` | 1 | 28 MB, plus four 256 MB scratch disks it puts filesystems on |
-| `interface-fallback` | 3 | 20 MB each |
+| `interface-fallback` | 4 | 20 MB each |
 | `key-store` | 1 | 96 MB — three 32 MB loop images, the same shape as `appliance`'s |
 
 A whole five-target run moved this host's free space by **2.8 GB**, nearly all of it closure and

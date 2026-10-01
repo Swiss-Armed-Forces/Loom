@@ -54,6 +54,18 @@
       Driver = "r8169";
     };
 
+    # ...and the other half of that decision, for the boot where the match above
+    # misses. `netMatch` not matching is not the same as the RJ45 being absent:
+    # a kernel that claims the RTL8127 with something other than r8169 -- an
+    # in-tree r8127, or NVIDIA's out-of-tree one that graham33's fork blacklists
+    # r8169 in favour of -- leaves the port enumerated under a name this file
+    # does not predict, and `loom-interface-fallback` then picks from every wired
+    # port by PCI address. The ConnectX-7's four MACs sit in domains 0000 and
+    # 0002, ahead of the RJ45 at 0007, so it would claim a cage that carries
+    # nothing without a transceiver -- while the operator's cable is in the port
+    # next to it and every unit reports success.
+    netExcludeDrivers = [ "mlx5_core" ];
+
     # Whatever radio the box carries, matched by type rather than by driver --
     # see platform.nix for why that is safe here and why it is not pinned.
     # Only consulted when the image is built with --wifi.

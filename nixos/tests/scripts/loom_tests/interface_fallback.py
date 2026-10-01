@@ -1,18 +1,26 @@
 """The box no platform matches: which wired NIC becomes loom0, and what is said.
 
-Three nodes, because the answer differs by what the box has: one wired port, two, and
-the fallback switched off -- which is the old behaviour, still reachable.
+Four nodes, because the answer differs by what the box has: one wired port, two, the
+fallback switched off -- which is the old behaviour, still reachable -- and a platform
+that excludes the driver behind the only port there is.
 
-Nothing here is interpolated from the .nix
-file:
-every value this asserts is a name
-the appliance itself chooses.
+Nothing here is interpolated from the Nix file -- every value this asserts is a name the
+appliance itself chooses.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, StartAll, Subtest
+
+
+class Nodes(NamedTuple):
+    """The four boxes this test compares, named rather than positional."""
+
+    single: "Machine"
+    dual: "Machine"
+    disabled: "Machine"
+    excluded: "Machine"
 
 
 def _single_nic_claimed(single: "Machine", subtest: "Subtest") -> None:
@@ -109,26 +117,43 @@ def _switched_off(disabled: "Machine", subtest: "Subtest") -> None:
         assert "\\" not in issue, issue
 
 
-def run(
-    single: "Machine",
-    dual: "Machine",
-    disabled: "Machine",
-    *,
-    start_all: "StartAll",
-    subtest: "Subtest",
-) -> None:
-    """The whole test, as the .nix file calls it."""
+def _excluded_driver_is_never_claimed(excluded: "Machine", subtest: "Subtest") -> None:
+    with subtest("a driver the platform excludes is passed over, not claimed"):
+        # Distinct from the switched-off node above: the fallback is enabled here
+        # and did run. It simply found nothing it was allowed to take.
+        excluded.succeed("systemctl cat loom-interface-fallback.service")
+        excluded.wait_for_unit("loom-interface-fallback.service")
+
+        excluded.fail("test -e /sys/class/net/loom0")
+        excluded.fail("test -e /run/loom/interface-fallback")
+
+        # And it said which port it passed over. Without that line an exclusion
+        # is indistinguishable from a NIC the kernel never enumerated, which are
+        # two very different things to be standing in front of.
+        journal = excluded.succeed("journalctl -b -u loom-interface-fallback.service")
+        assert "excludes virtio_net" in journal, journal
+
+        excluded.wait_for_unit("loom-network-check.service")
+        issue = excluded.succeed("cat /run/issue.d/60-loom-network.issue")
+        assert "does not exist" in issue, issue
+        assert "\\" not in issue, issue
+
+
+def run(nodes: Nodes, *, start_all: "StartAll", subtest: "Subtest") -> None:
+    """The whole test, as the Nix file calls it."""
     start_all()
 
-    for machine in (single, dual, disabled):
+    for machine in nodes:
         machine.wait_for_unit("multi-user.target")
 
-    _single_nic_claimed(single, subtest)
-    _claimed_nic_is_real(single, subtest)
-    _console_says_so(single, subtest)
-    _rerunning_changes_nothing(single, subtest)
+    _single_nic_claimed(nodes.single, subtest)
+    _claimed_nic_is_real(nodes.single, subtest)
+    _console_says_so(nodes.single, subtest)
+    _rerunning_changes_nothing(nodes.single, subtest)
 
-    _one_of_two_claimed(dual, subtest)
-    _lowest_device_path_wins(dual, subtest)
+    _one_of_two_claimed(nodes.dual, subtest)
+    _lowest_device_path_wins(nodes.dual, subtest)
 
-    _switched_off(disabled, subtest)
+    _switched_off(nodes.disabled, subtest)
+
+    _excluded_driver_is_never_claimed(nodes.excluded, subtest)

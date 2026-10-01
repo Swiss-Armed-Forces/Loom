@@ -382,10 +382,22 @@ virtual interfaces with no backing device. A cellular modem is the awkward one: 
 ethernet card apart from that `DEVTYPE=wwan`, and serving DHCP down a mobile connection is not a mistake worth
 making.
 
+A platform can also exclude a driver outright, and the Spark does. `netMatch` not matching is not the same as
+the port being absent: if the RJ45 is ever claimed by a driver other than the one `platforms/spark.nix` names,
+the port is still there under a name nobody predicted, and the table above would hand `loom0` to whichever
+wired port has the lowest PCI path. On that box those are the ConnectX-7's four MACs, in PCI domains 0000 and
+0002 against the RJ45's 0007 — cages that carry nothing without a transceiver. So `mlx5_core` is listed in the
+platform's `netExcludeDrivers` and the fallback never considers them.
+
+Excluding every candidate leaves the box with no `loom0`, and that is the intended outcome rather than a gap:
+a box that says so on its login screen is recoverable with `--interface`, and a box quietly serving a dark
+port is not.
+
 Picking rather than refusing is deliberate. A box that came up on the wrong port of a multi-port machine is
 fixed by moving the cable; a box with no `loom0` at all needs a new stick.
 
-`loom-wired-nics` prints the candidate list, in order, on the box itself.
+`loom-wired-nics` prints the candidate list, in order, on the box itself, and names any port it skipped —
+and why — on stderr.
 
 #### Pinning a port
 

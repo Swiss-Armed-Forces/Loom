@@ -86,7 +86,8 @@ let
   # for anyone debugging the box afterwards.
   fallbackRecord = "/run/loom/interface-fallback";
 
-  # Every wired NIC on the box, most-stable-device-path first.
+  # Every wired NIC on the box the fallback may claim, most-stable-device-path
+  # first.
   #
   # "Wired NIC" is four exclusions, and each one matters:
   #
@@ -105,9 +106,24 @@ let
   #   type != 1             not ARPHRD_ETHER: ppp, sit, ib and friends.
   #   lo                    obviously.
   #
+  # ...and a fifth, which is the platform's rather than the kernel's:
+  #
+  #   an excluded driver   `loom.platform.netExcludeDrivers`. A port the platform
+  #                        declined to name in `netMatch` is still a wired port,
+  #                        so without this the fallback claims it anyway -- and
+  #                        the sort below makes that *likelier*, not less. See
+  #                        the option for the Spark's ConnectX-7 cages, which
+  #                        rank ahead of the RJ45 and carry nothing without a
+  #                        transceiver.
+  #
   # Sorted by the PCI address behind the device rather than by interface name, so
   # a box with more than one port picks the same one on every boot instead of
   # whichever udev happened to finish first.
+  #
+  # Candidates on stdout, skipped ports on stderr. loom-interface-fallback reads
+  # the one and the journal keeps the other, so a box that came up on no port at
+  # all still says which ones it passed over and why -- without that, an
+  # exclusion is indistinguishable from a NIC the kernel never enumerated.
   loom-wired-nics = pkgs.writeShellApplication {
     name = "loom-wired-nics";
     runtimeInputs = with pkgs; [
@@ -116,6 +132,8 @@ let
       gnugrep
     ];
     text = ''
+      readonly EXCLUDED=${lib.escapeShellArg (lib.concatStringsSep " " config.loom.platform.netExcludeDrivers)}
+
       for path in /sys/class/net/*; do
           name="$(basename "''${path}")"
 
@@ -129,6 +147,25 @@ let
               continue
           fi
           if [ "$(cat "''${path}/type" 2>/dev/null || echo 0)" != 1 ]; then
+              continue
+          fi
+
+          # The driver is read per port rather than matched against `netMatch`,
+          # which is a systemd [Match] block nothing here can evaluate.
+          driver=""
+          if [ -e "''${path}/device/driver" ]; then
+              driver="$(basename "$(readlink --canonicalize "''${path}/device/driver")")"
+          fi
+
+          skip=false
+          for excluded in ''${EXCLUDED}; do
+              if [ "''${driver}" = "''${excluded}" ]; then
+                  skip=true
+                  break
+              fi
+          done
+          if [ "''${skip}" = true ]; then
+              echo >&2 "[*] Skipping ''${name}: this platform excludes ''${driver}."
               continue
           fi
 
