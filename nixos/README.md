@@ -25,7 +25,7 @@ this file is about the code.
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
 | `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
 | `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
-| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, and `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`. |
+| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge, radios off. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
 | `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror`, and the console pane the copy is drawn in — with its own pytest suite, run at build time. |
@@ -39,6 +39,9 @@ this file is about the code.
 | `scripts/platform_info.sh` | `loom-platform-info`: what the box actually is, next to what the platform file claims. Plain bash with no Nix dependency, because the box it most needs to run on is one that is not running Loom yet. |
 | `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
+| `tests/appliance-units.nix` | Not a VM test: asserts the unit edges that put the appliance address on the interface before dnsmasq and nginx bind it, in the default build and the `--wifi` one. Builds the second configuration itself with `extendModules`. |
+| `tests/appliance-dhcp.nix` | VM test for the default build's DHCP server: dnsmasq on a `loom0` renamed during boot, the lease a client gets, the captive-portal probe names, and that a missing interface no longer kills the daemon. |
+| `tests/dhcp-probe.nix` | The DHCP client the lease subtests run inside the guest, shared by the `wifi` and `dhcp` tests. Guest code, which is why it is not under `tests/scripts/`. |
 | `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
 | `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, and the fallback switched off. |
 | `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
@@ -555,14 +558,16 @@ package exists only inside the driver's closure, and importing it would mean the
 type-check any of this. Which is also why every test sets `skipTypeCheck = true` — exactly one of
 the two type checks can run, and the one that runs on every commit is worth more.
 
-`appliance-test` is the other half: the six short names and what each is for:
+`appliance-test` is the other half: the short names and what each is for:
 
 | Name | Attribute | What it asserts |
 | --- | --- | --- |
 | `hardware` | `tests.applianceHardware` | What nixos-hardware gives this platform, and that the Loom overrides still take the desktop userspace back off. **Not a VM test** — see below. |
+| `units` | `tests.applianceUnits` | The unit edges that put the appliance address on the interface before dnsmasq and nginx bind it, in the default build and the `--wifi` one. `network.target` does not imply a static address under this nixpkgs pin, and a daemon ordered only after it races the address. **Not a VM test** — and it builds the `--wifi` configuration itself, so it is the only coverage that build's ordering gets on a machine that cannot boot one. |
 | `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. Two nodes: the second exists for the guard's arm deadline, which ends in a poweroff of its own. |
 | `install` | `tests.applianceInstall` | The disk layout: the pool, the container where stage 1 expects it, and the wipe. |
-| `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. Being the only test where dnsmasq runs, it is also where the DHCP offer itself is read — a lease that names a default gateway would take a visitor's laptop off the internet. |
+| `dhcp` | `tests.applianceDhcp` | The build that actually gets flashed, serving DHCP on `loom0` — a renamed physical port rather than a bridge the configuration creates, which is the combination that shipped broken. The fallback renames the NIC during boot, so the ordering race is reproduced rather than simulated. Also the lease a client gets, the captive-portal probe names asked of the live resolver, and that a missing interface no longer kills the daemon. |
+| `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. The lease it reads is the one served over the bridge; `dhcp` reads the one served over the wire. A lease that names a default gateway would take a visitor's laptop off the internet. |
 | `mouse` | `tests.applianceMouse` | Point-and-click, end to end: a `uinput` mouse in the guest, through mousedev and gpm and the pty shim, to the pane tmux focuses — plus the detach control and the unreachable prefix. |
 | `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |
 | `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, and the fallback switched off. |
@@ -574,18 +579,18 @@ those correctly, so defaults would fail the test for the wrong reason — and as
 garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--gc`,
 `--nixpkgs` and `--nixos-hardware` are the flags; `appliance-test --help` lists them.
 
-`hardware` is the exception to everything in this section. It boots nothing — it reads the evaluated
-configuration and exits — so it does not need KVM, does not build the appliance closure, and is not
-bound to the host's architecture. It therefore runs first, and a selection made up only of it lifts the
-cross-architecture refusal:
+`hardware` and `units` boot nothing — they read the evaluated configuration and exit — so they do not
+need KVM, do not build the appliance closure, and are not bound to the host's architecture. They
+therefore run first, and a selection made up only of them lifts the cross-architecture refusal:
 
 ```bash
 appliance-test hardware --platform spark      # works on an x86_64 workstation
 appliance-test hardware --platform all        # or all three at once
+appliance-test units --platform all           # the unit graph, every platform, both builds
 ```
 
-That is the one to run after a renovate bump of the `nixos-hardware` pin: all three platforms checked
-from one machine, in seconds. `--platform all` is refused for any selection that includes a VM test,
+`hardware` is the one to run after a renovate bump of the `nixos-hardware` pin, and `units` after a
+bump of `nixpkgs-stable`: all three platforms checked from one machine, in seconds. `--platform all` is refused for any selection that includes a VM test,
 which has to boot the kernel it built.
 
 Underneath it is one `nix-build` per target, which is still the way to run one by hand:
@@ -637,8 +642,11 @@ nix-build ./nixos -A tests.appliance --arg requireKvm false ...   # what --no-kv
 
 Two jobs in `.gitlab-ci.yml`, split along the same line as the two scripts:
 
-- `appliance_check` runs `appliance-check` and `appliance-test hardware --platform all` on every
-  pipeline. Neither needs KVM nor a matching architecture, so it runs on any runner, and it is the
+- `appliance_check` runs `appliance-check` and `appliance-test hardware units --platform all` on every
+  pipeline. `units` has to be named there rather than left to `appliance-check`: that runs
+  `appliance-eval`, which only instantiates, and an eval-only test reports its verdict from the builder
+  script — so a failing check still produces a valid `.drv` and nothing notices until something builds
+  it. Neither needs KVM nor a matching architecture, so it runs on any runner, and it is the
   only coverage the Spark image gets there — the runners are all x86_64.
 - `appliance_test` runs the VM tests on `evo-x2`, and is the one job in that file gated with
   `rules: changes:` — `nixos/**/*`, `cicd/run_appliance_tests.sh`, `vars.sh`, `up.sh`,
@@ -672,6 +680,7 @@ A run costs disk in two ways, and both land on the filesystem holding `/nix`:
 | `appliance` | 2 | 165 MB — the heaviest, and mostly the key guard's loop images; the deadline node writes nothing |
 | `install` | 1 | the two 2 GB scratch disks it partitions, sparsely |
 | `wifi` | 1 | 19 MB |
+| `dhcp` | 1 | 20 MB |
 | `usb-ingest` | 1 | 28 MB, plus four 256 MB scratch disks it puts filesystems on |
 | `interface-fallback` | 3 | 20 MB each |
 | `key-store` | 1 | 96 MB — three 32 MB loop images, the same shape as `appliance`'s |

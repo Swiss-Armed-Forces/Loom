@@ -1,14 +1,19 @@
 """The captive portal, as configured.
 
-Read out of the rendered dnsmasq and nginx configurations rather than exercised over a
-socket, and deliberately so: tests/appliance.nix forces `loom.autoSelectInterface` off
-to assert the opposite property -- that a VM whose only NIC is virtio comes up with no
-`loom0` -- so this box has no appliance address for either daemon to bind. What can be
-checked here is the decision, which is the part that rots.
+Read out of the rendered nginx configuration rather than exercised over a socket, and
+deliberately so: tests/appliance.nix forces `loom.autoSelectInterface` off to assert the
+opposite property -- that a VM whose only NIC is virtio comes up with no `loom0` -- so
+this box has no appliance address for nginx to bind. What can be checked here is the
+decision, which is the part that rots.
 
-What cannot be checked here at all is the half that needs a cluster: that
-`http://frontend.loom/` answers 200 once Traefik is up. Bring-up takes hours, so that
-stays a manual check on hardware (Documentation/appliance.md).
+The resolver half lives in loom_tests/dhcp.py instead. It cannot be checked here at all:
+this node also forces dnsmasq off, so there is no dnsmasq.service and no rendered config
+to read. That test's node runs the resolver, so it asks it which address each captive-
+portal probe resolves to rather than inferring it from a config file.
+
+What cannot be checked here at all is the half that needs a cluster: that the frontend
+answers 200 over plain http once Traefik is up. Bring-up takes hours, so that stays a
+manual check on hardware (Documentation/appliance.md).
 """
 
 import re
@@ -19,11 +24,6 @@ from loom_tests.appliance.params import Params
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, Subtest
 
-# The fallbacks portal.nix deliberately does not claim. They are real sites, and
-# hijacking them would turn an answer to a question only an OS asks into blanket
-# interception -- so their absence is as much the decision as the four entries are.
-UNCLAIMED = ["www.google.com", "www.apple.com"]
-
 
 def _config_path(appliance: "Machine", unit: str, flag: str) -> str:
     """The config a unit is pointed at, through its ExecStart.
@@ -31,9 +31,15 @@ def _config_path(appliance: "Machine", unit: str, flag: str) -> str:
     Same indirection modes.py follows for the loom.service start script: the path is
     generated into the store, so nothing in the unit file can be matched against a name
     written here.
+
+    The flag has to be delimited on both sides, which is not fussiness. `systemctl cat`
+    prints the whole unit, `Environment=PATH=` included, and a NixOS unit's PATH always
+    carries `/nix/store/<hash>-coreutils-<version>/bin` -- in which `-c` appears, with
+    no space after it and a hash character before it. A bare search for the flag matched
+    that first and returned the rest of the PATH as a filename.
     """
     execstart = appliance.succeed(f"systemctl cat {unit}")
-    match = re.search(rf"{re.escape(flag)}\s*(\S+)", execstart)
+    match = re.search(rf"(?<![\w-]){re.escape(flag)}\s+(\S+)", execstart)
     assert match, execstart
     return match.group(1)
 
@@ -56,38 +62,6 @@ def addresses(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # address and the lease would collide with it.
         pool_start = int(f"{params.loom_subnet}.100".rsplit(".", maxsplit=1)[-1])
         assert int(portal.rsplit(".", maxsplit=1)[-1]) < pool_start, conf
-
-
-def probe_names(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
-    with subtest("dnsmasq sends the probes to the portal and refuses everything else"):
-        dnsmasq_conf = appliance.succeed(
-            f"cat {_config_path(appliance, 'dnsmasq.service', '-C')}"
-        )
-        box = f"{params.loom_subnet}.1"
-        portal = f"{params.loom_subnet}.2"
-
-        # The four dedicated probe FQDNs, at the responder rather than at the box.
-        for host in [
-            "connectivitycheck.gstatic.com",
-            "captive.apple.com",
-            "www.msftconnecttest.com",
-            "detectportal.firefox.com",
-        ]:
-            assert f"address=/{host}/{portal}" in dnsmasq_conf, dnsmasq_conf
-
-        # And nothing beyond them. A wildcard here would point a visitor's mail
-        # client at this box instead of letting it fail cleanly, which is the whole
-        # reason the list is written out one name at a time.
-        for host in UNCLAIMED:
-            assert host not in dnsmasq_conf, dnsmasq_conf
-        assert "address=/#/" not in dnsmasq_conf, dnsmasq_conf
-
-        # The names the box actually serves still resolve to the box.
-        assert f"address=/loom/{box}" in dnsmasq_conf, dnsmasq_conf
-
-        # No upstream, so everything else stays REFUSED rather than gaining an
-        # answer as a side effect of the entries above.
-        assert "no-resolv" in dnsmasq_conf, dnsmasq_conf
 
 
 def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:

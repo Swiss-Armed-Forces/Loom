@@ -362,8 +362,9 @@ in
         }
         # On the same interface as the appliance address, so it follows the
         # bridge in a --wifi build and loom0 otherwise with no second code path,
-        # and so both appear in one unit -- dnsmasq binds addresses rather than
-        # an interface name (bind-interfaces) and must not start between them.
+        # and so both appear in one unit -- which is the unit dnsmasq and nginx
+        # are ordered on, below and in portal.nix. One unit means one edge each,
+        # rather than a daemon that can start between two addresses.
         {
           address = portalAddress;
           prefixLength = 24;
@@ -378,10 +379,25 @@ in
         enable = true;
         resolveLocalQueries = false;
         settings = {
-          interface = serviceInterface;
           # Refuse to answer on anything but our own link, so the box can never
-          # act as a rogue DHCP server if it is cabled into a real network.
-          bind-interfaces = true;
+          # act as a rogue DHCP server if it is cabled into a real network. That
+          # is this line, and it is what makes the binding mode below safe.
+          interface = serviceInterface;
+
+          # bind-dynamic rather than bind-interfaces. Both bind the interface
+          # rather than the wildcard, which is what keeps the access control
+          # above honest. What they do not share is what happens to a name that
+          # is not there yet: bind-interfaces resolves `interface=` once, at
+          # startup, and dnsmasq exits with "unknown interface loom0" -- while
+          # dnsmasq(8) says of this one that "if new interfaces or addresses
+          # appear, it automatically listens on those (subject to any
+          # access-control configuration)". Linux-only, which this is.
+          #
+          # The ordering below is what makes the box come up correctly; this is
+          # what keeps it correct afterwards. loom0 is a renamed physical port
+          # and loombr0 is a bridge whose members come and go, and a daemon that
+          # needs a restart for either is a daemon nobody is there to restart.
+          bind-dynamic = true;
 
           dhcp-range = "${poolStart},${poolEnd},255.255.255.0,12h";
           dhcp-option = [
@@ -434,6 +450,44 @@ in
           bogus-priv = true;
           log-dhcp = true;
         };
+      };
+
+      # dnsmasq is given `interface=`, so what it needs is the link -- and under
+      # this nixpkgs pin nothing puts the link there before it looks.
+      #
+      # network-interfaces-scripted.nix pulls `network-addresses-<iface>.service`
+      # in from the interface's .device unit alone, and deliberately keeps it out
+      # of network.target, in its own words "so if an interface is not found
+      # (e.g. a USB interface not plugged in) it will not hang the boot
+      # sequence". The nixpkgs dnsmasq unit orders itself after network.target
+      # and nothing else. So the address lands whenever udev gets round to it,
+      # which on a box whose NIC is renamed at network-pre.target
+      # (loom-interface-fallback, below) is routinely after dnsmasq has looked.
+      #
+      # `wants` as well as `after`, and `wants` is the half that does the work.
+      # Ordering constrains two jobs that are both in the queue; with nothing
+      # else pulling the address unit in, there is no second job for `after` to
+      # be ordered against and the ordering is vacuous. Same trap
+      # loom-bridge-attach describes below -- `after` without `wants` started
+      # nothing.
+      #
+      # On a box with no interface to find, `wants` leaves dnsmasq's start job
+      # waiting on a device job rather than failing fast. That is bounded at
+      # DefaultDeviceTimeoutSec (90 s), after which the device job is cancelled,
+      # the address unit fails, and dnsmasq starts anyway -- `wants`, not
+      # `requires`. portal.nix accepts the same bound for nginx on this very
+      # unit, and a box with no loom0 has no network to serve either way.
+      #
+      # Keyed on `serviceInterface`, so this one definition is the bridge in a
+      # --wifi build and loom0 otherwise, exactly as portal.nix does it.
+      #
+      # `mkIf` on the enable flag, because tests/appliance.nix and vm.nix force
+      # dnsmasq off while staying in run mode: a bare definition here would leave
+      # them a dnsmasq.service with no ExecStart= for systemd to refuse to load,
+      # and modes.nix's `after = [ "dnsmasq.service" ]` is enough to make it try.
+      systemd.services.dnsmasq = lib.mkIf config.services.dnsmasq.enable {
+        after = [ "network-addresses-${serviceInterface}.service" ];
+        wants = [ "network-addresses-${serviceInterface}.service" ];
       };
 
       networking.firewall = {
@@ -540,8 +594,16 @@ in
           "systemd-udev-settle.service"
         ];
         # Before the address, so a cabled client cannot get a DHCP lease over a
-        # port that is not in the bridge yet.
-        before = [ "network-addresses-${bridgeInterface}.service" ];
+        # port that is not in the bridge yet -- and before network.target, which
+        # is the rule every unit that assembles an interface follows: upstream's
+        # own bridge, bond and vlan units in network-interfaces-scripted.nix are
+        # `wantedBy` network.target *and* `before` it. These are their peers. The
+        # alternative is a consumer of network.target running while the wired
+        # port is still outside the bridge.
+        before = [
+          "network-addresses-${bridgeInterface}.service"
+          "network.target"
+        ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -580,7 +642,11 @@ in
         description = "Pin forwarding behaviour on the appliance bridge";
         wantedBy = [ "network.target" ];
         after = [ "${bridgeInterface}-netdev.service" ];
-        before = [ "network-addresses-${bridgeInterface}.service" ];
+        # Same two edges as loom-bridge-attach above, for the same reason.
+        before = [
+          "network-addresses-${bridgeInterface}.service"
+          "network.target"
+        ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -589,13 +655,6 @@ in
           echo 0 >/sys/class/net/${bridgeInterface}/bridge/stp_state
           echo 0 >/sys/class/net/${bridgeInterface}/bridge/forward_delay
         '';
-      };
-
-      # dnsmasq binds an address rather than an interface name (bind-interfaces),
-      # so it has to start after that address exists on the bridge.
-      systemd.services.dnsmasq = {
-        after = [ "network-addresses-${bridgeInterface}.service" ];
-        wants = [ "network-addresses-${bridgeInterface}.service" ];
       };
     })
 

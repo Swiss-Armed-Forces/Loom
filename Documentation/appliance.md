@@ -397,6 +397,26 @@ udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
 
 The driver is what a new platform should match on; the name is what `--interface` wants.
 
+#### A laptop plugged into the box gets no address at all
+
+If `loom0` exists and carries the appliance address but nothing is handed out, and `*.loom` resolves
+nothing either, the DHCP server failed at boot rather than the interface being wrong:
+
+```bash
+systemctl status dnsmasq                      # failed
+journalctl -b -u dnsmasq | grep -i 'unknown interface'
+ip addr show loom0                            # the address is there regardless
+```
+
+Sticks built **without `--wifi` between 2026-09-07 and the fix** all do this. A nixpkgs update
+removed the unit that used to hold every network daemon back until the static addresses had been
+configured, so `dnsmasq` started first, found no `loom0` yet, and exited. Nothing else on the box is
+affected — the console, the cluster and the installer are all unaffected — which is why the box looks
+healthy.
+
+`sudo systemctl restart dnsmasq` fixes it until the box is powered off. The repair is a new stick;
+there is no `nixos-rebuild` on an appliance to apply a configuration change with.
+
 ### The WiFi access point
 
 Off by default. `--wifi` builds an image whose installed appliance also runs an access point on the box's own

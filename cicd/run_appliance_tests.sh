@@ -51,10 +51,11 @@ HOST_ARCH=""
 # Short names, in the order they are run: cheapest first, so a mistake that
 # breaks all of them is reported in a minute rather than in twenty.
 #
-# `hardware` is first because it is the only one that never boots anything: it
-# reads the evaluated configuration and exits, in seconds. A nixos-hardware bump
-# that broke every platform should be reported before the VM boots, not after.
-KNOWN_TESTS=(hardware install interface-fallback key-store debug wifi mouse usb-ingest appliance)
+# `hardware` and `units` are first because they never boot anything: they read
+# the evaluated configuration and exit, in seconds. A nixos-hardware bump or a
+# nixpkgs change to the unit graph that broke every platform should be reported
+# before the VM boots, not after.
+KNOWN_TESTS=(hardware units install interface-fallback dhcp key-store debug wifi mouse usb-ingest appliance)
 
 # Targets that only read the evaluated configuration -- no kernel, no VM, and
 # not even the appliance closure. The architecture check and the KVM and disk
@@ -63,7 +64,11 @@ KNOWN_TESTS=(hardware install interface-fallback key-store debug wifi mouse usb-
 # `appliance-test hardware --platform spark` work on an x86_64 workstation,
 # which is exactly what you want to run after a nixos-hardware bump: all three
 # platforms checked from one machine, in seconds.
-EVAL_ONLY_TESTS=(hardware)
+#
+# `units` is here for the same reason and one more: it builds the --wifi
+# configuration itself, so it is the only coverage that build's unit ordering
+# gets on a machine with no KVM or the wrong architecture.
+EVAL_ONLY_TESTS=(hardware units)
 # Resolved in Main, once, like NIX_SYSTEM -- not computed inside a condition,
 # which would switch `set -e` off for the duration.
 SELECTION_NEEDS_VM=true
@@ -106,7 +111,9 @@ test_attribute(){
     case "${1}" in
         appliance)          printf 'tests.appliance'                  ;;
         hardware)           printf 'tests.applianceHardware'          ;;
+        units)              printf 'tests.applianceUnits'             ;;
         install)            printf 'tests.applianceInstall'           ;;
+        dhcp)               printf 'tests.applianceDhcp'              ;;
         wifi)               printf 'tests.applianceWifi'              ;;
         mouse)              printf 'tests.applianceMouse'             ;;
         usb-ingest)         printf 'tests.applianceUsbIngest'         ;;

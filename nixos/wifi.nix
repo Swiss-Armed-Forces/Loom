@@ -215,6 +215,20 @@ in
         };
       };
 
+      # hostapd is handed `bridge=` in its own configuration above, and nixpkgs
+      # binds it to the radio's .device unit and nothing else. So it can be told
+      # to join a bridge that has not been created yet, which the driver reports
+      # -- if at all -- as a failure to configure the BSS.
+      #
+      # `wants` as well as `after`, for the reason loom-wifi-bridge-attach gives
+      # below: the netdev unit is already pulled in by network.target, but this
+      # file should not depend on another module's `wantedBy` for its own
+      # ordering to be anything other than vacuous.
+      systemd.services.hostapd = {
+        after = [ "${cfg.wifi.bridge}-netdev.service" ];
+        wants = [ "${cfg.wifi.bridge}-netdev.service" ];
+      };
+
       # Explicitly add the WiFi interface to the bridge. hostapd's settings.bridge
       # only tells the daemon which bridge to use - it does not guarantee the
       # interface is added, especially on drivers like mt7925e (Spark) that do not
@@ -244,7 +258,17 @@ in
           "hostapd.service"
           "systemd-udev-settle.service"
         ];
-        before = [ "network-addresses-${cfg.wifi.bridge}.service" ];
+        # As network.nix's wired counterpart: before the address, and before
+        # network.target, which is what every unit that assembles an interface
+        # does upstream. The second edge has a cost worth stating -- this unit is
+        # `after` hostapd, so network.target now waits for the radio as well as
+        # for the bridge. Bounded: hostapd `bindsTo` the radio's .device unit, so
+        # a box with no radio starts no hostapd job and nothing waits on it, and
+        # a hostapd that fails releases the ordering when its job completes.
+        before = [
+          "network-addresses-${cfg.wifi.bridge}.service"
+          "network.target"
+        ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;

@@ -406,9 +406,16 @@ appliance_check:
     # platform's architecture -- which makes it the only coverage the Spark image
     # gets here, and cheap enough to run on every pipeline.
     - devenv shell -- appliance-check
-    # What nixos-hardware gives each platform, for all three of them. Reads the
-    # evaluated configuration and exits.
-    - devenv shell -- appliance-test hardware --platform all
+    # What nixos-hardware gives each platform, and the unit edges the appliance
+    # network depends on, for all three of them. Both read the evaluated
+    # configuration and exit.
+    #
+    # `units` has to be named here rather than left to `appliance-check` above:
+    # that runs appliance-eval, which only instantiates. An eval-only test
+    # computes its verdict at evaluation time but reports it from the builder
+    # script, so a failing check still produces a valid .drv and nothing notices
+    # until something builds it.
+    - devenv shell -- appliance-test hardware units --platform all
 
 appliance_test:
   stage: test

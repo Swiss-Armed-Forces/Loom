@@ -219,16 +219,26 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   with a list of valid ones, rather than falling back to US on the box. See the
   `## Keyboard layout` section in `Documentation/appliance.md`
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
-  `appliance`, `install`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`, `key-store`, `debug`;
-  with no argument it runs all nine, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
+  `units`, `appliance`, `install`, `dhcp`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`,
+  `key-store`, `debug`;
+  with no argument it runs all of them, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
-- `appliance-test hardware --platform all` - The one test that boots nothing: it asserts what
-  `nixos-hardware` gives each platform and that the Loom overrides still take the desktop userspace
-  back off. Needs no KVM and is not bound to the host architecture, so `--platform all` checks all
-  three from one machine in seconds. Run it after every renovate bump of the `nixos-hardware` pin.
-  `all` is refused for any selection that includes a VM test
+- `appliance-test hardware units --platform all` - Two of the tests that boot nothing. `hardware`
+  asserts what `nixos-hardware` gives each platform and that the Loom overrides still take the
+  desktop userspace back off; `units` asserts the unit edges that put the appliance address on the
+  interface before dnsmasq and nginx bind it — `network.target` does not imply a static address
+  under this nixpkgs pin, and the default build once shipped with dnsmasq racing it. Neither needs
+  KVM nor is bound to the host architecture, so `--platform all` checks all three from one machine
+  in seconds, and `units` builds the `--wifi` configuration itself so it covers the build a given
+  machine may not be able to boot. Run `hardware` after every renovate bump of the `nixos-hardware`
+  pin and `units` after one of `nixpkgs-stable`. `all` is refused for any selection that includes a
+  VM test
+- `appliance-test dhcp` - The default (non-`--wifi`) build actually serving DHCP on `loom0`. The
+  only VM test where dnsmasq runs on a renamed physical port rather than on a bridge the
+  configuration creates, which is the combination that shipped broken; the interface fallback
+  renames the NIC during boot, so the start-ordering race is reproduced rather than simulated
 - `appliance-test --no-kvm` - Build the VM tests without the `kvm` system feature, so qemu falls
   back to software emulation — correct, and five to ten times slower. With neither this nor
   `--kvm` (which fails rather than taking the slow path) the script probes `/dev/kvm` and says

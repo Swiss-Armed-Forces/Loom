@@ -541,6 +541,24 @@ in
       ;
   };
 
+  # `nix-build ./nixos -A tests.applianceUnits --argstr platform spark`
+  # The unit edges that put the appliance address on the interface before
+  # dnsmasq and nginx bind it. Not a VM test either: every value is read off the
+  # evaluated configuration, so it costs seconds, needs no KVM and is not bound
+  # to the host architecture -- which is the point, because it builds the --wifi
+  # configuration itself with `extendModules` and is therefore the only coverage
+  # that build's ordering gets on a machine that cannot boot one.
+  #
+  # `hostPkgs` for the same reason tests.applianceHardware takes it: the values
+  # are the platform's, printing them is not.
+  tests.applianceUnits = import ./tests/appliance-units.nix {
+    inherit
+      pkgs
+      hostPkgs
+      boxSystem
+      ;
+  };
+
   # `nix-build ./nixos -A tests.applianceInstall --argstr system x86_64-linux`
   # What the installer lays down on the internal disks, and whether the box
   # could find it again. The three names come off the appliance's own evaluated
@@ -554,9 +572,6 @@ in
     }
   );
 
-  # `nix-build ./nixos -A tests.applianceWifi --argstr system x86_64-linux`
-  # The --wifi build, which tests.appliance deliberately does not cover: it
-  # forces off the two things (dnsmasq, static addresses) this one exercises.
   # `nix-build ./nixos -A tests.applianceUsbIngest --argstr system x86_64-linux`
   # Boots a box with scratch disks, puts real filesystems on them, and checks
   # what usb-ingest.nix decides about each -- above all that the LUKS key stick
@@ -588,6 +603,23 @@ in
     }
   );
 
+  # `nix-build ./nixos -A tests.applianceDhcp --argstr system x86_64-linux`
+  # The default build serving DHCP on loom0, which no other test covers:
+  # tests.appliance forces dnsmasq and the static addresses off, and
+  # tests.applianceWifi runs them on a bridge the configuration creates rather
+  # than on a port renamed during boot. That difference is where the ordering
+  # regression lived, and the rename is what makes the race reproducible here.
+  tests.applianceDhcp = withKvmPolicy (
+    import ./tests/appliance-dhcp.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        loomSubnet
+        ;
+    }
+  );
+
   # `nix-build ./nixos -A tests.applianceInterfaceFallback --argstr system x86_64-linux`
   # The box no platform matches: that a wired NIC is claimed as loom0 anyway,
   # which one is picked when there are several, and that switching it off
@@ -603,6 +635,11 @@ in
     }
   );
 
+  # `nix-build ./nixos -A tests.applianceWifi --argstr system x86_64-linux`
+  # The --wifi build, which tests.appliance deliberately does not cover: it
+  # forces off the two things (dnsmasq, static addresses) this one exercises.
+  # The lease it reads is the one served over the bridge; tests.applianceDhcp
+  # reads the one served over the wire.
   tests.applianceWifi = withKvmPolicy (
     import ./tests/appliance-wifi.nix {
       inherit

@@ -87,7 +87,6 @@ def run(
 
     # How a visitor who has never heard of frontend.loom is told where it is.
     portal.addresses(appliance, subtest, params)
-    portal.probe_names(appliance, subtest, params)
     portal.redirect(appliance, subtest, params)
     portal.http_entrypoint(appliance, subtest)
 
