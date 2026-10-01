@@ -180,6 +180,21 @@ Three things follow, and only the first is obvious:
 - `runsAiServices` defaults to `gpuVendor != null`, so a CPU-only platform also drops Ollama.
   That is deliberate: the embedding step runs over every indexed file, and on a CPU the queue never drains.
 
+A fourth thing follows from `--gpus` that is not about the driver at all. `minikube start --wait all` waits
+for the core components and nothing else, so the vendor's device plugin — an ordinary DaemonSet — registers
+`<vendor>.com/gpu` a minute or more later; measured at ~86s on a Spark with the image already on the node.
+A pod that asks for the resource inside that window is rejected at admission, terminally, with reason
+`UnexpectedAdmissionError`, and the owning ReplicaSet keeps the dead pod rather than replacing it. So `up.sh`
+waits for the node to advertise the resource before it deploys, as an assertion inside `create_cluster`
+alongside `assert_minikube_ip` rather than a skippable step. It fails the bring-up on timeout, which is the
+same call `check_host_resources` already makes for `--gpus` on a box whose SMI tool finds nothing.
+
+The same race is why `modes.nix` passes `--resume-if-deployed` in **run mode only**. `loom.service` runs
+`up.sh` at every boot and `skaffold run` restamps every pod template with a fresh `skaffold.dev/run-id`, so
+without it every Deployment — Ollama included — is recreated on every boot, straight into that window.
+`loom-fetch.service` deliberately does not get the flag: it exists to populate the image store, ends in
+`--delete`, and the one thing it must never do is decide the box is already deployed and skip the fetch.
+
 The second point is spelled differently per vendor, because the vendors package the tool differently:
 `rocm-smi` is a standalone package, while `nvidia-smi` is an output of the driver. So the nvidia branch in
 `box.nix` names `config.hardware.nvidia.package.bin` — a platform that declares the vendor without

@@ -38,8 +38,15 @@ ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
 MINIKUBE_HOSTPATH_PROVISIONER_DIR="/var/hostpath-provisioner"
+LOOM_CHART_FILE="${SCRIPT_DIR}/charts/Chart.yaml"
 
 WAIT_MAX_RETRIES=30
+
+# The GPU device plugin is itself a pod, so it only registers
+# <vendor>.com/gpu once the control plane and the CNI are back. Until it does,
+# kubelet rejects every pod requesting the resource with a terminal
+# UnexpectedAdmissionError, so the ceiling has to cover a cold plugin image pull.
+WAIT_GPU_MAX_RETRIES=300
 
 #
 # Minikube host resource reservation
@@ -67,6 +74,18 @@ KUBELET_SYSTEM_RESERVED_MEMORY=""
 KUBELET_KUBE_RESERVED_MEMORY=""
 KUBELET_EVICTION_HARD_MEMORY=""
 KUBELET_EVICTION_SOFT_MEMORY=""
+
+#
+# Controller-manager configuration
+#
+# A pod rejected at admission - a GPU pod that kubelet replayed after a reboot
+# before the device plugin had registered, say - is terminal, and the
+# ReplicaSet controller does not count terminal pods as active, so it never
+# deletes them. Pod GC is what reaps them, and upstream's default threshold of
+# 12500 means it effectively never runs here. A value <= 0 disables GC
+# entirely; this one sits above the terminated pods a healthy cluster carries
+# from the pre-install Jobs.
+KUBE_CONTROLLER_TERMINATED_POD_GC_THRESHOLD="50"
 
 #
 # Shared variables
@@ -117,6 +136,7 @@ STEPS_SETUP_SYSTEM=(
 STEPS_SETUP_CLUSTER=(
     create_namespace
     use_namespace
+    detect_deployed_release
     inject_archive_enc_key
     create_docker_secret_from_config
     install_third_party
@@ -138,6 +158,10 @@ TAIL=false
 EXPOSE=false
 EXPOSE_IP=""
 GPUS=""
+# Extended resource the chosen GPU vendor's device plugin advertises. Set
+# alongside the addon in create_cluster().
+GPU_RESOURCE_NAME=""
+RESUME_IF_DEPLOYED=false
 OFFLINE_MODE=false
 NO_RESOURCES=false
 SCALING=false
@@ -244,6 +268,44 @@ is_offline() {
         --max-time 5 \
         --head "${ONLINE_TEST_URL}" \
     &>/dev/null
+}
+
+# The node advertises the GPU vendor's extended resource. The cluster is
+# single-node, so select over .items[*] rather than naming the node; the dots in
+# "nvidia.com/gpu" have to be escaped for jsonpath.
+is_gpu_resource_registered() {
+    local allocatable
+    allocatable="$(
+        kubectl get nodes \
+            --output "jsonpath={.items[*].status.allocatable.${GPU_RESOURCE_NAME//./\\.}}" \
+        2>/dev/null
+    )" || return 1
+
+    [[ -n "${allocatable}" ]] && [[ "${allocatable}" -ge 1 ]]
+}
+
+# A deployment carries the helm.sh/chart label of the chart version we are
+# about to deploy. The loom and traefik skaffold configs render with
+# `helm template` and apply with kubectl, so no helm release is recorded and
+# this label is the only record of what is installed.
+is_chart_deployed() {
+    local deployment expected actual
+    deployment="${1}" && shift
+    expected="${1}" && shift
+
+    actual="$(
+        kubectl get deployment "${deployment}" \
+            --namespace "${NAMESPACE}" \
+            --output 'jsonpath={.metadata.labels.helm\.sh/chart}' \
+        2>/dev/null
+    )" || return 1
+
+    if [[ "${actual}" != "${expected}" ]]; then
+        echo "[*] ${deployment}: have '${actual:-nothing}', want '${expected}'."
+        return 1
+    fi
+
+    return 0
 }
 
 #
@@ -838,12 +900,14 @@ create_cluster(){
         case "${GPUS}" in
             amd)
                 addons="${addons},amd-gpu-device-plugin"
+                GPU_RESOURCE_NAME="amd.com/gpu"
             ;;
             nvidia)
                 # NVIDIA's own plugin, not minikube's `nvidia-gpu-device-plugin`:
                 # that one is deprecated upstream and ships a single amd64 image,
                 # which cannot run on an aarch64 node such as the DGX Spark.
                 addons="${addons},nvidia-device-plugin"
+                GPU_RESOURCE_NAME="nvidia.com/gpu"
             ;;
             *)
                 echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
@@ -867,10 +931,12 @@ create_cluster(){
         --extra-config="kubelet.eviction-hard=memory.available<${KUBELET_EVICTION_HARD_MEMORY},nodefs.available<${KUBELET_EVICTION_HARD_NODEFS},imagefs.available<${KUBELET_EVICTION_HARD_IMAGEFS}" \
         --extra-config="kubelet.eviction-soft=memory.available<${KUBELET_EVICTION_SOFT_MEMORY}" \
         --extra-config="kubelet.eviction-soft-grace-period=memory.available=${KUBELET_EVICTION_SOFT_GRACE_PERIOD_MEMORY}" \
+        --extra-config="controller-manager.terminated-pod-gc-threshold=${KUBE_CONTROLLER_TERMINATED_POD_GC_THRESHOLD}" \
         "${gpu_args[@]}" \
         "${mount_args[@]}"
 
     assert_minikube_ip
+    assert_gpu_resource_registered
 }
 
 # What --static-ip asked for, against what the node actually got.
@@ -916,6 +982,66 @@ assert_minikube_ip(){
     echo "[*] Minikube node is at ${minikube_ip}, as pinned"
 }
 
+# What the GPU device plugin addon was asked for, against what the node
+# actually advertises.
+#
+# `minikube start --wait all` waits for the core components and nothing else.
+# The device plugin is an ordinary DaemonSet that is scheduled, pulled and
+# started after that, and only then registers <vendor>.com/gpu with the kubelet
+# -- measured at ~86s on a DGX Spark with the image already on the node.
+#
+# A pod that requests the resource inside that window is not retried. Kubelet
+# rejects it at admission: phase Failed, reason UnexpectedAdmissionError,
+# "Allocate failed due to no healthy devices present", and the owning ReplicaSet
+# keeps that terminal pod rather than replacing it. Ollama is the only workload
+# that asks for a GPU, so the symptom is an appliance whose AI half is down with
+# nothing in the log that mentions a race.
+#
+# Called from create_cluster rather than listed in STEPS_SETUP_SYSTEM, for the
+# same reason assert_minikube_ip is: it is an assertion about the command
+# directly above it and must not be skippable on its own.
+#
+# It fails the run rather than warning, which is the choice check_host_resources
+# already makes for --gpus on a box whose nvidia-smi finds nothing: a Loom that
+# asked for a GPU and was not given one is a misconfiguration, and this is the
+# last place it can still be named.
+assert_gpu_resource_registered(){
+    if [[ -z "${GPUS}" ]]; then
+        return
+    fi
+
+    echo "[*] Waiting for the node to advertise ${GPU_RESOURCE_NAME}"
+
+    local retry_count
+    retry_count=0
+
+    # shellcheck disable=SC2310
+    while ! is_gpu_resource_registered; do
+        if [[ "${retry_count}" -ge "${WAIT_GPU_MAX_RETRIES}" ]]; then
+            echo >&2 "[!] Error: the node still does not advertise ${GPU_RESOURCE_NAME}"
+            echo >&2 "    after ${WAIT_GPU_MAX_RETRIES} seconds."
+            echo >&2 ""
+            echo >&2 "    The ${GPUS} device plugin is what registers that resource. Deploying"
+            echo >&2 "    now would put the ollama pod through kubelet admission before it"
+            echo >&2 "    exists, and admission rejects rather than retries: the pod would sit"
+            echo >&2 "    in UnexpectedAdmissionError for the life of the cluster."
+            echo >&2 ""
+            echo >&2 "    Look at the plugin:"
+            echo >&2 "      kubectl --namespace kube-system get daemonsets,pods | grep device-plugin"
+            echo >&2 "    A host whose driver is missing, or a node with no copy of the plugin"
+            echo >&2 "    image, shows up there. To bring Loom up without the GPU at all, run"
+            echo >&2 "    without --gpus."
+            exit 1
+        fi
+
+        echo "[*] Waiting for ${GPU_RESOURCE_NAME}... Attempt $((retry_count+1))/${WAIT_GPU_MAX_RETRIES}"
+        sleep 1
+        retry_count=$((retry_count + 1))
+    done
+
+    echo "[*] Node advertises ${GPU_RESOURCE_NAME}"
+}
+
 default_use_csi-hostpath-driver(){
     if [[ -n "${MINIKUBE_MOUNT_STRING}" ]]; then
         # storage-provisioner is already the default; nothing to do.
@@ -944,6 +1070,75 @@ use_namespace(){
         --namespace="${NAMESPACE}"
 }
 
+# Skip the deploy when the cluster already carries this checkout's release.
+#
+# `skaffold run` stamps a fresh skaffold.dev/run-id UUID into every pod template
+# on every invocation, so every Deployment in the namespace rolls on every run
+# even when nothing changed. A host that runs this script at every boot --
+# loom.service on the appliance -- therefore redeploys a stack that was already
+# correct, and the new ollama pod goes through kubelet admission while the GPU
+# device plugin is still starting.
+#
+# The chart version is read off live objects rather than from `helm list`: the
+# loom and traefik skaffold configs render with `helm template` and apply with
+# kubectl, so no helm release is recorded and the helm.sh/chart label is the
+# only record of what is installed.
+#
+# Opt-in, because a developer running `up` expects their working tree to reach
+# the cluster whether or not the chart version moved.
+detect_deployed_release(){
+    if [[ "${RESUME_IF_DEPLOYED}" = false ]]; then
+        return
+    fi
+
+    local chart_version
+    chart_version="$(yq --raw-output '.version' "${LOOM_CHART_FILE}")"
+
+    # Two release names, not three: the dev profile renames the release to
+    # `development`, and prod and offline both leave it at `production`.
+    local release
+    if [[ "${SKAFFOLD_PROFILE}" = "dev" ]]; then
+        release="development"
+    else
+        release="production"
+    fi
+
+    # shellcheck disable=SC2310
+    if ! is_chart_deployed \
+        "${release}-loom-api" "loom-${chart_version}"; then
+        echo "[*] Deploying: the cluster does not carry loom-${chart_version}."
+        return
+    fi
+
+    # shellcheck disable=SC2310
+    if ! is_chart_deployed \
+        "${release}-traefik" "traefik-${TRAEFIK_HELM_VERSION}"; then
+        echo "[*] Deploying: the cluster does not carry traefik-${TRAEFIK_HELM_VERSION}."
+        return
+    fi
+
+    # KEDA is only installed under --scaling, so asking for it unconditionally
+    # would keep every non-scaling deployment off the fast path for good.
+    if [[ "${SCALING}" = true ]]; then
+        # shellcheck disable=SC2310
+        if ! is_chart_deployed \
+            "${release}-keda-operator" "keda-${KEDA_HELM_VERSION}"; then
+            echo "[*] Deploying: the cluster does not carry keda-${KEDA_HELM_VERSION}."
+            return
+        fi
+    fi
+
+    # install_certificate is deliberately still run: it installs a certificate
+    # from files on the host that this script cannot fingerprint, so skipping it
+    # would silently keep one the operator has just replaced. It is two kubectl
+    # calls, and a no-op without --certificate.
+    echo "[*] The cluster already carries loom-${chart_version}; not redeploying."
+    SKIP+=(
+        "--skip-install_third_party"
+        "--skip-run_skaffold"
+    )
+}
+
 install_traefik(){
     (
         cd "${TRAEFIK_DIR}"
@@ -970,16 +1165,21 @@ install_traefik(){
             apply \
                 --filename tls-store.yaml
 
-        # Delete all traefik deployments before redeploying.
-        # Traefik holds exclusive access on ports 80/443, so any previously
-        # active profile (prod or dev) must be removed first — not just the
-        # current one. Otherwise switching between -d and non-d runs leaves a
-        # stale release that blocks port binding.
-        # Run both deletes in parallel to save time.
+        # Remove the release for the profile we are *not* deploying. Traefik
+        # binds the host's ports 80 and 443, so `up` and `up -d` cannot both
+        # have one, and the dev profile is the only one that renames the release
+        # (prod and offline both deploy it as `production`).
+        #
+        # The release we *are* deploying needs no delete: traefik/values.yaml
+        # sets updateStrategy to Recreate, so an in-place upgrade takes the old
+        # pod down before binding the ports again, where a delete costs a full
+        # ingress teardown on every bring-up.
         # Related: https://github.com/GoogleContainerTools/skaffold/issues/9222
-        "${CICD_SKAFFOLD}" traefik delete --profile prod || true &
-        "${CICD_SKAFFOLD}" traefik delete --profile dev  || true &
-        wait
+        if [[ "${SKAFFOLD_PROFILE}" = "dev" ]]; then
+            "${CICD_SKAFFOLD}" traefik delete --profile prod || true
+        else
+            "${CICD_SKAFFOLD}" traefik delete --profile dev  || true
+        fi
 
         "${CICD_SKAFFOLD}" traefik run \
             --profile "${SKAFFOLD_PROFILE}" \
@@ -1267,6 +1467,9 @@ usage(){
     echo "                                        transport security for the whole stack, Elasticsearch,"
     echo "                                        Grafana, S3 and the Traefik dashboard included. Only for a"
     echo "                                        deployment whose network is already trusted."
+    echo "  --resume-if-deployed                  skip the deploy when the cluster already carries this"
+    echo "                                        checkout's chart versions. For a host that runs this"
+    echo "                                        script at every boot; the cluster itself is still started."
     echo "  --down                                tear down the deployment and exit
   --delete                              delete the deployment after startup"
     echo "  --skip-STEP                           skip step STEP"
@@ -1382,6 +1585,10 @@ while [[ $# -gt 0 ]]; do
         ;;
         --enable-http)
             UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
+            shift
+        ;;
+        --resume-if-deployed)
+            RESUME_IF_DEPLOYED=true
             shift
         ;;
         --down)

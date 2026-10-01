@@ -1551,6 +1551,25 @@ Use these rather than `./up.sh` directly. Bare `up.sh` would rewrite `/etc/hosts
 which this appliance declares through NixOS — it would undo its own configuration. `loom-up` passes
 `--skip-setup_system --skip-install_host_entries` for exactly that reason, and forwards everything else through.
 
+`loom.service` adds `--resume-if-deployed` on top, in run mode only. The unit runs `up.sh` at every boot, and
+`skaffold run` stamps a fresh `skaffold.dev/run-id` into every pod template each time it is invoked — so
+without the flag every Deployment in the namespace rolls on every boot, even though the checkout, the images
+and the flags are all fixed by the image the box was built from. The flag compares the `helm.sh/chart` label
+on the live Deployments against the versions this checkout would deploy, and skips `install_third_party` and
+`run_skaffold` when they already match. The cluster itself is still started: after a host reboot minikube's
+container is stopped, and `minikube start` is never skipped.
+
+The rolling it avoids is not only wasted time. A pod that requests `nvidia.com/gpu` is rejected outright if it
+reaches kubelet before the GPU device plugin has registered the resource — terminal, with reason
+`UnexpectedAdmissionError` — and the ollama pod created by a needless redeploy at boot lands in exactly that
+window. `up.sh` now also waits for the node to advertise the vendor's resource before it deploys anything;
+a box whose plugin never comes up fails the bring-up with a message naming it, rather than coming up with its
+AI half permanently dead.
+
+To force a redeploy from the console — after editing the chart in place, say — run `loom-up --offline` without
+the flag, or bump `version` in `charts/Chart.yaml`. A change under `charts/templates/` with no version bump is
+the one edit the check cannot see.
+
 Note the absence of `up.sh`'s `--expose`. Making Loom reachable from the appliance network is a separate unit,
 **`loom-expose`**, and it is not something `loom-up` starts or stops:
 

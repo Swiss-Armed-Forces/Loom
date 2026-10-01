@@ -405,8 +405,19 @@ in
           # DNAT happens in nat PREROUTING, ahead of the routing decision that
           # would hand a packet to a local listener, so a tunnel socket on the
           # appliance address would never see one.
+          # --resume-if-deployed is run mode only. This unit runs up.sh at every
+          # boot, and `skaffold run` stamps a fresh skaffold.dev/run-id into
+          # every pod template each time, so without it every Deployment rolls
+          # on every boot even though the checkout, the images and the flags are
+          # all fixed by the image this box was built from. minikube is still
+          # started either way: after a host reboot its container is stopped.
+          #
+          # First-time setup does not get it. loom-fetch.service exists to
+          # populate the image store and ends in --delete, and the one thing it
+          # must never do is decide the box is already deployed and skip the
+          # fetch.
           script = ''
-            exec loom-up --offline${gpuArgs}${platformArgs}${httpArgs}
+            exec loom-up --offline --resume-if-deployed${gpuArgs}${platformArgs}${httpArgs}
           '';
         }
       ];

@@ -96,6 +96,15 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `ipBlock` in the `-allow-k8s-api` NetworkPolicy. It has to be the *node's* address, not the API server's
   ClusterIP, because a NetworkPolicy is matched after kube-proxy has rewritten `10.96.0.1:443` to the node.
   Overriding it in `values-overwrites.yaml` moves the policy but not the node
+- `up --resume-if-deployed` - Skip `install_third_party` and `run_skaffold` when the cluster already
+  carries this checkout's chart versions, compared against the `helm.sh/chart` label on the live
+  Deployments (`helm list` cannot answer: the loom and traefik skaffold configs render with
+  `helm template` and apply with kubectl, so no helm release is recorded). For a host that runs
+  `up.sh` at every boot — `loom.service` on the appliance passes it in run mode, and nothing else
+  does, because a developer running `up` expects their working tree to reach the cluster. `minikube
+  start` is never skipped. The check cannot see an edit under `charts/templates/` with no version
+  bump in `charts/Chart.yaml`. Without it, `skaffold run`'s fresh `skaffold.dev/run-id` per
+  invocation rolls every Deployment on every boot
 - `down` - Stop Loom
 - `build` - Build all Docker images
 
