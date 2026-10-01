@@ -521,6 +521,20 @@ in
       systemd.services.loom-bridge-attach = {
         description = "Attach the wired port to the appliance bridge";
         wantedBy = [ "network.target" ];
+        # `wants` as well as `after`. Ordering pulls nothing into the
+        # transaction -- it only says "if both start, this one goes second" --
+        # so with the netdev unit not already being started, this ran first and
+        # `ip` answered `argument "loombr0" is wrong: Device does not exist`.
+        # Measured on a Spark: this unit and wifi.nix's counterpart both failed
+        # 13.17 s into the boot, which left the wired port neither bridged *nor*
+        # up, since the two lines below are the only thing in the configuration
+        # that does either -- in a --wifi build the address lives on the bridge,
+        # so NixOS generates no network-link unit for the port itself.
+        #
+        # The same trap loom-network-check's getty-pre.target comment describes
+        # from the other side: there `wants` without `after` ordered nothing,
+        # here `after` without `wants` started nothing.
+        wants = [ "${bridgeInterface}-netdev.service" ];
         after = [
           "${bridgeInterface}-netdev.service"
           "systemd-udev-settle.service"
@@ -533,16 +547,26 @@ in
           RemainAfterExit = true;
         };
         path = [ pkgs.iproute2 ];
-        # Never fails. A missing loom0 is already reported by
-        # loom-network-check, and taking the boot down here would cost the
-        # access point too -- the one way left into a box in that state.
         script = ''
+          # A missing wired port is not fatal: loom-network-check reports it,
+          # and failing here would cost the access point too -- the one way left
+          # into a box in that state.
           if [ ! -e /sys/class/net/${applianceInterface} ]; then
-            echo "${applianceInterface} is not present; bridge ${bridgeInterface} starts with the radio only"
+            echo "[!] ${applianceInterface} is not present; ${bridgeInterface} starts with the radio only."
             exit 0
+          fi
+          # A missing bridge is a different thing, and must be loud. Everything
+          # that serves this box -- the address, dnsmasq, the DNAT chain -- is on
+          # the bridge, so a port that never joined it is a cable that goes
+          # nowhere while every unit reports success.
+          if [ ! -e /sys/class/net/${bridgeInterface} ]; then
+            echo "[!] bridge ${bridgeInterface} does not exist -- ${applianceInterface} stays"
+            echo "[!] unbridged and down, and nothing answers on the wire."
+            exit 1
           fi
           ip link set dev ${applianceInterface} master ${bridgeInterface}
           ip link set dev ${applianceInterface} up
+          echo "[*] Attached ${applianceInterface} to ${bridgeInterface}."
         '';
       };
 

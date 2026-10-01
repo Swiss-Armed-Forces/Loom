@@ -227,6 +227,18 @@ in
       systemd.services.loom-wifi-bridge-attach = {
         description = "Attach the WiFi radio to the appliance bridge";
         wantedBy = [ "network.target" ];
+        # `wants` as well as `after`, and the netdev unit is the reason. Ordering
+        # alone pulls nothing into the transaction: it says "if both start, this
+        # one goes second", so when the bridge was not already being started this
+        # unit ran first and `ip` answered `argument "loombr0" is wrong: Device
+        # does not exist`. Measured on a Spark -- it and network.nix's wired
+        # counterpart failed in the same 50 ms, leaving an access point that was
+        # broadcasting and attached to nothing.
+        #
+        # `wants`, not `requires` or `bindsTo`: a bridge that failed to appear
+        # should leave this unit failed and visible, not cascade into whatever
+        # else wanted it.
+        wants = [ "${cfg.wifi.bridge}-netdev.service" ];
         after = [
           "${cfg.wifi.bridge}-netdev.service"
           "hostapd.service"
@@ -236,15 +248,30 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          # Only add if not already in the bridge. The master check reads the
-          # kernel's view of the interface, so this is idempotent across re-runs.
-          # Never fails - a missing radio is already reported by loom-wifi-check.
-          ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.iproute2}/bin/ip link show ${wifiIface} | grep -q \"master ${cfg.wifi.bridge}\" || ${pkgs.iproute2}/bin/ip link set dev ${wifiIface} master ${cfg.wifi.bridge}'";
-          SuccessExitStatus = [
-            0
-            1
-          ];
         };
+        path = [ pkgs.iproute2 ];
+        # Idempotent: the master check reads the kernel's view, so a re-run on a
+        # radio hostapd already enslaved does nothing. Spelled as a script rather
+        # than a one-line ExecStart so that each failure can say which device was
+        # missing -- `ip`'s own message names the bridge whichever argument was
+        # wrong, which cost an evening once.
+        script = ''
+          if [ ! -e /sys/class/net/${wifiIface} ]; then
+            echo "[!] ${wifiIface} does not exist; loom-wifi-check reports the radio."
+            exit 0
+          fi
+          if [ ! -e /sys/class/net/${cfg.wifi.bridge} ]; then
+            echo "[!] bridge ${cfg.wifi.bridge} does not exist -- the radio stays unbridged,"
+            echo "[!] so clients associate and then reach nothing."
+            exit 1
+          fi
+          if ip link show ${wifiIface} | grep --quiet "master ${cfg.wifi.bridge}"; then
+            echo "[*] ${wifiIface} is already a port of ${cfg.wifi.bridge}."
+            exit 0
+          fi
+          ip link set dev ${wifiIface} master ${cfg.wifi.bridge}
+          echo "[*] Attached ${wifiIface} to ${cfg.wifi.bridge}."
+        '';
       };
 
       # network.nix blocks bluetooth rather than everything when the AP is on,
