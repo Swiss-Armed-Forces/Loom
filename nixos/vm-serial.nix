@@ -6,11 +6,12 @@
 # `vmSerialGetty` is set, which nothing but `appliance-vm installer --serial`
 # does -- and that path refuses to flash what it built.
 #
-# What this deliberately does NOT do is set `console=`. console.nix rejects that
-# in as many words: naming a serial port there makes it the *primary* console,
-# so a panic on a box with nothing plugged into the port goes nowhere at all
-# instead of onto the monitor somebody is standing in front of. The test asserts
-# `fgconsole` is 1 (tests/appliance.nix) so it cannot come back.
+# What this deliberately does NOT do is add a `console=` of its own. The box
+# already names one -- `console=tty0`, set in console.nix, which keeps the
+# console on whatever VT is foreground. Naming the serial port beside it would
+# make that port the *primary* console, so a panic on a box with nothing plugged
+# into it goes nowhere at all instead of onto the monitor somebody is standing in
+# front of. The test asserts `fgconsole` is 1 so it cannot come back.
 #
 # A getty is not a console, which is the whole reason this is safe: tty1 stays
 # the foreground VT, the installer menu keeps the `TTYPath = /dev/tty1` that

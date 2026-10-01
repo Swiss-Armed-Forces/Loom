@@ -28,9 +28,9 @@
 #     on the tty2-tty6 gettys this module has always left alone, and the status
 #     line says so.
 #   * Nothing else writes to that screen. The units that used to log to
-#     /dev/console -- which, with no `console=` on the command line, meant the
-#     VT the operator is looking at -- log to the journal only now, and the
-#     first pane is what shows them.
+#     /dev/console -- which, with `console=tty0`, means the VT the operator is
+#     looking at -- log to the journal only now, and the first pane is what
+#     shows them.
 #   * It is driven with a mouse as well as a keyboard, on a console that has no
 #     mouse driver behind it. That takes a daemon and a pty shim, both of which
 #     live in console-mouse.nix; what belongs here is the other half -- the tmux
@@ -1578,23 +1578,42 @@ in
     # -------------------------------------------------------------------------
     # /dev/console
     #
-    # The appliance named no console at all, so /dev/console was the active VT
-    # and every `StandardOutput = "journal+console"` line from modes.nix and
-    # network.nix landed on tty1 -- on top of the login prompt, and on top of
-    # the session below. That is fixed where it belongs: those units log to the
-    # journal only now, and the first pane follows them instead.
+    # /dev/console is the active VT, so every `StandardOutput = "journal+console"`
+    # line would land on tty1 -- on top of the login prompt, and on top of the
+    # session below. That is handled where it belongs: the units in modes.nix and
+    # network.nix log to the journal only, and the first pane follows them
+    # instead.
     #
-    # There is deliberately NO `console=` here at all -- neither a VT nor a
-    # serial port. Naming a VT on the kernel command line does not merely
-    # redirect output to it, it makes that VT the foreground console:
-    # `console=tty12` leaves the box showing the kernel log, with the banner and
-    # the press-a-key prompt rendered on a tty1 nobody is looking at and
-    # nobody's keystrokes reach. The test asserts `fgconsole` is 1 so this
-    # cannot come back. `console=ttyS0` is the same trap pointed at a cable: it
-    # makes the serial port the primary console, so a panic on a box with
-    # nothing plugged in goes nowhere at all instead of onto the monitor
-    # somebody is standing in front of.
+    # `tty0` and nothing else. The three cases are genuinely different, and only
+    # one of them is safe:
+    #
+    #   * A NUMBERED VT is a trap. Naming one does not merely redirect output to
+    #     it, it makes that VT the foreground console: `console=tty12` leaves the
+    #     box showing the kernel log, with the banner and the press-a-key prompt
+    #     rendered on a tty1 nobody is looking at and nobody's keystrokes reach.
+    #     tests/scripts/loom_tests/appliance/modes.py forbids `console=tty<N>`
+    #     for exactly this, and asserts `fgconsole` is 1.
+    #   * A SERIAL PORT is the same trap pointed at a cable. It makes the port
+    #     the primary console, so a panic on a box with nothing plugged in goes
+    #     nowhere at all instead of onto the monitor somebody is standing in
+    #     front of.
+    #   * `tty0` is neither: it is whatever VT is currently foreground, so it
+    #     cannot move the console off the screen the operator is using. It is the
+    #     behaviour this file already assumed back when it named no console at
+    #     all -- see the paragraph above, which describes /dev/console as "the
+    #     active VT".
+    #
+    # Naming it is load-bearing rather than cosmetic, because that assumption
+    # only holds where the kernel registers tty0 by itself. Firmware that
+    # publishes an ACPI SPCR table names a serial console the appliance has no
+    # driver for, that UART never registers, and -- with nothing on the command
+    # line to override it -- neither does anything else. `/proc/consoles` comes
+    # out EMPTY and /dev/console is ENODEV, which silently costs two things that
+    # have no other way to reach an operator: key-store.nix's `give_up`, whose
+    # whole job is to say the next prompt wants the recovery passphrase rather
+    # than the stick's, and systemd's own emergency and rescue shells.
     # -------------------------------------------------------------------------
+    boot.kernelParams = [ "console=tty0" ];
 
     # -------------------------------------------------------------------------
     # The session

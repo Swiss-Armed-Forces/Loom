@@ -122,6 +122,31 @@ def boot_splash(appliance: "Machine", subtest: "Subtest") -> None:
         )
         assert magic.split() == ["89", "50", "4e", "47"], magic
 
+    with subtest("the box has a console, and plymouthd lived long enough to use it"):
+        # The files above being right is not the same as the splash having run.
+        # plymouthd used to segfault on every boot of this appliance while every
+        # assertion above still passed, because nothing here had ever looked at
+        # whether the daemon survived starting.
+        #
+        # `plymouth-start.service` stays active for as long as the splash is up
+        # and is only stopped by plymouth-quit at the end of boot, so either
+        # state is a pass -- what is being excluded is `failed`.
+        state = appliance.succeed(
+            "systemctl show plymouth-start.service --property=Result --value"
+        ).strip()
+        assert state == "success", state
+
+        # The cause of that crash, asserted directly because it is not really
+        # about plymouth: a box whose firmware names an ACPI SPCR console the
+        # appliance has no driver for registers NO console at all unless the
+        # command line says otherwise, and then /dev/console cannot be opened.
+        # key-store.nix's `give_up` writes the recovery-passphrase hint there
+        # under `|| true`, so it fails silently -- on the one boot where an
+        # operator has nothing else to go on.
+        consoles = appliance.succeed("cat /proc/consoles")
+        assert consoles.strip(), "no kernel console registered"
+        appliance.succeed("echo loom-console-check > /dev/console")
+
     # ------------------------------------------------------------------------
     # The USB key guard.
     #

@@ -1217,6 +1217,28 @@ console fonts are missing the half blocks, and a build that selects one that is 
 box whose banner is a screen of holes. The appliance also asks its firmware for the largest console mode it
 has, since the column count is only ever the framebuffer width divided by that cell.
 
+### Why the box names `console=tty0`
+
+The appliance puts `console=tty0` on its kernel command line, and the choice of _which_ console to name is the
+whole of it. Naming a numbered VT — `console=tty12` — does not merely send output there, it makes that VT the
+foreground one, which leaves the box showing a kernel log while the banner and the press-a-key prompt sit on a
+tty1 nobody can see or type into. Naming a serial port is the same trap pointed at a cable: a panic on a box
+with nothing plugged in then goes nowhere at all, instead of onto the monitor somebody is standing in front of.
+`tty0` is neither, because it means _whichever VT is currently foreground_ — so it cannot move the console off
+the screen the operator is using. The test suite forbids the first two and requires the third.
+
+Naming it at all is not cosmetic. Leaving the command line silent is not the same as taking the kernel's
+default: firmware that publishes an ACPI **SPCR** table names a serial console of its own, and on a box with no
+driver for that UART — a DGX Spark declares one at `uart,mmio32,0x16a00000` — nothing registers it, and with
+nothing on the command line to override it nothing else registers either. The box then boots with **no console
+at all**: `/proc/consoles` is empty and `/dev/console` cannot be opened.
+
+That is close to invisible, because almost everything on this appliance logs to the journal and renders to a VT
+directly. What it costs is the handful of things that have no other way to reach a person: the boot splash,
+which crashes outright rather than drawing; the hint printed when the stick's passphrase has been given up on,
+whose entire job is to say that the _next_ prompt wants the recovery passphrase instead; and systemd's own
+emergency and rescue shells. All three matter only on the boot that has already gone wrong.
+
 ### Why the banner sometimes drops the logo
 
 agetty writes the login banner straight to the VT and never pages it, so a banner taller than the grid loses

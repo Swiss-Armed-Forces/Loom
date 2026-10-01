@@ -148,6 +148,20 @@ def _kernel_command_lines(appliance: "Machine", setup_sys: str) -> None:
         ]
         assert not vt_consoles, cmdline
 
+    # And both modes must name tty0, which is the other half of the same rule.
+    # Read off `kernel-params` rather than /proc/cmdline on purpose: that file is
+    # what the configuration declares, where /proc/cmdline also carries whatever
+    # the test framework added, which includes a `console=tty0` of its own and
+    # would make this pass with nothing behind it.
+    #
+    # Naming it matters because "no console= at all" is not the same as "the
+    # kernel's default". Firmware publishing an ACPI SPCR table points the
+    # console at a UART this appliance has no driver for, and with nothing on the
+    # command line to override it the box ends up with NO registered console:
+    # /proc/consoles empty and /dev/console ENODEV. See console.nix.
+    for cmdline in [run_cmdline, setup_cmdline]:
+        assert "console=tty0" in cmdline.split(), cmdline
+
 
 def mode_sessions(appliance: "Machine", subtest: "Subtest", setup_sys: str) -> None:
     with subtest("both modes run the same session, following their own unit"):
