@@ -263,9 +263,24 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     # load-bearing string: it is in opencode's BUNDLED_PROVIDERS table, so
     # the adapter is already in the binary. Any other name sends opencode
     # to the npm registry the first time the operator asks a question.
-    config_path = re.search(r"OPENCODE_CONFIG=(\S+)", chat_pane)
-    assert config_path, chat_pane
-    config = json.loads(appliance.succeed(f"cat {config_path.group(1)}"))
+    #
+    # The path has to be put back together rather than read off the export: the
+    # script says `OPENCODE_CONFIG="$config/opencode.json"`, and handing that to
+    # the driver is handing it a `$config` no shell of ours has ever set. Only
+    # `state` is a literal, so the two derived components are spelled out here
+    # the way loom-chat spells them. Quotes are stripped for the same reason the
+    # bring-up pane's `--state-dir` is: lib.escapeShellArg adds them only where
+    # they are needed.
+    assert re.search(
+        r'^export OPENCODE_CONFIG="\$config/opencode\.json"$', chat_pane, re.M
+    ), chat_pane
+    assert re.search(
+        r'^export OPENCODE_CONFIG_DIR="\$config"$', chat_pane, re.M
+    ), chat_pane
+    state = re.search(r"^state='?([^'\n]+)'?$", chat_pane, re.M)
+    assert state, chat_pane
+    config_dir = f"{state.group(1)}/config"
+    config = json.loads(appliance.succeed(f"cat {config_dir}/opencode.json"))
     assert config["autoupdate"] is False, config
     assert config["model"] == f"ollama/{want_model}", config
     ollama = config["provider"]["ollama"]
@@ -278,6 +293,30 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     # values-development.
     base = ollama["options"]["baseURL"]
     assert base in [f"https://{h}/v1" for h in params.loom_hosts], base
+
+    # The pane answers to nobody: there is no second operator to adjudicate a
+    # permission prompt on a console that is already unauthenticated, and a
+    # prompt the agent raises in a tmux pane behind a splash is a pane that
+    # looks hung. "allow" is the whole ruleset, and it has to be this bare
+    # string rather than a per-tool map -- opencode resolves with findLast over
+    # defaults-then-config, so only a `*` rule reaches the three the stock
+    # build agent still asks about.
+    assert config["permission"] == "allow", config
+    # Sharing uploads the session to opencode's servers. An air-gapped box has
+    # no route for it and the transcript is of an evidence set, so the command
+    # is taken away rather than left to fail at the far end.
+    assert config["share"] == "disabled", config
+
+    # tui.json has to be a sibling of opencode.json or OPENCODE_CONFIG_DIR
+    # never finds it, which is the whole reason loom-chat copies a directory.
+    tui = json.loads(appliance.succeed(f"cat {config_dir}/tui.json"))
+    assert tui["theme"] == "system", tui
+    # opencode's sidebar prints "$0.00 spent" unconditionally -- the session bar
+    # guards the same figure behind `cost > 0`, the sidebar block does not, and
+    # no key turns off that line alone. The models are local and the figure is
+    # always zero, so the block is disabled whole. Internal TUI plugins take the
+    # same `plugin_enabled` map as external ones; `which-key` ships off by it.
+    assert tui["plugin_enabled"]["internal:sidebar-context"] is False, tui
 
     # That certificate is self-signed, so the pane has to trust it
     # explicitly. Asserting the CA is handed over rather than

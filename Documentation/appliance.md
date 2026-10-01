@@ -33,11 +33,14 @@ Read this before building anything; the design only makes sense if these hold.
   **The one exception is an image built with `--debug`**, which runs an SSH server keyed to a keypair the
   build generates — see [Debug images](#debug-images). Such an image announces itself in red on its own login
   screen and is not something to hand to anybody.
-- **The console runs an AI agent that can act on the box.** The bottom pane is `opencode` wired to the
-  cluster's own Ollama — it reads and writes files and runs commands as `loom`, which is in `wheel` and
-  `docker`. It talks to nothing outside the box, so this adds no network exposure; what it adds is a way for
-  anyone already at the keyboard to act through natural language instead of a shell. Given the bullet above,
-  that is not a new boundary being crossed — but it is one more reason the box must not be left unattended
+- **The console runs an AI agent that can act on the box, and it does not ask first.** The bottom pane is
+  `opencode` wired to the cluster's own Ollama — it reads and writes files and runs commands as `loom`, which
+  is in `wheel` and `docker`. Its permission ruleset is `allow`, so it edits and executes without stopping
+  for confirmation. It talks to nothing outside the box, so this adds no network exposure; what it adds is a
+  way for anyone already at the keyboard to act through natural language instead of a shell. Given the bullet
+  above, that is not a new boundary being crossed — the console it sits in is already a passwordless root
+  session, and a confirmation prompt answered by the same unauthenticated person who typed the request is
+  not a control. But it is one more reason the box must not be left unattended
   with the stick in it. **Only on `evo-x2`**: the pane needs Ollama, and Ollama needs a GPU, so the other two
   images ship neither it nor `opencode` — see [AI services follow the GPU](#ai-services-follow-the-gpu).
 - **Any USB medium plugged in is mounted and indexed.** Every image does this — see
@@ -1341,6 +1344,37 @@ all on that path, and names `cert sign` on the `certificate.enabled` one.
 See [Hostnames and the self-signed certificate](installation.md#hostnames-and-the-self-signed-certificate).
 On a box already running an affected release, replacing the `self-signed-cert` secret by hand is the only
 fix, and it sticks, because the Job never replaces a certificate that covers every host.
+
+#### What the pane is allowed to do, and what it is told
+
+The pane ships a pinned `opencode.json` and a `tui.json` beside it, copied out of the store onto tmpfs on
+every start — so restarting the pane is also the way back to a known configuration, and nothing an operator
+changed in a session survives it.
+
+**It does not ask for permission.** `permission` is `allow`, which is opencode's whole ruleset in one word.
+Left at the default the agent still stops at three things — a long tool loop, touching a path outside its
+working directory, and reading a `.env` — and each of those is a modal prompt in a tmux pane behind a
+splash, answered by the same person who asked the question. See the threat-model bullet above; this is a
+deliberate choice, not an oversight.
+
+**It cannot share a session.** `share` is `disabled` rather than left at its `manual` default, which would
+leave `/share` on the command list. That command uploads the transcript to opencode's servers; there is no
+route for it here, and the transcript is of an evidence set.
+
+**It asks Ollama how big the context is.** A model opencode has no catalogue entry for resolves with
+`limit.context = 0`, and that number is not cosmetic: opencode's automatic compaction begins
+`if (context === 0) return false`, so a session with it never gets summarised — it runs until Ollama
+truncates it at the far end, silently. The number cannot be written into the image either, because Ollama
+sizes the context from the VRAM it measures (256k above 47 GiB, 32k above 23 GiB, 4096 below — the ladder
+`ollama/ollama_wrapper.py` mirrors) and one image serves boxes with different GPUs. So `loom-chat` reads it
+at startup: `/api/ps` for the window the running model actually has, falling back to `/api/show` for the
+trained length. If neither answers, nothing is written and the pane behaves as it did before — a token count
+with no percentage is honest, a guessed percentage is not.
+
+**It does not show a price.** opencode's sidebar prints `$0.00 spent` unconditionally — the session bar
+guards the same figure behind `cost > 0`, the sidebar block does not, and no setting hides that one line. The
+models are local and the figure is always zero, so the block is turned off whole, through `plugin_enabled`
+in `tui.json`. The token count and the percentage it also carried are still in the session bar.
 
 The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which must name a model
 `ollama/Dockerfile.models` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the

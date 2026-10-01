@@ -458,9 +458,33 @@ let
   #
   # `lsp` and `mcp` are emptied rather than left out: both default to sets that
   # download servers on demand.
+  #
+  # `permission` is the whole ruleset in one word. opencode's resolver is
+  # `findLast(rule => matches(action) && matches(resource))` over the defaults
+  # followed by this file, so a bare "allow" -- which normalises to `{"*":
+  # "allow"}` -- lands last and takes back the three prompts the stock build
+  # agent still raises: `doom_loop`, `external_directory` (anything outside the
+  # pane's cwd) and reading a `.env`. The `--auto` flag is the other way to get
+  # here and is not taken: it leaves nothing for the appliance test to read, and
+  # every other thing this pane pins lives in the config rather than the exec
+  # line. What it costs is real -- the agent edits and runs without asking on a
+  # box whose console has no authentication -- but the pane is already a root-
+  # adjacent shell's neighbour on tty1, and a prompt the operator cannot
+  # meaningfully adjudicate is not a control.
+  #
+  # `share` is "disabled", not left at its "manual" default: `/share` uploads the
+  # session to opencode's own servers. There is no route for it here and the
+  # transcript is of an evidence set, so the command is taken away rather than
+  # left to fail.
+  #
+  # `snapshot` off because the pane's cwd is not a git checkout, and the
+  # filesystem snapshots only exist to back undo/redo of file edits.
   opencodeConfig = pkgs.writeText "opencode.json" (
     builtins.toJSON {
       autoupdate = false;
+      permission = "allow";
+      share = "disabled";
+      snapshot = false;
       model = "ollama/${loomChatModel}";
       lsp = { };
       mcp = { };
@@ -499,7 +523,28 @@ let
   # settings out of `opencode.json` into a `tui.json` beside it, and warns about
   # `tui keys in opencode config are deprecated`. Hence the directory -- the two
   # files have to be siblings, which two `writeText` store paths are not.
-  opencodeTuiConfig = pkgs.writeText "tui.json" (builtins.toJSON { theme = "system"; });
+  #
+  # `plugin_enabled` turns off one of opencode's own built-in TUI plugins, which
+  # are registered in the same table as external ones and carry the same ids --
+  # `which-key` ships disabled by the same mechanism. `internal:sidebar-context`
+  # draws four lines, and the fourth is `$0.00 spent`: unlike the session bar,
+  # which renders cost only `if (cost > 0)`, the sidebar block formats it
+  # unconditionally through `Intl.NumberFormat(…, "USD")`. There is no key that
+  # hides that line on its own, so the block goes. The readout it was worth
+  # keeping does not: the session bar carries the same token count, and the same
+  # percentage once `limit.context` is known -- see `loom-chat` below, which asks
+  # Ollama for it at startup.
+  #
+  # A price in dollars is not merely noise on this box. It is wrong: the models
+  # are local, the figure is always zero because opencode has no cost table for
+  # the `ollama` provider this file invents, and an operator reading it has been
+  # told something about Loom that is not true.
+  opencodeTuiConfig = pkgs.writeText "tui.json" (
+    builtins.toJSON {
+      theme = "system";
+      plugin_enabled."internal:sidebar-context" = false;
+    }
+  );
 
   opencodeConfigDir = pkgs.runCommand "loom-opencode-config" { } ''
     mkdir -p "$out"
@@ -526,6 +571,7 @@ let
       opencode
       coreutils
       curl
+      jq
       kubectl
     ];
     text = ''
@@ -534,6 +580,9 @@ let
       # Ollama's root route, which answers "Ollama is running" and nothing else.
       # What the wait below gates on -- see `ready`.
       probe=${lib.escapeShellArg "https://${ollamaHost}/"}
+      # Ollama's native routes, which the OpenAI-compatible /v1 does not mirror:
+      # /api/ps and /api/show are where the context size is readable at all.
+      api=${lib.escapeShellArg "https://${ollamaHost}/api"}
       namespace=${lib.escapeShellArg loomNamespace}
 
       # Both are runtime flags (packages/core/src/flag/flag.ts), and neither is
@@ -757,6 +806,86 @@ let
         printf '  Warning: Ollama does not list %s.\n' "$model"
         printf '  Starting anyway; the first question will fail until it does.\n'
         printf '  What is on the box: ollama list, in the ollama pod.\n'
+      fi
+
+      # How big the context is, asked rather than written down.
+      #
+      # Not cosmetics. A model whose `limit.context` is 0 -- which is what a
+      # provider invented by this file resolves to, there being no catalogue
+      # entry for it -- turns opencode's automatic compaction OFF: the check
+      # begins `if (model.limit.context === 0) return false`. So the pane has
+      # been running without it, and a long session does not get summarised, it
+      # gets silently truncated by Ollama at the far end. The readout is the
+      # visible half of the same fact: "N tokens" with no percentage in the
+      # session bar, and the sidebar block that used to say `0% used`.
+      #
+      # It cannot be a constant. Ollama sizes the context from the VRAM it
+      # measures -- ollama/ollama_wrapper.py mirrors the ladder, 256k above 47
+      # GiB, 32k above 23 GiB, 4096 below -- capped by what the model was trained
+      # on, and one image serves platforms with different GPUs. A number written
+      # down here would be wrong on a box that fell to a lower tier, and wrong in
+      # the direction that matters: it would claim headroom that is not there,
+      # hold off compaction past the real window, and the operator would find out
+      # by having the conversation truncated anyway.
+      #
+      # /api/ps first, because that is the window the running model actually has.
+      # It is empty until something has been asked, so /api/show is the fallback:
+      # the trained length, which is what Ollama serves whenever the tier is not
+      # the binding constraint. The key there is architecture-prefixed
+      # (`qwen3.context_length`), hence the suffix match rather than a name.
+      #
+      # Nothing is written when neither answers, which leaves the pane exactly as
+      # it was. A missing limit is a bare token count: honest, if worse.
+      context_length() {
+        local body value
+        if body="$(curl --silent --fail --max-time 5 --cacert "$ca" \
+          "$api/ps" 2>/dev/null)"; then
+          if value="$(jq --exit-status \
+            '[.models[]?.context_length // 0] | max // 0 | select(. > 0)' \
+            <<<"$body" 2>/dev/null)"; then
+            printf '%s\n' "$value"
+            return 0
+          fi
+        fi
+        if body="$(curl --silent --fail --max-time 5 --cacert "$ca" \
+          --json "$(jq --null-input --arg model "$model" '{model: $model}')" \
+          "$api/show" 2>/dev/null)"; then
+          if value="$(jq --exit-status \
+            '[(.model_info // {}) | to_entries[]
+              | select(.key | endswith(".context_length")) | .value]
+             | first | select(type == "number" and . > 0)' \
+            <<<"$body" 2>/dev/null)"; then
+            printf '%s\n' "$value"
+            return 0
+          fi
+        fi
+        return 1
+      }
+
+      if context="$(context_length)"; then
+        # `output` is required beside `context` by opencode's schema and is not
+        # a thing Ollama reports -- a local model has no output cap of its own,
+        # `num_predict` runs until the window is full. It still has to be chosen
+        # rather than left large, because it is what compaction reserves:
+        # the trigger is `context - min(20000, output)`, so output == context
+        # would compact on the first message. A cap of 8192, and never more than
+        # a quarter of the window so the 4096-token tier keeps room to answer in.
+        output="$((context / 4))"
+        if [ "$output" -gt 8192 ]; then
+          output=8192
+        fi
+        # Patched into the tmpfs copy, which is re-seeded from the store on every
+        # start -- so this is re-asked each time rather than remembered, and a box
+        # whose Ollama came back on a different tier is not left describing the
+        # old one.
+        tmp="$config/opencode.json.tmp"
+        jq --arg model "$model" --argjson context "$context" \
+          --argjson output "$output" \
+          '.provider.ollama.models[$model].limit =
+             { context: $context, output: $output }' \
+          "$OPENCODE_CONFIG" >"$tmp"
+        mv "$tmp" "$OPENCODE_CONFIG"
+        printf '  Context window: %s tokens.\n' "$context"
       fi
 
       # Bun honours this the same way Node does -- measured against a self-signed
