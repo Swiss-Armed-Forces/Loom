@@ -58,7 +58,8 @@ See `## The two boot modes` in `/home/loom/loom/Documentation/appliance.md`.
 | `loom-bridge-tune` | Pins forwarding behaviour on the bridge |
 | `loom-expose` | Installs the DNAT rules that publish Loom on the appliance address |
 | `loom-network-check` | Reports how the interface was chosen, onto the login screen |
-| `loom-rfkill-block` | Hard-blocks the radios. On a WiFi build, bluetooth only |
+| `loom-rfkill-block` | Blocks any radio the module policy did not already stop loading. On a WiFi build, bluetooth only. Runs on the installer stick too |
+| `loom-rfkill-unblock-wifi` | WiFi builds only: releases the block on the AP radio before hostapd. Required — switches register blocked |
 
 ## Console and branding
 

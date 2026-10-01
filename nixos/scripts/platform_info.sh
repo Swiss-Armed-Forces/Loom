@@ -436,7 +436,16 @@ section_radios(){
     done
 
     if (( found == 0 )); then
-        note "no wireless interface present (or the radio is disabled in firmware)"
+        if [[ -n "${PLATFORM_ID}" ]]; then
+            # On an appliance this is the designed outcome, not a fault: unless
+            # the image was built with --wifi, nixos/radios.nix refuses cfg80211
+            # and the driver never binds, so a perfectly good card has no
+            # interface here. `grep -R install /etc/modprobe.d/` tells the two
+            # apart.
+            note "no wireless interface present -- expected unless this image was built with --wifi"
+        else
+            note "no wireless interface present (or the radio is disabled in firmware)"
+        fi
         return 0
     fi
 

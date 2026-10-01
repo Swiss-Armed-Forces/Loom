@@ -50,7 +50,7 @@ in
       description = ''
         Run an access point on the box's own radio, bridged onto the wired
         segment. Set by `build-appliance-image --wifi`; off in every other image,
-        which is what keeps network.nix's blanket radio block in force.
+        which is what keeps radios.nix's blanket radio block in force.
       '';
     };
 
@@ -107,6 +107,11 @@ in
 
   config = lib.mkMerge [
     {
+      # What radios.nix gates the 802.11 stack on. Read from the option rather
+      # than from the `enableWifi` argument above, because a test node turns the
+      # access point on by setting the option and never touches the build flag.
+      loom.radios.allowWifi = cfg.wifi.enable;
+
       assertions = [
         {
           assertion = cfg.wifi.enable -> wifiMatch != null;
@@ -298,19 +303,33 @@ in
         '';
       };
 
-      # network.nix blocks bluetooth rather than everything when the AP is on,
-      # but firmware can still hand us a soft-blocked radio, and hostapd will not
-      # unblock one itself: it just fails to bring the interface up.
+      # The unit that makes an access point possible at all.
+      #
+      # radios.nix asks the kernel to register every rfkill switch soft-blocked
+      # (`options rfkill default_state=0`), which is what leaves no window on a
+      # box that is not meant to have a radio. On this one it means the radio
+      # arrives blocked and stays blocked until this runs, and hostapd will not
+      # unblock one itself: it just fails to bring the interface up. Firmware
+      # that hands over a soft-blocked card is released by the same call.
+      #
+      # `wantedBy` names hostapd as well as multi-user.target, so the ordering
+      # below also holds for a `systemctl restart hostapd` rather than only for
+      # the boot transaction. `rfkill unblock` is a change-all operation: it
+      # moves the kernel's default for the type, so a radio that enumerates
+      # after this has run is unblocked too.
       systemd.services.loom-rfkill-unblock-wifi = {
-        description = "Release any soft block on the appliance radio";
-        wantedBy = [ "multi-user.target" ];
+        description = "Release the soft block on the appliance radio";
+        wantedBy = [
+          "multi-user.target"
+          "hostapd.service"
+        ];
         before = [ "hostapd.service" ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
           ExecStart = "${pkgs.util-linux}/bin/rfkill unblock wifi";
           # Nothing to unblock is the normal case, and rfkill exits non-zero for
-          # it exactly as it does for `block all` in network.nix.
+          # it exactly as it does for `block all` in radios.nix.
           SuccessExitStatus = [
             0
             1

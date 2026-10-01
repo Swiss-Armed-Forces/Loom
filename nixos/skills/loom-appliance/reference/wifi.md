@@ -27,8 +27,10 @@ ip --brief address
 
 In order:
 
-1. `rfkill list` — the WiFi radio should be unblocked. `loom-rfkill-unblock-wifi` is the unit that
-    does it; everything else stays blocked, including bluetooth.
+1. `rfkill list` — the WiFi radio should be unblocked. Every switch registers blocked on every
+    image, so an unblocked radio is `loom-rfkill-unblock-wifi`'s doing and that unit is required
+    rather than defensive: a radio it did not reach stays blocked and hostapd cannot bring the
+    interface up. Everything else stays blocked, including bluetooth.
 2. `journalctl --unit hostapd` — hostapd failing to start names the reason.
 3. `loom-platform-info` — reports the radios and, critically, **whether the driver advertises AP
     mode at all**. A radio that cannot do AP mode cannot host an access point, and no amount of

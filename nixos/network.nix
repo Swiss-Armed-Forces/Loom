@@ -934,54 +934,5 @@ in
       };
     }
 
-    # -------------------------------------------------------------------------
-    # Radios off in both modes.
-    #
-    # Software disable, module blacklist and an rfkill block. Generic on purpose
-    # -- this covers the Spark's radios and the EVO-X2's MediaTek Wi-Fi/BT alike.
-    # A firmware-level disable in the box's own BIOS is the only true guarantee
-    # and is a documented manual step -- see Documentation/appliance.md.
-    #
-    # Bluetooth is unconditional. --wifi opts a box into an access point, not
-    # into a radio free-for-all, and nothing in Loom has ever wanted BT.
-    # -------------------------------------------------------------------------
-    {
-      # wpa_supplicant, i.e. joining someone else's network. Never wanted, in
-      # either build: the access point is hostapd, which is the other direction.
-      networking.wireless.enable = false;
-      networking.networkmanager.enable = false;
-      hardware.bluetooth.enable = false;
-
-      boot.blacklistedKernelModules = [
-        "bluetooth"
-        "btusb"
-        "btintel"
-        "btbcm"
-        "btrtl"
-      ]
-      # The 802.11 stack itself, without which hostapd has nothing to drive.
-      # Dropping these two from the blacklist is the whole of what --wifi
-      # unblanks at the kernel level.
-      ++ lib.optionals (!wifiEnabled) [
-        "cfg80211"
-        "mac80211"
-      ];
-
-      systemd.services.loom-rfkill-block = {
-        description = if wifiEnabled then "Hard-block bluetooth" else "Hard-block all radios";
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          # `rfkill block` exits non-zero when there is nothing to block, which
-          # on a box with the modules blacklisted is the expected case.
-          ExecStart = "${pkgs.util-linux}/bin/rfkill block ${if wifiEnabled then "bluetooth" else "all"}";
-          SuccessExitStatus = [
-            0
-            1
-          ];
-        };
-      };
-    }
   ];
 }

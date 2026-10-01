@@ -330,6 +330,12 @@ let
         # property of the box: the installer stick has the same three typed
         # prompts the appliance does, and gets the same answer.
         ./keymap.nix
+        # Here for the same reason, and the reason is the stick: a medium booted
+        # on the box owns the box's radios while it runs, and the installer
+        # imports neither network.nix nor wifi.nix. It is in `applianceModules`
+        # as well, because every nixos/tests/*.nix node takes that list and
+        # bypasses this function.
+        ./radios.nix
         (
           { config, lib, ... }:
           {
@@ -384,6 +390,8 @@ let
     ./modes.nix
     ./network.nix
     ./portal.nix
+    # In evalConfig as well, which is what gets it onto the installer stick.
+    ./radios.nix
     ./ready.nix
     ./repo.nix
     ./storage.nix

@@ -224,8 +224,33 @@ def interface_rename(appliance: "Machine", subtest: "Subtest") -> None:
 def radios(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("radios are disabled"):
         appliance.wait_for_unit("loom-rfkill-block.service")
+
+        # -R, not -r: everything in /etc/modprobe.d is a symlink into
+        # /etc/static, and -r skips symlinks it finds while walking a
+        # directory. -r here silently matches nothing at all.
         for module in ["bluetooth", "btusb", "cfg80211", "mac80211"]:
-            # -R, not -r: everything in /etc/modprobe.d is a symlink into
-            # /etc/static, and -r skips symlinks it finds while walking a
-            # directory. -r here silently matches nothing at all.
             appliance.succeed(f"grep -R 'blacklist {module}' /etc/modprobe.d/")
+        for module in ["bluetooth", "cfg80211"]:
+            appliance.succeed(f"grep -R 'install {module}' /etc/modprobe.d/")
+        appliance.succeed("grep -R 'options rfkill default_state=0' /etc/modprobe.d/")
+
+        # The assertion the config greps above cannot make. A blacklist is
+        # scoped to a module's own device aliases, so it says nothing about the
+        # path radios actually arrive by: a driver matches its own alias and
+        # modprobe pulls the 802.11 core in behind it as a dependency. hwsim
+        # depends on mac80211 and cfg80211 like any real driver, so a load that
+        # fails is the dependency chain being broken rather than a file holding
+        # the right words.
+        appliance.fail("modprobe mac80211_hwsim")
+        appliance.fail("lsmod | grep -q '^cfg80211'")
+        appliance.fail("lsmod | grep -q '^bluetooth'")
+
+        # And that a switch registering later registers blocked, which is what
+        # covers the window before the unit above runs and anything hotplugged
+        # after it. rfkill is loadable by design -- it is the mechanism, not a
+        # radio -- so this reads the policy back off the running kernel.
+        appliance.succeed("modprobe rfkill")
+        assert (
+            appliance.succeed("cat /sys/module/rfkill/parameters/default_state").strip()
+            == "0"
+        )

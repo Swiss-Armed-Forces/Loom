@@ -46,7 +46,32 @@ let
   installer = installerSystem.config;
   platform = box.loom.platform.id;
 
+  # The --wifi build, taken off the same evaluation rather than written out as a
+  # second one, exactly as tests/appliance-units.nix does it. The credentials are
+  # inert -- nothing is realised from this closure -- but they are spelled from
+  # the alphabet wifi.nix's assertions demand, so this file is never the reason
+  # an assertion run fails.
+  wifiBox =
+    (boxSystem.extendModules {
+      modules = [
+        {
+          loom.wifi = {
+            enable = true;
+            ssid = "loom-hardware-eval";
+            psk = "hardware-eval-not-a-secret";
+          };
+        }
+      ];
+    }).config;
+
   elem = builtins.elem;
+
+  # radios.nix writes its policy as modprobe.d directives, so what is asserted is
+  # the text of the file the box ships rather than an option that only describes
+  # it. `install` is the half that reaches a module loaded as a dependency, which
+  # is how the 802.11 and Bluetooth cores arrive, and the half a blacklist cannot
+  # express -- so it is the half worth a tripwire.
+  modprobeHas = cfg: line: lib.hasInfix line cfg.boot.extraModprobeConfig;
 
   # The GTT ceiling is asserted by prefix rather than by value. The numbers in
   # platforms/evo-x2.nix are explicitly provisional -- they are meant to be
@@ -171,6 +196,44 @@ let
     ))
     (check "installer: kernel is still the nixpkgs default" (
       installer.boot.kernelPackages.kernel.version == pkgs.linuxPackages.kernel.version
+    ))
+
+    # The radio policy, on both closures. The installer half is the one worth a
+    # test: evalConfig hands radios.nix to the stick as well as the box, and
+    # nothing else would notice if it stopped -- a stick is booted on the box,
+    # for hours during first-time setup, and its radios are the box's radios.
+    (check "box: the 802.11 core is blocked at the dependency chokepoint" (
+      modprobeHas box "install cfg80211"
+    ))
+    (check "box: the Bluetooth core is blocked at the dependency chokepoint" (
+      modprobeHas box "install bluetooth"
+    ))
+    (check "box: rfkill switches register blocked" (modprobeHas box "options rfkill default_state=0"))
+    (check "box: the rfkill block unit is present" (box.systemd.services ? loom-rfkill-block))
+    (check "installer: the 802.11 core is blocked at the dependency chokepoint" (
+      modprobeHas installer "install cfg80211"
+    ))
+    (check "installer: the Bluetooth core is blocked at the dependency chokepoint" (
+      modprobeHas installer "install bluetooth"
+    ))
+    (check "installer: rfkill switches register blocked" (
+      modprobeHas installer "options rfkill default_state=0"
+    ))
+    (check "installer: the rfkill block unit is present" (
+      installer.systemd.services ? loom-rfkill-block
+    ))
+
+    # And the carve-out: --wifi is what hostapd needs, so the 802.11 half has to
+    # come back -- and only that half. Asserted here rather than left to
+    # tests/appliance-wifi.nix, which needs KVM and the matching architecture;
+    # this runs on any workstation for all three platforms.
+    (check "wifi: the 802.11 core is loadable" (!modprobeHas wifiBox "install cfg80211"))
+    (check "wifi: the 802.11 core is not blacklisted either" (
+      !elem "cfg80211" wifiBox.boot.blacklistedKernelModules
+    ))
+    (check "wifi: the Bluetooth core is still blocked" (modprobeHas wifiBox "install bluetooth"))
+    (check "wifi: rfkill switches still register blocked" (
+      modprobeHas wifiBox "options rfkill default_state=0"
     ))
   ];
 

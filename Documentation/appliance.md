@@ -68,11 +68,16 @@ Read this before building anything; the design only makes sense if these hold.
   and it is a smaller change than it sounds, because the certificate on the https side is self-signed and
   no visitor's browser can verify it anyway. It is still a real loss, and it matters most with `--wifi`,
   where "can see the segment" means everyone in radio range holding the passphrase.
-- **Bluetooth is disabled** by module blacklist and `rfkill`, in every image. **WiFi is disabled the same way
-  unless the image was built with `--wifi`**, which turns the box into an access point — read
-  [The WiFi access point](#the-wifi-access-point) before using it, because it changes most of the bullets
-  above. Either way this is a software guarantee; disable the radios in the box's own firmware as well if the
-  site requires it.
+- **Bluetooth is disabled** in every image, on the installer stick as well as on the box it installs.
+  **WiFi is disabled the same way unless the image was built with `--wifi`**, which turns the box into an
+  access point — read [The WiFi access point](#the-wifi-access-point) before using it, because it changes
+  most of the bullets above. The mechanism is three things in `nixos/radios.nix`: the driver cannot load,
+  because `cfg80211` and `bluetooth` are refused by a modprobe `install` directive and every WiFi and
+  Bluetooth driver depends on one of them; every rfkill switch registers soft-blocked, from kernel
+  initialisation rather than from the end of boot, so there is no window and a radio plugged in later is
+  covered too; and `rfkill block` runs as well, for a switch that belongs to neither stack. This is still a
+  software guarantee — `insmod` names a module by path and never consults modprobe, so a root shell on the
+  box can undo it — so disable the radios in the box's own firmware as well if the site requires it.
 
 ## Supported platforms
 

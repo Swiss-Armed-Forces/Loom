@@ -127,7 +127,20 @@ def _radios_state(appliance: "Machine", subtest: "Subtest") -> None:
             appliance.succeed(f"grep -R 'blacklist {module}' /etc/modprobe.d/")
         for module in ["cfg80211", "mac80211"]:
             appliance.fail(f"grep -R 'blacklist {module}' /etc/modprobe.d/")
+
+        # The carve-out, at the chokepoint that decides whether a driver loads
+        # at all: the Bluetooth core stays blocked, the 802.11 core must not be
+        # or hostapd has nothing to drive.
+        appliance.succeed("grep -R 'install bluetooth' /etc/modprobe.d/")
+        appliance.fail("grep -R 'install cfg80211' /etc/modprobe.d/")
+        appliance.succeed("lsmod | grep -q '^cfg80211'")
+        appliance.fail("lsmod | grep -q '^bluetooth'")
+
+        # Every rfkill switch registers soft-blocked on this box as on any
+        # other, so a radio that reaches hostapd unblocked is this unit's doing
+        # rather than the absence of a block.
         appliance.wait_for_unit("loom-rfkill-block.service")
+        appliance.wait_for_unit("loom-rfkill-unblock-wifi.service")
         rfkill = appliance.succeed("rfkill list")
         assert "Wireless LAN" in rfkill, rfkill
         assert "yes" not in rfkill.split("Wireless LAN")[1].split("\n\n")[0], rfkill
