@@ -234,6 +234,14 @@ let
         # copies its own disks into the store, and the second copies the disks
         # the first one wrote.
         ".appliance-vm"
+        # A developer's own agent configuration, which is untracked and so is
+        # in a local checkout but never in the `git clone` that
+        # cicd/build_appliance_image.sh builds a release from. Without this the
+        # two differ in a way that matters: `.claude/skills/**/SKILL.md` is a
+        # location opencode scans, and the assistant pane's working directory is
+        # this very checkout -- so a locally built box advertised whatever
+        # skills the person who built it happened to have.
+        ".claude"
         "result"
       ];
 
