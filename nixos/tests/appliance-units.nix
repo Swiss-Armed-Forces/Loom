@@ -54,6 +54,16 @@ let
     ];
   };
 
+  # The mutual TLS build (nixos/mtls.nix), taken off the same evaluation for the
+  # same reason the --wifi one above is.
+  mtlsSystem = boxSystem.extendModules {
+    modules = [
+      {
+        loom.mtls.enable = true;
+      }
+    ];
+  };
+
   check = what: ok: { inherit what ok; };
 
   # `services.dnsmasq.settings` is a freeform format whose values are normalised
@@ -149,9 +159,125 @@ let
       ))
     ];
 
+  # The mutual TLS proxy, which is the other thing on this box that binds a
+  # socket nothing else can supply.
+  #
+  # The edge under test is the one that keeps nginx off the cluster's critical
+  # path. `proxy_ssl_certificate` naming a file that is not there fails nginx's
+  # configuration test, and the certificate it names cannot exist until Loom has
+  # come up far enough to issue one -- so the placeholder has to be ordered ahead
+  # of nginx and the issuer has to be ordered nowhere near it. Get that backwards
+  # and nginx waits for a bring-up, which costs every visitor the captive portal
+  # for the length of one.
+  #
+  # The rest is the wiring: a box that requires client certificates and does not
+  # move its own two clients onto the proxy has an assistant pane and a USB
+  # ingest that its own cluster refuses.
+  mtlsChecks =
+    let
+      cfg = mtlsSystem.config;
+      mtls = cfg.loom.mtls;
+      vhosts = cfg.services.nginx.virtualHosts;
+      placeholder = cfg.systemd.services.loom-mtls-placeholder;
+      identity = cfg.systemd.services.loom-mtls-identity;
+
+      proxyUrl = route: "http://${mtls.listenAddress}:${toString route.port}";
+
+      routeChecks =
+        name: route:
+        let
+          vhost = vhosts."loom-mtls-${name}";
+          listen = builtins.head vhost.listen;
+          location = vhost.locations."/".extraConfig;
+        in
+        [
+          (check "mtls: the ${name} route listens on ${mtls.listenAddress}" (
+            listen.addr == mtls.listenAddress
+          ))
+          (check "mtls: the ${name} route listens on ${toString route.port}" (listen.port == route.port))
+          (check "mtls: the ${name} route proxies to ${route.host}" (
+            vhost.locations."/".proxyPass == "https://${route.host}"
+          ))
+          # Traefik routes on the Host header, so a route that forwards the
+          # loopback address it was dialled on gets a 404 from a healthy cluster.
+          (check "mtls: the ${name} route rewrites the Host header" (
+            lib.hasInfix "proxy_set_header Host ${route.host};" location
+          ))
+          # The whole point of the module.
+          (check "mtls: the ${name} route attaches the client certificate" (
+            lib.hasInfix "proxy_ssl_certificate " location && lib.hasInfix "proxy_ssl_certificate_key " location
+          ))
+          (check "mtls: the ${name} route verifies what it is talking to" (
+            lib.hasInfix "proxy_ssl_verify       on;" location
+          ))
+          # Without SNI the handshake lands on Traefik's default certificate and
+          # the router the client asked for is never matched.
+          (check "mtls: the ${name} route sends SNI" (
+            lib.hasInfix "proxy_ssl_name        ${route.host};" location
+            && lib.hasInfix "proxy_ssl_server_name on;" location
+          ))
+        ];
+    in
+    [
+      (check "mtls: the chart is told to require a client certificate" (
+        cfg.loom.chartOverrides.certificate.requireClientCert or false
+      ))
+      (check "mtls: the assistant pane dials the proxy" (
+        cfg.loom.assistant.ollamaBaseUrl == proxyUrl mtls.routes.ollama
+      ))
+      (check "mtls: USB ingest dials the proxy" (cfg.loom.usbIngest.endpoint == proxyUrl mtls.routes.s3))
+
+      # Both halves again, and for the reason the dnsmasq pair above states:
+      # ordering alone constrains nothing unless something puts the unit in the
+      # queue.
+      (check "mtls: the placeholder is before nginx" (lib.elem "nginx.service" placeholder.before))
+      (check "mtls: nginx pulls the placeholder in" (lib.elem "nginx.service" placeholder.wantedBy))
+
+      # And the inverse, which is the mistake that reads like thoroughness: the
+      # issuer waits for the cluster, so nginx must not wait for the issuer.
+      (check "mtls: the issuer does not hold nginx up" (
+        !(lib.elem "nginx.service" identity.before) && !(lib.elem "nginx.service" identity.wantedBy)
+      ))
+
+      # A plaintext entrypoint beside a client-certificate requirement is either
+      # a way around it or a route that 404s, so the one build that requires a
+      # certificate is the one build that does not pass --enable-http. Asserted
+      # in both directions: dropping it from every box would cost the captive
+      # portal its destination.
+      (check "mtls: the box does not also serve plain http" (
+        !(lib.hasInfix "--enable-http" cfg.systemd.services.loom.script)
+      ))
+      (check "default: the box serves plain http, for the captive portal" (
+        lib.hasInfix "--enable-http" boxSystem.config.systemd.services.loom.script
+      ))
+
+      # Nothing else reissues it, and the certificate outlives neither the CA
+      # nor the box.
+      (check "mtls: the identity is renewed on a timer" (
+        lib.elem "timers.target" cfg.systemd.timers.loom-mtls-identity.wantedBy
+      ))
+
+      # The flag is the whole gate: a box built without it must be the box it
+      # always was.
+      (check "default: no mutual TLS proxy" (
+        !(boxSystem.config.services.nginx.virtualHosts ? loom-mtls-ollama)
+      ))
+      (check "default: the assistant pane dials the ingress directly" (
+        lib.hasPrefix "https://" boxSystem.config.loom.assistant.ollamaBaseUrl
+      ))
+      (check "default: USB ingest dials the ingress directly" (
+        lib.hasPrefix "https://" boxSystem.config.loom.usbIngest.endpoint
+      ))
+    ]
+    ++ lib.concatLists (lib.mapAttrsToList routeChecks mtls.routes);
+
   platform = boxSystem.config.loom.platform.id;
 
-  checks = checksFor "default" boxSystem.config ++ checksFor "wifi" wifiSystem.config ++ bridgeChecks;
+  checks =
+    checksFor "default" boxSystem.config
+    ++ checksFor "wifi" wifiSystem.config
+    ++ bridgeChecks
+    ++ mtlsChecks;
   failures = builtins.filter (c: !c.ok) checks;
 
   report = lib.concatMapStringsSep "\n" (c: "  FAIL  ${c.what}") failures;
@@ -189,6 +315,10 @@ hostPkgs.runCommand "loom-appliance-units-${platform}"
         then nixpkgs' nixos/modules/tasks/network-interfaces-scripted.nix, before
         changing anything here. `after` without `wants` is the mistake that looks
         like a fix.
+
+        A failure whose name starts with `mtls:` is about nixos/mtls.nix instead:
+        the loopback proxy that gets the box's own clients through its own mutual
+        TLS, and the ordering that keeps nginx from waiting on a bring-up.
         EOF
         exit 1
       ''

@@ -195,6 +195,13 @@ evaluate_platforms(){
         instantiate "${platform}" installerImage '--lock-key' \
             --arg lockKey true
 
+        # The --require-client-cert build, for the same reason again:
+        # nixos/mtls.nix is a whole module behind one flag, and what it adds --
+        # two nginx servers, and the units that keep a certificate underneath
+        # them -- is evaluated nowhere else.
+        instantiate "${platform}" installerImage '--require-client-cert' \
+            --arg requireClientCert true
+
         # And --keymap, which is inert without a value the same way the two above
         # are. It also carries a build-time check that the name resolves, so this
         # pass is where a nixpkgs bump that moved the keymaps would surface --

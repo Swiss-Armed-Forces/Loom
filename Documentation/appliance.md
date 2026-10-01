@@ -68,6 +68,13 @@ Read this before building anything; the design only makes sense if these hold.
   and it is a smaller change than it sounds, because the certificate on the https side is self-signed and
   no visitor's browser can verify it anyway. It is still a real loss, and it matters most with `--wifi`,
   where "can see the segment" means everyone in radio range holding the passphrase.
+  **`--require-client-cert` changes this** — it drops the plaintext entrypoint and admits only clients
+  holding an issued certificate, which also means no visitor reaches Loom without being handed one. See
+  [Requiring a client certificate](#requiring-a-client-certificate).
+- **Anyone who can reach the appliance segment can use Loom.** There is no login: reaching the frontend is
+  the whole of the authorisation, by design — the deployment is meant to be task-specific and short-lived,
+  and every user of it is trusted. On a cabled box that means whoever is on the wire; with `--wifi` it
+  means whoever holds the passphrase. `--require-client-cert` is the one build where this is not true.
 - **Bluetooth is disabled** in every image, on the installer stick as well as on the box it installs.
   **WiFi is disabled the same way unless the image was built with `--wifi`**, which turns the box into an
   access point — read [The WiFi access point](#the-wifi-access-point) before using it, because it changes
@@ -887,6 +894,65 @@ neither.
 - **`appliance-vm installer` cannot boot a `--lock-key` image.** It writes the key partition with a plain
   `dd`, which needs no root; formatting a container inside the virtual stick does. Use an unlocked image for
   VM work.
+
+## Requiring a client certificate
+
+```bash
+build-appliance-image --platform evo-x2 --require-client-cert --flash /dev/disk/by-id/usb-...
+```
+
+Every image but this one serves Loom to whoever can reach the appliance segment. This one requires a
+client certificate on every route, so reaching the box is no longer enough: only somebody who was
+handed an identity gets in. Everything about issuing those identities is in
+[installation.md](installation.md#mutual-tls-and-client-certificates) — this section is what changes
+about the box.
+
+### The box has to get through its own front door
+
+Two of Loom's clients run on the appliance itself: the console's assistant pane (`opencode` under Bun)
+and USB ingest (`mc`). Both can be handed a CA and neither can be handed an identity, so with the
+requirement switched on they would be refused by their own cluster — a chat pane that never answers,
+and a USB stick that is mounted and then never ingested.
+
+So the image runs a reverse proxy for them. nginx — already on the box for the captive portal — listens
+on two loopback ports, attaches the box's own client certificate, and forwards to the ingress:
+
+| Port | Upstream | Client |
+| --- | --- | --- |
+| `127.0.0.1:18080` | `ollama.loom` | the assistant pane |
+| `127.0.0.1:18081` | `s3.loom` | USB ingest |
+
+The identity behind it is issued **on the box**, because the CA that signs it lives in the cluster.
+`loom-mtls-identity.service` waits for the chart's `self-signed-mtls-cert` secret — a bring-up, so
+possibly hours — then runs the same script an operator runs for a browser and reloads nginx. A daily
+timer reissues it with 14 days left. `loom-mtls-placeholder.service` writes a throwaway certificate
+first so nginx starts immediately: it authenticates nothing and the proxy answers 502 until the real
+one lands, but the captive portal is not held up behind a cluster bring-up.
+
+The hop from client to proxy is plain http on loopback. It never reaches a wire, and what it stands in
+front of is on the same encrypted disk.
+
+### It takes the cleartext entrypoint with it
+
+This is the one image that does **not** pass `up.sh --enable-http`. A plaintext entrypoint beside a
+client-certificate requirement is either a way around it or a route that answers 404, and neither is
+worth shipping.
+
+That costs the captive portal its destination. A phone that joins the network is still redirected to
+the frontend, and is then refused at the handshake like any other client with no certificate. On this
+box that is the intended answer — but if the point of the deployment is to hand a room full of people
+a browser tab, this is the wrong flag.
+
+### Checking it on a running box
+
+```bash
+systemctl status loom-mtls-identity    # issued, or still waiting for the cluster
+ls -l /var/lib/loom/mtls/              # client.crt, client.key, loom-server-ca.pem
+curl -sS http://127.0.0.1:18080/       # "Ollama is running", through the proxy
+```
+
+A `502` from that last call means the proxy is up and the identity is not — either the cluster has not
+issued one yet, or the placeholder is still in place. `journalctl -u loom-mtls-identity` says which.
 
 ## Keyboard layout
 

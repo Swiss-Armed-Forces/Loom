@@ -86,7 +86,7 @@ let
   # way to click through, so the page the probe is redirected to has to be
   # reachable without TLS or the portal dead-ends on a certificate error.
   #
-  # Unconditional rather than platform-derived: every box serves the same
+  # Platform-independent rather than platform-derived: every box serves the same
   # visitors, and the appliance segment is the trusted network the flag asks
   # for. What it gives up is in Documentation/appliance.md's threat model.
   #
@@ -94,7 +94,16 @@ let
   # that *disables* the global http-to-https redirect, so run mode never needs
   # an image a setup run without it would have skipped -- the asymmetry that
   # makes --scaling load-bearing in both does not arise here.
-  httpArgs = " --enable-http";
+  #
+  # The one build that goes without it is `--require-client-cert` (mtls.nix),
+  # where nothing is meant to reach Loom without an issued identity. A plaintext
+  # entrypoint beside that requirement is either a way around it or a route that
+  # answers 404 -- which of the two depends on how Traefik binds a TLS router to
+  # the `web` entrypoint, and neither is worth shipping. It costs the captive
+  # portal its destination: the redirect still points a visitor at the frontend,
+  # and the visitor is then refused at the handshake like every other client
+  # with no certificate, which on that box is the intended answer.
+  httpArgs = lib.optionalString (!cfg.mtls.enable) " --enable-http";
 
   # How long setup mode leaves its closing message on screen before powering the
   # box off. Long enough for whoever walks past to read why the box is going

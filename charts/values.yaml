@@ -102,6 +102,24 @@ certificate:
   enabled: false
   issuerRef:
     name: null
+  # Require a client certificate on every route this chart serves by name.
+  #
+  # It annotates each Ingress with the `-mtls` TLSOption in
+  # templates/common/tls-option.yaml, which is `RequireAndVerifyClientCert`
+  # against the CA the pre-install hook puts in the `self-signed-mtls-cert`
+  # secret. Nothing else creates client certificates: `generate-client-certificate`
+  # (cicd/generate_client_certificate.sh) signs one against that CA and exports
+  # the trust anchor beside it.
+  #
+  # It locks out every client that cannot present one, which is the point and is
+  # worth saying out loud, because two of them are on the box rather than in
+  # front of it: the appliance's assistant pane and its USB ingest. An appliance
+  # built with `build-appliance-image --require-client-cert` sets this and gets
+  # those two through a proxy that holds the certificate for them (nixos/mtls.nix);
+  # setting it by hand on an appliance that was not gets a box that refuses
+  # itself.
+  #
+  # See the mutual TLS section in Documentation/installation.md.
   requireClientCert: false
 
 externalSecrets:

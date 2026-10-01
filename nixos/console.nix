@@ -111,6 +111,10 @@ let
     builtins.fromJSON loomHostsJson
   );
 
+  # The ingress, or the loopback proxy in front of it on a mutual TLS box. See
+  # the option's description at the bottom of this file.
+  ollamaBaseUrl = config.loom.assistant.ollamaBaseUrl;
+
   tmuxConf = pkgs.writeText "loom.tmux.conf" ''
     # Panes are deliberately NOT login shells. tmux's default is `bash -l`,
     # which re-sources /etc/profile and would re-enter the hook at the bottom of
@@ -666,7 +670,7 @@ let
         npm = "@ai-sdk/openai-compatible";
         name = "Loom Ollama";
         options = {
-          baseURL = "https://${ollamaHost}/v1";
+          baseURL = "${ollamaBaseUrl}/v1";
           apiKey = "ollama";
         };
         models.${loomChatModel} = {
@@ -750,10 +754,10 @@ let
     ];
     text = ''
       model=${lib.escapeShellArg loomChatModel}
-      endpoint=${lib.escapeShellArg "https://${ollamaHost}/v1"}
+      endpoint=${lib.escapeShellArg "${ollamaBaseUrl}/v1"}
       # Ollama's root route, which answers "Ollama is running" and nothing else.
       # What the wait below gates on -- see `ready`.
-      probe=${lib.escapeShellArg "https://${ollamaHost}/"}
+      probe=${lib.escapeShellArg "${ollamaBaseUrl}/"}
       # Ollama's native routes, which the OpenAI-compatible /v1 does not mirror:
       # /api/ps and /api/show are where the context size is readable at all.
       api=${lib.escapeShellArg "https://${ollamaHost}/api"}
@@ -1465,6 +1469,28 @@ in
     description = ''
       The always-in-context instructions the assistant pane is given, or null on
       a box with no assistant.
+    '';
+  };
+
+  # An option rather than a literal in the two places that dial Ollama, because
+  # one of them is a JSON file and the other a shell script, and a box behind
+  # its own mutual TLS has to move both at once (mtls.nix).
+  options.loom.assistant.ollamaBaseUrl = lib.mkOption {
+    type = lib.types.str;
+    default = "https://${ollamaHost}";
+    defaultText = lib.literalExpression "\"https://\${ollamaHost}\"";
+    internal = true;
+    description = ''
+      Where the assistant pane reaches Ollama, without a trailing slash.
+
+      The ingress by default, over https: the appliance serves plain http as
+      well (modes.nix passes up.sh's --enable-http, for the captive portal), but
+      that exists for visitors who cannot be handed a CA, and this pane runs on
+      the box where the certificate is verifiable.
+
+      mtls.nix points it at the loopback proxy instead, which is http -- one
+      hop, on this machine, in front of the certificate that opencode has
+      nowhere to put.
     '';
   };
 

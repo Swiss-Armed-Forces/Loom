@@ -79,6 +79,11 @@ KEY_PARTITION_TIMEOUT=30
 # What it buys is that the stick stops being a bearer token. Unlocked, holding it
 # is enough; locked, it is one factor of two. See Documentation/appliance.md.
 LOCK_KEY=false
+# Deploy Loom with mutual TLS, and run the loopback proxy that gets the box's own
+# clients through it (nixos/mtls.nix). Off by default: with it every ingress
+# refuses a client that presents no certificate, which is a decision about who
+# may reach the box rather than a default worth making for anybody.
+REQUIRE_CLIENT_CERT=false
 # Seven EFF words is ~90 bits, which is more than argon2id needs to be out of
 # reach and still short enough to read off a printout and type at a console.
 #
@@ -977,6 +982,7 @@ build_image(){
         --arg debugAccess "${DEBUG_ACCESS}" \
         --argstr debugSshAuthorizedKey "${debug_key}" \
         --arg lockKey "${LOCK_KEY}" \
+        --arg requireClientCert "${REQUIRE_CLIENT_CERT}" \
         --argstr keymap "${KEYMAP}" \
         --out-link "${IMAGE_LINK}"
 }
@@ -1521,6 +1527,11 @@ usage(){
     echo "  --lock-key-out FILE           also write the key passphrase to FILE. Must not be"
     echo "                                the same file as --key-backup: one file holding both"
     echo "                                factors is no better than neither."
+    echo "  --require-client-cert         deploy Loom with mutual TLS: every ingress refuses a"
+    echo "                                client that presents no certificate. The box issues"
+    echo "                                itself one and reaches its own services through a"
+    echo "                                loopback proxy that attaches it; a browser needs one"
+    echo "                                from 'generate-client-certificate'."
     echo "  --keymap NAME                 console keymap for the box, the installer and stage 1,"
     echo "                                as loadkeys names it ('de_CH-latin1', 'fr', 'uk')."
     echo "                                Default is the kernel's US QWERTY. Set this when the"
@@ -1632,6 +1643,10 @@ while [[ $# -gt 0 ]]; do
         ;;
         --lock-key)
             LOCK_KEY=true
+            shift
+        ;;
+        --require-client-cert)
+            REQUIRE_CLIENT_CERT=true
             shift
         ;;
         --lock-key-words)

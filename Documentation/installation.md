@@ -331,6 +331,84 @@ certificate. Without that, OpenSSL-based clients (`curl`, Python) and Go accept 
 BoringSSL-based ones reject it with "unable to verify the first certificate" — so the breakage shows up in
 one client and nowhere else.
 
+### Mutual TLS and client certificates
+
+`certificate.requireClientCert` in `charts/values.yaml` (off by default) makes every route this chart
+serves by name require a client certificate. Traefik then refuses a connection that presents none
+during the handshake, before any request is read — no page, no 403, nothing a browser can explain.
+
+Two certificate authorities are in play, and mixing them up is the usual mistake:
+
+| Secret | What it is | What it does |
+| --- | --- | --- |
+| `self-signed-mtls-cert` | A CA keypair | Verifies clients. Signs every client certificate; signs nothing a client has to trust. |
+| `self-signed-cert` | The certificate Traefik serves | Nothing issued it, so a client that trusts this deployment trusts this certificate itself, as its own anchor. |
+
+Both come from pre-install hook Jobs, which create them once and leave an existing one alone.
+
+#### Issuing an identity
+
+```bash
+generate-client-certificate --name alice --out-dir ./certs
+```
+
+It reads the CA out of the cluster, signs a certificate against it, and writes five files:
+
+| File | What it is |
+| --- | --- |
+| `alice.p12` | The identity for browsers: certificate and private key, **no password** |
+| `alice.crt`, `alice.key` | The same pair as PEM, for `curl --cert/--key`, `mc`, nginx |
+| `loom-server-ca.pem` | The trust anchor — `self-signed-cert`, exported |
+| `README.txt` | What each file is, and the per-OS import steps |
+
+Useful flags: `--days N` (default 60), `--namespace`, `--force`, and `--legacy-pbe`, which encrypts
+the `.p12` with 3DES instead of OpenSSL 3's AES-256 for importers that reject the newer algorithm
+outright rather than prompting.
+
+#### The bundle carries no trust
+
+**Importing the `.p12` does not make Loom's own certificate trusted.** PKCS#12 is a bag of
+certificates with no notion of trust: a CA put into one is stored, handed back by `-cacerts`, and
+granted nothing by any browser, keystore or system store on the strength of having been in the bag.
+
+So the anchor is a separate file with a deliberate install step, and that step is the one people skip:
+
+- **Firefox** — Certificate Manager, _Authorities_, Import, and tick "Trust this CA to identify
+  websites". Without the tick the certificate is stored and trusted for nothing.
+- **Chrome** — on Linux the same NSS database; on Windows and macOS the system store, below.
+- **Windows** — `certutil -user -addstore Root loom-server-ca.pem`, and confirm the prompt.
+- **macOS** — `security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db loom-server-ca.pem`
+- **Linux CLI** — drop it in `/usr/local/share/ca-certificates/` and run `update-ca-certificates`, or
+  pass it per call with `curl --cacert`.
+
+Check both halves at once, and check that the negative fails too:
+
+```bash
+curl --cacert certs/loom-server-ca.pem --cert certs/alice.crt --key certs/alice.key https://frontend.loom/
+curl --cacert certs/loom-server-ca.pem https://frontend.loom/   # must fail in the handshake
+```
+
+If the second call succeeds, mutual TLS is not actually on.
+
+#### The CA rotates, and takes every certificate with it
+
+The pre-install Job replaces the mTLS CA once it is within 30 days of expiring, and the replacement
+verifies none of the certificates the old one signed. The usable life of an identity therefore ends a
+month before the date printed on the CA, not on it. `generate-client-certificate` refuses to issue a
+certificate that would outlive its issuer and says how many days are left; when the CA does roll,
+every client has to be reissued.
+
+Nothing renews a client certificate either. The 60-day default is a reminder, not a schedule.
+
+#### Clients that cannot present one
+
+Switching this on locks out anything with no way to hold a certificate. On the appliance that is two
+things on the box itself — the assistant pane (`opencode` under Bun) and USB ingest (`mc`) — both of
+which can be handed a CA and neither of which can be handed an identity. Build the image with
+`build-appliance-image --require-client-cert` and they go through a local proxy that holds one for
+them; set the value by hand on an appliance that was not built that way and the box refuses itself.
+See [appliance.md](appliance.md).
+
 ### The minikube node address
 
 `kubernetes.api` in `charts/values.yaml` is the address the minikube node itself comes up on — not the

@@ -217,6 +217,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--lock-key-out FILE` (refused if it names the same file as `--key-backup`). Only meaningful with
   `--flash`, and `appliance-vm installer` cannot boot such an image - it writes the key partition
   with a plain `dd`. Read the `## Locking the stick's key` section in `Documentation/appliance.md`
+- `build-appliance-image --require-client-cert` - Deploy Loom with mutual TLS, so reaching the
+  appliance segment is no longer enough to use Loom: every route refuses a client that presents no
+  certificate, and `generate-client-certificate` is what issues one. It sets
+  `certificate.requireClientCert` through `loom.chartOverrides` **and** gives the box's own two
+  clients a way through, which is the half that cannot be left out: `opencode` (the assistant pane)
+  and `mc` (USB ingest) can both be handed a CA and neither can be handed an identity, so nginx —
+  already on the box for the captive portal — reverse-proxies `ollama.loom` and `s3.loom` on two
+  loopback ports and attaches the certificate itself. That identity is issued **on the box**, since
+  the CA lives in the cluster: `loom-mtls-identity.service` waits for the secret, runs the same
+  script an operator runs, and a daily timer reissues it; `loom-mtls-placeholder.service` writes a
+  throwaway certificate first so nginx starts without waiting out a bring-up and the captive portal
+  is not held up. It is also the one image that **drops `up.sh --enable-http`** — a plaintext
+  entrypoint beside a client-certificate requirement is either a way around it or a 404 — which
+  costs the captive portal its destination. See the `## Requiring a client certificate` section in
+  `Documentation/appliance.md`
 - `build-appliance-image --keymap NAME` - Set the console keymap for the box, the installer **and
   stage 1**, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Default is the kernel's built-in US
   QWERTY, which is what every image was before this existed. It matters for the three prompts nobody
@@ -287,10 +302,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   pane's skills against the headings they cite in `Documentation/`, and no derivation's `src` holds
   both. The half that has to fail an image build is `nixos/tests/appliance-skills.nix` instead.
   Extra arguments go to pytest
-- `appliance-eval` - Instantiates the stick image for all three platforms — three times each, once
-  plain, once with `--debug` and once with `--lock-key`, since `nixos/debug.nix` and
-  `nixos/key-store.nix` are inert otherwise and would rot unevaluated — and the tests for this one,
-  building nothing. Catches a module that no longer evaluates, a renamed option, a failed
+- `appliance-eval` - Instantiates the stick image for all three platforms — five times each: plain,
+  `--debug`, `--lock-key`, `--require-client-cert` and `--keymap`, since `nixos/debug.nix`,
+  `nixos/key-store.nix` and `nixos/mtls.nix` are inert otherwise and would rot unevaluated — and the
+  tests for this one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
   assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
 - `loom-platform-info` - Report this box's hardware — wired ports with their drivers, PCI ids and
   multi-port ids, radios and whether they do AP mode, GPU with the firmware VRAM carve-out beside
@@ -325,6 +340,20 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   This covers the four appliance packages under `nixos/` as well; see the lockfile section in
   `nixos/README.md` for why their locks do not govern what an image ships
 - `generate-openapi-schema` - Print OpenAPI schema JSON
+- `generate-client-certificate --name NAME --out-dir DIR` - Issue a client identity for the mutual
+  TLS that `certificate.requireClientCert` switches on, signing it against the CA the chart's
+  pre-install hook puts in the `self-signed-mtls-cert` secret. Writes four things plus a `README.txt`:
+  `NAME.p12` (certificate and key, **no password**, for a browser), `NAME.crt` and `NAME.key` (the
+  same pair as PEM, for `curl --cert/--key`, `mc`, nginx), and `loom-server-ca.pem` — which is the
+  separate half that matters. **A PKCS#12 bundle carries certificates, not trust**: a CA put inside
+  one is stored, handed back by `-cacerts`, and granted nothing by any browser or system store, so
+  importing the `.p12` does not stop the `*.loom` certificate warning. The anchor is a file of its
+  own with a deliberate per-OS install step, and it is `self-signed-cert` — the certificate Traefik
+  serves — not the mTLS CA. Refuses to issue a certificate that would outlive its issuer: the
+  pre-install Job replaces that CA within 30 days of expiry and the replacement verifies nothing the
+  old one signed, so the usable life ends a month before the date on the CA. Other flags: `--days N`
+  (default 60), `--namespace`, `--force`, and `--legacy-pbe` for importers that reject OpenSSL 3's
+  AES-256 PKCS#12 outright. See the mutual TLS section in `Documentation/installation.md`
 - `chrome-loom-wrapped [SERVER [HTTP_PORT [HTTPS_PORT]]]` - Open the frontend in a chromium that
   resolves every `*.loom` name to `SERVER` via `--host-rules`, so a remote Loom needs no `/etc/hosts`
   entry. With no arguments it points at `127.0.0.1:8080`/`8443`, the pair `appliance-vm` forwards;

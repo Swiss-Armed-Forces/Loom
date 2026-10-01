@@ -252,6 +252,32 @@ nobody here is building). `modes.nix` puts them in that option, `repo.nix` write
 else. The written file carries a header saying where it came from; it is written once, so an operator can
 edit it afterwards.
 
+`mtls.nix` is the second author of that option, and the only one outside `modes.nix`. It sets
+`certificate.requireClientCert` there, so one flag moves the cluster and the box together — the two halves
+are useless apart, and `charts/values-overwrites.yaml` is the only place an appliance can state a Helm value.
+
+## `loom.mtls`, and why the box proxies to itself
+
+`build-appliance-image --require-client-cert` turns on mutual TLS, and mutual TLS locks out every client that
+cannot hold a certificate. Two of those run on the box: `opencode` under Bun (`console.nix`) takes a CA
+through `NODE_EXTRA_CA_CERTS` and has nowhere to put an identity, and `mc`'s certificate handling is the
+directory of CAs `install_cluster_ca` maintains (`usb-ingest/loom_usb_ingest/transfer.py`). Neither program
+offers a client-certificate option at all, so there is nothing to configure — hence a proxy that holds the
+certificate on their behalf, and two endpoints moved onto it. Both of those are already options
+(`loom.assistant.ollamaBaseUrl`, `loom.usbIngest.endpoint`), which is what keeps the wiring in one module.
+
+The ordering is the part worth not breaking, and `tests/appliance-units.nix` asserts it. nginx serves the
+captive portal as well as this proxy, and `proxy_ssl_certificate` naming a file that is not there fails its
+configuration test — so a placeholder unit runs `before` nginx and is pulled in `wantedBy` it, while the unit
+that waits for the cluster is ordered nowhere near it. Reverse those and nginx waits out a bring-up, which
+costs every visitor the captive portal for the length of one.
+
+The issuer is `cicd/generate_client_certificate.sh`, installed into the closure with `runCommandLocal` rather
+than run out of the seeded checkout: `loom-seed-repo` may not have finished, and one implementation serving
+both an operator's browser and the box is the point. That script sources `../vars.sh` when it finds one,
+which is how it picks up the namespace in a checkout; there is none beside `$out/bin`, so the unit passes
+`--namespace` instead.
+
 ## `loom0`, and the two things that can produce it
 
 A platform's `netMatch` is a **driver** match, applied by a `.link` file. That is the fast path and the one

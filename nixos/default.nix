@@ -137,6 +137,13 @@
   # unattended boot: the box stops at a prompt in stage 1. See
   # Documentation/appliance.md.
   lockKey ? false,
+  # Deploy Loom with mutual TLS, and run the loopback proxy that gets the box's
+  # own clients through it (nixos/mtls.nix).
+  #
+  # One flag for both halves. `certificate.requireClientCert` without the proxy
+  # is a box whose assistant pane and USB ingest are refused by its own cluster;
+  # the proxy without the value is two nginx servers nothing dials.
+  requireClientCert ? false,
   # The console keymap for the box, the installer and stage 1 (nixos/keymap.nix).
   # Empty is the kernel's built-in US QWERTY, which is what every image was
   # before this existed. It matters most for the prompts an operator has to type
@@ -297,6 +304,7 @@ let
       debugAccess
       debugSshAuthorizedKey
       lockKey
+      requireClientCert
       keymap
       ;
     loomUser = "loom";
@@ -388,6 +396,7 @@ let
     ./keymap.nix
     ./key-store.nix
     ./modes.nix
+    ./mtls.nix
     ./network.nix
     ./portal.nix
     # In evalConfig as well, which is what gets it onto the installer stick.
