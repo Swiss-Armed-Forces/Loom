@@ -33,11 +33,13 @@ this file is about the code.
 | `vm-serial.nix` | A getty on `ttyS0`, so a VM's console session can be reached from a terminal that copies and pastes. Never on a real stick; see `--serial` below. |
 | `debug.nix` | The `--debug` build: an sshd keyed to one generated key, `loom-debug-bundle`, and the five places the box says what it is. Inert in every other image; see `--debug` below. |
 | `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
+| `skills/` | What the assistant pane knows: two opencode skills (`loom-appliance`, `loom-usage`) as plain markdown, plus the pytest suite that checks their frontmatter and the documentation headings they cite. `console.nix` assembles them, adds a generated `facts.md` and ships the result as a store path. |
 | `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer/` | The three programs the stick runs — `loom-menu`, `loom-install`, `loom-wipe` — as one Python package: the device interlock, the auto-install decision, the console drawing (rich), and a pytest suite run at build time. |
 | `scripts/platform_info.sh` | `loom-platform-info`: what the box actually is, next to what the platform file claims. Plain bash with no Nix dependency, because the box it most needs to run on is one that is not running Loom yet. |
 | `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
+| `tests/appliance-skills.nix` | Not a VM test: asserts that the assistant pane got skills on a platform that deploys Ollama and none on one that does not, that their frontmatter is what opencode will register, and that every `loom-*` command they name is one this image carries. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
 | `tests/appliance-units.nix` | Not a VM test: asserts the unit edges that put the appliance address on the interface before dnsmasq and nginx bind it, in the default build and the `--wifi` one. Builds the second configuration itself with `extendModules`. |
 | `tests/appliance-dhcp.nix` | VM test for the default build's DHCP server: dnsmasq on a `loom0` renamed during boot, the lease a client gets, the captive-portal probe names, and that a missing interface no longer kills the daemon. |
@@ -579,9 +581,10 @@ those correctly, so defaults would fail the test for the wrong reason — and as
 garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--gc`,
 `--nixpkgs` and `--nixos-hardware` are the flags; `appliance-test --help` lists them.
 
-`hardware` and `units` boot nothing — they read the evaluated configuration and exit — so they do not
-need KVM, do not build the appliance closure, and are not bound to the host's architecture. They
-therefore run first, and a selection made up only of them lifts the cross-architecture refusal:
+`hardware` and `units` are the exceptions to everything in this section. They boot nothing — they read
+the evaluated configuration and exit — so they do not need KVM, do not build the appliance closure, and
+are not bound to the host's architecture. They therefore run first, and a selection made up only of
+them lifts the cross-architecture refusal:
 
 ```bash
 appliance-test hardware --platform spark      # works on an x86_64 workstation

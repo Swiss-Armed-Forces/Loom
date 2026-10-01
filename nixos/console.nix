@@ -429,6 +429,169 @@ let
     '';
   };
 
+  # What this particular image is, for the skills below to read. Generated whole
+  # rather than substituted into the prose, so the hand-written markdown is
+  # byte-identical in the repository and on the box -- ./skills is inside
+  # loomSrc, so the sources land at /home/loom/loom/nixos/skills as well, and the
+  # agent has `read` and `grep` over that checkout. Two copies of the same
+  # sentence that disagree is worse than one copy plus a table.
+  #
+  # Only facts with no runtime authority are in here. The GPU, the addresses and
+  # the interface are deliberately absent: `loom-platform-info` and `loom-info`
+  # answer those on the running box, and a skill that says "run the command" is
+  # right on every image where one that names a value is right on one.
+  applianceFacts = pkgs.writeText "loom-appliance-facts.md" ''
+    # What this box is
+
+    Generated when this image was built. Everything here is fixed for this
+    image; anything that can change while the box runs is not in this file, so
+    read it with `loom-info` or `loom-platform-info` instead.
+
+    | Fact | Value |
+    | --- | --- |
+    | Platform | `${cfg.platform.id}` -- ${cfg.platform.description} |
+    | GPU offload | ${
+      if cfg.platform.gpuVendor == null then "none" else "`${cfg.platform.gpuVendor}`"
+    } |
+    | AI services (Ollama, summarisation, RAG) | ${
+      if cfg.platform.runsAiServices then "deployed" else "not deployed"
+    } |
+    | Boot mode | `${cfg.mode}` |
+    | Kubernetes namespace | `${loomNamespace}` |
+    | Assistant model | `${loomChatModel}` |
+    | Loom checkout | `${loomRepoDir}` |
+    | WiFi access point | ${
+      if cfg.wifi.enable then "enabled" else "not built in -- radios are blocked"
+    } |
+    | Remote access (ssh) | ${
+      if cfg.debug.enable then
+        "**ENABLED** -- this is a `--debug` image, not a production one"
+      else
+        "none, by design"
+    } |
+    | Stick key passphrase (`--lock-key`) | ${
+      if cfg.keyStore.enable then "required at boot" else "not used"
+    } |
+
+    ## Names this box resolves
+
+    Every name below is pinned in `/etc/hosts` and served by this box. Not all
+    of them serve a web page -- see `${loomRepoDir}/charts/values.yaml`, where
+    `hostnames.ingress` are the routed ones and `hostnames.extra` are protocol
+    endpoints with nothing to browse.
+
+    ${lib.concatMapStringsSep "\n" (h: "- `${h}`") (builtins.fromJSON loomHostsJson)}
+  '';
+
+  # The skills the assistant pane can load: what this box is, and how to operate
+  # it. opencode puts only each skill's name and description in the system
+  # prompt and loads the body on demand, so this costs a handful of lines per
+  # skill until one is actually needed.
+  #
+  # A store path reached through `skills.paths` rather than a directory inside
+  # the config: the config is re-seeded onto tmpfs on every pane start (see
+  # loom-chat below) because opencode writes into it, and skills are read-only.
+  # Keeping them in the store also keeps them off a RAM disk, out of the
+  # operator's reach, and assertable by the appliance test.
+  #
+  # Every reference file ships on every image. Dropping the ones that do not
+  # apply was tried and is worse: each SKILL.md names its reference files, so a
+  # removed file leaves the router pointing at something that is not there.
+  # `facts.md` above is what says which of them this box can act on.
+  #
+  # The glob opencode applies to a `skills.paths` entry is `**/SKILL.md` -- not
+  # the `{*.md,**/SKILL.md}` the newer in-tree engine uses, which is not the one
+  # that reads this key -- so every skill has to be `<name>/SKILL.md`, and a
+  # stray markdown file at the root of this tree is ignored rather than
+  # registered as a nameless skill.
+  # ./skills holds the suite that checks it as well as the skills themselves, and
+  # neither that nor the bytecode a local pytest run leaves beside it belongs on
+  # an appliance. Filtered here rather than deleted in the builder, so a stray
+  # __pycache__ cannot change this derivation's hash either.
+  skillSources = lib.cleanSourceWith {
+    src = ./skills;
+    name = "loom-skill-sources";
+    filter =
+      path: type:
+      let
+        base = baseNameOf path;
+      in
+      !(type == "directory" && (base == "tests" || base == "__pycache__"));
+  };
+
+  skillsDir = pkgs.runCommand "loom-skills" { } ''
+    mkdir -p "$out"
+    cp --recursive ${skillSources}/. "$out/"
+    chmod -R u+w "$out"
+    cp ${applianceFacts} "$out/loom-appliance/facts.md"
+
+    # opencode registers a skill only if its frontmatter parses and carries a
+    # string `name`, and drops it silently otherwise -- no log line, no error,
+    # the skill simply never appears. The same is true of a `description` that
+    # YAML reads as a map because it was left unquoted around a colon. Catch
+    # both here, where the build can fail, rather than on a box where the only
+    # symptom is an assistant that has never heard of Loom.
+    for skill in "$out"/*/SKILL.md; do
+      name="$(basename "$(dirname "$skill")")"
+      grep -q "^name: $name\$" "$skill" \
+        || { echo "$skill: frontmatter name is not '$name'" >&2; exit 1; }
+      grep -q '^description: "' "$skill" \
+        || { echo "$skill: description must be a quoted string" >&2; exit 1; }
+    done
+  '';
+
+  # Always in context, unlike the skills. This exists because the failure mode of
+  # a 9B model here is not picking the wrong skill, it is never reaching for one
+  # and answering from priors instead -- which on a box like this produces
+  # confident, generic and wrong Linux advice. Nothing in opencode's stock prompt
+  # says what kind of machine it is on.
+  #
+  # Deliberately short, and about procedure rather than content: it is paid for
+  # on every turn of a model whose context window is small. The catalogue, the
+  # hostnames and the unit list are what the skills are for.
+  #
+  # It also replaces something. opencode walks up from its working directory for
+  # AGENTS.md, then CLAUDE.md -- and the seeded checkout has the repository's
+  # own CLAUDE.md, 500-odd lines of instructions about worktrees, GitLab merge
+  # requests and poetry lockfiles, which has been the first thing in this pane's
+  # context on every box so far. `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` in
+  # loom-chat is what stops that; this is what goes in its place.
+  loomInstructions = pkgs.writeText "loom-agent-instructions.md" ''
+    # This machine
+
+    You are running on a Loom appliance: a single-node, air-gapped NixOS box
+    serving Loom from a one-node minikube cluster. The person talking to you is
+    at its physical console. There is no browser here, no remote access, and no
+    route off this box -- do not suggest downloading, installing or fetching
+    anything.
+
+    ## How to answer
+
+    Before answering anything about this box, this cluster, or Loom itself, load
+    a skill with the `skill` tool. Do not answer from general knowledge about
+    Linux, NixOS or Kubernetes: the commands here are specific to this
+    appliance, and a plausible-sounding command that does not exist on it is
+    worse than no answer. `loom-appliance` is for the box; `loom-usage` is for
+    working with documents.
+
+    ## Facts you do not need a skill for
+
+    - The Kubernetes namespace is `${loomNamespace}`.
+    - Loom's own source and documentation are at `${loomRepoDir}`.
+    - `loom-info` prints what this box is; `loom-ready` prints how far the
+      bring-up got.
+
+    ## Rules
+
+    - Use absolute paths. Your working directory is not the same one the
+      operator gets at an `Alt-F2` prompt.
+    - Never propose `kubectl edit`, `helm upgrade`, or editing anything under
+      `/nix/store`. The store is read-only, and this box is reconfigured by
+      being brought down and up, not in place.
+    - Before anything destructive, say what it will do and let the operator
+      decide. Say so plainly rather than refusing.
+  '';
+
   # The assistant pane's config, in the store rather than generated at runtime
   # like loom-btop's: btop rewrites its config on exit and so needs a writable
   # copy, opencode only ever reads this one. A store path also means the appliance
@@ -485,6 +648,17 @@ let
       permission = "allow";
       share = "disabled";
       snapshot = false;
+      # Loaded on demand; only the names and descriptions are in the system
+      # prompt until the model asks for one. An entry that does not resolve is a
+      # log line and nothing else -- opencode warns `skill path not found` and
+      # carries on -- so the appliance test checks the directory on the running
+      # box rather than trusting this string.
+      skills.paths = [ "${skillsDir}" ];
+      # Always in context. An absolute path is taken verbatim here; the
+      # alternative spelling, a bare AGENTS.md discovered from the working
+      # directory, resolves differently for the pane and for `loom-chat` typed
+      # at a prompt, which have different ones.
+      instructions = [ "${loomInstructions}" ];
       model = "ollama/${loomChatModel}";
       lsp = { };
       mcp = { };
@@ -600,6 +774,27 @@ let
       export OPENCODE_DISABLE_MODELS_FETCH=1
       export OPENCODE_DISABLE_AUTOUPDATE=1
 
+      # What the assistant is allowed to learn about itself from, which on this
+      # box has to be only what the image shipped.
+      #
+      # opencode discovers skills from `.claude/skills` and `.agents/skills`, in
+      # $HOME and in every directory from its working directory up to the
+      # worktree root. Both are writable here -- $HOME is the operator's, and the
+      # working directory is the seeded checkout -- so without this the set of
+      # skills depends on what happens to be lying around rather than on what was
+      # built. `OPENCODE_DISABLE_EXTERNAL_SKILLS` is the one that covers it:
+      # `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS` drops only `.claude` and leaves
+      # `.agents` scanned, which reads like the right flag and is not.
+      export OPENCODE_DISABLE_EXTERNAL_SKILLS=1
+
+      # The same walk, for instruction files: AGENTS.md, then CLAUDE.md. There is
+      # no AGENTS.md in the checkout, so the fallback hits the repository's own
+      # CLAUDE.md -- 500-odd lines about git worktrees, GitLab merge requests and
+      # poetry lockfiles, prepended to every question an operator asks a box that
+      # has no git remote and no devenv. `instructions` in the config above is
+      # what this pane is told instead.
+      export OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1
+
       # Sessions, logs and caches land on tmpfs, not on the encrypted root. This
       # appliance is built for ephemeral, task-specific deployments, and the
       # transcript of what an operator asked about an evidence set is not
@@ -632,7 +827,13 @@ let
       config="$state/config"
       rm --recursive --force "$config"
       mkdir -p "$config"
-      cp --no-preserve=mode ${lib.escapeShellArg opencodeConfigDir}/* "$config/"
+      # `/.` rather than `/*`, and recursive, because the glob form has three
+      # ways to go wrong and all of them are silent: it cannot carry a
+      # subdirectory, it skips dotfiles, and on an empty source it passes a
+      # literal `*` that fails the copy under `set -e`. Nothing in
+      # opencodeConfigDir needs any of that today -- the point is that the next
+      # file added there must not have to notice.
+      cp --recursive --no-preserve=mode ${lib.escapeShellArg opencodeConfigDir}/. "$config/"
       export OPENCODE_CONFIG="$config/opencode.json"
       export OPENCODE_CONFIG_DIR="$config"
 
@@ -853,7 +1054,7 @@ let
           if value="$(jq --exit-status \
             '[(.model_info // {}) | to_entries[]
               | select(.key | endswith(".context_length")) | .value]
-             | first | select(type == "number" and . > 0)' \
+              | first | select(type == "number" and . > 0)' \
             <<<"$body" 2>/dev/null)"; then
             printf '%s\n' "$value"
             return 0
@@ -882,7 +1083,7 @@ let
         jq --arg model "$model" --argjson context "$context" \
           --argjson output "$output" \
           '.provider.ollama.models[$model].limit =
-             { context: $context, output: $output }' \
+              { context: $context, output: $output }' \
           "$OPENCODE_CONFIG" >"$tmp"
         mv "$tmp" "$OPENCODE_CONFIG"
         printf '  Context window: %s tokens.\n' "$context"
@@ -1233,6 +1434,40 @@ let
   };
 in
 {
+  # Published so tests/appliance-skills.nix can read what this image shipped.
+  # `opencodeConfig` and the two paths it names are `let` bindings, and an
+  # evaluation-time check has no other way to reach them -- the alternative is
+  # grepping the generated JSON out of the store, which asserts the spelling of
+  # the config rather than the thing it points at.
+  #
+  # Null on a platform with no Ollama: box.nix leaves `opencode` out of the
+  # closure there, console.nix builds no assistant pane, and shipping skills for
+  # an assistant that does not exist would be dead weight the test should catch
+  # rather than tolerate.
+  options.loom.assistant.skillsDir = lib.mkOption {
+    type = lib.types.nullOr lib.types.path;
+    default = if aiEnabled then skillsDir else null;
+    defaultText = lib.literalExpression "the assembled skills, when the platform runs Ollama";
+    readOnly = true;
+    internal = true;
+    description = ''
+      The skill tree the assistant pane loads from, or null on a box with no
+      assistant.
+    '';
+  };
+
+  options.loom.assistant.instructionsFile = lib.mkOption {
+    type = lib.types.nullOr lib.types.path;
+    default = if aiEnabled then loomInstructions else null;
+    defaultText = lib.literalExpression "the generated instructions, when the platform runs Ollama";
+    readOnly = true;
+    internal = true;
+    description = ''
+      The always-in-context instructions the assistant pane is given, or null on
+      a box with no assistant.
+    '';
+  };
+
   options.loom.consoleSocket = lib.mkOption {
     type = lib.types.str;
     default = "/run/loom/tmux.sock";

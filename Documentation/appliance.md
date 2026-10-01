@@ -41,8 +41,11 @@ Read this before building anything; the design only makes sense if these hold.
   above, that is not a new boundary being crossed — the console it sits in is already a passwordless root
   session, and a confirmation prompt answered by the same unauthenticated person who typed the request is
   not a control. But it is one more reason the box must not be left unattended
-  with the stick in it. **Only on `evo-x2`**: the pane needs Ollama, and Ollama needs a GPU, so the other two
-  images ship neither it nor `opencode` — see [AI services follow the GPU](#ai-services-follow-the-gpu).
+  with the stick in it. The agent also ships knowing how to operate this box — see
+  [Skills](#skills) — which makes it more useful to the operator and equally more useful to anyone
+  else who reaches the keyboard. **Only on a box with a GPU** (`spark`, `evo-x2`): the pane needs
+  Ollama, and Ollama needs a GPU, so `nuc12` ships neither it nor `opencode` — see
+  [AI services follow the GPU](#ai-services-follow-the-gpu).
 - **Any USB medium plugged in is mounted and indexed.** Every image does this — see
   [Ingesting data from USB](#ingesting-data-from-usb). A USB port is therefore an unauthenticated
   data-injection path: anyone who can reach the box can put arbitrary content into the index, and kernel
@@ -1325,9 +1328,9 @@ back, and the pane says so as it switches.
 
 ### The assistant pane
 
-Only on an image that deploys Ollama, which today means `evo-x2` alone — see
-[AI services follow the GPU](#ai-services-follow-the-gpu). Elsewhere the session is two panes and `opencode`
-is not in the closure at all.
+Only on an image that deploys Ollama, which means the two platforms with a GPU — `spark` and
+`evo-x2` — see [AI services follow the GPU](#ai-services-follow-the-gpu). On `nuc12`, and on anything
+built with `--no-gpu`, the session is two panes and `opencode` is not in the closure at all.
 
 The bottom pane runs [opencode](https://github.com/anomalyco/opencode) against the Ollama already running in
 the cluster, at `https://ollama.loom/v1/`. The box has carried a model on the stick since the first build and
@@ -1422,8 +1425,44 @@ Two things worth knowing before leaning on it:
   different proposition once `--wifi` is on, and worth re-reading [the threat model](#threat-model) in that
   case.
 - **The model is small.** It is a 9B, which is capable at short, well-scoped questions and gets unreliable as
-  the number of tools in play grows. Treat it as a knowledgeable colleague who has not seen your cluster,
-  rather than as something to hand a long autonomous task.
+  the number of tools in play grows. Treat it as a knowledgeable colleague who has seen this box but not your
+  cluster, rather than as something to hand a long autonomous task.
+
+#### Skills
+
+The pane ships knowing what Loom is and how this box is operated. Without that it is a general-purpose
+assistant guessing at `kubectl` invocations on a machine it has never been told about, which is worse than
+useless at the moment somebody needs it.
+
+Two skills, in a read-only store path the config names through `skills.paths`:
+
+- **`loom-appliance`** — operating and diagnosing the box: the `loom-*` commands, the systemd units, the
+  cluster and the Celery queue chain, addresses and `loom0` and `dnsmasq`, the LUKS key and USB ingest, the
+  GPU, the access point.
+- **`loom-usage`** — using Loom: getting documents in, every `*.loom` address and what it serves, the REST
+  API, searching and the AI features.
+
+Only each skill's name and one-line description sit in the model's context; the body is fetched when the
+model asks for it, and the reference files beside it only when it reads them. The skills do not restate this
+documentation — they name a file and a heading in the checkout at `/home/loom/loom` and send the agent to
+read it, which is also where an operator would look. A test asserts every heading they cite still exists, so
+editing this page cannot quietly leave the assistant pointing at a section that is gone.
+
+One file per box is generated at build time, `facts.md`: the platform, whether there is a GPU, the boot mode,
+the chat model, whether WiFi or `--debug` or `--lock-key` are on, and every name this box resolves. Anything
+that can change while the box runs is deliberately not in it — `loom-info` and `loom-platform-info` answer
+those, and a skill that names a command is right on every image where one that names a value is right on one.
+
+Alongside them, always in context rather than on demand, is a short briefing: that this is an air-gapped
+appliance with no route off itself, that the checkout is at `/home/loom/loom`, and that the agent should
+reach for a skill before answering from general knowledge about Linux.
+
+**What it deliberately does not read.** opencode looks for instructions by walking up from its working
+directory — `AGENTS.md`, then `CLAUDE.md` — and the pane's working directory is the seeded checkout, which
+has Loom's own `CLAUDE.md`: several hundred lines about git worktrees, merge requests and poetry lockfiles,
+addressed to someone developing Loom on a machine with a network. That is switched off, as is opencode's
+habit of discovering skills from `.claude/` and `.agents/` directories in the operator's home and in the
+checkout. An appliance's assistant should know exactly what the image gave it and nothing else.
 
 ### Driving it with a mouse
 

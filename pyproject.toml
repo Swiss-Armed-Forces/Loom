@@ -97,4 +97,8 @@ quiet = true
 # helpers.
 extraPaths = [
   "backend/worker/tests",
+  # The skill-tree suite. Not a package on purpose: it reads both nixos/skills
+  # and Documentation/, which no derivation's `src` can see at once, so it runs
+  # under `appliance-pytest` alone and nothing installs it.
+  "nixos/skills/tests",
 ]

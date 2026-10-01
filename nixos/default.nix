@@ -240,7 +240,9 @@ let
         # two differ in a way that matters: `.claude/skills/**/SKILL.md` is a
         # location opencode scans, and the assistant pane's working directory is
         # this very checkout -- so a locally built box advertised whatever
-        # skills the person who built it happened to have.
+        # skills the person who built it happened to have. loom-chat sets
+        # OPENCODE_DISABLE_EXTERNAL_SKILLS as well; this is the other half, so
+        # the file is not on the box at all rather than merely unread.
         ".claude"
         "result"
       ];
@@ -546,6 +548,20 @@ in
       hostPkgs
       boxSystem
       installerSystem
+      ;
+  };
+
+  # `nix-build ./nixos -A tests.applianceSkills --argstr platform evo-x2 ...`
+  # What the assistant pane was handed to read, and whether the commands those
+  # skills name are ones this platform actually carries. A third test that boots
+  # nothing, for the same reason as the two around it -- and the only coverage
+  # opencode's silent failures get, since a skill it refuses to register is not
+  # an error anywhere, just an assistant that knows nothing.
+  tests.applianceSkills = import ./tests/appliance-skills.nix {
+    inherit
+      pkgs
+      hostPkgs
+      boxSystem
       ;
   };
 

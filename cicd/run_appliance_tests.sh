@@ -51,11 +51,12 @@ HOST_ARCH=""
 # Short names, in the order they are run: cheapest first, so a mistake that
 # breaks all of them is reported in a minute rather than in twenty.
 #
-# `hardware` and `units` are first because they never boot anything: they read
-# the evaluated configuration and exit, in seconds. A nixos-hardware bump or a
-# nixpkgs change to the unit graph that broke every platform should be reported
-# before the VM boots, not after.
-KNOWN_TESTS=(hardware units install interface-fallback dhcp key-store debug wifi mouse usb-ingest appliance)
+# `hardware`, `units` and `skills` are first because they are the three that
+# never boot anything: they read the evaluated configuration and exit, in
+# seconds. A nixos-hardware bump, a nixpkgs change to the unit graph or an
+# opencode bump that broke every platform should be reported before the VM
+# boots, not after.
+KNOWN_TESTS=(hardware units skills install interface-fallback dhcp key-store debug wifi mouse usb-ingest appliance)
 
 # Targets that only read the evaluated configuration -- no kernel, no VM, and
 # not even the appliance closure. The architecture check and the KVM and disk
@@ -68,7 +69,12 @@ KNOWN_TESTS=(hardware units install interface-fallback dhcp key-store debug wifi
 # `units` is here for the same reason and one more: it builds the --wifi
 # configuration itself, so it is the only coverage that build's unit ordering
 # gets on a machine with no KVM or the wrong architecture.
-EVAL_ONLY_TESTS=(hardware units)
+#
+# `skills` likewise: what the assistant pane was given to read is a store path
+# hanging off the evaluated configuration, and the failures it guards against --
+# a skill opencode silently refuses to register, or one naming a command this
+# platform has not got -- are all visible without booting anything.
+EVAL_ONLY_TESTS=(hardware units skills)
 # Resolved in Main, once, like NIX_SYSTEM -- not computed inside a condition,
 # which would switch `set -e` off for the duration.
 SELECTION_NEEDS_VM=true
@@ -112,6 +118,7 @@ test_attribute(){
         appliance)          printf 'tests.appliance'                  ;;
         hardware)           printf 'tests.applianceHardware'          ;;
         units)              printf 'tests.applianceUnits'             ;;
+        skills)             printf 'tests.applianceSkills'            ;;
         install)            printf 'tests.applianceInstall'           ;;
         dhcp)               printf 'tests.applianceDhcp'              ;;
         wifi)               printf 'tests.applianceWifi'              ;;

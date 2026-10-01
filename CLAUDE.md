@@ -219,22 +219,26 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   with a list of valid ones, rather than falling back to US on the box. See the
   `## Keyboard layout` section in `Documentation/appliance.md`
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
-  `units`, `appliance`, `install`, `dhcp`, `wifi`, `mouse`, `usb-ingest`, `interface-fallback`,
-  `key-store`, `debug`;
+  `units`, `skills`, `appliance`, `install`, `dhcp`, `wifi`, `mouse`, `usb-ingest`,
+  `interface-fallback`, `key-store`, `debug`;
   with no argument it runs all of them, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
-- `appliance-test hardware units --platform all` - Two of the tests that boot nothing. `hardware`
-  asserts what `nixos-hardware` gives each platform and that the Loom overrides still take the
-  desktop userspace back off; `units` asserts the unit edges that put the appliance address on the
-  interface before dnsmasq and nginx bind it — `network.target` does not imply a static address
-  under this nixpkgs pin, and the default build once shipped with dnsmasq racing it. Neither needs
-  KVM nor is bound to the host architecture, so `--platform all` checks all three from one machine
-  in seconds, and `units` builds the `--wifi` configuration itself so it covers the build a given
-  machine may not be able to boot. Run `hardware` after every renovate bump of the `nixos-hardware`
-  pin and `units` after one of `nixpkgs-stable`. `all` is refused for any selection that includes a
-  VM test
+- `appliance-test hardware units skills --platform all` - The three tests that boot nothing.
+  `hardware` asserts what `nixos-hardware` gives each platform and that the Loom overrides still take
+  the desktop userspace back off; `units` asserts the unit edges that put the appliance address on
+  the interface before dnsmasq and nginx bind it — `network.target` does not imply a static address
+  under this nixpkgs pin, and the default build once shipped with dnsmasq racing it; `skills`
+  asserts what the assistant pane was given to read — that a GPU platform got skills and `nuc12` got
+  none, that their frontmatter is what opencode will actually register, and that every `loom-*`
+  command they name is one that image carries. None needs KVM nor is bound to the host architecture,
+  so `--platform all` checks all three from one machine in seconds, and `units` and `skills` build
+  the `--wifi` configuration themselves so they cover a build a given machine may not be able to
+  boot. Run `hardware` after every renovate bump of the `nixos-hardware` pin, `units` after one of
+  `nixpkgs-stable`, and `skills` after an `opencode` bump — its discovery rules and the frontmatter
+  it accepts are undocumented and have changed between releases. `all` is refused for any selection
+  that includes a VM test
 - `appliance-test dhcp` - The default (non-`--wifi`) build actually serving DHCP on `loom0`. The
   only VM test where dnsmasq runs on a renamed physical port rather than on a bridge the
   configuration creates, which is the combination that shipped broken; the interface fallback
@@ -267,9 +271,12 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   nor a matching architecture, which is why this is the appliance job that runs on every CI pipeline
   while the VM tests are gated on what the MR touched
 - `appliance-pytest` - The appliance's own pytest suites: `nixos/installer/tests`,
-  `nixos/ready/tests`, `nixos/usb-ingest/tests`, `nixos/console-mouse/tests` and
-  `nixos/tests/scripts/tests` (the VM tests' own helpers). Each also runs in its package's
-  `checkPhase`, so a mistake fails an image build too; running them here needs nothing built.
+  `nixos/ready/tests`, `nixos/usb-ingest/tests`, `nixos/console-mouse/tests`,
+  `nixos/tests/scripts/tests` (the VM tests' own helpers) and `nixos/skills/tests`. Each also runs
+  in its package's `checkPhase`, so a mistake fails an image build too; running them here needs
+  nothing built. `nixos/skills/tests` is the exception and runs here alone: it checks the assistant
+  pane's skills against the headings they cite in `Documentation/`, and no derivation's `src` holds
+  both. The half that has to fail an image build is `nixos/tests/appliance-skills.nix` instead.
   Extra arguments go to pytest
 - `appliance-eval` - Instantiates the stick image for all three platforms — three times each, once
   plain, once with `--debug` and once with `--lock-key`, since `nixos/debug.nix` and

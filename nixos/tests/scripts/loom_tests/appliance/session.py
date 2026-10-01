@@ -259,6 +259,22 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     assert "OPENCODE_DISABLE_MODELS_FETCH=1" in chat_pane, chat_pane
     assert "OPENCODE_DISABLE_AUTOUPDATE=1" in chat_pane, chat_pane
 
+    # What the assistant is allowed to learn about itself from. opencode
+    # discovers skills under `.claude/skills` and `.agents/skills`, in $HOME
+    # and in every directory from its working directory up -- both of which
+    # are writable here, so without this the skills on a box depend on what
+    # was lying around rather than on what was built. EXTERNAL is the flag
+    # that covers both; the CLAUDE_CODE one drops only `.claude` and reads
+    # like the right answer while leaving `.agents` scanned.
+    assert "OPENCODE_DISABLE_EXTERNAL_SKILLS=1" in chat_pane, chat_pane
+    # The same walk, for instruction files: AGENTS.md, then CLAUDE.md. There
+    # is no AGENTS.md in the seeded checkout, so the fallback used to hit the
+    # repository's own -- 500-odd lines about worktrees, merge requests and
+    # poetry lockfiles, prepended to every question asked of a box with no
+    # git remote. A package bump that lost this flag would put it back
+    # silently, and the only symptom is a worse assistant.
+    assert "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1" in chat_pane, chat_pane
+
     # And the config it ships. "@ai-sdk/openai-compatible" is the
     # load-bearing string: it is in opencode's BUNDLED_PROVIDERS table, so
     # the adapter is already in the binary. Any other name sends opencode
@@ -318,6 +334,8 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     # same `plugin_enabled` map as external ones; `which-key` ships off by it.
     assert tui["plugin_enabled"]["internal:sidebar-context"] is False, tui
 
+    _assistant_knowledge(appliance, params, config, want_model)
+
     # That certificate is self-signed, so the pane has to trust it
     # explicitly. Asserting the CA is handed over rather than
     # verification switched off.
@@ -330,3 +348,59 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     assert not re.search(
         r"^\s*(export\s+)?NODE_TLS_REJECT_UNAUTHORIZED=", chat_pane, re.M
     ), chat_pane
+
+
+def _assistant_knowledge(
+    appliance: "Machine",
+    params: Params,
+    config: dict,
+    want_model: str,
+) -> None:
+    """The skills and the briefing the pane was given, on the box that booted.
+
+    Split out of `_assistant_pane` rather than inlined: that function already carries
+    the model, the endpoint and the certificate, and what this checks is a different
+    question -- not what the pane dials, but what it knows.
+
+    Checked on the running box rather than only in the configuration, because both of
+    opencode's failures here are silent. A `skills.paths` entry that does not resolve is
+    one `logWarning` -- the pane starts and draws normally with no skills at all -- and
+    the path reaches the closure only because it is a literal string inside a
+    `writeText`, which Nix's reference scanner happens to see. Construct that path
+    instead of embedding it and the reference disappears with no error anywhere, leaving
+    exactly this symptom. So the directory is listed on the box, not trusted from the
+    JSON.
+    """
+    skills_paths = config["skills"]["paths"]
+    assert len(skills_paths) == 1, config
+    skills = skills_paths[0]
+    shipped = sorted(appliance.succeed(f"ls {skills}").split())
+    assert shipped == ["loom-appliance", "loom-usage"], shipped
+    for skill in shipped:
+        # opencode globs `**/SKILL.md` for a skills.paths entry, so this file
+        # existing is the whole of whether the skill exists.
+        appliance.succeed(f"test -s {skills}/{skill}/SKILL.md")
+
+    # Generated per image rather than written by hand, and the one place the
+    # agent is told what this particular box is. Asserted against two values
+    # that reach it by different routes -- the model from vars.sh, a hostname
+    # from the chart -- so a facts.md that shipped as an unsubstituted template,
+    # or one generated for a different image, fails here.
+    facts = appliance.succeed(f"cat {skills}/loom-appliance/facts.md")
+    assert want_model in facts, facts
+    assert params.loom_hosts[0] in facts, facts
+
+    # The always-in-context half: what the pane has instead of the repository's
+    # CLAUDE.md, and what tells a model with no other clue that this box has no
+    # route off itself.
+    instructions = config["instructions"]
+    assert len(instructions) == 1, config
+    briefing = appliance.succeed(f"cat {instructions[0]}")
+    assert "air-gapped" in briefing, briefing
+    assert "skill" in briefing, briefing
+
+    # And the negative. `OPENCODE_DISABLE_EXTERNAL_SKILLS` stops these being
+    # read; `junkNames` in nixos/default.nix stops them being on the box at all,
+    # and this is the only layer that sees the seeded checkout as it lands.
+    appliance.succeed(f"test ! -e {params.operator.repo_dir}/.claude")
+    appliance.succeed(f"test ! -e {params.operator.home}/.agents")

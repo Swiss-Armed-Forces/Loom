@@ -54,10 +54,17 @@ let
   ];
 
   # Where the appliance's own pytest suites live, for `appliance-check`.
+  #
+  # nixos/skills/tests is the one that is not also a package's `checkPhase`, and
+  # cannot be: it checks the skill sources against `Documentation/`, and no
+  # derivation's `src` holds both. So it runs here alone. The half that does have
+  # to fail an image build -- that a shipped skill names a command this platform
+  # actually has -- is nixos/tests/appliance-skills.nix instead.
   appliancePytestPaths = [
     "nixos/console-mouse/tests"
     "nixos/installer/tests"
     "nixos/ready/tests"
+    "nixos/skills/tests"
     "nixos/tests/scripts/tests"
     "nixos/usb-ingest/tests"
   ];
