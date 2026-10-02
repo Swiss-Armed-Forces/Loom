@@ -597,6 +597,7 @@ in
       pkgs
       hostPkgs
       boxSystem
+      loomSrc
       ;
   };
 

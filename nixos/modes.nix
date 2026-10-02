@@ -27,12 +27,32 @@
   config,
   lib,
   pkgs,
+  loomSrc,
   loomUser,
   loomRepoDir,
   ...
 }:
 let
   cfg = config.loom;
+
+  # Asked of the checkout that will actually be seeded, because the image pairs
+  # these modules with a *tagged* Loom that can predate them:
+  # cicd/build_appliance_image.sh runs `nix-build "${CONTEXT_DIR}/nixos"` from the
+  # working checkout but passes `--arg repoSrc` a clone checked out at the tag.
+  #
+  # Passing a flag the embedded up.sh does not know is not a no-op. Its parser
+  # has no reject branch -- `*)` collects the unknown option into ARGS, which the
+  # step runner forwards to every step, so run_skaffold hands it to skaffold and
+  # the boot dies on `unknown flag` from *skaffold*, naming neither up.sh nor the
+  # unit that added it.
+  #
+  # An image built from a tag without the flag simply redeploys on every boot, as
+  # every image did before it existed. tests/appliance-units.nix holds every flag
+  # the units pass to this same rule.
+  upShText = builtins.readFile "${loomSrc}/up.sh";
+  upShKnows = flag: lib.hasInfix flag upShText;
+
+  resumeArgs = lib.optionalString (upShKnows "--resume-if-deployed") " --resume-if-deployed";
 
   # Offload Ollama to the GPU this box actually has. Named, not `--gpus all`:
   # up.sh takes `amd` or `nvidia` and rejects anything else, and the vendor is
@@ -414,19 +434,20 @@ in
           # DNAT happens in nat PREROUTING, ahead of the routing decision that
           # would hand a packet to a local listener, so a tunnel socket on the
           # appliance address would never see one.
-          # --resume-if-deployed is run mode only. This unit runs up.sh at every
-          # boot, and `skaffold run` stamps a fresh skaffold.dev/run-id into
-          # every pod template each time, so without it every Deployment rolls
-          # on every boot even though the checkout, the images and the flags are
-          # all fixed by the image this box was built from. minikube is still
-          # started either way: after a host reboot its container is stopped.
+          # --resume-if-deployed is run mode only, and only when the embedded
+          # checkout has it (see resumeArgs). This unit runs up.sh at every boot,
+          # and `skaffold run` stamps a fresh skaffold.dev/run-id into every pod
+          # template each time, so without it every Deployment rolls on every
+          # boot even though the checkout, the images and the flags are all fixed
+          # by the image this box was built from. minikube is still started
+          # either way: after a host reboot its container is stopped.
           #
           # First-time setup does not get it. loom-fetch.service exists to
           # populate the image store and ends in --delete, and the one thing it
           # must never do is decide the box is already deployed and skip the
           # fetch.
           script = ''
-            exec loom-up --offline --resume-if-deployed${gpuArgs}${platformArgs}${httpArgs}
+            exec loom-up --offline${resumeArgs}${gpuArgs}${platformArgs}${httpArgs}
           '';
         }
       ];

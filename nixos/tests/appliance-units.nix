@@ -31,6 +31,7 @@
   pkgs,
   hostPkgs,
   boxSystem,
+  loomSrc,
 }:
 let
   inherit (pkgs) lib;
@@ -271,13 +272,65 @@ let
     ]
     ++ lib.concatLists (lib.mapAttrsToList routeChecks mtls.routes);
 
+  # Every long option the boot units hand to up.sh, against the up.sh that will
+  # actually be seeded.
+  #
+  # The image pairs these modules with a *tagged* Loom:
+  # cicd/build_appliance_image.sh runs `nix-build "${CONTEXT_DIR}/nixos"` out of
+  # the working checkout but passes `--arg repoSrc` a clone checked out at the
+  # tag, so a flag added to up.sh and to a unit in the same commit still reaches
+  # a box whose up.sh predates it by every release in between.
+  #
+  # up.sh does not reject an unknown long option: `*)` collects it into ARGS,
+  # which the step runner forwards to every step, so run_skaffold passes it to
+  # skaffold and the boot dies on `unknown flag` from skaffold -- naming neither
+  # up.sh nor the unit that added it. That is the failure this catches, and it
+  # costs one readFile.
+  #
+  # Matched as a substring, so `-g|--gpus)` answers for `--gpus`. A flag that
+  # appears only in a comment would pass; the case worth catching is a flag the
+  # file has never heard of.
+  upShChecks =
+    let
+      upShText = builtins.readFile "${loomSrc}/up.sh";
+
+      # `--gpus nvidia` splits into a flag and a value; the `--` filter drops the
+      # value. loom-up adds --skip-* of its own (nixos/box.nix), which up.sh
+      # matches with a glob rather than a literal, so they are not asserted here.
+      #
+      # The context is discarded because setup mode's script names store paths
+      # (loom-promote-boot-entry and friends), and every substring taken off it
+      # inherits that reference -- which a runCommand's name and build command
+      # are not allowed to carry. Only the flag spellings are wanted here, and
+      # nothing is realised from them.
+      # Only the `loom-up` lines: setup mode's script also runs systemctl and
+      # the boot-entry promoter, whose own options are nothing to do with up.sh.
+      flagsOf =
+        script:
+        let
+          lines = lib.filter (line: lib.hasInfix "loom-up" line) (
+            lib.splitString "\n" (builtins.unsafeDiscardStringContext script)
+          );
+        in
+        lib.filter (word: lib.hasPrefix "--" word) (lib.concatMap (line: lib.splitString " " line) lines);
+
+      unitChecks =
+        label: script:
+        map (flag: check "${label}: the embedded up.sh knows ${flag}" (lib.hasInfix flag upShText)) (
+          flagsOf script
+        );
+    in
+    unitChecks "run mode" boxSystem.config.systemd.services.loom.script
+    ++ unitChecks "setup mode" boxSystem.config.specialisation.first-time-setup.configuration.systemd.services.loom-fetch.script;
+
   platform = boxSystem.config.loom.platform.id;
 
   checks =
     checksFor "default" boxSystem.config
     ++ checksFor "wifi" wifiSystem.config
     ++ bridgeChecks
-    ++ mtlsChecks;
+    ++ mtlsChecks
+    ++ upShChecks;
   failures = builtins.filter (c: !c.ok) checks;
 
   report = lib.concatMapStringsSep "\n" (c: "  FAIL  ${c.what}") failures;
@@ -319,6 +372,13 @@ hostPkgs.runCommand "loom-appliance-units-${platform}"
         A failure whose name starts with `mtls:` is about nixos/mtls.nix instead:
         the loopback proxy that gets the box's own clients through its own mutual
         TLS, and the ordering that keeps nginx from waiting on a bring-up.
+
+        A failure ending in `the embedded up.sh knows <flag>` means a boot unit
+        passes a flag the tagged checkout does not have. The image takes its
+        NixOS modules from this working tree and its Loom from a tag, so the two
+        can be releases apart. Gate the flag on the embedded up.sh the way
+        nixos/modes.nix does for --resume-if-deployed, rather than dropping it:
+        the next release tag is what makes it work.
         EOF
         exit 1
       ''
