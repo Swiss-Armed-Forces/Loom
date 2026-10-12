@@ -62,7 +62,18 @@ install_fedora_pkg(){
   echo "[*] Installing daily cleanup cronjob"
   cat << EOF > /etc/cron.hourly/gitlab_runner_clear_cache
 #!/usr/bin/env sh
-docker system prune --volumes --force
+# A prune that lands next to an image pull collects the layer containerd is
+# still writing, and the pull dies with "failed commit on ref ...: no such
+# file or directory" - a runner_system_failure for a job that never started.
+# So skip the run while this host has a job in flight, and age out what is
+# left, to stay off anything a pull is still assembling.
+if docker ps --quiet --filter "label=com.gitlab.gitlab-runner.managed=true" | grep -q .; then
+  exit 0
+fi
+# --volumes and "--filter until" are mutually exclusive, hence the second
+# call; "docker volume prune" without --all is what --volumes means here.
+docker system prune --force --filter until=1h
+docker volume prune --force
 EOF
   chmod +x /etc/cron.hourly/gitlab_runner_clear_cache
 
