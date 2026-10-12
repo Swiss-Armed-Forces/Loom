@@ -82,7 +82,7 @@ match settings.worker_type:
             "--exclude-queues",
             ",".join(exclude_queues),
             "--autoscale",
-            f"{settings.worker_max_concurrency},{settings.worker_min_concurrency}",
+            f"{settings.worker_concurrency},{settings.worker_concurrency}",
         ]
         _disallowed = frozenset(exclude_queues)
         app.steps["consumer"].add(make_queue_guard(lambda q: q not in _disallowed))
