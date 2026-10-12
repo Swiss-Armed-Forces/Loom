@@ -140,11 +140,8 @@ data:
 
 
     # worker concurrency
-    {{- if ne .Values.worker.minConcurrency nil }}
-    worker_min_concurrency: {{ .Values.worker.minConcurrency | quote }}
-    {{- end }}
-    {{- if ne .Values.worker.maxConcurrency nil }}
-    worker_max_concurrency: {{ .Values.worker.maxConcurrency | quote }}
+    {{- if ne .Values.worker.concurrency nil }}
+    worker_concurrency: {{ .Values.worker.cncurrency | quote }}
     {{- end }}
 
     # persister sharding

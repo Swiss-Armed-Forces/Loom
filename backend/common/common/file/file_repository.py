@@ -113,6 +113,7 @@ class Embedding(BaseModel):
 
 class KnnSearchEmbedding(BaseModel):
     file_id: UUID
+    file: File
     file_score: float
     text_score: float
     text: str
@@ -1146,6 +1147,35 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             all_tags.append(cast(str, tag.key))
         return all_tags
 
+    def _knn_embeddings_from_hit(
+        self, hit: _EsFile
+    ) -> Generator[KnnSearchEmbedding, None, None]:
+        """Expand one top-level kNN hit into one embedding per inner hit.
+
+        The kNN response already carries the whole file document in the hit's
+        ``_source``, so the file is restored once here and shared by every embedding
+        yielded for this hit.  Fetching it per inner hit instead would issue one
+        Elasticsearch GET per embedding *per file*.
+        """
+        file = self._document_to_object(hit)
+        file_score = hit.meta.score if hit.meta.score is not None else 0.0
+
+        # Each result contains hits for every embedding we passed into the kNN search.
+        for _query_name, inner_hit_response in hit.meta.inner_hits.items():
+            inner_hit_response = cast(Response[TypedNestedHit], inner_hit_response)
+            for nested_hit in inner_hit_response.hits:
+                yield KnnSearchEmbedding(
+                    file_id=UUID(hit.meta.id),
+                    file=file,
+                    file_score=file_score,
+                    text_score=(
+                        nested_hit.meta.score
+                        if nested_hit.meta.score is not None
+                        else 0.0
+                    ),
+                    text=nested_hit.text,
+                )
+
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def get_embedding_generator_by_knn(
         self,
@@ -1194,26 +1224,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         def page_handler(response: Response[_EsFile]):
             for hit in response.hits:
-                inner_hits_dict = hit.meta.inner_hits
-
-                # Each result contains hits for every embedding we passed into the kNN search.
-                for _query_name, inner_hit_response in inner_hits_dict.items():
-                    inner_hit_response = cast(
-                        Response[TypedNestedHit], inner_hit_response
-                    )
-                    for nested_hit in inner_hit_response.hits:
-                        yield KnnSearchEmbedding(
-                            file_id=UUID(hit.meta.id),
-                            file_score=(
-                                hit.meta.score if hit.meta.score is not None else 0.0
-                            ),
-                            text_score=(
-                                nested_hit.meta.score
-                                if nested_hit.meta.score is not None
-                                else 0.0
-                            ),
-                            text=nested_hit.text,
-                        )
+                yield from self._knn_embeddings_from_hit(hit)
 
         yield from self._paginate_search(
             search=search,

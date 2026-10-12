@@ -612,8 +612,7 @@ worker: &worker
     limits:
       cpu: "1.5"
       memory: "4Gi"
-  minConcurrency: null
-  maxConcurrency: null
+  concurrency: null
   initContainer:
     image:
       repository: swiss-armed-forces/cyber-command/cea/loom/alpine

@@ -152,7 +152,7 @@ def fetch_embeddings_batch(
 
         similarity = knn_embedding.text_score
         if similarity > settings.auto_tag_file_similarity_threshold:
-            similar_file = get_file_repository().get_by_id(knn_embedding.file_id)
+            similar_file = knn_embedding.file
             if similar_file:
                 logger.debug(
                     "Found similar file %s to file %s (similarity score: %.4f)",

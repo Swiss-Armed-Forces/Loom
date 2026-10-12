@@ -248,12 +248,10 @@ class Settings(BaseSettings):
     tempfile_dir: Path = Path.home() / ".loomcache"
 
     worker_type: WorkerType = WorkerType.INSPECT
-    worker_max_concurrency: int = 4
-    # NOTE: worker_min_concurrency MUST equal worker_max_concurrency (no scaling allowed).
-    # Due to a suspected Celery bug, tasks get stuck on the worker when concurrency
+    # NOTE: Due to a suspected Celery bug, tasks get stuck on the worker when concurrency
     # is scaled dynamically — they are accepted but never executed. Until this is
     # understood and fixed, scaling is disabled by enforcing a fixed concurrency.
-    worker_min_concurrency: int = 4
+    worker_concurrency: int = 4
     num_persister_shards: int = 16
     persister_total: int = 1  # Total number of PERSISTER workers
     persister_id: int = Field(default_factory=_get_persister_id_from_hostname)
@@ -322,22 +320,6 @@ class Settings(BaseSettings):
             return AESMasterKey.from_string(value)
         logger.warning("No archive encryption master key provided. Using fixed key.")
         return AESMasterKey.from_fixed_key()
-
-    @model_validator(mode="after")
-    def validate_worker_concurrency(self) -> "Settings":
-        if self.worker_min_concurrency > self.worker_max_concurrency:
-            raise ValueError(
-                f"worker_min_concurrency ({self.worker_min_concurrency}) must be equal or"
-                f"less than worker_max_concurrency ({self.worker_max_concurrency})"
-            )
-        if self.worker_min_concurrency != self.worker_max_concurrency:
-            raise ValueError(
-                f"worker_min_concurrency ({self.worker_min_concurrency}) must equal "
-                f"worker_max_concurrency ({self.worker_max_concurrency}): dynamic "
-                f"concurrency scaling is disabled due to a suspected Celery bug that "
-                f"causes tasks to get stuck when the worker pool is scaled"
-            )
-        return self
 
     @model_validator(mode="after")
     def adjust_lazy_threshold_for_reaper(self) -> "Settings":

@@ -431,6 +431,10 @@ subnet is taken, which is why the node is pinned rather than discovered. **On a 
 `192.168.49.0/24`, change the value in `charts/values.yaml`** — an override in `values-overwrites.yaml`
 moves the policy but not the node, and `up.sh` will stop on the disagreement.
 
+### Worker concurrency
+
+`worker.concurrency` pins the worker to a fixed concurrency. (See also [#211](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/211).)
+
 ### Crawling external S3 sources
 
 By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.
