@@ -282,6 +282,10 @@ Overrides reach some of those and not others, and the gap is silent either way:
 
 A certificate you installed yourself, including via `up.sh --certificate`, is never replaced.
 
+### Worker concurrency
+
+`worker.concurrency` pins the worker to a fixed concurrency. (See also [#211](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues/211).)
+
 ### Crawling external S3 sources
 
 By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.
