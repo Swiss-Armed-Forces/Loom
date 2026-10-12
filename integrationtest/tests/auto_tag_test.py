@@ -8,7 +8,10 @@ from worker.index_file.tasks.auto_tag_file import AUTO_TAG_PREFIX
 from worker.settings import settings
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
-from utils.fetch_from_api import fetch_files_from_api, get_file_preview_by_name
+from utils.fetch_from_api import (
+    fetch_files_from_api,
+    get_file_preview_by_name,
+)
 from utils.upload_asset import upload_asset, upload_many_assets
 
 NET_TAG = "net"
@@ -38,7 +41,8 @@ class TestAutoTag:
         search_string = "short_name:*.txt"
         file_count = len(cls.base_asset_list)
         fetch_files_from_api(
-            search_string=search_string, expected_no_of_files=file_count
+            search_string=search_string,
+            expected_no_of_files=file_count,
         )
 
         for filetag in cls.base_asset_list:
