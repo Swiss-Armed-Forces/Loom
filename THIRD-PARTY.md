@@ -2548,7 +2548,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | krb5-multidev | 1.20.1-2+deb12u5 |  | dpkg-db-cataloger |
 | langchain-core | 1.6.3 | MIT | python-installed-package-cataloger |
 | langchain-protocol | 0.0.19 | MIT | python-installed-package-cataloger |
-| langchain-text-splitters | 1.1.2 | MIT | python-installed-package-cataloger |
+| langchain-text-splitters | 1.1.3 | MIT | python-installed-package-cataloger |
 | langsmith | 0.12.5 | MIT | python-installed-package-cataloger |
 | libabsl20220623 | 20220623.1-1+deb12u2 | Apache-2.0 | dpkg-db-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
@@ -8062,13 +8062,13 @@ The complete source code for Traefik is publicly available at https://github.com
 | k8s.io/utils | v0.0.0-20250604170112-4c0f3b243397 |  | go-module-binary-cataloger |
 | kubectl | 1.34.2-r6 | Apache-2.0 | apk-db-cataloger |
 | libapk | 3.0.8-r0 | GPL-2.0-only | apk-db-cataloger |
-| libcrypto3 | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
+| libcrypto3 | 3.5.9-r0 | Apache-2.0 | apk-db-cataloger |
 | libncursesw | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| libssl3 | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
+| libssl3 | 3.5.9-r0 | Apache-2.0 | apk-db-cataloger |
 | musl | 1.2.5-r23 | MIT | apk-db-cataloger |
 | musl-utils | 1.2.5-r23 | MIT AND BSD-2-Clause AND GPL-2.0-or-later | apk-db-cataloger |
 | ncurses-terminfo-base | 6.5_p20251123-r0 | X11 | apk-db-cataloger |
-| openssl | 3.5.8-r0 | Apache-2.0 | apk-db-cataloger |
+| openssl | 3.5.9-r0 | Apache-2.0 | apk-db-cataloger |
 | readline | 8.3.1-r0 | GPL-3.0-or-later | apk-db-cataloger |
 | scanelf | 1.3.8-r2 | GPL-2.0-only | apk-db-cataloger |
 | sigs.k8s.io/json | v0.0.0-20241014173422-cfa47c3a1cc8 |  | go-module-binary-cataloger |
