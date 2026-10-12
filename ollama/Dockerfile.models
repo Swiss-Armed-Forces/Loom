@@ -9,30 +9,37 @@
 # runtime of ollama/ollama stays behind in the pull stages.
 
 ARG OLLAMA_IMAGE_VERSION="0.23.4"
+ARG OLLAMA_IMAGE_DIGEST="sha256:7ffd891da3e9e278d042c856c0fbe1b10fa03ed1791471377dde331eae4ea834"
 
 # Image version
 ARG ALPINE_IMAGE_VERSION="3.23.6"
 ARG ALPINE_IMAGE_DIGEST="sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0"
 
 ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION} AS puller
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION}@${OLLAMA_IMAGE_DIGEST} AS puller
 ENV OLLAMA_HOST="127.0.0.1"
 
 FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}@${ALPINE_IMAGE_DIGEST} AS models-base
 
-# Dev models - lightweight models for development
+# Shared model pull logic - LLM_MODELS is the only difference between dev and production
+# Installs curl, waits for ollama server (30s timeout), pulls models, then stops server
 FROM puller AS pull-dev
 ARG LLM_MODELS="qwen2.5:0.5b moondream:1.8b nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
 RUN set -exu; \
+  apt-get update && apt-get install -y --no-install-recommends curl; \
   ollama serve & \
-  sleep 5; \
+  timeout=30; \
+  while ! curl -sf http://127.0.0.1:11434/api/version > /dev/null; do \
+    [ "${timeout}" -le 0 ] && { echo "ERROR: ollama server failed to start"; exit 1; }; \
+    timeout=$((timeout - 1)); \
+    sleep 1; \
+  done; \
   for llm_model in ${LLM_MODELS}; do \
     ollama pull "${llm_model}"; \
   done; \
   pkill ollama || true
 
-# Dev target
 FROM models-base AS dev
 COPY --from=pull-dev /root/.ollama/models /root/.ollama/models
 
@@ -41,13 +48,18 @@ FROM puller AS pull-production
 ARG LLM_MODELS="huihui_ai/qwen3.5-abliterated:9b nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
 RUN set -exu; \
+  apt-get update && apt-get install -y --no-install-recommends curl; \
   ollama serve & \
-  sleep 5; \
+  timeout=30; \
+  while ! curl -sf http://127.0.0.1:11434/api/version > /dev/null; do \
+    [ "${timeout}" -le 0 ] && { echo "ERROR: ollama server failed to start"; exit 1; }; \
+    timeout=$((timeout - 1)); \
+    sleep 1; \
+  done; \
   for llm_model in ${LLM_MODELS}; do \
     ollama pull "${llm_model}"; \
   done; \
   pkill ollama || true
 
-# Production target
 FROM models-base AS production
 COPY --from=pull-production /root/.ollama/models /root/.ollama/models

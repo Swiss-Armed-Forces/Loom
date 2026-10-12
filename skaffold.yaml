@@ -171,6 +171,7 @@ build:
         dockerfile: Dockerfile.runtime
         buildArgs:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+          GPU_VARIANT: "nvidia"
         cacheFrom:
           - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia"
       hooks:
@@ -187,7 +188,7 @@ build:
         dockerfile: Dockerfile.runtime
         buildArgs:
           DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-          GPU_TAG: "-rocm"
+          GPU_VARIANT: "rocm"
         cacheFrom:
           - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm"
       hooks:
