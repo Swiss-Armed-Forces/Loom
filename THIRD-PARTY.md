@@ -2548,7 +2548,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | krb5-multidev | 1.20.1-2+deb12u5 |  | dpkg-db-cataloger |
 | langchain-core | 1.6.3 | MIT | python-installed-package-cataloger |
 | langchain-protocol | 0.0.19 | MIT | python-installed-package-cataloger |
-| langchain-text-splitters | 1.1.2 | MIT | python-installed-package-cataloger |
+| langchain-text-splitters | 1.1.3 | MIT | python-installed-package-cataloger |
 | langsmith | 0.12.5 | MIT | python-installed-package-cataloger |
 | libabsl20220623 | 20220623.1-1+deb12u2 | Apache-2.0 | dpkg-db-cataloger |
 | libacl1 | 2.3.1-3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-or-later, LGPL-2.1-only | dpkg-db-cataloger |
