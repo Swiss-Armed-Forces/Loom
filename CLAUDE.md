@@ -283,6 +283,19 @@ in the *current* working tree — running one there moves the user's branch unde
   into Docker build contexts, pytest collection and Skaffold watches
 - Run `direnv allow` once in the new worktree; devenv files are tracked, but direnv trust is
   per directory
+- `direnv allow` only marks the directory trusted — it builds nothing. **Enter the environment
+  once with `direnv exec <worktree> true`**, which creates the worktree's own `.venv`, `.devenv`
+  and `.pre-commit-config.yaml`, then run every command there as
+  `direnv exec <worktree> <command>`. Until that happens the worktree has no environment of its
+  own and inherits the primary checkout's `PATH`, so `python`, `pytest` and the linters resolve
+  editable path dependencies — `aitools` among them — to the *primary checkout's* sources and
+  report on code that is not the code under test
+- Entering devenv rewrites `.git/hooks/`, which git shares across all worktrees, so the last tree
+  to enter owns the hooks for every tree. The tool wrappers resolve their own root at run time, so
+  they lint the files of the tree you commit in — but the hook script hard-codes
+  `--config=<generating tree>/.pre-commit-config.yaml`, so the hook *set*, its excludes and its
+  pinned tools still come from that tree's `devenv.nix`. Re-enter devenv in the tree you are
+  committing from, and re-enter the primary checkout before deleting a worktree
 - A branch cannot be checked out twice → on "already checked out", ask the user to move the
   primary checkout off that branch rather than working in place
 
