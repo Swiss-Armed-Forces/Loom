@@ -101,6 +101,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `backend-test worker/tests/test_bar.py::test_function` - Run specific test function
 - Scope tests to relevant packages/files when possible — e.g. `backend-test api/` to run only API tests
 
+**aitools testing:**
+
+- `aitools-test` - Run all `aitools` tests with pytest (always runs from `cicd/` directory)
+- `aitools-test aitools/tests/test_git_helpers.py` - Run specific test file (paths relative to `cicd/`)
+
 **Frontend:**
 
 - `frontend-test` - Run frontend tests
@@ -188,6 +193,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - Backend unit tests: `backend-test` (runs all tests in `backend/*/tests/`)
 - Frontend unit tests: `frontend-test`
+- `aitools` unit tests: `aitools-test` (runs all tests in `cicd/aitools/tests/`) — always from
+  `cicd/`, not from `cicd/aitools/`, where the `aitools.py` module shadows the `aitools` package
+  and every import fails
 - Integration tests: `run-integrationtest` — simulates full workflows against a running Loom instance
 - Tests create temp artifacts in `.pytest_tmp` (not `/tmp`) to avoid RAM usage
 - CI/CD pipeline runs the full test suite and linting via git-hooks

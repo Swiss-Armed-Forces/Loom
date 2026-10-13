@@ -409,6 +409,11 @@ backend_test:
         coverage_format: cobertura
         path: ./backend/coverage.xml
 
+aitools_test:
+  stage: test
+  script:
+    - devenv shell -- aitools-test
+
 test_build_nix-dind:
   extends: .default-docker
   stage: test
