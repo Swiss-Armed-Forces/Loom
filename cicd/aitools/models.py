@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import Literal, NamedTuple
 
 from gitlab.v4.objects import (
     ProjectIssueDiscussion,
@@ -77,6 +77,16 @@ class IssueNoteReply(NamedTuple):
 
     discussion: ProjectIssueDiscussion
     reply: str
+
+
+class DiffRange(NamedTuple):
+    """The two tree-ishes whose diff is a branch's own contribution to its target."""
+
+    left: str  # baseline: "origin/<target>", or a merge-base sha when degraded
+    right: str  # branch content: the merged tree sha, or the branch ref itself
+    ref: str  # the branch ref this range was resolved for
+    strategy: Literal["merge-tree", "merge-base"]
+    behind_count: int  # commits on origin/<target> not reachable from the branch
 
 
 class FileDiffMap(NamedTuple):

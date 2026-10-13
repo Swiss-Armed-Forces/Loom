@@ -921,6 +921,19 @@ in
     '';
   };
 
+  scripts.aitools-test = {
+    description = "Test the aitools CLI";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}/cicd'
+
+        python -m pytest \
+          "''${@:-aitools/tests/}"
+      )
+    '';
+  };
+
   scripts.poetry-lock = {
     description = "Regenerate all poetry lockfiles";
     exec = ''

@@ -73,7 +73,9 @@ def cmd_mr_update(_args: argparse.Namespace) -> None:
             with open(os.path.join(ctx, "conflicts.txt"), "w", encoding="utf-8") as f:
                 f.write("\n".join(conflicting))
             run_ai_agentic(
-                build_merge_conflict_prompt(branch_name, conflicting, ctx),
+                build_merge_conflict_prompt(
+                    branch_name, conflicting, ctx, target_branch
+                ),
                 repo,
             )
         repo.git.add("-A")
