@@ -95,6 +95,17 @@ variables:
 default:
   # Allow cancellation of running tasks
   interruptible: true
+  # Re-queue a job whose script never started, so that a runner-side fault does
+  # not reach `workflow.auto_cancel.on_job_failure` above: GitLab skips the
+  # auto-cancel for a job it still expects to auto-retry. Only these reasons -
+  # a `script_failure` must stay red on the first try, or a flaky test retries
+  # itself into a pass.
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - scheduler_failure
+      - api_failure
   # By default run on self-hosted runners:
   tags:
     # - debug

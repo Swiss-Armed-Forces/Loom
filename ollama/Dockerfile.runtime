@@ -1,15 +1,24 @@
-# Ollama Runtime Image
+# Ollama Runtime Image (GPU-agnostic)
 # Contains Ollama server + wrapper, NO models
-# GPU-specific variants built from this file
-#
-# Build with --build-arg GPU_TAG="-rocm" for AMD GPUs
-# Leave GPU_TAG empty (default) for NVIDIA GPUs
+# Build with GPU_VARIANT=nvidia or GPU_VARIANT=rocm
 
-ARG OLLAMA_IMAGE_VERSION="0.34.4"
+ARG GPU_VARIANT="nvidia"
 ARG DOCKER_REGISTRY="docker.io"
-ARG GPU_TAG=""
 
-FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION}${GPU_TAG}
+# NVIDIA configuration
+ARG OLLAMA_IMAGE_VERSION_NVIDIA="0.34.4"
+ARG OLLAMA_IMAGE_DIGEST_NVIDIA="sha256:8262851b2846b87c649eddf3e76beb270c52f4d1bc94559f47efde16b0841551"
+
+# ROCm configuration
+ARG OLLAMA_IMAGE_VERSION_ROCM="0.34.4"
+ARG OLLAMA_IMAGE_DIGEST_ROCM="sha256:f1f51e73691bd77e38a30b61f745f8d074fc664967ba8e209989091bd73b5adc"
+
+# Select base image based on GPU_VARIANT
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION_NVIDIA}@${OLLAMA_IMAGE_DIGEST_NVIDIA} AS nvidia
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION_ROCM}-rocm@${OLLAMA_IMAGE_DIGEST_ROCM} AS rocm
+
+# Select the appropriate stage based on GPU_VARIANT
+FROM ${GPU_VARIANT}
 
 # Python for wrapper script
 ARG PYTHON_VERSION="3.12.*"
