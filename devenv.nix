@@ -52,78 +52,112 @@ let
     "charts"
   ];
 
-  # Helper function to create a wrapper script that handles relative paths and additional args
-  createToolWrapper =
-    toolPath: subdir: subdirName: additionalArgs:
-    builtins.toString (
-      pkgs.writeShellScript "tool-wrapper-${subdirName}" ''
-        cd "${subdir}"
-
-        # Convert all file paths to relative paths and process in one call
-        relative_files=()
-        for file in "''${@}"; do
-          # Check if file is actually in the subdir
-          if [[ "''${file}" == "${subdir}"* ]]; then
-            relative_files+=("''${file#${subdir}/}")
-          else
-            >&2 echo "Warning: Skipping file outside ${subdir}: ''${file}"
-          fi
-        done
-
-        "${toolPath}" ${additionalArgs} "''${relative_files[@]}"
-      ''
+  # Helper function to create a hook entry that runs a tool from inside a subdirectory,
+  # with the hook's file list rewritten relative to it.
+  #
+  # The work is done by cicd/run_hook_tool.sh rather than by a script generated here,
+  # so that shellcheck covers it. Each entry is an argv for that script: prek splits
+  # the entry the way a shell would, then appends the hook's file names.
+  #
+  # The repository root is resolved by the script, at run time, in the tree the hook
+  # was invoked in -- never interpolated here. A commit made from a git worktree runs
+  # the hooks installed in the shared .git/hooks, which belong to whichever tree last
+  # entered devenv, so a root fixed at build time sends the tools at a different
+  # checkout than the files they are linting. Write %ROOT% in a command or an argument
+  # to reach the root of the tree the hook ran in; use createToolWrapper for a tool on
+  # PATH and createRepoScriptWrapper for a script inside the repository.
+  createCommandWrapper =
+    command: subdir: additionalArgs:
+    lib.escapeShellArgs (
+      [
+        "./cicd/run_hook_tool.sh"
+        "--subdir"
+        subdir
+        "--command"
+        command
+      ]
+      ++ lib.concatMap (arg: [
+        "--arg"
+        arg
+      ]) additionalArgs
     );
+
+  # A tool resolved from PATH, e.g. `black`.
+  createToolWrapper = createCommandWrapper;
+
+  # A script shipped in the repository, addressed relative to the repository root.
+  createRepoScriptWrapper = scriptPath: createCommandWrapper "%ROOT%/${scriptPath}";
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
     subdir:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
-      top_pyproject_toml = "${config.devenv.root}/pyproject.toml";
-      top_flake8 = "${config.devenv.root}/.flake8";
-      top_pylintrc = "${config.devenv.root}/.pylintrc";
+      # %ROOT% is substituted by the wrapper script, not by Nix -- see
+      # createCommandWrapper.
+      top_pyproject_toml = "%ROOT%/pyproject.toml";
+      top_flake8 = "%ROOT%/.flake8";
+      top_pylintrc = "%ROOT%/.pylintrc";
     in
     {
       "isort_${subdirName}" = {
         enable = true;
-        entry =
-          createToolWrapper "isort" subdir subdirName
-            "--config-root '${config.devenv.root}' --resolve-all-configs";
+        entry = createToolWrapper "isort" subdir [
+          "--config-root"
+          "%ROOT%"
+          "--resolve-all-configs"
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "autoflake_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "autoflake" subdir subdirName "--config '${top_pyproject_toml}'";
+        entry = createToolWrapper "autoflake" subdir [
+          "--config"
+          top_pyproject_toml
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "docformatter_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "docformatter" subdir subdirName "--config '${top_pyproject_toml}'";
+        entry = createToolWrapper "docformatter" subdir [
+          "--config"
+          top_pyproject_toml
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "black_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "black" subdir subdirName "--config '${top_pyproject_toml}' --preview";
+        entry = createToolWrapper "black" subdir [
+          "--config"
+          top_pyproject_toml
+          "--preview"
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "flake8_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "flake8" subdir subdirName "--config '${top_flake8}'";
+        entry = createToolWrapper "flake8" subdir [
+          "--config"
+          top_flake8
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "pylint_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "pylint" subdir subdirName "--rcfile '${top_pylintrc}'";
+        entry = createToolWrapper "pylint" subdir [
+          "--rcfile"
+          top_pylintrc
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
         # pylint must be run in serial, otherwise code duplication
@@ -133,7 +167,7 @@ let
 
       "mypy_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "mypy" subdir subdirName "";
+        entry = createToolWrapper "mypy" subdir [ ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
         excludes = [ "^${subdir}/tests/.*\\.py$" ];
@@ -145,7 +179,7 @@ let
 
       "poetry-check_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "poetry" subdir subdirName "check";
+        entry = createToolWrapper "poetry" subdir [ "check" ];
         files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
         types = [ "toml" ];
         pass_filenames = false;
@@ -153,7 +187,7 @@ let
 
       "poetry-lock_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "poetry" subdir subdirName "lock";
+        entry = createToolWrapper "poetry" subdir [ "lock" ];
         files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
         types = [ "toml" ];
         pass_filenames = false;
@@ -169,35 +203,46 @@ let
     {
       "eslint_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "eslint" subdir subdirName "--max-warnings 0 --fix ./.";
+        entry = createToolWrapper "eslint" subdir [
+          "--max-warnings"
+          "0"
+          "--fix"
+          "./."
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "prettier_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "prettier" subdir subdirName "--write ./.";
+        entry = createToolWrapper "prettier" subdir [
+          "--write"
+          "./."
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "tsc_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "tsc" subdir subdirName "";
+        entry = createToolWrapper "tsc" subdir [ ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "tsc-node_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "tsc" subdir subdirName "--project 'tsconfig.node.json'";
+        entry = createToolWrapper "tsc" subdir [
+          "--project"
+          "tsconfig.node.json"
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "vite-build_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "vite" subdir subdirName "build";
+        entry = createToolWrapper "vite" subdir [ "build" ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
         stages = [ "manual" ];
@@ -205,7 +250,10 @@ let
 
       "vitest_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "pnpm" subdir subdirName "test run";
+        entry = createToolWrapper "pnpm" subdir [
+          "test"
+          "run"
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
         stages = [ "manual" ];
@@ -220,13 +268,16 @@ let
     {
       "helm-lint_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "helm" subdir subdirName "lint ./.";
+        entry = createToolWrapper "helm" subdir [
+          "lint"
+          "./."
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
       "check-resources_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "${config.devenv.root}/cicd/check_resources.sh" subdir subdirName "./.";
+        entry = createRepoScriptWrapper "cicd/check_resources.sh" subdir [ "./." ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
@@ -580,14 +631,30 @@ in
 
     "check-celery-group-import" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_celery_group_import.sh";
+      entry = "./cicd/check_celery_group_import.sh";
       types = [ "python" ];
     };
 
     "check-dockerfile-run-flags" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_dockerfile_run_flags.sh";
+      entry = "./cicd/check_dockerfile_run_flags.sh";
       types = [ "dockerfile" ];
+    };
+
+    # A hook entry that interpolates config.devenv.root points at whichever tree
+    # last entered devenv, because git shares .git/hooks across all worktrees.
+    # CI runs a single checkout where the two coincide, so this is the only place
+    # the regression can be caught.
+    #
+    # `pass_filenames = false`: the script reads devenv.nix itself.
+    #
+    # The checker is in the pattern alongside devenv.nix so a change to it is
+    # exercised by its own hook.
+    "check-devenv-hook-roots" = {
+      enable = true;
+      entry = "./cicd/check_devenv_hook_roots.sh";
+      files = "^(devenv\\.nix$|cicd/check_devenv_hook_roots\\.sh$)";
+      pass_filenames = false;
     };
 
     # `hostnames.ingress` in charts/values.yaml against the hosts the chart's
@@ -603,7 +670,7 @@ in
     # /etc/hosts -- so a regression in either would otherwise land unchecked.
     "check-chart-hostnames" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_chart_hostnames.sh";
+      entry = "./cicd/check_chart_hostnames.sh";
       files = "^(charts/|cicd/check_chart_hostnames\\.sh$|vars\\.sh$)";
       pass_filenames = false;
     };
@@ -643,7 +710,7 @@ in
 
     "check-values-local-overrides" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_values_local_overrides.sh";
+      entry = "./cicd/check_values_local_overrides.sh";
       files = "charts/values-(overwrites|up-flags)\\.yaml$";
       types = [ "file" ];
     };
