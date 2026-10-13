@@ -174,6 +174,24 @@ def _login_credentials(
         appliance.fail("test -e /run/issue.d/61-loom-wifi.issue")
 
 
+def restart_banner_watcher(appliance: "Machine") -> None:
+    """Give loom-banner-repaint a watch window that starts now.
+
+    The unit watches the console for box.nix's `bannerRepaintWindow` seconds and
+    then exits -- it is a boot-time phenomenon, and a poller that outlived it
+    would be a poller nobody accounts for. The window runs from `getty.target`,
+    which is reached early, so on a host without KVM it is spent long before the
+    driver has a prompt: `multi-user.target` lands 117s into an emulated boot
+    here and 325s in CI, against a window of 60.
+
+    So the two subtests below restart it rather than race it. What they are
+    about is what the watcher does while it is watching; that it is the boot
+    that starts it is asserted separately, off the unit, where no clock is
+    involved.
+    """
+    appliance.succeed("systemctl restart loom-banner-repaint.service")
+
+
 def _banner_watcher(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("the banner watcher is running, not hung off the font units"):
         # It used to be started from loom-console-font-reapply's ExecStartPost.
@@ -184,6 +202,25 @@ def _banner_watcher(appliance: "Machine", subtest: "Subtest") -> None:
         appliance.succeed("systemctl cat loom-banner-repaint.service")
         reapply = appliance.succeed("systemctl cat loom-console-font-reapply.service")
         assert "loom-banner-repaint" not in reapply, reapply
+
+        # That the boot is what pulls it in, and that it did run, both read off
+        # the unit rather than off a live ActiveState. The watcher watches for
+        # box.nix's `bannerRepaintWindow` and then exits, and that window is
+        # measured from `getty.target` -- which a boot without KVM reaches
+        # minutes before this test gets its first prompt. "active" would
+        # therefore assert the speed of the host and nothing about the unit.
+        wanted = appliance.succeed(
+            "systemctl show -p WantedBy --value loom-banner-repaint.service"
+        ).split()
+        assert "multi-user.target" in wanted, wanted
+        started = appliance.succeed(
+            "systemctl show -p ExecMainStartTimestampMonotonic --value"
+            " loom-banner-repaint.service"
+        ).strip()
+        assert started != "0", started
+
+        # And that it does reach the running state, on a window that starts now.
+        restart_banner_watcher(appliance)
         assert (
             appliance.succeed(
                 "systemctl show -p ActiveState --value loom-banner-repaint.service"
@@ -215,7 +252,10 @@ def _banner_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         def marked() -> bool:
             return any(mark in line for line in vt.read(appliance).top(10, width=40))
 
-        assert marked()
+        # The resize below has to happen while the watcher is watching, which is
+        # the whole of what this reproduces -- see restart_banner_watcher.
+        restart_banner_watcher(appliance)
+        assert marked(), vt.read(appliance).top(10, width=40)
 
         appliance.succeed("setfont -d -C /dev/tty1 2>&1 || true")
         appliance.sleep(2)
