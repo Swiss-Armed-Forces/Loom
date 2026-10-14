@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from api.metrics import init_metrics
 from api.patch_openapi_schema import patch_openapi_schema_for_app
 from api.routers import (
+    about,
     ai,
     archives,
     beat,
@@ -66,6 +67,7 @@ def init_api(collect_metrics=True) -> FastAPI:
 
     # register routers
     api.include_router(docs.router)
+    api.include_router(about.router, prefix="/v1/about", tags=["about"])
     api.include_router(metrics.router, prefix="/v1/metrics", tags=["metrics"])
     api.include_router(archives.router, prefix="/v1/archive", tags=["archives"])
     api.include_router(tags.router, prefix="/v1/files/tags", tags=["tags"])

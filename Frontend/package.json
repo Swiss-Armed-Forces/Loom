@@ -31,7 +31,6 @@
         "@mui/x-tree-view": "^9.0.2",
         "@reduxjs/toolkit": "^2.11.2",
         "ace-builds": "^1.43.6",
-        "ajv": "^8.18.0",
         "core-js": "^3.50.0",
         "date-fns": "^4.1.0",
         "driver.js": "^1.8.0",

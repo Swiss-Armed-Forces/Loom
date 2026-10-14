@@ -69,6 +69,8 @@ failed test or deployment job leaves the previously published Pages site in plac
   the demo handler does not support partial updates.
 - Backend service links remain visible in the burger menu, but selecting one shows an
   unavailable notification instead of navigating away from the demo.
+- The About dialog reports `demo` as the version. It reads `GET /v1/about`, which a
+  deployed Loom answers from the chart that rendered it, and the demo deploys no chart.
 - The search emulator supports every query shown in the frontend search tips,
   including boolean expressions, field groups and aliases, value and field-name
   wildcards, regular expressions, fuzzy and phrase-proximity matching, relative dates,

@@ -803,7 +803,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | @mui/x-tree-view                    | MIT          | 9.11.0            |
 | @reduxjs/toolkit                    | MIT          | 2.12.0            |
 | ace-builds                          | BSD-3-Clause | 1.44.0            |
-| ajv                                 | MIT          | 8.20.0            |
 | core-js                             | MIT          | 3.50.0            |
 | date-fns                            | MIT          | 4.4.0             |
 | driver.js                           | MIT          | 1.8.0             |

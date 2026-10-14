@@ -3,6 +3,7 @@ from pathlib import Path
 from utils.settings import settings
 
 ASSETS_DIR = (Path(__file__).parent.parent / "assets").absolute()
+ABOUT_ENDPOINT = f"{settings.api_host}v1/about"
 FILES_ENDPOINT = f"{settings.api_host}v1/files"
 QUEUES_ENDPOINT = f"{settings.api_host}v1/queues"
 TAGS_ENDPOINT = f"{settings.api_host}v1/files/tags"

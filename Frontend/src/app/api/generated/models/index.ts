@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 // @ts-nocheck
+export * from "./AboutInfo";
 export * from "./ActivityInner";
 export * from "./AddTagsByQueryRequest";
 export * from "./AddTagsRequest";
