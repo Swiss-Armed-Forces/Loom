@@ -290,12 +290,12 @@ in the *current* working tree — running one there moves the user's branch unde
   own and inherits the primary checkout's `PATH`, so `python`, `pytest` and the linters resolve
   editable path dependencies — `aitools` among them — to the *primary checkout's* sources and
   report on code that is not the code under test
-- Entering devenv rewrites `.git/hooks/`, which git shares across all worktrees, so the last tree
-  to enter owns the hooks for every tree. The tool wrappers resolve their own root at run time, so
-  they lint the files of the tree you commit in — but the hook script hard-codes
-  `--config=<generating tree>/.pre-commit-config.yaml`, so the hook *set*, its excludes and its
-  pinned tools still come from that tree's `devenv.nix`. Re-enter devenv in the tree you are
-  committing from, and re-enter the primary checkout before deleting a worktree
+- Each checkout installs its git hooks into its own git directory — `.git/hooks` in the main
+  worktree, `.git/worktrees/<name>/hooks` in a linked one — pointed there by
+  `cicd/set_worktree_hooks_path.sh` before devenv installs them. The hook *set*, its excludes and
+  its pinned tools therefore come from the `devenv.nix` of the tree you commit in, and deleting a
+  worktree cannot break committing in the others. A worktree has no hooks of its own until devenv
+  is entered in it once
 - A branch cannot be checked out twice → on "already checked out", ask the user to move the
   primary checkout off that branch rather than working in place
 
@@ -310,12 +310,14 @@ in the *current* working tree — running one there moves the user's branch unde
   settings files to silence them
 
 **Keep cluster work in the primary checkout:** `up`, `down`, `build`, `wipe-data`,
-`run-integrationtest` and all `kubernetes-*` commands. Their minikube, Skaffold and Docker caches
-are gitignored per-directory, so a worktree would build a second cluster and contend for the same
-`*.loom` hosts entries. Safe in a worktree: `backend-test`, `frontend-test`, `frontend-build`,
-`generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
+`run-integrationtest` and all `kubernetes-*` commands. There is one cluster per machine and every
+checkout talks to it — `MINIKUBE_HOME` resolves to the main worktree, matching the `~/.kube/config`
+that minikube writes — so these commands do not fail in a worktree, they succeed *against the
+primary checkout's running system*: `up` redeploys it from the worktree's sources, and `wipe-data`
+and `kubernetes-delete` destroy it. Safe in a worktree: `backend-test`, `frontend-test`,
+`frontend-build`, `generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
 
-**Finishing up:** commit and push from the worktree — git config, hooks and refs are shared. Leave
+**Finishing up:** commit and push from the worktree — git config and refs are shared. Leave
 the MR in **Draft** and the worktree in place; report its path, the branch and the MR so the user
 can review the diff there. **Never merge, rebase the primary checkout, or remove the worktree on
 your own.** Remove one only when asked, with `git worktree remove <path>` and never `--force`.
