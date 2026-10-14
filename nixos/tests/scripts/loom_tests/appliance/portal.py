@@ -14,6 +14,10 @@ portal probe resolves to rather than inferring it from a config file.
 What cannot be checked here at all is the half that needs a cluster: that the frontend
 answers 200 over plain http once Traefik is up. Bring-up takes hours, so that stays a
 manual check on hardware (Documentation/appliance.md).
+
+tests/appliance-portal.nix is the other half of this file: it boots a box that *does* have
+the address, and sends the requests whose answers are only decided here. The two do not
+overlap -- this one reads a decision, that one observes it.
 """
 
 import re
@@ -65,12 +69,15 @@ def addresses(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
 
 
 def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
-    with subtest("the responder redirects to the frontend over plain http"):
+    with subtest("the responder redirects to the portal page over plain http"):
         nginx_conf = appliance.succeed(
             f"cat {_config_path(appliance, 'nginx.service', '-c')}"
         )
         portal = f"{params.loom_subnet}.2"
+        # Derived rather than spelled out, the way portal.nix derives it: a box built
+        # with another domain would answer for another name.
         frontend = next(h for h in params.loom_hosts if h.startswith("frontend."))
+        page = f"portal.{frontend.split('.', maxsplit=1)[1]}"
 
         # Bound to the portal address alone. nginx's default is every address the
         # box holds, which would put it on port 80 of the appliance address too.
@@ -80,13 +87,28 @@ def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # a browser -- it refuses an untrusted certificate outright with no way to
         # click through, and the appliance's is self-signed for a TLD no public CA
         # can ever issue for. An https target here would dead-end every visitor.
-        assert f"return 302 http://{frontend}/" in nginx_conf, nginx_conf
-        assert f"https://{frontend}" not in nginx_conf, nginx_conf
+        assert f"return 302 http://{page}/" in nginx_conf, nginx_conf
+        assert f"https://{page}" not in nginx_conf, nginx_conf
 
         # 302, never 301: these URLs belong to Google and Apple, and a permanent
         # redirect is cached -- a phone that kept this one would go on believing
         # connectivitycheck.gstatic.com is Loom long after leaving the appliance.
         assert "return 301" not in nginx_conf, nginx_conf
+
+        # Two server blocks on that socket, and exactly one of them is the default.
+        # That is what decides a probe: it arrives with a Host no `server_name`
+        # matches, falls to the default server and is redirected. Give the page
+        # `default_server` as well and every probe path starts answering 200 --
+        # which is the one failure this whole mechanism exists to avoid, and one
+        # nothing else here can see. tests/appliance-portal.nix sends the request.
+        assert nginx_conf.count(f"listen {portal}:80") == 2, nginx_conf
+        assert nginx_conf.count(f"listen {portal}:80 default_server") == 1, nginx_conf
+        assert f"server_name {page} {portal} ;" in nginx_conf, nginx_conf
+
+        # And the page is proxied rather than served from a root: the certificate it
+        # hands out and the answers it gives change with the cluster, so it is a
+        # process rather than a directory.
+        assert "proxy_pass http://127.0.0.1:18082;" in nginx_conf, nginx_conf
 
 
 def http_entrypoint(appliance: "Machine", subtest: "Subtest") -> None:

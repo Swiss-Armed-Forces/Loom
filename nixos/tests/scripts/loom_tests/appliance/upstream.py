@@ -33,9 +33,27 @@ def sysctls(appliance: "Machine", subtest: "Subtest") -> None:
 
 
 def host_resolution(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
-    with subtest("every *.loom name resolves to the minikube address"):
+    with subtest("every *.loom name the cluster serves resolves to the minikube node"):
+        # One exception, and it is the whole reason this names an exception rather
+        # than looping over the list: `portal` is in the chart's `hostnames.extra`
+        # so that the certificate's subjectAltName covers it, and the certificate is
+        # the only thing about it the cluster has anything to do with. The page
+        # itself is served by *this box*, on the portal address, which is why
+        # box.nix takes the name back out of the block that pins the rest at the
+        # node. Pinned there as well it would resolve to a Traefik that answers 404
+        # for a host it does not route.
+        # Derived the way loom_tests/appliance/portal.py derives it, rather than
+        # carried as a parameter: the `.2` is network.nix's and one copy of it in
+        # this package is enough.
+        portal_address = f"{params.loom_subnet}.2"
+
         for host in params.loom_hosts:
             got = appliance.succeed(f"getent hosts {host}").split()[0]
+            if host.startswith("portal."):
+                assert (
+                    got == portal_address
+                ), f"{host}: expected the portal address {portal_address}, got {got}"
+                continue
             assert (
                 got == params.minikube_ip
             ), f"{host}: expected {params.minikube_ip}, got {got}"

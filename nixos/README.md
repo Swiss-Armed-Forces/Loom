@@ -26,6 +26,8 @@ this file is about the code.
 | `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
 | `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
+| `portal.nix` | The captive portal: the probe responder, the page behind it, the certificate it publishes and the client identities it issues. Four units, two nginx listeners and a spool — see the section below. |
+| `portal/` | The program the page server runs — routing, rendering, the password gate and the visitor's side of the issuance spool — with its own pytest suite, run at build time. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `radios.nix` | Radios off, in both boot modes **and on the installer stick** — `evalConfig` hands it to both. A modprobe `install` directive refuses `cfg80211` and `bluetooth`, which every WiFi and Bluetooth driver depends on, so the driver cannot load however it is matched; `options rfkill default_state=0` makes every switch register blocked; `loom-rfkill-block` blocks whatever is left. `wifi.nix` sets `loom.radios.allowWifi` to take the 802.11 half back off. |
 | `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
@@ -313,6 +315,66 @@ than run out of the seeded checkout: `loom-seed-repo` may not have finished, and
 both an operator's browser and the box is the point. That script sources `../vars.sh` when it finds one,
 which is how it picks up the namespace in a checkout; there is none beside `$out/bin`, so the unit passes
 `--namespace` instead.
+
+## `loom.portal`, and the four units behind one page
+
+`portal.nix` grew from a three-line redirect into the only thing on the box a visitor talks to, so it is
+worth saying what each piece is for and which of them is load-bearing.
+
+**Two server blocks on `<subnet>.2:80`, and only one of them is `default_server`.** That is the whole
+captive-portal mechanism. A probe arrives with `Host: connectivitycheck.gstatic.com`, matches no
+`server_name`, falls to the default server and is redirected; the page answers only for `portal.loom` and for
+the address itself. Make the page the default, or give it a name a probe sends, and every probe path starts
+answering 200 — at which point Android stops offering "Sign in to network", keeps using mobile data, and
+resolves `frontend.loom` against a network that has never heard of `.loom`. Nothing about that is visible
+from a browser or from `curl`; it happens on a phone, at a site. `tests/appliance-units.nix` asserts the
+decision, `tests/appliance-portal.nix` sends the request, and `loom_portal/routes.py` keeps the server's own
+path table to the five entries that may answer anything but a 404.
+
+**The page server runs as `loom-portal` and can reach nothing.** Issuing a client identity needs the mutual
+TLS CA's *private key*, so the obvious implementation — this service shelling out to
+`loom-client-certificate` — would put a network-facing process in possession of the operator's kubeconfig.
+Instead it writes `/run/loom-portal/requests/<token>.req` into a spool it cannot enumerate (`0730
+root:loom-portal`: create, stat and unlink by name, never `readdir`), a `systemd.path` starts
+`loom-portal-issue` as root, and that drains the directory and leaves `bundles/<token>/` or
+`<token>.error` behind.
+
+The spool is at `/run/loom-portal` and not under `/run/loom` with everything else, which is a permission
+rather than a preference: `console.nix` declares `/run/loom` as `0700 loom:users` for the tmux socket, and
+systemd-tmpfiles keeps the first rule it has for a path and ignores every later one. A second declaration
+would silently win or silently lose — and the losing case is a console with no session at all, because
+`loom-console` could no longer create its socket. This is the first thing on the box running as neither
+root nor `loom`. The unprivileged half has no
+`kubectl` on `PATH`, no kubeconfig, `IPAddressDeny=any` but loopback, and write access to exactly two
+directories.
+
+`PathExistsGlob` is level-triggered and re-checks when the service exits, so the issuer drains in a loop
+rather than handling one request — and it must not be `RemainAfterExit`, for the reason `loom-mtls-identity`
+gives next door. It always exits 0 for a per-request failure and writes a reason file instead, so a visitor's
+typo does not leave a unit `failed` or burn the path unit's start limit.
+
+**The certificate sync is hourly, and expiry is not why.** `self-signed-cert` is good for 365 days and the
+chart replaces it at 30 days left, so daily would be ample for that. What forces hourly is replacement on
+*redeploy*: the pre-install Job regenerates the certificate the moment a declared host is missing from its
+subjectAltName, which is exactly what happens the first time a box meets a chart that names `portal`. A daily
+sync would spend up to a day handing out a stale anchor that a visitor installs and that does not stop the
+warning — the one failure the page exists to remove. It compares before it writes, because
+`reload-or-restart` becomes a *restart* when nginx is down and a restart drops the assistant pane's token
+stream.
+
+**The TLS listener is gated on two things, and the second is about the tag.** The image takes its NixOS
+modules from the working tree and its chart from a tagged clone, so a box built against a tag whose
+`charts/values.yaml` predates `portal` in `hostnames.extra` gets a certificate that does not name the page.
+`enableTls` tests the host list that tag produced rather than the YAML — `vars.sh` already derived it, and it
+is the same list the subjectAltName is built from. The listener exists only on `--require-client-cert`
+images, because what needs encrypting is the PKCS#12 and the anchor is public: standing it up everywhere
+would mean copying the key Traefik serves `*.loom` with onto every box to protect a file anyone may have.
+
+**The daily password reuses the `--lock-key` rule** (`diceware`, EFF list, rejection sampling against
+`[yz]`, `.` as the separator), even though the person typing it is on their own keyboard rather than on one
+somebody else chose. One box with two different rules for generating a passphrase is worse than one filter
+that is merely unnecessary here. It rotates the outgoing password to `password.previous` first, so somebody
+who read the screen at 23:59 and types it at 00:01 is not refused.
 
 ## `loom0`, and the two things that can produce it
 
@@ -603,7 +665,7 @@ each runnable on its own, and it runs both even when the first one fails:
 
 | Command | What it does |
 | --- | --- |
-| `appliance-pytest` | The suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records), `console-mouse/tests` (the gpm wire format and the SGR translation), `ready/tests` (what counts as a workload, and the stage machine) and `tests/scripts/tests` (the VM tests' own screen and pane parsers). Extra arguments go to pytest. |
+| `appliance-pytest` | The suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records), `console-mouse/tests` (the gpm wire format and the SGR translation), `ready/tests` (what counts as a workload, and the stage machine), `portal/tests` (the probe contract, the page, the password gate and the spool) and `tests/scripts/tests` (the VM tests' own screen and pane parsers). Extra arguments go to pytest. |
 | `appliance-eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
 
 Every suite also runs inside the derivation that owns it — each package's `checkPhase` — so a
@@ -656,6 +718,7 @@ the two type checks can run, and the one that runs on every commit is worth more
 | `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. Two nodes: the second exists for the guard's arm deadline, which ends in a poweroff of its own. |
 | `install` | `tests.applianceInstall` | The disk layout: the pool, the container where stage 1 expects it, and the wipe. |
 | `dhcp` | `tests.applianceDhcp` | The build that actually gets flashed, serving DHCP on `loom0` — a renamed physical port rather than a bridge the configuration creates, which is the combination that shipped broken. The fallback renames the NIC during boot, so the ordering race is reproduced rather than simulated. Also the lease a client gets, the captive-portal probe names asked of the live resolver, and that a missing interface no longer kills the daemon. |
+| `portal` | `tests.appliancePortal` | The captive portal page on a booted `--require-client-cert` box with no cluster behind it, which is the state every box is in for its first hours — and the one image nothing else here boots. The only test that *sends* a probe rather than reading the decision about one off a configuration: which server block answers is nginx's choice, taken from two `server_name` values and a `default_server` flag together. |
 | `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. The lease it reads is the one served over the bridge; `dhcp` reads the one served over the wire. A lease that names a default gateway would take a visitor's laptop off the internet. |
 | `mouse` | `tests.applianceMouse` | Point-and-click, end to end: a `uinput` mouse in the guest, through mousedev and gpm and the pty shim, to the pane tmux focuses — plus the detach control and the unreachable prefix. |
 | `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |

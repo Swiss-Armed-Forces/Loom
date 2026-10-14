@@ -597,7 +597,15 @@ in
   # (up.sh:963-977), which breaks /etc/hosts out of the Nix store on immutable
   # distributions -- it names NixOS in its own comment.
   # ---------------------------------------------------------------------------
-  networking.hosts."${minikubeIp}" = builtins.fromJSON loomHostsJson;
+  # Every name but the portal page's. That one is in `hostnames.extra` so the
+  # chart's pre-install Job puts it in the certificate's subjectAltName, and the
+  # certificate is the only thing about it the cluster has anything to do with:
+  # the page runs on this box, on the portal address, and portal.nix is what
+  # points the name at it. Pinned here as well it would resolve to a Traefik that
+  # answers 404 for a host it does not route.
+  networking.hosts."${minikubeIp}" = lib.subtractLists [ config.loom.portal.host ] (
+    builtins.fromJSON loomHostsJson
+  );
 
   networking.hostName = "loom";
   networking.firewall = {

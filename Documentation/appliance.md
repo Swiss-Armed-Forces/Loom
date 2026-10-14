@@ -75,6 +75,21 @@ Read this before building anything; the design only makes sense if these hold.
   the whole of the authorisation, by design — the deployment is meant to be task-specific and short-lived,
   and every user of it is trusted. On a cabled box that means whoever is on the wire; with `--wifi` it
   means whoever holds the passphrase. `--require-client-cert` is the one build where this is not true.
+- **The captive portal page is served by the box, not by the cluster**, so it answers on `http://portal.loom`
+  from the moment the machine is up — before Loom exists and whatever else is or is not running. It hands out
+  the certificate the box serves `*.loom` with, which is public: it is what Traefik presents to anyone who
+  opens a TLS connection, and the page is only saving a visitor the trouble of extracting it. See
+  [What the portal page offers](#what-the-portal-page-offers).
+  **`--require-client-cert` adds a second thing to that page**, and it is not public: anyone who can read the
+  password off the box's login screen can mint themselves a client certificate, and so can anyone they read
+  it out to. That is the trade — the alternative is an operator handing files to every visitor by hand — but
+  it makes the console screen as sensitive as the keyboard in front of it, and it means a box left unattended
+  with its screen visible is a box anybody can get into. The private key behind it never leaves the cluster:
+  the process a visitor talks to is unprivileged, has no kubeconfig and asks a root unit through a spool
+  directory. That image also copies the cluster's serving certificate **and its private key** onto the box,
+  so it can offer the download over TLS rather than in the clear; it is on the same encrypted disk the
+  cluster already keeps it on. See
+  [Visitors get their own certificate from the portal](#visitors-get-their-own-certificate-from-the-portal).
 - **Bluetooth is disabled** in every image, on the installer stick as well as on the box it installs.
   **WiFi is disabled the same way unless the image was built with `--wifi`**, which turns the box into an
   access point — read [The WiFi access point](#the-wifi-access-point) before using it, because it changes
@@ -939,13 +954,63 @@ front of is on the same encrypted disk.
 ### It takes the cleartext entrypoint with it
 
 This is the one image that does **not** pass `up.sh --enable-http`. A plaintext entrypoint beside a
-client-certificate requirement is either a way around it or a route that answers 404, and neither is
-worth shipping.
+client-certificate requirement is either a way around it or a route that answers 404, and neither is worth
+shipping.
 
-That costs the captive portal its destination. A phone that joins the network is still redirected to
-the frontend, and is then refused at the handshake like any other client with no certificate. On this
-box that is the intended answer — but if the point of the deployment is to hand a room full of people
-a browser tab, this is the wrong flag.
+### Visitors get their own certificate from the portal
+
+The captive portal page is the one thing on this image a visitor can reach without a certificate, because it
+is served by the box rather than by the cluster. On a `--require-client-cert` build it carries a third
+section: a password field that issues a fresh client certificate.
+
+```text
+http://portal.loom            the page, which a probe redirect also lands on
+https://portal.loom           the same page, where the form actually is
+```
+
+The password is **on the box's own login screen**, under the Loom mark, and it changes at midnight. So the
+authorisation for getting into Loom is "this person stood in front of the box" — the same authorisation
+every other thing on this appliance runs on. Four EFF words with dots between them, drawn to be typeable on
+any keyboard layout:
+
+```text
+  [*] Portal password (today): harbor.ritual.cobalt.fenced
+  [*] Visitors need it at http://portal.loom to get a certificate.
+```
+
+The form is offered over `https://portal.loom` and nowhere else. A PKCS#12 bundle carries an unencrypted
+private key, and the appliance segment is a wire — with `--wifi`, everyone in radio range. So the plaintext
+page links to the encrypted one instead of showing the form, and the box serves that listener with the
+cluster's own certificate: install the one from the page's second section first and there is no warning at
+all. Skipping that step costs one clickable interstitial, which is a real browser rather than the portal
+webview.
+
+Two buttons: **the certificate** (`.p12`, for a browser or a phone) and **all files** (`.zip`, which also
+carries the PEM pair for `curl --cert`, `mc` and nginx). Each press issues its own certificate. They are
+good for **seven days** — much shorter than the 60 `generate-client-certificate` defaults to, because that
+default is for an operator issuing by hand to somebody they chose. Nothing renews one; the page is always
+there to issue another.
+
+Four things bound what the page will do, in the order a visitor meets them: nginx rate-limits the route,
+the password is checked before anything else happens, the server refuses more than ten attempts a minute,
+and it makes at most two certificates at once. A wrong password creates nothing at all — the privileged half
+of the box is never woken.
+
+**The private key never leaves the cluster.** The page server runs as its own unprivileged user with no
+kubeconfig, no `kubectl` and no route off loopback; it writes a request into a spool it cannot even list, a
+root unit picks it up and runs the same `generate-client-certificate` an operator would, and the result
+comes back through the same spool. A compromise of the thing a visitor talks to buys a certificate request,
+which is what it is for.
+
+**What this changes about the threat model.** Anyone who can see the console screen can mint a client
+certificate for themselves, and anyone they read it out to can as well. That is a deliberate trade — the
+alternative is an operator issuing files by hand to every visitor — but it means the password is as
+sensitive as physical access to the box, and a box left unattended with its screen visible is a box anybody
+can get into. Build without `--require-client-cert` if that is not the arrangement you want; the page's
+certificate section is on every image either way.
+
+If the cluster has not come up yet the page says so rather than hanging. On a first boot that can take
+hours.
 
 ### Checking it on a running box
 
@@ -957,6 +1022,16 @@ curl -sS http://127.0.0.1:18080/       # "Ollama is running", through the proxy
 
 A `502` from that last call means the proxy is up and the identity is not — either the cluster has not
 issued one yet, or the placeholder is still in place. `journalctl -u loom-mtls-identity` says which.
+
+And the portal half:
+
+```bash
+cat /run/loom-portal/password             # what a visitor has to type, also on tty1
+systemctl status loom-portal              # the page server
+systemctl status loom-portal-certificate  # published the anchor, or waiting for the cluster
+journalctl -u loom-portal-issue           # every certificate the page has handed out
+curl -ksS https://portal.loom/ | head     # the page, as a visitor sees it
+```
 
 ## Custom Helm values
 
@@ -1143,8 +1218,8 @@ is resolved by the mobile network, which has never heard of `.loom`.
 The box answers the question the phone actually asks. Every operating system probes a URL it knows the
 answer to — `connectivitycheck.gstatic.com/generate_204` on Android, `captive.apple.com` on iOS — to decide
 whether a network reaches the internet. `dnsmasq` points those four names at a second address the box holds,
-where a small nginx answers `302` to `http://frontend.loom/`. The phone reads that as a captive portal,
-offers **"Sign in to network"**, and opens Loom.
+where a small nginx answers `302` to `http://portal.loom/`. The phone reads that as a captive portal, offers
+**"Sign in to network"**, and opens that page.
 
 Three things are worth knowing:
 
@@ -1162,8 +1237,33 @@ The standards-based alternative, RFC 8910's DHCP option 114, is deliberately not
 is governed by RFC 8908, which requires an HTTPS endpoint with a certificate the client can validate and
 revocation-check. `.loom` is not a real TLD, so no public CA can ever issue for it, and a conforming client
 aborts at the handshake. The probe redirect needs no certificate, which is why it is the mechanism that
-works — and why the frontend has to be reachable over plain http, since a portal webview refuses an
-untrusted certificate outright with no way to click through.
+works — and why the page has to be reachable over plain http, since a portal webview refuses an untrusted
+certificate outright with no way to click through.
+
+### What the portal page offers
+
+`http://portal.loom` is the page the probe redirect lands on, and typing it is the other way to reach it. It
+has up to three sections.
+
+**Open Loom.** The first thing on it, and the only one most visitors want. One tap and they are in.
+
+**The box's certificate.** `*.loom` is not a real top-level domain, so no public authority can ever issue for
+it and the box signed its own — which is why `https://frontend.loom` costs a warning. The page offers that
+certificate as a download with its SHA-256 fingerprint and per-platform install steps, including the two
+that are usually got wrong: on iOS, installing the profile is not enough and the switch under **Settings →
+General → About → Certificate Trust Settings** has to be turned on as well; on Android 7 and later a
+certificate installed this way is honoured by browsers and by nothing else, which is Android's decision and
+not something this box can change.
+
+Compare the fingerprint against the box's own console before trusting it. One checked only against the page
+that served it proves nothing.
+
+**A client certificate** — on a `--require-client-cert` image only, where a visitor cannot use Loom without
+one. See [Requiring a client certificate](#requiring-a-client-certificate).
+
+The page is served from the box itself rather than from the cluster, so it answers from the moment the
+machine is up. Before Loom has finished coming up it says so, in those words, instead of offering a download
+that is not there yet.
 
 The box is not a gateway and does not advertise itself as one: the lease carries an address, a netmask and a
 DNS server, and deliberately no default route. So a laptop that is also on wifi keeps reaching the internet

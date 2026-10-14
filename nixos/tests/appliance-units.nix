@@ -273,6 +273,19 @@ let
         lib.elem "timers.target" cfg.systemd.timers.loom-mtls-identity.wantedBy
       ))
 
+      # And the timer is also what *first* starts it. A target implicitly orders
+      # itself `After=` everything in its own `.wants` (systemd.target(5)), so a
+      # oneshot in there that waits out a cluster bring-up keeps the box from
+      # reaching multi-user.target for however many hours the fetch takes. The
+      # pair is asserted together: dropping the `wantedBy` without the
+      # `OnBootSec` would leave the identity unissued until the next midnight.
+      (check "mtls: the issuer does not hold multi-user.target up" (
+        !(lib.elem "multi-user.target" identity.wantedBy)
+      ))
+      (check "mtls: the issuer still runs shortly after boot" (
+        (cfg.systemd.timers.loom-mtls-identity.timerConfig.OnBootSec or null) != null
+      ))
+
       # The flag is the whole gate: a box built without it must be the box it
       # always was.
       (check "default: no mutual TLS proxy" (
@@ -286,6 +299,193 @@ let
       ))
     ]
     ++ lib.concatLists (lib.mapAttrsToList routeChecks mtls.routes);
+
+  # The captive portal page (nixos/portal.nix), and above all the one property of
+  # it that nothing else in this repository can observe.
+  #
+  # A probe is answered because it matches no `server_name` and falls to the
+  # default server, which redirects. Give the page vhost `default = true`, or let
+  # the catch-all stop being the default, and every probe path starts answering
+  # 200 -- at which point Android stops offering "Sign in to network", keeps using
+  # mobile data, and resolves `frontend.loom` against a mobile network that has
+  # never heard of `.loom`. That failure is invisible from a browser, from curl,
+  # and from the VM tests; it happens on a phone, at a site.
+  #
+  # The rest is the privilege split and the two halves of the page's own name.
+  portalChecks =
+    let
+      cfg = mtlsSystem.config;
+      plain = boxSystem.config;
+      portal = cfg.loom.portal;
+      vhosts = cfg.services.nginx.virtualHosts;
+      catchAll = vhosts.loom-portal;
+      page = vhosts.loom-portal-page;
+      server = cfg.systemd.services.loom-portal;
+      sync = cfg.systemd.services.loom-portal-certificate;
+      placeholder = cfg.systemd.services.loom-portal-tls-placeholder;
+      issue = cfg.systemd.services.loom-portal-issue;
+      password = cfg.systemd.services.loom-portal-password;
+
+      # Which addresses in /etc/hosts claim the page's name. There should be
+      # exactly one, and it should not be the minikube node: `portal` is in the
+      # chart's `hostnames.extra` so the certificate names it, and box.nix pins
+      # every other name in that list at the cluster.
+      addressesNaming = lib.attrNames (
+        lib.filterAttrs (_: names: lib.elem portal.host names) cfg.networking.hosts
+      );
+
+      portalListeners = lib.filterAttrs (name: _: lib.hasPrefix "loom-portal" name) vhosts;
+    in
+    [
+      # ---- the probe contract ----
+      (check "portal: the catch-all is still the default server" (
+        catchAll.default && catchAll.serverName == null
+      ))
+      (check "portal: an unknown path is still a redirect, never a page" (
+        lib.hasPrefix "302 " catchAll.locations."/".return
+      ))
+      (check "portal: the page is not the default server" (!(page.default or false)))
+      (check "portal: the page answers for its own name and for the address" (
+        lib.hasInfix portal.host (page.serverName or "")
+        && lib.hasInfix cfg.loom.portalAddress (page.serverName or "")
+      ))
+
+      # Everything this module binds is on the portal address. loom-expose DNATs
+      # 80 and 443 on the *appliance* address to the minikube node in nat
+      # PREROUTING, ahead of the routing decision, so a listener that landed there
+      # could never be reached and would only look as though it served the
+      # frontend.
+      (check "portal: every listener is on the portal address" (
+        lib.all (vhost: lib.all (listen: listen.addr == cfg.loom.portalAddress) vhost.listen) (
+          lib.attrValues portalListeners
+        )
+      ))
+
+      # ---- the page's own name ----
+      (check "portal: the resolver answers ${portal.host} with the portal address" (
+        lib.elem "/${portal.host}/${cfg.loom.portalAddress}" (
+          asList (cfg.services.dnsmasq.settings.address or [ ])
+        )
+      ))
+      (check "portal: ${portal.host} resolves to the portal address and nowhere else" (
+        addressesNaming == [ cfg.loom.portalAddress ]
+      ))
+      # The chart half. The image pairs these modules with a *tagged* Loom, so this
+      # is read off the embedded checkout for the same reason `upShChecks` is: a
+      # tag whose values.yaml predates the entry produces a certificate with no
+      # `portal.loom` in its subjectAltName, and portal.nix drops the TLS listener
+      # rather than serving the one page that exists to remove a warning with a
+      # warning of its own.
+      (check "portal: the embedded chart names the page in its certificate" (
+        lib.hasInfix "\n    - portal\n" (builtins.readFile "${loomSrc}/charts/values.yaml")
+      ))
+
+      # ---- nginx's critical path ----
+      # The same inversion `mtlsChecks` asserts, for the second pair of units that
+      # can hold nginx up: the placeholder needs nothing and goes first, the sync
+      # waits for a cluster and goes nowhere near it.
+      (check "portal: the TLS placeholder is before nginx" (lib.elem "nginx.service" placeholder.before))
+      (check "portal: nginx pulls the TLS placeholder in" (lib.elem "nginx.service" placeholder.wantedBy))
+      (check "portal: the certificate sync does not hold nginx up" (
+        !(lib.elem "nginx.service" sync.before) && !(lib.elem "nginx.service" sync.wantedBy)
+      ))
+      (check "portal: the certificate is refreshed on a timer" (
+        lib.elem "timers.target" cfg.systemd.timers.loom-portal-certificate.wantedBy
+      ))
+      # And started by it, for the reason the mtls pair above gives: this one
+      # waits out a bring-up too, and a target waits for everything in its
+      # `.wants`.
+      (check "portal: the certificate sync does not hold multi-user.target up" (
+        !(lib.elem "multi-user.target" sync.wantedBy)
+      ))
+      (check "portal: the certificate sync still runs shortly after boot" (
+        (cfg.systemd.timers.loom-portal-certificate.timerConfig.OnBootSec or null) != null
+      ))
+
+      # ---- the privilege split ----
+      # The page server is the one process on this box a visitor talks to. Issuing
+      # a certificate needs the mutual TLS CA's private key, so the work is split
+      # across a spool and these three are what make the split mean anything.
+      (check "portal: the page server does not run as root" (
+        (server.serviceConfig.User or "root") != "root"
+      ))
+      (check "portal: the page server has no kubeconfig" (
+        !(lib.any (entry: lib.hasPrefix "KUBECONFIG=" entry) (server.serviceConfig.Environment or [ ]))
+      ))
+      (check "portal: the page server can reach nothing but loopback" (
+        (server.serviceConfig.IPAddressDeny or "") == "any"
+      ))
+      (check "portal: the issuer is triggered only by the spool" (
+        (cfg.systemd.paths.loom-portal-issue.pathConfig.PathExistsGlob or null) != null
+        && issue.wantedBy == [ ]
+      ))
+      (check "portal: the issuer can be triggered again" (
+        !(issue.serviceConfig.RemainAfterExit or false)
+      ))
+
+      # ---- rate limiting ----
+      # `limit_req_zone` is only legal in http{}, and a zone with no limit counts
+      # nothing. Both halves, or the one route that costs an RSA key generation is
+      # unthrottled.
+      (check "portal: the rate-limit zones are declared at http level" (
+        lib.hasInfix "limit_req_zone" cfg.services.nginx.appendHttpConfig
+      ))
+      (check "portal: issuance is rate limited" (
+        lib.hasInfix "limit_req  zone=loom_portal_issue" page.locations."= /certificate".extraConfig
+      ))
+
+      # ---- the daily password ----
+      (check "portal: the password is rotated on a timer" (
+        lib.elem "timers.target" cfg.systemd.timers.loom-portal-password.wantedBy
+      ))
+      # Rotating a value nobody is shown is not rotating it. loom-banner-refresh
+      # is what redraws tty1, and it declines on its own when somebody is logged
+      # in rather than blanking the screen under them.
+      (check "portal: rotating the password repaints the login screen" (
+        lib.hasInfix "loom-banner-refresh" password.script
+      ))
+      (check "portal: the password lands in its own issue fragment" (
+        lib.hasInfix "/run/issue.d/62-loom-portal.issue" password.script
+      ))
+
+      # ---- gating, in both directions ----
+      (check "mtls: the page is served over TLS as well" (vhosts ? loom-portal-tls))
+      (check "default: no TLS listener on a box with nothing secret to serve" (
+        !(plain.services.nginx.virtualHosts ? loom-portal-tls)
+      ))
+      (check "default: no password is generated without mutual TLS" (
+        !(plain.systemd.services ? loom-portal-password)
+      ))
+      (check "default: there is no issuance endpoint without mutual TLS" (
+        !(plain.systemd.paths ? loom-portal-issue)
+      ))
+      # Every image still serves the page, and still publishes the anchor: the
+      # certificate warning is not a mutual TLS problem.
+      (check "default: the page is served anyway" (plain.services.nginx.virtualHosts ? loom-portal-page))
+      (check "default: the anchor is published anyway" (plain.systemd.services ? loom-portal-certificate))
+
+      # "Open Loom" follows the build, because the mutual TLS image is the one
+      # that does not pass --enable-http: there, port 80 carries only a redirect
+      # to a handshake the visitor is about to be refused at.
+      (check "mtls: the page links to the frontend over https" (
+        lib.hasPrefix "https://" portal.frontendUrl
+      ))
+      (check "default: the page links to the frontend over http" (
+        lib.hasPrefix "http://" plain.loom.portal.frontendUrl
+      ))
+      (check "mtls: the page knows where its own TLS listener is" (
+        portal.secureUrl == "https://${portal.host}/"
+      ))
+      (check "default: the page offers no secure link it cannot serve" (
+        plain.loom.portal.secureUrl == ""
+      ))
+
+      # And the probe lands on the page rather than on Loom, which is what makes
+      # the two sections above reachable at all.
+      (check "portal: the probe redirect points at the page" (
+        catchAll.locations."/".return == "302 http://${portal.host}/"
+      ))
+    ];
 
   # Every long option the boot units hand to up.sh, against the up.sh that will
   # actually be seeded.
@@ -434,6 +634,7 @@ let
     ++ checksFor "wifi" wifiSystem.config
     ++ bridgeChecks
     ++ mtlsChecks
+    ++ portalChecks
     ++ valuesChecks
     ++ upShChecks;
   failures = builtins.filter (c: !c.ok) checks;
@@ -477,6 +678,16 @@ hostPkgs.runCommand "loom-appliance-units-${platform}"
         A failure whose name starts with `mtls:` is about nixos/mtls.nix instead:
         the loopback proxy that gets the box's own clients through its own mutual
         TLS, and the ordering that keeps nginx from waiting on a bring-up.
+
+        A failure whose name starts with `portal:` is about nixos/portal.nix: the
+        page the captive portal answers with, the certificates it hands out, and
+        the privilege split behind them. The one worth reading twice is the
+        probe contract -- a probe is answered with a 302 because it matches no
+        `server_name` and falls to the default server. Make the page the default,
+        or give it a name a probe sends, and every probe path starts answering
+        200: Android stops offering "Sign in to network", keeps using mobile
+        data, and resolves `frontend.loom` against a network that has never heard
+        of `.loom`. Nothing else here can see that happen.
 
         A failure whose name starts with `values:` is about which Helm values
         file a value lands in, which is the whole of what decides whether it

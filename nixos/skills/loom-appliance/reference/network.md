@@ -75,6 +75,36 @@ If the rules are there and a client still gets nothing, the stack is probably st
 `curl --insecure https://frontend.loom` from the box goes straight to Traefik and separates "not
 exposed" from "not up yet" in one command.
 
+## The captive portal page
+
+A phone that joins the network is redirected to `http://portal.loom`, which is served by **this box**
+rather than by the cluster — so it answers long before Loom does, and its own failures have nothing to
+do with the stack.
+
+```bash
+systemctl status loom-portal              # the page server, on 127.0.0.1:18082 behind nginx
+systemctl status loom-portal-certificate  # publishes the certificate Loom serves, hourly
+curl --silent http://portal.loom/ | head  # the page itself
+```
+
+If the page says the certificate is **not available yet**, `loom-portal-certificate` is still waiting
+for the cluster — that is the normal state for the first part of a box's life, and
+`journalctl --unit loom-portal-certificate` says so in one line.
+
+On a box built with `--require-client-cert` the page also issues client certificates, and three more
+units are involved:
+
+```bash
+cat /run/loom-portal/password             # today's password, also on the login screen
+journalctl --unit loom-portal-password    # it rotates at midnight
+journalctl --unit loom-portal-issue       # every certificate the page has handed out
+curl --insecure --silent https://portal.loom/ | grep '<form'
+```
+
+`loom-portal-issue` runs as root and is started by a `systemd.path` watching
+`/run/loom-portal/requests`; the page server itself is unprivileged and has no cluster access at all.
+A visitor who gets "Loom is still starting" is being told the mutual TLS CA does not exist yet.
+
 ## A client that loses its own internet
 
 If a laptop plugged into the box loses connectivity on every other interface, the box's DHCP lease
@@ -89,6 +119,8 @@ stick.
 
 - `## Troubleshooting` — the symptom list, including both cases above
 - `### Finding Loom without being told where it is` — the captive portal
+- `### What the portal page offers` — and the certificate it hands out
+- `### Visitors get their own certificate from the portal` — the `--require-client-cert` build
 - `## Using Loom on the appliance`
 
 `/home/loom/loom/Documentation/installation.md`:

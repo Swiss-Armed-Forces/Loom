@@ -56,7 +56,7 @@ HOST_ARCH=""
 # seconds. A nixos-hardware bump, a nixpkgs change to the unit graph or an
 # opencode bump that broke every platform should be reported before the VM
 # boots, not after.
-KNOWN_TESTS=(hardware units skills install interface-fallback dhcp key-store debug wifi mouse usb-ingest appliance)
+KNOWN_TESTS=(hardware units skills install interface-fallback dhcp portal key-store debug wifi mouse usb-ingest appliance)
 
 # Targets that only read the evaluated configuration -- no kernel, no VM, and
 # not even the appliance closure. The architecture check and the KVM and disk
@@ -121,6 +121,7 @@ test_attribute(){
         skills)             printf 'tests.applianceSkills'            ;;
         install)            printf 'tests.applianceInstall'           ;;
         dhcp)               printf 'tests.applianceDhcp'              ;;
+        portal)             printf 'tests.appliancePortal'            ;;
         wifi)               printf 'tests.applianceWifi'              ;;
         mouse)              printf 'tests.applianceMouse'             ;;
         usb-ingest)         printf 'tests.applianceUsbIngest'         ;;
