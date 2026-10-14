@@ -140,7 +140,8 @@ def _open_loom(model: PageModel) -> str:
         aside = (
             "<p>This box requires a client certificate. Until you have installed one "
             "from the second section below, your browser will be refused when it "
-            "connects -- with no page and no explanation, because the refusal happens "
+            "connects &mdash; with no page and no explanation, because the refusal "
+            "happens "
             "before any request is read.</p>"
         )
     return (
@@ -251,7 +252,7 @@ def _identity_section(model: PageModel) -> str:
         "here for another one.</p>"
         '<div class="notice warn"><strong>The identity carries no trust.</strong>'
         "<p>Installing it lets Loom accept you. It does not make Loom&rsquo;s own "
-        "certificate trusted -- that is the section above, and it is a separate "
+        "certificate trusted &mdash; that is the section above, and it is a separate "
         "step.</p></div>"
         f"{_guides(model.guides.identity)}"
         "</section>"
