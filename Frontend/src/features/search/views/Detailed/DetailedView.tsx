@@ -3,6 +3,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading } from "@app/slices/commonSlice";
+import { isLoadedResult } from "@app/slices/searchFileEntry";
 import {
     NamedDensity,
     selectCardDensity,
@@ -138,7 +139,9 @@ export const DetailedView: React.FC = React.memo(() => {
 
     const allFileIds = useMemo(
         () =>
-            Object.keys(files).filter((fileId) => files[fileId].meta !== null),
+            Object.keys(files).filter((fileId) =>
+                isLoadedResult(files[fileId]),
+            ),
         [files],
     );
 
