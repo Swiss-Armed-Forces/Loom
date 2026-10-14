@@ -394,11 +394,33 @@ let
 
       current=""
 
+      # Written to a dot-prefixed temporary and renamed, exactly as the bundle
+      # directory below is, and for a sharper reason than tidiness.
+      #
+      # The page polls `bundles/<token>.error` every 100ms and unlinks it the
+      # instant it appears. Creating the file and *then* chgrp-ing it left a
+      # window of one fork-and-exec in which the page could take it away -- after
+      # which `chgrp` failed, `set -e` aborted the script, and the EXIT trap found
+      # `current` still set and wrote a second answer over a question already
+      # answered. The unit went to `failed` on a perfectly ordinary
+      # "cluster not ready", a stale file was left for the next run's reap, and a
+      # visitor whose timing landed the other way was told the box could not issue
+      # a certificate rather than that Loom was still starting.
+      #
+      # So the name the page watches for appears once, already owned and already
+      # readable, and nothing touches it afterwards.
       refuse() {
-        printf '%s\n' "$2" > "$bundles/$1.error"
-        chgrp ${lib.escapeShellArg portalUser} "$bundles/$1.error"
-        chmod 640 "$bundles/$1.error"
+        local temporary
+        temporary="$bundles/.$1.error.tmp"
+        printf '%s\n' "$2" > "$temporary"
+        chgrp ${lib.escapeShellArg portalUser} "$temporary"
+        chmod 640 "$temporary"
+        # Cleared before the rename rather than after it: once the answer is
+        # visible the trap below must not write a second one, and a failure
+        # between here and the rename is better served by the page's own deadline
+        # than by an answer that contradicts this one.
         current=""
+        mv "$temporary" "$bundles/$1.error"
       }
 
       # TERM as well as EXIT, because TimeoutStartSec kills with SIGTERM and the

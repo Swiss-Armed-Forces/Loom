@@ -222,12 +222,23 @@ def _the_issuer_answers_rather_than_hangs(
         # does, because nobody is watching it; here somebody is standing at a page.
         assert "Loom is still starting" in body, body
 
-        # It ran, and it left nothing behind.
-        appliance.succeed("systemctl is-active loom-portal-issue.service || true")
+        # It ran, and it ran cleanly. "cluster not ready" is the most ordinary
+        # answer this unit ever gives, and it must not leave a failed unit behind
+        # for an operator to find: the page writes its own answer file and deletes
+        # it the moment it appears, so anything the issuer does to that file after
+        # creating it is a race it loses about half the time -- `set -e` aborts,
+        # the EXIT trap writes a second answer, and the unit reports failure on a
+        # request that was handled correctly.
+        result = appliance.succeed(
+            "systemctl show loom-portal-issue.service --property=Result --value"
+        ).strip()
+        assert result == "success", result
+
         journal = appliance.succeed(
             "journalctl --unit loom-portal-issue.service --no-pager"
         )
         assert journal.strip(), "the path unit never started the issuer"
+        assert "No such file or directory" not in journal, journal
         assert appliance.succeed("ls -A /run/loom-portal/requests").strip() == ""
         assert appliance.succeed("ls -A /run/loom-portal/bundles").strip() == ""
 
