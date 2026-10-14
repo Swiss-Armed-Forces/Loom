@@ -3071,6 +3071,20 @@ type = "directory"
 url = "ollama"
 
 [[package]]
+name = "loom-portal"
+version = "0.1.0"
+description = "The page the appliance's captive portal answers with, and the certificates it hands out"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "nixos/portal"
+
+[[package]]
 name = "loom-ready"
 version = "0.1.0"
 description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
@@ -7492,4 +7506,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "ba595b8abe61da5660f1e4a423534a107cb6e3f1b2fb0c92e5d4a410567e54f0"
+content-hash = "372cce86f1dd0a19f0e6261d235e196c7e59a9849516e79a5940aa55ee736ce3"

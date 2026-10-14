@@ -2476,6 +2476,7 @@ integrationtest = {path = "integrationtest", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
 loom-ollama = {path = "ollama", develop = true}
+loom-portal = {path = "nixos/portal", develop = true}
 loom-ready = {path = "nixos/ready", develop = true}
 loom-tests = {path = "nixos/tests/scripts", develop = true}
 loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
@@ -2485,6 +2486,20 @@ worker = {path = "backend/worker", develop = true}
 [package.source]
 type = "directory"
 url = ".."
+
+[[package]]
+name = "loom-portal"
+version = "0.1.0"
+description = "The page the appliance's captive portal answers with, and the certificates it hands out"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../nixos/portal"
 
 [[package]]
 name = "loom-ready"

@@ -69,7 +69,15 @@ hostnames:
   # resolves it and whoever dials it, and nothing in the templates implies it.
   # `rabbit-amqp` is in `backend/common/common/settings.py`, `traefik` is the
   # dashboard from the Traefik chart.
+  #
+  # `portal` is a third case: nothing in this deployment serves it at all. It is
+  # the appliance's captive portal page (`nixos/portal.nix`), which runs on the
+  # box itself on a second address and presents *this* certificate on its own
+  # TLS listener -- so the name has to be in the subjectAltName even though no
+  # route, entrypoint or pod here has ever heard of it. A `*.loom` wildcard
+  # cannot stand in for it: a wildcard needs two dots and `.loom` has one.
   extra:
+    - portal
     - rabbit-amqp
     - redis
     - redis-cache

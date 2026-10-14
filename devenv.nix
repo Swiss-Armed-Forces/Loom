@@ -48,6 +48,7 @@ let
     "ollama"
     "nixos/console-mouse"
     "nixos/installer"
+    "nixos/portal"
     "nixos/ready"
     "nixos/tests/scripts"
     "nixos/usb-ingest"
@@ -63,6 +64,7 @@ let
   appliancePytestPaths = [
     "nixos/console-mouse/tests"
     "nixos/installer/tests"
+    "nixos/portal/tests"
     "nixos/ready/tests"
     "nixos/skills/tests"
     "nixos/tests/scripts/tests"

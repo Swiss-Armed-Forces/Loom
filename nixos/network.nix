@@ -468,16 +468,20 @@ in
           # Wildcard, so this covers every name under .loom rather than just
           # the 22 currently in vars.sh.
           #
+          # The portal page is the exception to it, and dnsmasq resolves these
+          # by longest matching domain, so the more specific entry wins. It has
+          # to: port 80 and 443 on the box address are DNAT'd to Traefik before
+          # the routing decision, and the page runs on the box itself.
+          #
           # The rest are the captive-portal probes (portal.nix), pointed at the
-          # responder's own address rather than at the box: port 80 on the box
-          # is DNAT'd to Traefik, which would answer 404 and leave the phone
-          # showing a 404 in its portal webview.
+          # responder's own address rather than at the box, for the same reason.
           #
           # Named one at a time rather than with a wildcard. Every other name
           # keeps being REFUSED, so a visitor's mail client fails cleanly
           # instead of being handed this box.
           address = [
             "/loom/${boxAddress}"
+            "/${config.loom.portal.host}/${portalAddress}"
           ]
           ++ map (host: "/${host}/${portalAddress}") config.loom.portal.probeHosts;
 

@@ -393,6 +393,22 @@ in
         daily timer is what notices.
       '';
     };
+
+    issuer = lib.mkOption {
+      type = lib.types.package;
+      internal = true;
+      readOnly = true;
+      description = ''
+        `loom-client-certificate`: the checkout's own issuing script, packaged.
+
+        An option because portal.nix issues visitors' certificates with the same
+        binary, and a second `runCommandLocal` over the same file would be a
+        second thing to keep in step. Set outside the `mkIf` below, beside
+        `applianceValues`, so reading it does not depend on this box being a
+        mutual TLS one -- portal.nix does its own gating, and an unreferenced
+        package is not in any closure.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -411,7 +427,10 @@ in
     #     loopback proxies and the identity units below -- that a values file
     #     cannot bring with it, and a box with one half of it serves nothing to
     #     anybody, including itself.
-    { loom.applianceValues.certificate.requireClientCert = cfg.mtls.enable; }
+    {
+      loom.applianceValues.certificate.requireClientCert = cfg.mtls.enable;
+      loom.mtls.issuer = loom-client-certificate;
+    }
 
     (lib.mkIf (cfg.mtls.enable && cfg.mode == "run") {
       # mc reaches S3 through the proxy rather than through the ingress. The CA
