@@ -52,6 +52,46 @@ let
     "charts"
   ];
 
+  # The checkout that owns the shared .git directory.
+  #
+  # In a linked worktree `.git` is a regular file reading
+  # `gitdir: <main>/.git/worktrees/<name>`; anywhere else it is a directory and
+  # the main worktree is this tree. Machine state that several checkouts must
+  # agree on -- the minikube home, whose certificate paths ~/.kube/config
+  # records absolutely -- is anchored here rather than at config.devenv.root.
+  #
+  # `.git` being a file is not on its own proof of a worktree: `git clone
+  # --separate-git-dir` writes one too. The shape git uses for a worktree is
+  # what is matched, so the gitdir target must end in `.git/worktrees/<name>`.
+  #
+  # Resolution failing is not an error. Builds run from export tarballs, CI
+  # checkouts and containers where `.git` is absent or truncated, and must never
+  # fail because a convenience value could not be computed -- those fall back to
+  # the tree itself.
+  mainWorktreeRoot =
+    let
+      dotGit = "${config.devenv.root}/.git";
+
+      isWorktreeFile = builtins.pathExists dotGit && builtins.readFileType dotGit == "regular";
+
+      firstLine = lib.head (lib.splitString "\n" (builtins.readFile dotGit));
+      gitdir = lib.removePrefix "gitdir: " firstLine;
+
+      parts = lib.splitString "/" gitdir;
+      count = builtins.length parts;
+
+      # .../<main>/.git/worktrees/<name> -- the two components before <name>.
+      isWorktreeGitdir =
+        lib.hasPrefix "gitdir: " firstLine
+        && count >= 4
+        && lib.elemAt parts (count - 2) == "worktrees"
+        && lib.elemAt parts (count - 3) == ".git";
+    in
+    if isWorktreeFile && isWorktreeGitdir then
+      lib.concatStringsSep "/" (lib.take (count - 3) parts)
+    else
+      config.devenv.root;
+
   # Helper function to create a hook entry that runs a tool from inside a subdirectory,
   # with the hook's file list rewritten relative to it.
   #
@@ -333,8 +373,15 @@ in
     # https://www.reddit.com/r/learnpython/comments/zcb95y/comment/kdh0aka
     PYTHON_KEYRING_BACKEND = "keyring.backends.fail.Keyring";
 
-    # Make minikube store all its metadata in the project root
-    MINIKUBE_HOME = "${config.devenv.root}/.minikube";
+    # Make minikube store all its metadata in the main worktree.
+    #
+    # There is one cluster per machine and every checkout talks to it. The
+    # kubeconfig that minikube writes is ~/.kube/config, which is shared and
+    # records the certificate paths absolutely, so a per-checkout home would
+    # leave `kubectl` working everywhere while `minikube` saw no profile in the
+    # worktree it ran from -- and `up` there would try to build a second cluster
+    # on top of the first one's docker container.
+    MINIKUBE_HOME = "${mainWorktreeRoot}/.minikube";
 
     # Make skaffold store all its metadata in the project root
     SKAFFOLD_HOME = "${config.devenv.root}/.skaffold";
@@ -569,6 +616,13 @@ in
     pnpm.install.enable = true;
   };
   languages.typescript.enable = true;
+
+  # Give this checkout its own hooks directory before the hooks are installed
+  # into it -- see cicd/set_worktree_hooks_path.sh.
+  tasks."loom:git-hooks:worktree-hooks-path" = {
+    exec = "${config.devenv.root}/cicd/set_worktree_hooks_path.sh";
+    before = [ "devenv:git-hooks:install" ];
+  };
 
   tasks."devenv:git-hooks:run" = {
     # Print the output of the git hooks that "devenv test" runs, otherwise a
