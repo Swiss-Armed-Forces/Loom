@@ -8,8 +8,11 @@
 # so the published targets are alpine plus the model blobs and the ~5 GiB CUDA
 # runtime of ollama/ollama stays behind in the pull stages.
 
-ARG OLLAMA_IMAGE_VERSION="0.34.4"
-ARG OLLAMA_IMAGE_DIGEST="sha256:8262851b2846b87c649eddf3e76beb270c52f4d1bc94559f47efde16b0841551"
+# Must stay in lockstep with ollama/Dockerfile.runtime: a model pulled by 0.40 or
+# newer is written in a manifest format a pre-0.40 runtime cannot read, and
+# registry.ollama.ai refuses to serve the library tags to a pre-0.40 client at all.
+ARG OLLAMA_IMAGE_VERSION="0.40.4"
+ARG OLLAMA_IMAGE_DIGEST="sha256:926d40fd6eeeebd346b5c358a63de2a10ec995371cd93dd22f1843200694b1a6"
 
 # Image version
 ARG ALPINE_IMAGE_VERSION="3.23.6"

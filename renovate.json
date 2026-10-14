@@ -148,6 +148,17 @@
     },
     {
       "customType": "regex",
+      "description": "Update the ollama base image pins, which the dockerfile manager cannot resolve through their ARG indirection",
+      "managerFilePatterns": ["/(^|/)Dockerfile\\.(models|runtime)$/"],
+      "matchStrings": [
+        "ARG OLLAMA_IMAGE_VERSION(?:_NVIDIA|_ROCM)?=\"(?<currentValue>[^\"]+)\"\\nARG OLLAMA_IMAGE_DIGEST(?:_NVIDIA|_ROCM)?=\"(?<currentDigest>sha256:[a-f0-9]+)\""
+      ],
+      "depNameTemplate": "ollama/ollama",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
       "description": "Track devenv input updates to notify when devenv update should be run",
       "managerFilePatterns": ["/(^|/)devenv\\.yaml$/"],
       "matchStrings": [

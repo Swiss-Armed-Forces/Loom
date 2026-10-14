@@ -5,17 +5,21 @@
 ARG GPU_VARIANT="nvidia"
 ARG DOCKER_REGISTRY="docker.io"
 
-# NVIDIA configuration
-ARG OLLAMA_IMAGE_VERSION_NVIDIA="0.34.4"
-ARG OLLAMA_IMAGE_DIGEST_NVIDIA="sha256:8262851b2846b87c649eddf3e76beb270c52f4d1bc94559f47efde16b0841551"
+# Must stay in lockstep with ollama/Dockerfile.models: a model pulled by 0.40 or
+# newer is written in a manifest format a pre-0.40 runtime cannot read.
 
-# ROCm configuration
-ARG OLLAMA_IMAGE_VERSION_ROCM="0.34.4"
-ARG OLLAMA_IMAGE_DIGEST_ROCM="sha256:f1f51e73691bd77e38a30b61f745f8d074fc664967ba8e209989091bd73b5adc"
+# NVIDIA configuration
+ARG OLLAMA_IMAGE_VERSION_NVIDIA="0.40.4"
+ARG OLLAMA_IMAGE_DIGEST_NVIDIA="sha256:926d40fd6eeeebd346b5c358a63de2a10ec995371cd93dd22f1843200694b1a6"
+
+# ROCm configuration - the tag carries its own -rocm suffix so that the pin names
+# the image it resolves to, digest included
+ARG OLLAMA_IMAGE_VERSION_ROCM="0.40.4-rocm"
+ARG OLLAMA_IMAGE_DIGEST_ROCM="sha256:86f96f13977da6a2f4819962fc040c01987eff2d14660441b247ff4e48bcf459"
 
 # Select base image based on GPU_VARIANT
 FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION_NVIDIA}@${OLLAMA_IMAGE_DIGEST_NVIDIA} AS nvidia
-FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION_ROCM}-rocm@${OLLAMA_IMAGE_DIGEST_ROCM} AS rocm
+FROM ${DOCKER_REGISTRY}/ollama/ollama:${OLLAMA_IMAGE_VERSION_ROCM}@${OLLAMA_IMAGE_DIGEST_ROCM} AS rocm
 
 # Select the appropriate stage based on GPU_VARIANT
 FROM ${GPU_VARIANT}
