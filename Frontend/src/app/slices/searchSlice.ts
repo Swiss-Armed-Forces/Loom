@@ -13,7 +13,6 @@ import { v4 as uuidv4 } from "uuid";
 import {
     getFilePreview,
     GetFilePreviewResponse,
-    GetFilesFileEntry,
     searchFiles,
     GroupedHistogramStatisticsModel,
     TermsStatisticsModel,
@@ -32,6 +31,7 @@ import {
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
+import { isLoadedResult, SearchFileEntry } from "@app/slices/searchFileEntry";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { CombinedStats, SearchQuery } from "@features/common/utils/model";
 import { shortcutRegistry } from "@features/search/hooks/shortcutRegistry";
@@ -222,13 +222,7 @@ export interface SearchState {
     stats: CombinedStats;
     bindings: Record<string, string[]>;
     files: {
-        [fileId: string]: {
-            meta: GetFilesFileEntry | null;
-            preview: GetFilePreviewResponse | null;
-            query: SearchQuery | null;
-            stale?: boolean;
-            temporary?: boolean;
-        };
+        [fileId: string]: SearchFileEntry;
     };
     temporaryFileId: string | null;
     totalFiles: number;
@@ -285,7 +279,7 @@ export const SEARCH_STATE_DOCS = {
         "LeftSidebarPanel | null — active left sidebar panel (folder/tags/queries/card_customization/chat)",
     rightSidebarTab: "RightSidebarTab | null — active right sidebar tab",
     stats: "CombinedStats — search statistics (termsData, histogramData)",
-    files: "Record<fileId, {meta, preview, query, stale?, temporary?}> — loaded file entries",
+    files: "Record<fileId, {meta, preview, query, stale?, temporary?}> — file entry cache: search hits (meta set) plus entries kept for open tabs, fetched previews and the temporary highlight (meta null), so the key count is not the number of results shown",
     temporaryFileId:
         "string | null — ID of a transiently opened file not in search results",
     totalFiles: "number — total result count for the current query",
@@ -1096,6 +1090,13 @@ export const searchSlice = createSlice({
                             preserved[id] = {
                                 ...state.files[id],
                                 meta: null,
+                                // The highlight does not survive a new query,
+                                // so a flag carried over here would never be
+                                // cleared and would append the id to the
+                                // temporary tail of selectOrderedFileIds with
+                                // no card for it. The keep-alive branch below
+                                // restores the flag where it still applies.
+                                temporary: false,
                             };
                         }
                     });
@@ -1137,6 +1138,16 @@ export const searchSlice = createSlice({
                         // results so clear any stale flag
                         state.files[file.fileId].meta = file;
                         state.files[file.fileId].stale = false;
+                        // A hit is a result, never an out-of-results highlight.
+                        // The two carriers of that state are independent and
+                        // both have to go: the per-entry flag would list the id
+                        // twice in selectOrderedFileIds, once as a result and
+                        // once in the temporary tail, and `temporaryFileId`
+                        // would render a second card for it in DetailedView.
+                        state.files[file.fileId].temporary = false;
+                        if (state.temporaryFileId === file.fileId) {
+                            state.temporaryFileId = null;
+                        }
                     }
                 });
                 state.totalFiles = action.payload.totalFiles;
@@ -1376,11 +1387,18 @@ export const selectTotalFiles = createSelector(
     selectSearch,
     (search) => search.totalFiles,
 );
+// How many hits of the current query have been loaded, counted by `meta` so it
+// stays in step with the result segment of `selectOrderedFileIds` and with the
+// cards DetailedView renders. Cache entries that are not hits (open tabs,
+// fetched previews, the temporary highlight) carry `meta: null` and are
+// excluded; stale cards keep their `meta` and are counted, because they stay on
+// screen as results. That makes this the number of hits the backend has
+// reported for this query so far — not a value `totalFiles` is guaranteed to
+// bound, since `totalFiles` is refetched on every page and a card can outlive
+// the hit it came from.
 export const selectLoadedFiles = createSelector(
-    selectSearch,
-    (search) =>
-        Object.values(search.files).filter((f) => !f.stale && !f.temporary)
-            .length,
+    selectFiles,
+    (files) => Object.values(files).filter(isLoadedResult).length,
 );
 
 export const selectFilesInView = createSelector(
@@ -1442,7 +1460,7 @@ export const selectExpandFilePaths = createSelector(
 // Extracted as a standalone selector so it is not recomputed on every keypress
 // when only the highlighted index changes.
 export const selectOrderedFileIds = createSelector(selectFiles, (files) => [
-    ...Object.keys(files).filter((id) => files[id].meta !== null),
+    ...Object.keys(files).filter((id) => isLoadedResult(files[id])),
     ...Object.keys(files).filter((id) => files[id].temporary),
 ]);
 

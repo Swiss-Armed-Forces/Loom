@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { isLoadedResult } from "@app/slices/searchFileEntry";
 import { selectFiles, updateQuery } from "@app/slices/searchSlice";
 
 import {
@@ -81,10 +82,13 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     const pendingPreparationCancelRef = useRef<(() => void) | null>(null);
     const pathnameRef = useRef(location.pathname);
     pathnameRef.current = location.pathname;
+    // Stale cards count as loaded results elsewhere, but the tour drives a real
+    // card: a stale entry has no usable preview, so it is skipped here on
+    // purpose rather than by drift from `isLoadedResult`.
     const existingResultFileId = useMemo(
         () =>
             Object.entries(files).find(
-                ([, file]) => file.meta !== null && !file.stale,
+                ([, file]) => isLoadedResult(file) && !file.stale,
             )?.[0] ?? null,
         [files],
     );
