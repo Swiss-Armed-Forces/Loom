@@ -650,6 +650,11 @@ when the pod starts, so switching between CPU, NVIDIA and AMD never re-downloads
 `ollama.pvc.enabled: true` (the default) and that copy happens once — with it off, every pod
 restart repeats it.
 
+The production model is ~18 GB of weights, so that image is correspondingly large and
+`ollama.pvc.storage` (default `50Gi`) is sized to hold it beside the blobs of a model it
+supersedes — the copy runs `cp --update` and never prunes. Inference wants a GPU with at least
+20 GB of VRAM; with less, Ollama offloads layers to the CPU and generation slows down sharply.
+
 ## Troubleshooting
 
 This section covers known issues and their solutions. If you encounter a problem not listed here,

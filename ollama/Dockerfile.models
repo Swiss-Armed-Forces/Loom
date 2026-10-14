@@ -45,7 +45,7 @@ COPY --from=pull-dev /root/.ollama/models /root/.ollama/models
 
 # Production models - full models for production use
 FROM puller AS pull-production
-ARG LLM_MODELS="huihui_ai/qwen3.5-abliterated:9b nomic-embed-text-v2-moe"
+ARG LLM_MODELS="qwen3.8:27b nomic-embed-text-v2-moe"
 ENV LLM_MODELS=${LLM_MODELS}
 RUN set -exu; \
   apt-get update && apt-get install -y --no-install-recommends curl; \
