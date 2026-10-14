@@ -229,9 +229,15 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   script an operator runs, and a daily timer reissues it; `loom-mtls-placeholder.service` writes a
   throwaway certificate first so nginx starts without waiting out a bring-up and the captive portal
   is not held up. It is also the one image that **drops `up.sh --enable-http`** — a plaintext
-  entrypoint beside a client-certificate requirement is either a way around it or a 404 — which
-  costs the captive portal its destination. See the `## Requiring a client certificate` section in
-  `Documentation/appliance.md`
+  entrypoint beside a client-certificate requirement is either a way around it or a 404 — so the
+  portal page's "Open Loom" points at https there, and a visitor is refused at the handshake until
+  they hold an identity. Which they get **from that page**: this is the one image whose portal
+  carries a password field, and the password is on the box's own login screen and rotates daily
+  (`nixos/portal.nix`), so "stood in front of the box" becomes the authorisation for getting into
+  Loom. It also gains a TLS listener on the portal address, because a PKCS#12 carries an
+  unencrypted private key and the appliance segment is a wire. See the
+  `## Requiring a client certificate` section in `Documentation/appliance.md`, including what the
+  password does to the threat model
 - `build-appliance-image --values FILE` / `--set PATH=VALUE` - Deploy the box with custom Helm
   values, so tuning a stick for the data it will index (OCR languages, pipeline limits, sizing)
   needs no flag per knob. `--values` is repeatable and merged in order; `--set` lands after it and
@@ -258,7 +264,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   with a list of valid ones, rather than falling back to US on the box. See the
   `## Keyboard layout` section in `Documentation/appliance.md`
 - `appliance-test` - Run the NixOS appliance tests (`nixos/tests/`). Takes any of `hardware`,
-  `units`, `skills`, `appliance`, `install`, `dhcp`, `wifi`, `mouse`, `usb-ingest`,
+  `units`, `skills`, `appliance`, `install`, `dhcp`, `portal`, `wifi`, `mouse`, `usb-ingest`,
   `interface-fallback`, `key-store`, `debug`;
   with no argument it runs all of them, cheapest first. Defaults to the platform matching the host architecture — the VM tests boot
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
@@ -278,6 +284,13 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `nixpkgs-stable`, and `skills` after an `opencode` bump — its discovery rules and the frontmatter
   it accepts are undocumented and have changed between releases. `all` is refused for any selection
   that includes a VM test
+- `appliance-test portal` - The captive portal page on a booted `--require-client-cert` box with no
+  cluster behind it, which is the state every box is in for its first hours - and the one image
+  nothing else boots. It is the only test that **sends** a probe rather than reading the decision
+  about one off a configuration: which nginx server block answers is taken from two `server_name`
+  values and a `default_server` flag together, and getting it wrong means every probe path answers
+  200, Android stops offering "Sign in to network", and a phone silently falls back to mobile data.
+  Also the daily password, the spool's permissions and that nginx started at all
 - `appliance-test dhcp` - The default (non-`--wifi`) build actually serving DHCP on `loom0`. The
   only VM test where dnsmasq runs on a renamed physical port rather than on a bridge the
   configuration creates, which is the combination that shipped broken; the interface fallback
@@ -310,8 +323,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   nor a matching architecture, which is why this is the appliance job that runs on every CI pipeline
   while the VM tests are gated on what the MR touched
 - `appliance-pytest` - The appliance's own pytest suites: `nixos/installer/tests`,
-  `nixos/ready/tests`, `nixos/usb-ingest/tests`, `nixos/console-mouse/tests`,
-  `nixos/tests/scripts/tests` (the VM tests' own helpers) and `nixos/skills/tests`. Each also runs
+  `nixos/ready/tests`, `nixos/portal/tests`, `nixos/usb-ingest/tests`,
+  `nixos/console-mouse/tests`, `nixos/tests/scripts/tests` (the VM tests' own helpers) and
+  `nixos/skills/tests`. Each also runs
   in its package's `checkPhase`, so a mistake fails an image build too; running them here needs
   nothing built. `nixos/skills/tests` is the exception and runs here alone: it checks the assistant
   pane's skills against the headings they cite in `Documentation/`, and no derivation's `src` holds

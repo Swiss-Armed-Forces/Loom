@@ -304,7 +304,9 @@ Skaffold applies five of them on every deploy, in this order — later wins:
 
 Loom serves every service under one domain (`domain`, `loom` by default), and `hostnames` in
 `charts/values.yaml` lists every name it answers to — `ingress` for the services behind a route that
-names them, `extra` for the ones Traefik tells apart by entrypoint:
+names them, `extra` for the ones Traefik tells apart by entrypoint and for the one this deployment does not
+serve at all (`portal`, the NixOS appliance's own captive portal page, which presents this certificate on a
+listener of its own):
 
 ```yaml
 domain: loom
@@ -366,6 +368,13 @@ Both come from pre-install hook Jobs, which create them once and leave an existi
 ```bash
 generate-client-certificate --name alice --out-dir ./certs
 ```
+
+On a NixOS appliance there is a second route that needs no operator: a box built with
+`--require-client-cert` serves a page at `https://portal.loom` where a visitor who can read a daily
+password off the box's own console issues one for themselves, in seven-day increments. The script below
+is what runs behind it, so the files are the same ones. See
+[appliance.md](appliance.md#visitors-get-their-own-certificate-from-the-portal) — including what it means
+for the threat model, since the password is as sensitive as standing in front of the box.
 
 It reads the CA out of the cluster, signs a certificate against it, and writes five files:
 
