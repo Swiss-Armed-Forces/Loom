@@ -181,7 +181,7 @@ them from the model name:
 
 | Model | Mode | Where |
 | ----- | ---- | ----- |
-| `huihui_ai/qwen3.5-abliterated:9b` | `tool` | production default |
+| `qwen3.8:27b` | `tool` | production default |
 | `qwen2.5:0.5b`, `moondream:1.8b` | `native` | `values-development.yaml` |
 | `Qwen/Qwen3.5-122B-A10B-FP8`, `mixtral:8x7b`, `prod-deployment-1` | `tool` | no size stated |
 
@@ -242,7 +242,7 @@ Three things to know:
   than ignoring it — so pointing a client with `thinking: true` at a non-reasoning checkpoint turns
   every one of its calls into a hard failure. `none` is always accepted. This is why
   `values-development.yaml` sets `thinking: false` on the four clients it swaps onto
-  `qwen2.5:0.5b`, which does not reason; the default `huihui_ai/qwen3.5-abliterated:9b` does.
+  `qwen2.5:0.5b`, which does not reason; the default `qwen3.8:27b` does.
 - The model's chat template has the final say. A checkpoint whose template ignores
   `enable_thinking`, or one that always reasons, will keep thinking no matter what is sent. Check a
   new model with:

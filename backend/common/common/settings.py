@@ -86,7 +86,7 @@ class LLMClientSettings(BaseModel):
     provider: LLMProvider = LLMProvider.OLLAMA
     endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
     api_key: str = "ollama"
-    model: str = "huihui_ai/qwen3.5-abliterated:9b"
+    model: str = "qwen3.8:27b"
     temperature: float | None = None
     # None sends no reasoning_effort at all, leaving the model to its own default.
     thinking: bool | None = None
@@ -177,7 +177,7 @@ class LLMAgentSettings(LLMClientSettings):
 
 
 class LLMVisionSettings(LLMClientSettings):
-    model: str = "huihui_ai/qwen3.5-abliterated:9b"
+    model: str = "qwen3.8:27b"
     system_prompt: str | None = "You are an expert at analysing what's in an image"
     max_sentences: int | None = 20
     thinking: bool | None = False

@@ -112,7 +112,7 @@ _WITHHOLDS_STRICT_TOOL_DEFINITIONS = OpenAIModelProfile(
 # The parameter count below which tool output stops being reliable, and the tag it is read
 # from. Unlike everything else in this module, `4` is a judgement rather than a measured
 # limit: it sits above the 1.8B and 0.5B weights `values-development.yaml` runs and below
-# the 9B one production runs, and nothing in between has been tried.
+# the 27B one production runs, and nothing in between has been tried.
 _MIN_PARAMS_B_FOR_TOOL_OUTPUT = 4.0
 _MODEL_SIZE_RE = re.compile(r":(\d+(?:\.\d+)?)b\b")
 
@@ -131,7 +131,7 @@ def _structured_output_profile(model_name: str) -> ModelProfile | None:
     support and the one that keeps the output schema out of the prompt. A model large
     enough to follow its own template should use it.
 
-    The size is read off the `:9b` tag, which is where Ollama publishes it. A name carrying
+    The size is read off the `:27b` tag, which is where Ollama publishes it. A name carrying
     no such tag keeps the default, and that is the right answer for both ways it happens:
     `Qwen/Qwen3.5-122B-A10B-FP8`, as Infomaniak serves it, is far above the threshold, and
     an opaque LiteLLM alias like `prod-deployment-1` says nothing about the weights behind

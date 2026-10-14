@@ -338,7 +338,7 @@ _llmDefaults: &llm-defaults
   provider: null
   endpoint: null      # set per sub-key in configmap when null
   api_key: null
-  model: huihui_ai/qwen3.5-abliterated:9b
+  model: qwen3.8:27b
   temperature: null
   thinking: null      # true/false; null leaves the model to its own default
   extra_headers: null
@@ -1062,20 +1062,26 @@ ollama:
     externalHost: ""
   pvc:
     enabled: true
-    storage: 30Gi
+    # Holds every model in the models image (qwen3.8:27b ~18GB + nomic-embed ~0.5GB).
+    # The initContainer copies with `cp --update` and never prunes, so a rollout onto an
+    # existing PVC carries the superseded blobs alongside the new ones until it is wiped.
+    storage: 50Gi
     storageClass: null
   ingress: *default-ingress-config
   readinessProbe:
     enabled: true
   livenessProbe:
     enabled: true
+  # Sized for a GPU deployment: the weights live in VRAM, and this memory only stages the
+  # load and holds the mmap'd GGUF page cache, which is reclaimable. It is deliberately
+  # far below the 18GB the model occupies on the GPU.
   resources:
     requests:
       cpu: "0.5"
-      memory: "1.5Gi"
+      memory: "2Gi"
     limits:
       cpu: "10"
-      memory: "10Gi"
+      memory: "12Gi"
   initContainer:
     resources:
       requests:
