@@ -465,7 +465,13 @@ in
 
       systemd.services.loom-mtls-identity = {
         description = "Issue the appliance's mutual TLS client identity";
-        wantedBy = [ "multi-user.target" ];
+        # Deliberately NOT `wantedBy = [ "multi-user.target" ]`, which is what it
+        # used to be. A target implicitly orders itself `After=` everything in
+        # its `.wants` (systemd.target(5)), and this unit waits for a cluster
+        # bring-up -- so a box that requires client certificates never reached
+        # multi-user.target at all, for however many hours the fetch took. The
+        # timer below starts it instead, thirty seconds in, which is the same
+        # moment for every purpose except the one that was broken.
         after = [ "loom-mtls-placeholder.service" ];
 
         serviceConfig = {
@@ -487,6 +493,9 @@ in
         description = "Renew the appliance's mutual TLS client identity";
         wantedBy = [ "timers.target" ];
         timerConfig = {
+          # Both, and the first is what replaced the unit's own `wantedBy` --
+          # see the note on it.
+          OnBootSec = "30s";
           OnCalendar = "daily";
           Persistent = true;
         };

@@ -273,6 +273,19 @@ let
         lib.elem "timers.target" cfg.systemd.timers.loom-mtls-identity.wantedBy
       ))
 
+      # And the timer is also what *first* starts it. A target implicitly orders
+      # itself `After=` everything in its own `.wants` (systemd.target(5)), so a
+      # oneshot in there that waits out a cluster bring-up keeps the box from
+      # reaching multi-user.target for however many hours the fetch takes. The
+      # pair is asserted together: dropping the `wantedBy` without the
+      # `OnBootSec` would leave the identity unissued until the next midnight.
+      (check "mtls: the issuer does not hold multi-user.target up" (
+        !(lib.elem "multi-user.target" identity.wantedBy)
+      ))
+      (check "mtls: the issuer still runs shortly after boot" (
+        (cfg.systemd.timers.loom-mtls-identity.timerConfig.OnBootSec or null) != null
+      ))
+
       # The flag is the whole gate: a box built without it must be the box it
       # always was.
       (check "default: no mutual TLS proxy" (
@@ -378,6 +391,15 @@ let
       ))
       (check "portal: the certificate is refreshed on a timer" (
         lib.elem "timers.target" cfg.systemd.timers.loom-portal-certificate.wantedBy
+      ))
+      # And started by it, for the reason the mtls pair above gives: this one
+      # waits out a bring-up too, and a target waits for everything in its
+      # `.wants`.
+      (check "portal: the certificate sync does not hold multi-user.target up" (
+        !(lib.elem "multi-user.target" sync.wantedBy)
+      ))
+      (check "portal: the certificate sync still runs shortly after boot" (
+        (cfg.systemd.timers.loom-portal-certificate.timerConfig.OnBootSec or null) != null
       ))
 
       # ---- the privilege split ----

@@ -748,7 +748,11 @@ in
 
           systemd.services.loom-portal-certificate = {
             description = "Publish the cluster's serving certificate for the portal";
-            wantedBy = [ "multi-user.target" ];
+            # Deliberately not `wantedBy = [ "multi-user.target" ]`. A target
+            # implicitly orders itself `After=` everything in its `.wants`
+            # (systemd.target(5)), and this unit waits out a cluster bring-up --
+            # so the box would not reach multi-user.target for as long as that
+            # took. The timer below starts it instead, thirty seconds in.
             after = [ "loom-portal-tls-placeholder.service" ];
             # Deliberately NOT before or wantedBy nginx. This unit waits for a
             # cluster bring-up; nginx must not. The placeholder is what nginx
@@ -777,6 +781,9 @@ in
               # to a day handing out an anchor that no longer matches what Traefik
               # serves, so a visitor would install it and the warning would stay:
               # the one failure this whole page exists to remove.
+              # Thirty seconds in, which is what replaced the unit's own
+              # `wantedBy` -- see the note on it.
+              OnBootSec = "30s";
               OnCalendar = "hourly";
               Persistent = true;
               RandomizedDelaySec = 300;
