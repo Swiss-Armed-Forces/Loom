@@ -78,7 +78,9 @@ For the Summary section, write a brief paragraph summarizing the changes, follow
 sections like "Added:", "Changed:", "Removed:", "Fixed:" with bullet points
 (use "- " for bullets).
 
-Leave the Issue Reference section empty (it will be filled manually).
+Under the Issue Reference section, repeat the issue reference carried by the current
+description ("Closes #123", "Related to #456"). Leave that section empty only when the
+current description carries no such reference.
 """
 
     current_mr_hint = ""

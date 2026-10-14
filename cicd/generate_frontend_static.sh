@@ -11,7 +11,6 @@ FRONTEND_STATIC_DIR="${FRONTEND_DIR}/public"
 LICENSE_TXT="${TOPLEVEL_DIR}/LICENSE.txt"
 CONTRIBUTING_MD="${TOPLEVEL_DIR}/CONTRIBUTING.md"
 CODE_OF_CONDUCT_MD="${TOPLEVEL_DIR}/CODE_OF_CONDUCT.md"
-CHARTS_DIR="${TOPLEVEL_DIR}/charts"
 
 VERBOSE=false
 STEPS=(
@@ -19,7 +18,6 @@ STEPS=(
     copy_license
     copy_contributing
     copy_code_of_conduct
-    write_chart_data
     fix_frontend
 )
 SKIP=()
@@ -42,13 +40,6 @@ copy_contributing(){
 copy_code_of_conduct(){
     cp \
         "${CODE_OF_CONDUCT_MD}" "${FRONTEND_STATIC_DIR}"
-}
-
-write_chart_data(){
-    helm \
-        show chart "${CHARTS_DIR}" \
-    | yq \
-    > "${FRONTEND_STATIC_DIR}/chartData.json"
 }
 
 fix_frontend(){

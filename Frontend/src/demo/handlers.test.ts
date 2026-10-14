@@ -11,6 +11,7 @@ import {
 } from "vitest";
 
 import {
+    AboutApi,
     ArchivesApi,
     ArchivesModel,
     Configuration,
@@ -525,6 +526,17 @@ describe("demo API handlers", () => {
         expect(first.messages_in_queues).toBeGreaterThanOrEqual(0);
         expect(second.messages_in_queues).toBe(first.messages_in_queues);
         expect(first.paused_queues).toEqual([]);
+    });
+
+    it("reports chart metadata below a Pages subpath", async () => {
+        const aboutApi = new AboutApi(
+            new Configuration({ basePath: "http://loom.test/loom/api" }),
+        );
+
+        const about = await aboutApi.getAboutV1AboutGet();
+
+        expect(about.name).toBe("loom");
+        expect(about.appVersion).toBe("demo");
     });
 
     it("handles WebSocket keepalives and subscription confirmations", async () => {

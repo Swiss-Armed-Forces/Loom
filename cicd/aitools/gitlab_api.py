@@ -20,7 +20,16 @@ from gitlab.v4.objects import (
 )
 
 from .config import CI_PROJECT_ID, CI_SERVER_HOST, GITLAB_TOKEN
-from .models import IssueRef, JobRef, MilestoneRef, MRRef, PipelineRef, ReviewComment
+from .git_helpers import build_initial_mr_description
+from .models import (
+    IssueBranchResult,
+    IssueRef,
+    JobRef,
+    MilestoneRef,
+    MRRef,
+    PipelineRef,
+    ReviewComment,
+)
 
 PIPELINE_WAITING_STATUSES: frozenset[str] = frozenset(
     {
@@ -333,11 +342,12 @@ def slugify_issue_title(title: str) -> str:
 
 
 def create_branch_and_mr_for_issue(
-    project: Project, issue: ProjectIssue
-) -> tuple[ProjectMergeRequest, str]:
+    project: Project, issue: ProjectIssue, mr_template: str
+) -> IssueBranchResult:
     """Create a branch and draft MR for the given issue.
 
-    Returns (mr, branch_name).
+    The description is rendered from the repository's MR template, so an MR opened by
+    aitools has the same shape as one opened through the GitLab UI.
     """
     branch_name = f"{issue.iid}-{slugify_issue_title(issue.title)}"
     project.branches.create({"branch": branch_name, "ref": "main"})
@@ -346,10 +356,10 @@ def create_branch_and_mr_for_issue(
             "source_branch": branch_name,
             "target_branch": "main",
             "title": f"Draft: {issue.title}",
-            "description": f"Closes #{issue.iid}",
+            "description": build_initial_mr_description(mr_template, issue.iid),
         }
     )
-    return mr, branch_name
+    return IssueBranchResult(mr=mr, branch_name=branch_name)
 
 
 def parse_job_url_or_id(value: str) -> JobRef:

@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 // @ts-nocheck
+export * from "./AboutApi";
 export * from "./AiApi";
 export * from "./ArchivesApi";
 export * from "./BeatApi";

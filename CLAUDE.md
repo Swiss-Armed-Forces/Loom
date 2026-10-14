@@ -526,10 +526,27 @@ Before reaching for a patch, ask yourself:
 Only patch when there is no reasonable alternative (e.g. a global external side effect that cannot
 be injected). If you find yourself patching, treat it as a signal to reconsider the design first.
 
-### Creating Issues (Bug Reports & Feature Requests)
+### Issue and Merge Request Templates
 
-Always use the issue template at `.gitlab/issue_templates/Default.md` when creating GitLab issues.
-It covers both bug reports and feature requests in a single form.
+Both templates are tracked in this repo. **Read the file at the moment you write the issue or MR
+description** — do not reproduce its structure from memory, it changes.
+
+**Issues** → `.gitlab/issue_templates/Default.md`. One combined form for bug reports and feature
+requests: tick exactly one `📝 Issue Type` box (`[ ]` → `[x]`), fill the section matching that
+type, and delete the section that does not apply along with the `<!-- -->` hint comments. Keep the
+headings and their emoji verbatim — they are what makes issues scannable.
+
+**Merge requests** → `.gitlab/merge_request_templates/Default.md`. `# 📌 Summary` gets a short
+paragraph followed by `Added:` / `Changed:` / `Removed:` / `Fixed:` bullet lists; `## 🔗 Issue
+Reference` gets `Closes #<issue-number>`.
+
+The `%{...}` placeholder under the Summary heading is a GitLab expansion variable that only fires
+when an MR is created through the **web UI**. Sent through the REST API it stays in the
+description verbatim, so replace it with the real summary text whenever you write a description
+any other way.
+
+This applies no matter how the issue or MR is created — GitLab UI, REST API, `glab`, or
+`aitools mr-create` / `mr-describe` / `mr-update`.
 
 ### Documentation Check Before Committing
 
@@ -593,23 +610,59 @@ primary checkout's running system*: `up` redeploys it from the worktree's source
 and `kubernetes-delete` destroy it. Safe in a worktree: `backend-test`, `frontend-test`,
 `frontend-build`, `generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
 
-**Finishing up:** commit and push from the worktree — git config and refs are shared. Leave
-the MR in **Draft** and the worktree in place; report its path, the branch and the MR so the user
-can review the diff there. **Never merge, rebase the primary checkout, or remove the worktree on
-your own.** Remove one only when asked, with `git worktree remove <path>` and never `--force`.
+**Finishing up:** commit and push from the worktree — git config and refs are shared. Then
+**take the MR out of Draft and start a pipeline for it** (see `### Finishing an MR` below), and
+report the worktree path, the branch, the MR and the pipeline so the user can review the diff
+there. Leave the worktree in place. **Never merge, rebase the primary checkout, or remove the
+worktree on your own.** Remove one only when asked, with `git worktree remove <path>` and never
+`--force`.
 
 ### Git Workflow
 
 Per `CONTRIBUTING.md`:
 
 - Implement in a dedicated worktree, not the primary checkout (see the section above)
-- Always create an issue first
+- Always create an issue first, filling `.gitlab/issue_templates/Default.md` (see
+  `### Issue and Merge Request Templates` above)
 - Use GitLab's "Create Merge Request" button from the issue (auto-links and names branch)
-- Open MR early as **Draft**
+- Open MR early as **Draft**, with the description following
+  `.gitlab/merge_request_templates/Default.md`
 - MR title becomes release note entry - make it descriptive
 - Squash merging used - individual commit messages don't matter
-- Use `Closes #issue-number` in MR description
-- Remove Draft status only when ready for review
+- Use `Closes #issue-number` under the MR description's `## 🔗 Issue Reference` heading
+- Remove Draft status when the work is done, and start a pipeline yourself (see below)
+
+### Finishing an MR
+
+**When you are done working — the change is committed, pushed and its tests pass — undraft the
+MR and start a pipeline for it.** Do both, in that order, without waiting to be asked. A Draft MR
+is invisible to CI, so leaving one behind means nobody finds out whether the change builds.
+
+Why both steps are needed, per the `workflow:rules:` in `.gitlab-ci.yml`:
+
+- Merge request pipelines only run when the title does **not** start with `Draft`, and branch
+  pipelines are skipped outright while an MR is open (`$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS`
+  → `when: never`). So **a Draft MR runs no pipeline at all**, however often you push.
+- Undrafting is a title change, and a title change does not create a pipeline. Removing the
+  `Draft:` prefix therefore leaves the MR with the *stale* pipeline status it already had — the
+  pipeline has to be created explicitly.
+
+Undraft by stripping the `Draft:` prefix from the title (`mr.title`, then `mr.save()`), then
+create the pipeline with `mr.pipelines.create()` — the MR-pipelines endpoint, not
+`project.pipelines.create()`, whose branch pipeline the rules above discard. Afterwards
+`aitools mr-watch` follows that pipeline and fixes what fails.
+
+**When the MR stops tracking its branch, close and reopen it.** GitLab sometimes leaves an MR
+stuck on an old head commit, and everything downstream then misbehaves:
+`mr.pipelines.create()` answers **405** while `mr.detailed_merge_status` is `preparing`, `mr.sha`
+keeps reporting a commit the branch has long moved past, and `generate_frontend_static` fails on
+purpose rather than run CI on what it sees as a stale commit. Pushing again does not clear it.
+Closing and reopening the MR (`state_event`) does, within seconds: the status becomes `unchecked`,
+`mr.sha` catches up with the branch, and the pipeline can be created. Compare `mr.sha` against
+`project.branches.get(<branch>).commit` to tell this apart from a real failure.
+
+Keep the MR in Draft only while it is deliberately unfinished — an MR opened early for discussion
+before the work exists, or one the user asked you to leave alone.
 
 ### Git Commit Format
 

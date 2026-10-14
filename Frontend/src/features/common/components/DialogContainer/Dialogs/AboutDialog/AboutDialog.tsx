@@ -12,56 +12,20 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import Ajv, { JSONSchemaType } from "ajv";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { AboutInfo, fetchAbout } from "@app/api";
 import { DialogProps } from "@app/slices/commonSlice";
 import { startWhenDialogsClose } from "@app/tours/startWhenDialogsClose";
 import { useTour } from "@app/tours/useTour";
 
-const AJV = new Ajv();
 const basePath = import.meta.env.BASE_URL;
-
-export interface HelmChartMetadata {
-    apiVersion: string;
-    appVersion: string;
-    description: string;
-    name: string;
-    version: string;
-}
-
-const HelmChartMetadataSchema: JSONSchemaType<HelmChartMetadata> = {
-    type: "object",
-    properties: {
-        apiVersion: { type: "string" },
-        appVersion: { type: "string" },
-        description: { type: "string" },
-        name: { type: "string" },
-        version: { type: "string" },
-    },
-    required: ["apiVersion", "appVersion", "description", "name", "version"],
-    additionalProperties: false,
-};
-
-const loadHelmChartMetadata = (chartData: string): HelmChartMetadata | null => {
-    const parsed = JSON.parse(chartData);
-
-    const validate = AJV.compile(HelmChartMetadataSchema);
-
-    if (validate(parsed)) {
-        return parsed;
-    } else {
-        console.warn("Invalid Helm chart metadata:", validate.errors);
-        return null;
-    }
-};
 
 export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
     const [licenseText, setLicenseText] = useState<string>("");
-    const [helmChartMetadata, setHelmChartMetadata] =
-        useState<HelmChartMetadata | null>(null);
+    const [about, setAbout] = useState<AboutInfo | null>(null);
     const { t } = useTranslation();
     const isMobile = useMediaQuery("(max-width:600px)");
     const location = useLocation();
@@ -79,13 +43,12 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
             const license = await fetch(`${basePath}${t("about.license")}`);
             setLicenseText(await license.text());
         };
-        const fetchChartData = async () => {
-            const chartData = await fetch(`${basePath}${t("about.chartData")}`);
-            setHelmChartMetadata(loadHelmChartMetadata(await chartData.text()));
+        const fetchChartMetadata = async () => {
+            setAbout(await fetchAbout());
         };
 
         fetchLicense();
-        fetchChartData();
+        fetchChartMetadata();
     }, [t]);
 
     return (
@@ -121,8 +84,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                                 color: "text.secondary",
                             }}
                         >
-                            {helmChartMetadata?.name} v
-                            {helmChartMetadata?.appVersion}
+                            {about?.name} v{about?.appVersion}
                         </Typography>
                     </Box>
                     <IconButton
@@ -140,7 +102,7 @@ export const AboutDialog = ({ onClose, isTop }: DialogProps) => {
                     {/* Description Section */}
                     <Box>
                         <Typography variant="body1" component="p">
-                            {helmChartMetadata?.description}
+                            {about?.description}
                         </Typography>
                     </Box>
 
