@@ -17,6 +17,7 @@ from dataclasses import asdict
 
 from loom_usb_ingest.jsonfile import Formatting, Permissions, write_atomic
 from loom_usb_ingest.manifest import Manifest
+from loom_usb_ingest.sizes import gib
 
 logger = logging.getLogger(__name__)
 
@@ -128,13 +129,9 @@ def warn_if_short_on_space(root: str, incoming_bytes: int, console_socket: str) 
         return False
 
     announce(
-        f"[loom] WARNING: {_gib(incoming_bytes)} to ingest needs about "
-        f"{_gib(needed)} of room (intake plus file storage) and only "
-        f"{_gib(available)} is free. Ingesting anyway.",
+        f"[loom] WARNING: {gib(incoming_bytes)} to ingest needs about "
+        f"{gib(needed)} of room (intake plus file storage) and only "
+        f"{gib(available)} is free. Ingesting anyway.",
         console_socket,
     )
     return True
-
-
-def _gib(value: int) -> str:
-    return f"{value / (1024 ** 3):.1f} GiB"

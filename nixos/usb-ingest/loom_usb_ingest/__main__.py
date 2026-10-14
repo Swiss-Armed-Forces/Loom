@@ -36,6 +36,7 @@ from loom_usb_ingest.manifest import (
     VolumePlan,
     annotate,
 )
+from loom_usb_ingest.sizes import gib
 
 logger = logging.getLogger("loom-usb-ingest")
 
@@ -373,7 +374,7 @@ def _ingest_volumes(
         )
         uploaded = (
             f"{volume.path}: {result.objects} files uploaded "
-            f"({result.bytes_transferred / (1024 ** 3):.1f} GiB)"
+            f"({gib(result.bytes_transferred)})"
         )
         if result.failures:
             first_error = first_error or result.first_error
@@ -423,7 +424,7 @@ def _ingest_volumes(
     # line rather than after the full stop of "safe to remove".
     summary = (
         f"{disk.path} done: {total_objects} files, "
-        f"{total_bytes / (1024 ** 3):.1f} GiB, {total_failures} failures "
+        f"{gib(total_bytes)}, {total_failures} failures "
         "-- safe to remove"
     )
 

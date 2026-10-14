@@ -1,7 +1,6 @@
 from loom_usb_ingest.naming import (
     MAX_COMPONENT,
     derive_identity,
-    object_key,
     sanitize_component,
     volume_component,
 )
@@ -114,23 +113,3 @@ def test_sticks_of_different_capacities_are_told_apart():
 def test_volume_component_with_and_without_a_label():
     assert volume_component(2, None) == "p2"
     assert volume_component(2, "DATA") == "p2-DATA"
-
-
-def test_object_key_preserves_the_on_stick_path():
-    assert (
-        object_key("usb-crawled/EVIDENCE-4C53", "reports/2026/q1.pdf")
-        == "usb-crawled/EVIDENCE-4C53/reports/2026/q1.pdf"
-    )
-
-
-def test_object_key_translates_windows_separators():
-    """NTFS and FAT media authored on Windows use backslashes.
-
-    Left alone they would render as one flat filename rather than a tree.
-    """
-    assert object_key("p", "Users\\alice\\notes.txt") == "p/Users/alice/notes.txt"
-
-
-def test_object_key_cannot_escape_its_prefix():
-    assert object_key("p", "../../etc/shadow") == "p/etc/shadow"
-    assert object_key("p", "/absolute/path") == "p/absolute/path"

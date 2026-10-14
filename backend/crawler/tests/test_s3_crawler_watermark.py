@@ -105,6 +105,41 @@ def test_an_object_written_during_a_poll_is_still_ahead_of_the_watermark():
     assert [obj.object_name for obj in crawler.unprocessed([late])] == ["late.pdf"]
 
 
+def test_the_watermark_never_passes_an_object_that_was_not_finished():
+    """A failed download has to come back, and the watermark is what can bury it.
+
+    The poll loop deliberately does not record an object whose download raised, so it is
+    offered again next poll -- but `covers` answers True for everything at or below the
+    watermark whether or not it was ever recorded. Unless `advance` is told what was
+    left unfinished, the next object to succeed moves the watermark over the failure and
+    nothing ever picks it up again.
+    """
+    crawler = _crawler()
+    failed_at = NOW - WATERMARK_GRACE - timedelta(minutes=5)
+    _process(crawler, [_listed("new.pdf", NOW)])
+
+    crawler.processed.advance(oldest_unfinished=failed_at)
+
+    assert [
+        obj.object_name
+        for obj in crawler.unprocessed([_listed("failed.pdf", failed_at)])
+    ] == ["failed.pdf"]
+
+
+def test_an_unfinished_object_never_drags_the_watermark_backwards():
+    """It bounds where the watermark may go, it does not undo where it has been.
+
+    Moving it back would re-offer objects that were genuinely handled and forgotten.
+    """
+    crawler = _crawler()
+    _process(crawler, [_listed("new.pdf", NOW)])
+    crawler.processed.advance()
+
+    crawler.processed.advance(oldest_unfinished=NOW - timedelta(days=30))
+
+    assert crawler.processed.watermark == NOW - WATERMARK_GRACE
+
+
 def test_an_object_with_no_timestamp_is_skipped_rather_than_crashing():
     crawler = _crawler()
 

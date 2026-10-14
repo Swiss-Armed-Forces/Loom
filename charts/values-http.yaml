@@ -12,6 +12,15 @@
 # appliance segment, which with --wifi is everyone in radio range holding the
 # PSK. See the threat model in Documentation/appliance.md.
 #
+# It is also incompatible with `certificate.requireClientCert`, and not merely in
+# tension with it: the `-mtls` TLSOption is attached as
+# `traefik.ingress.kubernetes.io/router.tls.options`, which constrains the TLS
+# handshake and nothing else. The routes widened below answer in cleartext, where
+# no client certificate is asked for at all -- so this file does not weaken that
+# requirement, it goes around it. up.sh's `validate_environment` refuses the
+# combination, and nixos/modes.nix never builds it: a --require-client-cert image
+# is the one appliance that drops --enable-http.
+#
 # Both halves below are required. Widening the entrypoints alone changes
 # nothing a client can see, because templates/global-http-redirect/ingress.yaml
 # matches `*.<domain>` on `web` and 302s the request back to https before any

@@ -77,7 +77,7 @@ different box from every other stick.
 
 ## The `poetry.lock` beside each Python package
 
-`console-mouse/`, `installer/`, `ready/`, `usb-ingest/` and `tests/scripts/` are Poetry projects
+`console-mouse/`, `installer/`, `portal/`, `ready/`, `usb-ingest/` and `tests/scripts/` are Poetry projects
 like every other Python package in the repository — `poetry-core` build backend, a `poetry.lock` beside the
 `pyproject.toml`, and `poetry-lock` regenerating them along with the rest.
 

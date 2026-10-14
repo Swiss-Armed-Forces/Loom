@@ -33,6 +33,7 @@ simply absent, which is correctly read as "not blocking".
 import json
 import logging
 import subprocess
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from loom_ready.state import Blocker, Counts, Stage, Workload
@@ -210,7 +211,7 @@ def _items(document: str) -> list[object]:
     return items if isinstance(items, list) else []
 
 
-def _mapping(value: object) -> dict:
+def _mapping(value: object) -> Mapping[str, object]:
     """Whatever this is, as something with `.get`.
 
     Every field below is read out of a document kubectl produced, and kubectl is not the
@@ -270,7 +271,7 @@ def _workload(item: dict) -> Workload | None:
     return None
 
 
-def _sniff_kind(spec: dict, status: dict) -> str:
+def _sniff_kind(spec: Mapping[str, object], status: Mapping[str, object]) -> str:
     if "desiredNumberScheduled" in status or "numberReady" in status:
         return "DaemonSet"
     if "completions" in spec or "succeeded" in status:

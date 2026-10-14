@@ -422,8 +422,11 @@ profiles:
   # including the DGX Spark appliance, whose GPU is NVIDIA and which would never
   # have wanted this image.
   #
-  # Activated on TARGETARCH, which `up.sh` exports beside SKAFFOLD_PLATFORM, so
-  # this needs no flag anywhere and follows the host it runs on.
+  # Activated on TARGETARCH, which `up.sh` exports beside SKAFFOLD_PLATFORM
+  # (set_docker_platform) and `cicd/build.sh` exports as its first step, so this
+  # needs no flag anywhere and follows the host it runs on. Both, because
+  # neither covers the other: `build` never goes near up.sh, and a skaffold
+  # invoked by hand with neither exported falls back to amd64 and emulates.
   - name: arm64
     activation:
       - env: TARGETARCH=arm64

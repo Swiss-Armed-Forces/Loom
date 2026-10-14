@@ -12,7 +12,7 @@ SCRIPT_NAME=$(basename "$0")
 #
 # Environment
 #
-export EDITOR="${EDITOR:-vim}"
+EDITOR="${EDITOR:-nano}"
 REGISTRY_MIRROR="${REGISTRY_MIRROR:-}"
 SKAFFOLD_HOME="${SKAFFOLD_HOME:-${HOME}/.skaffold}"
 
@@ -165,6 +165,7 @@ RESUME_IF_DEPLOYED=false
 OFFLINE_MODE=false
 NO_RESOURCES=false
 SCALING=false
+ENABLE_HTTP=false
 DELETE=false
 DOWN=false
 SKAFFOLD_PROFILE="prod"
@@ -458,6 +459,34 @@ write_up_flags_values() {
     fi
 }
 
+# Whether the values this deployment will render with require a client certificate.
+#
+# The same deep merge, in the same order, that skaffold performs -- see the
+# `valuesFiles` list in skaffold.yaml. charts/values-up-flags.yaml is deliberately left
+# out: no up.sh flag sets this key, and the file has not been written yet when this runs.
+# Files that parse to null (absent, or comments only) are skipped rather than merged,
+# since `{} * null` is an error rather than a no-op.
+client_certificate_required() {
+    # Prints `true` or `false` rather than answering through its exit status: a
+    # function in an `if` condition switches `set -e` off for everything it runs, and
+    # this one runs yq over four files.
+    local merged
+    # Single quotes are intentional: this is a jq expression, not shell.
+    # shellcheck disable=SC2016
+    merged="$(
+        yq -s 'reduce (.[] | select(. != null)) as $item ({}; . * $item) | .certificate.requireClientCert' \
+            "${SCRIPT_DIR}/charts/values.yaml" \
+            "${SCRIPT_DIR}/charts/values-user.yaml" \
+            "${SCRIPT_DIR}/charts/values-appliance.yaml" \
+            "${SCRIPT_DIR}/charts/values-overwrites.yaml" 2> /dev/null || true
+    )"
+    if [[ "${merged}" = "true" ]]; then
+        printf 'true'
+    else
+        printf 'false'
+    fi
+}
+
 validate_environment() {
     # --scaling enables a resource quota that requires requests on every pod.
     # --no-resources nullifies all requests, so the quota blocks pod creation.
@@ -465,6 +494,26 @@ validate_environment() {
         echo >&2 "[!] Error: --scaling and --no-resources are incompatible."
         echo >&2 "[!] The scaling resource quota requires CPU/memory requests on every pod,"
         echo >&2 "[!] but --no-resources removes them. Use one or the other."
+        exit 1
+    fi
+
+    # --enable-http does not weaken certificate.requireClientCert, it bypasses it.
+    #
+    # The `-mtls` TLSOption is attached as `router.tls.options`, which constrains the
+    # TLS handshake and nothing else. Widening every router onto the `web` entrypoint
+    # and switching the global redirect off means the same routes answer in cleartext,
+    # where no client certificate is asked for at all -- so a deployment that believes
+    # it requires one serves every host to anyone who can reach port 80.
+    #
+    # The appliance is already safe: nixos/modes.nix drops --enable-http from a
+    # --require-client-cert image. Nothing guarded a deployment driving up.sh by hand.
+    local requires_client_cert
+    requires_client_cert="$(client_certificate_required)"
+    if [[ "${ENABLE_HTTP}" = true ]] && [[ "${requires_client_cert}" = true ]]; then
+        echo >&2 "[!] Error: --enable-http and certificate.requireClientCert are incompatible."
+        echo >&2 "[!] The client-certificate requirement only applies to the TLS handshake, so"
+        echo >&2 "[!] serving the same routes over plain http bypasses it entirely rather than"
+        echo >&2 "[!] weakening it. Drop one of the two."
         exit 1
     fi
 
@@ -1584,6 +1633,7 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         --enable-http)
+            ENABLE_HTTP=true
             UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
             shift
         ;;

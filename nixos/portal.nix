@@ -770,6 +770,13 @@ in
               # No RemainAfterExit: the timer restarts this unit, and a unit still
               # "active (exited)" is not restarted by one.
               ExecStart = lib.getExe loom-portal-certificate;
+              # What makes "waiting forever is safe here" true. The script loops
+              # `until kubectl ...; sleep 10`, so without this systemd's 90 s
+              # DefaultTimeoutStartSec kills it and logs a failed unit on every boot
+              # where the cluster is not already up -- and the hourly timer then
+              # spends the page's first hour handing out no anchor and no
+              # fingerprint, which is the hour the page exists for.
+              TimeoutStartSec = "infinity";
               # kubectl runs as root here and borrows the operator's credentials,
               # the same arrangement mtls.nix, ready.nix and usb-ingest.nix use.
               Environment = [ "KUBECONFIG=/home/${loomUser}/.kube/config" ];

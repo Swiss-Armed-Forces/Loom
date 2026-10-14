@@ -3,7 +3,11 @@
 # Like tests/appliance-hardware.nix and unlike everything else in this directory,
 # this is not a VM test: the skills are a store path reachable off the evaluated
 # configuration, so this is a `runCommand` that either exits 0 or prints what
-# disagreed. Seconds, no KVM, and not bound to the host architecture.
+# disagreed. Seconds and no KVM -- but, unlike appliance-hardware.nix, it *is*
+# bound to the host architecture: the report below is built from `hostPkgs`, and
+# the two store paths it inspects are not. Asking an x86_64 machine about the
+# Spark is therefore a platform mismatch rather than a verdict, which is why
+# `appliance-test skills` is run without `--platform all`.
 #
 # It exists because opencode fails quietly in three distinct ways here, none of
 # which a running box reports in a place anybody looks:
@@ -27,6 +31,13 @@
 # the same reason appliance-hardware.nix gives: nothing in it is
 # architecture-specific, and a runCommand from `pkgs` could not be built on an
 # x86_64 runner asking about the Spark.
+#
+# That is only half enough here, and knowingly so. `assistant.skillsDir` and
+# `assistant.instructionsFile` are inputs to the report, and console.nix builds
+# both from the platform's `pkgs` -- so realising the report still realises two
+# aarch64 derivations. Unlike appliance-hardware.nix, which reads only values,
+# this one cannot run for a platform the host cannot build for. See the note at
+# the top.
 {
   pkgs,
   hostPkgs,

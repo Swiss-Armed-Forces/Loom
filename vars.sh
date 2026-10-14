@@ -54,6 +54,10 @@ LOOM_DOMAIN="$(yq --raw-output '.domain' "${LOOM_VALUES_FILE}")"
 # model -- so pointing the console anywhere else gives a pane that cannot
 # answer, and naming a second model that *is* present would be worse: ollama
 # would load it and evict the workers' one mid-index.
+#
+# That Dockerfile states its model list as a literal `ARG LLM_MODELS`, so the
+# agreement is not structural. cicd/check_ollama_models.sh asserts it, as a git
+# hook on either file -- the same arrangement cicd/check_chart_hostnames.sh has.
 LOOM_CHAT_MODEL="$(yq --raw-output '._llmDefaults.model' "${LOOM_VALUES_FILE}")"
 
 # The address the minikube node has to come up on. up.sh pins the node to it
@@ -74,6 +78,12 @@ LOOM_MINIKUBE_IP="$(yq --raw-output '.kubernetes.api' "${LOOM_VALUES_FILE}")"
 # no route naming it and is told apart by entrypoint -- but not in how they are
 # named, so both need a hosts entry. Read, then sorted, in two steps rather than
 # a pipeline, so `set -e` still sees yq fail.
+#
+# `portal` is the exception, and the one entry nothing serves at all: it is in
+# `hostnames.extra` only so the pre-install Job puts it in the certificate's
+# subjectAltName, for the appliance's own nginx. So every non-appliance `up`
+# writes a hosts entry for a name Traefik has no router for, which is harmless
+# and is the one case the paragraph above does not describe.
 #
 # Sorted, so the list is a set rather than an order somebody has to maintain.
 # Nothing depends on the order any more: cicd/chrome_wrapped.sh used to open a

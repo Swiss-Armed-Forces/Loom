@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Iterable
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -25,6 +25,26 @@ S3_READ_CHUNK_SIZE: int = 1 * 1024 * 1024
 S3_RETRY_MAX_ATTEMPTS: int = 5
 S3_RETRY_WAIT_S: int = 10
 S3_MAX_CONCURRENT_DOWNLOADS: int = 4
+
+# The ceiling the poll interval backs off to while nothing new is arriving.
+#
+# Listing is not free: S3 has no "objects newer than X", so every poll pages the whole
+# bucket, and nothing ever deletes from `loom-intake` (see `WATERMARK_GRACE`), so the
+# listing grows monotonically with every stick ever ingested. At five seconds flat, a
+# 300k-object bucket is roughly 60 requests a second against the gateway forever, to
+# discover nothing. Backing off only costs latency on the poll that finds the first
+# object of a new stick; the interval drops straight back to the floor from there.
+S3_OBJECT_POLL_MAX_INTERVAL_S: int = 60
+
+# How many new objects one poll hands to the download pool.
+#
+# The first poll after a stick lands sees the whole stick. Submitting all of it queues
+# hundreds of thousands of callables into the executor's unbounded work queue, and the
+# rest of this loop -- the ledger, the watermark -- does not move again until the last
+# of them is done. A bounded batch keeps the ledger advancing and bounds what a pod
+# restart re-downloads; the remainder is simply picked up by the next poll, and
+# `advance` is told about it so the watermark cannot run past it.
+S3_MAX_OBJECTS_PER_POLL: int = 1000
 
 # How far behind the newest object it has taken the crawler still remembers
 # individual objects for.
@@ -86,18 +106,27 @@ class ProcessedLedger:
         """Remember an object, until the watermark comes to cover it."""
         self._seen.add(_ProcessedObject(obj.object_name, obj.last_modified))
 
-    def advance(self) -> None:
+    def advance(self, oldest_unfinished: datetime | None = None) -> None:
         """Move the watermark up and forget everything it now covers.
 
         The grace period is what makes this safe rather than merely cheap: the
         watermark trails the newest processed object, so an object written while a
         poll was in flight is still ahead of it. See `WATERMARK_GRACE`.
+
+        `oldest_unfinished` is the oldest object this poll did *not* finish -- a failed
+        download, or one deferred to the next batch -- and the watermark never passes
+        it. `covers` answers True for everything at or below the watermark whether or
+        not it was ever recorded, so without this bound a single object that exhausted
+        its retries early on a long mirror is declared done the moment a newer one
+        succeeds, and nothing ever offers it again or says so.
         """
         if not self._seen:
             return
 
         newest = max(entry.last_modified for entry in self._seen)
         watermark = newest - WATERMARK_GRACE
+        if oldest_unfinished is not None:
+            watermark = min(watermark, oldest_unfinished - WATERMARK_GRACE)
         if self.watermark is not None and watermark <= self.watermark:
             return
 
@@ -192,23 +221,41 @@ class S3Crawler:
             S3_OBJECT_POLL_INTERVAL_S,
         )
         logger.info("Entering poll loop")
+        interval = S3_OBJECT_POLL_INTERVAL_S
         while True:
             logger.debug("Polling bucket '%s' for objects", self.bucket_name)
-            raw = retry(
-                lambda: list(self.client.list_objects(self.bucket_name, recursive=True))
-            )
 
-            # Filtered before it is sorted, not after. The listing is the whole
-            # bucket -- S3 has no way to ask for "objects newer than X", since
-            # `start_after` is lexicographic by key and these keys are not in time
-            # order -- so after a few sticks it is hundreds of thousands of entries,
-            # and sorting all of them every five seconds was most of what this loop
-            # did. What is new is a handful.
-            fresh = self.unprocessed(raw)
+            # Filtered as the listing arrives, not after it has been collected. The
+            # listing is the whole bucket -- S3 has no way to ask for "objects newer
+            # than X", since `start_after` is lexicographic by key and these keys are
+            # not in time order -- so after a few sticks it is hundreds of thousands of
+            # entries. Sorting all of them every five seconds was most of what this loop
+            # did; materialising all of them first is hundreds of megabytes of minio
+            # `Object`s allocated and discarded on every poll, in a pod that also holds
+            # download buffers. `unprocessed` takes an iterable and touches no state the
+            # retry would have to undo, so it is safe inside `retry`. What is new is a
+            # handful.
+            fresh = retry(
+                lambda: self.unprocessed(
+                    self.client.list_objects(self.bucket_name, recursive=True)
+                )
+            )
             fresh.sort(key=lambda o: o.last_modified, reverse=True)
 
+            batch, deferred = (
+                fresh[:S3_MAX_OBJECTS_PER_POLL],
+                fresh[S3_MAX_OBJECTS_PER_POLL:],
+            )
+            if deferred:
+                logger.info(
+                    "Taking %d of %d new objects this poll; %d follow next poll",
+                    len(batch),
+                    len(fresh),
+                    len(deferred),
+                )
+
             future_to_object = {}
-            for obj in fresh:
+            for obj in batch:
                 logger.info("New object detected via polling: %s", obj.object_name)
                 future_to_object[
                     self._executor.submit(
@@ -216,14 +263,35 @@ class S3Crawler:
                     )
                 ] = obj
 
-            for future, processed_object in future_to_object.items():
+            # `as_completed` rather than iterating the mapping: the ledger is in-process
+            # memory, so an object is only safe from being re-downloaded once it has
+            # been recorded. Taking the futures in submission order means nothing is
+            # recorded until the slowest of the batch is done -- hours, for a stick --
+            # and a pod restart in the middle repeats every object already ingested.
+            unfinished = [obj.last_modified for obj in deferred]
+            for future in as_completed(future_to_object):
+                processed_object = future_to_object[future]
                 if exc := future.exception():
-                    logger.error("Failed to download object: %s", exc)
+                    logger.error(
+                        "Failed to download object '%s': %s",
+                        processed_object.object_name,
+                        exc,
+                    )
+                    unfinished.append(processed_object.last_modified)
                 else:
                     self.processed.record(processed_object)
 
-            self.processed.advance()
-            sleep(S3_OBJECT_POLL_INTERVAL_S)
+            self.processed.advance(min(unfinished) if unfinished else None)
+
+            # Backed off only while the bucket is quiet, and reset by the first new
+            # object, so the latency that matters -- a stick that has just been
+            # mirrored -- is still the floor.
+            interval = (
+                S3_OBJECT_POLL_INTERVAL_S
+                if fresh
+                else min(interval * 2, S3_OBJECT_POLL_MAX_INTERVAL_S)
+            )
+            sleep(interval)
 
     def unprocessed(self, listing: Iterable[Object]) -> list[IntakeObject]:
         """The objects in a listing that still have to be handled."""

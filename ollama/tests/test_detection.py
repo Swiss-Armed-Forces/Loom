@@ -1,7 +1,25 @@
-"""Detection policy: what a declaration plus a set of reachable devices means."""
+"""Detection policy: what a declaration plus a set of reachable devices means.
+
+Most of it is asserted against `decide_detection`, which is pure. The two at the bottom
+go through `detect_gpu_memory` over real directory trees instead, because the roots it
+reads -- /dev for the device node, /sys for the amdgpu attributes, /proc for host memory
+-- are three separate parameters, and a policy that is right about a `frozenset` says
+nothing about which of them were actually looked at.
+"""
+
+from pathlib import Path
 
 import pytest
-from doubles import GIB, RecordingProbe
+from doubles import (
+    GIB,
+    MIB,
+    FakeCard,
+    RecordingProbe,
+    make_dev,
+    make_proc,
+    make_sysfs,
+    nvml_totals,
+)
 
 from ollama_wrapper import (
     GPU_VENDOR_ENV,
@@ -11,6 +29,7 @@ from ollama_wrapper import (
     GpuVendor,
     decide_detection,
     declared_vendor,
+    detect_gpu_memory,
 )
 
 
@@ -105,3 +124,45 @@ def test_a_declared_vendor_is_case_and_space_insensitive() -> None:
     assert declared_vendor({GPU_VENDOR_ENV: "  AMD "}) is GpuVendor.AMD
     assert declared_vendor({}) is None
     assert declared_vendor({GPU_VENDOR_ENV: ""}) is None
+
+
+# --- End to end, over real trees ---
+def test_a_declared_vendor_with_no_device_node_stops_the_pod(tmp_path: Path) -> None:
+    """The refuse-to-start path, from the environment variable to the verdict.
+
+    `charts/values-amd-gpu.yaml` set LOOM_GPU_VENDOR and the box did not enumerate its
+    GPU -- the case `--no-gpu` exists for. Asserted through `detect_gpu_memory` rather
+    than through the policy alone, because what has to be true is that the *absence of
+    /dev/kfd under dev_root* is what produced it: a probe reached anyway would read the
+    host's real /sys and could answer either way.
+    """
+    detection = detect_gpu_memory(
+        {GPU_VENDOR_ENV: "amd"},
+        nvml_totals(),
+        sysfs_root=make_sysfs(tmp_path / "sys", {}),
+        proc_root=make_proc(tmp_path / "proc", 128 * GIB),
+        dev_root=make_dev(tmp_path / "dev", ()),
+    )
+
+    assert detection.status is GpuStatus.DECLARED_BUT_MISSING
+    assert detection.memory is None
+    assert "/dev/kfd" in detection.detail
+
+
+def test_a_declared_vendor_whose_node_is_there_is_measured(tmp_path: Path) -> None:
+    """The other side of the same seam: the node exists, so the probe really runs."""
+    detection = detect_gpu_memory(
+        {GPU_VENDOR_ENV: "amd"},
+        nvml_totals(),
+        sysfs_root=make_sysfs(
+            tmp_path / "sys",
+            {"card0": FakeCard(vram=str(512 * MIB), gtt=str(64 * GIB))},
+        ),
+        proc_root=make_proc(tmp_path / "proc", 128 * GIB),
+        dev_root=make_dev(tmp_path / "dev", ("kfd",)),
+    )
+
+    assert detection.status is GpuStatus.DETECTED
+    assert detection.memory is not None
+    assert detection.memory.vendor is GpuVendor.AMD
+    assert detection.memory.shared_bytes == 64 * GIB

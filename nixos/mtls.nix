@@ -480,6 +480,15 @@ in
           # and a unit that is still "active (exited)" is not restarted by one.
           ExecStart = lib.getExe loom-mtls-identity;
 
+          # The script waits for the CA secret with `until kubectl get secret; sleep
+          # 10`, and a first bring-up takes hours. Without this, systemd's
+          # DefaultTimeoutStartSec of 90 s SIGTERMs the OnBootSec run every time --
+          # and the only other trigger is the daily timer, so the box would hold a
+          # certificate no CA signed until the next midnight. For that whole window
+          # the assistant pane and USB ingest, both pointed at the loopback proxy,
+          # are refused by the box's own cluster.
+          TimeoutStartSec = "infinity";
+
           # kubectl runs as root here and borrows the operator's credentials, the
           # same arrangement ready.nix and usb-ingest.nix use.
           Environment = [ "KUBECONFIG=/home/${loomUser}/.kube/config" ];

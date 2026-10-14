@@ -8,9 +8,12 @@ appears in a directory.
 
 What is asserted and why:
 
-  * A half-written request can never match the issuer's `*.req` glob. Getting that wrong
-    means the issuer reads an empty file and mints a certificate for the wrong label, at
-    random, under load.
+  * A request is one file, named by its token, and nothing else is left in the directory
+    the issuer globs. The half of that rule which cannot be checked from here is the
+    moment *during* the write -- `_write_request` goes through a dot-prefixed temporary
+    and `os.replace`, and by the time any assertion in this file runs, both are over.
+    Getting it wrong means the issuer reads an empty file and mints a certificate for
+    the wrong label, at random, under load.
   * A timeout takes the request back. An abandoned page must not cost the box a key
     generation nobody is waiting for.
   * A delivered bundle is removed at once. It holds an unencrypted private key.
@@ -90,8 +93,10 @@ def test_a_request_is_one_file_named_by_a_token(tmp_path):
     spool_for(settings, clock).issue("visitor", BundleFormat.P12)
 
     assert TOKEN_PATTERN.match(seen["token"])
-    # The temporary name is dot-prefixed and gone by the time the request exists, so the
-    # issuer's glob can never catch a partial write.
+    # No leftovers: the temporary is renamed into place, not copied and deleted, so
+    # nothing of the write survives it. This callback runs on the second tick, long
+    # after `_write_request` returned, so it cannot say anything about what the
+    # directory held *during* the write -- that is the test below.
     assert not seen["others"]
 
 

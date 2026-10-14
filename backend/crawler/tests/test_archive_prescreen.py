@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 from common.archive.archive_detection import ENCRYPTED_ARCHIVE_MAGIC, MANIFEST_FILENAME
 from common.archive.archive_repository import LOOM_ARCHIVE_VERSION, Archive
 from common.services.query_builder import QueryParameters
+from common.testing.s3_doubles import S3Double, s3_serving
 from minio import Minio
 from minio.error import S3Error
 
@@ -50,55 +51,20 @@ def _loom_archive_bytes(comment: bytes = b"") -> bytes:
     )
 
 
-# The same pair as backend/common/tests/doubles.py, restated here rather than
-# imported: the crawler package cannot reach the common package's tests, and a path
-# hook in a conftest to make it possible would cost more than the duplication does.
-class _FakeResponse:
-    """What minio's get_object hands back: a urllib3-ish response."""
+def _client_for(payload: bytes) -> S3Double:
+    """The shared S3 doubles, which ship inside `common` so this package can reach them.
 
-    def __init__(self, payload: bytes):
-        self._payload = payload
-        self.closed = False
-        self.released = False
-
-    def read(self) -> bytes:
-        return self._payload
-
-    def close(self) -> None:
-        self.closed = True
-
-    def release_conn(self) -> None:
-        self.released = True
-
-
-class _ObjectStore:
-    """Serves real byte ranges out of an in-memory object, and counts requests."""
-
-    def __init__(self, payload: bytes):
-        self.payload = payload
-        self.responses: list[_FakeResponse] = []
-
-    def get_object(
-        self, bucket: str, object_name: str, offset: int = 0, length: int = 0
-    ):
-        assert bucket == BUCKET
-        assert object_name == OBJECT
-        end = offset + length if length else len(self.payload)
-        response = _FakeResponse(self.payload[offset:end])
-        self.responses.append(response)
-        return response
-
-
-def _client_for(payload: bytes) -> tuple[MagicMock, _ObjectStore]:
-    store = _ObjectStore(payload)
-    client = MagicMock(spec=Minio)
-    client.get_object.side_effect = store.get_object
-    return client, store
+    They used to be restated here verbatim -- the crawler cannot import from the common
+    package's *tests* -- and the copy promptly lost the request accounting the
+    assertions below are built on.
+    """
+    return s3_serving(payload, BUCKET, OBJECT)
 
 
 def _classify(payload: bytes) -> IntakeObjectKind:
-    client, _ = _client_for(payload)
-    return classify_intake_object(client, BUCKET, OBJECT, len(payload))
+    return classify_intake_object(
+        _client_for(payload).client, BUCKET, OBJECT, len(payload)
+    )
 
 
 def test_detects_a_plain_loom_archive():
@@ -190,13 +156,31 @@ def test_classification_reads_a_fraction_of_a_large_archive():
         compression=zipfile.ZIP_STORED,
     )
     assert len(big) > 1_000_000  # the stored payload really is large
-    client, store = _client_for(big)
+    double = _client_for(big)
 
     assert (
-        classify_intake_object(client, BUCKET, OBJECT, len(big))
+        classify_intake_object(double.client, BUCKET, OBJECT, len(big))
         is IntakeObjectKind.LOOM_ARCHIVE
     )
 
-    fetched = sum(len(response.read()) for response in store.responses)
+    fetched = double.store.fetched_bytes
     assert fetched < len(big) // 4, f"read {fetched} of {len(big)} bytes"
-    assert all(response.closed and response.released for response in store.responses)
+    assert double.store.every_response_was_released
+
+
+def test_a_non_zip_costs_a_single_range_read():
+    """Nearly every object on a stick lands here, so the cheap answer has to be cheap.
+
+    Handing a non-zip to ZipFile is two further round trips -- the trailing 22 bytes,
+    then the last 64 KiB hunting a displaced end-of-central-directory record -- and at
+    the 300k objects a USB mirror lands that is ~600k avoidable requests. The local file
+    header is already in the bytes fetched for the encryption probe.
+    """
+    double = _client_for(b"%PDF-1.7\n" + b"\x00" * 100_000)
+
+    assert (
+        classify_intake_object(double.client, BUCKET, OBJECT, 100_009)
+        is IntakeObjectKind.PLAIN_FILE
+    )
+    assert double.store.request_count == 1
+    assert double.store.every_response_was_released

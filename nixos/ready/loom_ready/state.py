@@ -174,13 +174,29 @@ def publish(state_dir: str, readiness: Readiness, summary: str) -> None:
 
 
 def _replace(path: str, content: str, state_dir: str) -> None:
-    with tempfile.NamedTemporaryFile(
-        mode="w", dir=state_dir, delete=False, encoding="utf-8"
-    ) as handle:
-        handle.write(content)
-        temporary = handle.name
-    os.chmod(temporary, 0o644)
-    os.replace(temporary, path)
+    """Write `content` to `path` through a temporary file in the same directory.
+
+    The `finally` is the part worth stating: without it, a write or a chmod that raises
+    leaves a `tmp*` file behind in `state_dir`, and `publish` is called every five
+    seconds by the status line -- so a directory that has gone read-only or full
+    accumulates one stray per failure for as long as the box is up.
+    """
+    temporary = ""
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", dir=state_dir, delete=False, encoding="utf-8"
+        ) as handle:
+            temporary = handle.name
+            handle.write(content)
+        os.chmod(temporary, 0o644)
+        os.replace(temporary, path)
+        temporary = ""
+    finally:
+        if temporary:
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
 
 
 def read(state_dir: str, now: float | None = None) -> Readiness | None:

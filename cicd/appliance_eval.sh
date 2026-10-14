@@ -134,17 +134,9 @@ instantiate(){
     shift 3
     system="$(platform_system "${platform}")"
 
+    common_nix_args "${platform}" "${system}" "${attribute}" "${CONTEXT_DIR}"
     local args=(
-        "${CONTEXT_DIR}/nixos"
-        --attr "${attribute}"
-        --arg nixpkgs "${NIXPKGS}"
-        --arg nixosHardware "${NIXOS_HARDWARE}"
-        --argstr system "${system}"
-        --argstr platform "${platform}"
-        --arg repoSrc "${CONTEXT_DIR}"
-        --argstr loomHostsJson "${LOOM_HOSTS_JSON}"
-        --argstr loomNamespace "${NAMESPACE}"
-        --argstr loomChatModel "${LOOM_CHAT_MODEL}"
+        "${NIX_COMMON_ARGS[@]}"
         # Nothing is realised, so there is nothing to root -- and a root here
         # would be a gc root on every .drv this touches.
         --no-gc-warning

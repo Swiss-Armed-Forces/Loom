@@ -35,6 +35,12 @@ def serve(portal: Portal, settings: PortalSettings) -> None:
         # Suppress the stock `Python/3.x` banner. There is nothing to gain from telling
         # a visitor which interpreter is behind the proxy.
         sys_version = ""
+        # Restated from BaseHTTPRequestHandler, which only ever sets it from inside
+        # `handle_one_request`. `_body` writes to it to drop a connection it refused to
+        # drain, and declaring it here is what makes that an assignment to a field of
+        # this class rather than one invented at runtime. The value below is never the
+        # one in force: the base class sets it per request before anything here runs.
+        close_connection = False
 
         def _get(self) -> None:
             self._answer("GET")
@@ -75,6 +81,11 @@ def serve(portal: Portal, settings: PortalSettings) -> None:
                 self.send_header(header.name, header.value)
             if not seen_length:
                 self.send_header("Content-Length", str(len(response.body)))
+            # Set when `_body` refused to read a body it was told was there. Saying so
+            # is the difference between a client that moves on and one that waits out
+            # a keep-alive that is not coming.
+            if self.close_connection:
+                self.send_header("Connection", "close")
             self.end_headers()
 
             # A HEAD carries the headers and no body, which is what some captive-portal
@@ -83,11 +94,26 @@ def serve(portal: Portal, settings: PortalSettings) -> None:
                 self.wfile.write(response.body)
 
         def _body(self) -> bytes:
+            """The request body, or nothing -- but never a half-read socket.
+
+            `protocol_version` is HTTP/1.1, so the connection stays open after the
+            response. Declining a body without taking it off the socket leaves those
+            bytes to be parsed as the next request line, which desynchronises the
+            connection: one POST with an oversized Content-Length then yields a 400 on
+            garbage, or, with a crafted body, a second request of the client's
+            choosing. Today nginx caps this route at 4k and proxies as HTTP/1.0, so
+            only something dialling the loopback port directly can reach it -- one
+            nginx-config change away from mattering.
+            """
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
+                self.close_connection = True
                 return b""
-            if length <= 0 or length > MAX_BODY_BYTES:
+            if length <= 0:
+                return b""
+            if length > MAX_BODY_BYTES:
+                self.close_connection = True
                 return b""
             return self.rfile.read(length)
 

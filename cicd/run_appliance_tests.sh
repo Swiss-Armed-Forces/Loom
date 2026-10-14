@@ -74,6 +74,12 @@ KNOWN_TESTS=(hardware units skills install interface-fallback dhcp portal key-st
 # hanging off the evaluated configuration, and the failures it guards against --
 # a skill opencode silently refuses to register, or one naming a command this
 # platform has not got -- are all visible without booting anything.
+#
+# `skills` is nonetheless the one eval-only test that is still bound to the host
+# architecture, because a store path has to be *realised*: console.nix builds the
+# skills directory and the instructions file from the platform's own nixpkgs, so
+# `--platform spark` on an x86_64 machine is a platform mismatch rather than a
+# verdict. `hardware` and `units` read values alone and have no such limit.
 EVAL_ONLY_TESTS=(hardware units skills)
 # Resolved in Main, once, like NIX_SYSTEM -- not computed inside a condition,
 # which would switch `set -e` off for the duration.
@@ -231,21 +237,9 @@ run_test(){
     attribute="$(test_attribute "${name}")"
     nix_system="$(platform_system "${platform}")"
 
+    common_nix_args "${platform}" "${nix_system}" "${attribute}" "${CONTEXT_DIR}"
     local args=(
-        "${CONTEXT_DIR}/nixos"
-        --attr "${attribute}"
-        --arg nixpkgs "${NIXPKGS}"
-        --arg nixosHardware "${NIXOS_HARDWARE}"
-        --argstr system "${nix_system}"
-        --argstr platform "${platform}"
-        # The working tree, filtered by `loomSrc` in nixos/default.nix -- which
-        # is what makes passing it cheap. Unfiltered it would copy every
-        # .pytest_tmp and node_modules in the checkout into the store, once per
-        # run.
-        --arg repoSrc "${CONTEXT_DIR}"
-        --argstr loomHostsJson "${LOOM_HOSTS_JSON}"
-        --argstr loomNamespace "${NAMESPACE}"
-        --argstr loomChatModel "${LOOM_CHAT_MODEL}"
+        "${NIX_COMMON_ARGS[@]}"
         # A test result is a log, not something to keep: an out-link would root
         # the whole closure and defeat the garbage collection above.
         --no-out-link

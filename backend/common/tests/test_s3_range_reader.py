@@ -3,9 +3,9 @@ import zipfile
 from dataclasses import dataclass
 
 import pytest
-from doubles import ObjectStore, s3_serving
 
 from common.services.s3_range_reader import BLOCK_SIZE, S3RangeReader
+from common.testing.s3_doubles import ObjectStore, s3_serving
 
 BUCKET = "loom-file-storage"
 OBJECT = "5f2b1c3d-0000-4000-8000-000000000001"

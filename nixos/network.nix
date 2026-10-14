@@ -682,6 +682,13 @@ in
       systemd.services.loom-bridge-tune = {
         description = "Pin forwarding behaviour on the appliance bridge";
         wantedBy = [ "network.target" ];
+        # `wants` as well as `after`, for the reason loom-bridge-attach above spells
+        # out: `after` alone does not pull the netdev job into the transaction, it only
+        # says "if both start, this one goes second". Worse here than there, because
+        # the script below writes straight into /sys/class/net/<bridge>/bridge/ with no
+        # existence guard, so a bridge that has not been created yet fails the unit on
+        # a bare redirect error.
+        wants = [ "${bridgeInterface}-netdev.service" ];
         after = [ "${bridgeInterface}-netdev.service" ];
         # Same two edges as loom-bridge-attach above, for the same reason.
         before = [

@@ -5,6 +5,6 @@ app = get_celery_app()
 
 
 @app.task()
-def dispatch_index_archive(request: ArchiveImportRequest):
+def dispatch_index_archive(request: ArchiveImportRequest) -> None:
     """Dispatch a loom archive for import via ArchiveSchedulingService."""
     get_archive_scheduling_service().index_archive(request)

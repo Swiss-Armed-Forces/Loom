@@ -40,6 +40,7 @@ from common.services.lazybytes_service import (
     FileStorageLazyBytesService,
 )
 from common.services.task_scheduling_service import ArchiveImportRequest
+from minio.error import MinioException
 
 from worker.create_archive.decrypt_archive import decrypt_loom_archive
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
@@ -164,6 +165,13 @@ def route_archive_blob(
             )
 
         if not _is_importable_archive(decrypted, services):
+            # Deleted rather than dropped on the floor. `decrypt_loom_archive` has
+            # already written a full plaintext copy into permanent file storage, and
+            # nothing from here on holds its service id: no `File` entity references
+            # it, so no later pass reaps it. On a single-disk appliance that is a
+            # permanent leak the size of the archive, now reached unattended off a USB
+            # stick rather than by an operator calling the import endpoint.
+            services.file_storage.delete(decrypted)
             return ArchiveRouting(
                 ArchiveDecision.INDEX_AS_FILE,
                 None,
@@ -197,9 +205,25 @@ def _index_as_ordinary_file(request: ArchiveImportRequest, reason: str) -> None:
 
 
 @app.task(base=ArchiveProcessingTask)
-def index_archive_task(request: ArchiveImportRequest):
+def index_archive_task(request: ArchiveImportRequest) -> None:
     """Import a loom archive, or index the blob as a file when it is not one."""
-    routing = route_archive_blob(request.file_content)
+    try:
+        routing = route_archive_blob(request.file_content)
+    # The never-drop guarantee this module exists for, held even when deciding *what*
+    # the blob is fails. Everything above is parsing attacker-shaped bytes -- a zip
+    # central directory, a container header -- off a stranger's USB stick, and a
+    # failure here would otherwise take the task round the retry chain into the
+    # graveyard queue with no `File` entity and no trace, which is precisely the
+    # failure this module's docstring says is no longer possible. Indexing the blob
+    # as the opaque thing it is stays the recoverable outcome.
+    #
+    # The same three as `crawler.archive_prescreen`, and for the same reason: a
+    # genuinely exotic error still propagates, which leaves the message to the retry
+    # chain rather than quietly indexing the wrong thing on a transport fault.
+    except (OSError, ValueError, MinioException) as exc:
+        logger.exception("Could not decide what '%s' is", request.full_name)
+        _index_as_ordinary_file(request, f"routing failed: {exc}")
+        return
 
     if routing.decision is ArchiveDecision.INDEX_AS_FILE:
         _index_as_ordinary_file(request, routing.reason)

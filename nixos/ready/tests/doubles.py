@@ -29,6 +29,14 @@ PODS = "pods"
 
 OK = Completed(ok=True, stdout="", stderr="")
 
+# One resource as `kubectl get -o json` renders it.
+#
+# A named alias rather than an enumerated shape: the point of every factory below is to
+# produce the *document kubectl emits*, nested and open-ended, so that `cluster.py`'s
+# parser is exercised against the thing it actually reads rather than against a
+# convenience object this file invented. `-> dict` said nothing about any of that.
+KubectlDocument = dict[str, object]
+
 
 class FakeCommands(Commands):
     """Canned answers, and a record of what was asked.
@@ -66,7 +74,7 @@ def unit(state: str) -> Completed:
     return Completed(ok=True, stdout=state + "\n", stderr="")
 
 
-def listing(*items: dict) -> Completed:
+def listing(*items: KubectlDocument) -> Completed:
     """A `kubectl get -o json` document, whatever the resources were."""
     return Completed(ok=True, stdout=json.dumps({"items": list(items)}), stderr="")
 
@@ -87,7 +95,7 @@ def unreachable() -> Completed:
     )
 
 
-def deployment(name: str, desired: int = 1, ready: int = 0) -> dict:
+def deployment(name: str, desired: int = 1, ready: int = 0) -> KubectlDocument:
     return {
         "kind": "Deployment",
         "metadata": {"name": name},
@@ -96,7 +104,7 @@ def deployment(name: str, desired: int = 1, ready: int = 0) -> dict:
     }
 
 
-def stateful_set(name: str, desired: int = 1, ready: int = 0) -> dict:
+def stateful_set(name: str, desired: int = 1, ready: int = 0) -> KubectlDocument:
     return {
         "kind": "StatefulSet",
         "metadata": {"name": name},
@@ -105,7 +113,7 @@ def stateful_set(name: str, desired: int = 1, ready: int = 0) -> dict:
     }
 
 
-def daemon_set(name: str, desired: int = 1, ready: int = 0) -> dict:
+def daemon_set(name: str, desired: int = 1, ready: int = 0) -> KubectlDocument:
     return {
         "kind": "DaemonSet",
         "metadata": {"name": name},
@@ -114,7 +122,7 @@ def daemon_set(name: str, desired: int = 1, ready: int = 0) -> dict:
     }
 
 
-def job(name: str, completions: int = 1, succeeded: int = 0) -> dict:
+def job(name: str, completions: int = 1, succeeded: int = 0) -> KubectlDocument:
     return {
         "kind": "Job",
         "metadata": {"name": name},
@@ -123,14 +131,16 @@ def job(name: str, completions: int = 1, succeeded: int = 0) -> dict:
     }
 
 
-def pod(name: str, phase: str = "Running", waiting: str | None = None) -> dict:
-    status: dict = {"phase": phase}
+def pod(
+    name: str, phase: str = "Running", waiting: str | None = None
+) -> KubectlDocument:
+    status: KubectlDocument = {"phase": phase}
     if waiting is not None:
         status["containerStatuses"] = [{"state": {"waiting": {"reason": waiting}}}]
     return {"kind": "Pod", "metadata": {"name": name}, "status": status}
 
 
-def unschedulable(name: str, reason: str = "Unschedulable") -> dict:
+def unschedulable(name: str, reason: str = "Unschedulable") -> KubectlDocument:
     return {
         "kind": "Pod",
         "metadata": {"name": name},

@@ -5,9 +5,8 @@ response was closed *and* released -- a leaked urllib3 connection is invisible u
 pool runs dry under load -- and that the bucket and object asked for were the ones
 expected.
 
-`backend/crawler/tests/test_archive_prescreen.py` keeps its own copy: the crawler
-package cannot import from the common package's tests, and adding a path hook to a
-conftest to make it possible would cost more than the duplication does.
+Shipped inside `common` rather than kept beside its tests so that the crawler, worker
+and api suites can import it too; see `common.testing`.
 """
 
 from dataclasses import dataclass
@@ -52,6 +51,11 @@ class ObjectStore:
         response = FakeResponse(self.payload[offset:end])
         self.responses.append(response)
         return response
+
+    @property
+    def request_count(self) -> int:
+        """How many range requests were served."""
+        return len(self.responses)
 
     @property
     def fetched_bytes(self) -> int:

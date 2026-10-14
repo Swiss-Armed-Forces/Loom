@@ -35,6 +35,20 @@ def _manifest(version: int = LOOM_ARCHIVE_VERSION) -> bytes:
     return json.dumps(payload).encode()
 
 
+def _manifest_of_size(size: int) -> bytes:
+    """A manifest that still validates, padded out to exactly `size` bytes.
+
+    Padded through an unknown key: `Archive` ignores extras, so the document is as valid
+    at four megabytes as it is at four hundred bytes and only its weight differs.
+    """
+    payload = json.loads(_manifest())
+    payload["_padding"] = ""
+    payload["_padding"] = "x" * (size - len(json.dumps(payload)))
+    rendered = json.dumps(payload).encode()
+    assert len(rendered) == size
+    return rendered
+
+
 def _zip(entries: dict[str, bytes]) -> io.BytesIO:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
@@ -69,11 +83,54 @@ def test_a_zip_bomb_dressed_as_a_manifest_is_refused_unread():
     assert is_loom_archive(archive) is False
 
 
-def test_a_manifest_of_an_ordinary_size_is_still_read():
-    """The cap must not reject the real thing: a manifest is a few kilobytes."""
-    archive = _zip({f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest()})
+def test_a_manifest_right_at_the_cap_is_still_read():
+    """The cap must not reject what it is meant to let through.
+
+    Sized to the limit rather than to the few hundred bytes a real manifest weighs,
+    because that is where `_read_manifest`'s two checks actually meet: the declared size
+    in the central directory, and the bounded read that does not trust it. A small
+    manifest exercises neither, and simply repeats `test_detects_a_loom_archive`.
+    """
+    archive = _zip(
+        {
+            f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest_of_size(
+                MAX_MANIFEST_BYTES
+            )
+        }
+    )
 
     assert is_loom_archive(archive) is True
+
+
+def test_a_manifest_one_byte_over_the_cap_is_refused():
+    archive = _zip(
+        {
+            f"{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest_of_size(
+                MAX_MANIFEST_BYTES + 1
+            )
+        }
+    )
+
+    assert is_loom_archive(archive) is False
+
+
+def test_an_entry_name_that_lies_about_being_utf8_is_declined():
+    """What a CP932 or GBK zip tool writes, and what used to escape this function.
+
+    ZipFile decodes a central directory name with `.decode("utf-8")` and no guard when
+    general-purpose bit 11 is set, so a name whose bytes are not UTF-8 raises
+    UnicodeDecodeError -- not BadZipFile, and not pydantic's ValidationError. On the
+    worker that escaped the router and took the blob round the retry chain into the
+    graveyard queue with no File entity: exactly the silent disappearance this module
+    exists to make impossible.
+    """
+    # Written with a non-ASCII name so zipfile sets bit 11, then the two UTF-8 bytes
+    # are replaced in place by two that are not. Same length, so every offset in the
+    # zip stays valid and only the decode is broken.
+    valid = _zip({f"é{ARCHIVE_ROOT_DIR}/{MANIFEST_FILENAME}": _manifest()})
+    mangled = io.BytesIO(valid.getvalue().replace(b"\xc3\xa9", b"\xff\xfe"))
+
+    assert is_loom_archive(mangled) is False
 
 
 def test_rejects_a_manifest_at_the_archive_root():

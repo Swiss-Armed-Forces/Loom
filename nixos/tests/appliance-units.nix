@@ -160,6 +160,18 @@ let
         (check "wifi: ${name} is before ${addresses}" (
           lib.elem addresses cfg.systemd.services.${name}.before
         ))
+        # `after` without `wants` orders a job that is never queued: it says "if
+        # both start, this one goes second" and nothing more. All three of these
+        # touch the bridge -- two with `ip link`, one by writing into
+        # /sys/class/net/<bridge>/bridge/ with no existence guard -- so the netdev
+        # job has to be pulled into the transaction, not merely ordered against.
+        # Measured on a Spark: two of them failed 13.17 s into the boot this way.
+        (check "wifi: ${name} wants ${bridge}-netdev.service" (
+          lib.elem "${bridge}-netdev.service" cfg.systemd.services.${name}.wants
+        ))
+        (check "wifi: ${name} is after ${bridge}-netdev.service" (
+          lib.elem "${bridge}-netdev.service" cfg.systemd.services.${name}.after
+        ))
       ])
       [
         "loom-bridge-attach"

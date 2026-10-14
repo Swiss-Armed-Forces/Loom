@@ -69,9 +69,10 @@ def _create_archive_of_everything() -> UUID:
     return UUID(response.json()["archive_id"])
 
 
-def _download_archive(archive_id: UUID) -> bytes:
+def _download_archive(archive_id: UUID, encrypted: bool = False) -> bytes:
     response = requests.get(
         f"{ARCHIVE_ENDPOINT}/{archive_id}",
+        params={"encrypted": "true"} if encrypted else None,
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
@@ -110,6 +111,41 @@ def test_a_loom_archive_in_the_intake_bucket_is_imported_not_indexed_as_a_zip():
     # Only now is this meaningful: the import above proves the object was seen.
     fetch_files_from_api(
         search_string=f'filename:"{ARCHIVE_OBJECT_NAME}"',
+        expected_no_of_files=0,
+    )
+
+
+def test_an_encrypted_loom_archive_this_box_can_open_is_imported():
+    """The fourth routing outcome, and the only one nothing else reaches.
+
+    `?encrypted=true` hands back the archive under this cluster's own
+    `archive_enc_master_key`, which is exactly a `.loom` this box can open -- the one
+    way to produce that blob without knowing the key. It is the only path that exercises
+    `ArchiveDecision.IMPORT_DECRYPTED` through `index_archive_task`, and therefore the
+    only coverage of `encrypted_archive_zip`: the link that keeps the restored archive
+    pointing at the blob the operator actually supplied rather than at the decrypted
+    copy. The worker suite cannot reach it, because the canvas it dispatches needs a
+    real Celery `.s()`.
+    """
+    upload_asset("empty_file.txt")
+    get_file_preview_by_name("empty_file.txt")
+
+    archive_id = _create_archive_of_everything()
+    archives = fetch_archives_from_api()
+    assert archives[0].file_id == archive_id
+
+    _put_in_intake(ENCRYPTED_OBJECT_NAME, _download_archive(archive_id, encrypted=True))
+
+    imported = fetch_archives_from_api(
+        expected_no_of_archives=1, expected_state="imported"
+    )
+    assert imported[0].file_id == archive_id
+
+    # Only now is this meaningful: the import above proves the object was seen. A
+    # decrypted archive that was *also* indexed as an opaque blob would mean the
+    # prescreen and the router each took their own branch.
+    fetch_files_from_api(
+        search_string=f'filename:"{ENCRYPTED_OBJECT_NAME}"',
         expected_no_of_files=0,
     )
 

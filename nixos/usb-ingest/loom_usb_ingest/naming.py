@@ -119,15 +119,3 @@ def volume_component(index: int, label: str | None) -> str:
     if label:
         return f"p{index}-{sanitize_component(label)}"
     return f"p{index}"
-
-
-def object_key(prefix: str, relative_path: str) -> str:
-    """Join an S3 prefix and an on-stick relative path.
-
-    Backslashes become separators because NTFS and FAT volumes authored on Windows use
-    them, and a key containing one would otherwise render as a single flat filename in
-    the frontend rather than as the directory tree it is.
-    """
-    cleaned = relative_path.replace("\\", "/").lstrip("/")
-    parts = [part for part in cleaned.split("/") if part not in ("", ".", "..")]
-    return "/".join([prefix.rstrip("/"), *parts])

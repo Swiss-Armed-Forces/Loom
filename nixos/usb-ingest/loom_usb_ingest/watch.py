@@ -25,6 +25,7 @@ from rich.table import Table
 from rich.text import Text
 
 from loom_usb_ingest.progress import DeviceProgress, Stage, device_present, read_all
+from loom_usb_ingest.sizes import GIBIBYTE, gib
 
 REFRESH_INTERVAL_S = 1.0
 
@@ -33,8 +34,6 @@ REFRESH_INTERVAL_S = 1.0
 # withdrawn a moment before the pane is killed from outside does not leave a flash of
 # an empty pane behind.
 LINGER_S = 3.0
-
-GIBIBYTE = 1024**3
 
 # Named colours rather than rich's defaults, which are 24-bit and land somewhere
 # unreadable once a Linux VT has shoehorned them into its sixteen.
@@ -117,10 +116,10 @@ def _counts(record: DeviceProgress) -> str:
     # the same number written twice -- and `total` is per volume in any case.
     if record.counts.total and not record.finished:
         return (
-            f"{record.counts.copied / GIBIBYTE:5.1f}/{record.counts.total / GIBIBYTE:.1f} GiB"
+            f"{record.counts.copied / GIBIBYTE:5.1f}/{gib(record.counts.total)}"
             f"  {record.counts.objects} files"
         )
-    return f"{record.counts.copied / GIBIBYTE:5.1f} GiB  {record.counts.objects} files"
+    return f"{gib(record.counts.copied, width=5)}  {record.counts.objects} files"
 
 
 def _status(record: DeviceProgress) -> Text:

@@ -44,8 +44,26 @@ class Params(NamedTuple):
     pool_start: str
 
 
-def _offer(appliance: "Machine", params: Params) -> dict[int, str]:
-    """One DHCP offer from the appliance, as {option code: value}."""
+class Offer(NamedTuple):
+    """The three options a lease from this box is judged on.
+
+    Named rather than the raw {option code: value} map it is read out of: the codes are
+    the wire's spelling, and an assertion written as `options.get(6)` needs a table
+    beside it to say that 6 is the resolver and 3 the gateway that must not be there.
+    """
+
+    netmask: str | None
+    """Option 1."""
+
+    gateway: str | None
+    """Option 3 -- `None` is the correct answer; see `_lease`."""
+
+    dns_server: str | None
+    """Option 6."""
+
+
+def _offer(appliance: "Machine", params: Params) -> Offer:
+    """One DHCP offer from the appliance."""
     raw = appliance.succeed(f"loom-dhcp-probe {params.interface} {params.box_address}")
 
     # The address offered has to come out of the pool network.nix configured. The
@@ -54,11 +72,14 @@ def _offer(appliance: "Machine", params: Params) -> dict[int, str]:
     pool = params.pool_start.rsplit(".", maxsplit=1)[0]
     assert raw.splitlines()[0].startswith(f"yiaddr {pool}."), raw
 
-    return {
+    options = {
         int(line.split()[1]): line.split()[2]
         for line in raw.splitlines()
         if line.startswith("option ")
     }
+    return Offer(
+        netmask=options.get(1), gateway=options.get(3), dns_server=options.get(6)
+    )
 
 
 def _interface_claimed(
@@ -99,14 +120,14 @@ def _lease(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # The field symptom was "no DHCP", so this is the assertion that matches
         # it. An active dnsmasq is not the same thing: with bind-dynamic the
         # daemon starts whether or not its `interface=` ever matched anything.
-        options = _offer(appliance, params)
-        assert options.get(6) == params.box_address, options  # dns-server
-        assert options.get(1) == "255.255.255.0", options  # netmask
+        offer = _offer(appliance, params)
+        assert offer.dns_server == params.box_address, offer
+        assert offer.netmask == "255.255.255.0", offer
 
         # No gateway, for the reason network.nix spells out: the box is an island,
         # and a lease naming it as the default route takes a visitor's laptop off
         # the internet on every interface it has.
-        assert 3 not in options, options
+        assert offer.gateway is None, offer
 
 
 def _wildcard_dns(appliance: "Machine", subtest: "Subtest", params: Params) -> None:

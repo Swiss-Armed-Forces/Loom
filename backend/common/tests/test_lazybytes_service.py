@@ -5,7 +5,6 @@ from io import SEEK_END, BytesIO
 from pathlib import Path
 
 import pytest
-from doubles import s3_serving
 from pydantic import BaseModel
 
 from common.services.lazybytes_service import (
@@ -16,6 +15,7 @@ from common.services.lazybytes_service import (
     TypedLazyBytes,
 )
 from common.settings import settings
+from common.testing.s3_doubles import s3_serving
 
 # pylint: disable=redefined-outer-name
 

@@ -421,12 +421,23 @@ appliance_check:
     # network depends on, for all three of them. Both read the evaluated
     # configuration and exit.
     #
-    # `units` has to be named here rather than left to `appliance-check` above:
+    # They have to be named here rather than left to `appliance-check` above:
     # that runs appliance-eval, which only instantiates. An eval-only test
     # computes its verdict at evaluation time but reports it from the builder
     # script, so a failing check still produces a valid .drv and nothing notices
     # until something builds it.
     - devenv shell -- appliance-test hardware units --platform all
+    # `skills` is the third eval-only test and is here for the identical reason
+    # -- devenv.nix designates nixos/tests/appliance-skills.nix as the half that
+    # has to fail an image build, and nothing else in this file builds it.
+    #
+    # Without `--platform all`, which the other two can take and this one cannot:
+    # the report is built from `hostPkgs`, but the skills directory and the
+    # instructions file it inspects are store paths of the *platform's* nixpkgs,
+    # so asking an x86_64 runner about the Spark is a platform mismatch rather
+    # than a verdict. The default is the platform matching the runner, which is
+    # real coverage of the discovery rules and the frontmatter either way.
+    - devenv shell -- appliance-test skills
 
 appliance_test:
   stage: test
@@ -452,6 +463,12 @@ appliance_test:
     - changes:
         - nixos/**/*
         - cicd/run_appliance_tests.sh
+        # Sourced by run_appliance_tests.sh, and by the image build that
+        # `appliance-vm installer` drives: platform_system, resolve_loom_values
+        # and the shared nix argument list are all in there, so an edit changes
+        # exactly what this job builds without touching anything else.
+        - cicd/appliance_common.sh
+        - cicd/build_appliance_image.sh
         - vars.sh
         - up.sh
         # vars.sh reads the domain, the host list and the console's chat model

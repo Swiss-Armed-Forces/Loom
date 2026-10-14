@@ -275,17 +275,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   a real kernel, so they cannot be cross-built. `--gc` collects garbage afterwards and
   `--min-free GB` sets how much space nix should free mid-build; see the disk budget section in
   `nixos/README.md`
-- `appliance-test hardware units skills --platform all` - The three tests that boot nothing.
+- `appliance-test hardware units skills` - The three tests that boot nothing.
   `hardware` asserts what `nixos-hardware` gives each platform and that the Loom overrides still take
   the desktop userspace back off; `units` asserts the unit edges that put the appliance address on
   the interface before dnsmasq and nginx bind it — `network.target` does not imply a static address
   under this nixpkgs pin, and the default build once shipped with dnsmasq racing it; `skills`
   asserts what the assistant pane was given to read — that a GPU platform got skills and `nuc12` got
   none, that their frontmatter is what opencode will actually register, and that every `loom-*`
-  command they name is one that image carries. None needs KVM nor is bound to the host architecture,
-  so `--platform all` checks all three from one machine in seconds, and `units` and `skills` build
+  command they name is one that image carries. None needs KVM, and `units` and `skills` build
   the `--wifi` configuration themselves so they cover a build a given machine may not be able to
-  boot. Run `hardware` after every renovate bump of the `nixos-hardware` pin, `units` after one of
+  boot. `hardware units --platform all` checks those two for all three platforms from one machine in
+  seconds; **`skills` cannot take `--platform all`** on a foreign architecture, because the skills
+  directory and the instructions file it inspects are store paths of the *platform's* own nixpkgs,
+  so an x86_64 host asking about the Spark gets a platform mismatch rather than a verdict — run it
+  without `--platform`, which picks the platform matching the host. Run `hardware` after every
+  renovate bump of the `nixos-hardware` pin, `units` after one of
   `nixpkgs-stable`, and `skills` after an `opencode` bump — its discovery rules and the frontmatter
   it accepts are undocumented and have changed between releases. `all` is refused for any selection
   that includes a VM test
@@ -372,7 +376,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`).
   Discovers projects by walking every tracked `pyproject.toml`, so a newly added package is locked
   without editing a list — `backend/common` first, the root project last, the rest in between.
-  This covers the four appliance packages under `nixos/` as well; see the lockfile section in
+  This covers every appliance package under `nixos/` as well; see the lockfile section in
   `nixos/README.md` for why their locks do not govern what an image ships
 - `generate-openapi-schema` - Print OpenAPI schema JSON
 - `generate-client-certificate --name NAME --out-dir DIR` - Issue a client identity for the mutual
@@ -395,8 +399,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   with a server named, at its `80`/`443`. The two ports are mapped **separately and must be given as
   a pair** - a single catch-all rule rewrites the port as well as the host, so it sends the `https`
   that every ingress redirects to (all of them are on Traefik's `websecure` entrypoint; only
-  `values-development` widens that to `web`) back at the http port, where Traefik answers 404 on a
-  perfectly healthy stack. Expect one self-signed certificate interstitial
+  `charts/values-http.yaml` widens that to `web`, which `up --enable-http` applies — as does
+  `up -d` and `up --integrationtest` implicitly) back at the http port, where Traefik answers 404 on
+  a perfectly healthy stack. Expect one self-signed certificate interstitial
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
   HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a

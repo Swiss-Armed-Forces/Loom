@@ -29,6 +29,11 @@ from loom_usb_ingest.progress import (
 )
 from loom_usb_ingest.watch import render
 
+# Where each device the progress directory still holds a record for has got to, keyed by
+# kernel name. A named alias rather than an enumerated shape: which devices are present
+# is the point of every assertion made against it.
+StagesByDevice = dict[str, Stage]
+
 
 def test_a_record_survives_the_round_trip(tmp_path) -> None:
     reporter = Reporter(str(tmp_path), "sdb", "/dev/sdb", "kingston-a1b2")
@@ -208,7 +213,8 @@ class _Box:
             argv.append(str(self.dev / kernel_name))
         assert release(parse_args(argv)) == 0
 
-    def stages(self) -> dict[str, Stage]:
+    def stages(self) -> StagesByDevice:
+        """Where every device the pane still knows about has got to."""
         return {
             record.kernel_name: record.stage
             for record in read_all(str(self.progress_dir))
@@ -280,11 +286,20 @@ def test_the_pane_drops_a_device_that_is_gone_without_being_withdrawn(
     assert not device_present(record)
 
 
-def test_every_stage_renders() -> None:
+def test_every_stage_renders_as_something_of_its_own() -> None:
     # The pane is the only place a stage is ever shown, so a stage added without a
     # rendering would be an empty cell on a console in the field.
-    for stage in Stage:
-        assert render([_record(stage=stage)]) is not None
+    #
+    # Drawn and compared, not `is not None`: `render` is annotated -> RenderableType and
+    # never returns None, so that assertion only restated the signature. What it caught
+    # by luck was the KeyError from STAGE_STYLE; what it could not catch is the likelier
+    # mistake -- a stage given a style but no branch in `watch._status_text`, which
+    # falls through to the DONE text and tells the operator a copy finished.
+    drawn = {stage: _drawn(_record(stage=stage)) for stage in Stage}
+
+    for stage, text in drawn.items():
+        assert text.strip(), stage
+    assert len(set(drawn.values())) == len(Stage), drawn
 
 
 def test_a_volume_with_no_total_still_renders() -> None:

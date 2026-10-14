@@ -36,6 +36,15 @@ def test_event_struct_is_twenty_eight_bytes() -> None:
 
 
 def test_event_fields_land_where_the_c_struct_puts_them() -> None:
+    """Read back at fixed offsets out of gpm.h, not through `_EVENT` itself.
+
+    Packing and unpacking with the same Struct is an identity for any twelve-field
+    format of compatible types -- including for the mistakes this test is named after.
+    Swapping dx,dy with x,y, or type with clicks, keeps `_EVENT.size == 28` and keeps a
+    round-trip green while every coordinate the pane is given is nonsense. The offsets
+    below are the independent statement of the layout, the way
+    `test_connect_payload_carries_the_masks_and_the_console` uses a literal format.
+    """
     packed = _EVENT.pack(
         4,  # buttons  (GPM_B_LEFT)
         1,  # modifiers
@@ -50,12 +59,23 @@ def test_event_fields_land_where_the_c_struct_puts_them() -> None:
         0,  # wdx
         -1,  # wdy
     )
+
+    # buttons and modifiers are one byte each, then vc as a short.
+    assert struct.unpack_from("=BBH", packed, 0) == (4, 1, 7)
+    # Four shorts: dx, dy, x, y. x sits at offset 8 and y at 10.
+    assert struct.unpack_from("=hhhh", packed, 4) == (-1, 2, 40, 12)
+    # Three ints: type, clicks, margin -- type is an enum, which C sizes as int.
+    assert struct.unpack_from("=iii", packed, 12) == (GPM_DOWN, 1, 0)
+    # The wheel, as two trailing shorts.
+    assert struct.unpack_from("=hh", packed, 24) == (0, -1)
+
+    # And the dataclass reads them in that order, which is the other half: the
+    # offsets above are worthless if GpmEvent's fields are declared in another one.
     event = GpmEvent(*_EVENT.unpack(packed))
-    assert event.buttons == 4
-    assert event.vc == 7
-    assert event.x == 40
-    assert event.y == 12
-    assert event.wdy == -1
+    assert (event.buttons, event.modifiers, event.vc) == (4, 1, 7)
+    assert (event.dx, event.dy, event.x, event.y) == (-1, 2, 40, 12)
+    assert (event.type, event.clicks, event.margin) == (GPM_DOWN, 1, 0)
+    assert (event.wdx, event.wdy) == (0, -1)
 
 
 def test_bare_type_masks_off_the_click_flags() -> None:

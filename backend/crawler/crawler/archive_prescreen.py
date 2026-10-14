@@ -18,6 +18,7 @@ from enum import StrEnum
 
 from common.archive.archive_detection import (
     ENCRYPTED_ARCHIVE_MAGIC,
+    ZIP_LOCAL_FILE_HEADER,
     is_encrypted_archive_header,
     is_loom_archive,
 )
@@ -26,6 +27,10 @@ from minio import Minio
 from minio.error import S3Error
 
 logger = logging.getLogger(__name__)
+
+# Enough of the object to answer both "is this the encrypted container?" and "is this
+# zip-shaped at all?" from one range read, since neither magic is longer than this.
+HEAD_LENGTH = max(len(ENCRYPTED_ARCHIVE_MAGIC), len(ZIP_LOCAL_FILE_HEADER))
 
 
 class IntakeObjectKind(StrEnum):
@@ -60,10 +65,24 @@ def classify_intake_object(
         # a whole 64 KiB block that the zip probe below then seeks away from -- and
         # this runs on every object a USB mirror lands in the bucket, so at 300k
         # objects that is ~19 GB of range reads fetched and thrown away.
-        if is_encrypted_archive_header(
-            reader.fetch_range(0, len(ENCRYPTED_ARCHIVE_MAGIC))
-        ):
+        head = reader.fetch_range(0, HEAD_LENGTH)
+
+        if is_encrypted_archive_header(head):
             return IntakeObjectKind.LOOM_ARCHIVE_ENCRYPTED
+
+        # Gated on the local file header, out of the bytes already in hand. Handing a
+        # non-zip to ZipFile is not free: `_EndRecData` reads the trailing 22 bytes,
+        # fails the signature check, then seeks back for the last ~64 KiB looking for a
+        # displaced end-of-central-directory record -- two further round trips for every
+        # ordinary file on a stick, which is nearly all of them.
+        #
+        # Exact for the archives this codebase writes: `compress_files.py` builds every
+        # one as `zipfile.ZipFile(buf, mode="w")` with at least a MANIFEST.json in it, so
+        # the first bytes are always a local file header. What it gives up is a loom
+        # archive hidden behind a prepended self-extracting stub, which nothing here
+        # produces.
+        if not head.startswith(ZIP_LOCAL_FILE_HEADER):
+            return IntakeObjectKind.PLAIN_FILE
 
         # BufferedReader for two reasons: it coalesces zipfile's many tiny reads
         # on top of the reader's block cache, and it is what makes this a plain

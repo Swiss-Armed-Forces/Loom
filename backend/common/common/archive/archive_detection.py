@@ -104,7 +104,13 @@ def is_loom_archive(fd: IO[bytes]) -> bool:
     # compression method zipfile has no decompressor for, which is what WinZip's AES
     # ("method 99") is. Either would otherwise take the crawler pod down on an object
     # it can simply decline.
-    except (BadZipFile, ValidationError, OSError, RuntimeError):
+    #
+    # ValueError rather than pydantic's ValidationError alone, because it subsumes it
+    # *and* UnicodeDecodeError, which is what ZipFile -- not BadZipFile -- raises for a
+    # central directory entry whose general-purpose bit 11 claims UTF-8 over bytes that
+    # are not: CPython decodes the name with no guard, and every archive written by a
+    # CP932 or GBK tool does exactly that.
+    except (BadZipFile, ValueError, OSError, RuntimeError):
         return False
 
 

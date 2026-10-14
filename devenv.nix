@@ -841,6 +841,19 @@ in
       pass_filenames = false;
     };
 
+    # ollama/Dockerfile.models hardcodes the models the production image bakes,
+    # and charts/values.yaml names the ones Loom asks for. They agreed, and
+    # nothing made them: a drift is invisible until an air-gapped box is in
+    # front of somebody with a console pane that cannot answer. vars.sh's
+    # LOOM_CHAT_MODEL reads the chart precisely so there is no second literal;
+    # this is what keeps the Dockerfile from being one.
+    "check-ollama-models" = {
+      enable = true;
+      entry = "./cicd/check_ollama_models.sh";
+      files = "^(charts/values\\.yaml$|ollama/Dockerfile\\.models$|cicd/check_ollama_models\\.sh$|vars\\.sh$)";
+      pass_filenames = false;
+    };
+
     # The Ollama image's entrypoint wrapper decides OLLAMA_NUM_PARALLEL from the
     # GPU it finds, which is arithmetic no type can check. The suite is stdlib
     # only and runs in well under a second, so it rides the hook set -- and so
@@ -1490,10 +1503,11 @@ in
         # appliance package, so devenv's virtualenv already imports them by name.
         # Run from the repository root so that pytest.ini applies -- above all
         # `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
-        # One invocation, so the five suites in `appliancePytestPaths` share a
-        # session. Their module basenames are unique across all five for that
-        # reason: pytest imports them into one namespace, so a second
-        # `test_devices.py` anywhere in that list collides with the first.
+        # One invocation, so the suites in `appliancePytestPaths` share a
+        # session. Their module basenames are unique across all of them for that
+        # reason -- however many there come to be: pytest imports them into one
+        # namespace, so a second `test_devices.py` anywhere in that list collides
+        # with the first.
         python -m pytest ${lib.concatStringsSep " " appliancePytestPaths} "''${@}"
       )
     '';

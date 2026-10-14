@@ -306,14 +306,28 @@ class Relay:
             pass
         _set_window_size(self._master, _window_size(self._console))
 
-    def _handle_console(self) -> None:
-        """Keystrokes, straight through to the session."""
+    def _handle_console(self) -> bool:
+        """Keystrokes, straight through to the session.
+
+        False when the console has gone away.
+
+        Mirrors `_handle_master`, and for a reason this package already has to live
+        with: a VT hangup -- `vhangup`, a VT deallocated under a DRM takeover, the very
+        thing `_RECONNECT_INTERVAL` exists for -- leaves the descriptor permanently
+        readable to `select` while every `os.read` on it raises EIO. Treating that as
+        "nothing arrived" and going round again is a loop that spins at 100% CPU for
+        the life of the session, with no timeout and no way out.
+        """
         try:
             data = os.read(self._console, _IO_CHUNK)
-        except OSError:
-            data = b""
-        if data:
-            _write_all(self._master, data)
+        except OSError as exc:
+            if exc.errno == errno.EINTR:
+                return True
+            return False
+        if not data:
+            return False
+        _write_all(self._master, data)
+        return True
 
     def _handle_master(self) -> bool:
         """The session's own output.
@@ -359,8 +373,8 @@ class Relay:
             if wakeup_read in ready:
                 self._handle_wakeup(wakeup_read)
 
-            if self._console in ready:
-                self._handle_console()
+            if self._console in ready and not self._handle_console():
+                return
 
             if self._gpm.client is not None and self._gpm.client.fileno() in ready:
                 self.handle_gpm()

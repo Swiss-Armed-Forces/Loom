@@ -19,6 +19,15 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import NotRequired, TypedDict
 
+# Everything `udevadm info --query=property` printed for a device.
+#
+# A named alias rather than a declared shape, and that is the honest description: which
+# keys a stick reports is the device's choice and not this package's. `derive_identity`
+# falls through four candidate identifiers precisely because cheap sticks omit the
+# obvious ones, and the whole map is carried into `Stick.udev` in the manifest verbatim,
+# where an enumerated type would quietly drop whatever the next stick happens to report.
+UdevProperties = dict[str, str]
+
 
 class LsblkNode(TypedDict):
     """One row of `lsblk --json --tree`, as the columns below ask for it.
@@ -100,7 +109,7 @@ class Disk:
     kernel_name: str
     size: int
     volumes: tuple[Volume, ...] = field(default_factory=tuple)
-    properties: dict[str, str] = field(default_factory=dict)
+    properties: UdevProperties = field(default_factory=dict)
 
     @property
     def partlabels(self) -> frozenset[str]:
@@ -257,13 +266,13 @@ def protected_disks() -> frozenset[str]:
     return frozenset(found)
 
 
-def udev_properties(device: str) -> dict[str, str]:
+def udev_properties(device: str) -> UdevProperties:
     try:
         output = _run(["udevadm", "info", "--query=property", "--name", device])
     except (subprocess.SubprocessError, OSError):
         return {}
 
-    properties = {}
+    properties: UdevProperties = {}
     for line in output.splitlines():
         key, _, value = line.partition("=")
         if key and value:
@@ -334,7 +343,7 @@ def inspect_disk(device: str) -> Disk:
 
 
 def disk_from_lsblk(
-    nodes: list[LsblkNode], device: str, properties: dict[str, str]
+    nodes: list[LsblkNode], device: str, properties: UdevProperties
 ) -> Disk:
     """Build a `Disk` from lsblk's `blockdevices`.
 

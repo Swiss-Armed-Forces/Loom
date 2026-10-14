@@ -54,6 +54,11 @@ class _CountingFileStorage(InMemoryFileStorageLazyBytesService):
         super().__init__(threshold_bytes=threshold_bytes)
         self.full_transfer_bytes = 0
 
+    @property
+    def stored_objects(self) -> int:
+        """How many objects the store is holding, which is what a leak shows up in."""
+        return len(self._storage)
+
     def _load_to(self, service_id, dst):
         self.full_transfer_bytes += len(self._storage[service_id])
         super()._load_to(service_id, dst)
@@ -217,16 +222,51 @@ def test_a_truncated_archive_of_our_own_is_indexed_rather_than_dropped(
 def test_an_encrypted_blob_that_is_not_an_archive_is_indexed_rather_than_dropped(
     services, storage
 ):
-    """Our own key, a clean decrypt, and a zip with no manifest in it."""
+    """Our own key, a clean decrypt, and a zip with no manifest in it.
+
+    The object count is the second half of this, and the expensive half: decrypting
+    wrote a full plaintext copy into permanent storage, and the routing that follows
+    carries None, so nothing downstream holds its service id and no File entity ever
+    references it. Left behind it is a permanent leak the size of the archive, on a
+    single-disk appliance, now reached unattended off a USB stick.
+    """
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
         zip_file.writestr("notes/report.pdf", b"no manifest here")
     encrypted = _encrypted(services, buffer.getvalue())
+    file_content = storage.from_bytes(encrypted)
+    stored_before = storage.stored_objects
 
-    routing = route_archive_blob(storage.from_bytes(encrypted), services)
+    routing = route_archive_blob(file_content, services)
 
     assert routing.decision is ArchiveDecision.INDEX_AS_FILE
     assert routing.reason == "decrypted, but not a loom archive"
+    assert storage.stored_objects == stored_before
+
+
+def test_a_blob_that_cannot_even_be_inspected_is_indexed_rather_than_dropped(
+    install_services, services, dispatched_files
+):
+    """The never-drop guarantee has to survive the decision itself failing.
+
+    Everything routing does is parse attacker-shaped bytes off a stranger's stick, so
+    "deciding what this is raised" is a real outcome -- and letting it out of the task
+    sends the message round the retry chain into the graveyard queue with no File entity
+    and no trace, which is the exact disappearance this module replaced.
+    """
+
+    class _UnreadableStorage(InMemoryFileStorageLazyBytesService):
+        def _load_seekable(self, service_id):
+            del service_id  # unused
+            raise OSError("connection reset by peer")
+
+    storage = _UnreadableStorage(threshold_bytes=THRESHOLD_BYTES)
+    install_services(file_storage=storage, archive_encryption=services.encryption)
+
+    index_archive_task(_request(b"%PDF-1.7\nsomething went wrong reading this"))
+
+    dispatched_files.assert_called_once()
+    assert dispatched_files.call_args.kwargs["full_name"] == FULL_NAME
 
 
 @pytest.mark.usefixtures("task_services")

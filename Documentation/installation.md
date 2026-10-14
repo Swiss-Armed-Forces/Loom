@@ -410,9 +410,24 @@ Check both halves at once, and check that the negative fails too:
 ```bash
 curl --cacert certs/loom-server-ca.pem --cert certs/alice.crt --key certs/alice.key https://frontend.loom/
 curl --cacert certs/loom-server-ca.pem https://frontend.loom/   # must fail in the handshake
+curl http://frontend.loom/                                      # must also fail
 ```
 
-If the second call succeeds, mutual TLS is not actually on.
+If the second call succeeds, mutual TLS is not actually on. If the third one succeeds, it has been
+bypassed rather than weakened — see below.
+
+#### Plain HTTP goes around it, it does not weaken it
+
+`up --enable-http` (and `charts/values-http.yaml`, which it applies) widens every route onto
+Traefik's `web` entrypoint and switches the global redirect to https off. The client-certificate
+requirement is attached as `traefik.ingress.kubernetes.io/router.tls.options`, which constrains the
+TLS handshake and nothing else — so the same routes then answer in cleartext, asking for no
+certificate at all, and every host the chart serves is open to anyone who can reach port 80.
+
+`up.sh` refuses the combination outright, and the appliance never builds it: a
+`--require-client-cert` image is the one that drops `--enable-http` (`nixos/modes.nix`). The dev and
+integration-test profiles apply `values-http.yaml` implicitly, so neither is a deployment to switch
+this on in.
 
 #### The CA rotates, and takes every certificate with it
 

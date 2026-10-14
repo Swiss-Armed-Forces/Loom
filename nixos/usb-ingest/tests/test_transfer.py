@@ -132,13 +132,22 @@ def test_the_endpoint_is_declared_in_the_environment() -> None:
     assert env[f"MC_HOST_{ALIAS}"] == ENDPOINT
 
 
+# The environment a child is run under.
+#
+# A named alias rather than an enumerated shape, because that is what it is: these
+# helpers put a directory on PATH and the module under test reads whatever else the
+# unit was given. `-> dict[str, str]` read identically to half a dozen other maps in
+# this file.
+Environment = dict[str, str]
+
+
 def _emits(*events: str) -> str:
     """A fake mc body that streams these JSON events, one per line."""
     quoted = " ".join(f"'{event}'" for event in events)
     return f"printf '%s\\n' {quoted}"
 
 
-def _fake_mc(tmp_path, body: str) -> dict[str, str]:
+def _fake_mc(tmp_path, body: str) -> Environment:
     """An environment whose PATH holds an `mc` that does what the test wants.
 
     The wait shells out, so this is the honest way to drive it: a real process, a real
@@ -298,7 +307,7 @@ def test_an_error_event_with_nothing_in_it_still_counts(tmp_path) -> None:
     assert result.failures == 1
 
 
-def _fake_kubectl(tmp_path, body: str) -> dict[str, str]:
+def _fake_kubectl(tmp_path, body: str) -> Environment:
     binary = tmp_path / "bin" / "kubectl"
     binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_text(f"#!/bin/sh\n{body}\n")

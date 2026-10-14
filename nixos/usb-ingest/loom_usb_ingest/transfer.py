@@ -307,18 +307,38 @@ def mirror(
     return TransferResult(objects, transferred, failures, first_error)
 
 
+# How much of a child's stderr is kept. The rest is read and discarded, which is the
+# part that matters -- stopping would deadlock the child in write(2).
+#
+# The only consumer is `_stream_json`'s synthetic error event, which goes through
+# `report.condense` and is cut to REASON_LIMIT characters, so nothing past the first
+# line is ever shown. Keeping all of it means that the case the docstring below names
+# -- a long mirror over media with many unreadable files -- holds one stderr line per
+# unreadable file in RAM for the length of the copy, which on a 300k-file stick is tens
+# of megabytes in a root unit on an appliance.
+MAX_CAPTURED_STDERR = 64 * 1024
+
+
 def _drain_in_background(stream, sink: list[str]) -> threading.Thread:
-    """Read a pipe to exhaustion on a thread, appending what it said to `sink`.
+    """Read a pipe to exhaustion on a thread, keeping the first `MAX_CAPTURED_STDERR`.
 
     Daemonised so a stream that never closes cannot keep the process alive; the caller
     joins it after `wait()` has already proved the child is gone.
+
+    Everything is read, only the first bytes are kept: draining is what keeps the child
+    from blocking, and the sink is only ever read for its opening line.
     """
 
     def pump() -> None:
         if stream is None:
             return
+        kept = 0
         try:
             for chunk in stream:
+                if kept >= MAX_CAPTURED_STDERR:
+                    continue
+                chunk = chunk[: MAX_CAPTURED_STDERR - kept]
+                kept += len(chunk)
                 sink.append(chunk)
         except (OSError, ValueError):
             pass

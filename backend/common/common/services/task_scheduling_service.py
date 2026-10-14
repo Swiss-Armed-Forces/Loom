@@ -126,7 +126,16 @@ class TaskSchedulingService(TaskService):
         ).forget()
 
     def dispatch_index_archive(self, request: ArchiveImportRequest) -> None:
-        """Dispatch a loom archive for import."""
+        """Dispatch a loom archive for import.
+
+        The argument is an `ArchiveImportRequest` where it used to be a bare
+        `FileStorageLazyBytes`, under the same task name. A message enqueued by an older
+        worker and consumed by this one therefore fails Pydantic validation rather than
+        being understood. That is consistent with Loom's stated lack of an upgrade path
+        -- the whole cluster deploys as one unit and these queues are short-lived -- but
+        it is the reason a rolling replacement of the worker alone is not a thing to
+        attempt.
+        """
         root_task_id = uuid4()
         self._send_task(
             "worker.create_archive.dispatch_tasks.dispatch_index_archive",
