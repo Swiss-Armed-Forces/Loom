@@ -630,6 +630,11 @@ in
       tailscale
       dig
 
+      # GitLab from the shell (issues, MRs, pipelines). A developer convenience
+      # only - nothing in cicd/ may call it, so it stays out of the pipeline's
+      # package set.
+      glab
+
       # monitoring
       btop-with-gpu-patch
 
