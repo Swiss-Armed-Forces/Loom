@@ -16,6 +16,15 @@ class Settings(CommonSettings):
     app_title: str = "Loom API"
     api_frontend_url: str = "api/"
 
+    # Chart metadata of the running release, set from the settings ConfigMap and
+    # served on /v1/about. The defaults are placeholders rather than a version
+    # number: outside a cluster there is no release to report, and a plausible
+    # looking default would be indistinguishable from a real one.
+    chart_name: str = "loom"
+    chart_version: str = "unknown"
+    chart_app_version: str = "unknown"
+    chart_description: str = ""
+
     # Note: we can not use pydantic's HttpUrl here,
     # because it adds '/' at the end, which will
     # then break CORSMiddleware

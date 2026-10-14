@@ -24,6 +24,15 @@ data:
     ENVIRONMENT: {{ .Values.environment }}
     DOMAIN: {{ .Values.domain }}
 
+    # chart metadata
+    # The API serves these on /v1/about, so the version a client sees is the one
+    # of the release that rendered this ConfigMap. No 'ne ... nil' guard: unlike
+    # the values below, .Chart fields always carry a value.
+    chart_name: {{ .Chart.Name | quote }}
+    chart_version: {{ .Chart.Version | quote }}
+    chart_app_version: {{ .Chart.AppVersion | quote }}
+    chart_description: {{ .Chart.Description | quote }}
+
     # pipeline
     {{- if ne .Values.pipeline.task_time_limit_seconds nil }}
     task_time_limit_seconds: {{ .Values.pipeline.task_time_limit_seconds | quote }}

@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 
 import {
+    AboutInfoToJSON,
     CompleteEstimateResultToJSON,
     QueuesStatsToJSON,
 } from "@app/api/generated";
@@ -93,6 +94,21 @@ const estimateHandler = http.get(/\/api\/v1\/complete-estimate$/, () => {
     );
 });
 
+// The demo runs no chart, so there is no release to report. "demo" is a literal
+// rather than a copied version number on purpose: a number here would be wrong
+// the moment the chart moves, which is the duplication /v1/about exists to end.
+const aboutHandler = http.get(/\/api\/v1\/about$/, () =>
+    json(
+        AboutInfoToJSON({
+            name: "loom",
+            version: "demo",
+            appVersion: "demo",
+            description:
+                "Loom is a powerful and easily deployable open-source document search engine.",
+        }),
+    ),
+);
+
 const metricsHandler = http.get(
     /\/api\/v1\/metrics$/,
     () =>
@@ -107,5 +123,6 @@ export const systemHandlers = [
     bulkTaskHandler,
     queuesHandler,
     estimateHandler,
+    aboutHandler,
     metricsHandler,
 ];

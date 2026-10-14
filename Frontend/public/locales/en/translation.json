@@ -825,7 +825,6 @@
         "title": "About",
         "linkTitle": "Repository",
         "link": "https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom",
-        "chartData": "chartData.json",
         "license": "LICENSE.txt",
         "thirdParty": "THIRD-PARTY.md",
         "contributing": "CONTRIBUTING.md",
