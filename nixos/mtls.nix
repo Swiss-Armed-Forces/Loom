@@ -49,6 +49,20 @@ let
   clientKey = "${stateDir}/client.key";
   serverAnchor = "${stateDir}/loom-server-ca.pem";
 
+  # Who has to be able to read the identity, and the reason it is not root.
+  #
+  # The nixpkgs nginx unit sets `User = cfg.user; Group = cfg.group;`
+  # unconditionally -- there is no privileged master process -- and its
+  # `preStart` runs `nginx -t` as that user. A `proxy_ssl_certificate` with no
+  # variables in it is loaded while the configuration is parsed, so the test
+  # opens this key. Owned root:root at 0600 inside a 0700 directory, it cannot:
+  # the test fails, `preStart` fails, and nginx never starts -- which on this box
+  # takes the captive portal and both loopback proxies with it.
+  #
+  # Read through the option rather than written as `nginx`, so a box that ever
+  # renames the service user keeps working.
+  nginxGroup = config.services.nginx.group;
+
   # The issuer, out of the checkout rather than restated here. Installed as a
   # store binary rather than run from the seeded repository: this unit can start
   # before loom-seed-repo has finished, and one implementation is the point.
@@ -98,7 +112,11 @@ let
     text = ''
       state=${lib.escapeShellArg stateDir}
       mkdir -p "$state"
-      chmod 700 "$state"
+      # Restated here as well as in tmpfiles, because this unit is ordered
+      # before nginx and a directory nginx cannot traverse is the failure it
+      # exists to prevent.
+      chgrp ${lib.escapeShellArg nginxGroup} "$state"
+      chmod 750 "$state"
 
       # Only when there is nothing there. A placeholder written over a real
       # identity would take the box off its own cluster until the next renewal.
@@ -112,6 +130,13 @@ let
         -subj "/CN=loom-mtls-placeholder" \
         -keyout ${lib.escapeShellArg clientKey} \
         -out ${lib.escapeShellArg clientCert} 2>/dev/null
+
+      # Group-readable, for the reason `nginxGroup` is declared at all: the
+      # configuration test reads both halves as the service user.
+      chgrp ${lib.escapeShellArg nginxGroup} \
+        ${lib.escapeShellArg clientKey} ${lib.escapeShellArg clientCert}
+      chmod 640 ${lib.escapeShellArg clientKey}
+      chmod 644 ${lib.escapeShellArg clientCert}
 
       # `proxy_ssl_trusted_certificate` needs a file too, and the placeholder
       # identity is as good a stand-in as any: nothing verifies against it while
@@ -184,8 +209,11 @@ let
       # Moved into place together, and only once all three exist: nginx reloads
       # on its own schedule as well as on the one below, and a reload that lands
       # between a new certificate and its key gets a pair that does not match.
-      install -m 600 "$work/$name.crt" "$state/client.crt"
-      install -m 600 "$work/$name.key" "$state/client.key"
+      #
+      # The key is group-readable and the group is nginx's, because nginx runs
+      # as its own user and reads this while parsing -- see `nginxGroup`.
+      install -m 644 "$work/$name.crt" "$state/client.crt"
+      install -m 640 -g ${lib.escapeShellArg nginxGroup} "$work/$name.key" "$state/client.key"
       install -m 644 "$work/loom-server-ca.pem" "$state/loom-server-ca.pem"
 
       echo "Issued a client identity for $name."
@@ -399,7 +427,10 @@ in
 
       systemd.tmpfiles.rules = [
         "d /var/lib/loom 0755 root root -"
-        "d ${stateDir} 0700 root root -"
+        # 0750 root:nginx, not 0700 root:root. See `nginxGroup`: the
+        # configuration test opens the key in here as the service user, and a
+        # directory it cannot traverse stops nginx from starting at all.
+        "d ${stateDir} 0750 root ${nginxGroup} -"
       ];
 
       systemd.services.loom-mtls-placeholder = {
