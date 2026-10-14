@@ -402,6 +402,48 @@ let
   helmHooks = builtins.foldl' (acc: subdir: acc // (createHelmHooksForSubdir subdir)) { } helmSubdirs;
 
   cicd-config = builtins.path { path = ./nix-dind/devenv.local.nix; };
+
+  # The public key each Cachix cache in `cachix.pull` signs with. devenv's
+  # cachix module carries no keys -- its Rust core fetches them from the API at
+  # shell build time -- so they are stated here, and `cachix use <name>` prints
+  # one. A cache never rotates its key: rotating means re-signing every path.
+  cachixPublicKeys = {
+    # devenv's own module appends this to `cachix.pull` whatever this file says.
+    devenv = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    loom = "loom.cachix.org-1:qK4ugmN5g4Pvhv45OLcXTwG53ZnSauwrHLVA0A7Y0rs=";
+    nixpkgs-python = "nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU=";
+  };
+
+  cachixPublicKey =
+    name:
+    cachixPublicKeys.${name}
+      or (throw "devenv.nix: no public key for the '${name}' Cachix cache -- add it to cachixPublicKeys (`cachix use ${name}` prints it)");
+
+  # `unique`, because the list is assembled from several modules that each
+  # append what they need: devenv adds its own cache and the nixpkgs-python
+  # input adds the one this file also names, so a cache would otherwise be
+  # queried twice per path.
+  cachixPullCaches = lib.unique config.cachix.pull;
+
+  # One nix.conf fragment, which is what NIX_CONFIG is parsed as: one setting
+  # per line, values space separated.
+  #
+  # devenv applies `cachix.pull` to the nix invocations it drives itself and to
+  # nothing else -- it writes no nix.conf and exports nothing -- so a nix-build
+  # run inside this shell would otherwise see cache.nixos.org alone and rebuild
+  # paths sitting in loom.cachix.org: for `spark`, a qemu-emulated aarch64
+  # kernel, hours against a 32 MB download.
+  #
+  # `extra-` rather than plain, so this adds to /etc/nix/nix.conf and
+  # ~/.config/nix/nix.conf rather than replacing what they say. Nix discards
+  # both lines for a caller outside `trusted-users`, naming the setting and the
+  # reason on every invocation -- see Documentation/devenv-setup.md.
+  cachixNixConfig = ''
+    extra-substituters = ${
+      lib.concatMapStringsSep " " (name: "https://${name}.cachix.org") cachixPullCaches
+    }
+    extra-trusted-public-keys = ${lib.concatMapStringsSep " " cachixPublicKey cachixPullCaches}
+  '';
 in
 {
   env = {
@@ -421,6 +463,10 @@ in
     # this, corepack fetches the newest pnpm (12.x) whose Rust-native
     # binary fails on Alpine/musl CI runners.
     COREPACK_DEFAULT_TO_LATEST = 0;
+
+    # Every nix command run inside this shell -- the appliance scripts above
+    # all -- sees the caches `cachix.pull` names. See cachixNixConfig.
+    NIX_CONFIG = cachixNixConfig;
 
     # fix locale
     LOCALE_ARCHIVE = "${custom-locales}/lib/locale/locale-archive";

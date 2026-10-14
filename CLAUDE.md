@@ -84,6 +84,12 @@ All services accessible via `*.loom` domains (configured in /etc/hosts by `up.sh
 Loom uses **devenv** (Nix-based) for reproducible development environments. When you `cd` into the repo,
 direnv automatically loads the environment.
 
+**Run every nix command through the devenv shell** (`devenv shell -- …`, or `direnv exec <tree> …`).
+`devenv.nix` sets `NIX_CONFIG` from `cachix.pull` there, and that is the only thing pointing nix at
+`loom.cachix.org` — devenv applies `cachix.pull` to the invocations it drives itself and to nothing
+else. A bare `nix-build ./nixos` outside the shell rebuilds the whole appliance closure from source
+rather than fetching it, which under `--allow-cross` means emulating an aarch64 kernel under qemu.
+
 ### Common Commands
 
 All commands below are provided by devenv scripts (run `devenv-help` to see full list):

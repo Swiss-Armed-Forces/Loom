@@ -494,6 +494,21 @@ Both store paths are in `devenv.lock`; the devenv scripts pass them for you, and
 Targets: `box`, `boxVm`, `installerImage`, `tests.appliance`, plus `boxSystem` and `installerSystem`
 for poking at evaluated configuration.
 
+Run all of these **inside the devenv shell**. That is the only place `NIX_CONFIG` names
+`loom.cachix.org` — `devenv.nix` builds it from `cachix.pull`, because devenv applies that option
+to the nix invocations it drives itself and to nothing else: it writes no `nix.conf` and exports
+nothing. Outside the shell nix sees `cache.nixos.org` alone and rebuilds the appliance closure from
+source, which under `--allow-cross` means a qemu-emulated aarch64 kernel — hours, against a 32 MB
+download. If nix prints
+
+```text
+ignoring the client-specified setting 'extra-substituters', because it is a restricted setting
+and you are not a trusted user
+```
+
+you are not in `trusted-users` and the cache is unreachable whatever the shell exports; see
+`Documentation/devenv-setup.md`.
+
 ## Booting one by hand
 
 The tests answer questions you can write down in advance. `appliance-vm` is for the other kind —
@@ -812,6 +827,11 @@ Two jobs in `.gitlab-ci.yml`, split along the same line as the two scripts:
 `appliance_check` prints one line naming the runner's architecture, whether `/dev/kvm` is usable and
 the free space on the store. That line is how the KVM question gets answered for a runner nobody can
 log into.
+
+Both jobs reach their scripts through `devenv shell --` (`cicd/ci_helpers.sh`), so a runner gets the
+binary cache for the same reason a workstation does, and `nix-dind/Dockerfile` puts the job's user in
+`trusted-users`, without which nix would discard it — the same precondition the `--option` paragraph
+under *Disk budget* states for `min-free`.
 
 ## Disk budget
 

@@ -58,9 +58,25 @@ covering prerequisites, initial configuration, and optional tooling for developm
     - Open file `/etc/nix/nix.conf` and add the following lines
 
     ```bash
+    trusted-users = root <your-username>
     extra-substituters = https://devenv.cachix.org
     extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
     ```
+
+    > `trusted-users` is not optional. Nix discards a substituter that a client
+    > supplies — on the command line or through `NIX_CONFIG` — unless the caller is
+    > in that list, and says so on every invocation:
+    > `ignoring the client-specified setting 'extra-substituters', because it is a`
+    > `restricted setting and you are not a trusted user`. Without it the Loom cache
+    > below is unreachable and an appliance build compiles its whole closure from
+    > source.
+    >
+    > `devenv.cachix.org` has to be named here because the first `devenv shell`
+    > fetches devenv itself, before anything in this repository can apply. The Loom
+    > cache does not: `devenv.nix` sets `NIX_CONFIG` from `cachix.pull`, so every nix
+    > command run inside the development shell sees `loom.cachix.org`. Keep personal
+    > nix settings in `~/.config/nix/nix.conf` rather than in a `NIX_CONFIG` of your
+    > own — the shell sets that variable.
 
     - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
     - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
