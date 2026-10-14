@@ -412,7 +412,13 @@ This separation means:
   of CUDA userspace the box could never execute
 - Switching GPU types doesn't re-download models
 - Runtime images are lightweight and fast to deploy
-- Development uses lightweight models (`qwen2.5:0.5b`, `moondream:1.8b`), production uses full models (`huihui_ai/qwen3.5-abliterated:9b`)
+- Development uses lightweight models (`qwen2.5:0.5b`, `moondream:1.8b`), production uses full models (`qwen3.8:27b`)
+
+> ℹ️ The production model is ~18 GB of weights, so the `ollama-models` image is correspondingly
+> large and the model PVC (`ollama.pvc.storage`, default `50Gi`) is sized to hold it alongside the
+> blobs of a superseded model — the initContainer copies with `cp --update` and never prunes.
+> Inference wants a GPU with at least 20 GB of VRAM; with less, Ollama offloads layers to the CPU
+> and generation slows down sharply.
 
 **GPU selection:**
 

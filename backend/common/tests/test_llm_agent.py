@@ -246,7 +246,7 @@ def test_thinking_survives_every_family(model: str) -> None:
     assert params.thinking is True
 
 
-_PRODUCTION_MODEL = "huihui_ai/qwen3.5-abliterated:9b"
+_PRODUCTION_MODEL = "qwen3.8:27b"
 _DEVELOPMENT_MODEL = "qwen2.5:0.5b"
 
 

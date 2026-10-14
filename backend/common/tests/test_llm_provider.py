@@ -200,12 +200,12 @@ def test_the_production_model_keeps_tool_output(provider: LLMProvider) -> None:
     """The floor is a claim about small weights, not a preference for grammars.
 
     Tool output has the broader support and keeps the output schema out of the prompt,
-    so a model large enough to follow its own template keeps pydantic-ai's default. Also
-    pins that the author namespace does not confuse the tag read.
+    so a model large enough to follow its own template keeps pydantic-ai's default.
+
+    Read off the settings default rather than a literal, so that the mode production
+    actually gets is what is asserted whenever that default moves.
     """
-    profile = _profile(
-        LLMClientSettings(provider=provider, model="huihui_ai/qwen3.5-abliterated:9b")
-    )
+    profile = _profile(LLMClientSettings(provider=provider))
 
     assert profile.get("default_structured_output_mode", "tool") == "tool"
 
@@ -216,6 +216,7 @@ def test_the_production_model_keeps_tool_output(provider: LLMProvider) -> None:
         pytest.param("qwen2.5:0.5b", "native", id="half-a-billion"),
         pytest.param("qwen2.5:3b", "native", id="just-under-the-floor"),
         pytest.param("gemma3:4b", "tool", id="on-the-floor"),
+        pytest.param("huihui_ai/qwen3.5-abliterated:9b", "tool", id="author-namespace"),
         pytest.param("llama3.3:70b-instruct-q4_K_M", "tool", id="quantisation-suffix"),
         pytest.param("mixtral:8x7b", "tool", id="expert-layout-not-a-size"),
         pytest.param("Qwen/Qwen3.5-122B-A10B-FP8", "tool", id="no-tag"),
@@ -228,7 +229,8 @@ def test_the_parameter_tag_decides_the_output_mode(model: str, mode: str) -> Non
 
     `8x7b` is an expert layout rather than a parameter count, and a name stating no size
     states nothing -- both fall back to `tool`, which is the mode every other layer in
-    the provider is already written for.
+    the provider is already written for. An author namespace does not confuse the read
+    either: the tag is matched on a `:` that no namespace carries.
     """
     profile = _profile(LLMClientSettings(provider=LLMProvider.OLLAMA, model=model))
 
