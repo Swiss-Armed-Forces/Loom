@@ -372,7 +372,7 @@ in
       # Only the HPA goes. Worker, reaper, tika and gotenberg scale as the
       # values file intends; they are bound by cores and memory, which this box
       # has.
-      loom.chartOverrides =
+      loom.applianceValues =
         lib.mkIf
           (cfg.platform.runsAutoscaling && cfg.platform.runsAiServices && cfg.platform.gpuVendor != null)
           {

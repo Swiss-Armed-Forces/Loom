@@ -39,6 +39,20 @@
   # that `nix-build ./nixos -A tests.appliance` needs no arguments beyond the
   # ones it already takes.
   loomNamespace ? "loom",
+  # Helm values the operator asked for, as a JSON object -- the merged result of
+  # `build-appliance-image --values FILE` and `--set path=value`, passed the way
+  # loomHostsJson is. nixos/repo.nix writes it into charts/values-user.yaml of
+  # the seeded checkout, which skaffold applies *before* everything up.sh
+  # assembles, so nothing in here can break a decision a flag or a platform made.
+  #
+  # Every path in it is checked against the embedded tag's charts/values.yaml
+  # before the build starts. Nothing is checked here, because by the time Nix
+  # sees it the operator has gone home.
+  userValuesJson ? "{}",
+  # Where those values came from, for the header of the generated file: the
+  # --values filenames and a count of --set arguments, comma-separated. Purely a
+  # note to whoever reads the file on the box a month later.
+  userValuesSources ? "",
   # The model the console's chat pane pins itself to -- `LOOM_CHAT_MODEL` in
   # vars.sh, passed through the same way the namespace is. vars.sh reads it out
   # of `_llmDefaults.model` in charts/values.yaml, which is the authority: an
@@ -292,6 +306,8 @@ let
       tag
       loomHostsJson
       loomNamespace
+      userValuesJson
+      userValuesSources
       loomChatModel
       minikubeIp
       loomSubnet

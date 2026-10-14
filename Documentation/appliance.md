@@ -271,6 +271,10 @@ Without `--flash` it only produces the image, under `.appliance-build/`. The opt
 | `--lock-key-out FILE` | Also write the key passphrase to `FILE`, mode 0400. Must not be the same file as `--key-backup`. |
 | `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
 | `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — `spark` or `evo-x2`. There is no `--gpu`: the GPU is a property of the box. On the Spark this drops the offload but keeps the NVIDIA driver, which also runs that box's console. See [GPU support](#gpu-support) for when you need this. |
+| `--values FILE` | Deploy the box with these Helm values on top of the chart's. Repeatable, merged in order, last wins. The lowest override layer: every values file an `up.sh` flag turns on still wins over it. See [Custom Helm values](#custom-helm-values). |
+| `--set PATH=VALUE` | The same, one value at a time: `--set pipeline.tika_ocr_languages='["deu","fra"]'`. Applied after `--values`. The value is JSON where it parses as JSON, a string where it does not. |
+| `--values-allow-new-keys` | Accept a path the tag's `charts/values.yaml` does not carry. For the chart's free-form maps (labels, annotations, `nodeSelector`); otherwise an unknown path is how a typo gets caught. |
+| `--skip-values-check` | Skip the `helm template` dry-run over the merged values. |
 | `--keymap NAME` | Console keymap for the box, the installer and stage 1, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Defaults to the kernel's US QWERTY. Set this whenever the box has a non-US keyboard — see [Keyboard layout](#keyboard-layout). |
 | `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
 | `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
@@ -953,6 +957,80 @@ curl -sS http://127.0.0.1:18080/       # "Ollama is running", through the proxy
 
 A `502` from that last call means the proxy is up and the identity is not — either the cluster has not
 issued one yet, or the placeholder is still in place. `journalctl -u loom-mtls-identity` says which.
+
+## Custom Helm values
+
+A box is usually built for a particular pile of documents, and the chart already exposes most of what
+that changes: the OCR languages Tika is asked for, how deep the pipeline recurses into archives, which
+indexing steps are skipped, how much memory Elasticsearch gets. `--values` and `--set` deploy the box
+with those set, without a flag per knob.
+
+```bash
+# Swiss documents: German, French and Italian OCR instead of the default.
+build-appliance-image --platform evo-x2 --tag 1.5.0 \
+    --set pipeline.tika_ocr_languages='["deu","fra","ita"]'
+
+# The same thing, and more of it, from a file you keep.
+build-appliance-image --platform evo-x2 --tag 1.5.0 --values ./swiss-archive.yaml
+```
+
+```yaml
+# swiss-archive.yaml
+pipeline:
+  tika_ocr_languages: [deu, fra, ita]
+  max_recursion_depth: 12
+  skip_translate_while_indexing: true
+```
+
+`--values` is repeatable and the files are merged in order, last wins; `--set` is applied after all of
+them. A `--set` value is read as JSON when it parses as JSON — `5` is a number, `true` a boolean,
+`["deu","fra"]` a list — and as a string when it does not. Quote it as JSON (`'"123"'`) when you want
+a number-looking string.
+
+### What wins
+
+Values land in `charts/values-user.yaml` of the checkout the box deploys from, which is the **lowest**
+of the override layers. Skaffold applies these in order, later winning:
+
+| file | holds |
+| --- | --- |
+| `charts/values.yaml` | the chart's defaults |
+| `charts/values-user.yaml` | `--values` and `--set` |
+| `charts/values-up-flags.yaml` | whatever `up.sh`'s own flags turned on — `--gpus`, `--scaling`, `--enable-http`, `--no-resources` |
+| `charts/values-appliance.yaml` | facts about this box: the platform's deployment decisions, and whether the image requires a client certificate |
+| `charts/values-overwrites.yaml` | yours, edited on the box |
+
+That order is the point. Nothing you pass to `--values` can break a decision the platform or a flag
+made — a box asked to scale Ollama across its single GPU gets the platform's answer, and
+`certificate.requireClientCert` set in a values file does nothing at all, because mutual TLS needs the
+loopback proxy that only [`--require-client-cert`](#requiring-a-client-certificate) brings with it. The
+build prints every path it takes back from you.
+
+To override something the box itself decided, edit `charts/values-overwrites.yaml` on the box and run
+`up` by hand. It is the last word in the chart and nothing in the image ever writes it. Note that a
+reboot alone will not pick up such an edit: `loom.service` passes `--resume-if-deployed`, which
+compares chart versions and will not roll a Deployment for a changed values file.
+
+### What gets refused
+
+The image build checks the values before it starts, because a stick cannot be fixed afterwards:
+
+- **Every path must exist in that tag's `charts/values.yaml`.** The chart has no values schema, so
+  Helm takes an unknown key without a word and the box quietly does nothing it was asked for. A typo
+  fails the build naming the path. For the chart's free-form maps — labels, annotations,
+  `nodeSelector` — pass `--values-allow-new-keys`.
+- **The chart has to render with them.** A `helm template` dry-run runs offline, catching a value of
+  the wrong shape. `--skip-values-check` turns it off.
+- **`kubernetes.api`, `hostnames` and `image.registry` are refused outright**, with no way round it.
+  Each has something outside the chart built from the same value — `/etc/hosts`, the DNAT chain, the
+  NetworkPolicy that lets pods reach the API server, the certificate's `subjectAltName` — that a
+  values file cannot move.
+- **Credentials get a warning.** A path that looks like an API key or a password is baked into the
+  image and readable in `/nix/store` by anyone holding the stick. Without `--lock-key`, holding the
+  stick is the whole of the access control.
+
+Finally, the layer only exists in tags that carry it. Building an older tag with `--values` is refused
+rather than writing a file that tag's `skaffold.yaml` never applies.
 
 ## Keyboard layout
 

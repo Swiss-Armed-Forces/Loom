@@ -29,23 +29,39 @@ def repository(appliance: "Machine", subtest: "Subtest", params: Params) -> None
             f"runuser -u {params.operator.user} -- test -w {params.operator.repo_dir}/charts"
         )
 
-    with subtest("the checkout carries this platform's chart overrides"):
-        # repo.nix writes `loom.chartOverrides` into charts/values-overwrites.yaml,
+    with subtest("the checkout carries this platform's appliance values"):
+        # repo.nix writes `loom.applianceValues` into charts/values-appliance.yaml,
         # which skaffold lists after the values file up.sh generates and therefore
-        # applies last. Parsed through the box's own yq rather than compared as text:
-        # what has to match is the values, and the generator's formatting is not part
-        # of the claim.
-        overwrites = f"{params.operator.repo_dir}/charts/values-overwrites.yaml"
-        got = json.loads(appliance.succeed(f"yq --compact-output . {overwrites}")) or {}
-        want = json.loads(params.chart_overrides_json)
-        # Every declared override must be in there, rather than the file being exactly
-        # the overrides. The committed copy is comments only -- it parses to `null`, the
-        # `or {}` above -- but these tests are also run with `repoSrc ./.` against a
-        # developer's checkout, where this very file is the one they keep their own
-        # overrides in. What is being asserted is that the platform's landed, not that
-        # nobody else wrote here.
+        # applies over every up.sh flag. Parsed through the box's own yq rather than
+        # compared as text: what has to match is the values, and the generator's
+        # formatting is not part of the claim.
+        appliance_values = f"{params.operator.repo_dir}/charts/values-appliance.yaml"
+        got = (
+            json.loads(appliance.succeed(f"yq --compact-output . {appliance_values}"))
+            or {}
+        )
+        want = json.loads(params.appliance_values_json)
+        # Every declared value must be in there, rather than the file being exactly
+        # them. The committed copy is comments only -- it parses to `null`, the `or {}`
+        # above. What is being asserted is that the platform's landed.
         for key, value in want.items():
             assert got.get(key) == value, f"{key}: {got.get(key)} != {value}"
+
+    with subtest("the operator's own values file is left alone"):
+        # charts/values-overwrites.yaml is the last word in the chart and belongs to
+        # whoever deploys Loom. It is `--skip-worktree` in a developer's clone so that
+        # real content can live in it, and these tests run with `repoSrc ./.` -- so a
+        # seed that wrote it would overwrite the values of the person running them.
+        #
+        # Asserted by the absence of the seed's own header rather than by a diff: the
+        # file is `--skip-worktree`, so `git status` would report a clean tree whatever
+        # was written to it, and its content is by definition whatever the operator put
+        # there.
+        overwrites = f"{params.operator.repo_dir}/charts/values-overwrites.yaml"
+        content = appliance.succeed(f"cat {overwrites}")
+        assert (
+            "Written by the Loom appliance" not in content
+        ), f"the seed wrote values-overwrites.yaml:\n{content}"
 
 
 def loom_up_flags(appliance: "Machine", subtest: "Subtest", params: Params) -> None:

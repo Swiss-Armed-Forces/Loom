@@ -167,7 +167,7 @@ pkgs.testers.runNixOSTest {
           params=Params(
               ai_enabled=${if nodes.appliance.loom.platform.runsAiServices then "True" else "False"},
               autoscaling=${if nodes.appliance.loom.platform.runsAutoscaling then "True" else "False"},
-              chart_overrides_json=${builtins.toJSON (builtins.toJSON nodes.appliance.loom.chartOverrides)},
+              appliance_values_json=${builtins.toJSON (builtins.toJSON nodes.appliance.loom.applianceValues)},
               loom_hosts=${builtins.toJSON loomHosts},
               minikube_ip="${minikubeIp}",
               upsh_commands=${builtins.toJSON upshCommands} + ["sudo"],

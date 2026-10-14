@@ -1,0 +1,22 @@
+# This file is intentionally left empty in the repository. On a Loom appliance it
+# carries the handful of values that are true of *that box* rather than of Loom:
+# the platform's own deployment decisions (nixos/modes.nix) and whether the image
+# was built with mutual TLS (nixos/mtls.nix).
+#
+# It is written by nixos/repo.nix when the appliance seeds its checkout, and by
+# nothing else. On a normal install it stays as it is and contributes nothing.
+#
+# It is applied after charts/values-up-flags.yaml, so a box fact wins over an
+# up.sh flag -- which is the point: --scaling turns on Ollama's HPA, and a box
+# with exactly one GPU has to turn it back off.
+#
+# Do not put local overrides here. charts/values-user.yaml loses to up.sh's flags
+# and charts/values-overwrites.yaml beats everything; this one is the appliance's.
+#
+# The full order, later wins (skaffold.yaml):
+#
+#   charts/values.yaml              defaults
+#   charts/values-user.yaml         values that should lose to an up.sh flag
+#   charts/values-up-flags.yaml     whatever up.sh's flags turned on
+#   charts/values-appliance.yaml    this file
+#   charts/values-overwrites.yaml   your own last word

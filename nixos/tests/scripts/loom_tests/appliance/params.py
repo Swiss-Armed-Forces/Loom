@@ -45,10 +45,10 @@ class Params(NamedTuple):
     # hardcoded for the same reason `ai_enabled` is: it is false on the NUC 12, where
     # up.sh would refuse the flag alongside the `--no-resources` that box needs.
     autoscaling: bool
-    # `loom.chartOverrides` as JSON -- the Helm values the appliance forces on top of
-    # whatever up.sh assembles, which repo.nix writes into the seeded checkout. `{}` on
-    # a platform that overrides nothing.
-    chart_overrides_json: str
+    # `loom.applianceValues` as JSON -- the Helm values the appliance forces on top of
+    # whatever up.sh assembles, which repo.nix writes into charts/values-appliance.yaml
+    # of the seeded checkout. `{}` on a platform that overrides nothing.
+    appliance_values_json: str
     loom_hosts: list[str]
     minikube_ip: str
     # The literal list from up.sh `validate_environment`, plus whichever vendor SMI

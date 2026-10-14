@@ -84,6 +84,46 @@ LOCK_KEY=false
 # refuses a client that presents no certificate, which is a decision about who
 # may reach the box rather than a default worth making for anybody.
 REQUIRE_CLIENT_CERT=false
+
+# Helm values the operator wants this box deployed with: --values FILE and
+# --set path=value, merged in that order into charts/values-user.yaml of the
+# embedded checkout (nixos/repo.nix).
+#
+# That file is the *lowest* of the override layers -- skaffold applies it before
+# charts/values-up-flags.yaml -- so nothing given here can break a decision the
+# platform or an up.sh flag made. It is for everything the chart exposes and the
+# appliance has no opinion about: OCR languages, the pipeline's limits, sizing.
+USER_VALUES_FILES=()
+USER_VALUES_SETS=()
+# Accept a path the tag's charts/values.yaml does not already carry. Off by
+# default because there is no values.schema.json: helm takes an unknown key
+# without a word, so a typo becomes a stick that quietly does nothing it was
+# asked for. Needed for the chart's free-form maps -- labels, annotations,
+# nodeSelector -- where a new key is the point.
+USER_VALUES_ALLOW_NEW_KEYS=false
+# Skip the `helm template` dry-run over the merged values. The check is offline
+# and client-side; this exists for a tag whose chart cannot be rendered by the
+# helm on this host.
+USER_VALUES_SKIP_CHECK=false
+# Filled in by resolve_user_values from the two arrays above.
+USER_VALUES_JSON="{}"
+USER_VALUES_SOURCES=""
+# Values that decide what the box *is*, refused with no way round it. Each one
+# has something outside the chart that has to agree with it:
+#
+#   kubernetes.api   the node address, which up.sh pins with --static-ip, which
+#                    /etc/hosts and the DNAT chain are built from, and which the
+#                    -allow-k8s-api NetworkPolicy allows pods to reach
+#   hostnames        what the pre-install Job puts in the certificate's
+#                    subjectAltName, and what the box resolves to itself
+#   image.registry   where the images come from, on a box that has none left to
+#                    fetch
+RESERVED_VALUE_PATHS=(
+    kubernetes.api
+    hostnames
+    image.registry
+)
+
 # Seven EFF words is ~90 bits, which is more than argon2id needs to be out of
 # reach and still short enough to read off a printout and type at a console.
 #
@@ -200,6 +240,7 @@ STEPS=(
     verify_repo
     normalize_git_config
     generate_loom_hosts
+    resolve_user_values
     build_image
     report
 )
@@ -265,6 +306,24 @@ validate_environment(){
     if [[ "${LOCK_KEY}" = true ]]; then
         check_command cryptsetup
         check_command diceware
+    fi
+
+    # Likewise, and the files are read here rather than in resolve_user_values so
+    # that a path typo costs nothing: that step runs after the tag has been
+    # fetched and the checkout prepared.
+    if [[ ${#USER_VALUES_FILES[@]} -gt 0 || ${#USER_VALUES_SETS[@]} -gt 0 ]]; then
+        check_command yq
+        check_command comm
+        if [[ "${USER_VALUES_SKIP_CHECK}" != true ]]; then
+            check_command helm
+        fi
+        local values_file
+        for values_file in "${USER_VALUES_FILES[@]}"; do
+            if [[ ! -r "${values_file}" ]]; then
+                echo >&2 "[!] Error: --values file not readable: ${values_file}"
+                exit 1
+            fi
+        done
     fi
 
     if [[ -z "${NIXPKGS}" ]]; then
@@ -946,6 +1005,216 @@ generate_loom_hosts(){
     fi
 }
 
+# Every leaf of a JSON object as a dot-joined path, arrays counted as leaves.
+#
+# An array is replaced whole rather than merged -- by helm, by the `*` below and
+# by lib.recursiveUpdate on the Nix side -- so descending into one would ask
+# whether `pipeline.tika_ocr_languages.0` is a key the chart declares, which is
+# not a question the chart can answer.
+VALUE_LEAF_PATHS_PROGRAM="$(cat <<'JQ'
+def leaves($prefix):
+    to_entries[]
+    | ($prefix + [.key]) as $path
+    | if (.value | type) == "object" then (.value | leaves($path)) else $path end;
+leaves([]) | join(".")
+JQ
+)"
+
+# Every path the chart declares, the objects on the way down included, so that a
+# value given for a subtree (`llm.agent`) is recognised as readily as one given
+# for a leaf (`llm.agent.model`). YAML anchors are resolved on parse, so the
+# clients that share `&llm-defaults` each carry the full set of concrete paths.
+VALUE_ALL_PATHS_PROGRAM="$(cat <<'JQ'
+def walk($prefix):
+    to_entries[]
+    | ($prefix + [.key]) as $path
+    | $path, (if (.value | type) == "object" then (.value | walk($path)) else empty end);
+walk([]) | join(".")
+JQ
+)"
+
+# Merge --values and --set into one JSON object, and refuse everything about it
+# that can be refused here rather than on a box with no remote access.
+#
+# Checked against the *embedded tag's* chart, never this checkout's: the stick's
+# Nix code comes from here while the tree it deploys comes from the tag, and it
+# is the tag that has to carry the keys.
+resolve_user_values(){
+    if [[ ${#USER_VALUES_FILES[@]} -eq 0 && ${#USER_VALUES_SETS[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    local chart="${WORK_DIR}/loom/charts/values.yaml"
+    local skaffold="${WORK_DIR}/loom/skaffold.yaml"
+
+    # A tag that does not list charts/values-user.yaml renders the file into
+    # nothing: it would be written onto the box, carried in the closure, and
+    # read by no one. Refuse rather than ship a stick whose values are inert.
+    if ! grep --quiet 'charts/values-user\.yaml' "${skaffold}"; then
+        echo >&2 "[!] Error: ${TAG} has no charts/values-user.yaml in its skaffold.yaml,"
+        echo >&2 "    so --values and --set would be written to a file nothing applies."
+        echo >&2 "    Build from a tag that carries the user values layer."
+        exit 1
+    fi
+
+    local merged='{}'
+    if [[ ${#USER_VALUES_FILES[@]} -gt 0 ]]; then
+        # The same deep merge up.sh:457 folds its flag-driven values files with.
+        # jq's `*` merges objects and replaces arrays, which is what helm does
+        # for `-f` and what lib.recursiveUpdate does for the appliance layer.
+        #
+        # Single quotes are intentional: this is a jq expression, not shell.
+        # shellcheck disable=SC2016
+        merged="$(yq --slurp --compact-output \
+            'reduce .[] as $item ({}; . * $item)' "${USER_VALUES_FILES[@]}")"
+    fi
+
+    local assignment path value
+    for assignment in "${USER_VALUES_SETS[@]}"; do
+        if [[ "${assignment}" != *=* ]]; then
+            echo >&2 "[!] Error: --set '${assignment}' is not path=value."
+            exit 1
+        fi
+        path="${assignment%%=*}"
+        value="${assignment#*=}"
+        if [[ -z "${path}" ]]; then
+            echo >&2 "[!] Error: --set '${assignment}' names no path."
+            exit 1
+        fi
+        # Typed as JSON where it parses as JSON, as a string where it does not:
+        # `5` is a number, `true` a boolean, `["deu","eng"]` a list, `deu` a
+        # string. A string that happens to look like a number arrives as one --
+        # quote it as JSON (`'"123"'`) when that matters.
+        #
+        # shellcheck disable=SC2016
+        merged="$(printf '%s' "${merged}" | jq --compact-output \
+            --arg path "${path}" --arg raw "${value}" \
+            'setpath($path | split("."); ($raw | fromjson? // $raw))')"
+    done
+
+    local leaves
+    leaves="$(printf '%s' "${merged}" | jq --raw-output "${VALUE_LEAF_PATHS_PROGRAM}")"
+    if [[ -z "${leaves}" ]]; then
+        echo "[*] --values and --set set nothing; no user values layer will be written."
+        return 0
+    fi
+
+    check_reserved_value_paths "${leaves}"
+    check_known_value_paths "${leaves}" "${chart}"
+    warn_secret_value_paths "${leaves}"
+    render_user_values "${merged}"
+
+    USER_VALUES_JSON="${merged}"
+    USER_VALUES_SOURCES="$(user_values_sources)"
+
+    echo "[*] User values (${USER_VALUES_SOURCES}):"
+    printf '%s\n' "${leaves}" | sed 's/^/      /'
+}
+
+# What the generated file on the box says it came from.
+user_values_sources(){
+    local parts=()
+    if [[ ${#USER_VALUES_FILES[@]} -gt 0 ]]; then
+        parts+=("${USER_VALUES_FILES[@]}")
+    fi
+    if [[ ${#USER_VALUES_SETS[@]} -gt 0 ]]; then
+        parts+=("${#USER_VALUES_SETS[@]} --set argument(s)")
+    fi
+    local IFS=', '
+    printf '%s' "${parts[*]}"
+}
+
+check_reserved_value_paths(){
+    local leaves="${1}" leaf reserved hit=false
+    while IFS= read -r leaf; do
+        for reserved in "${RESERVED_VALUE_PATHS[@]}"; do
+            # The leaf itself, or anything under it: `hostnames` given whole
+            # takes the ingress list with it.
+            if [[ "${leaf}" == "${reserved}" || "${leaf}" == "${reserved}."* \
+                || "${reserved}" == "${leaf}."* ]]; then
+                echo >&2 "[!] Error: '${leaf}' is set by the image, not by --values."
+                hit=true
+            fi
+        done
+    done <<< "${leaves}"
+    if [[ "${hit}" = true ]]; then
+        echo >&2 "    These decide what the box is rather than how it indexes:"
+        echo >&2 "      ${RESERVED_VALUE_PATHS[*]}"
+        echo >&2 "    Each has something outside the chart -- /etc/hosts, the DNAT chain,"
+        echo >&2 "    the NetworkPolicy, the certificate's subjectAltName -- that is built"
+        echo >&2 "    from the same value and cannot be moved from a values file."
+        exit 1
+    fi
+}
+
+check_known_value_paths(){
+    local leaves="${1}" chart="${2}" chart_paths given declared unknown
+    chart_paths="$(yq --raw-output "${VALUE_ALL_PATHS_PROGRAM}" "${chart}")"
+    # Sorted into files rather than piped inside the process substitutions below,
+    # so that neither sort's exit status is masked by comm's.
+    given="${WORK_DIR}/user-value-paths"
+    declared="${WORK_DIR}/chart-value-paths"
+    sort --unique <<< "${leaves}" > "${given}"
+    sort --unique <<< "${chart_paths}" > "${declared}"
+    unknown="$(comm -23 "${given}" "${declared}")"
+    if [[ -z "${unknown}" ]]; then
+        return 0
+    fi
+    if [[ "${USER_VALUES_ALLOW_NEW_KEYS}" = true ]]; then
+        echo "[!] These paths are not in ${TAG}'s charts/values.yaml, and --values-allow-new-keys"
+        echo "    was given, so they are passed through as they are:"
+        printf '%s\n' "${unknown}" | sed 's/^/      /'
+        return 0
+    fi
+    echo >&2 "[!] Error: these paths are not in ${TAG}'s charts/values.yaml:"
+    printf '%s\n' "${unknown}" | sed 's/^/      /' >&2
+    echo >&2 "    The chart has no values schema, so helm would take them in silence and"
+    echo >&2 "    the box would do nothing it was asked for. Check the spelling against"
+    echo >&2 "    ${chart}."
+    echo >&2 "    For the chart's free-form maps -- labels, annotations, nodeSelector --"
+    echo >&2 "    pass --values-allow-new-keys."
+    exit 1
+}
+
+warn_secret_value_paths(){
+    local leaves="${1}" secrets
+    secrets="$(printf '%s\n' "${leaves}" | grep --extended-regexp \
+        '(^|\.)[^.]*(api_key|apikey|password|passphrase|secret|token)[^.]*$' || true)"
+    if [[ -z "${secrets}" ]]; then
+        return 0
+    fi
+    echo "[!] These look like credentials:"
+    printf '%s\n' "${secrets}" | sed 's/^/      /'
+    echo "[!] They are baked into the image and are readable in /nix/store by anyone"
+    echo "    holding the stick. Without --lock-key, holding the stick is the whole"
+    echo "    of the access control. See Documentation/appliance.md."
+}
+
+# Render the tag's chart with the values on top of it, client-side and offline,
+# the way cicd/check_chart_hostnames.sh does.
+#
+# The path check above catches a key that does not exist; this catches a value
+# the chart does not accept -- a string where a template indexes a list, a
+# number where it expects a map. Both failures otherwise surface during
+# first-time setup, on a box with no way in.
+render_user_values(){
+    local merged="${1}" overlay="${WORK_DIR}/user-values.yaml" output
+    if [[ "${USER_VALUES_SKIP_CHECK}" = true ]]; then
+        echo "[!] Skipping the helm dry-run over the user values (--skip-values-check)."
+        return 0
+    fi
+    printf '%s' "${merged}" | yq --yaml-output . > "${overlay}"
+    if output="$(helm template loom-values-check "${WORK_DIR}/loom/charts" \
+        --values "${WORK_DIR}/loom/charts/values.yaml" \
+        --values "${overlay}" 2>&1 >/dev/null)"; then
+        return 0
+    fi
+    echo >&2 "[!] Error: ${TAG}'s chart does not render with these values:"
+    printf '%s\n' "${output}" | sed 's/^/      /' >&2
+    echo >&2 "    Fix the values, or pass --skip-values-check to build anyway."
+    exit 1
+}
+
 build_image(){
     local hosts_json debug_key=''
     hosts_json="$(cat "${WORK_DIR}/loom-hosts.json")"
@@ -968,6 +1237,8 @@ build_image(){
         --argstr tag "${TAG}" \
         --argstr loomHostsJson "${hosts_json}" \
         --argstr loomNamespace "${NAMESPACE}" \
+        --argstr userValuesJson "${USER_VALUES_JSON}" \
+        --argstr userValuesSources "${USER_VALUES_SOURCES}" \
         --argstr loomChatModel "${LOOM_CHAT_MODEL}" \
         --argstr minikubeIp "${MINIKUBE_IP}" \
         --argstr loomSubnet "${SUBNET}" \
@@ -1420,6 +1691,8 @@ report(){
     echo "      gpu       : ${gpu}"
     echo "      debug     : ${DEBUG_ACCESS}"
     echo "      key lock  : ${LOCK_KEY}"
+    echo "      mtls      : ${REQUIRE_CLIENT_CERT}"
+    echo "      values    : ${USER_VALUES_SOURCES:-none (chart defaults)}"
     echo "      keymap    : ${KEYMAP:-us (built-in default)}"
     echo "      wifi      : ${ENABLE_WIFI}"
     if [[ "${ENABLE_WIFI}" = true ]]; then
@@ -1532,6 +1805,19 @@ usage(){
     echo "                                itself one and reaches its own services through a"
     echo "                                loopback proxy that attaches it; a browser needs one"
     echo "                                from 'generate-client-certificate'."
+    echo "  --values FILE                 deploy the box with these Helm values on top of the"
+    echo "                                chart's. Repeatable, merged in order, last wins. The"
+    echo "                                lowest override layer: every values file an up.sh flag"
+    echo "                                turns on, and the appliance's own values, still win."
+    echo "                                Every path is checked against the tag's values.yaml."
+    echo "  --set PATH=VALUE              the same, one value at a time: --set"
+    echo "                                pipeline.tika_ocr_languages='[\"deu\",\"fra\"]'. Applied"
+    echo "                                after --values. The value is JSON where it parses as"
+    echo "                                JSON and a string where it does not."
+    echo "  --values-allow-new-keys       accept a path the tag's values.yaml does not carry."
+    echo "                                For the chart's free-form maps (labels, annotations,"
+    echo "                                nodeSelector); otherwise it is how a typo is caught."
+    echo "  --skip-values-check           skip the helm dry-run over the merged values."
     echo "  --keymap NAME                 console keymap for the box, the installer and stage 1,"
     echo "                                as loadkeys names it ('de_CH-latin1', 'fr', 'uk')."
     echo "                                Default is the kernel's US QWERTY. Set this when the"
@@ -1647,6 +1933,24 @@ while [[ $# -gt 0 ]]; do
         ;;
         --require-client-cert)
             REQUIRE_CLIENT_CERT=true
+            shift
+        ;;
+        --values)
+            shift
+            USER_VALUES_FILES+=("${1?Missing FILE}")
+            shift
+        ;;
+        --set)
+            shift
+            USER_VALUES_SETS+=("${1?Missing PATH=VALUE}")
+            shift
+        ;;
+        --values-allow-new-keys)
+            USER_VALUES_ALLOW_NEW_KEYS=true
+            shift
+        ;;
+        --skip-values-check)
+            USER_VALUES_SKIP_CHECK=true
             shift
         ;;
         --lock-key-words)

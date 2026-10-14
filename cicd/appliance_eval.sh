@@ -202,6 +202,14 @@ evaluate_platforms(){
         instantiate "${platform}" installerImage '--require-client-cert' \
             --arg requireClientCert true
 
+        # The --values build: nixos/repo.nix writes a second values file into the
+        # seeded checkout only when there is something to put in it, so the
+        # branch that does is evaluated nowhere else. A real chart path, so that
+        # a rename in charts/values.yaml is what this notices.
+        instantiate "${platform}" installerImage '--values' \
+            --argstr userValuesJson '{"pipeline":{"tika_ocr_languages":["deu","fra"]}}' \
+            --argstr userValuesSources 'eval.yaml'
+
         # And --keymap, which is inert without a value the same way the two above
         # are. It also carries a build-time check that the name resolves, so this
         # pass is where a nixpkgs bump that moved the keymaps would surface --

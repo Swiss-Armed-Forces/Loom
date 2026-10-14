@@ -308,7 +308,9 @@ manifests:
         chartPath: charts
         valuesFiles:
           - charts/values.yaml
+          - charts/values-user.yaml        # lowest override layer; loses to every up.sh flag
           - charts/values-up-flags.yaml   # runtime, written by up.sh; {} when no flags active
+          - charts/values-appliance.yaml  # facts about an appliance box; empty elsewhere
           - charts/values-overwrites.yaml  # always highest priority
         setValueTemplates:
           # Skaffold's post-renderer does not process Helm hook resources, so image tags used
@@ -385,6 +387,9 @@ profiles:
       - op: replace
         path: /manifests/helm/releases/0/name
         value: development
+      # Index 1 — must stay here: it puts the dev profile directly above the
+      # defaults and below charts/values-user.yaml, so a value set by hand or by
+      # `build-appliance-image --values` still wins over the profile.
       - op: add
         path: /manifests/helm/releases/0/valuesFiles/1
         value: charts/values-development.yaml

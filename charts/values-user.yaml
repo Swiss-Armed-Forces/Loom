@@ -1,0 +1,29 @@
+# This file is intentionally left empty. It is the lowest of the override layers:
+# values set here are applied before every values file an up.sh flag enables, so a
+# flag always wins over them.
+#
+# Two things write it:
+#
+#   - `build-appliance-image --values FILE` / `--set path=value`, which bakes the
+#     merged result into the appliance image. nixos/repo.nix writes it into the
+#     checkout the box runs from. See Documentation/appliance.md.
+#   - A developer, by hand, for values that should lose to `up --scaling`,
+#     `up --gpus` and friends. Local changes are ignored by git (via skip-worktree,
+#     configured in devenv.nix) so they never get accidentally committed.
+#
+# Values that must win over an up.sh flag belong in charts/values-overwrites.yaml,
+# which skaffold applies last.
+#
+# The full order, later wins (skaffold.yaml):
+#
+#   charts/values.yaml              defaults
+#   charts/values-user.yaml         this file
+#   charts/values-up-flags.yaml     whatever up.sh's flags turned on
+#   charts/values-appliance.yaml    facts about an appliance box, if this is one
+#   charts/values-overwrites.yaml   your own last word
+#
+# Example usage:
+#   pipeline:
+#     tika_ocr_languages:
+#       - deu
+#       - fra

@@ -65,6 +65,21 @@ let
     ];
   };
 
+  # A build carrying operator values, the way a stick built with
+  # `build-appliance-image --values` does. The content is inert -- nothing is
+  # realised from this closure -- and is a real chart path so that the file it
+  # lands in is the only thing under test.
+  userValuesSystem = boxSystem.extendModules {
+    modules = [
+      {
+        loom.userValues.pipeline.tika_ocr_languages = [
+          "deu"
+          "fra"
+        ];
+      }
+    ];
+  };
+
   check = what: ok: { inherit what ok; };
 
   # `services.dnsmasq.settings` is a freeform format whose values are normalised
@@ -221,7 +236,7 @@ let
     in
     [
       (check "mtls: the chart is told to require a client certificate" (
-        cfg.loom.chartOverrides.certificate.requireClientCert or false
+        cfg.loom.applianceValues.certificate.requireClientCert or false
       ))
       (check "mtls: the assistant pane dials the proxy" (
         cfg.loom.assistant.ollamaBaseUrl == proxyUrl mtls.routes.ollama
@@ -323,6 +338,95 @@ let
     unitChecks "run mode" boxSystem.config.systemd.services.loom.script
     ++ unitChecks "setup mode" boxSystem.config.specialisation.first-time-setup.configuration.systemd.services.loom-fetch.script;
 
+  # Which values file a value lands in is the whole of what decides whether it
+  # takes effect, and the order is stated in the *tagged* skaffold.yaml rather
+  # than here -- the same split the up.sh checks above are about.
+  #
+  # Read off the file instead of asserted as prose: three layers whose entire
+  # contract is "later wins" are indistinguishable from each other until
+  # something compares their positions.
+  valuesChecks =
+    let
+      skaffoldText = builtins.readFile "${loomSrc}/skaffold.yaml";
+
+      # `          - charts/values-user.yaml        # a comment` -> the path.
+      # The dev profile's entry is added by a JSON patch rather than listed, so
+      # it does not appear here and the order below is the production one.
+      order = map (line: lib.head (lib.splitString " " (lib.last (lib.splitString "- " line)))) (
+        lib.filter (line: lib.hasInfix "- charts/values" line) (lib.splitString "\n" skaffoldText)
+      );
+
+      position =
+        name:
+        let
+          hits = lib.filter (entry: entry.value == name) (
+            lib.imap0 (index: value: { inherit index value; }) order
+          );
+        in
+        if hits == [ ] then null else (lib.head hits).index;
+
+      # Null-safe, so a file the tag does not list fails as "not listed" rather
+      # than throwing out of the comparison.
+      below =
+        a: b:
+        let
+          x = position a;
+          y = position b;
+        in
+        x != null && y != null && x < y;
+
+      seedScript = system: system.config.systemd.services.loom-seed-repo.script;
+    in
+    [
+      (check "values: the user layer loses to every up.sh flag" (
+        below "charts/values-user.yaml" "charts/values-up-flags.yaml"
+      ))
+      (check "values: the appliance layer beats every up.sh flag" (
+        below "charts/values-up-flags.yaml" "charts/values-appliance.yaml"
+      ))
+      # The operator's own file stays the last word, which is why nothing here
+      # may write it.
+      (check "values: values-overwrites.yaml is still applied last" (
+        below "charts/values-appliance.yaml" "charts/values-overwrites.yaml"
+      ))
+      (check "values: the defaults are applied first" (
+        below "charts/values.yaml" "charts/values-user.yaml"
+      ))
+
+      # The regression guard. That file is `--skip-worktree` in a developer's
+      # clone precisely so people keep real content in it, and these modules are
+      # evaluated against a developer's tree whenever the VM tests run with
+      # `repoSrc ./.`.
+      (check "values: the seed never writes values-overwrites.yaml" (
+        !(lib.hasInfix "values-overwrites.yaml" (seedScript boxSystem))
+        && !(lib.hasInfix "values-overwrites.yaml" (seedScript userValuesSystem))
+      ))
+
+      # Empty layers are not written at all, so a box that asked for nothing
+      # leaves both committed placeholders exactly as the checkout carries them.
+      (check "values: a box with no user values writes no user layer" (
+        !(lib.hasInfix "charts/values-user.yaml" (seedScript boxSystem))
+      ))
+      (check "values: --values reaches the seeded checkout" (
+        lib.hasInfix "charts/values-user.yaml" (seedScript userValuesSystem)
+      ))
+
+      # The seed runs once, on whichever mode boots first, and first-time setup
+      # is the mode an air-gapped box boots first. A value only one mode declares
+      # is a value that depends on the order somebody used the boot menu in.
+      (check "values: mutual TLS is pinned in run mode" (
+        mtlsSystem.config.loom.applianceValues.certificate.requireClientCert
+      ))
+      (check "values: mutual TLS is pinned in setup mode too" (
+        mtlsSystem.config.specialisation.first-time-setup.configuration.loom.applianceValues.certificate.requireClientCert
+      ))
+      # Stated in both directions: pinning it off is what makes the key inert in
+      # an operator's own values file on a box that was not built for it.
+      (check "values: a default box pins mutual TLS off" (
+        boxSystem.config.loom.applianceValues.certificate.requireClientCert == false
+      ))
+    ];
+
   platform = boxSystem.config.loom.platform.id;
 
   checks =
@@ -330,6 +434,7 @@ let
     ++ checksFor "wifi" wifiSystem.config
     ++ bridgeChecks
     ++ mtlsChecks
+    ++ valuesChecks
     ++ upShChecks;
   failures = builtins.filter (c: !c.ok) checks;
 
@@ -372,6 +477,12 @@ hostPkgs.runCommand "loom-appliance-units-${platform}"
         A failure whose name starts with `mtls:` is about nixos/mtls.nix instead:
         the loopback proxy that gets the box's own clients through its own mutual
         TLS, and the ordering that keeps nginx from waiting on a bring-up.
+
+        A failure whose name starts with `values:` is about which Helm values
+        file a value lands in, which is the whole of what decides whether it
+        takes effect. The order is read off the embedded skaffold.yaml;
+        charts/values-overwrites.yaml belongs to the operator and nothing in
+        nixos/ may write it. See nixos/repo.nix.
 
         A failure ending in `the embedded up.sh knows <flag>` means a boot unit
         passes a flag the tagged checkout does not have. The image takes its

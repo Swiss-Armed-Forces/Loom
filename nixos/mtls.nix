@@ -249,7 +249,7 @@ in
         through it. Set by `build-appliance-image --require-client-cert`.
 
         This turns on `certificate.requireClientCert` in the chart as well, via
-        `loom.chartOverrides`. The two are one switch on purpose: a box with the
+        `loom.applianceValues`. The two are one switch on purpose: a box with the
         proxy and no mutual TLS proxies for nothing, and a box with mutual TLS
         and no proxy loses its assistant pane and its USB ingest.
       '';
@@ -367,74 +367,89 @@ in
     };
   };
 
-  config = lib.mkIf (cfg.mtls.enable && cfg.mode == "run") {
-    # The other half of the switch. repo.nix writes this into
-    # charts/values-overwrites.yaml, which Skaffold applies last.
-    loom.chartOverrides.certificate.requireClientCert = true;
+  config = lib.mkMerge [
+    # The other half of the switch, and the only part of this module that is not
+    # conditional. repo.nix writes it into charts/values-appliance.yaml, which
+    # Skaffold applies after everything up.sh assembles.
+    #
+    # Stated in both directions and in both modes rather than only when it is on:
+    #
+    #   - The seed runs once, on whichever mode boots first, and first-time setup
+    #     is the mode an air-gapped box boots first. A value that only one mode
+    #     declares is a value that depends on the order somebody used the boot
+    #     menu in.
+    #   - Pinning it either way is what makes `certificate.requireClientCert` in
+    #     an operator's own values file inert. The key has a box-side half -- the
+    #     loopback proxies and the identity units below -- that a values file
+    #     cannot bring with it, and a box with one half of it serves nothing to
+    #     anybody, including itself.
+    { loom.applianceValues.certificate.requireClientCert = cfg.mtls.enable; }
 
-    # mc reaches S3 through the proxy rather than through the ingress. The CA
-    # directory install_cluster_ca maintains stays as it is and goes unused on
-    # this path: the hop is http, and taking the code out would leave the
-    # non-mutual-TLS box with nothing.
-    loom.usbIngest.endpoint = "http://${cfg.mtls.listenAddress}:${toString cfg.mtls.routes.s3.port}";
+    (lib.mkIf (cfg.mtls.enable && cfg.mode == "run") {
+      # mc reaches S3 through the proxy rather than through the ingress. The CA
+      # directory install_cluster_ca maintains stays as it is and goes unused on
+      # this path: the hop is http, and taking the code out would leave the
+      # non-mutual-TLS box with nothing.
+      loom.usbIngest.endpoint = "http://${cfg.mtls.listenAddress}:${toString cfg.mtls.routes.s3.port}";
 
-    # And the chat pane likewise.
-    loom.assistant.ollamaBaseUrl = "http://${cfg.mtls.listenAddress}:${toString cfg.mtls.routes.ollama.port}";
+      # And the chat pane likewise.
+      loom.assistant.ollamaBaseUrl = "http://${cfg.mtls.listenAddress}:${toString cfg.mtls.routes.ollama.port}";
 
-    environment.systemPackages = [ loom-client-certificate ];
+      environment.systemPackages = [ loom-client-certificate ];
 
-    systemd.tmpfiles.rules = [
-      "d /var/lib/loom 0755 root root -"
-      "d ${stateDir} 0700 root root -"
-    ];
+      systemd.tmpfiles.rules = [
+        "d /var/lib/loom 0755 root root -"
+        "d ${stateDir} 0700 root root -"
+      ];
 
-    systemd.services.loom-mtls-placeholder = {
-      description = "Give the mutual TLS proxy something to start with";
-      before = [ "nginx.service" ];
-      wantedBy = [ "nginx.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = lib.getExe loom-mtls-placeholder;
+      systemd.services.loom-mtls-placeholder = {
+        description = "Give the mutual TLS proxy something to start with";
+        before = [ "nginx.service" ];
+        wantedBy = [ "nginx.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = lib.getExe loom-mtls-placeholder;
+        };
       };
-    };
 
-    systemd.services.loom-mtls-identity = {
-      description = "Issue the appliance's mutual TLS client identity";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "loom-mtls-placeholder.service" ];
+      systemd.services.loom-mtls-identity = {
+        description = "Issue the appliance's mutual TLS client identity";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "loom-mtls-placeholder.service" ];
 
-      serviceConfig = {
-        Type = "oneshot";
-        # Deliberately not RemainAfterExit: the timer below restarts this unit,
-        # and a unit that is still "active (exited)" is not restarted by one.
-        ExecStart = lib.getExe loom-mtls-identity;
+        serviceConfig = {
+          Type = "oneshot";
+          # Deliberately not RemainAfterExit: the timer below restarts this unit,
+          # and a unit that is still "active (exited)" is not restarted by one.
+          ExecStart = lib.getExe loom-mtls-identity;
 
-        # kubectl runs as root here and borrows the operator's credentials, the
-        # same arrangement ready.nix and usb-ingest.nix use.
-        Environment = [ "KUBECONFIG=/home/${loomUser}/.kube/config" ];
+          # kubectl runs as root here and borrows the operator's credentials, the
+          # same arrangement ready.nix and usb-ingest.nix use.
+          Environment = [ "KUBECONFIG=/home/${loomUser}/.kube/config" ];
 
-        StandardOutput = "journal";
-        StandardError = "journal";
+          StandardOutput = "journal";
+          StandardError = "journal";
+        };
       };
-    };
 
-    systemd.timers.loom-mtls-identity = {
-      description = "Renew the appliance's mutual TLS client identity";
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnCalendar = "daily";
-        Persistent = true;
+      systemd.timers.loom-mtls-identity = {
+        description = "Renew the appliance's mutual TLS client identity";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "daily";
+          Persistent = true;
+        };
       };
-    };
 
-    services.nginx = {
-      # Set here as well as in portal.nix: the proxy is needed whether or not
-      # the box answers captive-portal probes.
-      enable = true;
-      virtualHosts = lib.mapAttrs' (
-        name: route: lib.nameValuePair "loom-mtls-${name}" (routeVirtualHost name route)
-      ) cfg.mtls.routes;
-    };
-  };
+      services.nginx = {
+        # Set here as well as in portal.nix: the proxy is needed whether or not
+        # the box answers captive-portal probes.
+        enable = true;
+        virtualHosts = lib.mapAttrs' (
+          name: route: lib.nameValuePair "loom-mtls-${name}" (routeVirtualHost name route)
+        ) cfg.mtls.routes;
+      };
+    })
+  ];
 }

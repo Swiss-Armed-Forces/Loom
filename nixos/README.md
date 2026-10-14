@@ -231,7 +231,7 @@ means "no offload" rather than "no NVIDIA". `loom-platform-info`'s `runtimeInput
 `hardware.nvidia.enabled` for exactly that reason: a `--no-gpu` box is the box somebody is diagnosing, and
 the report needs `nvidia-smi` to say why the GPU did not enumerate.
 
-### `runsAutoscaling`, and `loom.chartOverrides`
+### `runsAutoscaling`, and `loom.applianceValues`
 
 `runsAutoscaling` defaults to `meetsResourceMinimum` and adds `--scaling` to the `up.sh` arguments
 `modes.nix` builds. The default is load-bearing rather than tidy: `up.sh` refuses `--scaling` alongside the
@@ -244,17 +244,53 @@ is the only thing that installs KEDA, so a first-time setup that ran without it 
 minikube's store, and run mode is air-gapped. `tests/scripts/loom_tests/appliance/modes.py` asserts both
 scripts agree.
 
-`loom.chartOverrides` is the other half. Some facts are true of the box rather than of Loom — today, that
+`loom.applianceValues` is the other half. Some facts are true of the box rather than of Loom — today, that
 scaling Ollama is pointless where there is one GPU to schedule it on — and they fit neither a values file
 under `charts/` (shared with every cluster install) nor an `up.sh` flag (an argument to have on machines
 nobody here is building). `modes.nix` puts them in that option, `repo.nix` writes them into
-`charts/values-overwrites.yaml` while it seeds the checkout, and Skaffold applies that file after everything
-else. The written file carries a header saying where it came from; it is written once, so an operator can
-edit it afterwards.
+`charts/values-appliance.yaml` while it seeds the checkout, and Skaffold applies that file after everything
+`up.sh` assembles. The written file carries a header saying where it came from; it is written once, so an
+operator can edit it afterwards.
 
 `mtls.nix` is the second author of that option, and the only one outside `modes.nix`. It sets
 `certificate.requireClientCert` there, so one flag moves the cluster and the box together — the two halves
-are useless apart, and `charts/values-overwrites.yaml` is the only place an appliance can state a Helm value.
+are useless apart. It states the value in **both** directions and in **both** modes, unlike every other
+entry: the seed runs once, on whichever mode boots first, so a value only run mode declares is a value that
+depends on which boot-menu entry somebody picked first; and pinning it `false` on an ordinary box is what
+makes the key inert in an operator's own values file, which cannot bring the loopback proxy with it.
+
+### `loom.userValues`, and the four layers
+
+`build-appliance-image --values FILE` and `--set path=value` are the generic way to deploy a box with
+different chart values — OCR languages, the indexing pipeline's limits, resource sizing. They are merged in
+the build script, checked there against the **embedded tag's** `charts/values.yaml`, and passed to Nix as
+`userValuesJson`; `repo.nix` writes them into `charts/values-user.yaml` of the seeded checkout.
+
+What decides whether a value takes effect is which file it lands in. Skaffold applies these in order, later
+winning:
+
+| file | written by |
+| --- | --- |
+| `charts/values.yaml` | the chart |
+| `charts/values-user.yaml` | `loom.userValues` — `--values`, `--set` |
+| `charts/values-up-flags.yaml` | `up.sh`, from its own flags |
+| `charts/values-appliance.yaml` | `loom.applianceValues` — `modes.nix`, `mtls.nix` |
+| `charts/values-overwrites.yaml` | the operator, by hand, on the box |
+
+The user layer is deliberately the **lowest**, so nothing passed to `--values` can break a decision the
+platform or an `up.sh` flag made: a box asked to scale Ollama on its single GPU gets the platform's answer,
+not the operator's. `repo.nix` warns at build time listing every path the appliance layer takes back, because
+a value that silently does nothing is worth one line while somebody is still looking at a terminal.
+
+`charts/values-overwrites.yaml` is **never written from here**. It is the operator's own last word, it is
+`--skip-worktree` in a developer's clone so that real content lives in it, and these modules are evaluated
+against a developer's checkout every time the VM tests run with `repoSrc ./.`.
+`tests/appliance-units.nix` asserts both the order (read off the tagged `skaffold.yaml`, the way the `up.sh`
+flag checks are) and that no seed script mentions that file.
+
+A tag whose `skaffold.yaml` does not list `charts/values-user.yaml` cannot apply the layer at all, so
+`build_appliance_image.sh` refuses `--values` against it rather than shipping a stick whose values are inert
+— the same class of gap as a flag the embedded `up.sh` has never heard of.
 
 ## `loom.mtls`, and why the box proxies to itself
 

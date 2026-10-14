@@ -220,7 +220,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `build-appliance-image --require-client-cert` - Deploy Loom with mutual TLS, so reaching the
   appliance segment is no longer enough to use Loom: every route refuses a client that presents no
   certificate, and `generate-client-certificate` is what issues one. It sets
-  `certificate.requireClientCert` through `loom.chartOverrides` **and** gives the box's own two
+  `certificate.requireClientCert` through `loom.applianceValues` **and** gives the box's own two
   clients a way through, which is the half that cannot be left out: `opencode` (the assistant pane)
   and `mc` (USB ingest) can both be handed a CA and neither can be handed an identity, so nginx —
   already on the box for the captive portal — reverse-proxies `ollama.loom` and `s3.loom` on two
@@ -232,6 +232,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   entrypoint beside a client-certificate requirement is either a way around it or a 404 — which
   costs the captive portal its destination. See the `## Requiring a client certificate` section in
   `Documentation/appliance.md`
+- `build-appliance-image --values FILE` / `--set PATH=VALUE` - Deploy the box with custom Helm
+  values, so tuning a stick for the data it will index (OCR languages, pipeline limits, sizing)
+  needs no flag per knob. `--values` is repeatable and merged in order; `--set` lands after it and
+  reads its value as JSON where it parses as JSON. They are written into
+  `charts/values-user.yaml` of the seeded checkout, which skaffold applies **before**
+  `values-up-flags.yaml` - the lowest layer on purpose, so nothing here can break a decision the
+  platform or an `up.sh` flag made. The box's own facts are a layer above it in
+  `charts/values-appliance.yaml` (`loom.applianceValues`), and `charts/values-overwrites.yaml`
+  stays the operator's last word that **nothing in `nixos/` ever writes**. Refused before the build
+  starts: a path the embedded tag's `charts/values.yaml` does not carry (there is no values schema,
+  so helm would take a typo in silence - `--values-allow-new-keys` for the chart's free-form maps),
+  values the chart cannot render (`helm template` dry-run, `--skip-values-check`), and
+  `kubernetes.api`, `hostnames` or `image.registry`, each of which something outside the chart is
+  built from. A tag whose `skaffold.yaml` predates the layer is refused outright rather than given a
+  file nothing applies. See the `## Custom Helm values` section in `Documentation/appliance.md`
 - `build-appliance-image --keymap NAME` - Set the console keymap for the box, the installer **and
   stage 1**, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Default is the kernel's built-in US
   QWERTY, which is what every image was before this existed. It matters for the three prompts nobody
@@ -302,9 +317,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   pane's skills against the headings they cite in `Documentation/`, and no derivation's `src` holds
   both. The half that has to fail an image build is `nixos/tests/appliance-skills.nix` instead.
   Extra arguments go to pytest
-- `appliance-eval` - Instantiates the stick image for all three platforms — five times each: plain,
-  `--debug`, `--lock-key`, `--require-client-cert` and `--keymap`, since `nixos/debug.nix`,
-  `nixos/key-store.nix` and `nixos/mtls.nix` are inert otherwise and would rot unevaluated — and the
+- `appliance-eval` - Instantiates the stick image for all three platforms — six times each: plain,
+  `--debug`, `--lock-key`, `--require-client-cert`, `--values` and `--keymap`, since
+  `nixos/debug.nix`, `nixos/key-store.nix`, `nixos/mtls.nix` and `repo.nix`'s user values layer are
+  inert otherwise and would rot unevaluated — and the
   tests for this one, building nothing. Catches a module that no longer evaluates, a renamed option, a failed
   assertion and a typo in a test file. `--platform` (repeatable), `--verbose`
 - `loom-platform-info` - Report this box's hardware — wired ports with their drivers, PCI ids and
