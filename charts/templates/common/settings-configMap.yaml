@@ -593,7 +593,7 @@ data:
     llm__vision__provider: {{ .Values.llm.vision.provider | quote }}
     {{- end }}
     llm__vision__endpoint: {{ .Values.llm.vision.endpoint | default $ollamaEndpoint | quote }}
-    {{- if ne .Values.llm.vision.api_key nil }}
+    {{- if and (not .Values.externalSecrets.secrets.llm__vision__api_key.enabled) (ne .Values.llm.vision.api_key nil) }}
     llm__vision__api_key: {{ .Values.llm.vision.api_key | quote }}
     {{- end }}
     {{- if ne .Values.llm.vision.model nil }}

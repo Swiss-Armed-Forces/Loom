@@ -130,6 +130,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   is absent. It deliberately never sets `OLLAMA_CONTEXT_LENGTH`; see the "Ollama GPU Configuration"
   section in `Documentation/installation.md`
 
+**aitools testing:**
+
+- `aitools-test` - Run all `aitools` tests with pytest (always runs from `cicd/` directory)
+- `aitools-test aitools/tests/test_git_helpers.py` - Run specific test file (paths relative to `cicd/`)
+
 **Frontend:**
 
 - `frontend-test` - Run frontend tests
@@ -439,6 +444,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - Backend unit tests: `backend-test` (runs all tests in `backend/*/tests/`)
 - Frontend unit tests: `frontend-test`
+- `aitools` unit tests: `aitools-test` (runs all tests in `cicd/aitools/tests/`) — always from
+  `cicd/`, not from `cicd/aitools/`, where the `aitools.py` module shadows the `aitools` package
+  and every import fails
 - Integration tests: `run-integrationtest` — simulates full workflows against a running Loom instance
 - Tests create temp artifacts in `.pytest_tmp` (not `/tmp`) to avoid RAM usage
 - CI/CD pipeline runs the full test suite and linting via git-hooks
@@ -526,6 +534,19 @@ in the *current* working tree — running one there moves the user's branch unde
   into Docker build contexts, pytest collection and Skaffold watches
 - Run `direnv allow` once in the new worktree; devenv files are tracked, but direnv trust is
   per directory
+- `direnv allow` only marks the directory trusted — it builds nothing. **Enter the environment
+  once with `direnv exec <worktree> true`**, which creates the worktree's own `.venv`, `.devenv`
+  and `.pre-commit-config.yaml`, then run every command there as
+  `direnv exec <worktree> <command>`. Until that happens the worktree has no environment of its
+  own and inherits the primary checkout's `PATH`, so `python`, `pytest` and the linters resolve
+  editable path dependencies — `aitools` among them — to the *primary checkout's* sources and
+  report on code that is not the code under test
+- Each checkout installs its git hooks into its own git directory — `.git/hooks` in the main
+  worktree, `.git/worktrees/<name>/hooks` in a linked one — pointed there by
+  `cicd/set_worktree_hooks_path.sh` before devenv installs them. The hook *set*, its excludes and
+  its pinned tools therefore come from the `devenv.nix` of the tree you commit in, and deleting a
+  worktree cannot break committing in the others. A worktree has no hooks of its own until devenv
+  is entered in it once
 - A branch cannot be checked out twice → on "already checked out", ask the user to move the
   primary checkout off that branch rather than working in place
 
@@ -540,12 +561,14 @@ in the *current* working tree — running one there moves the user's branch unde
   settings files to silence them
 
 **Keep cluster work in the primary checkout:** `up`, `down`, `build`, `wipe-data`,
-`run-integrationtest` and all `kubernetes-*` commands. Their minikube, Skaffold and Docker caches
-are gitignored per-directory, so a worktree would build a second cluster and contend for the same
-`*.loom` hosts entries. Safe in a worktree: `backend-test`, `frontend-test`, `frontend-build`,
-`generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
+`run-integrationtest` and all `kubernetes-*` commands. There is one cluster per machine and every
+checkout talks to it — `MINIKUBE_HOME` resolves to the main worktree, matching the `~/.kube/config`
+that minikube writes — so these commands do not fail in a worktree, they succeed *against the
+primary checkout's running system*: `up` redeploys it from the worktree's sources, and `wipe-data`
+and `kubernetes-delete` destroy it. Safe in a worktree: `backend-test`, `frontend-test`,
+`frontend-build`, `generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
 
-**Finishing up:** commit and push from the worktree — git config, hooks and refs are shared. Leave
+**Finishing up:** commit and push from the worktree — git config and refs are shared. Leave
 the MR in **Draft** and the worktree in place; report its path, the branch and the MR so the user
 can review the diff there. **Never merge, rebase the primary checkout, or remove the worktree on
 your own.** Remove one only when asked, with `git worktree remove <path>` and never `--force`.
@@ -589,8 +612,9 @@ you **must** run `poetry-lock` to update all lockfiles.
 
 Editing the root `pyproject.toml` stales **two** lockfiles, not one: `integrationtest` takes the root
 project as a path dependency (`loom-overarching-dev = {path = "../"}`), so its lock carries the root
-manifest too. The `poetry-check_root` git hook checks both and fails the commit if either has drifted —
-`poetry-lock` is the fix. A stale lock is not cosmetic: `poetry install` refuses to run against one, so
+manifest too. The `poetry-check_root` and `poetry-check_root-integrationtest` git hooks check one project each,
+both firing on the root manifest, and fail the commit if either has drifted — `poetry-lock` is the
+fix. A stale lock is not cosmetic: `poetry install` refuses to run against one, so
 committing it breaks `devenv` for everyone until it is regenerated.
 
 ### File Processing Pipeline

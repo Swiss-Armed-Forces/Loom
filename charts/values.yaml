@@ -224,6 +224,12 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
+    llm__vision__api_key:
+      enabled: false
+      name: loom-llm-vision-api-key
+      remoteRef:
+        key: ""
+        property: ""
     llm__language_detection__api_key:
       enabled: false
       name: loom-llm-language-detection-api-key

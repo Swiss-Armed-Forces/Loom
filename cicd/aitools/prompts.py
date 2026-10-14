@@ -1,5 +1,43 @@
 from gitlab.v4.objects import ProjectIssue, ProjectJob, ProjectMergeRequest
 
+from .config import EXCLUDED_PATHSPECS
+from .models import DiffRange
+
+
+def build_discovery_command(diff_range: DiffRange) -> str:
+    """Return the shell command listing the files a diff range changes.
+
+    Applies the same exclusions as the diff itself, so the agent's file list matches the
+    diff it is given rather than sending it into a lockfile.
+    """
+    excludes = " ".join(f"'{p}'" for p in EXCLUDED_PATHSPECS)
+    return f"git diff {diff_range.left} {diff_range.right} --name-only -- {excludes}"
+
+
+def build_diff_caveats(diff_range: DiffRange, target_branch: str) -> list[str]:
+    """Return the sentences stating what makes a diff range less trustworthy."""
+    caveats = []
+    if diff_range.strategy == "merge-base":
+        caveats.append(
+            f"This branch could not be merged onto origin/{target_branch}, so the diff"
+            " was taken from an arbitrary merge base and may include commits this"
+            " branch did not make."
+        )
+    elif diff_range.behind_count:
+        caveats.append(
+            f"This branch is {diff_range.behind_count} commit(s) behind"
+            f" origin/{target_branch}. The diff covers what the branch adds to"
+            f" origin/{target_branch} as it stands now, so the file contents are older"
+            " than the diff."
+        )
+    if diff_range.ref != "HEAD":
+        caveats.append(
+            f"Branch {diff_range.ref} is not checked out — the working tree holds a"
+            f" different branch. Read file contents with `git show"
+            f" {diff_range.ref}:<path>`, not from disk."
+        )
+    return caveats
+
 
 def build_diff_chunk_summary_prompt(files_in_chunk: list[str], chunk_diff: str) -> str:
     """Build the prompt for summarizing a chunk of file diffs."""
@@ -348,13 +386,16 @@ Do NOT push.
 
 
 def build_merge_conflict_prompt(
-    branch_name: str, conflicting_files: list[str], context_dir: str
+    branch_name: str,
+    conflicting_files: list[str],
+    context_dir: str,
+    target_branch: str = "main",
 ) -> str:
-    """Build the prompt for resolving git merge conflicts after merging origin/main."""
+    """Build the prompt for resolving git merge conflicts after merging the target."""
     files_list = "\n".join(f"- {f}" for f in conflicting_files)
     return f"""\
 You are resolving git merge conflicts on branch '{branch_name}' in the Loom project.
-A merge of origin/main was started but left unfinished due to conflicts.
+A merge of origin/{target_branch} was started but left unfinished due to conflicts.
 
 ## Conflicting files
 
@@ -377,7 +418,7 @@ Context directory: {context_dir}
 
 
 def build_mr_review_prompt(
-    mr: ProjectMergeRequest, context_dir: str, comments_dir: str, branch_ref: str
+    mr: ProjectMergeRequest, context_dir: str, comments_dir: str, diff_range: DiffRange
 ) -> str:
     """Build the prompt for the multi-agent MR review.
 
@@ -385,6 +426,8 @@ def build_mr_review_prompt(
     changeset, then write one JSON comment file per finding to comments_dir. It must not
     modify source files, commit, or push.
     """
+    caveats = build_diff_caveats(diff_range, mr.target_branch)
+    caveat_note = "".join(f"\nCAVEAT: {c}" for c in caveats) + "\n" if caveats else ""
     return f"""You are performing a multi-agent code review of a GitLab merge request.
 
 ## Merge Request
@@ -395,12 +438,13 @@ URL: {mr.web_url}
 ## Context
 
 All context files are in: {context_dir}
-- branch.diff — full diff of the branch against main (for reference only)
+- branch.diff — full diff of the branch against {mr.target_branch} (for reference only)
 
-Start by running `git diff origin/main...{branch_ref} --name-only` to discover the
-complete changeset. Read the changed files directly from the repository to understand
-what was added or removed.
-
+Start by running `{build_discovery_command(diff_range)}` to discover the complete
+changeset. Use exactly that command: it is what produced branch.diff, and other forms
+of the diff (`..`, `...`) report files this branch never touched. Read the changed
+files directly from the repository to understand what was added or removed.
+{caveat_note}
 ## Review criteria
 
   1. Bug-free — correct behaviour at runtime, no protocol violations

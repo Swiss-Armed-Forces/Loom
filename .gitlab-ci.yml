@@ -475,6 +475,11 @@ appliance_test:
     # a workstation's.
     - devenv shell -- appliance-test --platform evo-x2 --min-free 10 --max-free 20
 
+aitools_test:
+  stage: test
+  script:
+    - devenv shell -- aitools-test
+
 test_build_nix-dind:
   extends: .default-docker
   stage: test

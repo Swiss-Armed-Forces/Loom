@@ -18,6 +18,11 @@ pytest = "^8.0"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# This file anchors pytest's rootdir here, so the repo-root pytest.ini never applies.
+# Mirror its settings: do not use /tmp (RAMFS) as tmp directory because we don't want
+# that our tmp artifacts end up in RAM.
+addopts = '--basetemp=".pytest_tmp" --random-order'
+timeout = 900
 
 [build-system]
 requires = ["poetry-core"]

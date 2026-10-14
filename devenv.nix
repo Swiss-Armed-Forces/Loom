@@ -79,78 +79,152 @@ let
     "charts"
   ];
 
-  # Helper function to create a wrapper script that handles relative paths and additional args
-  createToolWrapper =
-    toolPath: subdir: subdirName: additionalArgs:
-    builtins.toString (
-      pkgs.writeShellScript "tool-wrapper-${subdirName}" ''
-        cd "${subdir}"
+  # The checkout that owns the shared .git directory.
+  #
+  # In a linked worktree `.git` is a regular file reading
+  # `gitdir: <main>/.git/worktrees/<name>`; anywhere else it is a directory and
+  # the main worktree is this tree. Machine state that several checkouts must
+  # agree on -- the minikube home, whose certificate paths ~/.kube/config
+  # records absolutely -- is anchored here rather than at config.devenv.root.
+  #
+  # `.git` being a file is not on its own proof of a worktree: `git clone
+  # --separate-git-dir` writes one too. The shape git uses for a worktree is
+  # what is matched, so the gitdir target must end in `.git/worktrees/<name>`.
+  #
+  # Resolution failing is not an error. Builds run from export tarballs, CI
+  # checkouts and containers where `.git` is absent or truncated, and must never
+  # fail because a convenience value could not be computed -- those fall back to
+  # the tree itself.
+  mainWorktreeRoot =
+    let
+      dotGit = "${config.devenv.root}/.git";
 
-        # Convert all file paths to relative paths and process in one call
-        relative_files=()
-        for file in "''${@}"; do
-          # Check if file is actually in the subdir
-          if [[ "''${file}" == "${subdir}"* ]]; then
-            relative_files+=("''${file#${subdir}/}")
-          else
-            >&2 echo "Warning: Skipping file outside ${subdir}: ''${file}"
-          fi
-        done
+      isWorktreeFile = builtins.pathExists dotGit && builtins.readFileType dotGit == "regular";
 
-        "${toolPath}" ${additionalArgs} "''${relative_files[@]}"
-      ''
+      firstLine = lib.head (lib.splitString "\n" (builtins.readFile dotGit));
+      gitdir = lib.removePrefix "gitdir: " firstLine;
+
+      parts = lib.splitString "/" gitdir;
+      count = builtins.length parts;
+
+      # .../<main>/.git/worktrees/<name> -- the two components before <name>.
+      isWorktreeGitdir =
+        lib.hasPrefix "gitdir: " firstLine
+        && count >= 4
+        && lib.elemAt parts (count - 2) == "worktrees"
+        && lib.elemAt parts (count - 3) == ".git";
+    in
+    if isWorktreeFile && isWorktreeGitdir then
+      lib.concatStringsSep "/" (lib.take (count - 3) parts)
+    else
+      config.devenv.root;
+
+  # Helper function to create a hook entry that runs a tool from inside a subdirectory,
+  # with the hook's file list rewritten relative to it.
+  #
+  # The work is done by cicd/run_hook_tool.sh rather than by a script generated here,
+  # so that shellcheck covers it. Each entry is an argv for that script: prek splits
+  # the entry the way a shell would, then appends the hook's file names.
+  #
+  # The repository root is resolved by the script, at run time, in the tree the hook
+  # was invoked in -- never interpolated here. A commit made from a git worktree runs
+  # the hooks installed in the shared .git/hooks, which belong to whichever tree last
+  # entered devenv, so a root fixed at build time sends the tools at a different
+  # checkout than the files they are linting. Write %ROOT% in a command or an argument
+  # to reach the root of the tree the hook ran in; use createToolWrapper for a tool on
+  # PATH and createRepoScriptWrapper for a script inside the repository.
+  createCommandWrapper =
+    command: subdir: additionalArgs:
+    lib.escapeShellArgs (
+      [
+        "./cicd/run_hook_tool.sh"
+        "--subdir"
+        subdir
+        "--command"
+        command
+      ]
+      ++ lib.concatMap (arg: [
+        "--arg"
+        arg
+      ]) additionalArgs
     );
+
+  # A tool resolved from PATH, e.g. `black`.
+  createToolWrapper = createCommandWrapper;
+
+  # A script shipped in the repository, addressed relative to the repository root.
+  createRepoScriptWrapper = scriptPath: createCommandWrapper "%ROOT%/${scriptPath}";
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
     { subdir }:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
-      top_pyproject_toml = "${config.devenv.root}/pyproject.toml";
-      top_flake8 = "${config.devenv.root}/.flake8";
-      top_pylintrc = "${config.devenv.root}/.pylintrc";
+      # %ROOT% is substituted by the wrapper script, not by Nix -- see
+      # createCommandWrapper.
+      top_pyproject_toml = "%ROOT%/pyproject.toml";
+      top_flake8 = "%ROOT%/.flake8";
+      top_pylintrc = "%ROOT%/.pylintrc";
     in
     {
       "isort_${subdirName}" = {
         enable = true;
-        entry =
-          createToolWrapper "isort" subdir subdirName
-            "--config-root '${config.devenv.root}' --resolve-all-configs";
+        entry = createToolWrapper "isort" subdir [
+          "--config-root"
+          "%ROOT%"
+          "--resolve-all-configs"
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "autoflake_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "autoflake" subdir subdirName "--config '${top_pyproject_toml}'";
+        entry = createToolWrapper "autoflake" subdir [
+          "--config"
+          top_pyproject_toml
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "docformatter_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "docformatter" subdir subdirName "--config '${top_pyproject_toml}'";
+        entry = createToolWrapper "docformatter" subdir [
+          "--config"
+          top_pyproject_toml
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "black_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "black" subdir subdirName "--config '${top_pyproject_toml}' --preview";
+        entry = createToolWrapper "black" subdir [
+          "--config"
+          top_pyproject_toml
+          "--preview"
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "flake8_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "flake8" subdir subdirName "--config '${top_flake8}'";
+        entry = createToolWrapper "flake8" subdir [
+          "--config"
+          top_flake8
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
       };
 
       "pylint_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "pylint" subdir subdirName "--rcfile '${top_pylintrc}'";
+        entry = createToolWrapper "pylint" subdir [
+          "--rcfile"
+          top_pylintrc
+        ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
         # pylint must be run in serial, otherwise code duplication
@@ -160,7 +234,7 @@ let
 
       "mypy_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "mypy" subdir subdirName "";
+        entry = createToolWrapper "mypy" subdir [ ];
         files = "^${subdir}/.*\\.py$";
         types = [ "python" ];
         excludes = [ "^${subdir}/tests/.*\\.py$" ];
@@ -172,7 +246,7 @@ let
 
       "poetry-check_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "poetry" subdir subdirName "check";
+        entry = createToolWrapper "poetry" subdir [ "check" ];
         # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
         # so the old spelling made every subdir's hook fire on any poetry.lock.
         files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
@@ -182,7 +256,7 @@ let
 
       "poetry-lock_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "poetry" subdir subdirName "lock";
+        entry = createToolWrapper "poetry" subdir [ "lock" ];
         # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
         # so the old spelling made every subdir's hook fire on any poetry.lock.
         files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
@@ -200,35 +274,46 @@ let
     {
       "eslint_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "eslint" subdir subdirName "--max-warnings 0 --fix ./.";
+        entry = createToolWrapper "eslint" subdir [
+          "--max-warnings"
+          "0"
+          "--fix"
+          "./."
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "prettier_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "prettier" subdir subdirName "--write ./.";
+        entry = createToolWrapper "prettier" subdir [
+          "--write"
+          "./."
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "tsc_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "tsc" subdir subdirName "";
+        entry = createToolWrapper "tsc" subdir [ ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "tsc-node_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "tsc" subdir subdirName "--project 'tsconfig.node.json'";
+        entry = createToolWrapper "tsc" subdir [
+          "--project"
+          "tsconfig.node.json"
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
 
       "vite-build_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "vite" subdir subdirName "build";
+        entry = createToolWrapper "vite" subdir [ "build" ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
         stages = [ "manual" ];
@@ -236,7 +321,10 @@ let
 
       "vitest_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "pnpm" subdir subdirName "test run";
+        entry = createToolWrapper "pnpm" subdir [
+          "test"
+          "run"
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
         stages = [ "manual" ];
@@ -251,13 +339,16 @@ let
     {
       "helm-lint_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "helm" subdir subdirName "lint ./.";
+        entry = createToolWrapper "helm" subdir [
+          "lint"
+          "./."
+        ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
       "check-resources_${subdirName}" = {
         enable = true;
-        entry = createToolWrapper "${config.devenv.root}/cicd/check_resources.sh" subdir subdirName "./.";
+        entry = createRepoScriptWrapper "cicd/check_resources.sh" subdir [ "./." ];
         files = "^${subdir}/.*$";
         pass_filenames = false;
       };
@@ -282,18 +373,24 @@ let
   # `poetry check` reports a lockfile that no longer matches its manifest, so this
   # fails the commit and points at `poetry-lock`; it deliberately does not
   # regenerate anything itself, because the fix spans both projects.
+  #
+  # One hook per project rather than a loop in a generated script: the entry has
+  # to leave the repository root to cicd/run_hook_tool.sh (see
+  # cicd/check_devenv_hook_roots.sh), and that script runs one command in one
+  # directory. Both fire on the *root* manifest, which is what distinguishes
+  # poetry-check_root-integrationtest from the poetry-check_integrationtest
+  # generated above -- that one only sees integrationtest's own files.
   rootPoetryHooks = {
     poetry-check_root = {
       enable = true;
-      entry = builtins.toString (
-        pkgs.writeShellScript "poetry-check-root" ''
-          set -euo pipefail
-          for dir in '${config.devenv.root}' '${config.devenv.root}/integrationtest'; do
-            cd "''${dir}"
-            poetry check
-          done
-        ''
-      );
+      entry = createToolWrapper "poetry" "." [ "check" ];
+      files = "^(pyproject\\.toml|poetry\\.lock)$";
+      pass_filenames = false;
+    };
+
+    poetry-check_root-integrationtest = {
+      enable = true;
+      entry = createToolWrapper "poetry" "integrationtest" [ "check" ];
       files = "^(pyproject\\.toml|poetry\\.lock)$";
       pass_filenames = false;
     };
@@ -344,8 +441,15 @@ in
     # https://www.reddit.com/r/learnpython/comments/zcb95y/comment/kdh0aka
     PYTHON_KEYRING_BACKEND = "keyring.backends.fail.Keyring";
 
-    # Make minikube store all its metadata in the project root
-    MINIKUBE_HOME = "${config.devenv.root}/.minikube";
+    # Make minikube store all its metadata in the main worktree.
+    #
+    # There is one cluster per machine and every checkout talks to it. The
+    # kubeconfig that minikube writes is ~/.kube/config, which is shared and
+    # records the certificate paths absolutely, so a per-checkout home would
+    # leave `kubectl` working everywhere while `minikube` saw no profile in the
+    # worktree it ran from -- and `up` there would try to build a second cluster
+    # on top of the first one's docker container.
+    MINIKUBE_HOME = "${mainWorktreeRoot}/.minikube";
 
     # Make skaffold store all its metadata in the project root
     SKAFFOLD_HOME = "${config.devenv.root}/.skaffold";
@@ -603,6 +707,13 @@ in
   };
   languages.typescript.enable = true;
 
+  # Give this checkout its own hooks directory before the hooks are installed
+  # into it -- see cicd/set_worktree_hooks_path.sh.
+  tasks."loom:git-hooks:worktree-hooks-path" = {
+    exec = "${config.devenv.root}/cicd/set_worktree_hooks_path.sh";
+    before = [ "devenv:git-hooks:install" ];
+  };
+
   tasks."devenv:git-hooks:run" = {
     # Print the output of the git hooks that "devenv test" runs, otherwise a
     # failing hook only reports that it failed.
@@ -664,14 +775,30 @@ in
 
     "check-celery-group-import" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_celery_group_import.sh";
+      entry = "./cicd/check_celery_group_import.sh";
       types = [ "python" ];
     };
 
     "check-dockerfile-run-flags" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_dockerfile_run_flags.sh";
+      entry = "./cicd/check_dockerfile_run_flags.sh";
       types = [ "dockerfile" ];
+    };
+
+    # A hook entry that interpolates config.devenv.root points at whichever tree
+    # last entered devenv, because git shares .git/hooks across all worktrees.
+    # CI runs a single checkout where the two coincide, so this is the only place
+    # the regression can be caught.
+    #
+    # `pass_filenames = false`: the script reads devenv.nix itself.
+    #
+    # The checker is in the pattern alongside devenv.nix so a change to it is
+    # exercised by its own hook.
+    "check-devenv-hook-roots" = {
+      enable = true;
+      entry = "./cicd/check_devenv_hook_roots.sh";
+      files = "^(devenv\\.nix$|cicd/check_devenv_hook_roots\\.sh$)";
+      pass_filenames = false;
     };
 
     # `hostnames.ingress` in charts/values.yaml against the hosts the chart's
@@ -687,7 +814,7 @@ in
     # /etc/hosts -- so a regression in either would otherwise land unchecked.
     "check-chart-hostnames" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_chart_hostnames.sh";
+      entry = "./cicd/check_chart_hostnames.sh";
       files = "^(charts/|cicd/check_chart_hostnames\\.sh$|vars\\.sh$)";
       pass_filenames = false;
     };
@@ -707,7 +834,7 @@ in
     # rejects arguments it does not know.
     "check-http-values" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_http_values.sh";
+      entry = "./cicd/check_http_values.sh";
       files = "^(charts/|cicd/check_http_values\\.sh$)";
       pass_filenames = false;
     };
@@ -724,14 +851,16 @@ in
     # are not on PATH for a `git commit` run outside `devenv shell`, while the
     # virtualenv's `python` is -- which is the same assumption every hook above
     # makes about `isort`, `black` and the rest.
+    #
+    # Run from the repository root (`--subdir .`) so that pytest.ini applies;
+    # the wrapper is what resolves that root in the tree the hook ran in.
     "ollama-test" = {
       enable = true;
-      entry = builtins.toString (
-        pkgs.writeShellScript "ollama-test-hook" ''
-          cd '${config.devenv.root}'
-          exec python -m pytest ollama/tests
-        ''
-      );
+      entry = createToolWrapper "python" "." [
+        "-m"
+        "pytest"
+        "ollama/tests"
+      ];
       files = "^ollama/.*\\.py$";
       types = [ "python" ];
       pass_filenames = false;
@@ -772,7 +901,7 @@ in
 
     "check-values-local-overrides" = {
       enable = true;
-      entry = "${config.devenv.root}/cicd/check_values_local_overrides.sh";
+      entry = "./cicd/check_values_local_overrides.sh";
       files = "charts/values-(overwrites|user|up-flags)\\.yaml$";
       types = [ "file" ];
     };
@@ -1072,6 +1201,19 @@ in
         # devenv's virtualenv already imports ollama_wrapper by name. Run from the
         # repository root so that pytest.ini applies.
         python -m pytest ollama/tests "''${@}"
+      )
+    '';
+  };
+
+  scripts.aitools-test = {
+    description = "Test the aitools CLI";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}/cicd'
+
+        python -m pytest \
+          "''${@:-aitools/tests/}"
       )
     '';
   };

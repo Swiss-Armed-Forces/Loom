@@ -13,9 +13,9 @@ from ._common import (
     resolve_mr_from_args_or_branch,
 )
 from .aitools import run_ai_agentic
-from .git_helpers import get_branch_diff
+from .git_helpers import get_branch_diff, resolve_diff_range
 from .gitlab_api import post_review_comment
-from .models import ReviewComment
+from .models import DiffRange, ReviewComment
 from .prompts import build_mr_fix_prompt, build_mr_review_prompt
 
 logger = logging.getLogger(__name__)
@@ -110,8 +110,7 @@ def _fix_from_comments(
     mr: ProjectMergeRequest,
     comments: list[ReviewComment],
     repo: Repo,
-    branch_ref: str,
-    target_branch: str,
+    diff_range: DiffRange,
 ) -> None:
     """Run a AI agent to fix all review findings without posting them as comments."""
     print(f"\nRunning fix agent for {len(comments)} finding(s)...")
@@ -123,7 +122,11 @@ def _fix_from_comments(
         ) as f:
             f.write(_format_comments_for_fix(comments))
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(get_branch_diff(repo, branch_ref, target_branch))
+            f.write(
+                get_branch_diff(
+                    repo, diff_range.ref, mr.target_branch, diff_range=diff_range
+                )
+            )
         prompt = build_mr_fix_prompt(mr, context_dir)
         run_ai_agentic(prompt, repo)
 
@@ -159,10 +162,15 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
         comments_dir = os.path.join(context_dir, "comments")
         os.makedirs(comments_dir)
 
+        diff_range = resolve_diff_range(repo, branch_ref, mr.target_branch)
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(get_branch_diff(repo, branch_ref, mr.target_branch))
+            f.write(
+                get_branch_diff(
+                    repo, branch_ref, mr.target_branch, diff_range=diff_range
+                )
+            )
 
-        prompt = build_mr_review_prompt(mr, context_dir, comments_dir, branch_ref)
+        prompt = build_mr_review_prompt(mr, context_dir, comments_dir, diff_range)
         run_ai_agentic(prompt, repo)
 
         comments = _read_comment_files(comments_dir)
@@ -178,12 +186,6 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
 
     print(f"\nFound {len(comments)} review comment(s) for MR !{mr.iid}.")
     if args.fix:
-        _fix_from_comments(
-            mr,
-            comments,
-            repo,
-            branch_ref,
-            mr.target_branch,
-        )
+        _fix_from_comments(mr, comments, repo, diff_range)
     else:
         _review_comments_interactively(mr, comments)

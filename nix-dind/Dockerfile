@@ -174,6 +174,13 @@ COPY --chown=${NIX_USER_NAME} \
     nix-dind/devenv.local.nix \
     "${NIX_USER_HOMEDIR}"/nix-dind/
 
+# Entering the shell runs loom:git-hooks:worktree-hooks-path, which executes
+# this script. There is no .git here, so it returns without configuring
+# anything -- but the task is unconditional, so the file has to exist.
+COPY --chown=${NIX_USER_NAME} \
+    cicd/set_worktree_hooks_path.sh \
+    "${NIX_USER_HOMEDIR}"/cicd/
+
 
 # Realise the whole devenv package set, so that a job using this image does
 # not have to download it, and clean up the store afterwards.
