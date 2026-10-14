@@ -793,6 +793,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | loom-console-mouse                       | 0.1.0           | UNKNOWN                                                                          |
 | loom-installer                           | 0.1.0           | UNKNOWN                                                                          |
 | loom-ollama                              | 0.1.0           | UNKNOWN                                                                          |
+| loom-portal                              | 0.1.0           | UNKNOWN                                                                          |
 | loom-ready                               | 0.1.0           | UNKNOWN                                                                          |
 | loom-tests                               | 0.1.0           | UNKNOWN                                                                          |
 | loom-usb-ingest                          | 0.1.0           | UNKNOWN                                                                          |
