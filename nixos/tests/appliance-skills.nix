@@ -96,6 +96,11 @@ let
       };
     }
     ++ variantUnits { loom.mode = "setup"; }
+    # And the mutual TLS build, for the same reason: the portal's issuance units
+    # and the box's own identity exist only there, and the skills' unit tables
+    # are about what this appliance has rather than about which flags this stick
+    # was built with. `facts.md` is what says which box the pane is sitting on.
+    ++ variantUnits { loom.mtls.enable = true; }
   );
 
   # The skills refer to each other by name, and their names start with `loom-`

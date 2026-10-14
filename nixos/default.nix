@@ -678,6 +678,24 @@ in
     }
   );
 
+  # `nix-build ./nixos -A tests.appliancePortal --argstr system x86_64-linux`
+  # The captive portal page on a booted `--require-client-cert` box with no
+  # cluster behind it -- which is the state every real box is in for its first
+  # hours, and the one image nothing else here boots. It is also the only test
+  # that sends a probe request rather than reading the decision about one out of
+  # a configuration: which server block answers is nginx's choice, and that
+  # choice is what keeps a phone offering "Sign in to network".
+  tests.appliancePortal = withKvmPolicy (
+    import ./tests/appliance-portal.nix {
+      inherit
+        pkgs
+        specialArgs
+        applianceModules
+        loomSubnet
+        ;
+    }
+  );
+
   # `nix-build ./nixos -A tests.applianceInterfaceFallback --argstr system x86_64-linux`
   # The box no platform matches: that a wired NIC is claimed as loom0 anyway,
   # which one is picked when there are several, and that switching it off
