@@ -1026,7 +1026,7 @@ issued one yet, or the placeholder is still in place. `journalctl -u loom-mtls-i
 And the portal half:
 
 ```bash
-cat /run/loom/portal/password             # what a visitor has to type, also on tty1
+cat /run/loom-portal/password             # what a visitor has to type, also on tty1
 systemctl status loom-portal              # the page server
 systemctl status loom-portal-certificate  # published the anchor, or waiting for the cluster
 journalctl -u loom-portal-issue           # every certificate the page has handed out

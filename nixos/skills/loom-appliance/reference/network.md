@@ -95,14 +95,14 @@ On a box built with `--require-client-cert` the page also issues client certific
 units are involved:
 
 ```bash
-cat /run/loom/portal/password             # today's password, also on the login screen
+cat /run/loom-portal/password             # today's password, also on the login screen
 journalctl --unit loom-portal-password    # it rotates at midnight
 journalctl --unit loom-portal-issue       # every certificate the page has handed out
 curl --insecure --silent https://portal.loom/ | grep '<form'
 ```
 
 `loom-portal-issue` runs as root and is started by a `systemd.path` watching
-`/run/loom/portal/requests`; the page server itself is unprivileged and has no cluster access at all.
+`/run/loom-portal/requests`; the page server itself is unprivileged and has no cluster access at all.
 A visitor who gets "Loom is still starting" is being told the mutual TLS CA does not exist yet.
 
 ## A client that loses its own internet

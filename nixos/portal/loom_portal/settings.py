@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass, field
 
 # Where the appliance publishes what this service reads. portal.nix creates it.
-DEFAULT_STATE_DIR = "/run/loom/portal"
+DEFAULT_STATE_DIR = "/run/loom-portal"
 
 # The names inside it.
 ANCHOR_NAME = "anchor.pem"

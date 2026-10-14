@@ -172,8 +172,8 @@ def _the_password_is_on_the_login_screen(
         # The file rather than the unit: the rotation is a `Type=oneshot` with no
         # `RemainAfterExit` -- so that its timer can restart it -- and a unit like that
         # is `inactive (dead)` the moment it has done its job.
-        appliance.wait_for_file("/run/loom/portal/password")
-        password = appliance.succeed("cat /run/loom/portal/password").strip()
+        appliance.wait_for_file("/run/loom-portal/password")
+        password = appliance.succeed("cat /run/loom-portal/password").strip()
 
         # Four EFF words with dots between them, and none of the two letters that move
         # between Latin layouts -- the same rule the --lock-key passphrase follows.
@@ -187,7 +187,7 @@ def _the_password_is_on_the_login_screen(
         assert "\\" not in fragment, fragment
 
         # And the file the page reads is not world-readable: it is the credential.
-        mode = appliance.succeed("stat --format=%a /run/loom/portal/password").strip()
+        mode = appliance.succeed("stat --format=%a /run/loom-portal/password").strip()
         assert mode == "640", mode
 
 
@@ -204,7 +204,7 @@ def _a_wrong_password_asks_the_box_for_nothing(
 
         # The assertion that matters: no spool entry was created, so the root issuer was
         # never woken and no key was generated.
-        pending = appliance.succeed("ls -A /run/loom/portal/requests").strip()
+        pending = appliance.succeed("ls -A /run/loom-portal/requests").strip()
         assert pending == "", pending
 
 
@@ -212,7 +212,7 @@ def _the_issuer_answers_rather_than_hangs(
     appliance: "Machine", subtest: "Subtest", params: Params
 ) -> None:
     with subtest("with the right password and no cluster, the box says it is starting"):
-        password = appliance.succeed("cat /run/loom/portal/password").strip()
+        password = appliance.succeed("cat /run/loom-portal/password").strip()
         body = appliance.succeed(
             f"{CURL} --insecure --data 'password={password}&label=visitor' "
             f"https://{params.portal_host}/certificate"
@@ -228,8 +228,8 @@ def _the_issuer_answers_rather_than_hangs(
             "journalctl --unit loom-portal-issue.service --no-pager"
         )
         assert journal.strip(), "the path unit never started the issuer"
-        assert appliance.succeed("ls -A /run/loom/portal/requests").strip() == ""
-        assert appliance.succeed("ls -A /run/loom/portal/bundles").strip() == ""
+        assert appliance.succeed("ls -A /run/loom-portal/requests").strip() == ""
+        assert appliance.succeed("ls -A /run/loom-portal/bundles").strip() == ""
 
 
 def _issuance_is_rate_limited(
@@ -269,7 +269,7 @@ def _the_spool_is_not_readable_by_the_page(
     with subtest("the page server may use the spool and may not read it"):
         for directory in ("requests", "bundles"):
             mode = appliance.succeed(
-                f"stat --format='%a %U:%G' /run/loom/portal/{directory}"
+                f"stat --format='%a %U:%G' /run/loom-portal/{directory}"
             ).strip()
             # 0730 root:loom-portal -- create, stat and unlink by name; never enumerate.
             # A compromise of the one process a visitor talks to therefore cannot list

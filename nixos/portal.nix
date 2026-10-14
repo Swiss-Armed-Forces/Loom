@@ -79,7 +79,7 @@ let
   # DynamicUser, because the tmpfiles rules below name it.
   portalUser = "loom-portal";
 
-  stateDir = "/run/loom/portal";
+  stateDir = "/run/loom-portal";
   requestsDir = "${stateDir}/requests";
   bundlesDir = "${stateDir}/bundles";
   anchorFile = "${stateDir}/anchor.pem";
@@ -685,7 +685,15 @@ in
           users.groups.${portalUser} = { };
 
           systemd.tmpfiles.rules = [
-            "d /run/loom 0755 root root -"
+            # `/run/loom-portal`, beside `/run/loom` rather than inside it, and the
+            # reason is a permission rather than a preference: console.nix declares
+            # `/run/loom` as `0700 loom:users` for the tmux socket, and
+            # systemd-tmpfiles takes the first rule it has for a path and ignores
+            # every later one. A second declaration of it here would silently win or
+            # silently lose, and the losing case is a console with no session --
+            # `loom-console` could no longer create its socket. This is the first
+            # thing on the box that runs as neither root nor `loom`, so it gets a
+            # directory of its own instead.
             "d ${stateDir} 0755 root root -"
             # 0730, which is -wx for the group and nothing for anyone else. The
             # page server may create, stat and unlink **by name** and may not

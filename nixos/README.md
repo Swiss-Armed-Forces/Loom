@@ -334,9 +334,17 @@ path table to the five entries that may answer anything but a 404.
 **The page server runs as `loom-portal` and can reach nothing.** Issuing a client identity needs the mutual
 TLS CA's *private key*, so the obvious implementation — this service shelling out to
 `loom-client-certificate` — would put a network-facing process in possession of the operator's kubeconfig.
-Instead it writes `requests/<token>.req` into a spool it cannot enumerate (`0730 root:loom-portal`: create,
-stat and unlink by name, never `readdir`), a `systemd.path` starts `loom-portal-issue` as root, and that
-drains the directory and leaves `bundles/<token>/` or `<token>.error` behind. The unprivileged half has no
+Instead it writes `/run/loom-portal/requests/<token>.req` into a spool it cannot enumerate (`0730
+root:loom-portal`: create, stat and unlink by name, never `readdir`), a `systemd.path` starts
+`loom-portal-issue` as root, and that drains the directory and leaves `bundles/<token>/` or
+`<token>.error` behind.
+
+The spool is at `/run/loom-portal` and not under `/run/loom` with everything else, which is a permission
+rather than a preference: `console.nix` declares `/run/loom` as `0700 loom:users` for the tmux socket, and
+systemd-tmpfiles keeps the first rule it has for a path and ignores every later one. A second declaration
+would silently win or silently lose — and the losing case is a console with no session at all, because
+`loom-console` could no longer create its socket. This is the first thing on the box running as neither
+root nor `loom`. The unprivileged half has no
 `kubectl` on `PATH`, no kubeconfig, `IPAddressDeny=any` but loopback, and write access to exactly two
 directories.
 
