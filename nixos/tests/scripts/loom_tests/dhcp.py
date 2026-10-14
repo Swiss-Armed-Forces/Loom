@@ -154,10 +154,18 @@ def _portal_responder(appliance: "Machine", subtest: "Subtest", params: Params) 
         # unit since it was written, and network.nix did not. Both now do, and
         # both are checked, so they cannot drift apart again.
         appliance.wait_for_unit("nginx.service")
-        page = appliance.succeed(
-            f"curl --silent --include http://{params.portal_address}/generate_204"
+
+        # With the probe's own Host header, because that is what decides which of
+        # the two server blocks on this socket answers. A probe matches no
+        # `server_name`, falls to the default server and is redirected; a request
+        # that names the address is the visitor who typed it, and gets the page.
+        # Fetching a probe path without the header tests neither.
+        probe = appliance.succeed(
+            "curl --silent --include "
+            "--header 'Host: connectivitycheck.gstatic.com' "
+            f"http://{params.portal_address}/generate_204"
         )
-        assert "302" in page, page
+        assert "302" in probe, probe
 
 
 def _survives_a_missing_interface(
