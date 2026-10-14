@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import git
 from git import Repo
@@ -8,6 +9,16 @@ from .config import EXCLUDED_PATHSPECS, MAX_DIFF_CHARS
 from .models import DiffRange, FileDiffMap
 
 logger = logging.getLogger(__name__)
+
+# A line holding nothing but a GitLab template expansion variable, e.g. the commit
+# description placeholder the MR template carries for web-UI creation.
+TEMPLATE_VARIABLE_LINE = re.compile(r"^%\{[A-Za-z0-9_]+\}[ \t]*\r?\n?", re.MULTILINE)
+
+# A line holding nothing but an HTML hint comment, e.g. "<!-- Closes #<issue-number> -->".
+HINT_COMMENT_LINE = re.compile(r"^[ \t]*<!--.*-->[ \t]*$")
+
+# Matched as a substring of a "## " heading, so the template may change its emoji.
+ISSUE_REFERENCE_HEADING = "Issue Reference"
 
 
 def _merge_base_range(
@@ -168,7 +179,12 @@ def get_per_file_diffs(repo: Repo, target_branch: str = "main") -> FileDiffMap:
 
 
 def load_mr_template(repo: Repo) -> str:
-    """Load the MR template from the repository."""
+    """Load the MR template from the repository, without its UI-only expansion variable.
+
+    GitLab expands a `%{...}` variable in a template only when the MR is created through
+    the web UI. Sent through the REST API it stays in the description verbatim, where it
+    is noise an AI then has to be told to overwrite, so it is stripped here instead.
+    """
     if not repo.working_dir:
         logger.warning("No working directory available (bare repo?)")
         return ""
@@ -178,10 +194,45 @@ def load_mr_template(repo: Repo) -> str:
     )
     try:
         with open(template_path, encoding="utf-8") as f:
-            return f.read()
+            return TEMPLATE_VARIABLE_LINE.sub("", f.read())
     except FileNotFoundError:
         logger.warning("MR template not found at %s", template_path)
         return ""
+
+
+def build_initial_mr_description(mr_template: str, issue_iid: int) -> str:
+    """Render the first MR description for an issue from the MR template.
+
+    The summary sections stay empty - `aitools mr-describe` fills them once there are
+    commits to describe - but the issue reference is placed under its own heading right
+    away, so the MR closes its issue from the moment it is opened.
+    """
+    closes = f"Closes #{issue_iid}"
+    kept = [
+        line
+        for line in mr_template.strip().splitlines()
+        if not HINT_COMMENT_LINE.match(line)
+    ]
+    # Removing the expansion variable and the hint comments leaves the blank lines that
+    # used to separate them behind.
+    lines = [
+        line
+        for index, line in enumerate(kept)
+        if line.strip() or (index and kept[index - 1].strip())
+    ]
+    if not lines:
+        return closes
+
+    for index, line in enumerate(lines):
+        if line.startswith("## ") and ISSUE_REFERENCE_HEADING in line:
+            lines[index + 1 : index + 1] = ["", closes]
+            return "\n".join(lines).rstrip() + "\n"
+
+    logger.warning(
+        "No '%s' heading in the MR template, appending the issue reference",
+        ISSUE_REFERENCE_HEADING,
+    )
+    return "\n".join(lines).rstrip() + f"\n\n{closes}\n"
 
 
 def get_tag_diff(repo: Repo, from_tag: str, to_tag: str) -> str:

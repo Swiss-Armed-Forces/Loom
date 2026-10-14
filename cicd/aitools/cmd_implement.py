@@ -15,6 +15,7 @@ from ._common import (
     checkout_and_update_branch,
 )
 from .aitools import run_ai_agentic
+from .git_helpers import load_mr_template
 from .gitlab_api import (
     create_branch_and_mr_for_issue,
     fetch_issue_by_ref,
@@ -37,15 +38,15 @@ def _checkout_issue_branch(
     """Find or create an MR for the issue and check out its branch locally."""
     mr = find_open_mr_for_issue(project, issue)
     if mr:
-        branch_name = mr.source_branch
-        print(f"Found existing MR !{mr.iid} on branch {branch_name}")
+        result = IssueBranchResult(mr=mr, branch_name=mr.source_branch)
+        print(f"Found existing MR !{result.mr.iid} on branch {result.branch_name}")
     else:
-        mr, branch_name = create_branch_and_mr_for_issue(project, issue)
-        print(f"Created MR !{mr.iid} on branch {branch_name}")
+        result = create_branch_and_mr_for_issue(project, issue, load_mr_template(repo))
+        print(f"Created MR !{result.mr.iid} on branch {result.branch_name}")
 
-    checkout_and_update_branch(branch_name, repo)
+    checkout_and_update_branch(result.branch_name, repo)
 
-    return IssueBranchResult(mr=mr, branch_name=branch_name)
+    return result
 
 
 def _implement_issue(project: Project, issue: ProjectIssue, repo: Repo) -> None:
