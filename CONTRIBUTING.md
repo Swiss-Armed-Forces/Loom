@@ -23,6 +23,9 @@ To maintain transparency and traceability:
 1. **Start with an Issue**
     - Always create an issue first to describe the problem, feature, or enhancement you wish to address.
     This ensures alignmentand facilitates discussion before implementation.
+    - The issue form is pre-filled from [`.gitlab/issue_templates/Default.md`](.gitlab/issue_templates/Default.md).
+    Tick the matching **Issue Type** box, fill the bug report *or* feature request section,
+    and delete the one that does not apply.
     - Use GitLab’s **"Create Merge Request"** button directly from the issue.
     This automatically links the issue to the merge request and generates a branch with a default name.
 
@@ -40,12 +43,19 @@ To maintain transparency and traceability:
     - The **Draft** status should only be removed when the assignee deems the MR ready for merging.
     - While in Draft status, MRs do not require reviews and can generally be ignored by reviewers
     unless the assignee specifically requests a review.
+    - A Draft MR also runs **no pipelines** — `.gitlab-ci.yml` skips merge request pipelines whose
+    title starts with `Draft`, and branch pipelines are skipped while an MR is open. Removing the
+    Draft status does not start one either, as a title change creates no pipeline: run the
+    pipeline from the MR once it is ready.
 
 5. **Use Meaningful Titles and Descriptions**
     - Use a clear and meaningful title for your MR. This title will be used to generate release notes,
     so ensure it accurately reflects the purpose of the MR.
     - Keep the MR description up-to-date with the scope and context of your work.
     Use it to explain implementation details or specific considerations.
+    - The description follows [`.gitlab/merge_request_templates/Default.md`](.gitlab/merge_request_templates/Default.md):
+    a summary paragraph under **📌 Summary**, and the `Closes #issue-number` line from rule 6
+    under **🔗 Issue Reference**.
 
 6. **Linking Issues to Merge Requests**
     - Link your MR to any related issue by including the following in the MR description:
