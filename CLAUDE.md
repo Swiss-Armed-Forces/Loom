@@ -526,6 +526,34 @@ Before reaching for a patch, ask yourself:
 Only patch when there is no reasonable alternative (e.g. a global external side effect that cannot
 be injected). If you find yourself patching, treat it as a signal to reconsider the design first.
 
+**Retry classification:**
+
+A Celery task's `autoretry_for` must name exactly the exception the code below it raises for a
+*transient* failure — nothing wider, nothing narrower. Getting it wrong is silent in both
+directions: too narrow and a service outage is treated as a property of the document, too wide and
+a deterministic failure occupies a worker for the whole backoff budget (with `retry_backoff=True`
+and `max_retries=15`, roughly an hour, multiplied by the chunk count of every affected document).
+
+- **The service layer classifies**, because it is the only layer that sees the status code. It
+  raises a distinct type per outcome under one base — see `TikaTransientError` /
+  `TikaPermanentError` in `worker/services/tika_service.py`, and the matching pairs in
+  `rspamd_service.py` and `common/llm/exceptions.py`. A service that wraps an exception
+  (`raise XError from exc`) has to be checked against what the task declares: `TikaError` wrapping
+  `requests.HTTPError` while the task declared `RequestException` is what made every Tika 5xx
+  degrade a PDF to the strings extractor without a single retry.
+- **Classify from what the service actually reports, not from the status class.** The default for
+  an unrecognised failure is transient, because a wasted retry budget is cheaper than silently
+  discarding work that would have succeeded — but check each 5xx before assuming it. Gotenberg
+  answers `500` on a document's own route when LibreOffice cannot open the file, so there it is a
+  verdict and only `503`/`502`/`429`/`408` are worth retrying; Tika answers `5xx` when its forked
+  parser was killed and keeps refusals to `4xx`, so there the whole `5xx` range is transient.
+  Misreading a verdict as transient is not a wasted budget — it holds the file out of the index for
+  the entire backoff before degrading to the same answer.
+- **The task decides degrade-vs-fail with `BaseTask.is_last_attempt`**, never by comparing
+  `self.request.retries` against the limit by hand.
+- **A task that degrades logs a warning.** Degrading silently is why the Tika defect went unnoticed
+  for so long: the only trace it left was `tika_handled_by` on the indexed document.
+
 ### Issue and Merge Request Templates
 
 Both templates are tracked in this repo. **Read the file at the moment you write the issue or MR

@@ -7,6 +7,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File
+from common.llm.exceptions import LLMTransientError, classify_llm_error
 from common.services.lazybytes_service import TempLazyBytes
 from common.settings import settings
 from common.utils.cache import cache
@@ -34,10 +35,6 @@ IMAGE_MIMETYPES = [
     "image/gif",
     "image/webp",
 ]
-
-
-class LLMError(Exception):
-    pass
 
 
 def is_image(extension: str, mimetype: str) -> bool:
@@ -89,7 +86,7 @@ DESCRIPTION:"""
         )
 
     except Exception as ex:
-        raise LLMError("Image description failed") from ex
+        raise classify_llm_error(ex, "Image description failed") from ex
 
     return result.output.description
 
@@ -101,7 +98,7 @@ def detect_image_task(file_type: str, file_extension: str) -> bool:
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=(LLMError,),
+    autoretry_for=(LLMTransientError,),
     max_retries=DESCRIBE_IMAGE_MAX_RETRIES,
     retry_backoff=True,
 )

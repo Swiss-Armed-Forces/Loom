@@ -25,13 +25,41 @@ from worker.utils.persisting_task import persisting_task
 
 GOTENBERG_MAX_RETRIES = 15
 
+# The statuses that say "ask again later" rather than "this document cannot be
+# rendered". 503 is what a saturated Chromium and LibreOffice pool answers, 502 comes
+# from the proxy in front of it, and 408/429 are its timeout and rate limit.
+#
+# 500 is deliberately absent, unlike in the tika classifier: Gotenberg reports a failed
+# conversion as 500 on the document's own route ("convert to PDF: supervisor run task:
+# uno exception" for an RTF LibreOffice cannot open), so it is a verdict on the file
+# and no number of retries changes it.
+GOTENBERG_TRANSIENT_STATUS_CODES = frozenset({408, 429, 502, 503})
+
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
 
 class GotenbergError(Exception):
-    """Raised to trigger a Celery retry on transient Gotenberg connectivity issues."""
+    """Raised to trigger a Celery retry on transient Gotenberg failures."""
+
+
+def handle_gotenberg_status_error(exc: HTTPStatusError, message: str) -> None:
+    """Decide whether an HTTP status from Gotenberg is worth another attempt.
+
+    Raises GotenbergError for a capacity signal, so the caller's autoretry_for sees it.
+    Returning is the caller's signal to degrade: this document has no rendering, which
+    is what every status outside GOTENBERG_TRANSIENT_STATUS_CODES means.
+
+    Degrading on the first attempt matters as much as retrying does. A conversion
+    Gotenberg cannot perform fails identically on every attempt, and the retry backoff
+    delays the whole file's indexing by the better part of an hour before it lands back
+    here anyway.
+    """
+    status_code = exc.response.status_code
+    if status_code in GOTENBERG_TRANSIENT_STATUS_CODES:
+        raise GotenbergError(f"gotenberg call failed: HTTP {status_code}") from exc
+    logger.warning("%s (HTTP %s)", message, status_code, exc_info=exc)
 
 
 class RenderFile(BaseModel):
@@ -302,8 +330,8 @@ def render_browser_to_pdf_task(
         route = route.skip_network_idle()
         try:
             response = route.run()
-        except HTTPStatusError:
-            logger.warning("Unable to render pdf in browser", exc_info=True)
+        except HTTPStatusError as ex:
+            handle_gotenberg_status_error(ex, "Unable to render pdf in browser")
             return None
         except TransportError as ex:
             raise GotenbergError() from ex
@@ -335,8 +363,8 @@ def render_office_to_pdf_task(
         route = route.convert(Path(fd.name))
         try:
             response = route.run()
-        except HTTPStatusError:
-            logger.warning("Unable to render pdf in libreoffice", exc_info=True)
+        except HTTPStatusError as ex:
+            handle_gotenberg_status_error(ex, "Unable to render pdf in libreoffice")
             return None
         except TransportError as ex:
             raise GotenbergError() from ex

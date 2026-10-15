@@ -202,8 +202,7 @@ describe("demo API handlers", () => {
         ).then((response) => response.json());
 
         expect(emailDetail.rendered_file).toEqual({
-            image_file_id: "rendered-image.png",
-            office_pdf_file_id: "rendered-office.pdf",
+            browser_pdf_file_id: "rendered-browser.pdf",
         });
         expect(archiveDetail.rendered_file).toEqual({});
         expect(archivePreview.thumbnail_file_id).toBeUndefined();

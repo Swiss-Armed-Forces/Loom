@@ -7,6 +7,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File
+from common.llm.exceptions import LLMTransientError, classify_llm_error
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.services.lazybytes_service import TempLazyBytes
 from common.utils.cache import cache
@@ -91,13 +92,9 @@ def summarize_task(
     )
 
 
-class LLMError(Exception):
-    pass
-
-
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=(LLMTransientError,),
     max_retries=SUMMARIZE_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -125,14 +122,14 @@ KEY POINTS:"""
         )
 
     except Exception as ex:
-        raise LLMError() from ex
+        raise classify_llm_error(ex, "Summarization failed") from ex
 
     return result.output.text
 
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=(LLMTransientError,),
     max_retries=SUMMARIZE_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -167,14 +164,14 @@ SUMMARY:"""
         )
 
     except Exception as ex:
-        raise LLMError() from ex
+        raise classify_llm_error(ex, "Summarization failed") from ex
 
     return result.output.text
 
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=(LLMTransientError,),
     max_retries=SUMMARIZE_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -209,7 +206,7 @@ SUMMARY:"""
         )
 
     except Exception as ex:
-        raise LLMError() from ex
+        raise classify_llm_error(ex, "Summarization failed") from ex
 
     return result.output.text
 

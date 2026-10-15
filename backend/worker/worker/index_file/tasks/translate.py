@@ -7,6 +7,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import File, TranslatedLanguage
+from common.llm.exceptions import LLMTransientError, classify_llm_error
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.llm.return_types import DetectedLanguage
 from common.services.lazybytes_service import TempLazyBytes
@@ -33,10 +34,6 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-class LLMError(Exception):
-    pass
-
-
 def signature(file: File) -> Signature:
     """Create the signature for translation."""
     if settings.skip_translate_while_indexing:
@@ -61,7 +58,7 @@ def noop(*_, **__):
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=(LLMTransientError,),
     retry_backoff=True,
     max_retries=TRANSLATE_MAX_RETRIES,
 )
@@ -108,7 +105,7 @@ def translate_detect_language(text: str) -> list[DetectedLanguage]:
         result_agent = agent.run_sync(prompt)
 
     except Exception as ex:
-        raise LLMError("Language detection failed") from ex
+        raise classify_llm_error(ex, "Language detection failed") from ex
 
     for detected_language in result_agent.output:
         if detected_language.confidence >= settings.min_language_detection_confidence:
@@ -168,7 +165,7 @@ def translate_task(
 
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=(LLMTransientError,),
     retry_backoff=True,
     max_retries=TRANSLATE_MAX_RETRIES,
 )
@@ -195,7 +192,7 @@ def translate(text: str, detected_language: DetectedLanguage) -> str:
         result = agent.run_sync(prompt)
 
     except Exception as ex:
-        raise LLMError("Translation failed") from ex
+        raise classify_llm_error(ex, "Translation failed") from ex
 
     return result.output.text
 

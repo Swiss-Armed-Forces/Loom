@@ -9,12 +9,18 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
+from common.llm.exceptions import (
+    LLMError,
+    LLMTransientError,
+    classify_llm_error,
+)
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
+from minio.error import MinioException
 from numpy import array, mean
 from pydantic import BaseModel, Field, computed_field
-from pydantic_ai.exceptions import ModelAPIError
+from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.dependencies import (
@@ -47,6 +53,15 @@ MAX_RANKED_SEARCH_EMBEDDINGS = 10
 LLM_MAX_TOKENS_RAG = 100
 
 RAG_MAX_RETRIES = 15
+# Only the transient half of the LLMError hierarchy - see TIKA_RETRY_EXCEPTIONS.
+RAG_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = (LLMTransientError,)
+# For the tasks that also stream a chunk's text out of object storage before
+# prompting. minio calls urlopen bare, so an unreachable store arrives as a
+# urllib3 error rather than a MinioException.
+RAG_STORAGE_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = RAG_RETRY_EXCEPTIONS + (
+    MinioException,
+    Urllib3HTTPError,
+)
 
 Rank = Annotated[
     float,
@@ -94,13 +109,9 @@ def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
         return text
 
 
-class LLMError(Exception):
-    pass
-
-
 @app.task(
     base=AiContextProcessingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=RAG_RETRY_EXCEPTIONS,
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -115,8 +126,8 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
         result = get_llm_embedder().embed_query_sync(
             f"{settings.llm.embedding.query_prefix}{question}"
         )
-    except ModelAPIError as ex:
-        raise LLMError("Question embedding failed") from ex
+    except Exception as ex:  # pylint: disable=broad-exception-caught
+        raise classify_llm_error(ex, "Question embedding failed") from ex
 
     embedding = list(result.embeddings[0])
     logger.debug("Embedded question into %d-dim vector", len(embedding))
@@ -126,7 +137,7 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
 @app.task(
     bind=True,
     base=AiContextProcessingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=RAG_RETRY_EXCEPTIONS,
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -155,8 +166,9 @@ Passage:"""
         result_agent = agent.run_sync(prompt)
 
     except Exception as ex:  # pylint: disable=broad-except
-        if not self.is_last_attempt:
-            raise LLMError("Hypothetical document generation failed") from ex
+        error = classify_llm_error(ex, "Hypothetical document generation failed")
+        if isinstance(error, LLMTransientError) and not self.is_last_attempt:
+            raise error from ex
         logger.warning(
             "generate_hypothetical_document: dropping document, LLM call failed",
             exc_info=True,
@@ -177,7 +189,7 @@ Passage:"""
 @app.task(
     bind=True,
     base=AiContextProcessingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=RAG_RETRY_EXCEPTIONS,
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -196,9 +208,10 @@ def embed_document(
         result = get_llm_embedder().embed_documents_sync(
             f"{settings.llm.embedding.document_prefix}{document}"
         )
-    except ModelAPIError as ex:
-        if not self.is_last_attempt:
-            raise LLMError("Document embedding failed") from ex
+    except Exception as ex:  # pylint: disable=broad-exception-caught
+        error = classify_llm_error(ex, "Document embedding failed")
+        if isinstance(error, LLMTransientError) and not self.is_last_attempt:
+            raise error from ex
         logger.warning(
             "embed_document: dropping document, embedding failed", exc_info=True
         )
@@ -313,7 +326,7 @@ RANK:"""
         result_agent = agent.run_sync(rerank_prompt, output_type=_RerankResult)
 
     except Exception as ex:
-        raise LLMError("Reranking document failed") from ex
+        raise classify_llm_error(ex, "Reranking document failed") from ex
 
     return result_agent.output.rank
 
@@ -321,7 +334,7 @@ RANK:"""
 @app.task(
     bind=True,
     base=AiContextProcessingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=RAG_STORAGE_RETRY_EXCEPTIONS,
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -343,8 +356,8 @@ def rerank(
             text,
             question,
         )
-    except LLMError:
-        if not self.is_last_attempt:
+    except LLMError as ex:
+        if isinstance(ex, LLMTransientError) and not self.is_last_attempt:
             raise
         logger.warning(
             "rerank: dropping chunk of file %s, LLM call failed",
@@ -409,7 +422,7 @@ def limit_and_sort_ranked_search_embeddings(
 
 @app.task(
     base=AiContextProcessingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=RAG_STORAGE_RETRY_EXCEPTIONS,
     max_retries=RAG_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -453,7 +466,7 @@ def synthesize_rag_answer_task(
         result = agent.run_sync(task_prompt)
 
     except Exception as ex:
-        raise LLMError() from ex
+        raise classify_llm_error(ex, "Answer synthesis failed") from ex
 
     answer = (result.output or "").strip()
 

@@ -1443,11 +1443,13 @@ tika:
     # A parse that is killed - task timeout, OOM - never runs its cleanup
     # handlers, so its scratch files stay behind. They accumulate until /tmp is
     # full, and from then on every parse fails, not just the oversized one that
-    # started it: Tika answers with an error, the worker's Tika call raises and
-    # the indexing pipeline falls back to the strings extractor, which indexes
-    # raw byte sequences instead of document text. Clearing /tmp on container
-    # start only heals this at a restart, so a sidecar sweeps the leftovers of a
-    # long-running pod.
+    # started it: Tika answers 5xx for everything it is asked.
+    # The worker treats that as transient and retries the file through its
+    # backoff budget, so a fill the sweeper clears in time costs latency and
+    # nothing else. Outlast that budget and the pipeline degrades to the strings
+    # extractor, which indexes raw byte sequences instead of document text.
+    # Clearing /tmp on container start only heals this at a restart, so a
+    # sidecar sweeps the leftovers of a long-running pod.
     reaper:
       enabled: true
       # How often to sweep.

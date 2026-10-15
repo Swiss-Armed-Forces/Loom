@@ -8,10 +8,10 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.file.file_repository import Embedding, File
+from common.llm.exceptions import LLMTransientError, classify_llm_error
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.utils.cache import cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic_ai.exceptions import ModelAPIError
 
 from worker.dependencies import get_llm_embedder
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -82,13 +82,9 @@ def create_embedding_task(
     )
 
 
-class LLMError(Exception):
-    pass
-
-
 @app.task(
     base=FileIndexingTask,
-    autoretry_for=tuple([LLMError]),
+    autoretry_for=(LLMTransientError,),
     max_retries=CREATE_EMBEDDING_MAX_RETRIES,
     retry_backoff=True,
 )
@@ -98,8 +94,8 @@ def embed_text(text: str) -> TempTypedLazyBytes[Embedding]:
         result = get_llm_embedder().embed_documents_sync(
             f"{settings.llm.embedding.document_prefix}{text}"
         )
-    except ModelAPIError as ex:
-        raise LLMError() from ex
+    except Exception as ex:  # pylint: disable=broad-exception-caught
+        raise classify_llm_error(ex, "Embedding failed") from ex
 
     embedding = Embedding(
         text=text,

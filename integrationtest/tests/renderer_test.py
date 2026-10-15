@@ -20,19 +20,22 @@ class TestRenderer:
         )
 
     def test_renderer_image(self):
+        # The email is absent here: its PDF preview replaces the image.
         fetch_files_from_api(
             search_string="rendered_file.image_data.service_id:*",
-            expected_no_of_files=4,
+            expected_no_of_files=3,
         )
 
     def test_renderer_office_pdf(self):
+        # The email is absent here: its PDF comes from chromium and is kept as-is.
         fetch_files_from_api(
             search_string="rendered_file.office_pdf_data.service_id:*",
-            expected_no_of_files=5,
+            expected_no_of_files=4,
         )
 
     def test_renderer_browser(self):
+        # The svg, and the email rendered as one continuous page.
         fetch_files_from_api(
             search_string="rendered_file.browser_pdf_data.service_id:*",
-            expected_no_of_files=1,
+            expected_no_of_files=2,
         )
