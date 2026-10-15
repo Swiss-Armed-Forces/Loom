@@ -93,10 +93,7 @@ describe("demo repository", () => {
         });
         expect(email).toMatchObject({
             thumbnail: { totalFrames: 1 },
-            rendered: {
-                imageUrl: expect.any(String),
-                officePdfUrl: expect.any(String),
-            },
+            rendered: { browserPdfUrl: expect.any(String) },
         });
         expect(office).toMatchObject({
             thumbnail: { totalFrames: 1 },

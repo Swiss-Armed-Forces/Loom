@@ -70,11 +70,13 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
                             thumbnail_file=thumbnail_file,
                         ),
                     ),
+                    # The PDF is stored as it arrives. Rendering it again would
+                    # mean LibreOffice, which caps a page at 3000mm and scales
+                    # anything taller down to fit, halving a long email.
                     chain(
                         render_email_to_pdf.s(),
-                        render.signature_pass_file_content(
-                            file=file, render_file=rendered_file
-                        ),
+                        render.upload_rendered_task.s(),
+                        render.persist_rendered_file_browser_pdf_data_task.s(file.id_),
                     ),
                 ),
             ),
@@ -193,6 +195,25 @@ def render_email_to_image(
         return get_lazybytes_service().from_file(BytesIO(response.content))
 
 
+def _render_email_html_to_pdf(
+    html: str, *, single_page: bool
+) -> bytes | bytearray | None:
+    """Render email HTML to PDF bytes, or None when Chromium refuses the document."""
+    with get_gotenberg_client().chromium.html_to_pdf() as route:
+        route = route.string_index(html)
+        route = route.skip_network_idle()
+        # Sets the page width; the height is ignored while single_page is on.
+        route = route.size(size=settings.rendered_pdf_page_size)
+        route = route.single_page(use_single_page=single_page)
+
+        try:
+            return route.run().content
+        except HTTPStatusError:
+            return None
+        except TransportError as ex:
+            raise GotenbergError() from ex
+
+
 @app.task(
     base=FileIndexingTask,
     autoretry_for=(GotenbergError,),
@@ -206,16 +227,16 @@ def render_email_to_pdf(
     if email is None:
         return None
 
-    with get_gotenberg_client().chromium.html_to_pdf() as route:
-        try:
-            route = route.string_index(email.rendered_content)
-            route = route.skip_network_idle()
-            route = route.size(size=settings.rendered_pdf_page_size)
-            response = route.run()
-        except HTTPStatusError:
-            logger.warning("Unable to render email to pdf in browser", exc_info=True)
-            return None
-        except TransportError as ex:
-            raise GotenbergError() from ex
+    # An email has no natural page breaks, so it is rendered as one continuous
+    # page. Chromium refuses to print a page taller than roughly 65535pt, and a
+    # paginated preview is better than none.
+    content = _render_email_html_to_pdf(email.rendered_content, single_page=True)
+    if content is None:
+        logger.warning("Email too long for a single page, rendering it paginated")
+        content = _render_email_html_to_pdf(email.rendered_content, single_page=False)
 
-        return get_lazybytes_service().from_file(BytesIO(response.content))
+    if content is None:
+        logger.warning("Unable to render email to pdf in browser")
+        return None
+
+    return get_lazybytes_service().from_file(BytesIO(content))
