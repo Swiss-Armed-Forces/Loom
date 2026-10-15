@@ -5,7 +5,20 @@ ARG NGINX_IMAGE_VERSION="1.30.3-alpine3.23"
 ARG NGINX_IMAGE_DIGEST="sha256:0d3b80406a13a767339fbe2f41406d6c7da727ab89cf8fae399e81f780f814d1"
 
 ARG DOCKER_REGISTRY="docker.io"
-FROM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION}@${NODE_IMAGE_DIGEST} AS base
+# The node stages build for the build host's architecture, not the target's.
+# Under QEMU user-mode emulation `pnpm install` dies with `uncaught target
+# signal 4 (Illegal instruction)` and then hangs, holding the runner until the
+# job times out rather than failing. Nothing these stages produce is
+# architecture-specific - `pnpm run build` emits static JS/CSS into /code/dist -
+# so running them natively is both correct and far faster than emulating them.
+# Only `production` below stays per-architecture, because nginx is a real binary.
+#
+# NOTE: this makes `dev` carry the build host's architecture, so a cross-built
+# `dev` image is wrong by construction. That is why publish_dev_images builds
+# amd64 only; see `.gitlab-ci.yml`. Building on the machine that runs the image
+# - any `up --development` - is unaffected, since there BUILDPLATFORM is the
+# target platform.
+FROM --platform=$BUILDPLATFORM ${DOCKER_REGISTRY}/node:${NODE_IMAGE_VERSION}@${NODE_IMAGE_DIGEST} AS base
 WORKDIR /code
 # Copy dependencies separately and install them once
 ARG PNPM_VERSION="10.32.1"
