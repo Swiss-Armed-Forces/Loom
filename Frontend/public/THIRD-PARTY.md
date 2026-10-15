@@ -6636,6 +6636,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | github.com/charmbracelet/x/cellbuf | v0.0.13-0.20250311204145-2c3ea96c31dd |  | go-module-binary-cataloger |
 | github.com/charmbracelet/x/term | v0.2.1 |  | go-module-binary-cataloger |
 | github.com/containerd/console | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/d4l3k/go-bfloat16 | v0.0.0-20211005043715-690c3bdd05f1 |  | go-module-binary-cataloger |
 | github.com/emirpasic/gods/v2 | v2.0.0-alpha |  | go-module-binary-cataloger |
 | github.com/gabriel-vasile/mimetype | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/gin-contrib/cors | v1.7.2 |  | go-module-binary-cataloger |
@@ -6664,6 +6665,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | github.com/spf13/pflag | v1.0.5 |  | go-module-binary-cataloger |
 | github.com/ugorji/go/codec | v1.2.12 |  | go-module-binary-cataloger |
 | github.com/wk8/go-ordered-map/v2 | v2.1.8 |  | go-module-binary-cataloger |
+| github.com/x448/float16 | v0.8.4 |  | go-module-binary-cataloger |
 | github.com/xo/terminfo | v0.0.0-20220910002029-abceb7e1c41e |  | go-module-binary-cataloger |
 | golang.org/x/crypto | v0.43.0 |  | go-module-binary-cataloger |
 | golang.org/x/image | v0.22.0 |  | go-module-binary-cataloger |
@@ -6702,7 +6704,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libdrm2 | 2.4.125-1ubuntu0.1~24.04.2 |  | dpkg-db-cataloger |
 | libedit2 | 3.1-20230828-1build1 | BSD-3-Clause | dpkg-db-cataloger |
 | libelf1t64 | 0.190-1.1ubuntu0.1 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libexpat1 | 2.6.1-2ubuntu0.5 | MIT | dpkg-db-cataloger |
+| libexpat1 | 2.6.1-2ubuntu0.6 | MIT | dpkg-db-cataloger |
 | libext2fs2t64 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libffi8 | 3.4.6-1build1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
 | libgcc-s1 | 14.2.0-4ubuntu2~24.04.1 |  | dpkg-db-cataloger |
@@ -6743,7 +6745,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libsmartcols1 | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libsqlite3-0 | 3.45.1-1ubuntu2.8 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libss2 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libssl3t64 | 3.0.13-0ubuntu3.15 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3t64 | 3.0.13-0ubuntu3.16 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++6 | 14.2.0-4ubuntu2~24.04.1 |  | dpkg-db-cataloger |
 | libsystemd0 | 255.4-1ubuntu8.17 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-3ubuntu0.24.04.2 |  | dpkg-db-cataloger |
@@ -6753,9 +6755,9 @@ The complete source code for Traefik is publicly available at https://github.com
 | libuuid1 | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libvulkan1 | 1.3.275.0-1build1 | Apache-2.0, MIT | dpkg-db-cataloger |
 | libwayland-client0 | 1.22.0-2.1build1 |  | dpkg-db-cataloger |
-| libx11-6 | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
-| libx11-data | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
-| libx11-xcb1 | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-6 | 2:1.8.7-1ubuntu0.1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-data | 2:1.8.7-1ubuntu0.1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-xcb1 | 2:1.8.7-1ubuntu0.1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
 | libxau6 | 1:1.0.9-1build6 |  | dpkg-db-cataloger |
 | libxcb-dri3-0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
 | libxcb-present0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
@@ -6765,7 +6767,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libxcb-xfixes0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
 | libxcb1 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
 | libxdmcp6 | 1:1.1.3-0ubuntu6 |  | dpkg-db-cataloger |
-| libxml2 | 2.9.14+dfsg-1.3ubuntu3.9 | ISC | dpkg-db-cataloger |
+| libxml2 | 2.9.14+dfsg-1.3ubuntu3.10 | ISC | dpkg-db-cataloger |
 | libxshmfence1 | 1.3-1build5 | HPND-sell-variant | dpkg-db-cataloger |
 | libxxhash0 | 0.8.2-2build1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libzstd1 | 1.5.5+dfsg2-2build1.1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
@@ -6773,14 +6775,14 @@ The complete source code for Traefik is publicly available at https://github.com
 | logsave | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | mawk | 1.3.4.20240123-1build1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-only, X11 | dpkg-db-cataloger |
 | media-types | 10.1.0 |  | dpkg-db-cataloger |
-| mesa-vulkan-drivers | 25.2.8-0ubuntu0.24.04.2 | Apache-2.0, BSD-2-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, MIT, Unicode-DFS-2016 | dpkg-db-cataloger |
+| mesa-vulkan-drivers | 25.2.8-0ubuntu0.24.04.4 | Apache-2.0, BSD-2-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, MIT, Unicode-DFS-2016 | dpkg-db-cataloger |
 | mount | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ncurses-base | 6.4+20240113-1ubuntu2.2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4+20240113-1ubuntu2.2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
-| openssl | 3.0.13-0ubuntu3.15 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl | 3.0.13-0ubuntu3.16 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | passwd | 1:4.13+dfsg1-4ubuntu3.2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| perl-base | 5.38.2-3.2ubuntu0.4 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-base | 5.38.2-3.2ubuntu0.6 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | procps | 2:4.0.4-4ubuntu3.3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | python3 | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
 | python3-minimal | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
@@ -6792,7 +6794,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | stdlib | go1.26.0 | BSD-3-Clause | go-module-binary-cataloger |
 | sysvinit-utils | 3.08-6ubuntu3 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | tar | 1.35+dfsg-3ubuntu0.4 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| tzdata | 2026c-0ubuntu0.24.04.1 | ICU | dpkg-db-cataloger |
+| tzdata | 2026e-0ubuntu0.24.04.1 | ICU | dpkg-db-cataloger |
 | ubuntu-keyring | 2023.11.28.1 |  | dpkg-db-cataloger |
 | unminimize | 0.2.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | util-linux | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
@@ -9509,6 +9511,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | github.com/charmbracelet/x/cellbuf | v0.0.13-0.20250311204145-2c3ea96c31dd |  | go-module-binary-cataloger |
 | github.com/charmbracelet/x/term | v0.2.1 |  | go-module-binary-cataloger |
 | github.com/containerd/console | v1.0.3 |  | go-module-binary-cataloger |
+| github.com/d4l3k/go-bfloat16 | v0.0.0-20211005043715-690c3bdd05f1 |  | go-module-binary-cataloger |
 | github.com/emirpasic/gods/v2 | v2.0.0-alpha |  | go-module-binary-cataloger |
 | github.com/gabriel-vasile/mimetype | v1.4.3 |  | go-module-binary-cataloger |
 | github.com/gin-contrib/cors | v1.7.2 |  | go-module-binary-cataloger |
@@ -9537,6 +9540,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | github.com/spf13/pflag | v1.0.5 |  | go-module-binary-cataloger |
 | github.com/ugorji/go/codec | v1.2.12 |  | go-module-binary-cataloger |
 | github.com/wk8/go-ordered-map/v2 | v2.1.8 |  | go-module-binary-cataloger |
+| github.com/x448/float16 | v0.8.4 |  | go-module-binary-cataloger |
 | github.com/xo/terminfo | v0.0.0-20220910002029-abceb7e1c41e |  | go-module-binary-cataloger |
 | golang.org/x/crypto | v0.43.0 |  | go-module-binary-cataloger |
 | golang.org/x/image | v0.22.0 |  | go-module-binary-cataloger |
@@ -9575,7 +9579,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libdrm2 | 2.4.125-1ubuntu0.1~24.04.2 |  | dpkg-db-cataloger |
 | libedit2 | 3.1-20230828-1build1 | BSD-3-Clause | dpkg-db-cataloger |
 | libelf1t64 | 0.190-1.1ubuntu0.1 | BSD-2-Clause, GFDL-1.3-only, GPL-2.0-only, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| libexpat1 | 2.6.1-2ubuntu0.5 | MIT | dpkg-db-cataloger |
+| libexpat1 | 2.6.1-2ubuntu0.6 | MIT | dpkg-db-cataloger |
 | libext2fs2t64 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libffi8 | 3.4.6-1build1 | GPL-2.0-or-later, GPL-3.0-or-later, MPL-1.1, X11 | dpkg-db-cataloger |
 | libgcc-s1 | 14.2.0-4ubuntu2~24.04.1 |  | dpkg-db-cataloger |
@@ -9616,7 +9620,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libsmartcols1 | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libsqlite3-0 | 3.45.1-1ubuntu2.8 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libss2 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
-| libssl3t64 | 3.0.13-0ubuntu3.15 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| libssl3t64 | 3.0.13-0ubuntu3.16 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++6 | 14.2.0-4ubuntu2~24.04.1 |  | dpkg-db-cataloger |
 | libsystemd0 | 255.4-1ubuntu8.17 | CC0-1.0, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libtasn1-6 | 4.19.0-3ubuntu0.24.04.2 |  | dpkg-db-cataloger |
@@ -9626,9 +9630,9 @@ The complete source code for Traefik is publicly available at https://github.com
 | libuuid1 | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | libvulkan1 | 1.3.275.0-1build1 | Apache-2.0, MIT | dpkg-db-cataloger |
 | libwayland-client0 | 1.22.0-2.1build1 |  | dpkg-db-cataloger |
-| libx11-6 | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
-| libx11-data | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
-| libx11-xcb1 | 2:1.8.7-1build1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-6 | 2:1.8.7-1ubuntu0.1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-data | 2:1.8.7-1ubuntu0.1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
+| libx11-xcb1 | 2:1.8.7-1ubuntu0.1 | BSD-1-Clause, HPND, HPND-sell-variant, MIT | dpkg-db-cataloger |
 | libxau6 | 1:1.0.9-1build6 |  | dpkg-db-cataloger |
 | libxcb-dri3-0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
 | libxcb-present0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
@@ -9638,7 +9642,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libxcb-xfixes0 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
 | libxcb1 | 1.15-1ubuntu2 |  | dpkg-db-cataloger |
 | libxdmcp6 | 1:1.1.3-0ubuntu6 |  | dpkg-db-cataloger |
-| libxml2 | 2.9.14+dfsg-1.3ubuntu3.9 | ISC | dpkg-db-cataloger |
+| libxml2 | 2.9.14+dfsg-1.3ubuntu3.10 | ISC | dpkg-db-cataloger |
 | libxshmfence1 | 1.3-1build5 | HPND-sell-variant | dpkg-db-cataloger |
 | libxxhash0 | 0.8.2-2build1 | BSD-2-Clause, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libzstd1 | 1.5.5+dfsg2-2build1.1 | BSD-3-Clause, GPL-2.0-only, Zlib | dpkg-db-cataloger |
@@ -9646,14 +9650,14 @@ The complete source code for Traefik is publicly available at https://github.com
 | logsave | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | mawk | 1.3.4.20240123-1build1 | CC-BY-3.0, GPL-2.0-only, GPL-2.0-only, X11 | dpkg-db-cataloger |
 | media-types | 10.1.0 |  | dpkg-db-cataloger |
-| mesa-vulkan-drivers | 25.2.8-0ubuntu0.24.04.2 | Apache-2.0, BSD-2-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, MIT, Unicode-DFS-2016 | dpkg-db-cataloger |
+| mesa-vulkan-drivers | 25.2.8-0ubuntu0.24.04.4 | Apache-2.0, BSD-2-Clause, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, MIT, Unicode-DFS-2016 | dpkg-db-cataloger |
 | mount | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
 | ncurses-base | 6.4+20240113-1ubuntu2.2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | ncurses-bin | 6.4+20240113-1ubuntu2.2 | BSD-3-Clause, X11 | dpkg-db-cataloger |
 | netbase | 6.4 | GPL-2.0-only | dpkg-db-cataloger |
-| openssl | 3.0.13-0ubuntu3.15 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
+| openssl | 3.0.13-0ubuntu3.16 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | passwd | 1:4.13+dfsg1-4ubuntu3.2 | BSD-3-Clause, GPL-1.0-only, GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
-| perl-base | 5.38.2-3.2ubuntu0.4 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
+| perl-base | 5.38.2-3.2ubuntu0.6 | Artistic-2.0, Artistic-dist, BSD-3-Clause, FSFAP, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, Zlib | dpkg-db-cataloger |
 | procps | 2:4.0.4-4ubuntu3.3 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | python3 | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
 | python3-minimal | 3.12.3-0ubuntu2.1 |  | dpkg-db-cataloger |
@@ -9665,7 +9669,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | stdlib | go1.26.0 | BSD-3-Clause | go-module-binary-cataloger |
 | sysvinit-utils | 3.08-6ubuntu3 | GPL-2.0-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | tar | 1.35+dfsg-3ubuntu0.4 | GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
-| tzdata | 2026c-0ubuntu0.24.04.1 | ICU | dpkg-db-cataloger |
+| tzdata | 2026e-0ubuntu0.24.04.1 | ICU | dpkg-db-cataloger |
 | ubuntu-keyring | 2023.11.28.1 |  | dpkg-db-cataloger |
 | unminimize | 0.2.1 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | util-linux | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
