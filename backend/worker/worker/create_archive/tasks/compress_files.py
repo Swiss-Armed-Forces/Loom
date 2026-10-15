@@ -29,6 +29,7 @@ from common.utils.pydantic_field_paths import iter_field_paths_by_type
 from elasticsearch import ApiError, TransportError
 from minio.error import MinioException
 from pydantic import BaseModel
+from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 from worker.create_archive.tasks.archive_cli import (
@@ -453,6 +454,8 @@ def compress_files_task(
         compressed_file_storage_data = file_storage_service.from_generator(
             iter(zipped_chunks)
         )
-    except MinioException as ex:
+    except (MinioException, Urllib3HTTPError) as ex:
+        # minio wraps what the object store answers, but calls urlopen bare, so an
+        # unreachable store arrives as a urllib3 MaxRetryError instead.
         raise ArchiveCompressionError() from ex
     return compressed_file_storage_data

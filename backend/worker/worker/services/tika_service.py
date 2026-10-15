@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from itertools import chain
 from tempfile import TemporaryFile
 from typing import Generator, Iterable, Mapping
+from zipfile import BadZipFile
 from zipfile import Path as ZipPath
 from zipfile import ZipFile
 
@@ -21,7 +22,7 @@ import requests
 from common.file.file_repository import TikaMeta
 from common.services.lazybytes_service import TempLazyBytes, TempLazyBytesService
 from pydantic import BaseModel, ConfigDict, Field
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from worker.settings import settings
 
@@ -30,6 +31,11 @@ TIKA_SPOOLED_MAX_SIZE = int(1 * (1024**2))  # 1 MiB
 TIKA_UNPACK_MAX_SIZE = int(512 * (1024**2))  # 512 MiB
 TIKA_MAX_TEXT_SIZE = int(2 * (1024**2))  # 2 MiB
 TIKA_VERIFY_TLS = False
+
+# Status codes on which tika-server reports that it understood the request and
+# refused this particular document: an unsupported media type, an encrypted or
+# corrupt file, a malformed request. Every attempt fails the same way.
+TIKA_PERMANENT_STATUS_CODES = frozenset({400, 405, 415, 422})
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +58,52 @@ class TikaResult(BaseModel):
 
 class TikaError(Exception):
     """Tika Parser exception."""
+
+
+class TikaTransientError(TikaError):
+    """Tika failed in a way a later attempt may survive.
+
+    A saturated fork pool, a full /tmp, a parser JVM killed by the task timeout: the
+    document is fine, the server was not. Only this type belongs in a task's
+    ``autoretry_for``.
+    """
+
+
+class TikaPermanentError(TikaError):
+    """Tika understood the request and refused this document.
+
+    Encrypted, corrupt, or of an unsupported media type. Retrying costs a full backoff
+    budget and ends in the same place, so callers degrade on the first attempt.
+    """
+
+
+def classify_tika_http_error(exc: HTTPError) -> TikaError:
+    """Map an HTTP status from tika-server onto the transient/permanent split.
+
+    An unrecognised status counts as transient: mistaking a permanent failure for a
+    transient one costs one wasted retry budget, while the reverse silently degrades a
+    document to a fallback extractor.
+    """
+    status_code = exc.response.status_code if exc.response is not None else None
+    if status_code in TIKA_PERMANENT_STATUS_CODES:
+        return TikaPermanentError(f"tika refused the document: HTTP {status_code}")
+    return TikaTransientError(f"tika call failed: HTTP {status_code}")
+
+
+@contextmanager
+def _as_tika_error() -> Generator[None, None, None]:
+    """Translate everything the transport can raise into the TikaError hierarchy."""
+    try:
+        yield
+    except HTTPError as exc:
+        raise classify_tika_http_error(exc) from exc
+    except BadZipFile as exc:
+        # A 200 whose body is not a zip, or one cut short. tika only writes a truncated
+        # archive when the parse it was streaming died underneath it.
+        raise TikaTransientError("tika returned a truncated or non-zip body") from exc
+    except RequestException as exc:
+        # Connect or read timeout, broken chunked encoding, DNS failure, reset peer.
+        raise TikaTransientError("tika request failed") from exc
 
 
 class TikaService:
@@ -167,21 +219,23 @@ class TikaService:
     ) -> TikaResult:
         """Parse file using tika.
 
-        Raises TikaError on failures.
+        Raises TikaTransientError or TikaPermanentError on failures.
         """
         data_iterable = self._peek_and_chain(data_generator)
         if data_iterable is None:
             return TikaResult()
 
-        try:
+        with _as_tika_error():
             with self._unpack(data_iterable) as zipfile:
                 return self._parse(zipfile)
-        except HTTPError as exc:
-            raise TikaError from exc
 
     def get_language_from_generator(
         self, data_generator: Generator[bytes, None, None]
     ) -> str:
+        """Detect the document language.
+
+        Raises TikaTransientError or TikaPermanentError on failures.
+        """
         data_iterable = self._peek_and_chain(data_generator)
         if data_iterable is None:
             return ""
@@ -191,19 +245,24 @@ class TikaService:
             "Accept": "text/plain",
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
         }
-        response = requests.put(
-            uri,
-            data_iterable,
-            headers=headers,
-            timeout=self.timeout,
-            verify=TIKA_VERIFY_TLS,
-        )
-        response.raise_for_status()
-        return response.text
+        with _as_tika_error():
+            response = requests.put(
+                uri,
+                data_iterable,
+                headers=headers,
+                timeout=self.timeout,
+                verify=TIKA_VERIFY_TLS,
+            )
+            response.raise_for_status()
+            return response.text
 
     def get_file_type_from_generator(
         self, data_generator: Generator[bytes, None, None]
     ) -> str:
+        """Detect the document media type.
+
+        Raises TikaTransientError or TikaPermanentError on failures.
+        """
         data_iterable = self._peek_and_chain(data_generator)
         if data_iterable is None:
             return ""
@@ -213,12 +272,13 @@ class TikaService:
             "Accept": "text/plain",
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
         }
-        response = requests.put(
-            uri,
-            data_iterable,
-            headers=headers,
-            timeout=self.timeout,
-            verify=TIKA_VERIFY_TLS,
-        )
-        response.raise_for_status()
-        return response.text
+        with _as_tika_error():
+            response = requests.put(
+                uri,
+                data_iterable,
+                headers=headers,
+                timeout=self.timeout,
+                verify=TIKA_VERIFY_TLS,
+            )
+            response.raise_for_status()
+            return response.text

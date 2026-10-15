@@ -7,6 +7,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
+from common.llm.exceptions import LLMError
 from common.services.lazybytes_service import InMemoryTempLazyBytesService, LazyBytes
 from openai import APIConnectionError
 from pydantic_ai.embeddings.result import EmbeddingResult, EmbedInputType
@@ -16,7 +17,6 @@ from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.tasks.rag_tool import (
     RERANK_MAX_RANK,
     RERANK_MIN_RANK,
-    LLMError,
     RankedSearchEmbedding,
     ScoredSearchEmbedding,
     _RerankResult,
