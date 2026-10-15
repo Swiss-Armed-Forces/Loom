@@ -13,7 +13,6 @@ from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.utils.cache import cache
 from pydantic import BaseModel, ConfigDict
-from requests import RequestException
 
 from worker.dependencies import get_tika_service
 from worker.index_file.extractor.base import (
@@ -49,12 +48,16 @@ from worker.services.tika_service import (
     TikaAttachment,
     TikaError,
     TikaResult,
+    TikaTransientError,
 )
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 
 TIKA_MAX_RETRIES = 15
-TIKA_RETRY_EXCEPTIONS = (RequestException,)
+# Only the transient half of the TikaError hierarchy. A TikaPermanentError fails the
+# same way on every attempt, so retrying it buys nothing and occupies a worker for the
+# whole backoff budget.
+TIKA_RETRY_EXCEPTIONS = (TikaTransientError,)
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,43 @@ app = get_celery_app()
 
 def _exception_as_str(ex: Exception) -> str:
     return "".join(format_exception(type(ex), ex, ex.__traceback__))
+
+
+def _degraded_tika_facet(file: File, facet: str) -> str:
+    """Give up on an optional tika facet rather than failing the file over it.
+
+    The empty string is already this service's answer for an empty document, and the
+    language and file type are search facets: losing one costs less than failing the
+    whole indexing chain for a document tika will never parse.
+    """
+    logger.warning(
+        "Tika %s detection failed, indexing without it (file=%s sha256=%s)",
+        facet,
+        file.full_name,
+        file.sha256,
+        exc_info=True,
+    )
+    return ""
+
+
+def _log_degradation(
+    file: File, file_type: str, ex: Exception, *, retries_exhausted: bool
+) -> None:
+    """Announce that tika will not parse this document and the fallbacks take over.
+
+    Without this the degradation is invisible: the exceptions collected here are
+    dropped as soon as any fallback produces a result, so the only trace left on a
+    document is its tika_handled_by.
+    """
+    logger.warning(
+        "Tika parsing failed, degrading to the fallback extractors "
+        "(file=%s sha256=%s file_type=%s retries_exhausted=%s)",
+        file.full_name,
+        file.sha256,
+        file_type,
+        retries_exhausted,
+        exc_info=ex,
+    )
 
 
 class TikaProcessingResult(BaseModel):
@@ -172,6 +212,11 @@ def _get_fallback_name(fallback: TikaFallback) -> str:
     return fallback.__class__.__name__.lower()
 
 
+LEVEL2_FALLBACK_NAMES: set[str] = {
+    _get_fallback_name(fallback) for fallback in FALLBACKS_LEVEL2
+}
+
+
 def _create_fallback_task(fallback: TikaFallback) -> Task:
     """Factory to create a distinct Celery task for a TikaFallback."""
     fallback_name = _get_fallback_name(fallback)
@@ -274,7 +319,7 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
 )
 @cache(key_function=lambda _, __, ___, file: file.sha256)
 def tika_processor_task(
-    self: FileIndexingTask, file_type: str, file_content: TempLazyBytes, _: File
+    self: FileIndexingTask, file_type: str, file_content: TempLazyBytes, file: File
 ) -> TikaProcessingResult:
     lazybytes_service = get_lazybytes_service()
 
@@ -285,13 +330,18 @@ def tika_processor_task(
     generator = lazybytes_service.load_generator(file_content)
     try:
         result = get_tika_service().parse_from_generator(generator)
+    except TikaTransientError as ex:
+        if not self.is_last_attempt:
+            # Re-raise the same object: autoretry_for matches on what leaves here.
+            raise
+        _log_degradation(file, file_type, ex, retries_exhausted=True)
+        return TikaProcessingResult(
+            file_type=file_type, exceptions=[_exception_as_str(ex)]
+        )
     except Exception as ex:  # pylint: disable=broad-exception-caught
-        if (
-            isinstance(ex, TIKA_RETRY_EXCEPTIONS)
-            and self.request.retries < TIKA_MAX_RETRIES
-        ):
-            raise ex
-        # will proceed to fallback
+        # A permanent tika refusal, or anything unforeseen: a retry ends in the same
+        # place, so degrade to the fallback extractors now.
+        _log_degradation(file, file_type, ex, retries_exhausted=False)
         return TikaProcessingResult(
             file_type=file_type, exceptions=[_exception_as_str(ex)]
         )
@@ -318,6 +368,13 @@ def choose_tika_processing_result_task(
     #     just want to pick the first non-None result.
     for tika_processing_result in tika_processing_results:
         if tika_processing_result.result is not None:
+            if tika_processing_result.handled_by in LEVEL2_FALLBACK_NAMES:
+                # The last resort won. For a document format tika handles, this means
+                # its text was replaced by whatever byte sequences looked printable.
+                logger.warning(
+                    "Tika processing degraded to a last-resort fallback: %s",
+                    tika_processing_result.handled_by,
+                )
             return tika_processing_result
     # if all invalid, merge results
     merged_tika_processing_result = TikaProcessingResult(
@@ -377,16 +434,26 @@ def persist_tika_meta_task(
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
+    bind=True,
     autoretry_for=TIKA_RETRY_EXCEPTIONS,
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
-@cache(key_function=lambda _, file: file.sha256)
-def tika_get_language_task(file_content: TempLazyBytes, file: File) -> str:
+@cache(key_function=lambda _, __, file: file.sha256)
+def tika_get_language_task(
+    self: FileIndexingTask, file_content: TempLazyBytes, file: File
+) -> str:
     """Task to get the tika detected language."""
     logger.info("Getting language for %s with tika", file.full_name)
     file_generator = get_lazybytes_service().load_generator(file_content)
-    return get_tika_service().get_language_from_generator(file_generator)
+    try:
+        return get_tika_service().get_language_from_generator(file_generator)
+    except TikaTransientError:
+        if not self.is_last_attempt:
+            raise
+        return _degraded_tika_facet(file, "language")
+    except TikaError:
+        return _degraded_tika_facet(file, "language")
 
 
 @persisting_task(app, IndexingPersister)
@@ -396,16 +463,26 @@ def persist_tika_language_task(persister: IndexingPersister, tika_language: str)
 
 @app.task(  # type: ignore[call-overload]
     base=FileIndexingTask,
+    bind=True,
     autoretry_for=TIKA_RETRY_EXCEPTIONS,
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
-@cache(key_function=lambda _, file: file.sha256)
-def tika_get_file_type_task(file_content: TempLazyBytes, file: File) -> str:
+@cache(key_function=lambda _, __, file: file.sha256)
+def tika_get_file_type_task(
+    self: FileIndexingTask, file_content: TempLazyBytes, file: File
+) -> str:
     """Task to get the tika detected file type."""
     logger.info("Getting file type for %s with tika", file.full_name)
     file_generator = get_lazybytes_service().load_generator(file_content)
-    return get_tika_service().get_file_type_from_generator(file_generator)
+    try:
+        return get_tika_service().get_file_type_from_generator(file_generator)
+    except TikaTransientError:
+        if not self.is_last_attempt:
+            raise
+        return _degraded_tika_facet(file, "file type")
+    except TikaError:
+        return _degraded_tika_facet(file, "file type")
 
 
 @persisting_task(app, IndexingPersister)

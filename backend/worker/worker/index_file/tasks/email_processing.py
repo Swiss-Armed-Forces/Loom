@@ -12,7 +12,6 @@ from common.file.file_repository import (
 )
 from common.services.lazybytes_service import TempLazyBytes
 from httpx import HTTPStatusError, TransportError
-from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from worker.dependencies import get_gotenberg_client, get_rspamd_service
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -23,7 +22,13 @@ from worker.index_file.parse_and_render_email_task import (
 )
 from worker.index_file.tasks import create_thumbnail, render
 from worker.index_file.tasks.create_thumbnail import ThumbnailFile
-from worker.index_file.tasks.render import GotenbergError, RenderFile
+from worker.index_file.tasks.render import (
+    GOTENBERG_MAX_RETRIES,
+    GotenbergError,
+    RenderFile,
+    handle_gotenberg_status_error,
+)
+from worker.services.rspamd_service import RspamdError, RspamdTransientError
 from worker.settings import settings
 from worker.utils.persisting_task import persisting_task
 
@@ -32,9 +37,8 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 RSPAMD_MAX_RETRIES = 15
-RSPAMD_RETRY_EXCEPTIONS = (RequestsConnectionError,)
-
-GOTENBERG_MAX_RETRIES = 15
+# Only the transient half of the RspamdError hierarchy - see TIKA_RETRY_EXCEPTIONS.
+RSPAMD_RETRY_EXCEPTIONS = (RspamdTransientError,)
 
 
 def signature(file_content: TempLazyBytes, file: File) -> Signature:
@@ -98,11 +102,13 @@ def detect_email_task(
 
 @app.task(
     base=FileIndexingTask,
+    bind=True,
     autoretry_for=RSPAMD_RETRY_EXCEPTIONS,
     max_retries=RSPAMD_MAX_RETRIES,
     retry_backoff=True,
 )
 def detect_spam_task(
+    self: FileIndexingTask,
     is_email_detected: bool,
     file_content: TempLazyBytes,
 ) -> bool:
@@ -112,8 +118,25 @@ def detect_spam_task(
     rspamd_service = get_rspamd_service()
 
     generator = get_lazybytes_service().load_generator(file_content)
-    is_spam = rspamd_service.detect_spam_from_generator(generator)
-    return is_spam
+    try:
+        return rspamd_service.detect_spam_from_generator(generator)
+    except RspamdTransientError:
+        if not self.is_last_attempt:
+            raise
+        return _unscanned_for_spam()
+    except RspamdError:
+        return _unscanned_for_spam()
+
+
+def _unscanned_for_spam() -> bool:
+    """Report "not spam" for a message rspamd will not scan.
+
+    Failing instead would take the whole email-indexing group down with it, losing the
+    body, the attachments and the rendering over a single optional flag - and "not
+    spam" is already the answer this task gives for anything that is not an email.
+    """
+    logger.warning("Rspamd scan failed, indexing the email as not spam", exc_info=True)
+    return False
 
 
 @persisting_task(app, IndexingPersister)
@@ -186,8 +209,10 @@ def render_email_to_image(
 
         try:
             response = route.run()
-        except HTTPStatusError:
-            logger.warning("Unable to render email as image in browser", exc_info=True)
+        except HTTPStatusError as ex:
+            handle_gotenberg_status_error(
+                ex, "Unable to render email as image in browser"
+            )
             return None
         except TransportError as ex:
             raise GotenbergError() from ex
@@ -208,7 +233,11 @@ def _render_email_html_to_pdf(
 
         try:
             return route.run().content
-        except HTTPStatusError:
+        except HTTPStatusError as ex:
+            # Returning lets the caller fall back to a paginated render. Only a
+            # capacity signal raises, and then the whole task is retried rather than
+            # the taller-than-Chromium-allows case being mistaken for one.
+            handle_gotenberg_status_error(ex, "Chromium refused to render the email")
             return None
         except TransportError as ex:
             raise GotenbergError() from ex

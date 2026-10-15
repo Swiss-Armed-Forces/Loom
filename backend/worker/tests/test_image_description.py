@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
+from common.llm.exceptions import LLMError
 from openai import APIConnectionError, APIError, InternalServerError
 
 from worker.dependencies import get_llm_vision_agent
 from worker.index_file.tasks.image_description import (
-    LLMError,
     describe_image,
     is_image,
 )
