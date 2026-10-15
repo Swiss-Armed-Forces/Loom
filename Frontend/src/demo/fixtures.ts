@@ -10,7 +10,6 @@ import germanText from "../../../integrationtest/assets/text_de.txt?raw";
 
 import basicEmailThumbnailUrl from "./previews/basic-email-thumbnail.png?url";
 import basicEmailPdfUrl from "./previews/basic-email.pdf?url";
-import basicEmailImageUrl from "./previews/basic-email.png?url";
 import networkSecurityThumbnailUrl from "./previews/network-security-thumbnail.png?url";
 import networkSecurityPdfUrl from "./previews/network-security.pdf?url";
 import sample3Image1ThumbnailUrl from "./previews/sample3-image1-thumbnail.png?url";
@@ -95,10 +94,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
             archiveIds: [INITIAL_ARCHIVE_ID],
             data: basicEmail,
             thumbnail: { url: basicEmailThumbnailUrl, totalFrames: 1 },
-            rendered: {
-                imageUrl: basicEmailImageUrl,
-                officePdfUrl: basicEmailPdfUrl,
-            },
+            rendered: { browserPdfUrl: basicEmailPdfUrl },
         },
         {
             id: ATTACHMENT_EMAIL_ID,

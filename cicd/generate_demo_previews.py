@@ -76,10 +76,7 @@ CAPTURES = (
     PreviewCapture(
         key="basic-email",
         source=ASSETS_DIRECTORY / "basic_email.eml",
-        renderer_outputs=(
-            ("image_file_id", "basic-email.png"),
-            ("office_pdf_file_id", "basic-email.pdf"),
-        ),
+        renderer_outputs=(("browser_pdf_file_id", "basic-email.pdf"),),
     ),
     PreviewCapture(
         key="sample3",
