@@ -32,22 +32,28 @@ let
         ];
       });
 
-  # Python subdirectories managed by Poetry: the whole hook set, lockfile checks
-  # included. The appliance's own packages are here too -- Nix builds them, but it
-  # builds them through poetry-core and resolves their dependencies from nixpkgs,
-  # so the lockfile beside each one is what keeps `poetry lock` honest about the
-  # versions the devenv's virtualenv gets. nixos/tests/scripts is the VM tests,
-  # which the driver installs the same way (nixos/tests/scripts.nix).
   # Every directory of first-party Python, and whether it is a Poetry project.
   # The hooks are generated per directory -- there is no repository-wide Python
   # hook -- so a directory missing from this list has no formatter, no linter
   # and no type checker at all.
+  #
+  # A root may contain another one: "cicd" holds the scripts the pipeline runs,
+  # and "cicd/aitools" is a poetry package of its own inside it. Each file is
+  # linted by the innermost root that contains it -- see nestedSubdirExcludes --
+  # because the tools run from the root's directory and resolve imports and
+  # configuration relative to it.
+  #
+  # The appliance's own packages are here too: Nix builds them through
+  # poetry-core and resolves their dependencies from nixpkgs, so the lockfile
+  # beside each one is what keeps `poetry lock` honest about the versions the
+  # devenv's virtualenv gets.
   pythonSubdirs = [
     { subdir = "backend/api"; }
     { subdir = "backend/common"; }
     { subdir = "backend/crawler"; }
     { subdir = "backend/worker"; }
     { subdir = "integrationtest"; }
+    { subdir = "cicd"; }
     { subdir = "cicd/aitools"; }
     { subdir = "ollama"; }
     { subdir = "nixos/banner"; }
@@ -82,6 +88,15 @@ let
     "nixos/tests/scripts/tests"
     "nixos/usb-ingest/tests"
   ];
+
+  # Files of a nested root, as regexes excluding them from the outer root.
+  nestedSubdirExcludes =
+    subdir:
+    map (nested: "^${nested}/.*") (
+      builtins.filter (other: other != subdir && lib.hasPrefix "${subdir}/" other) (
+        map (entry: entry.subdir) pythonSubdirs
+      )
+    );
 
   # JavaScript/TypeScript subdirectories
   jsSubdirs = [
@@ -199,6 +214,7 @@ let
           "--resolve-all-configs"
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -209,6 +225,7 @@ let
           top_pyproject_toml
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -219,6 +236,7 @@ let
           top_pyproject_toml
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -230,6 +248,7 @@ let
           "--preview"
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -240,6 +259,7 @@ let
           top_flake8
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -250,6 +270,7 @@ let
           top_pylintrc
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
         # pylint must be run in serial, otherwise code duplication
         # checks don't properly work.
@@ -260,8 +281,8 @@ let
         enable = true;
         entry = createToolWrapper "mypy" subdir [ ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir ++ [ "^${subdir}/tests/.*\\.py$" ];
         types = [ "python" ];
-        excludes = [ "^${subdir}/tests/.*\\.py$" ];
         # mypy must be run in serial, otherwise we hit the
         # following issue:
         # - https://github.com/python/mypy/issues/14521
@@ -273,9 +294,7 @@ let
       "poetry-check_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir [ "check" ];
-        # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
-        # so the old spelling made every subdir's hook fire on any poetry.lock.
-        files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
+        files = "^${subdir}/((pyproject\\.toml)|(poetry\\.lock))$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -283,9 +302,7 @@ let
       "poetry-lock_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir [ "lock" ];
-        # Anchored as one alternation: "^a/(x)|(y)$" parses as "^a/x" or "y$",
-        # so the old spelling made every subdir's hook fire on any poetry.lock.
-        files = "^${subdir}/(pyproject\\.toml|poetry\\.lock)$";
+        files = "^${subdir}/((pyproject\\.toml)|(poetry\\.lock))$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -1319,14 +1336,17 @@ in
   };
 
   scripts.aitools-test = {
-    description = "Test the aitools CLI";
+    description = "Test the aitools CLI and the cicd scripts beside it";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}/cicd'
 
-        python -m pytest \
-          "''${@:-aitools/tests/}"
+        if [[ ''$# -gt 0 ]]; then
+          python -m pytest "''${@}"
+        else
+          python -m pytest aitools/tests/ tests/
+        fi
       )
     '';
   };
@@ -1768,13 +1788,13 @@ in
   };
 
   scripts.generate-third-party = {
-    description = "Generate THIRD-PARTY.md";
+    description = "Generate THIRD-PARTY.md, its Frontend copy and THIRD-PARTY.lock";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/generate_third_party.sh \
+        ./cicd/generate_third_party.py \
           "''${@}"
       )
     '';
