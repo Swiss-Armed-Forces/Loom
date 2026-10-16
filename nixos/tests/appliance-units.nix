@@ -397,12 +397,10 @@ let
       (check "portal: ${portal.host} resolves to the portal address and nowhere else" (
         addressesNaming == [ cfg.loom.portalAddress ]
       ))
-      # The chart half. The image pairs these modules with a *tagged* Loom, so this
-      # is read off the embedded checkout for the same reason `upShChecks` is: a
-      # tag whose values.yaml predates the entry produces a certificate with no
-      # `portal.loom` in its subjectAltName, and portal.nix drops the TLS listener
-      # rather than serving the one page that exists to remove a warning with a
-      # warning of its own.
+      # The chart half, read off the seeded checkout for the same reason
+      # `upShChecks` is. A chart that does not name the portal produces a
+      # certificate with no `portal.loom` in its subjectAltName, and the one page
+      # that exists to remove a warning would be served with a warning of its own.
       (check "portal: the embedded chart names the page in its certificate" (
         lib.hasInfix "\n    - portal\n" (builtins.readFile "${loomSrc}/charts/values.yaml")
       ))
@@ -516,12 +514,6 @@ let
 
   # Every long option the boot units hand to up.sh, against the up.sh that will
   # actually be seeded.
-  #
-  # The image pairs these modules with a *tagged* Loom:
-  # cicd/build_appliance_image.sh runs `nix-build "${CONTEXT_DIR}/nixos"` out of
-  # the working checkout but passes `--arg repoSrc` a clone checked out at the
-  # tag, so a flag added to up.sh and to a unit in the same commit still reaches
-  # a box whose up.sh predates it by every release in between.
   #
   # up.sh does not reject an unknown long option: `*)` collects it into ARGS,
   # which the step runner forwards to every step, so run_skaffold passes it to

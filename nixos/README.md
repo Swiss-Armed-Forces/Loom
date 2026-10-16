@@ -367,11 +367,9 @@ warning — the one failure the page exists to remove. It compares before it wri
 stream.
 
 **The TLS listener needs a certificate that names the page.** The chart's pre-install Job builds the
-subjectAltName from `hostnames`, one entry per host, so `portal` has to be in `hostnames.extra` of the chart
-the box deploys — which is the tag's, not this checkout's. `verify_tag_features` in
-`cicd/build_appliance_image.sh` refuses a tag that does not carry it rather than shipping a box where the
-page meant to remove a certificate warning presents one. The listener exists only on
-`--require-client-cert` images, because what needs encrypting is the PKCS#12 and the anchor is public:
+subjectAltName from `hostnames`, one entry per host, so `portal` has to be in `hostnames.extra` —
+`tests/appliance-units.nix` checks that it is, because without it the page meant to remove a certificate
+warning would present one. The listener exists only on `--require-client-cert` images, because what needs encrypting is the PKCS#12 and the anchor is public:
 standing it up everywhere would mean copying the key Traefik serves `*.loom` with onto every box to protect
 a file anyone may have.
 

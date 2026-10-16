@@ -262,8 +262,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   so helm would take a typo in silence - `--values-allow-new-keys` for the chart's free-form maps),
   values the chart cannot render (`helm template` dry-run, `--skip-values-check`), and
   `kubernetes.api`, `hostnames` or `image.registry`, each of which something outside the chart is
-  built from. A tag whose `skaffold.yaml` predates the layer is refused outright rather than given a
-  file nothing applies. See the `## Custom Helm values` section in `Documentation/appliance.md`
+  built from. See the `## Custom Helm values` section in `Documentation/appliance.md`
 - `build-appliance-image --keymap NAME` - Set the console keymap for the box, the installer **and
   stage 1**, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Default is the kernel's built-in US
   QWERTY, which is what every image was before this existed. It matters for the three prompts nobody

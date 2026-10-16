@@ -34,17 +34,12 @@
 let
   cfg = config.loom;
 
-  # Every flag these units pass is one the embedded tag's up.sh must know:
-  # cicd/build_appliance_image.sh runs `nix-build "${CONTEXT_DIR}/nixos"` from
-  # the working checkout but passes `--arg repoSrc` a clone checked out at a
-  # tag, and `verify_tag_features` there stops the build when the two disagree.
-  #
-  # Checked at build time rather than tolerated here, because passing a flag the
-  # embedded up.sh does not know is not a no-op: its parser has no reject branch
-  # -- `*)` collects the unknown option into ARGS, which the step runner
-  # forwards to every step, so run_skaffold hands it to skaffold and the boot
-  # dies on `unknown flag` from *skaffold*, naming neither up.sh nor the unit
-  # that added it. tests/appliance-units.nix holds every flag the units pass.
+  # Every flag these units pass has to be one up.sh takes, and nothing at
+  # runtime will say so: its parser has no reject branch -- `*)` collects an
+  # unknown option into ARGS, the step runner forwards it to every step, and
+  # run_skaffold hands it to skaffold, so the boot dies on `unknown flag` from
+  # *skaffold*, naming neither up.sh nor the unit that added it.
+  # tests/appliance-units.nix checks every flag these units pass against up.sh.
   resumeArgs = " --resume-if-deployed";
 
   # Offload Ollama to the GPU this box actually has. Named, not `--gpus all`:

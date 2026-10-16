@@ -347,16 +347,10 @@ by its own last candidate. `appliance-vm installer` takes the same flag and forw
 has to be in this checkout already, because the image is built from a clone of it rather than from the remote.
 If it is not, fetch and try again.
 
-Whichever way the tag is picked, **the build refuses one that is older than the `nixos/` tree asking for it.**
-The stick pairs the NixOS modules from your working checkout with a Loom checked out at the tag, and Loom
-guarantees no compatibility in either direction, so `verify_tag_features` checks the tag for each thing those
-modules depend on and stops with the list of what is missing. Today that is `--enable-http` and
-`--resume-if-deployed` in its `up.sh`, `portal` in its `charts/values.yaml`, plus `NAMESPACE` and
-`LOOM_CHAT_MODEL` in its `vars.sh` and `charts/values-user.yaml` in its `skaffold.yaml` when `--values` is
-given. An image assembled from halves nobody has run together is not something to discover on a box with no
-remote access — and these failures are quiet ones: an unknown flag reaches `skaffold` and kills the boot
-naming neither up.sh nor the unit that passed it, and a certificate without `portal.loom` turns the page that
-exists to remove a warning into one that raises its own.
+The tag is expected to be one this checkout's `nixos/` was written against — in practice the release this
+branch becomes. Loom guarantees no compatibility in either direction and nothing here reaches back for an
+older one: the modules pass the flags they need, and a tag that has never heard of one fails at boot rather
+than quietly building a different box.
 
 ### Trying a stick without a box
 
@@ -1116,9 +1110,6 @@ The image build checks the values before it starts, because a stick cannot be fi
   image and readable in `/nix/store` by anyone holding the stick. Without `--lock-key`, holding the
   stick is the whole of the access control.
 
-Finally, the layer only exists in tags that carry it. Building an older tag with `--values` is refused
-rather than writing a file that tag's `skaffold.yaml` never applies.
-
 ## Keyboard layout
 
 Every prompt on this appliance is typed on a Linux console, and a Linux console with no keymap
@@ -1650,22 +1641,19 @@ CA bundle from the certificate secrets the cluster holds and passes it in `NODE_
 verification stays **on**: if the bundle cannot be built the pane says so and waits, rather than falling back
 to an unverified connection.
 
-Two things have to be true of that certificate, and they are the two things that have to be true of the Loom
-release the box ships.
+Two things have to be true of that certificate, and the chart is what makes them true.
 
 **It has to name `ollama.loom` explicitly.** A certificate carrying only `DNS:*.loom` does not work: a
 wildcard needs at least two dots, so OpenSSL refuses to expand one under a single-label parent and Bun — like
-curl — rejects the connection with "no alternative certificate subject name matches target hostname".
-Releases whose chart predates `hostnames` in `charts/values.yaml` (everything up to and including
-`1.4.0-rc2`) generate a certificate the assistant cannot verify, and the pane says exactly that while it
-waits.
+curl — rejects the connection with "no alternative certificate subject name matches target hostname". The
+pre-install Job therefore writes every `hostnames` entry into the subjectAltName one by one.
 
 **It has to be usable as its own anchor.** Nothing issued it, so trusting it means trusting it as a root, and
 a verifier handed a root asks whether it was allowed to sign anything. A certificate whose critical
 `keyUsage` omits `keyCertSign` was not, and Bun refuses it with "unable to verify the first certificate" —
 after the pane has started, because the wait ahead of it uses `curl`, and OpenSSL accepts such a certificate
-without complaint. `1.4.0-rc4` is the one release that generates one; the chart now emits no `keyUsage` at
-all on that path, and names `cert sign` on the `certificate.enabled` one.
+without complaint. The chart emits no `keyUsage` at all on the self-signed path, and names `cert sign` on the
+`certificate.enabled` one.
 
 See [Hostnames and the self-signed certificate](installation.md#hostnames-and-the-self-signed-certificate).
 On a box already running an affected release, replacing the `self-signed-cert` secret by hand is the only

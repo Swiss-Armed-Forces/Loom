@@ -113,10 +113,9 @@ let
   frontendUrl = "http${lib.optionalString cfg.mtls.enable "s"}://${frontendHost}/";
 
   # Whether the box may serve this page over TLS as well. The listener needs a
-  # certificate that names `portal.loom`, which the cluster only issues because
-  # `hostnames.extra` lists the portal -- asserted of the embedded tag by
-  # `verify_tag_features` in cicd/build_appliance_image.sh, so what is left to
-  # decide here is what this image was asked for.
+  # certificate that names `portal.loom`, which the cluster issues because
+  # `hostnames.extra` lists the portal -- checked by tests/appliance-units.nix,
+  # so what is left to decide here is what this image was asked for.
   enableTls = cfg.mtls.enable && cfg.portal.tls.enable;
 
   loom-portal = pkgs.python3Packages.buildPythonApplication {
