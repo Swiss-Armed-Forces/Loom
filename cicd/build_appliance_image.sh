@@ -981,6 +981,53 @@ verify_repo(){
         echo >&2 "[!] Error: traefik chart is not a real gzip; git-lfs materialisation is broken."
         exit 1
     fi
+
+    verify_tag_features "${repo}"
+}
+
+# What the modules in this checkout need the embedded tag to carry.
+#
+# The stick pairs `nixos/` from *this* working checkout with a Loom checked out
+# at a tag, so the two can disagree. Where they do, the build stops: Loom
+# guarantees no compatibility in either direction, and a stick assembled from
+# halves nobody has run together is not something to find out about on a box
+# with no remote access.
+#
+# Each entry is `<file>|<string>|<what it is for>`. A string rather than a
+# version comparison, because what matters is whether the tagged code has the
+# thing, not what it is called.
+verify_tag_features(){
+    local repo="${1:?Missing REPO}" entry file needle purpose missing=()
+
+    local required=(
+        # up.sh's parser has no reject branch: `*)` collects an unknown option
+        # into ARGS, the step runner forwards it to every step, run_skaffold
+        # hands it to skaffold and the boot dies on `unknown flag` from
+        # *skaffold*, naming neither up.sh nor the unit that passed it.
+        "up.sh|--enable-http|modes.nix passes it to serve the captive portal's destination over http"
+        "up.sh|--resume-if-deployed|modes.nix passes it so the box does not roll every Deployment at every boot"
+        # The chart's pre-install Job puts `hostnames` in the certificate's
+        # subjectAltName, so a tag that does not name the portal cannot serve
+        # portal.loom over TLS at all.
+        "charts/values.yaml|portal|portal.nix serves portal.loom over TLS under --require-client-cert"
+    )
+
+    for entry in "${required[@]}"; do
+        file="${entry%%|*}"
+        needle="${entry#*|}"
+        purpose="${needle#*|}"
+        needle="${needle%%|*}"
+        if ! grep --quiet --fixed-strings -- "${needle}" "${repo}/${file}"; then
+            missing+=("${file}: ${needle} -- ${purpose}")
+        fi
+    done
+
+    if (( ${#missing[@]} > 0 )); then
+        echo >&2 "[!] Error: ${TAG} predates what this checkout's nixos/ expects:"
+        printf >&2 '      %s\n' "${missing[@]}"
+        echo >&2 "    Build from a newer tag, or check out the Loom that matches this tag."
+        exit 1
+    fi
 }
 
 # Pin the one part of .git whose *content* differs between two runs of the same
@@ -1023,14 +1070,18 @@ normalize_git_config(){
 # from -- `source` at function scope still assigns globally, and build_image runs
 # after this step.
 #
-# A value this script wants but the tag's vars.sh has never heard of is a real
-# case, not a hypothetical: the stick's Nix code comes from *this* checkout
-# (`${CONTEXT_DIR}/nixos`) while the tree it embeds comes from the tag, so the
-# console can be newer than the variables it reads. Every such value is
-# pre-initialised empty at the top of this script for shellcheck, which is
-# exactly what makes the gap silent -- `loomChatModel ""` builds an image whose
-# assistant pane announces "Loom assistant on ." and pins opencode to the model
-# named `ollama/`. Hence the fallback below rather than an empty --argstr.
+# A value this script wants but the tag's vars.sh has never heard of stops the
+# build. The stick's Nix code comes from *this* checkout (`${CONTEXT_DIR}/nixos`)
+# while the tree it embeds comes from the tag, so the console can be newer than
+# the variables it reads -- and every such value is pre-initialised empty at the
+# top of this script for shellcheck, which is exactly what makes the gap silent:
+# `loomChatModel ""` builds an image whose assistant pane announces "Loom
+# assistant on ." and pins opencode to the model named `ollama/`.
+#
+# Refused rather than substituted from this checkout. A tag that predates a
+# variable predates the code that reads it, and Loom guarantees no compatibility
+# in either direction -- an image built from half this checkout and half a tag
+# that disagrees with it is not a configuration anybody tested.
 generate_loom_hosts(){
     # shellcheck disable=SC1091
     # shellcheck source=../vars.sh
@@ -1039,50 +1090,24 @@ generate_loom_hosts(){
         > "${WORK_DIR}/loom-hosts.json"
 
     if [[ -z "${LOOM_CHAT_MODEL}" ]]; then
-        # Read in a subshell, so this one value crosses over and the tag's
-        # other variables -- the host list above included -- stay the tag's.
-        LOOM_CHAT_MODEL="$(
-            # shellcheck disable=SC1091
-            # shellcheck source=../vars.sh
-            source "${CONTEXT_DIR}/vars.sh"
-            printf '%s' "${LOOM_CHAT_MODEL}"
-        )"
-        if [[ -z "${LOOM_CHAT_MODEL}" ]]; then
-            echo >&2 "[!] Error: neither ${TAG}'s vars.sh nor this checkout's defines"
-            echo >&2 "    LOOM_CHAT_MODEL, and the console's assistant pane cannot be"
-            echo >&2 "    pinned to a model without it."
-            exit 1
-        fi
-        echo "[!] ${TAG}'s vars.sh defines no LOOM_CHAT_MODEL -- it predates the console"
-        echo "    assistant. Pinning the pane to this checkout's value instead:"
-        echo "      ${LOOM_CHAT_MODEL}"
-        echo "[!] That has to be a model the tag's ollama image bakes in. Check it"
-        echo "    against '_llmDefaults.model' in the embedded charts/values.yaml."
+        echo >&2 "[!] Error: ${TAG}'s vars.sh defines no LOOM_CHAT_MODEL, and the"
+        echo >&2 "    console's assistant pane cannot be pinned to a model without it."
+        echo >&2 "    Build from a tag that carries it."
+        exit 1
     fi
 
-    # The namespace gets the same treatment as LOOM_CHAT_MODEL above, and for
-    # the same reason: `NAMESPACE` does not exist in vars.sh at 1.2.0 and first
-    # appears at 1.3.0, while `resolve_tag` accepts any tag that exists. An empty
-    # `--argstr loomNamespace ""` *overrides* nixos/default.nix's `? "loom"` -- a
-    # default cannot rescue a value that is explicitly passed empty -- and
+    # `NAMESPACE` is the same case: it does not exist in vars.sh at 1.2.0 and
+    # first appears at 1.3.0, while `resolve_tag` accepts any tag that exists. An
+    # empty `--argstr loomNamespace ""` *overrides* nixos/default.nix's `? "loom"`
+    # -- a default cannot rescue a value that is explicitly passed empty -- and
     # reaches ready.nix, portal.nix, console.nix and debug.nix as `--namespace
-    # ''`, so the readiness pane, the portal and `loom-debug-bundle` all watch a
-    # namespace that does not exist, on a box with no remote access.
+    # ''`, so the readiness pane, the portal and `loom-debug-bundle` would all
+    # watch a namespace that does not exist, on a box with no remote access.
     if [[ -z "${NAMESPACE}" ]]; then
-        NAMESPACE="$(
-            # shellcheck disable=SC1091
-            # shellcheck source=../vars.sh
-            source "${CONTEXT_DIR}/vars.sh"
-            printf '%s' "${NAMESPACE}"
-        )"
-        if [[ -z "${NAMESPACE}" ]]; then
-            echo >&2 "[!] Error: neither ${TAG}'s vars.sh nor this checkout's defines"
-            echo >&2 "    NAMESPACE, and every unit on the box that asks Kubernetes"
-            echo >&2 "    anything needs one."
-            exit 1
-        fi
-        echo "[!] ${TAG}'s vars.sh defines no NAMESPACE -- it predates the variable."
-        echo "    Using this checkout's value instead: ${NAMESPACE}"
+        echo >&2 "[!] Error: ${TAG}'s vars.sh defines no NAMESPACE, and every unit on"
+        echo >&2 "    the box that asks Kubernetes anything needs one."
+        echo >&2 "    Build from a tag that carries it."
+        exit 1
     fi
 
     # The node address comes straight out of the tag's chart rather than through

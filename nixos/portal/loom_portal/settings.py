@@ -152,7 +152,7 @@ class PortalSettings:
     # Whether this box requires a client certificate *and* has the TLS listener to
     # hand one out over. `portal.nix` derives it from `enableTls` rather than from
     # `loom.mtls.enable` alone, because the listener also needs
-    # `loom.portal.tls.enable` and a tag whose chart names `portal`.
+    # `loom.portal.tls.enable`.
     mtls: bool = False
 
     # Where `loom-portal-tls-placeholder` leaves its marker. While that file exists,

@@ -366,13 +366,14 @@ warning — the one failure the page exists to remove. It compares before it wri
 `reload-or-restart` becomes a *restart* when nginx is down and a restart drops the assistant pane's token
 stream.
 
-**The TLS listener is gated on two things, and the second is about the tag.** The image takes its NixOS
-modules from the working tree and its chart from a tagged clone, so a box built against a tag whose
-`charts/values.yaml` predates `portal` in `hostnames.extra` gets a certificate that does not name the page.
-`enableTls` tests the host list that tag produced rather than the YAML — `vars.sh` already derived it, and it
-is the same list the subjectAltName is built from. The listener exists only on `--require-client-cert`
-images, because what needs encrypting is the PKCS#12 and the anchor is public: standing it up everywhere
-would mean copying the key Traefik serves `*.loom` with onto every box to protect a file anyone may have.
+**The TLS listener needs a certificate that names the page.** The chart's pre-install Job builds the
+subjectAltName from `hostnames`, one entry per host, so `portal` has to be in `hostnames.extra` of the chart
+the box deploys — which is the tag's, not this checkout's. `verify_tag_features` in
+`cicd/build_appliance_image.sh` refuses a tag that does not carry it rather than shipping a box where the
+page meant to remove a certificate warning presents one. The listener exists only on
+`--require-client-cert` images, because what needs encrypting is the PKCS#12 and the anchor is public:
+standing it up everywhere would mean copying the key Traefik serves `*.loom` with onto every box to protect
+a file anyone may have.
 
 **The daily password reuses the `--lock-key` rule** (`diceware`, EFF list, rejection sampling against
 `[yz]`, `.` as the separator), even though the person typing it is on their own keyboard rather than on one

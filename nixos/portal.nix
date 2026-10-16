@@ -112,21 +112,12 @@ let
   # certificate from its own second section is installed.
   frontendUrl = "http${lib.optionalString cfg.mtls.enable "s"}://${frontendHost}/";
 
-  # Whether the box may serve this page over TLS as well.
-  #
-  # Two conditions, and the second is about the tag rather than about this
-  # checkout. The image takes its Nix from the working tree and its chart from a
-  # tagged clone (cicd/build_appliance_image.sh sources that clone's vars.sh), so
-  # a box built against a tag whose charts/values.yaml predates `portal` in
-  # `hostnames.extra` gets a serving certificate with no `portal.loom` in its
-  # subjectAltName. Serving it anyway would mean the page whose whole job is to
-  # remove a certificate warning presenting one of its own.
-  #
-  # The host list the tag produced is what is tested, rather than the YAML:
-  # vars.sh already derived it, and it is the same list the certificate's SAN is
-  # built from.
-  tagNamesPortal = lib.elem cfg.portal.host hosts;
-  enableTls = cfg.mtls.enable && cfg.portal.tls.enable && tagNamesPortal;
+  # Whether the box may serve this page over TLS as well. The listener needs a
+  # certificate that names `portal.loom`, which the cluster only issues because
+  # `hostnames.extra` lists the portal -- asserted of the embedded tag by
+  # `verify_tag_features` in cicd/build_appliance_image.sh, so what is left to
+  # decide here is what this image was asked for.
+  enableTls = cfg.mtls.enable && cfg.portal.tls.enable;
 
   loom-portal = pkgs.python3Packages.buildPythonApplication {
     pname = "loom-portal";
@@ -161,12 +152,10 @@ let
       "--set LOOM_PORTAL_LOGO ${config.loom.branding.logoPng}"
       "--set LOOM_PORTAL_ACCENT ${lib.escapeShellArg "#${config.loom.branding.amberRgb}"}"
       # Derived from `enableTls`, not from `cfg.mtls.enable` alone. The two used
-      # to differ: `cfg.portal.tls.enable = false` is a documented option, and a
-      # tag whose chart does not list `portal` in `hostnames.extra` -- every tag
-      # before this MR -- also leaves the listener off. The page then advertised
-      # an identity form on a box that could never answer it, and `page.py`'s
-      # own "should not be reachable" branch was the thing being reached. The
-      # assertion below pins the other half.
+      # to differ: `cfg.portal.tls.enable = false` is a documented option and
+      # leaves the listener off on an mTLS box. The page then advertised an
+      # identity form on a box that could never answer it, and `page.py`'s own
+      # "should not be reachable" branch was the thing being reached.
       "--set LOOM_PORTAL_MTLS ${if enableTls then "1" else "0"}"
       "--set LOOM_PORTAL_TLS_PLACEHOLDER ${lib.escapeShellArg tlsPlaceholderMarker}"
       "--set LOOM_PORTAL_PORT ${toString cfg.portal.listenPort}"
@@ -1147,12 +1136,12 @@ in
                         ${lib.escapeShellArg "http://${cfg.portal.host}"}
                     ''
                   else
-                    # mTLS without a TLS listener: `tagNamesPortal` is false, i.e.
-                    # the embedded tag's chart does not name `portal` in
-                    # `hostnames.extra`, so the page degrades to "Not configured"
-                    # and `_issue` refuses every plaintext POST. Pointing visitors
-                    # at a URL that can never issue one would be worse than saying
-                    # nothing; the operator gets the route that does work.
+                    # mTLS with `loom.portal.tls.enable = false`: the page
+                    # degrades to "Not configured" and `_issue` refuses every
+                    # plaintext POST, because a PKCS#12 carries an unencrypted
+                    # private key. Pointing visitors at a URL that can never
+                    # issue one would be worse than saying nothing; the operator
+                    # gets the route that does work.
                     ''
                       printf '  [*] This image issues no certificates from the portal.\n'
                       printf '  [*] Issue one from this console: loom-client-certificate --name NAME --out-dir DIR\n'

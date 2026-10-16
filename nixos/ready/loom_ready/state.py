@@ -292,10 +292,10 @@ def _parse(raw: object) -> Readiness | None:
             ),
             workloads=[
                 Workload(
-                    # Read back through the enum: this document was written by a
-                    # publisher that may be a version older, and an unrecognised
-                    # kind is a reason to drop the record rather than to carry a
-                    # string the rest of this package cannot compare.
+                    # Read back through the enum rather than carried as the raw
+                    # string: the rest of this package compares `WorkloadKind`,
+                    # and a value that is not one belongs to a document this
+                    # reader cannot use.
                     kind=WorkloadKind(item["kind"]),
                     name=str(item["name"]),
                     desired=int(item["desired"]),
@@ -312,6 +312,7 @@ def _parse(raw: object) -> Readiness | None:
             changed=float(raw["changed"]),
         )
     except (KeyError, TypeError, ValueError):
-        # A record written by a different version of this program. Dropping it costs one
-        # refresh; refusing to read any would cost the display.
+        # A document that is not the shape this file writes -- a short read against a
+        # writer that was interrupted, or a truncated tmpfs file after a hard power
+        # cut. Dropping it costs one refresh; letting it raise would cost the display.
         return None

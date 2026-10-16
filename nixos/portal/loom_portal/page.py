@@ -219,12 +219,9 @@ def _identity_section(model: PageModel) -> str:
         )
 
     if not model.urls.secure:
-        # Reachable, and on two supported configurations: `portal.nix` sets
+        # Reachable on one supported configuration: `portal.nix` sets
         # `LOOM_PORTAL_MTLS` from `cfg.mtls.enable` alone, while the TLS listener also
-        # needs `cfg.portal.tls.enable` (a documented option) and a tag whose chart
-        # lists `portal` in `hostnames.extra` (every tag before this MR). An assertion
-        # in portal.nix refuses the first; the second cannot be refused at build time
-        # without declining to build against an older tag at all, so the page says so
+        # needs `cfg.portal.tls.enable`, which is a documented option. The page says so
         # rather than serving a private key in the clear or pretending to.
         return (
             f'<section id="identity">{heading}{explain}'

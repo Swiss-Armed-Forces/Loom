@@ -347,6 +347,17 @@ by its own last candidate. `appliance-vm installer` takes the same flag and forw
 has to be in this checkout already, because the image is built from a clone of it rather than from the remote.
 If it is not, fetch and try again.
 
+Whichever way the tag is picked, **the build refuses one that is older than the `nixos/` tree asking for it.**
+The stick pairs the NixOS modules from your working checkout with a Loom checked out at the tag, and Loom
+guarantees no compatibility in either direction, so `verify_tag_features` checks the tag for each thing those
+modules depend on and stops with the list of what is missing. Today that is `--enable-http` and
+`--resume-if-deployed` in its `up.sh`, `portal` in its `charts/values.yaml`, plus `NAMESPACE` and
+`LOOM_CHAT_MODEL` in its `vars.sh` and `charts/values-user.yaml` in its `skaffold.yaml` when `--values` is
+given. An image assembled from halves nobody has run together is not something to discover on a box with no
+remote access — and these failures are quiet ones: an unknown flag reaches `skaffold` and kills the boot
+naming neither up.sh nor the unit that passed it, and a certificate without `portal.loom` turns the page that
+exists to remove a warning into one that raises its own.
+
 ### Trying a stick without a box
 
 You do not need appliance hardware — or a stick — to see what one does. `appliance-vm installer`

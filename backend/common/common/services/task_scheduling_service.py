@@ -135,18 +135,11 @@ class TaskSchedulingService(TaskService):
     def dispatch_index_archive(self, request: ArchiveImportRequest) -> None:
         """Dispatch a loom archive for import.
 
-        The argument is an `ArchiveImportRequest` where it used to be a bare
-        `FileStorageLazyBytes`, under the same task name -- and nothing on this path
-        notices the difference. The serializer is pickle (`_initialization.py` sets
-        `task_serializer = "pickle"`) and Celery coerces arguments to models only for a
-        task declared `pydantic=True`, which this one is not, so a message enqueued by
-        an older worker unpickles cleanly, passes through `dispatch_index_archive` and
-        `index_archive` -- both pure forwarders -- and raises `AttributeError` at
-        `request.file_content` inside the task. `index_archive_task` therefore checks
-        the type it was handed before touching it. That is consistent with Loom's
-        stated lack of an upgrade path -- the whole cluster deploys as one unit -- but
-        these queues are durable, so it is the reason a rolling replacement of the
-        worker alone is not a thing to attempt.
+        Nothing on this path validates the message: the serializer is pickle
+        (`_initialization.py` sets `task_serializer = "pickle"`) and Celery coerces
+        arguments to models only for a task declared `pydantic=True`, which this one is
+        not. Both this method and `index_archive` are pure forwarders, so whatever is
+        enqueued is what the task is handed.
         """
         root_task_id = uuid4()
         self._send_task(

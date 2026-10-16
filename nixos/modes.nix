@@ -27,7 +27,6 @@
   config,
   lib,
   pkgs,
-  loomSrc,
   loomUser,
   loomRepoDir,
   ...
@@ -35,24 +34,18 @@
 let
   cfg = config.loom;
 
-  # Asked of the checkout that will actually be seeded, because the image pairs
-  # these modules with a *tagged* Loom that can predate them:
-  # cicd/build_appliance_image.sh runs `nix-build "${CONTEXT_DIR}/nixos"` from the
-  # working checkout but passes `--arg repoSrc` a clone checked out at the tag.
+  # Every flag these units pass is one the embedded tag's up.sh must know:
+  # cicd/build_appliance_image.sh runs `nix-build "${CONTEXT_DIR}/nixos"` from
+  # the working checkout but passes `--arg repoSrc` a clone checked out at a
+  # tag, and `verify_tag_features` there stops the build when the two disagree.
   #
-  # Passing a flag the embedded up.sh does not know is not a no-op. Its parser
-  # has no reject branch -- `*)` collects the unknown option into ARGS, which the
-  # step runner forwards to every step, so run_skaffold hands it to skaffold and
-  # the boot dies on `unknown flag` from *skaffold*, naming neither up.sh nor the
-  # unit that added it.
-  #
-  # An image built from a tag without the flag simply redeploys on every boot, as
-  # every image did before it existed. tests/appliance-units.nix holds every flag
-  # the units pass to this same rule.
-  upShText = builtins.readFile "${loomSrc}/up.sh";
-  upShKnows = flag: lib.hasInfix flag upShText;
-
-  resumeArgs = lib.optionalString (upShKnows "--resume-if-deployed") " --resume-if-deployed";
+  # Checked at build time rather than tolerated here, because passing a flag the
+  # embedded up.sh does not know is not a no-op: its parser has no reject branch
+  # -- `*)` collects the unknown option into ARGS, which the step runner
+  # forwards to every step, so run_skaffold hands it to skaffold and the boot
+  # dies on `unknown flag` from *skaffold*, naming neither up.sh nor the unit
+  # that added it. tests/appliance-units.nix holds every flag the units pass.
+  resumeArgs = " --resume-if-deployed";
 
   # Offload Ollama to the GPU this box actually has. Named, not `--gpus all`:
   # up.sh takes `amd` or `nvidia` and rejects anything else, and the vendor is
@@ -124,16 +117,7 @@ let
   # and the visitor is then refused at the handshake like every other client
   # with no certificate, which on that box is the intended answer.
   #
-  # Gated on `upShKnows`, like `resumeArgs` above and for the reason stated with
-  # it: these modules come from the working tree, but Loom is deployed from an
-  # embedded *tag*, and `--enable-http` is newer than the newest release. A tag
-  # that has never heard of the flag would take it through up.sh's catch-all into
-  # skaffold and die at boot on `unknown flag`, naming neither -- on a box with no
-  # remote access. An older tag simply serves https only, which is what every
-  # image did before the flag existed; the captive portal's destination is the
-  # cost, and `tests/appliance-units.nix` cannot see it because it reads this
-  # checkout's up.sh, where the flag is present.
-  httpArgs = lib.optionalString (!cfg.mtls.enable && upShKnows "--enable-http") " --enable-http";
+  httpArgs = lib.optionalString (!cfg.mtls.enable) " --enable-http";
 
   # How long setup mode leaves its closing message on screen before powering the
   # box off. Long enough for whoever walks past to read why the box is going

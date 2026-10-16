@@ -286,19 +286,6 @@ def index_archive_task(
     self: ArchiveProcessingTask, request: ArchiveImportRequest
 ) -> None:
     """Import a loom archive, or index the blob as a file when it is not one."""
-    # The message was pickled by whichever worker enqueued it and nothing on the way
-    # here validates its shape, so an older message carrying a bare
-    # `FileStorageLazyBytes` arrives intact and only fails at the first attribute
-    # access. Named and loud beats `AttributeError`, which the fallback below would
-    # otherwise turn into an opaque file with no name and no source.
-    if not isinstance(request, ArchiveImportRequest):
-        raise TypeError(
-            "index_archive_task was handed a "
-            f"{type(request).__name__}, not an ArchiveImportRequest. This is a message "
-            "from a worker of a different version; the queues are durable and Loom has "
-            "no upgrade path."
-        )
-
     try:
         routing = route_archive_blob(
             request.file_content, unattended=request.unattended
