@@ -58,6 +58,17 @@ def _put_in_intake(object_name: str, payload: bytes) -> None:
 
 
 def _create_archive_of_everything() -> UUID:
+    """Archive everything indexed, and return only once it can be downloaded.
+
+    The POST schedules the pipeline and answers immediately. `download_archive` answers
+    **500** until the storage data is on the entity -- the zip and, for
+    `?encrypted=true`, the encrypted copy -- so a download straight off this call is a
+    race against `create_archive_task`'s chain.
+
+    `created` is the state to wait for rather than the archive merely existing:
+    `persist_processing_done` sets it as the last link of that chain, after the group
+    that writes both storage-data fields.
+    """
     response = requests.post(
         ARCHIVE_ENDPOINT,
         json={
@@ -70,7 +81,11 @@ def _create_archive_of_everything() -> UUID:
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
-    return UUID(response.json()["archive_id"])
+    archive_id = UUID(response.json()["archive_id"])
+
+    created = fetch_archives_from_api()
+    assert created[0].file_id == archive_id
+    return archive_id
 
 
 def _download_archive(archive_id: UUID, encrypted: bool = False) -> bytes:
@@ -98,8 +113,6 @@ def test_a_loom_archive_in_the_intake_bucket_is_imported_not_indexed_as_a_zip():
     get_file_preview_by_name("empty_file.txt")
 
     archive_id = _create_archive_of_everything()
-    archives = fetch_archives_from_api()
-    assert archives[0].file_id == archive_id
 
     _put_in_intake(ARCHIVE_OBJECT_NAME, _download_archive(archive_id))
 
@@ -140,8 +153,6 @@ def test_an_encrypted_loom_archive_this_box_can_open_is_imported():
     get_file_preview_by_name("empty_file.txt")
 
     archive_id = _create_archive_of_everything()
-    archives = fetch_archives_from_api()
-    assert archives[0].file_id == archive_id
 
     _put_in_intake(ENCRYPTED_OBJECT_NAME, _download_archive(archive_id, encrypted=True))
 
