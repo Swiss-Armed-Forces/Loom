@@ -103,7 +103,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **aitools testing:**
 
-- `aitools-test` - Run all `aitools` tests with pytest (always runs from `cicd/` directory)
+- `aitools-test` - Run all `aitools` tests and the `cicd/tests/` tests covering the scripts
+  beside it, with pytest (always runs from `cicd/` directory)
 - `aitools-test aitools/tests/test_git_helpers.py` - Run specific test file (paths relative to `cicd/`)
 
 **Frontend:**
@@ -132,6 +133,13 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`)
 - `generate-openapi-schema` - Print OpenAPI schema JSON
+- `generate-third-party` - Regenerate `THIRD-PARTY.md`, its `Frontend/public/` copy and
+  `THIRD-PARTY.lock`. The lock records which image tag produced each image's section; a section
+  is reused byte-for-byte while its tag is unchanged, so a pipeline that changed no image scans
+  nothing and builds nothing. **The generated file must depend on the repository alone** - it is
+  committed by CI, and a generator that answers differently on two runners pushes a commit per
+  pipeline forever. Pass `--refresh` to rescan every image regardless of the lock, which is how
+  package drift inside an unchanged image is picked up deliberately rather than at random
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
   HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a
@@ -193,7 +201,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 - Backend unit tests: `backend-test` (runs all tests in `backend/*/tests/`)
 - Frontend unit tests: `frontend-test`
-- `aitools` unit tests: `aitools-test` (runs all tests in `cicd/aitools/tests/`) — always from
+- `aitools` unit tests: `aitools-test` (runs all tests in `cicd/aitools/tests/` and
+  `cicd/tests/`, the latter covering the scripts at the root of `cicd/`) — always from
   `cicd/`, not from `cicd/aitools/`, where the `aitools.py` module shadows the `aitools` package
   and every import fails
 - Integration tests: `run-integrationtest` — simulates full workflows against a running Loom instance
@@ -474,6 +483,13 @@ function, **stop and ask the user first** — there is almost certainly a better
   Raw `tuple[str, str]`, `tuple[X, Y]`, etc. are forbidden as return types. Callers should not need
   to remember what position 0 or 1 means — use a named type with descriptive field names instead.
 - Pydantic models for validation and serialization
+- **`cicd/` is a linted Python root like any backend package.** Its scripts go through black,
+  isort, autoflake, docformatter, flake8, pylint and mypy, with mypy configured by
+  `cicd/mypy.ini` because mypy reads its settings from the directory a tool runs in. Tests for
+  them live in `cicd/tests/`. `cicd/aitools` is a root nested inside it; `nestedSubdirExcludes`
+  in `devenv.nix` keeps each file linted by the innermost root that contains it, so adding a
+  python root under another one needs no further wiring. A long shell script in `cicd/` is
+  better rewritten in Python than grown - the tools above only cover the Python
 - Repository pattern for data access (see `common/models/`)
 - Dependency injection via FastAPI dependencies and Celery task context
 - Async/await where appropriate (FastAPI routes)

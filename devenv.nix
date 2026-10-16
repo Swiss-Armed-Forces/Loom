@@ -33,14 +33,28 @@ let
       });
 
   # Python subdirectories
+  #
+  # A root may contain another one: "cicd" holds the scripts the pipeline runs,
+  # and "cicd/aitools" is a poetry package of its own inside it. Each file is
+  # linted by the innermost root that contains it - see nestedSubdirExcludes -
+  # because the tools run from the root's directory and resolve imports and
+  # configuration relative to it.
   pythonSubdirs = [
     "backend/api"
     "backend/common"
     "backend/crawler"
     "backend/worker"
     "integrationtest"
+    "cicd"
     "cicd/aitools"
   ];
+
+  # Files of a nested root, as regexes excluding them from the outer root.
+  nestedSubdirExcludes =
+    subdir:
+    map (nested: "^${nested}/.*") (
+      builtins.filter (other: other != subdir && lib.hasPrefix "${subdir}/" other) pythonSubdirs
+    );
 
   # JavaScript/TypeScript subdirectories
   jsSubdirs = [
@@ -148,6 +162,7 @@ let
           "--resolve-all-configs"
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -158,6 +173,7 @@ let
           top_pyproject_toml
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -168,6 +184,7 @@ let
           top_pyproject_toml
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -179,6 +196,7 @@ let
           "--preview"
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -189,6 +207,7 @@ let
           top_flake8
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
       };
 
@@ -199,6 +218,7 @@ let
           top_pylintrc
         ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir;
         types = [ "python" ];
         # pylint must be run in serial, otherwise code duplication
         # checks don't properly work.
@@ -209,8 +229,8 @@ let
         enable = true;
         entry = createToolWrapper "mypy" subdir [ ];
         files = "^${subdir}/.*\\.py$";
+        excludes = nestedSubdirExcludes subdir ++ [ "^${subdir}/tests/.*\\.py$" ];
         types = [ "python" ];
-        excludes = [ "^${subdir}/tests/.*\\.py$" ];
         # mypy must be run in serial, otherwise we hit the
         # following issue:
         # - https://github.com/python/mypy/issues/14521
@@ -220,7 +240,7 @@ let
       "poetry-check_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir [ "check" ];
-        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
+        files = "^${subdir}/((pyproject\\.toml)|(poetry\\.lock))$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -228,7 +248,7 @@ let
       "poetry-lock_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir [ "lock" ];
-        files = "^${subdir}/(pyproject.toml)|(poetry.lock)$";
+        files = "^${subdir}/((pyproject\\.toml)|(poetry\\.lock))$";
         types = [ "toml" ];
         pass_filenames = false;
       };
@@ -1043,14 +1063,17 @@ in
   };
 
   scripts.aitools-test = {
-    description = "Test the aitools CLI";
+    description = "Test the aitools CLI and the cicd scripts beside it";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}/cicd'
 
-        python -m pytest \
-          "''${@:-aitools/tests/}"
+        if [[ ''$# -gt 0 ]]; then
+          python -m pytest "''${@}"
+        else
+          python -m pytest aitools/tests/ tests/
+        fi
       )
     '';
   };
@@ -1297,13 +1320,13 @@ in
   };
 
   scripts.generate-third-party = {
-    description = "Generate THIRD-PARTY.md";
+    description = "Generate THIRD-PARTY.md, its Frontend copy and THIRD-PARTY.lock";
     exec = ''
       (
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/generate_third_party.sh \
+        ./cicd/generate_third_party.py \
           "''${@}"
       )
     '';

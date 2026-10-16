@@ -4,9 +4,7 @@ import errno
 import logging
 import os
 import re
-import shlex
 import shutil
-import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -14,6 +12,8 @@ import docker
 import zstandard as zstd
 from docker.errors import ImageLoadError, ImageNotFound
 from pydantic import BaseModel, RootModel
+
+from minikube_env import load_minikube_docker_environment
 
 # -------------------------------
 # Constants
@@ -35,14 +35,14 @@ logger = logging.getLogger()
 # Models
 # -------------------------------
 class ImageTag(RootModel[str]):
-    """A Docker image tag with convenient accessors for repository and tag components."""
+    """A Docker image tag with convenient accessors for repository and tag
+    components."""
 
     root: str
 
     @property
     def repository(self) -> str:
-        """
-        Get the repository part (everything before the ':').
+        """Get the repository part (everything before the ':').
 
         Example: 'registry.gitlab.com/path/to/image:tag' -> 'registry.gitlab.com/path/to/image'
         """
@@ -52,8 +52,7 @@ class ImageTag(RootModel[str]):
 
     @property
     def tag(self) -> str:
-        """
-        Get the tag part (everything after the ':').
+        """Get the tag part (everything after the ':').
 
         Example: 'registry.gitlab.com/path/to/image:tag' -> 'tag'
         Returns 'latest' if no tag is specified.
@@ -70,27 +69,6 @@ class ImageTag(RootModel[str]):
 class ImageMetadata(BaseModel):
     id: str
     tags: list[ImageTag]
-
-
-# -------------------------------
-# Minikube Env Loader
-# -------------------------------
-def load_minikube_env() -> None:
-    proc = subprocess.run(
-        ["minikube", "-p", "minikube", "docker-env"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    for line in proc.stdout.splitlines():
-        line = line.strip()
-        if not line.startswith("export "):
-            continue
-        key, val = line[len("export ") :].split("=", 1)
-        val = shlex.split(val)[0]  # Remove surrounding quotes
-        os.environ[key] = val
-        logger.debug("Set env %s=%s", key, val)
-    logger.info("Successfully loaded Minikube Docker environment.")
 
 
 # -------------------------------
@@ -365,7 +343,7 @@ def main() -> None:
     logger.setLevel(LOG_LEVEL)
 
     if minikube:
-        load_minikube_env()
+        load_minikube_docker_environment()
 
     match command:
         case "backup":
