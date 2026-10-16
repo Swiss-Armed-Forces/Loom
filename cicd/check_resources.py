@@ -1,375 +1,41 @@
 #!/usr/bin/env python3
-"""
-Kubernetes Resource Calculator.
+"""Kubernetes Resource Calculator.
 
-Calculates CPU, memory, and any extended resources from Kubernetes manifests.
-Unified threshold handling for all resource types.
-Properly handles SI units (G, M, K) and binary units (Gi, Mi, Ki).
-Warns when memory/storage thresholds lack units (interpreted as bytes per K8s spec).
+Calculates CPU, memory, and any extended resources from Kubernetes manifests. Unified
+threshold handling for all resource types. Properly handles SI units (G, M, K) and
+binary units (Gi, Mi, Ki). Warns when memory/storage thresholds lack units (interpreted
+as bytes per K8s spec).
 """
 
 import argparse
 import logging
-import re
 import sys
-from dataclasses import dataclass, field
-from enum import StrEnum
+from dataclasses import dataclass
 from fnmatch import fnmatch
+from pathlib import Path
 from typing import Any, TextIO
 
 import yaml
+
+from check_resources_model import (
+    REPLICATED_WORKLOADS,
+    WORKLOADS_WITH_PODS,
+    CalculatorReport,
+    Container,
+    ReplicaCount,
+    ResourceQuantity,
+    Workload,
+    WorkloadKind,
+    extract_resources,
+    load_quota_thresholds,
+    parse_threshold,
+    read_replica_count,
+)
 
 # -----------------------------------------------------------------------------
 # Logging setup
 # -----------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-
-
-# -----------------------------------------------------------------------------
-# Constants
-# -----------------------------------------------------------------------------
-class ResourceName:
-    """Standard Kubernetes resource names."""
-
-    CPU = "cpu"
-    MEMORY = "memory"
-    EPHEMERAL_STORAGE = "ephemeral-storage"
-
-
-class WorkloadKind(StrEnum):
-    """Kubernetes workload kinds that contain pods."""
-
-    POD = "Pod"
-    DEPLOYMENT = "Deployment"
-    STATEFUL_SET = "StatefulSet"
-    REPLICA_SET = "ReplicaSet"
-    DAEMON_SET = "DaemonSet"
-    JOB = "Job"
-    CRON_JOB = "CronJob"
-
-
-CPU_MILLICORES = {"m": 1, "": 1000}
-# Conversion factors to bytes
-MEMORY_UNITS = {
-    # Binary units (IEC) - base 1024
-    "Ki": 1024,
-    "Mi": 1024**2,
-    "Gi": 1024**3,
-    "Ti": 1024**4,
-    "Pi": 1024**5,
-    # Decimal units (SI) - base 1000, converted to bytes
-    "K": 1000,
-    "M": 1000**2,
-    "G": 1000**3,
-    "T": 1000**4,
-    "P": 1000**5,
-}
-
-REPLICATED_WORKLOADS: set[str] = {
-    WorkloadKind.DEPLOYMENT,
-    WorkloadKind.STATEFUL_SET,
-    WorkloadKind.REPLICA_SET,
-}
-WORKLOADS_WITH_PODS: set[str] = {kind.value for kind in WorkloadKind}
-
-# Compiled regex patterns
-CPU_REGEX = re.compile(r"^(\d+(?:\.\d+)?)(m?)$")
-# Case-insensitive regex for memory units
-MEMORY_REGEX = re.compile(r"^(\d+(?:\.\d+)?)([KMGT]i?)$", re.IGNORECASE)
-# Regex for bare numbers without units
-BARE_NUMBER_REGEX = re.compile(r"^\d+(?:\.\d+)?$")
-
-
-# -----------------------------------------------------------------------------
-# Data Classes
-# -----------------------------------------------------------------------------
-@dataclass(frozen=True)
-class ResourceQuantity:
-    """Container for arbitrary resource quantities."""
-
-    resources: dict[str, int] = field(default_factory=dict)
-
-    def get(self, key: str, default: int = 0) -> int:
-        """Get resource value by key."""
-        return self.resources.get(key, default)
-
-    def keys(self) -> set[str]:
-        """Get all resource keys."""
-        return set(self.resources.keys())
-
-    def __add__(self, other: "ResourceQuantity") -> "ResourceQuantity":
-        """Add two resource quantities."""
-        merged = dict(self.resources)
-        for key, val in other.resources.items():
-            merged[key] = merged.get(key, 0) + val
-        return ResourceQuantity(merged)
-
-    def __mul__(self, multiplier: int) -> "ResourceQuantity":
-        """Scale resources by multiplier."""
-        return ResourceQuantity({k: v * multiplier for k, v in self.resources.items()})
-
-
-@dataclass
-class Container:
-    """Container with resource specifications."""
-
-    name: str
-    container_type: str
-    requests: ResourceQuantity
-    limits: ResourceQuantity
-
-
-@dataclass
-class Workload:
-    """Parsed Kubernetes workload."""
-
-    kind: str
-    name: str
-    namespace: str
-    replicas: int
-    replica_source: str
-    containers: list[Container] = field(default_factory=list)
-    is_daemonset: bool = False
-
-
-@dataclass
-class CalculatorReport:
-    """Calculation results."""
-
-    total_requests: ResourceQuantity
-    total_limits: ResourceQuantity
-    workloads: list[Workload]
-    node_count: int
-
-    def get_all_resource_types(self) -> set[str]:
-        """Get all resource types found in the calculation."""
-        return self.total_requests.keys() | self.total_limits.keys()
-
-
-# -----------------------------------------------------------------------------
-# Parsing Utilities
-# -----------------------------------------------------------------------------
-def normalize_unit(unit: str) -> str:
-    """Normalize unit string to match MEMORY_UNITS keys (e.g., 'ki' -> 'Ki', 'k' -> 'K')."""
-    if len(unit) > 1:
-        return unit[0].upper() + unit[1:].lower()
-    return unit.upper()
-
-
-def safe_int(value: Any, default: int = 0) -> int:
-    """Safely convert a value to int."""
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return default
-    if isinstance(value, (int, float)):
-        return int(value)
-    if isinstance(value, str):
-        try:
-            return int(float(value.strip()))
-        except ValueError:
-            return default
-    return default
-
-
-def parse_cpu(value: Any) -> int:
-    """Parse CPU value to millicores."""
-    if value is None:
-        return 0
-    if isinstance(value, bool):
-        return 0
-    if isinstance(value, (int, float)):
-        return int(value * 1000)
-
-    str_val = str(value).strip()
-    match = CPU_REGEX.match(str_val)
-    if not match:
-        logger.warning("Could not parse CPU value: %r", value)
-        return 0
-
-    num, unit = match.groups()
-    multiplier = CPU_MILLICORES.get(unit, 1000)
-    return int(float(num) * multiplier)
-
-
-def is_bare_number(val: str) -> bool:
-    """Check if value is a bare number without units."""
-    return bool(BARE_NUMBER_REGEX.match(val.strip()))
-
-
-def parse_memory(value: Any) -> int:
-    """Parse memory value to bytes. Raw numbers are treated as bytes."""
-    if value is None:
-        return 0
-    if isinstance(value, bool):
-        return 0
-    if isinstance(value, (int, float)):
-        # Raw integer/float is treated as bytes
-        return int(value)
-
-    str_val = str(value).strip()
-    match = MEMORY_REGEX.match(str_val)
-    if match:
-        num, unit = match.groups()
-        unit_normalized = normalize_unit(unit)
-        multiplier = MEMORY_UNITS.get(unit_normalized)
-        if multiplier is not None:
-            return int(float(num) * multiplier)
-
-    # Try parsing as raw bytes if no unit matches
-    try:
-        result = int(float(str_val))
-        logger.debug("Parsed memory value %r as raw bytes: %d", value, result)
-        return result
-    except ValueError:
-        logger.warning("Could not parse memory value: %r", value)
-        return 0
-
-
-def parse_resource_value(resource_name: str, value: Any) -> int:
-    """
-    Parse any resource value to a normalized integer.
-    """
-    if value is None:
-        return 0
-
-    if resource_name == ResourceName.CPU:
-        return parse_cpu(value)
-    elif resource_name in (ResourceName.MEMORY, ResourceName.EPHEMERAL_STORAGE):
-        return parse_memory(value)
-
-    str_val = str(value).strip()
-
-    # Try memory-style units for extended resources
-    match = MEMORY_REGEX.match(str_val)
-    if match:
-        num, unit = match.groups()
-        unit_normalized = normalize_unit(unit)
-        multiplier = MEMORY_UNITS.get(unit_normalized)
-        if multiplier:
-            return int(float(num) * multiplier)
-
-    # Try millicore-style (e.g., "500m")
-    match = CPU_REGEX.match(str_val)
-    if match:
-        num, unit = match.groups()
-        if unit == "m":
-            return int(float(num))
-
-    # Raw number
-    try:
-        if isinstance(value, (int, float)):
-            return int(value)
-        return int(float(str_val))
-    except ValueError:
-        logger.warning("Could not parse resource %r value: %r", resource_name, value)
-        return 0
-
-
-def parse_threshold(value: str) -> tuple[str, int, str | None]:
-    """
-    Parse threshold string 'resource=value'.
-
-    Returns:
-        Tuple of (resource_name, parsed_value, warning_message)
-        warning_message is None if no warning, or a string to display
-
-    Examples:
-        cpu=2000m
-        memory=1G      # 1 Gigabyte
-        memory=1Gi     # 1 Gibibyte
-        memory=2       # 2 bytes - will return a warning!
-    """
-    if "=" not in value:
-        raise ValueError(
-            f"Invalid threshold format: {value}. Expected 'resource=value'"
-        )
-
-    name, val = value.split("=", 1)
-    name = name.strip()
-    val_str = val.strip()
-    warning: str | None = None
-
-    # Validation for memory-like resources: warn on bare numbers (interpreted as bytes)
-    if name in (ResourceName.MEMORY, ResourceName.EPHEMERAL_STORAGE):
-        if is_bare_number(val_str):
-            # It's just a number like "2" or "1048576" - means bytes
-            byte_val = int(float(val_str))
-            mib_val = byte_val / (1024 * 1024)
-            if byte_val > 0:
-                warning = (
-                    f"WARNING: {name} threshold '{val_str}' is interpreted as {byte_val} bytes "
-                    f"({mib_val:.10f} MiB). Did you mean '{name}={val_str}Gi' or '{name}={val_str}Mi'?"
-                )
-
-    parsed_val = parse_resource_value(name, val_str)
-    return name, parsed_val, warning
-
-
-def load_quota_thresholds(
-    values_path: str,
-) -> tuple[dict[str, int], dict[str, int], bool]:
-    """
-    Read resourceQuotas.scalable from a Helm values file.
-
-    Returns (request_thresholds, limit_thresholds, enabled).
-    Maps Kubernetes ResourceQuota hard keys (e.g. 'requests.cpu', 'limits.memory')
-    to the resource names used by this tool. 'pods' is ignored.
-    """
-    with open(values_path, encoding="utf-8") as f:
-        values = yaml.safe_load(f)
-
-    rq = (values or {}).get("resourceQuotas", {}).get("scalable", {})
-    enabled = bool(rq.get("enabled", False))
-    hard: dict[str, Any] = rq.get("hard") or {}
-
-    request_thresholds: dict[str, int] = {}
-    limit_thresholds: dict[str, int] = {}
-
-    for key, value in hard.items():
-        if key.startswith("requests."):
-            resource = key[len("requests."):]
-            if resource in (ResourceName.CPU, ResourceName.MEMORY, ResourceName.EPHEMERAL_STORAGE):
-                request_thresholds[resource] = parse_resource_value(resource, value)
-        elif key.startswith("limits."):
-            resource = key[len("limits."):]
-            if resource in (ResourceName.CPU, ResourceName.MEMORY, ResourceName.EPHEMERAL_STORAGE):
-                limit_thresholds[resource] = parse_resource_value(resource, value)
-
-    return request_thresholds, limit_thresholds, enabled
-
-
-def extract_resources(
-    resource_spec: dict[str, Any] | None,
-) -> tuple[ResourceQuantity, ResourceQuantity]:
-    """
-    Extract requests and limits from resource spec.
-    If a limit is set but no request, request defaults to limit (Kubernetes behavior).
-    """
-    if not resource_spec:
-        return ResourceQuantity(), ResourceQuantity()
-
-    requests_spec = resource_spec.get("requests") or {}
-    limits_spec = resource_spec.get("limits") or {}
-
-    # Parse limits first
-    lim_resources: dict[str, int] = {}
-    for name, value in limits_spec.items():
-        if value:
-            lim_resources[name] = parse_resource_value(name, value)
-
-    # Parse requests
-    req_resources: dict[str, int] = {}
-    for name, value in requests_spec.items():
-        if value:
-            req_resources[name] = parse_resource_value(name, value)
-
-    # K8s behavior: if limit is set but request is not, request = limit
-    for resource_name, limit_value in lim_resources.items():
-        if resource_name not in req_resources:
-            req_resources[resource_name] = limit_value
-
-    return ResourceQuantity(req_resources), ResourceQuantity(lim_resources)
 
 
 # -----------------------------------------------------------------------------
@@ -388,53 +54,31 @@ class ManifestResourceCalculator:
         self.exclude_ephemeral = exclude_ephemeral
         self.priority_class_filter = priority_class_filter
 
-    def extract_replica_count(self, doc: dict[str, Any]) -> tuple[int, str, bool]:
+    def extract_replica_count(self, doc: dict[str, Any]) -> ReplicaCount:
         """Extract replica count directly from manifest fields."""
         kind = doc.get("kind", "")
         spec = doc.get("spec") or {}
 
         if kind in REPLICATED_WORKLOADS:
-            replicas = spec.get("replicas")
-            if (
-                replicas is not None
-                and isinstance(replicas, (int, float, str))
-                and not isinstance(replicas, bool)
-            ):
-                count = safe_int(replicas)
-                if count >= 0:
-                    return count, "spec.replicas", False
-            return 1, "spec.replicas (default)", False
+            return read_replica_count(spec.get("replicas"), "spec.replicas")
 
-        elif kind == WorkloadKind.JOB:
-            parallelism = spec.get("parallelism")
-            if (
-                parallelism is not None
-                and isinstance(parallelism, (int, float, str))
-                and not isinstance(parallelism, bool)
-            ):
-                count = safe_int(parallelism)
-                if count >= 0:
-                    return count, "spec.parallelism", False
-            return 1, "spec.parallelism (default)", False
+        if kind == WorkloadKind.JOB:
+            return read_replica_count(spec.get("parallelism"), "spec.parallelism")
 
-        elif kind == WorkloadKind.CRON_JOB:
-            job_template = spec.get("jobTemplate") or {}
-            job_spec = job_template.get("spec") or {}
-            parallelism = job_spec.get("parallelism")
-            if (
-                parallelism is not None
-                and isinstance(parallelism, (int, float, str))
-                and not isinstance(parallelism, bool)
-            ):
-                count = safe_int(parallelism)
-                if count >= 0:
-                    return count, "spec.jobTemplate.spec.parallelism", False
-            return 1, "spec.jobTemplate.spec.parallelism (default)", False
+        if kind == WorkloadKind.CRON_JOB:
+            job_spec = (spec.get("jobTemplate") or {}).get("spec") or {}
+            return read_replica_count(
+                job_spec.get("parallelism"), "spec.jobTemplate.spec.parallelism"
+            )
 
-        elif kind == WorkloadKind.DAEMON_SET:
-            return self.node_count, f"spec.nodes ({self.node_count} nodes)", True
+        if kind == WorkloadKind.DAEMON_SET:
+            return ReplicaCount(
+                count=self.node_count,
+                source=f"spec.nodes ({self.node_count} nodes)",
+                scales_with_nodes=True,
+            )
 
-        return 1, "unknown", False
+        return ReplicaCount(count=1, source="unknown")
 
     def extract_containers(self, doc: dict[str, Any]) -> list[Container]:
         """Extract all containers from pod template.
@@ -463,8 +107,12 @@ class ManifestResourceCalculator:
         pod_level_resources = pod_spec.get("resources")
         if pod_level_resources:
             # Pod-level resources defined - use only these resources
-            req, lim = extract_resources(pod_level_resources)
-            containers.append(Container("pod-level", "pod", req, lim))
+            pod_resources = extract_resources(pod_level_resources)
+            containers.append(
+                Container(
+                    "pod-level", "pod", pod_resources.requests, pod_resources.limits
+                )
+            )
             return containers
 
         # Init containers
@@ -472,18 +120,20 @@ class ManifestResourceCalculator:
             if not c_spec:
                 continue
             name = str(c_spec.get("name", "unnamed"))
-            resources = c_spec.get("resources")
-            req, lim = extract_resources(resources)
-            containers.append(Container(name, "init", req, lim))
+            resources = extract_resources(c_spec.get("resources"))
+            containers.append(
+                Container(name, "init", resources.requests, resources.limits)
+            )
 
         # App containers
         for c_spec in pod_spec.get("containers", []):
             if not c_spec:
                 continue
             name = str(c_spec.get("name", "unnamed"))
-            resources = c_spec.get("resources")
-            req, lim = extract_resources(resources)
-            containers.append(Container(name, "app", req, lim))
+            resources = extract_resources(c_spec.get("resources"))
+            containers.append(
+                Container(name, "app", resources.requests, resources.limits)
+            )
 
         return containers
 
@@ -513,7 +163,13 @@ class ManifestResourceCalculator:
         if self.priority_class_filter:
             _spec = doc.get("spec") or {}
             if kind == WorkloadKind.CRON_JOB:
-                _pod_spec = _spec.get("jobTemplate", {}).get("spec", {}).get("template", {}).get("spec") or {}
+                _pod_spec = (
+                    _spec.get("jobTemplate", {})
+                    .get("spec", {})
+                    .get("template", {})
+                    .get("spec")
+                    or {}
+                )
             elif kind == WorkloadKind.POD:
                 _pod_spec = _spec
             else:
@@ -522,7 +178,7 @@ class ManifestResourceCalculator:
             if not fnmatch(priority_class_name, self.priority_class_filter):
                 return None
 
-        replicas, source, is_daemonset = self.extract_replica_count(doc)
+        replica_count = self.extract_replica_count(doc)
         containers = self.extract_containers(doc)
 
         if not containers:
@@ -533,10 +189,10 @@ class ManifestResourceCalculator:
             kind=kind,
             name=name,
             namespace=namespace,
-            replicas=replicas,
-            replica_source=source,
+            replicas=replica_count.count,
+            replica_source=replica_count.source,
             containers=containers,
-            is_daemonset=is_daemonset,
+            is_daemonset=replica_count.scales_with_nodes,
         )
 
     def calculate(self, yaml_stream: TextIO) -> CalculatorReport:
@@ -567,7 +223,13 @@ class ManifestResourceCalculator:
 
                         total_requests = total_requests + scaled_req
                         total_limits = total_limits + scaled_lim
-            except Exception as e:
+            except (
+                AttributeError,
+                KeyError,
+                TypeError,
+                ValueError,
+                yaml.YAMLError,
+            ) as e:
                 logger.warning("Error parsing document %d: %s", doc_count, e)
                 continue
 
@@ -590,7 +252,7 @@ class ReportFormatter:
         if millicores == 0:
             return "-"
         if millicores >= 1000:
-            return f"{millicores}m ({millicores/1000:.2f} cores)"
+            return f"{millicores}m ({millicores / 1000:.2f} cores)"
         return f"{millicores}m"
 
     @staticmethod
@@ -627,15 +289,14 @@ class ReportFormatter:
         """Format any resource value appropriately."""
         if resource_name == "cpu":
             return ReportFormatter.format_cpu(value)
-        elif resource_name in ("memory", "ephemeral-storage"):
+        if resource_name in ("memory", "ephemeral-storage"):
             return ReportFormatter.format_memory(value)
-        else:
-            return ReportFormatter.format_generic(value)
+        return ReportFormatter.format_generic(value)
 
     @staticmethod
     def calculate_multiplier(request: int, limit: int) -> str:
-        """
-        Calculate multiplier factor (limit/request).
+        """Calculate multiplier factor (limit/request).
+
         Shows how many times limits exceed requests.
         """
         if request == 0:
@@ -649,74 +310,86 @@ class ReportFormatter:
         ratio = limit / request
         if ratio == 1.0:
             return "1x"
-        elif ratio == int(ratio):
+        if ratio == int(ratio):
             return f"{int(ratio)}x"
-        else:
-            return f"{ratio:.2f}x"
+        return f"{ratio:.2f}x"
+
+    @classmethod
+    def print_container_details(
+        cls, container: Container, replicas: int, resource_types: list[str]
+    ) -> None:
+        """Print one container's share of its workload's resources."""
+        print(f"      {container.name:<15} ({container.container_type})")
+        for res in resource_types:
+            req_val = container.requests.get(res) * replicas
+            lim_val = container.limits.get(res) * replicas
+            if req_val <= 0 and lim_val <= 0:
+                continue
+            mult = cls.calculate_multiplier(req_val, lim_val)
+            print(
+                f"        {res:<18}"
+                f" Req: {cls.format_resource(res, req_val):<20}"
+                f" Lim: {cls.format_resource(res, lim_val):<20} [{mult}]"
+            )
+
+    @classmethod
+    def print_workload_details(
+        cls, report: CalculatorReport, resource_types: list[str]
+    ) -> None:
+        """Print each workload's totals, and its containers when it has several."""
+        print("\nWorkload Details")
+        print("=" * 80)
+
+        for wl in report.workloads:
+            ds_marker = "[DS]" if wl.is_daemonset else ""
+            header = f"{wl.kind}/{wl.namespace}/{wl.name}"
+            print(
+                f"\n{header} (Source: {wl.replica_source},"
+                f" Replicas: {wl.replicas}) {ds_marker}"
+            )
+
+            wl_req = ResourceQuantity()
+            wl_lim = ResourceQuantity()
+            for c in wl.containers:
+                wl_req = wl_req + (c.requests * wl.replicas)
+                wl_lim = wl_lim + (c.limits * wl.replicas)
+
+            for res in resource_types:
+                req_val = wl_req.get(res)
+                lim_val = wl_lim.get(res)
+                if req_val <= 0 and lim_val <= 0:
+                    continue
+                mult = cls.calculate_multiplier(req_val, lim_val)
+                print(
+                    f"  {res:<20} Req: {cls.format_resource(res, req_val):<25} "
+                    f"Lim: {cls.format_resource(res, lim_val):<25} [{mult}]"
+                )
+
+            if len(wl.containers) > 1:
+                print("    Containers:")
+                for c in wl.containers:
+                    cls.print_container_details(c, wl.replicas, resource_types)
 
     @classmethod
     def print_report(cls, report: CalculatorReport, detailed: bool = False) -> None:
         """Print formatted report showing requests, limits, and multiplier."""
         resource_types = sorted(report.get_all_resource_types())
 
-        # Calculate column widths
-        max_res_len = max((len(r) for r in resource_types), default=10)
-        res_width = max(max_res_len, 15)
+        res_width = max(max((len(r) for r in resource_types), default=10), 15)
         val_width = 30
         mult_width = 8
-
         total_width = res_width + 2 + val_width + 2 + val_width + 2 + mult_width
 
         if detailed and report.workloads:
-            print(f"\n{'Workload Details'}")
-            print("=" * 80)
-
-            for wl in report.workloads:
-                ds_marker = "[DS]" if wl.is_daemonset else ""
-                header = f"{wl.kind}/{wl.namespace}/{wl.name}"
-                print(
-                    f"\n{header} (Source: {wl.replica_source}, Replicas: {wl.replicas}) {ds_marker}"
-                )
-
-                # Aggregate per workload
-                wl_req = ResourceQuantity()
-                wl_lim = ResourceQuantity()
-                for c in wl.containers:
-                    wl_req = wl_req + (c.requests * wl.replicas)
-                    wl_lim = wl_lim + (c.limits * wl.replicas)
-
-                # Show workload totals with multiplier
-                for res in resource_types:
-                    req_val = wl_req.get(res)
-                    lim_val = wl_lim.get(res)
-                    if req_val > 0 or lim_val > 0:
-                        mult = cls.calculate_multiplier(req_val, lim_val)
-                        print(
-                            f"  {res:<20} Req: {cls.format_resource(res, req_val):<25} "
-                            f"Lim: {cls.format_resource(res, lim_val):<25} [{mult}]"
-                        )
-
-                # Per-container breakdown
-                if len(wl.containers) > 1:
-                    print(f"    Containers:")
-                    for c in wl.containers:
-                        print(f"      {c.name:<15} ({c.container_type})")
-                        for res in resource_types:
-                            req_val = c.requests.get(res) * wl.replicas
-                            lim_val = c.limits.get(res) * wl.replicas
-                            if req_val > 0 or lim_val > 0:
-                                mult = cls.calculate_multiplier(req_val, lim_val)
-                                print(
-                                    f"        {res:<18} Req: {cls.format_resource(res, req_val):<20} "
-                                    f"Lim: {cls.format_resource(res, lim_val):<20} [{mult}]"
-                                )
+            cls.print_workload_details(report, resource_types)
 
         # Summary table with requests, limits and multiplier
         print("\n" + "=" * total_width)
         print(f"CLUSTER TOTALS (Node count: {report.node_count})")
         print("=" * total_width)
         print(
-            f"{'Resource':<{res_width}}  {'Requests':<{val_width}}  {'Limits':<{val_width}}  {'Factor':<{mult_width}}"
+            f"{'Resource':<{res_width}}  {'Requests':<{val_width}}"
+            f"  {'Limits':<{val_width}}  {'Factor':<{mult_width}}"
         )
         print("-" * total_width)
 
@@ -727,7 +400,8 @@ class ReportFormatter:
             lim_str = cls.format_resource(res, lim_val)
             mult_str = cls.calculate_multiplier(req_val, lim_val)
             print(
-                f"{res:<{res_width}}  {req_str:<{val_width}}  {lim_str:<{val_width}}  {mult_str:<{mult_width}}"
+                f"{res:<{res_width}}  {req_str:<{val_width}}"
+                f"  {lim_str:<{val_width}}  {mult_str:<{mult_width}}"
             )
 
         print("=" * total_width)
@@ -736,7 +410,8 @@ class ReportFormatter:
         daemonsets = [w for w in report.workloads if w.is_daemonset]
         if daemonsets:
             print(
-                f"\nNote: {len(daemonsets)} DaemonSet(s) calculated using {report.node_count} node(s)"
+                f"\nNote: {len(daemonsets)} DaemonSet(s) calculated using"
+                f" {report.node_count} node(s)"
             )
 
 
@@ -748,8 +423,7 @@ def check_thresholds(
     thresholds: dict[str, int],
     threshold_type: str = "request",
 ) -> bool:
-    """
-    Check if calculated resources exceed thresholds.
+    """Check if calculated resources exceed thresholds.
 
     Args:
         report: CalculatorReport with totals
@@ -792,8 +466,11 @@ def check_thresholds(
         else:
             # Only show status if threshold was specified
             usage_pct = (actual_value / max_value) * 100 if max_value > 0 else 0
+            actual = ReportFormatter.format_resource(resource_name, actual_value)
+            allowed = ReportFormatter.format_resource(resource_name, max_value)
             print(
-                f"\n✅ {resource_name} {type_label}: {ReportFormatter.format_resource(resource_name, actual_value)} / {ReportFormatter.format_resource(resource_name, max_value)} ({usage_pct:.1f}%)"
+                f"\n✅ {resource_name} {type_label}: {actual} / {allowed}"
+                f" ({usage_pct:.1f}%)"
             )
 
     return exceeded
@@ -802,35 +479,38 @@ def check_thresholds(
 # -----------------------------------------------------------------------------
 # CLI
 # -----------------------------------------------------------------------------
-def build_thresholds(
-    threshold_args: list[str], threshold_type: str
-) -> tuple[dict[str, int], list[str]]:
+@dataclass(frozen=True)
+class ThresholdSet:
+    """Thresholds parsed from the command line, with anything worth warning about."""
+
+    thresholds: dict[str, int]
+    warnings: list[str]
+
+
+def build_thresholds(threshold_args: list[str], threshold_type: str) -> ThresholdSet:
     """Build thresholds dict from CLI arguments."""
     thresholds: dict[str, int] = {}
     warnings: list[str] = []
 
     for th in threshold_args:
         try:
-            name, value, warning = parse_threshold(th)
-            thresholds[name] = value
-            if warning:
-                warnings.append(warning)
+            parsed = parse_threshold(th)
+            thresholds[parsed.resource] = parsed.value
+            if parsed.warning:
+                warnings.append(parsed.warning)
         except ValueError as e:
             raise ValueError(f"{threshold_type} threshold error: {e}") from e
 
-    return thresholds, warnings
+    return ThresholdSet(thresholds=thresholds, warnings=warnings)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Calculate K8s resources from manifests with threshold checking",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+EXAMPLES = """
 Examples:
   helm template . | python3 %(prog)s --nodes 3
 
   # Threshold for REQUESTS
-  helm template . | python3 %(prog)s --threshold-request cpu=2000m --threshold-request memory=8Gi
+  helm template . | python3 %(prog)s \\
+      --threshold-request cpu=2000m --threshold-request memory=8Gi
 
   # Threshold for LIMITS
   helm template . | python3 %(prog)s --threshold-limit cpu=4000m --threshold-limit memory=16Gi
@@ -845,13 +525,21 @@ Examples:
 
   # Extended resources work the same way
   helm template . | python3 %(prog)s --threshold-request nvidia.com/gpu=2
-        """,
+"""
+
+
+def build_argument_parser() -> argparse.ArgumentParser:
+    """Define the command line."""
+    parser = argparse.ArgumentParser(
+        description="Calculate K8s resources from manifests with threshold checking",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EXAMPLES,
     )
     parser.add_argument(
         "--file",
         "-f",
-        type=argparse.FileType("r"),
-        default=sys.stdin,
+        type=Path,
+        default=None,
         help="YAML file (default: stdin)",
     )
     parser.add_argument(
@@ -908,104 +596,131 @@ Examples:
         "thresholds. If resourceQuotas.scalable.enabled is false and no explicit "
         "--threshold-* args are given, the check is skipped (exit 0).",
     )
-    args = parser.parse_args()
+    return parser
+
+
+@dataclass(frozen=True)
+class ResolvedThresholds:
+    """What a run will check against, and why it might check nothing at all."""
+
+    requests: dict[str, int]
+    limits: dict[str, int]
+    warnings: list[str]
+    skip_reason: str | None = None
+
+
+def resolve_thresholds(args: argparse.Namespace) -> ResolvedThresholds:
+    """Combine the --threshold-* arguments with a Helm values file, if given.
+
+    Raises ValueError when an argument or the values file cannot be read; the caller
+    turns that into a message and a non-zero exit.
+    """
+    request_set = build_thresholds(args.threshold_request, "request")
+    limit_set = build_thresholds(args.threshold_limit, "limit")
+
+    requests = dict(request_set.thresholds)
+    limits = dict(limit_set.thresholds)
+    warnings = [*request_set.warnings, *limit_set.warnings]
+
+    if not args.quota_values:
+        return ResolvedThresholds(requests=requests, limits=limits, warnings=warnings)
+
+    try:
+        quota = load_quota_thresholds(args.quota_values)
+    except (OSError, KeyError, TypeError, yaml.YAMLError) as e:
+        raise ValueError(
+            f"Error reading quota values from {args.quota_values}: {e}"
+        ) from e
+
+    if quota.enabled:
+        requests.update(quota.requests)
+        limits.update(quota.limits)
+        return ResolvedThresholds(requests=requests, limits=limits, warnings=warnings)
+
+    # Quotas are switched off. Explicit thresholds still apply; without any,
+    # there is nothing left to check.
+    skip_reason = None
+    if not requests and not limits:
+        skip_reason = (
+            f"Note: resourceQuotas.scalable.enabled is false in"
+            f" {args.quota_values} — skipping quota check."
+        )
+    return ResolvedThresholds(
+        requests=requests, limits=limits, warnings=warnings, skip_reason=skip_reason
+    )
+
+
+def read_report(args: argparse.Namespace) -> CalculatorReport:
+    """Calculate the report from the manifest file, or from stdin."""
+    calculator = ManifestResourceCalculator(
+        node_count=args.nodes,
+        exclude_ephemeral=args.exclude_ephemeral,
+        priority_class_filter=args.filter_priority_class,
+    )
+    if args.file:
+        with args.file.open(encoding="utf-8") as manifests:
+            return calculator.calculate(manifests)
+    return calculator.calculate(sys.stdin)
+
+
+def report_and_check(args: argparse.Namespace, resolved: ResolvedThresholds) -> int:
+    """Print the report and return the exit code the thresholds imply."""
+    report = read_report(args)
+
+    if not report.workloads:
+        if args.filter_priority_class:
+            print(
+                "No workloads found matching priority class filter"
+                f" '{args.filter_priority_class}'",
+                file=sys.stderr,
+            )
+            return 0
+        print("No workloads found", file=sys.stderr)
+        return 1
+
+    ReportFormatter.print_report(report, detailed=args.detail)
+
+    if resolved.requests or resolved.limits:
+        print()  # Empty line separator
+
+    exceeded = False
+    if resolved.requests:
+        if check_thresholds(report, resolved.requests, threshold_type="request"):
+            exceeded = True
+    if resolved.limits:
+        if check_thresholds(report, resolved.limits, threshold_type="limit"):
+            exceeded = True
+
+    return 1 if exceeded else 0
+
+
+def main() -> int:
+    """Entry point."""
+    args = build_argument_parser().parse_args()
 
     if args.nodes < 1:
         print("Error: Node count must be at least 1", file=sys.stderr)
         return 1
 
-    # Build thresholds dictionaries
-    request_thresholds: dict[str, int] = {}
-    limit_thresholds: dict[str, int] = {}
-    all_warnings: list[str] = []
-
     try:
-        # --threshold-request thresholds
-        thresholds, warnings = build_thresholds(args.threshold_request, "request")
-        request_thresholds.update(thresholds)
-        all_warnings.extend(warnings)
-
-        # --threshold-limit thresholds
-        thresholds, warnings = build_thresholds(args.threshold_limit, "limit")
-        limit_thresholds.update(thresholds)
-        all_warnings.extend(warnings)
-
+        resolved = resolve_thresholds(args)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    # --quota-values: load resourceQuotas.scalable.hard from a Helm values file
-    if args.quota_values:
-        try:
-            quota_req, quota_lim, quota_enabled = load_quota_thresholds(args.quota_values)
-        except Exception as e:
-            print(f"Error reading quota values from {args.quota_values}: {e}", file=sys.stderr)
-            return 1
-
-        if not quota_enabled:
-            if not request_thresholds and not limit_thresholds:
-                print(
-                    f"Note: resourceQuotas.scalable.enabled is false in {args.quota_values} "
-                    "— skipping quota check."
-                )
-                sys.stdin.read()
-                return 0
-            # Explicit thresholds were given alongside --quota-values; proceed without quota thresholds
-        else:
-            request_thresholds.update(quota_req)
-            limit_thresholds.update(quota_lim)
+    if resolved.skip_reason:
+        print(resolved.skip_reason)
+        sys.stdin.read()
+        return 0
 
     # Print any warnings about unit-less memory values before proceeding
-    for warning in all_warnings:
+    for warning in resolved.warnings:
         print(warning, file=sys.stderr)
 
     try:
-        calculator = ManifestResourceCalculator(
-            node_count=args.nodes,
-            exclude_ephemeral=args.exclude_ephemeral,
-            priority_class_filter=args.filter_priority_class,
-        )
-        report = calculator.calculate(args.file)
-
-        if not report.workloads:
-            if args.filter_priority_class:
-                print(
-                    f"No workloads found matching priority class filter '{args.filter_priority_class}'",
-                    file=sys.stderr,
-                )
-                return 0
-            print("No workloads found", file=sys.stderr)
-            return 1
-
-        # Print the report
-        ReportFormatter.print_report(report, detailed=args.detail)
-
-        # Check thresholds if specified
-        if request_thresholds or limit_thresholds:
-            print()  # Empty line separator
-
-        exceeded = False
-
-        # Check request thresholds
-        if request_thresholds:
-            if check_thresholds(report, request_thresholds, threshold_type="request"):
-                exceeded = True
-
-        # Check limit thresholds
-        if limit_thresholds:
-            if check_thresholds(report, limit_thresholds, threshold_type="limit"):
-                exceeded = True
-
-        if exceeded:
-            return 1
-
-        return 0
-
-    except Exception as e:
+        return report_and_check(args, resolved)
+    except (OSError, ValueError, yaml.YAMLError) as e:
         print(f"Error: {e}", file=sys.stderr)
-        import traceback
-
-        traceback.print_exc()
         return 1
 
 

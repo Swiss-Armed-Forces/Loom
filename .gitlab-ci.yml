@@ -82,16 +82,6 @@ variables:
   unprotect: true
   when: "always"
 
-# Third party cache (job-specific)
-.cache_third_party: &cache_third_party
-  key:
-    files:
-      - cicd/generate_third_party.sh
-  paths:
-    - third-party-cache
-  unprotect: true
-  when: "always"
-
 default:
   # Allow cancellation of running tasks
   interruptible: true
@@ -362,12 +352,19 @@ generate_third_party:
       when: never
     - when: on_success
   script:
+    # syft exports each image it scans to a tar under the build directory, and
+    # the Ollama models image is larger than the free space on most runners:
+    # 291G total, 244G of it already image store and restored archives. A run
+    # that has to scan it needs a runner with room, which is why the lock that
+    # keeps such runs rare matters. Pruning does not help - there is nothing
+    # dangling to reclaim, BuildKit keeps its layer cache elsewhere - so the
+    # disk is only reported, to say how far short a failing runner was.
+    - df -h /builds
     - devenv shell -- generate-third-party
     - devenv shell -- git-file-changed
   cache:
     - *cache_dependencies
     - *cache_build
-    - *cache_third_party
 
 # ---------------------------------------------#
 #

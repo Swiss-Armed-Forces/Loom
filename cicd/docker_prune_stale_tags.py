@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 import logging
-import os
-import shlex
-import subprocess
 from collections import defaultdict
 
 import docker
+
+from minikube_env import load_minikube_docker_environment
 
 # -------------------------------
 # Constants
@@ -22,33 +21,15 @@ logger = logging.getLogger()
 
 
 # -------------------------------
-# Minikube Env Loader
-# -------------------------------
-def load_minikube_env() -> None:
-    proc = subprocess.run(
-        ["minikube", "-p", "minikube", "docker-env"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    for line in proc.stdout.splitlines():
-        line = line.strip()
-        if not line.startswith("export "):
-            continue
-        key, val = line[len("export "):].split("=", 1)
-        val = shlex.split(val)[0]
-        os.environ[key] = val
-    logger.info("Successfully loaded Minikube Docker environment.")
-
-
-# -------------------------------
 # Core Logic
 # -------------------------------
 def prune_stale_tags(dry_run: bool) -> None:
     client = docker.from_env(timeout=DOCKER_CLIENT_TIMEOUT)
 
     # Group tags by repository -> image ID
-    repo_id_tags: dict[str, dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
+    repo_id_tags: dict[str, dict[str, list[str]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
     for image in client.images.list():
         for full_tag in image.tags:
             repo, _, tag = full_tag.rpartition(":")
@@ -102,19 +83,24 @@ def main() -> None:
         "-m", "--minikube", action="store_true", help="Use Minikube's Docker daemon."
     )
     parser.add_argument(
-        "-n", "--dry-run", action="store_true", help="Print what would be removed without removing."
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="Print what would be removed without removing.",
     )
     args = parser.parse_args()
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+        logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
+        )
     )
     logger.addHandler(console_handler)
     logger.setLevel(LOG_LEVEL)
 
     if args.minikube:
-        load_minikube_env()
+        load_minikube_docker_environment()
 
     prune_stale_tags(dry_run=args.dry_run)
 

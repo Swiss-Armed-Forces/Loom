@@ -202,9 +202,7 @@ def wait_for_outputs(
     )
 
 
-def download_asset(
-    session: requests.Session, url: str, output_path: Path
-) -> None:
+def download_asset(session: requests.Session, url: str, output_path: Path) -> None:
     response = session.get(url, timeout=60)
     response.raise_for_status()
     temporary_path = output_path.with_suffix(f"{output_path.suffix}.tmp")
@@ -245,8 +243,7 @@ def capture_child(
         if not isinstance(rendered, dict):
             rendered = {}
         renderer_ids_ready = all(
-            isinstance(rendered.get(field), str)
-            for field, _ in child.renderer_outputs
+            isinstance(rendered.get(field), str) for field, _ in child.renderer_outputs
         )
         if isinstance(preview.get("thumbnail_file_id"), str) and renderer_ids_ready:
             thumbnail_id = preview["thumbnail_file_id"]

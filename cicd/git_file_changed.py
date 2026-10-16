@@ -2,8 +2,8 @@
 import argparse
 import logging
 import os
-import sys
 import shutil
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,14 +13,15 @@ import git
 import gitlab
 from gitlab.v4.objects import Project
 
-
 # ----------------------------
 # Config & context
 # ----------------------------
 
 
+# One field per GitLab CI variable this script reads, and there are that many;
+# grouping them into sub-contexts would only move the list somewhere else.
 @dataclass(frozen=True)
-class CiContext:
+class CiContext:  # pylint: disable=too-many-instance-attributes
     # Standard GitLab CI env vars
     api_url: str
     server_host: str
@@ -86,7 +87,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--project-access-token",
         default=None,
-        help="Project access token for creating MR pipelines (default: PROJECT_ACCESS_TOKEN env var).",
+        help=(
+            "Project access token for creating MR pipelines "
+            "(default: PROJECT_ACCESS_TOKEN env var)."
+        ),
     )
     parser.add_argument(
         "--project-id",
@@ -115,8 +119,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--max-ci-commits",
         type=int,
-        default=int(os.getenv("MAX_CI_COMMITS", "10")),
-        help="Abort if there are already this many consecutive CI commits. Default 10.",
+        default=int(os.getenv("MAX_CI_COMMITS", "3")),
+        help="Abort if there are already this many consecutive CI commits. Default 3.",
     )
     parser.add_argument(
         "--no-update",
@@ -196,13 +200,13 @@ def setup_logging(level: str) -> None:
 
 
 def init_git_repo(ctx: CiContext) -> git.Repo:
-    """
-    Prepare the repo safely for MR pushes.
-      * set identity + safe.directory
-      * set token remote
-      * fetch origin/<source_branch>
-      * checkout -B <branch> (align local branch)
-      * pull --rebase with autostash to preserve local edits
+    """Prepare the repo safely for MR pushes.
+
+    * set identity + safe.directory
+    * set token remote
+    * fetch origin/<source_branch>
+    * checkout -B <branch> (align local branch)
+    * pull --rebase with autostash to preserve local edits
     """
     repo = git.Repo(Path.cwd())
 
@@ -258,9 +262,8 @@ def init_git_repo(ctx: CiContext) -> git.Repo:
 
 
 def get_unstaged_paths(repo: git.Repo) -> list[Path]:
-    """
-    Return paths with *unstaged* changes (tracked mods/deletes + untracked, not ignored).
-    """
+    """Return paths with *unstaged* changes (tracked mods/deletes + untracked, not
+    ignored)."""
     paths: set[Path] = set()
     for diff in repo.index.diff(None):
         if diff.a_path:
@@ -310,8 +313,9 @@ def copy_changed_files(
     changed_paths: Iterable[Path],
     ctx: CiContext,
 ) -> None:
-    """
-    Copy all existing changed files into dest_root, preserving tree relative to repo root.
+    """Copy all existing changed files into dest_root, preserving tree relative to repo
+    root.
+
     Skips deleted/non-existent files (logs them).
     """
     wt = Path(repo.working_tree_dir or ".").resolve()
@@ -343,20 +347,111 @@ def copy_changed_files(
 def count_consecutive_ci_commits(
     repo: git.Repo, ctx: CiContext, limit: int = 50
 ) -> int:
-    """
-    Count consecutive commits from HEAD backwards that look like CI commits from this bot.
+    """Count consecutive commits from HEAD backwards that look like CI commits.
+
+    The message prefix alone decides. Authorship does not: a commit is
+    attributed to whoever's push or token started the pipeline, so a chain
+    alternates between the developer and the pipeline-trigger bot, and counting
+    only one of them resets on every other commit - which is how a regeneration
+    loop ran eight rounds without this ever tripping.
     """
     count = 0
     for commit in repo.iter_commits(max_count=limit):
         msg = commit.message or ""
         if not isinstance(msg, str):
             raise RuntimeError(f"Unexpected commit message type: '{type(msg)}'")
-        email = (commit.author.email or "").lower()
-        if msg.startswith(ctx.ci_commit_prefix) and email == ctx.author_email.lower():
+        if msg.startswith(ctx.ci_commit_prefix):
             count += 1
         else:
             break
     return count
+
+
+def get_head_paths(repo: git.Repo) -> set[str]:
+    """Return the paths the HEAD commit touched, relative to the repo root."""
+    out = repo.git.show("--name-only", "--pretty=format:", "HEAD")
+    return {line.strip() for line in out.splitlines() if line.strip()}
+
+
+def head_is_ci_commit(repo: git.Repo, ctx: CiContext) -> bool:
+    """True when HEAD was itself written by one of these jobs."""
+    if not repo.head.is_valid():
+        return False
+    msg = repo.head.commit.message or ""
+    if not isinstance(msg, str):
+        raise RuntimeError(f"Unexpected commit message type: '{type(msg)}'")
+    return msg.startswith(ctx.ci_commit_prefix)
+
+
+def is_regeneration_loop(
+    repo: git.Repo, ctx: CiContext, changed: Iterable[Path]
+) -> bool:
+    """True when pushing these changes would continue a regeneration loop.
+
+    Logs which signature was seen, because each says something different about
+    what is wrong: a reversal means a generator reads something outside the
+    repository, while a long chain means the pipeline keeps finding work no
+    previous round settled.
+    """
+    oscillating = get_oscillating_paths(repo, ctx, changed)
+    if oscillating:
+        logging.error(
+            "These files are being generated back to the content they had "
+            "before the previous commit:\n  %s\n"
+            "The generator answers from something outside the repository - a "
+            "runner's cached image or scan, say - so each pipeline undoes the "
+            "last one. Fix the generator rather than the file.",
+            "\n  ".join(oscillating),
+        )
+        return True
+
+    consecutive = count_consecutive_ci_commits(repo, ctx)
+    if consecutive >= ctx.max_ci_commits:
+        logging.error(
+            "Detected %d consecutive CI commits (>= %d). Aborting push to avoid a loop.",
+            consecutive,
+            ctx.max_ci_commits,
+        )
+        return True
+
+    return False
+
+
+def get_oscillating_paths(
+    repo: git.Repo, ctx: CiContext, changed: Iterable[Path]
+) -> list[str]:
+    """Return the paths this job would restore to their content before HEAD.
+
+    HEAD was written by one of these jobs, and a file it changed is being
+    changed straight back: A -> B -> A. The generator therefore answers from
+    something outside the repository - a runner's cached image or scan - and
+    pushing would hand the same coin flip to the next pipeline.
+
+    Only a reversal counts. A generated file may legitimately change twice in a
+    row, because committing one can move an image tag that another is derived
+    from; such a chain advances instead of repeating itself, and terminates.
+    """
+    if not head_is_ci_commit(repo, ctx):
+        return []
+    if not repo.head.commit.parents:
+        return []
+
+    before_head = repo.head.commit.parents[0]
+    work_tree = Path(repo.working_tree_dir or ".")
+
+    oscillating: list[str] = []
+    for path in sorted(get_head_paths(repo) & {str(p) for p in changed}):
+        try:
+            blob = before_head.tree / path
+        except KeyError:
+            # HEAD created the file; writing it again cannot be a reversal.
+            continue
+        work_file = work_tree / path
+        if not work_file.is_file():
+            continue
+        if work_file.read_bytes() == blob.data_stream.read():
+            oscillating.append(path)
+    return oscillating
 
 
 # ----------------------------
@@ -365,15 +460,18 @@ def count_consecutive_ci_commits(
 
 
 def is_cross_project_mr(ctx: CiContext) -> bool:
-    """True when the MR source branch is in a different project (fork MR in upstream context)."""
+    """True when the MR source branch is in a different project.
+
+    That is a fork MR seen from the upstream project's context.
+    """
     if not ctx.is_mr or not ctx.source_project_path:
         return False
     return ctx.source_project_path != ctx.project_path
 
 
 def generate_patch(repo: git.Repo, ctx: CiContext) -> Path:
-    """
-    Stage all unstaged changes, produce a unified diff patch, then unstage.
+    """Stage all unstaged changes, produce a unified diff patch, then unstage.
+
     Returns the path of the written patch file.
     """
     patch_path = ctx.changed_out_dir / "fork-update.patch"
@@ -397,8 +495,7 @@ def generate_patch(repo: git.Repo, ctx: CiContext) -> Path:
 
 
 def is_bot_user(ctx: CiContext) -> bool:
-    """
-    Detect if pipeline was triggered by a bot user (project/group access token).
+    """Detect if pipeline was triggered by a bot user (project/group access token).
 
     Bot users created by access tokens follow these patterns:
     - Project tokens: project_{id}_bot{suffix}
@@ -420,8 +517,7 @@ def wait_for_mr_commit_sync(
     max_retries: int = 5,
     base_delay: float = 2.0,
 ) -> bool:
-    """
-    Wait for GitLab MR to sync with the latest commit using exponential backoff.
+    """Wait for GitLab MR to sync with the latest commit using exponential backoff.
 
     Args:
         project: GitLab project instance
@@ -437,11 +533,11 @@ def wait_for_mr_commit_sync(
         # Always fetch fresh MR data from API
         mr = project.mergerequests.get(mr_iid, lazy=True)
         diffs = mr.diffs.list()
-        current_sha = None
+        current_sha: str | None = None
         if diffs:
             # Get the latest diff (most recent)
             latest_diff = diffs[0]
-            current_sha: str | None = latest_diff.head_commit_sha
+            current_sha = latest_diff.head_commit_sha
 
         if current_sha == expected_commit_sha:
             if attempt > 0:
@@ -468,11 +564,10 @@ def wait_for_mr_commit_sync(
 
 
 def trigger_pipeline(ctx: CiContext) -> None:
-    """
-    Trigger a new merge request pipeline using the project access token.
+    """Trigger a new merge request pipeline using the project access token.
 
-    Waits for GitLab to sync the latest commit before triggering to ensure the
-    pipeline runs on the correct commit, not a stale one.
+    Waits for GitLab to sync the latest commit before triggering to ensure the pipeline
+    runs on the correct commit, not a stale one.
 
     No-ops in dry-run or if not in MR context or no token provided.
     """
@@ -509,7 +604,8 @@ def trigger_pipeline(ctx: CiContext) -> None:
     logging.info("Waiting for MR !%s to sync with latest commit...", ctx.mr_iid)
     if not wait_for_mr_commit_sync(project, ctx.mr_iid, latest_commit_sha):
         logging.error(
-            "Failed to sync MR with latest commit. Not triggering pipeline to avoid running on stale commit."
+            "Failed to sync MR with latest commit. Not triggering pipeline to "
+            "avoid running on stale commit."
         )
         return
 
@@ -524,8 +620,8 @@ def trigger_pipeline(ctx: CiContext) -> None:
 
 
 def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
-    """
-    Commit staged changes and push to the MR source branch.
+    """Commit staged changes and push to the MR source branch.
+
     No-ops in dry-run.
     """
     msg = (
@@ -618,14 +714,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # Max consecutive CI commits safeguard
-    consecutive = count_consecutive_ci_commits(repo, ctx)
-    if consecutive >= ctx.max_ci_commits:
-        logging.error(
-            "Detected %d consecutive CI commits (>= %d). Aborting push to avoid a loop.",
-            consecutive,
-            ctx.max_ci_commits,
-        )
+    if is_regeneration_loop(repo, ctx, unstaged_before):
         return 1
 
     # Prepare repo (fetch/checkout/pull with autostash)
