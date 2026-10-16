@@ -96,7 +96,9 @@ def arms_on_a_container(
         # The banner follows the guard, the same as on an unlocked box: it is the
         # only thing an operator who never logs in sees.
         locked.wait_until_succeeds(
-            "grep -q 'USB key guard: armed' /run/issue.d/50-loom.issue"
+            # The value sits in the aligned column, so the label and what it says
+            # are matched as two fields rather than as one phrase.
+            "grep -qE 'USB key guard: +armed' /run/issue.d/50-loom.issue"
         )
         assert "\\" not in locked.succeed("cat /run/issue.d/50-loom.issue")
 

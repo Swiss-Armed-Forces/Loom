@@ -14,7 +14,9 @@ this file is about the code.
 | `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. Imports the nixos-hardware Strix Halo leaves, and sets the iGPU's GTT ceiling. |
 | `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). Imports `intel/nuc/12wshi7`. |
 | `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
-| `box.nix` | The appliance: host tuning, toolchain, operator account, banner, `loom-up`. |
+| `banner.nix` | The pre-login screen as a package and two commands: `loom-info`, told which box it is drawing, and `loom-issue-fragment`, which the units writing the screen's lower blocks go through. |
+| `banner/` | What those commands are — the section order, the aligned value column, the colour roles and the rule that no backslash reaches an issue file — with its own pytest suite, run at build time. See the section below. |
+| `box.nix` | The appliance: host tuning, toolchain, operator account, the units that render the screen, `loom-up`. |
 | `console.nix` | What the operator meets: the press-a-key login, the three-pane session (the log-to-`k9s` handover, and `loom-chat` on the cluster's Ollama), `/dev/console`. No pane is a shell; `Alt-F2` is. Also `loom-pane`, which restarts a pane's program when it exits, the kiosk key policy and the clickable status-line controls. |
 | `console-mouse.nix` | The mouse on a console that has none: `gpm`, the ordering that keeps its one-shot console measurement honest, and the `loom-console-mouse` package. See the section below. |
 | `console-mouse/` | The pty shim `loom-console` runs the tmux client under — the gpm client protocol, SGR translation and the pointer sequencing — with its own pytest suite, run at build time. |
@@ -662,9 +664,12 @@ the module hangs together.
   a directory it prints and never cleans up, and passes `--argstr debugSshAuthorizedKey`. Unlike the
   WiFi passphrase there is no secret in `/nix/store` and none on the stick.
 
-The banner block is rendered by `box.nix`, at the **end** of `loom-info`, and the position is load
-bearing: agetty writes the issue straight to the VT with no paging, so a banner taller than the
-console loses its *first* rows. The tail is the only place a warning cannot scroll away from.
+The banner block is written as its own fragment, `/run/issue.d/90-loom-debug.issue`, and the
+number is load bearing: agetty reads that directory in filename order and writes the result straight
+to the VT with no paging, so a screen taller than the console loses its *first* rows. `90` is what
+puts the warning below every other unit's block, which is the only place it cannot scroll away from.
+`loom-info` prints the same block at the end of its own output, for an operator who runs it by hand
+where there are no fragments.
 
 `appliance-vm box --debug` builds the same module and forwards `localhost:2222`, keeping its keypair
 in the VM's state directory so it survives a rebuild. `appliance-test debug` is the VM test.
@@ -1195,6 +1200,53 @@ Three things, before it was even built:
   driver" branch. Partitions 17 and 18 exist to show it: stock they are refused, and after
   `modprobe squashfs erofs` on the box they mount. The difference is the finding.
 - **`ntfs3` in `KNOWN` is unreachable from media.** libblkid's NTFS prober only ever emits `ntfs`.
+
+## The pre-login screen, and the four fragments it is made of
+
+`banner.nix` and `banner/` own the one screen a person standing in front of the box sees without
+logging in. agetty paints `/run/issue.d` **in filename order**, once, and then blocks on a keypress,
+so the number in a fragment's name is its position and the whole directory is one screen:
+
+| Fragment | Written by | When |
+| --- | --- | --- |
+| `50-loom.issue` | `loom-issue.service` (`box.nix`), via `loom-info --for-issue` | every boot, and every `loom-banner-refresh` |
+| `60-loom-network.issue` | `loom-network-check.service` (`network.nix`) | only when the wired port is missing or was claimed automatically |
+| `61-loom-wifi.issue` | `loom-wifi-check.service` (`wifi.nix`) | only when the radio or hostapd did not come up |
+| `90-loom-debug.issue` | `loom-issue.service`, on a `--debug` image only | every boot |
+
+Four rules come from that one consumer, and they live in `banner/loom_banner/render.py` rather than
+in a `printf` per unit:
+
+- **No backslash, anywhere.** agetty reads one as the start of an escape of its own and eats it. The
+  renderer raises instead, because a passphrase one character short cannot be recovered from the
+  screen it was supposed to be read on.
+- **Nothing wider than 78 columns.** The console cannot be measured — it is resized several times
+  during boot, so any reading describes a screen that no longer exists by the time agetty paints —
+  and the narrowest in play is the 80-column getty a `--vm-serial` box carries.
+- **Sixteen named colours.** console_codes(4) shoehorns even a 24-bit SGR into the basic sixteen, so
+  rich's default truecolor lands somewhere unpredictable.
+- **No intensity.** `branding.nix` loads a 512-glyph font and setfont(8) spends the console's
+  intensity bit on glyph selection past 256, so `bold` cannot be relied on to show. Emphasis is
+  reverse video (values to type) and hue (red for a problem, white-on-red for a danger).
+
+Two things about the layout are load bearing rather than decorative:
+
+- **Order is "most-needed last".** The screen is written straight to the VT with no paging, so one
+  too tall loses its *first* rows. The mark is at the top because it is the thing that can be
+  spared; the secrets, the state and the danger block are at the bottom because they cannot.
+- **The QR sits above the secrets.** On a console too short for both, a half-scrolled QR was already
+  unscannable, while a half-scrolled passphrase costs the reader the box.
+
+`screen.py` is a pure function from facts to sections precisely so the order can be asserted without
+booting anything; `render.py` is asserted against rendered bytes, escapes included. Two classes of
+fact meet there: what the image was built with arrives as flags from `banner.nix`, and what is true
+now — the key guard's state, the readiness summary, the recovery passphrase, the portal's daily
+password — is read at print time, every time, because the screen is rendered once per boot and all
+four change underneath it.
+
+Also why there is a `Screen painted:` row. `loom-banner-refresh` deliberately refuses to repaint a
+console somebody has logged into, so a screen can outlive what it says; without a timestamp a stale
+one and a live one are identical.
 
 ## Readiness, in one place and three screens
 

@@ -177,8 +177,16 @@ def _login_credentials(
         assert "▄████▄    ▄████▄" in issue, issue
         assert "Scan to join" in issue, issue
         # Drawn with the half blocks, not with '#'. An ASCII QR has modules
-        # twice as tall as they are wide and phones refuse it -- see box.nix.
+        # twice as tall as they are wide and phones refuse it -- see
+        # loom_banner/__main__.py.
         assert "▀" in issue or "▄" in issue, issue
+
+        # The credentials are in the block everything transcribable shares, below
+        # the card rather than under it: on a console too short for both, the card
+        # is the half that was already unscannable.
+        assert "── Write these down ─" in issue, issue
+        assert issue.index("Scan to join") < issue.index("WiFi network:"), issue
+        assert issue.index("WiFi network:") < issue.index("WiFi passphrase:"), issue
 
         # The health check found a working AP, so it must not have left a
         # warning contradicting the credentials printed above it.

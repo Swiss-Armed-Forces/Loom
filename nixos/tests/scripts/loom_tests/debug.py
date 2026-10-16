@@ -254,7 +254,11 @@ def _the_banner_says_so(
 ) -> None:
     with subtest("the login screen carries the warning, last and unescaped"):
         appliance.wait_for_unit("loom-issue.service")
-        issue = appliance.succeed("cat /run/issue.d/50-loom.issue")
+        # Every fragment, in the order agetty reads them -- which is the order they
+        # are painted in, and the only order in which "last" means anything. Read
+        # from 50-loom.issue alone, this assertion passed while the portal's own
+        # fragment rendered the day's password *below* the warning.
+        issue = appliance.succeed("cat /run/issue.d/*.issue")
 
         assert params.warning_phrase in issue, issue
 
@@ -275,6 +279,11 @@ def _the_banner_says_so(
         tail = issue[issue.rindex("\x1b[1;37;41m") :]
         after = tail.split("\x1b[0m", 1)[1]
         assert after.strip() == "", repr(after)
+
+        # And it is last because it is a fragment of its own, numbered to sort below
+        # every other unit's block rather than because of where it sits in a file.
+        fragments = appliance.succeed("ls /run/issue.d/").split()
+        assert sorted(fragments)[-1] == "90-loom-debug.issue", fragments
 
 
 def _the_motd_says_so(client: "Machine", params: Params, subtest: "Subtest") -> None:

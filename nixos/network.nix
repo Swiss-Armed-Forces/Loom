@@ -910,38 +910,32 @@ in
         path = with pkgs; [
           coreutils
           loom-wired-nics
+          config.loom.banner.fragment
         ];
         script = ''
+          # `60` sorts after box.nix's 50-loom.issue, so this lands under the banner
+          # and above agetty's press-ENTER prompt. loom-issue-fragment owns the rest:
+          # the indent, the rule, the atomic rename a getty respawning mid-write
+          # needs, the copy to the journal, and the rule that no backslash reaches
+          # an issue file.
           fragment=/run/issue.d/60-loom-network.issue
-
-          # Sorts after box.nix's 50-loom.issue, so this lands under the banner
-          # and above agetty's press-ENTER prompt. No backslashes anywhere in
-          # the text: agetty reads them as issue escapes. Written through a
-          # temporary file for the same reason loom-issue.service is -- a getty
-          # respawning mid-write must never read half a message.
-          report() {
-            mkdir --parents /run/issue.d
-            cat >"''${fragment}.tmp"
-            mv "''${fragment}.tmp" "''${fragment}"
-            # And to the journal, so `journalctl -u loom-network-check` has it.
-            cat "''${fragment}"
-          }
 
           if [ ! -e /sys/class/net/${applianceInterface} ]; then
             # With the fallback in place this no longer means "the match missed"
             # -- it means there was no wired port to claim either.
-            {
-              echo "[!] ${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
-              echo "[!] No wired interface was found to claim. Present instead:"
-              for candidate in /sys/class/net/*; do
-                name="$(basename "$candidate")"
-                if [ "$name" = lo ]; then
-                  continue
-                fi
-                echo "[!]   $name"
-              done
-              echo "[!] If one of those is in fact wired, rebuild with --interface <name>."
-            } | report
+            lines=(
+              --warn "${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
+              --warn "No wired interface was found to claim. Present instead:"
+            )
+            for candidate in /sys/class/net/*; do
+              name="$(basename "$candidate")"
+              if [ "$name" = lo ]; then
+                continue
+              fi
+              lines+=(--warn "  $name")
+            done
+            lines+=(--warn "If one of those is in fact wired, rebuild with --interface <name>.")
+            loom-issue-fragment 60-loom-network "''${lines[@]}"
             exit 0
           fi
 
@@ -956,16 +950,23 @@ in
               exit 0
             fi
 
-            {
-              echo "[*] ${applianceInterface} is $LOOM_FALLBACK_INTERFACE, claimed automatically:"
-              echo "[*] this image has no platform match for the NIC in this box."
-              if [ -n "$LOOM_FALLBACK_ALTERNATIVES" ]; then
-                echo "[*] Other wired ports: $LOOM_FALLBACK_ALTERNATIVES"
-                echo "[*] If nothing reaches the box, move the cable to one of those."
-              fi
-              echo "[*] To pin it, rebuild with --interface $LOOM_FALLBACK_INTERFACE,"
-              echo "[*] or add a platform for this machine."
-            } | report
+            # A notice rather than a problem: the box works, it simply claimed the
+            # port itself. In red it would read as a fault that needs fixing.
+            lines=(
+              --note "${applianceInterface} is $LOOM_FALLBACK_INTERFACE, claimed automatically:"
+              --note "this image has no platform match for the NIC in this box."
+            )
+            if [ -n "$LOOM_FALLBACK_ALTERNATIVES" ]; then
+              lines+=(
+                --note "Other wired ports: $LOOM_FALLBACK_ALTERNATIVES"
+                --note "If nothing reaches the box, move the cable to one of those."
+              )
+            fi
+            lines+=(
+              --note "To pin it, rebuild with --interface $LOOM_FALLBACK_INTERFACE,"
+              --note "or add a platform for this machine."
+            )
+            loom-issue-fragment 60-loom-network "''${lines[@]}"
             exit 0
           fi
 

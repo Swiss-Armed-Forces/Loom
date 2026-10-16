@@ -84,8 +84,10 @@ let
   bundlesDir = "${stateDir}/bundles";
   anchorFile = "${stateDir}/anchor.pem";
   fingerprintFile = "${stateDir}/anchor.sha256";
-  passwordFile = "${stateDir}/password";
-  previousPasswordFile = "${stateDir}/password.previous";
+  # Declared as an option below, because the login screen prints it and box.nix
+  # must be able to name the file without restating the path.
+  passwordFile = cfg.portal.passwordFile;
+  previousPasswordFile = "${passwordFile}.previous";
 
   # The TLS pair, on the encrypted root rather than in /run: nginx reads it at
   # parse time, so a box that rebooted before the cluster came back would
@@ -98,8 +100,6 @@ let
   # key over a connection authenticated by it -- see that unit, and
   # `page.py`'s identity section.
   tlsPlaceholderMarker = "${tlsDir}/placeholder";
-
-  issueFragment = "/run/issue.d/62-loom-portal.issue";
 
   # Where "Open Loom" points, and the one detail in this module that cannot be a
   # constant.
@@ -702,6 +702,22 @@ in
       };
     };
 
+    passwordFile = lib.mkOption {
+      type = lib.types.str;
+      default = "${stateDir}/password";
+      internal = true;
+      readOnly = true;
+      description = ''
+        Where the day's portal password is published.
+
+        Declared rather than written out twice: the rotation unit below owns the
+        file, and the login screen reads it at print time -- the same arrangement
+        `loom.ready.stateDir` and `loom.keyGuard.stateDir` have with the banner.
+        On tmpfs, so a box that has been off since midnight has no stale password
+        to offer.
+      '';
+    };
+
     mtls = {
       validityDays = lib.mkOption {
         type = lib.types.int;
@@ -1115,42 +1131,11 @@ in
               fi
               put ${lib.escapeShellArg passwordFile} "$passphrase"
 
-              # And onto the login screen, as a fragment of its own rather than a
-              # change to loom-info -- the same arrangement loom-network-check and
-              # loom-wifi-check use, and it sorts after both. Two lines and no
-              # more: box.nix's banner loses its TOP rows when it overflows, which
-              # is where the Loom mark is, and a --wifi box already carries a QR
-              # code down there.
-              #
-              # No backslash in any of it: agetty reads one in an issue file as the
-              # start of an escape of its own and eats it.
-              mkdir --parents /run/issue.d
-              fragment=${lib.escapeShellArg issueFragment}
-              {
-                printf '  [*] Portal password (today): %s\n' "$passphrase"
-                ${
-                  if enableTls then
-                    ''
-                      printf '  [*] Visitors need it at %s to get a certificate.\n' \
-                        ${lib.escapeShellArg "http://${cfg.portal.host}"}
-                    ''
-                  else
-                    # mTLS with `loom.portal.tls.enable = false`: the page
-                    # degrades to "Not configured" and `_issue` refuses every
-                    # plaintext POST, because a PKCS#12 carries an unencrypted
-                    # private key. Pointing visitors at a URL that can never
-                    # issue one would be worse than saying nothing; the operator
-                    # gets the route that does work.
-                    ''
-                      printf '  [*] This image issues no certificates from the portal.\n'
-                      printf '  [*] Issue one from this console: loom-client-certificate --name NAME --out-dir DIR\n'
-                    ''
-                }
-              } > "$fragment.tmp"
-              mv "$fragment.tmp" "$fragment"
-
-              # Repaint, unless somebody is already logged in -- which is what
-              # loom-banner-refresh decides, and it says so by exiting 1.
+              # And onto the login screen, which reads the file above at print time
+              # and puts the password in the same block as everything else somebody
+              # has to transcribe. Repaint, unless somebody is already logged in --
+              # which is what loom-banner-refresh decides, and it says so by
+              # exiting 1.
               loom-banner-refresh || true
             '';
           };

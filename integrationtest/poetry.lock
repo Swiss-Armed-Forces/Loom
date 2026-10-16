@@ -2414,6 +2414,23 @@ files = [
 ]
 
 [[package]]
+name = "loom-banner"
+version = "0.1.0"
+description = "Draw the appliance's pre-login screen, and the fragments that land under it"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "../nixos/banner"
+
+[[package]]
 name = "loom-console-mouse"
 version = "0.1.0"
 description = "Point-and-click support for the Loom appliance's console session"
@@ -2473,6 +2490,7 @@ api = {path = "backend/api", develop = true}
 common = {path = "backend/common", develop = true}
 crawler = {path = "backend/crawler", develop = true}
 integrationtest = {path = "integrationtest", develop = true}
+loom-banner = {path = "nixos/banner", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
 loom-ollama = {path = "ollama", develop = true}

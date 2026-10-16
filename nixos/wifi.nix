@@ -381,40 +381,41 @@ in
           StandardOutput = "journal";
           StandardError = "journal";
         };
-        # No backslashes anywhere below: agetty reads them as issue escapes.
+        path = [
+          pkgs.coreutils
+          config.systemd.package
+          config.loom.banner.fragment
+        ];
         script = ''
-          # Sorts after network.nix's 60-loom-network.issue, so a box that is
-          # wrong about both reports the wired problem first.
-          report() {
-            mkdir -p /run/issue.d
-            cat >/run/issue.d/61-loom-wifi.issue.tmp
-            mv /run/issue.d/61-loom-wifi.issue.tmp /run/issue.d/61-loom-wifi.issue
-            cat /run/issue.d/61-loom-wifi.issue
-          }
-
+          # `61` sorts after network.nix's 60-loom-network.issue, so a box that is
+          # wrong about both reports the wired problem first. loom-issue-fragment
+          # owns the indent, the rule, the atomic rename, the journal copy and the
+          # rule that no backslash reaches an issue file.
           if [ ! -e /sys/class/net/${wifiIface} ]; then
-            {
-              echo "[!] ${wifiIface} does not exist -- this box has no access point."
-              echo "[!] The platform's radio match did not select anything. Present instead:"
-              for candidate in /sys/class/net/*; do
-                name="$(basename "$candidate")"
-                [ "$name" = lo ] && continue
-                echo "[!]   $name"
-              done
-              echo "[!] Rebuild with --wifi-interface <name>, or without --wifi."
-              echo "[!] The wired port still works."
-            } | report
+            lines=(
+              --warn "${wifiIface} does not exist -- this box has no access point."
+              --warn "The platform's radio match did not select anything. Present instead:"
+            )
+            for candidate in /sys/class/net/*; do
+              name="$(basename "$candidate")"
+              [ "$name" = lo ] && continue
+              lines+=(--warn "  $name")
+            done
+            lines+=(
+              --warn "Rebuild with --wifi-interface <name>, or without --wifi."
+              --warn "The wired port still works."
+            )
+            loom-issue-fragment 61-loom-wifi "''${lines[@]}"
             exit 0
           fi
 
           if ! systemctl is-active --quiet hostapd.service; then
-            {
-              echo "[!] ${wifiIface} exists but hostapd is not running -- no access point."
-              echo "[!] The usual cause is a radio that does not support AP mode. Check with:"
-              echo "[!]   iw list | grep -A15 'Supported interface modes'"
-              echo "[!] and look for a line reading '* AP'. Then: journalctl -u hostapd"
-              echo "[!] The wired port still works."
-            } | report
+            loom-issue-fragment 61-loom-wifi \
+              --warn "${wifiIface} exists but hostapd is not running -- no access point." \
+              --warn "The usual cause is a radio that does not support AP mode. Check with:" \
+              --warn "  iw list | grep -A15 'Supported interface modes'" \
+              --warn "and look for a line reading '* AP'. Then: journalctl -u hostapd" \
+              --warn "The wired port still works."
             exit 0
           fi
 

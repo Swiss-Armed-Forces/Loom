@@ -3026,6 +3026,23 @@ files = [
 ]
 
 [[package]]
+name = "loom-banner"
+version = "0.1.0"
+description = "Draw the appliance's pre-login screen, and the fragments that land under it"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "nixos/banner"
+
+[[package]]
 name = "loom-console-mouse"
 version = "0.1.0"
 description = "Point-and-click support for the Loom appliance's console session"
@@ -7506,4 +7523,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14"
-content-hash = "372cce86f1dd0a19f0e6261d235e196c7e59a9849516e79a5940aa55ee736ce3"
+content-hash = "9043573fa87de1f2208d39b9bad3d213970f98f08acda05db0b21126376ba45e"

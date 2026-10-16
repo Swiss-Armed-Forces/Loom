@@ -64,6 +64,12 @@ def _console_says_so(single: "Machine", subtest: "Subtest") -> None:
         # No backslashes: agetty eats them out of an issue file as escapes.
         assert "\\" not in issue, issue
 
+        # A notice, not a problem. This box works -- it claimed its own port -- and
+        # a red block on its login screen would send somebody looking for a fault
+        # that is not there.
+        assert "Notice" in issue, issue
+        assert "Problem" not in issue, issue
+
 
 def _rerunning_changes_nothing(single: "Machine", subtest: "Subtest") -> None:
     with subtest("re-running the fallback changes nothing"):

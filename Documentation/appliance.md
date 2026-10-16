@@ -973,15 +973,24 @@ http://portal.loom            the page, which a probe redirect also lands on
 https://portal.loom           the same page, where the form actually is
 ```
 
-The password is **on the box's own login screen**, under the Loom mark, and it changes at midnight. So the
-authorisation for getting into Loom is "this person stood in front of the box" — the same authorisation
-every other thing on this appliance runs on. Four EFF words with dots between them, drawn to be typeable on
-any keyboard layout:
+The password is **on the box's own login screen**, in the `Write these down` block with everything else that
+has to be transcribed, and it changes at midnight. So the authorisation for getting into Loom is "this person
+stood in front of the box" — the same authorisation every other thing on this appliance runs on. Four EFF
+words with dots between them, drawn to be typeable on any keyboard layout:
 
 ```text
-  [*] Portal password (today): harbor.ritual.cobalt.fenced
-  [*] Visitors need it at http://portal.loom to get a certificate.
+  ── Write these down ────────────────────────────────────────────────────────
+  LUKS recovery passphrase:  8euwj-4qkws-yvwk7-9rs7k-typst-jxae4
+  Portal password (today):   harbor.ritual.cobalt.fenced
+  Without the stick, the recovery passphrase is the only way into this disk.
+  Visitors need the password at http://portal.loom to get a certificate.
 ```
+
+The password is printed in reverse video, and the `This box` section below it carries a `Screen painted:`
+timestamp. That timestamp is worth reading before trusting what is above it: agetty paints the screen once
+and then waits for a keypress, and the box deliberately does not repaint a console somebody has already
+logged into — so a screen can outlive the password on it. `loom-info`, typed in the console session,
+always renders the current one.
 
 The form is offered over `https://portal.loom` and nowhere else. A PKCS#12 bundle carries an unencrypted
 private key, and the appliance segment is a wire — with `--wifi`, everyone in radio range. So the plaintext
@@ -1389,18 +1398,20 @@ which no uniform shift of this art can satisfy.
   ██▄  ▄██  ██▄  ▄██
    ▀████▀    ▀████▀
 
-  Loom appliance -- 1.4.0
-  GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
-  Plug a laptop into loom0 and browse https://frontend.loom
-  This box serves DHCP on 10.13.37.0/24 and answers for *.loom
+  Loom appliance 1.4.0 -- GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
   Loom: starting -- 12/18 pods ready.
 
-  USB key guard: armed. Removing the USB key powers this
-  box off after 10 seconds.
+  ── Connect ─────────────────────────────────────────────────────────────────
+  Plug a laptop into loom0 and browse http://frontend.loom
+  DHCP and *.loom are served on 10.13.37.0/24
 
-  LUKS recovery passphrase: ka3mn-7pqrs-t4uvw-x9yzb-cd2ef-gh5jk
-  Write it down. Without the USB stick it is the only way
-  to unlock this disk, and nobody else holds a copy.
+  ── Write these down ────────────────────────────────────────────────────────
+  LUKS recovery passphrase:  ka3mn-7pqrs-t4uvw-x9yzb-cd2ef-gh5jk
+  Without the stick, the recovery passphrase is the only way into this disk.
+
+  ── This box ────────────────────────────────────────────────────────────────
+  USB key guard:             armed -- removing the key powers off after 10s
+  Screen painted:            06:57 UTC
 
 [press ENTER to login]
 ```

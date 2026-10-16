@@ -17,6 +17,7 @@ integrationtest = {path = "integrationtest", develop = true}
 # The appliance's own Python (nixos/). Nix builds these for the image; they are
 # path dependencies here so that the devenv installs what they import, and so that
 # the git hooks can lint and type-check them like every other package.
+loom-banner = {path = "nixos/banner", develop = true}
 loom-console-mouse = {path = "nixos/console-mouse", develop = true}
 loom-installer = {path = "nixos/installer", develop = true}
 loom-portal = {path = "nixos/portal", develop = true}

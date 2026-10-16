@@ -10,6 +10,7 @@ The boot splash is here too. It is the same mark, drawn by plymouth instead, and
 are wrong in the same way when branding.nix is.
 """
 
+import re
 from typing import TYPE_CHECKING
 
 from loom_tests.appliance import readiness
@@ -21,6 +22,15 @@ if TYPE_CHECKING:
 
 # What box.nix renders the banner into, and what agetty paints from.
 ISSUE = "/run/issue.d/50-loom.issue"
+
+# Colour is not width: a row of reverse-video passphrase is as wide as the
+# passphrase, and counting the escapes with it would pass every line as too long.
+_SGR = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _visible(issue: str) -> str:
+    """What a reader sees, with the escapes taken out."""
+    return _SGR.sub("", issue)
 
 
 def access_policy(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
@@ -41,6 +51,23 @@ def access_policy(appliance: "Machine", subtest: "Subtest", params: Params) -> N
         assert "frontend.loom" in issue, issue
         # A backslash would be eaten by agetty as an issue escape.
         assert "\\" not in issue, issue
+
+        # The screen is sectioned, and the sections are what make a wall of
+        # equally-weighted lines readable at a glance.
+        assert "── Connect ─" in issue, issue
+        assert "── This box ─" in issue, issue
+
+        # When it was painted. agetty paints the issue once and then blocks on a
+        # keypress, and loom-banner-refresh will not repaint a console somebody has
+        # touched -- so without this row a screen showing a password that rotated
+        # hours ago is indistinguishable from a live one.
+        assert "Screen painted:" in issue, issue
+
+        # Nothing past 80 columns: the narrowest console in play is the getty a
+        # --vm-serial box carries, and what does not fit scrolls the mark away
+        # rather than wrapping.
+        wide = [line for line in _visible(issue).splitlines() if len(line) > 80]
+        assert wide == [], wide
 
         # loom-eyes draws one pair, and it survives the round trip through the
         # issue file: loom-issue.service captures it with stdout redirected, and

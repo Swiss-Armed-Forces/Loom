@@ -28,10 +28,6 @@ let
   bannerRepaintWindow = 60;
   bannerRepaintInterval = 2;
 
-  # Only run mode ever has an access point -- see wifi.nix -- so first-time setup
-  # must not advertise one.
-  showWifi = config.loom.wifi.enable && config.loom.mode == "run";
-
   # Where the operator account actually lives, taken from the account rather than
   # written out, so the two cannot drift.
   operatorHome = config.users.users.${loomUser}.home;
@@ -62,49 +58,26 @@ let
     kubeContexts = [ ];
   };
 
-  # What a phone's camera expects, and what Android and iOS both emit from their
-  # own "share this network". No escaping here and none needed: wifi.nix asserts
-  # that the SSID and the passphrase contain nothing outside [A-Za-z0-9_-], which
-  # excludes every character this format reserves. That is not tidiness -- the
-  # escape for a reserved character is a backslash, and agetty eats backslashes
-  # out of an issue file before anyone gets to see them.
-  wifiUri = "WIFI:T:WPA;S:${config.loom.wifi.ssid};P:${config.loom.wifi.psk};;";
-
-  # The `--debug` warning, as a block of white-on-red, for the END of the
-  # banner. See nixos/debug.nix for what the flag does and what it costs.
+  # The `--debug` warning, as its own numbered fragment at the END of the screen.
+  # See nixos/debug.nix for what the flag does and what it costs.
   #
-  # Three things about it are decided here rather than there:
+  # The position is not a style choice. The issue is written straight to the VT
+  # with no paging, so a banner taller than the console loses its FIRST rows: the
+  # tail is the only place that cannot scroll away, and a warning that can scroll
+  # away is not one. A fragment rather than a section of the banner, because
+  # /run/issue.d is read in filename order and `90` is the only way to sort below
+  # network.nix's and wifi.nix's problem blocks as well.
   #
-  #   * The position. It is printed last, and that is not a style choice: this
-  #     banner is written straight to the VT with no paging (see the comment on
-  #     the mark above), so a banner taller than the console loses its FIRST
-  #     rows. The tail is the only place that cannot scroll away, and a warning
-  #     that can scroll away is not one. (Last within this file, which is
-  #     50-loom.issue; network.nix's and wifi.nix's fragments sort after it and
-  #     land below. Both exist only when something is wrong, and both are meant
-  #     to be the most prominent thing on the screen when they do.)
-  #   * The colour. branding.nix redefines palette indices 3, B and 7 and leaves
-  #     1 alone, so `41` is still the console's own red and needs none of the
-  #     ESC]P redefinition the amber above does. `1;37` on top, because the
-  #     default index-7 foreground was redefined to pure white for the QR card.
-  #   * The rectangle. Each line is padded to a common width in Nix rather than
-  #     by the shell, so the background runs to the same column on every row.
-  #     The background is re-opened per line for the reason the QR code does it:
-  #     a terminal resets it at the newline, so one long run would paint a
-  #     staircase rather than a block.
-  debugBanner =
-    let
-      lines = config.loom.debug.warningLines;
-      width = 2 + lib.foldl' (widest: line: lib.max widest (lib.stringLength line)) 0 lines;
-      padded =
-        line: " ${line}" + lib.concatStrings (lib.genList (_: " ") (width - lib.stringLength line));
-    in
-    lib.optionalString config.loom.debug.enable ''
-      printf '\n'
-      ${lib.concatMapStrings (line: ''
-        printf '  %s%s%s\n' $'\033[1;37;41m' ${lib.escapeShellArg (padded line)} $'\033[0m'
-      '') lines}
-    '';
+  # `loom-info` prints the same block when it is run by hand, where there are no
+  # fragments and an operator is owed the warning just the same.
+  debugFragment = lib.optionalString config.loom.debug.enable ''
+    ${lib.getExe' config.loom.banner.fragment "loom-issue-fragment"} 90-loom-debug \
+      ${
+        lib.concatMapStringsSep " \\\n      " (
+          line: "--bar ${lib.escapeShellArg line}"
+        ) config.loom.debug.warningLines
+      } >/dev/null
+  '';
 
   # Ship a wrapper rather than only documenting the flags. Running bare `up.sh`
   # here is actively harmful: `setup_system` writes /etc/sysctl.d/99-loom.conf
@@ -152,21 +125,15 @@ let
     '';
   };
 
-  # The console banner, as a command. Everything it prints is also what the
-  # login screen shows: `loom-issue.service` below captures this output into
-  # /run/issue.d. One generator rather than two copies that drift -- and the
-  # operator can re-run it by hand once the console session has covered the
-  # boot-time copy.
+  # The login screen, written into the issue directory. Three things run this:
+  # loom-issue.service at boot, and loom-banner-repaint.service and
+  # loom-banner-refresh below, once for the console settling under it and once for
+  # every time what it says stops being true.
   #
-  # Produces no backslashes on purpose: agetty interprets them as issue-file
-  # escapes. The passphrase charset (install.sh:225-231) cannot contain one, and
-  # neither can the art `loom-eyes` draws. The colour below is not an exception:
-  # `$'\033'` is a literal ESC byte by the time it is written, and agetty(8)
-  # only ever reads a backslash as the start of an escape of its own.
-  # Writing the banner into the issue directory, as a script rather than inline,
-  # because three things run it: loom-issue.service at boot, and
-  # loom-banner-repaint.service and loom-banner-refresh below, once for the console
-  # settling under it and once for every time what it says stops being true.
+  # Everything it writes is what `loom-info` prints, so the screen and the command
+  # an operator types in a pane cannot drift. nixos/banner/ owns the rule that
+  # matters either way: no backslash, which agetty would eat as an escape of its
+  # own.
   writeIssue = pkgs.writeShellScript "loom-write-issue" ''
     set -euo pipefail
     ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
@@ -179,15 +146,18 @@ let
     # login prompt nobody has touched yet -- would be the one that renders
     # the eyes plain.
     #
-    # Deliberately no measurement of the console here. This used to read
-    # `stty size </dev/tty1` and hand loom-info a row budget to trim itself to,
-    # and there is no point in the boot at which that reading stays true -- see
-    # the banner's own comment. It produced a box with no mark and no QR code on
-    # a console with room for both.
-    LOOM_INFO_COLOR=vt ${loom-info}/bin/loom-info \
+    # Deliberately no measurement of the console here. There is no point in the
+    # boot at which a row count stays true -- the console is resized several times
+    # -- so the banner is always written whole and a screen with too few rows
+    # loses its top ones.
+    #
+    # --for-issue leaves the danger block to its own fragment below, which is what
+    # puts it beneath every other unit's.
+    LOOM_INFO_COLOR=vt ${lib.getExe config.loom.banner.info} --for-issue \
       >/run/issue.d/50-loom.issue.tmp
     ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
       /run/issue.d/50-loom.issue
+    ${debugFragment}
   '';
 
   # Redraw the login screen, because what it says has stopped being true.
@@ -309,248 +279,6 @@ let
       }
 
       ${builtins.readFile ./scripts/platform_info.sh}
-    '';
-  };
-
-  loom-info = pkgs.writeShellApplication {
-    name = "loom-info";
-    runtimeInputs = [ pkgs.coreutils ] ++ lib.optional showWifi pkgs.qrencode;
-    text = ''
-      # The eyes in the logo's amber, so the login screen agrees with the boot
-      # splash and the installer menu instead of being the one place the mark
-      # is monochrome.
-      #
-      # Two sequences, because they answer to different consoles:
-      #
-      #   ESC ] P nrrggbb   Redefines a Linux VT palette entry. The only way to
-      #                     reach the exact colour -- console_codes(4) shoehorns
-      #                     even a 24-bit 38;2;r;g;b into the 16 basic ones, so
-      #                     a bare ESC[33m lands on #aa5500. VT only: the same
-      #                     page warns that xterm hangs on it until somebody
-      #                     presses return.
-      #   ESC [ 33m         Selects that entry. Safe on any terminal.
-      #
-      # Indices 3 and B are both set because bold promotes one to the other,
-      # and because branding.nix loads a 512-glyph font: setfont(8) notes that
-      # past 256 glyphs the console spends its intensity bit on glyph selection
-      # and drops to 8 colours, so which of the two any given VT lands on is
-      # not worth predicting. Setting both makes it moot.
-      #
-      # There is deliberately no reset. The VT looks the palette up when it
-      # paints, not when the character was written, so restoring it would
-      # recolour the eyes already on screen back to mustard.
-      palette=""
-      amber=""
-      reset=""
-      # loom-issue.service sets this: it captures this output into a file, so
-      # the checks below cannot see the console, but that file is read only by
-      # agetty and agetty is only ever on a VT here.
-      if [ "''${LOOM_INFO_COLOR:-auto}" = vt ]; then
-        palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}\033]P7ffffff'
-      elif [ -t 1 ]; then
-        # A pts -- a tmux pane of console.nix's session -- gets the selector but
-        # not the redefinition, and still comes out amber: the VT underneath it
-        # had its palette rewritten by the banner at boot.
-        case "$(tty 2>/dev/null || true)" in
-          /dev/tty[0-9]*)
-            palette=$'\033]P3${config.loom.branding.amberRgb}\033]PB${config.loom.branding.amberRgb}\033]P7ffffff'
-            ;;
-          *) ;;
-        esac
-      fi
-      # Keyed on stdout so that `loom-info > banner.txt` stays readable.
-      if [ "''${LOOM_INFO_COLOR:-auto}" = vt ] || [ -t 1 ]; then
-        amber=$'\033[33m'
-        reset=$'\033[0m'
-      fi
-
-      # The banner is always printed whole.
-      #
-      # It used to measure the console and drop the mark, then the QR code, to
-      # fit. That was wrong, and wrong in a way worth recording: there is no
-      # moment at which the row count can be measured and trusted. The console
-      # is resized several times during boot -- the kernel's built-in font, then
-      # Cozette, then the DRM driver's reset, then Cozette again -- and a reading
-      # taken between any two of them is a reading of a screen that no longer
-      # exists by the time agetty paints. Ordering the measurement after the font
-      # unit was not enough; it only moved the race. What it produced on the box
-      # was a banner with no mark and no QR code on a console with room for both.
-      #
-      # So: print everything, and fix the geometry problem where it actually is
-      # -- loom-banner-repaint.service redraws this once the resizing has
-      # stopped. A banner that is genuinely taller than the final screen loses
-      # its top rows, which is the mild, visible failure this replaced a silent
-      # one with.
-      #
-      # The mark the boot splash just showed, in the form a console can hold.
-      # A command rather than a here-document so that the banner, the issue and
-      # the installer menu all draw the same art from one place. See
-      # branding.nix.
-      printf '\n'
-      printf '%s%s' "$palette" "$amber"
-      ${lib.getExe config.loom.branding.eyes}
-      printf '%s' "$reset"
-      printf '\n  Loom appliance -- %s\n' ${lib.escapeShellArg tag}
-      printf '  %s\n' ${lib.escapeShellArg config.loom.platform.description}
-      ${lib.optionalString (!config.loom.platform.runsAiServices) ''
-        printf '  No AI on this box: no summaries, translation or semantic search.\n'
-      ''}
-      ${lib.optionalString (!config.loom.platform.meetsResourceMinimum) ''
-        printf '  Below the documented memory minimum -- running without resource limits.\n'
-      ''}
-      if [ -r /etc/loom/network.conf ]; then
-        # shellcheck disable=SC1091
-        . /etc/loom/network.conf
-        # The wired port, which is not the same thing as the interface holding
-        # the address once the access point bridges the two. See network.nix.
-        # http rather than https, and it is the friendlier of the two now that
-        # both work (modes.nix passes --enable-http): the certificate is
-        # self-signed, so the https spelling costs whoever reads this an
-        # interstitial. It is also the URL the captive portal sends a phone to,
-        # and the banner should not name a second one.
-        printf '  Plug a laptop into %s and browse http://frontend.loom\n' \
-          "''${LOOM_WIRED_INTERFACE}"
-        printf '  This box serves DHCP on %s and answers for *.loom\n' \
-          "''${LOOM_SUBNET}"
-      fi
-      # How far the bring-up has got, in one line.
-      #
-      # Read at print time for the same reason the key guard's state below is, and with a
-      # sharper edge: this banner is rendered once per boot, so a box that came up an hour
-      # ago would otherwise still be telling whoever walks past that it is starting.
-      # ready.nix's publisher runs loom-banner-refresh on every stage change, which
-      # rewrites this file and redraws the screen if nobody has pressed a key yet.
-      #
-      # A line of plain text rather than a field out of the published JSON: this is a
-      # shell script assembling an agetty issue file, and parsing JSON here would mean
-      # putting jq in the banner's closure to render something it can be handed.
-      # loom_ready/text.py is what guarantees it is one ASCII line with no backslash in
-      # it -- see the header of this file for why that matters.
-      #
-      # One line and no more, and `-s` rather than `-r`: the file is written on every
-      # poll and is deliberately EMPTY while the cluster has not answered yet, because
-      # this banner is the one screen with a hard height budget -- it is written straight
-      # to the VT with no paging, so what does not fit scrolls off the top, taking the
-      # mark with it, and on a --wifi box there is already a QR code below. The line
-      # appears once it has a number on it. See loom_ready/text.py.
-      if [ -s ${config.loom.ready.stateDir}/summary ]; then
-        printf '  %s\n' "$(cat ${config.loom.ready.stateDir}/summary)"
-      fi
-      # Read at print time, not baked in: a box booted with the recovery
-      # passphrase has no key at all and its guard never arms, and a banner
-      # that claimed otherwise would be promising protection the box does not
-      # have. key-guard.nix redraws this screen whenever the state changes.
-      if [ -r ${config.loom.keyGuard.stateDir}/state ]; then
-        case "$(cat ${config.loom.keyGuard.stateDir}/state)" in
-          armed)
-            ${
-              # What the guard will actually do, not what the usual image does.
-              # A banner promising a poweroff on an image whose guard only warns
-              # is the one claim on this screen an operator can disprove by
-              # pulling the stick.
-              if config.loom.keyGuard.action == "poweroff" then
-                ''
-                  printf '\n  USB key guard: armed. Removing the USB key powers this\n'
-                  printf '  box off after %s seconds.\n' ${toString keyGuardGrace}
-                ''
-              else
-                ''
-                  printf '\n  USB key guard: armed, but this --debug image only warns.\n'
-                  printf '  Removing the USB key leaves the box up.\n'
-                ''
-            }
-            ;;
-          disarmed)
-            printf '\n  USB key guard: disarmed until the next boot.\n'
-            ;;
-          *)
-            printf '\n  USB key guard: idle -- no USB key present.\n'
-            # Only while a deadline is actually running. The file exists on a
-            # box that booted from the stick and has not armed, which is the
-            # one case where this screen has seconds left on it -- and the
-            # number is the budget, not a countdown, because the banner is
-            # painted once and a countdown on it would go stale.
-            if [ -r ${config.loom.keyGuard.stateDir}/deadline ]; then
-              printf '  This box powers off %s seconds after boot unless the key\n' \
-                ${toString config.loom.keyGuard.armDeadlineSec}
-              printf "  arms. Run 'loom-key-guard disarm' to keep it up.\n"
-            fi
-            ;;
-        esac
-      fi
-      if [ -r ${recoveryPassphraseFile} ]; then
-        printf '\n  LUKS recovery passphrase: %s\n' \
-          "$(cat ${recoveryPassphraseFile})"
-        printf '  Write it down. Without the USB stick it is the only way\n'
-        printf '  to unlock this disk, and nobody else holds a copy.\n'
-      fi
-      ${lib.optionalString showWifi ''
-        # Safe to print for the same reason the recovery passphrase above is:
-        # this screen belongs to a VT that opens a root-capable session on the
-        # next keypress, so it discloses nothing the console did not already.
-        #
-        # loom-wifi-check (wifi.nix) writes a warning fragment above this one
-        # when the radio never came up, so a box printing these credentials for
-        # a network that does not exist says so on the same screen.
-        printf '\n  Scan to join -- same network as the cable, same *.loom:\n\n'
-        # ANSIUTF8 rather than ASCII, and this is not cosmetic. It draws each
-        # row with the half blocks U+2580/U+2584, so a QR module is one cell
-        # wide by half a cell tall -- close to square on the 12x26 cell
-        # branding.nix selects. Drawn with '#' instead, every module would be
-        # twice as tall as it is wide and most phones refuse to decode it.
-        # branding.nix already asserts the console font carries those two
-        # glyphs plus U+2588, which is why the mark renders at all.
-        #
-        # The reset matters: the banner deliberately never restores the palette
-        # after the eyes (see above), and a QR drawn in amber-on-amber is not a
-        # QR. qrencode emits its own SGR pairs, so one reset here is enough.
-        #
-        # --margin=2 rather than the default 4. The whole banner has to fit one
-        # screen -- agetty writes the issue straight to the VT with no paging,
-        # so whatever does not fit scrolls off the top, taking the mark with it.
-        # Two modules of quiet zone is under the 4 the spec asks for, but the
-        # zone here is white against a black console, which is the high-contrast
-        # case scanners cope with; checked against a decoder at this margin.
-        printf '%s' $'\033[0m'
-        # UTF8i, not ANSIUTF8, and the colours are ours rather than qrencode's.
-        #
-        # qrencode's own ANSI types emit `ESC[40;37;1m` and then draw the *light*
-        # modules as white glyphs, so the code comes out as white marks on
-        # whatever the console's background happens to be -- a white-on-black QR
-        # with no field behind it. The `i` types invert which modules the glyphs
-        # stand for, so with a white background and black ink the block becomes
-        # a proper white card with black modules: the orientation every scanner
-        # is tuned for, and the one people recognise as a QR code.
-        #
-        # 47, with palette index 7 redefined to ffffff by `palette` above --
-        # rather than the bright-background code 107 this used to use.
-        #
-        # 40-47 are the background codes console_codes(4) lists outright; 100-107
-        # are the aixterm extension, and a console that does not take them leaves
-        # the background where it was. Here that is black, against ink this sets
-        # to black -- an invisible code rather than a wrong-coloured one, which
-        # is the worst way for it to fail. 40-47 only reach palette indices 0-7,
-        # so the card has to be index 7, and index 7 is plain light grey by
-        # default -- too little contrast to scan reliably. Redefining it is the
-        # same ESC]P mechanism the amber already depends on, and it also makes
-        # the console's ordinary text pure white instead of grey.
-        qrencode --type=UTF8i --level=L --margin=2 -- ${lib.escapeShellArg wifiUri} |
-          while IFS= read -r qrline; do
-            # Indented like every other line of the banner, and the background
-            # is re-opened per line so the card is a solid rectangle rather than
-            # a run that the terminal resets at the first newline.
-            printf '  %s%s%s\n' $'\033[47;30m' "$qrline" $'\033[0m'
-          done
-        # Below the code, not above it: someone who cannot scan reads them off
-        # the same part of the screen they were already looking at, and they
-        # stay visible when the code itself is the thing that scrolled.
-        printf '  WiFi network: %s\n' ${lib.escapeShellArg config.loom.wifi.ssid}
-        printf '  Passphrase:   %s\n' ${lib.escapeShellArg config.loom.wifi.psk}
-      ''}
-      # Last, and last for a reason -- see `debugBanner` above. Empty in every
-      # image that was not built with --debug.
-      ${debugBanner}
-      printf '\n'
     '';
   };
 in
@@ -746,7 +474,7 @@ in
     # does not behave, or when the values in platforms/<id>.nix need checking
     # against the hardware for the first time.
     ++ [
-      loom-info
+      config.loom.banner.info
       loom-platform-info
       # Beside loom-info rather than hidden in the unit that used to be its only
       # caller: that one prints the banner, this one puts it back on the screen.

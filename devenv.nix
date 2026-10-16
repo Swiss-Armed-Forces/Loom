@@ -50,6 +50,7 @@ let
     { subdir = "integrationtest"; }
     { subdir = "cicd/aitools"; }
     { subdir = "ollama"; }
+    { subdir = "nixos/banner"; }
     { subdir = "nixos/console-mouse"; }
     { subdir = "nixos/installer"; }
     { subdir = "nixos/portal"; }
@@ -72,6 +73,7 @@ let
   # to fail an image build -- that a shipped skill names a command this platform
   # actually has -- is nixos/tests/appliance-skills.nix instead.
   appliancePytestPaths = [
+    "nixos/banner/tests"
     "nixos/console-mouse/tests"
     "nixos/installer/tests"
     "nixos/portal/tests"

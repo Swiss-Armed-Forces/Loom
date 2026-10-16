@@ -407,6 +407,7 @@ let
   applianceModules = [
     ./platform.nix
     platformModule
+    ./banner.nix
     ./branding.nix
     ./box.nix
     ./console.nix

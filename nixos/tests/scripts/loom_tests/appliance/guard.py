@@ -134,7 +134,9 @@ def arms(appliance: "Machine", subtest: "Subtest", params: Params) -> str:
         # The banner follows the guard rather than reporting what was true at
         # boot, because it is the only thing an operator who never logs in sees.
         appliance.wait_until_succeeds(
-            "grep -q 'USB key guard: armed' /run/issue.d/50-loom.issue"
+            # The value sits in the aligned column, so the label and what it says
+            # are matched as two fields rather than as one phrase.
+            "grep -qE 'USB key guard: +armed' /run/issue.d/50-loom.issue"
         )
         assert "\\" not in appliance.succeed("cat /run/issue.d/50-loom.issue")
 
