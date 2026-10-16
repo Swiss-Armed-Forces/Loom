@@ -99,6 +99,25 @@ def _require_bool(name: str) -> bool:
     return value == "true"
 
 
+def _require_int(name: str) -> int:
+    """A whole number from the wrapper, or a `SettingsError` naming where it is set.
+
+    The same friendly path `_require_bool` takes, and for the same reason: a bare
+    `int()` raises ValueError, which is not a `SettingsError`, so `menu.py`'s
+    `ui.warn` branch is bypassed and the operator gets `crash_handler`'s "Unexpected
+    error: ValueError: invalid literal for int()" plus a traceback file -- for a
+    wrapper variable, on a console with no remote access.
+    """
+    value = _require(name)
+    try:
+        return int(value)
+    except ValueError:
+        raise SettingsError(
+            f"{name} is {value!r}, which is not a whole number of seconds. "
+            "nixos/installer.nix sets it from loom.installer.autoGrace."
+        ) from None
+
+
 @lru_cache(maxsize=1)
 def settings() -> Settings:
     """The stick's configuration, resolved on first use.
@@ -111,7 +130,7 @@ def settings() -> Settings:
         efi_arch=_require("LOOM_EFI_ARCH"),
         tag=_require("LOOM_TAG"),
         platform=_require("LOOM_PLATFORM"),
-        auto_grace=int(_require("LOOM_AUTO_GRACE")),
+        auto_grace=_require_int("LOOM_AUTO_GRACE"),
         storage=StorageNames(
             volume_group=_require("LOOM_VG_NAME"),
             root_volume=_require("LOOM_LV_NAME"),

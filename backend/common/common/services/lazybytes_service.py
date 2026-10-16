@@ -208,6 +208,18 @@ class LazyBytesService(ABC, Generic[_Tag]):
     def get_total_size_bytes(self) -> int:
         """Get total size of all stored lazybytes in bytes."""
 
+    def size(self, lazy_bytes: "LazyBytes[_Tag]") -> int:
+        """How many bytes the object holds, without transferring it.
+
+        `load_seekable` is a range reader, so seeking to the end is a `stat_object`
+        rather than a download -- which is the difference between asking how large an
+        archive is and paying for it.
+        """
+        if lazy_bytes.embedded_data is not None:
+            return len(lazy_bytes.embedded_data)
+        with self.load_seekable(lazy_bytes) as source:
+            return source.seek(0, 2)
+
     def exists(self, lazy_bytes: "LazyBytes[_Tag]") -> bool:
         """Returns True if the data is available (embedded or present in the
         service)."""
@@ -521,7 +533,12 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
         self._counter = 0
 
     def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
-        service_id = len(self._storage)
+        # `_get_service_id` rather than `len(self._storage)`, which is not monotonic:
+        # after a delete, the next store reuses the freed id and silently aliases a
+        # live LazyBytes onto someone else's bytes. That matters now that the archive
+        # router deletes mid-flow, and because `stored_objects` (a `len` over this
+        # dict) is what the router's tests use as their leak assertion.
+        service_id = self._get_service_id()
         self._storage[service_id] = b"".join(data)
         return service_id
 

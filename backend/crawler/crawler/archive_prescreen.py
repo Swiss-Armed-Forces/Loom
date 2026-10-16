@@ -22,8 +22,7 @@ from common.archive.archive_detection import (
     is_encrypted_archive_header,
     is_loom_archive,
 )
-from common.services.s3_range_reader import S3RangeReader
-from minio import Minio
+from common.services.s3_range_reader import S3ObjectClient, S3RangeReader
 from minio.error import S3Error
 
 logger = logging.getLogger(__name__)
@@ -42,7 +41,7 @@ class IntakeObjectKind(StrEnum):
 
 
 def classify_intake_object(
-    client: Minio, bucket: str, object_name: str, size: int
+    client: S3ObjectClient, bucket: str, object_name: str, size: int
 ) -> IntakeObjectKind:
     """Decide whether an intake object is a loom archive, plain or encrypted.
 

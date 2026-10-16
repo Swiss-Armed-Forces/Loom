@@ -32,10 +32,23 @@ KEY_DEVICE: Final = f"{BY_PARTLABEL}/{KEY_LABEL}"
 
 KEY_BYTES: Final = 4096
 
+# Written into the LUKS2 header by `install.stamp_pool_installed` as the last act of
+# the destructive block, and required by `storage.pool_claimed_by_key`. The
+# passphrase test on its own only proves `encrypt` ran, which is true from twenty
+# minutes before the install is finished.
+INSTALLED_LABEL: Final = "loom-installed"
+
 # The whole pool, not each disk: a box with two small NVMes has as much room as one
 # with a single large one, and refusing it would be arithmetic nobody can argue with
 # from the console.
-MIN_POOL_BYTES: Final = 250 * 1000 * 1000 * 1000
+#
+# 200 GiB exactly, because that is the number Documentation/installation.md publishes
+# as the requirement and `install.check_pool_size` cites. It used to be 250 GB, which
+# is 232.8 GiB: somebody specifying hardware from the installation guide could buy a
+# 240 GB NVMe -- an extremely common size that meets the published requirement -- and
+# have the installer refuse it, with `decide()` answering TOO_SMALL and the box never
+# installing itself.
+MIN_POOL_BYTES: Final = 200 * 1024 * 1024 * 1024
 
 # Set by the menu before it hands over to an unattended install, so that a menu
 # restarted by systemd cannot count down a second time onto a disk the first attempt

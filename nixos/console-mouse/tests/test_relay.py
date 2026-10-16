@@ -8,32 +8,14 @@ access to notice it from.
 """
 
 import os
+import time
 
-from loom_console_mouse.gpm import _EVENT, GPM_DOWN, GPM_UP, GpmClient
+from doubles_console_mouse import FakeSocket, packed
+
+from loom_console_mouse.gpm import GPM_DOWN, GPM_MOVE, GPM_UP, GpmClient
 from loom_console_mouse.relay import Relay
 
 VC = 1
-
-
-class _FakeSocket:
-    """A canned byte stream, chunked as the test wants, that records being closed."""
-
-    def __init__(self, chunks: list[bytes]) -> None:
-        self._chunks = list(chunks)
-        self.closed = False
-
-    def recv(self, _size: int, /) -> bytes:
-        return self._chunks.pop(0) if self._chunks else b""
-
-    def fileno(self) -> int:
-        return -1
-
-    def close(self) -> None:
-        self.closed = True
-
-
-def _packed(x: int, y: int, event_type: int) -> bytes:
-    return _EVENT.pack(4, 0, 1, 0, 0, x, y, event_type, 1, 0, 0, 0)
 
 
 def _relay(chunks: list[bytes]):
@@ -43,14 +25,14 @@ def _relay(chunks: list[bytes]):
     """
     console_read, console_write = os.pipe()
     master_read, master_write = os.pipe()
-    socket = _FakeSocket(chunks)
+    socket = FakeSocket(chunks)
     relay = Relay(console_write, GpmClient(socket), master_write, VC)
     return relay, socket, master_read, console_read
 
 
 def test_a_short_read_does_not_cost_the_mouse() -> None:
     """The held-over bytes are the point: closing here would throw them away."""
-    whole = _packed(40, 12, GPM_DOWN)
+    whole = packed(40, 12, GPM_DOWN)
     relay, socket, master_read, _console = _relay([whole[:10], whole[10:]])
 
     relay.handle_gpm()
@@ -74,9 +56,45 @@ def test_the_daemon_going_away_drops_the_connection() -> None:
 
 def test_a_whole_record_is_reported_straight_away() -> None:
     """A press is not coalesced: only pure motion is."""
-    relay, _socket, master_read, _console = _relay([_packed(3, 4, GPM_UP)])
+    relay, _socket, master_read, _console = _relay([packed(3, 4, GPM_UP)])
 
     relay.handle_gpm()
 
     os.set_blocking(master_read, False)
     assert os.read(master_read, 4096)
+
+
+def test_a_wheel_notch_is_not_coalesced_as_motion() -> None:
+    """A notch is a GPM_MOVE carrying `wdy`, which the type table alone cannot see.
+
+    Classified as pure motion it would be held in `_motion.pending`, where the next
+    notch inside the same 16ms frame overwrites it -- so sustained scrolling arrives at
+    one notch per frame, and a pointer drift between two notches eats one outright.
+    """
+    notches = packed(5, 5, GPM_MOVE, buttons=0, wdy=1) * 3
+    relay, _socket, master_read, _console = _relay([notches])
+
+    relay.handle_gpm()
+
+    os.set_blocking(master_read, False)
+    written = os.read(master_read, 4096)
+    assert written.count(b"\033[<") == 3, written
+
+
+def test_pure_motion_is_still_coalesced() -> None:
+    """The other half: drift with no button down is exactly what may be dropped."""
+    moves = packed(5, 5, GPM_MOVE, buttons=0) + packed(6, 6, GPM_MOVE, buttons=0)
+    relay, _socket, master_read, _console = _relay([moves])
+
+    relay.handle_gpm()
+
+    os.set_blocking(master_read, False)
+    try:
+        written = os.read(master_read, 4096)
+    except BlockingIOError:
+        written = b""
+    assert written == b""
+
+    # pylint: disable-next=protected-access
+    relay._flush_motion(time.monotonic() + 1.0)
+    assert os.read(master_read, 4096).count(b"\033[<") == 1

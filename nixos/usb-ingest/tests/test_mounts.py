@@ -10,9 +10,9 @@ The commands are injected rather than patched -- see `mounts.Runner`.
 
 import os
 
+from loom_usb_ingest.commands import CommandOutcome
 from loom_usb_ingest.devices import Volume
 from loom_usb_ingest.mounts import (
-    CommandOutcome,
     MountedVolume,
     SkippedVolume,
     mount_volume,
@@ -22,7 +22,6 @@ from loom_usb_ingest.mounts import (
 
 UID = 1000
 GID = 100
-KERNEL = frozenset({"ext4", "vfat", "minix"})
 
 
 class FakeRunner:
@@ -67,7 +66,7 @@ def test_a_fuse_helper_is_invoked_as_a_binary_not_through_mount(tmp_path):
     runner = FakeRunner()
     mountpoint = str(tmp_path / "p1")
 
-    mounted = mount_volume(_volume("ntfs"), mountpoint, UID, GID, KERNEL, runner)
+    mounted = mount_volume(_volume("ntfs"), mountpoint, UID, GID, runner)
 
     assert isinstance(mounted, MountedVolume)
     argv = runner.argv_for("ntfs-3g")
@@ -82,7 +81,7 @@ def test_an_in_kernel_filesystem_goes_through_mount_with_its_type(tmp_path):
     runner = FakeRunner()
     mountpoint = str(tmp_path / "p1")
 
-    mount_volume(_volume("ext4"), mountpoint, UID, GID, KERNEL, runner)
+    mount_volume(_volume("ext4"), mountpoint, UID, GID, runner)
 
     argv = runner.argv_for("mount")
     assert argv is not None
@@ -94,7 +93,7 @@ def test_an_in_kernel_filesystem_goes_through_mount_with_its_type(tmp_path):
 def test_the_block_device_is_set_read_only_before_it_is_mounted(tmp_path):
     runner = FakeRunner()
 
-    mount_volume(_volume("ext4"), str(tmp_path / "p1"), UID, GID, KERNEL, runner)
+    mount_volume(_volume("ext4"), str(tmp_path / "p1"), UID, GID, runner)
 
     programs = [os.path.basename(call[0]) for call in runner.calls]
     assert programs.index("blockdev") < programs.index("mount")
@@ -106,9 +105,7 @@ def test_a_bridge_that_refuses_the_ioctl_does_not_stop_the_mount(tmp_path):
     runner = FakeRunner({("blockdev",): CommandOutcome(1, "Inappropriate ioctl")})
 
     assert not set_block_read_only("/dev/sdb", runner)
-    mounted = mount_volume(
-        _volume("ext4"), str(tmp_path / "p1"), UID, GID, KERNEL, runner
-    )
+    mounted = mount_volume(_volume("ext4"), str(tmp_path / "p1"), UID, GID, runner)
 
     assert isinstance(mounted, MountedVolume)
 
@@ -120,7 +117,7 @@ def test_a_corrupt_filesystem_is_skipped_with_what_mount_said(tmp_path):
     )
     mountpoint = str(tmp_path / "p1")
 
-    skipped = mount_volume(_volume("ext4"), mountpoint, UID, GID, KERNEL, runner)
+    skipped = mount_volume(_volume("ext4"), mountpoint, UID, GID, runner)
 
     assert isinstance(skipped, SkippedVolume)
     assert skipped.reason == "mount: wrong fs type, bad option"
@@ -132,9 +129,7 @@ def test_a_corrupt_filesystem_is_skipped_with_what_mount_said(tmp_path):
 def test_a_mount_that_says_nothing_still_gives_a_reason(tmp_path):
     runner = FakeRunner({("mount",): CommandOutcome(1, "")})
 
-    skipped = mount_volume(
-        _volume("ext4"), str(tmp_path / "p1"), UID, GID, KERNEL, runner
-    )
+    skipped = mount_volume(_volume("ext4"), str(tmp_path / "p1"), UID, GID, runner)
 
     assert isinstance(skipped, SkippedVolume)
     assert "1" in skipped.reason
@@ -144,7 +139,7 @@ def test_a_refused_volume_never_reaches_a_command(tmp_path):
     runner = FakeRunner()
 
     skipped = mount_volume(
-        _volume("crypto_LUKS"), str(tmp_path / "p1"), UID, GID, KERNEL, runner
+        _volume("crypto_LUKS"), str(tmp_path / "p1"), UID, GID, runner
     )
 
     assert isinstance(skipped, SkippedVolume)

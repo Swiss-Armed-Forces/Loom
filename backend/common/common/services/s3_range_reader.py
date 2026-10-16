@@ -17,8 +17,7 @@ against a raw client for an intake object that is not a `LazyBytes` at all.
 """
 
 import io
-
-from minio import Minio
+from typing import Protocol
 
 # How much to fetch per underlying request. zipfile issues many small reads
 # (record headers are tens of bytes), and one HTTP request each would turn a
@@ -26,6 +25,44 @@ from minio import Minio
 # covers the end-of-central-directory record plus a maximal 64 KiB archive
 # comment, so the tail is almost always a single request.
 BLOCK_SIZE = 64 * 1024
+
+
+class S3Response(Protocol):
+    """The part of urllib3's response that a range read touches."""
+
+    def read(self) -> bytes:
+        """All of the body this response carries."""
+
+    def close(self) -> None:
+        """Release the body."""
+
+    def release_conn(self) -> None:
+        """Give the connection back to the pool."""
+
+
+class S3ObjectStat(Protocol):
+    """The part of minio's `Object` that a size probe touches."""
+
+    @property
+    def size(self) -> int | None:
+        """How many bytes the object holds, or None when the store did not say."""
+
+
+class S3ObjectClient(Protocol):
+    """The two methods of `Minio` this module and its callers need.
+
+    Spelled as a Protocol, with minio's own parameter names, so that `Minio` satisfies
+    it structurally and a test double is checked against the same contract -- a
+    `MagicMock(spec=Minio)` validates attribute names at runtime and signatures never.
+    """
+
+    def get_object(
+        self, bucket_name: str, object_name: str, offset: int = 0, length: int = 0
+    ) -> S3Response:
+        """One ranged read, as `Minio.get_object` performs it."""
+
+    def stat_object(self, bucket_name: str, object_name: str) -> S3ObjectStat:
+        """The object's metadata, as `Minio.stat_object` returns it."""
 
 
 class S3RangeReader(io.RawIOBase):
@@ -38,7 +75,9 @@ class S3RangeReader(io.RawIOBase):
     above holds however large the object is.
     """
 
-    def __init__(self, client: Minio, bucket: str, object_name: str, size: int):
+    def __init__(
+        self, client: S3ObjectClient, bucket: str, object_name: str, size: int
+    ):
         super().__init__()
         self._client = client
         self._bucket = bucket

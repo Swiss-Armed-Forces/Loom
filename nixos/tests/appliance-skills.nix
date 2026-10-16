@@ -186,10 +186,31 @@ let
     EOF
     sed -i 's/^[[:space:]]*//' known
 
-    grep --recursive --only-matching --no-filename -E 'loom-[a-z0-9-]+' "$skills" \
-      | sed 's/-$//' | sort --unique >named || true
+    # No `|| true`, and the result is required to be non-empty. Any failure of
+    # the pipeline -- a wrong path, an empty tree, a pipefail surprise -- used to
+    # leave `named` empty, which made `comm` find nothing missing and the check
+    # report success: a fail-open headline assertion, in a derivation whose
+    # header says its whole reason to exist is that opencode's failures are
+    # silent.
+    #
+    # Only where the name starts a token and is not the right-hand side of a
+    # `key=value`. Two things in the skills are spelled like a command and are
+    # not one: a workload, which is `production-loom-<component>` in full, and a
+    # pod label, as in `--selector app=loom-ollama`. A bare `loom-[a-z0-9-]+`
+    # reads `loom-crawler` out of the first and `loom-ollama` out of the second,
+    # then demands commands of those names, which no image has ever carried.
+    grep --recursive --only-matching --no-filename -E '(^|[^a-z0-9=-])loom-[a-z0-9-]+' "$skills" \
+      | sed -E 's/^[^l]+//; s/-$//' | sort --unique >named
 
-    if missing="$(comm -23 named <(sort --unique known))" && [ -n "$missing" ]; then
+    if [ ! -s named ]; then
+      echo "no loom-* name appears anywhere in the skills; the scan is broken" >&2
+      exit 1
+    fi
+
+    # On its own line: `comm` exits non-zero on a --check-order violation, and
+    # folding that into the `if` short-circuited to "pass" as well.
+    missing="$(comm -23 named <(sort --unique known))"
+    if [ -n "$missing" ]; then
       echo "skills name loom-* things this image does not have:" >&2
       printf '  %s\n' $missing >&2
       echo "" >&2

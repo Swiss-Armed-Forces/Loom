@@ -18,8 +18,9 @@ Two rules shape the whole module, and both come from where it runs:
 
 import logging
 import os
-import subprocess
 import sys
+
+from loom_usb_ingest.commands import run_tolerant
 
 logger = logging.getLogger(__name__)
 
@@ -35,22 +36,16 @@ INGEST_PANE_PERCENT = 35
 
 
 def _tmux(socket: str, *arguments: str) -> str | None:
-    """One tmux command against the operator's server, or None if it did not run."""
-    try:
-        completed = subprocess.run(
-            ["tmux", "-S", socket, *arguments],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=TMUX_TIMEOUT_S,
-        )
-    except (subprocess.SubprocessError, OSError) as error:
-        logger.debug("tmux %s: %s", arguments, error)
+    """One tmux command against the operator's server, or None if it did not run.
+
+    Best-effort by design -- see the module docstring -- so it goes through the tolerant
+    runner in `commands` rather than carrying a fifth copy of `subprocess.run`.
+    """
+    outcome = run_tolerant(["tmux", "-S", socket, *arguments], TMUX_TIMEOUT_S)
+    if not outcome.ok:
+        logger.debug("tmux %s: %s", arguments, outcome.stderr.strip())
         return None
-    if completed.returncode != 0:
-        logger.debug("tmux %s: %s", arguments, completed.stderr.strip())
-        return None
-    return completed.stdout.strip()
+    return outcome.stdout.strip()
 
 
 def _pane_with(socket: str, option: str) -> str | None:
@@ -82,6 +77,12 @@ def open_pane(socket: str, command: list[str]) -> str | None:
         logger.info("No console session to draw ingest progress in")
         return None
 
+    # Whichever pane the operator was in, read *before* the split. `main` is the
+    # k9s/bring-up pane, and console.nix makes the assistant the pane the session
+    # lands on -- so restoring focus to `main` moved the keyboard to k9s's command
+    # bar mid-prompt, which is no better than leaving it on the new pane.
+    previous = _tmux(socket, "display-message", "-p", "-t", "loom", "#{pane_id}")
+
     pane = _tmux(
         socket,
         "split-window",
@@ -101,7 +102,7 @@ def open_pane(socket: str, command: list[str]) -> str | None:
     _tmux(socket, "set-option", "-p", "-t", pane, INGEST_PANE_OPTION, "1")
     # A split leaves the new pane active, and the operator may be typing in the
     # assistant: a copy starting under their hands must not take the keyboard away.
-    _tmux(socket, "select-pane", "-t", main)
+    _tmux(socket, "select-pane", "-t", previous or main)
     return pane
 
 

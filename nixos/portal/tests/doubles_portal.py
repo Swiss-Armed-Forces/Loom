@@ -102,6 +102,7 @@ def settings_for(
     mtls: bool = False,
     secure_url: str = "",
     limits: PortalLimits | None = None,
+    tls_placeholder_path: str = "",
 ) -> PortalSettings:
     """A settings object pointed at a temporary state directory, with the spool made.
 
@@ -114,6 +115,7 @@ def settings_for(
         mtls=mtls,
         urls=PortalUrls(secure=secure_url),
         limits=limits or PortalLimits(wrong_password_delay_s=0.0),
+        tls_placeholder_path=tls_placeholder_path,
     )
     os.makedirs(settings.requests_dir, exist_ok=True)
     os.makedirs(settings.bundles_dir, exist_ok=True)

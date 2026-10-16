@@ -16,6 +16,8 @@
 # The full order, later wins (skaffold.yaml):
 #
 #   charts/values.yaml              defaults
+#   charts/values-development.yaml  under `up -d` / `up --integrationtest` only
+#                                   (skaffold's dev profile inserts it here)
 #   charts/values-user.yaml         values that should lose to an up.sh flag
 #   charts/values-up-flags.yaml     whatever up.sh's flags turned on
 #   charts/values-appliance.yaml    this file

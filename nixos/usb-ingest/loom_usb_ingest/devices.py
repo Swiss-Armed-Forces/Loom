@@ -19,6 +19,12 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import NotRequired, TypedDict
 
+from loom_usb_ingest.commands import run_checked
+
+# How long a question about a block device gets. Everything here is lsblk or udevadm
+# against a node that is either there or not.
+PROBE_TIMEOUT_S = 60
+
 # Everything `udevadm info --query=property` printed for a device.
 #
 # A named alias rather than a declared shape, and that is the honest description: which
@@ -32,8 +38,14 @@ UdevProperties = dict[str, str]
 class LsblkNode(TypedDict):
     """One row of `lsblk --json --tree`, as the columns below ask for it.
 
-    Every key is optional because lsblk omits what does not apply: a disk has no
-    `partlabel`, an unformatted partition no `fstype`, a leaf no `children`.
+    Every requested column is in fact *present* on every row -- as JSON `null` where it
+    does not apply, which is what util-linux emits for a disk's `partlabel` or an
+    unformatted partition's `fstype`. `children` is the one key lsblk genuinely omits,
+    for a leaf. Both shapes are read through `.get`, so neither matters at runtime; the
+    keys are `NotRequired` because this is somebody else's output format, and the
+    fixtures in tests/test_devices.py spell the nulls out so that a reader deciding
+    between `"fstype" in node` and `node["fstype"]` is not misled in opposite
+    directions.
     """
 
     path: NotRequired[str]
@@ -180,10 +192,10 @@ def _read_text(path: str) -> str | None:
         return None
 
 
+# The shared checked runner, under this module's own deadline. One `_run` in this
+# package rather than one per module -- see `commands`.
 def _run(argv: list[str]) -> str:
-    return subprocess.run(
-        argv, check=True, capture_output=True, text=True, timeout=60
-    ).stdout
+    return run_checked(argv, timeout=PROBE_TIMEOUT_S)
 
 
 def parent_disks(device: str) -> frozenset[str]:

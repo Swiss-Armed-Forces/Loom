@@ -17,6 +17,10 @@ from crawler.s3_crawler import WATERMARK_GRACE, S3Crawler
 BUCKET = "loom-intake"
 NOW = datetime(2026, 6, 7, 9, 0, 0, tzinfo=timezone.utc)
 
+# Far enough ahead of any plausible pod clock to be unmistakable, and the shape a dead
+# RTC actually produces.
+SKEW = timedelta(days=365 * 8)
+
 
 def _crawler() -> S3Crawler:
     return S3Crawler(
@@ -34,8 +38,12 @@ def _listed(name: str, at: datetime | None, size: int = 10) -> Object:
 
 def _process(crawler: S3Crawler, listing: list[Object]) -> None:
     """One successful pass over a listing, as the poll loop performs it."""
-    for obj in crawler.unprocessed(listing):
+    for obj in crawler.unprocessed(listing).batch:
         crawler.processed.record(obj)
+
+
+def _fresh_names(crawler: S3Crawler, listing: list[Object]) -> list[str]:
+    return [obj.object_name for obj in crawler.unprocessed(listing).batch]
 
 
 def test_an_unseen_object_is_work_to_do():
@@ -43,8 +51,8 @@ def test_an_unseen_object_is_work_to_do():
 
     fresh = crawler.unprocessed([_listed("a.pdf", NOW)])
 
-    assert [obj.object_name for obj in fresh] == ["a.pdf"]
-    assert fresh[0].size == 10
+    assert [obj.object_name for obj in fresh.batch] == ["a.pdf"]
+    assert fresh.batch[0].size == 10
 
 
 def test_an_object_already_processed_is_not_offered_again():
@@ -52,7 +60,73 @@ def test_an_object_already_processed_is_not_offered_again():
 
     _process(crawler, [_listed("a.pdf", NOW)])
 
-    assert not crawler.unprocessed([_listed("a.pdf", NOW)])
+    assert not crawler.unprocessed([_listed("a.pdf", NOW)]).batch
+
+
+def test_an_object_overwritten_in_place_is_crawled_again():
+    """The ledger keys on the name *and* the timestamp, deliberately.
+
+    `intake_archive_routing_test.py` puts the same object name in the bucket twice with
+    different payloads and expects both to be routed, so narrowing the key to the name
+    alone -- a plausible simplification -- would leave this whole suite green and turn
+    that integration test into a run-order dependency.
+    """
+    crawler = _crawler()
+
+    _process(crawler, [_listed("a.pdf", NOW)])
+
+    assert _fresh_names(crawler, [_listed("a.pdf", NOW + timedelta(minutes=1))]) == [
+        "a.pdf"
+    ]
+
+
+def test_a_bounded_poll_takes_the_oldest_objects_first():
+    """Oldest first is what lets the watermark move during a long drain.
+
+    Newest-first leaves the oldest object deferred, and `advance` is clamped to the
+    oldest unfinished one -- so the watermark would stay pinned at the age of the first
+    object on the stick for the whole mirror, and the ledger would grow to the entire
+    backlog.
+    """
+    crawler = _crawler()
+    listing = [_listed(f"{n}.pdf", NOW - timedelta(minutes=n)) for n in range(5)]
+
+    fresh = crawler.unprocessed(listing, limit=2)
+
+    assert [obj.object_name for obj in fresh.batch] == ["4.pdf", "3.pdf"]
+    assert fresh.total == 5
+    assert fresh.deferred == 3
+    assert fresh.oldest_deferred == NOW - timedelta(minutes=2)
+
+
+def test_a_bounded_poll_that_sees_everything_defers_nothing():
+    crawler = _crawler()
+
+    fresh = crawler.unprocessed([_listed("a.pdf", NOW)], limit=10)
+
+    assert fresh.deferred == 0
+    assert fresh.oldest_deferred is None
+
+
+def test_an_object_stamped_in_the_future_cannot_poison_the_watermark():
+    """A box with a dead RTC and no NTP writes one, and nothing deletes it.
+
+    The watermark only ever moves forwards, so a timestamp years ahead would declare
+    every object written between now and then already handled -- silently, with the loop
+    backing off as though the bucket were quiet, and re-poisoned on every restart
+    because the object is still in the bucket.
+    """
+    crawler = _crawler()
+
+    _process(crawler, [_listed("skewed.txt", datetime.now(timezone.utc) + SKEW)])
+    crawler.processed.advance()
+
+    watermark = crawler.processed.watermark
+    assert watermark is not None
+    assert watermark < datetime.now(timezone.utc)
+    assert _fresh_names(
+        crawler, [_listed("later.pdf", datetime.now(timezone.utc))]
+    ) == ["later.pdf"]
 
 
 def test_the_watermark_only_moves_once_something_has_been_processed():
@@ -62,7 +136,7 @@ def test_the_watermark_only_moves_once_something_has_been_processed():
     crawler.processed.advance()
 
     assert crawler.processed.watermark is None
-    assert crawler.unprocessed([_listed("old.pdf", NOW - timedelta(days=30))])
+    assert crawler.unprocessed([_listed("old.pdf", NOW - timedelta(days=30))]).batch
 
 
 def test_everything_below_the_watermark_is_forgotten():
@@ -87,7 +161,9 @@ def test_an_object_below_the_watermark_is_not_crawled_again():
     _process(crawler, [_listed("new.pdf", NOW)])
     crawler.processed.advance()
 
-    assert not crawler.unprocessed([_listed("old.pdf", NOW - WATERMARK_GRACE * 2)])
+    assert not crawler.unprocessed(
+        [_listed("old.pdf", NOW - WATERMARK_GRACE * 2)]
+    ).batch
 
 
 def test_an_object_written_during_a_poll_is_still_ahead_of_the_watermark():
@@ -102,7 +178,7 @@ def test_an_object_written_during_a_poll_is_still_ahead_of_the_watermark():
 
     late = _listed("late.pdf", NOW - timedelta(minutes=5))
 
-    assert [obj.object_name for obj in crawler.unprocessed([late])] == ["late.pdf"]
+    assert _fresh_names(crawler, [late]) == ["late.pdf"]
 
 
 def test_the_watermark_never_passes_an_object_that_was_not_finished():
@@ -120,10 +196,7 @@ def test_the_watermark_never_passes_an_object_that_was_not_finished():
 
     crawler.processed.advance(oldest_unfinished=failed_at)
 
-    assert [
-        obj.object_name
-        for obj in crawler.unprocessed([_listed("failed.pdf", failed_at)])
-    ] == ["failed.pdf"]
+    assert _fresh_names(crawler, [_listed("failed.pdf", failed_at)]) == ["failed.pdf"]
 
 
 def test_an_unfinished_object_never_drags_the_watermark_backwards():
@@ -143,5 +216,5 @@ def test_an_unfinished_object_never_drags_the_watermark_backwards():
 def test_an_object_with_no_timestamp_is_skipped_rather_than_crashing():
     crawler = _crawler()
 
-    assert not crawler.unprocessed([_listed("a.pdf", None)])
-    assert not crawler.unprocessed([_listed("", NOW)])
+    assert not crawler.unprocessed([_listed("a.pdf", None)]).batch
+    assert not crawler.unprocessed([_listed("", NOW)]).batch

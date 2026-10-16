@@ -141,7 +141,15 @@ let
     # why, and what to pass to `--keymap` to fix it. It is named even when it
     # is the default `us`, because that is the case most likely to be wrong
     # and the one nothing else on the screen would mention.
-    readonly KEYBOARD="[keyboard: ${config.loom.keymapLabel}]"
+    # Escaped, like every other use of this value -- `keymap.nix` passes the raw
+    # `--keymap` argument through, and this lands in a double-quoted bash string
+    # in a stage-1 script running as root before the root filesystem is unlocked.
+    # Unreachable today behind two build-time guards (`keymapCheck` runs
+    # `loadkeys` on it, and `pkgs.runCommand "loom-keymap-check-''${cfg}"` makes a
+    # value containing `$`, a backtick, `;` or a space an invalid derivation name)
+    # -- which is exactly why it should not be load-bearing for something it was
+    # not written for.
+    readonly KEYBOARD=${lib.escapeShellArg "[keyboard: ${config.loom.keymapLabel}]"}
     readonly ATTEMPTS=${toString cfg.attempts}
 
     # Stop trying, say why where it can actually be read, and let the boot

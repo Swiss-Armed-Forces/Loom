@@ -29,6 +29,54 @@ check_command(){
     fi
 }
 
+# The boxes this repository builds appliance images for.
+#
+# One list, here, beside `platform_system` -- which is already bash-with-arrays
+# by its own docstring. It used to be written out in all four scripts that use
+# it, along with the identical validating `case`, and the header above claims to
+# have ended exactly that: a fifth platform meant four identical edits with
+# nothing to catch a missed one. A stale copy is not silent (the script refuses
+# the new platform by name) but it is four discoveries, one per script, each the
+# first time somebody runs it.
+KNOWN_PLATFORMS=(spark evo-x2 nuc12)
+
+# Refuse anything that is not one of them, with the list in the message.
+#
+# `case` rather than a call to `platform_system`: that returns 1 for an unknown
+# platform, and calling it inside a condition disables `set -e` for its whole
+# body.
+require_platform(){
+    local platform="${1}"
+    case " ${KNOWN_PLATFORMS[*]} " in
+        *" ${platform} "*)
+            return 0
+        ;;
+        *)
+            echo >&2 "[!] Error: unknown platform: ${platform}"
+            echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
+            exit 1
+        ;;
+    esac
+}
+
+# The platform to use when none was named: the one matching this machine.
+#
+# Every caller that has a default has the same one, and for the same reason --
+# the VM tests boot a real kernel, so a cross-architecture default would only
+# ever be wrong.
+default_platform_for_arch(){
+    local arch
+    arch="$(uname -m)"
+    case "${arch}" in
+        aarch64) printf 'spark'  ;;
+        x86_64)  printf 'evo-x2' ;;
+        *)
+            echo >&2 "[!] Error: no appliance platform for this architecture: ${arch}"
+            exit 1
+        ;;
+    esac
+}
+
 # The architecture each platform is. Mirrors `nixSystem` in the matching
 # nixos/platforms/<id>.nix, which is the authority -- nixos/default.nix asserts
 # that the two agree, so a drift here fails during evaluation rather than on the

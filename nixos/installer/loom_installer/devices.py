@@ -161,16 +161,33 @@ def _is_removable(runner: CommandRunner, disk: str) -> bool:
 
 
 def _is_usb(runner: CommandRunner, disk: str) -> bool:
+    """Unanswerable counts as USB, matching `_is_removable`'s stated policy.
+
+    `Subprocess.output` returns "" for a command that failed or could not be run at
+    all -- `commands.py` maps OSError to rc 127 with empty stdout -- and an empty
+    answer makes `any(...)` false, so a failed udevadm used to *admit* a USB-attached
+    disk to the target list. On the unattended path no human ever sees that list.
+    """
     properties = runner.output(
         ["udevadm", "info", "--query=property", f"--name={disk}"]
     )
+    if not properties.strip():
+        return True
     return any(line.strip() == "ID_BUS=usb" for line in properties.splitlines())
 
 
 def _has_mounted_partition(runner: CommandRunner, disk: str) -> bool:
+    """Unanswerable counts as mounted, for the same reason as `_is_usb`.
+
+    lsblk prints one line per device in the tree, empty for the unmounted ones, so even
+    a disk with nothing mounted produces newlines. Output with not a single byte in it
+    therefore means the question was not answered at all.
+    """
     mountpoints = runner.output(
         ["lsblk", "--noheadings", "--raw", "--paths", "--output", "MOUNTPOINTS", disk]
     )
+    if not mountpoints:
+        return True
     return any(line.strip() for line in mountpoints.splitlines())
 
 

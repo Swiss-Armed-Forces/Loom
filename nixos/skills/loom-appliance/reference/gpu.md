@@ -9,8 +9,14 @@ the console.
 
 ```bash
 loom-platform-info                    # the GPU, its memory split, and whether a container can see it
-kubectl --namespace loom get pods --selector app.kubernetes.io/component=ollama
+kubectl --namespace loom get pods --selector app=loom-ollama
 ```
+
+The selector is `app=loom-ollama`, not `app.kubernetes.io/component`: that label is set on the
+Deployment's own metadata and not on the pod template (`charts/templates/ollama/_deployment.yaml`
+builds those from `app:` plus `app.labels.custom`, and every `customLabels` is empty), so a
+component selector returns `No resources found` on a perfectly healthy GPU box -- which reads
+exactly like the "built without a GPU" case above.
 
 `loom-platform-info` is the first and usually the last command here. It reports the GPU, the
 firmware VRAM carve-out beside the GTT pool, and — the part that actually matters — whether the GPU
@@ -37,10 +43,13 @@ An air-gapped box only has the models that were baked into the image. There is n
 another.
 
 ```bash
-kubectl --namespace loom logs deploy/ollama --tail 100
-kubectl --namespace loom exec deploy/ollama -- ollama list      # what is actually on the box
+kubectl --namespace loom logs deploy/production-loom-ollama --tail 100
+kubectl --namespace loom exec deploy/production-loom-ollama -- ollama list   # what is on the box
 curl --insecure https://ollama.loom/                            # answers "Ollama is running"
 ```
+
+Every workload is `production-loom-<component>` -- see `reference/kubernetes.md`. `deploy/ollama`
+is a `NotFound`, including on the `exec` that is the only real check below.
 
 A Ready `ollama` pod proves nothing about its model store — the readiness probe answers on an empty
 one. `ollama list` is the real check.

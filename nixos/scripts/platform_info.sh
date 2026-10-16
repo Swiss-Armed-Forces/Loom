@@ -278,7 +278,13 @@ section_cpu_memory(){
             head --lines=1 || true)"
         model="implementer ${model:-unknown}"
     fi
-    cores="$(grep --count '^processor' /proc/cpuinfo 2>/dev/null || printf '?')"
+    # Assigned, then defaulted. `grep -c` prints its count *and* exits 1 when
+    # the count is zero, so an `|| printf '?'` appended to the output of a
+    # command that has already printed `0` renders the field as `0?`. The
+    # fallback is only for the case where /proc/cpuinfo cannot be read at all,
+    # where grep exits 2 with no stdout.
+    cores="$(grep --count '^processor' /proc/cpuinfo 2>/dev/null)" || cores=""
+    cores="${cores:-?}"
     field "model" "${model}"
     field "logical cpus" "${cores}"
 
@@ -764,7 +770,7 @@ section_firmware(){
 
 emit_json(){
     local interfaces entry iface driver path state wireless pci port netname
-    local kernel arch cmdline mem_kb vram gtt
+    local kernel arch cmdline mem_kb vram gtt card
     local scaling_driver cppc dt_model secure_boot setup_mode
     local nvidia_version nvidia_modules nvidia_nodes node cdi_dir cdi_spec cdi_specs
     local has_nvidia_ctk has_nvidiactl
@@ -813,8 +819,22 @@ emit_json(){
     arch="$(uname --machine)"
     cmdline="$(slurp /proc/cmdline)"
     mem_kb="$(sed --quiet 's/^MemTotal:[[:space:]]*\([0-9]*\) kB$/\1/p' /proc/meminfo 2>/dev/null || true)"
-    vram="$(slurp /sys/class/drm/card0/device/mem_info_vram_total)"
-    gtt="$(slurp /sys/class/drm/card0/device/mem_info_gtt_total)"
+    # The first card that answers, not card0. `section_gpu` iterates
+    # `/sys/class/drm/card*` for a reason -- the index is not stable, and a
+    # simpledrm/efifb console or a discrete card enumerating ahead of the APU
+    # puts something else at card0 -- so reading card0 here made the
+    # machine-readable report say nothing on exactly the boxes the loop was
+    # written for. `--json` is the form an agent consumes, and the stated point
+    # of this script is checking guessed platform values against real hardware.
+    vram=""
+    gtt=""
+    for card in /sys/class/drm/card*; do
+        [[ "$(basename "${card}")" =~ ^card[0-9]+$ ]] || continue
+        vram="$(slurp "${card}/device/mem_info_vram_total")"
+        [[ -n "${vram}" ]] || continue
+        gtt="$(slurp "${card}/device/mem_info_gtt_total")"
+        break
+    done
 
     scaling_driver="$(slurp /sys/devices/system/cpu/cpufreq/policy0/scaling_driver)"
     # The register itself, for the same reason the text report reads it there.

@@ -6,6 +6,7 @@ import pytest
 from common.services.encryption_service import (
     AES_KEY_LEN_BYTES,
     AES_MAC_LEN,
+    DEFAULT_ENCRYPTED_MAGIC_BYTES,
     FIXED_AES_KEY,
     AESMasterKey,
     FileEncryptionService,
@@ -240,3 +241,81 @@ def test_header_size_agrees_with_what_the_encoder_writes():
 
     # magic + salt + nonce, then nothing but the MAC for empty plaintext.
     assert len(encrypted) == service.header_size + AES_MAC_LEN
+
+
+def test_a_container_relabelled_as_another_type_is_rejected():
+    """The magic is a type discriminator, so it has to be bound to the key.
+
+    `archive_detection` reasons explicitly that "an encrypted archive never carries
+    the generic one", and `decrypt_prefix` reads the magic as a type tag -- but GCM's
+    tag covers the ciphertext only, so without binding the magic into the key
+    derivation the header is an unauthenticated label: strip `LOOMENC`, prepend the
+    archive magic, and the archive service decrypts it with the MAC passing.
+    """
+    master_key = AESMasterKey()
+    plain = FileEncryptionService(master_key)
+    archive = FileEncryptionService(master_key, magic_bytes=b"LOOMARCHIVEV2")
+
+    relabelled = (
+        b"LOOMARCHIVEV2"
+        + _encrypted(plain, b"PK\x03\x04payload")[len(DEFAULT_ENCRYPTED_MAGIC_BYTES) :]
+    )
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(archive.get_decrypted_stream(iter([relabelled])))
+    assert archive.decrypt_prefix(relabelled, 4) != b"PK\x03\x04"
+
+
+def test_the_two_container_types_do_not_share_a_derived_key():
+    """The same master key under two magics must not produce interchangeable keys."""
+    master_key = AESMasterKey()
+    plain = FileEncryptionService(master_key)
+    archive = FileEncryptionService(master_key, magic_bytes=b"LOOMARCHIVEV2")
+
+    encrypted = _encrypted(plain, b"payload")
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(
+            archive.get_decrypted_stream(
+                iter(
+                    [b"LOOMARCHIVEV2" + encrypted[len(DEFAULT_ENCRYPTED_MAGIC_BYTES) :]]
+                )
+            )
+        )
+
+
+def test_a_truncated_container_is_rejected():
+    """Length is not covered by the mutation loop above: every case there is in place.
+
+    `index_archive.py` justifies a whole routing branch with "the body failed its MAC:
+    truncation or corruption", so the truncation half is a property something depends
+    on.
+    """
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload" * 100)
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(service.get_decrypted_stream(iter([encrypted[:-1]])))
+
+
+def test_an_extended_container_is_rejected():
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload" * 100)
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(service.get_decrypted_stream(iter([encrypted + b"\x00"])))
+
+
+def test_a_container_too_short_to_hold_a_mac_is_named_as_such():
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload")
+
+    with pytest.raises(FileEncryptionServiceException, match="Input too short"):
+        list(
+            service.get_decrypted_stream(
+                iter([encrypted[: service.header_size + AES_MAC_LEN - 1]])
+            )
+        )

@@ -57,6 +57,10 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
 
   DEADLINE_S = 10
 
+  # How often the DISCOVER is repeated inside that budget. A real client
+  # retransmits; a single lost frame should cost a second, not the test.
+  RESEND_INTERVAL_S = 2
+
   # Option 53 DHCPDISCOVER, and a parameter request list (option 55) naming
   # netmask, router and DNS server -- so a router option that is absent below
   # is absent because the server declined to send one, not because nobody
@@ -96,6 +100,10 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
           if code == PAD:
               index += 1
               continue
+          if index + 1 >= len(body):
+              # A truncated option list is "not our packet", not a crash: every
+              # frame on the interface reaches this parser.
+              break
           length = body[index + 1]
           found[code] = body[index + 2:index + 2 + length]
           index += 2 + length
@@ -111,6 +119,9 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
       if packet[9] != IPPROTO_UDP:
           return None
       start = (packet[0] & 0x0F) * 4
+      if start + 8 > len(packet):
+          # A large IHL on a short frame. Same rule as above: not our packet.
+          return None
       ports = struct.unpack_from("!HH", packet, start)
       if ports != (SERVER_PORT, CLIENT_PORT):
           return None
@@ -128,7 +139,6 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
           socket.AF_PACKET, socket.SOCK_DGRAM, socket.htons(ETH_P_ALL)
       )
       sniffer.bind((interface, ETH_P_ALL))
-      sniffer.settimeout(DEADLINE_S)
 
       client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
       client.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -136,14 +146,35 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
           socket.SOL_SOCKET, socket.SO_BINDTODEVICE, interface.encode()
       )
       client.bind(("0.0.0.0", CLIENT_PORT))
-      client.sendto(request(), ("255.255.255.255", SERVER_PORT))
 
       deadline = time.monotonic() + DEADLINE_S
+      next_send = 0.0
       offer = None
       while offer is None and time.monotonic() < deadline:
+          # Retransmitted, as a real client does. One DISCOVER and a single
+          # lost frame was a flaky VM test with no retry.
+          now = time.monotonic()
+          if now >= next_send:
+              client.sendto(request(), ("255.255.255.255", SERVER_PORT))
+              next_send = now + RESEND_INTERVAL_S
+
+          # The socket's deadline is what is left of the budget, not the whole
+          # of it. It used to be set once before the loop, so on a quiet link
+          # `recv` raised an uncaught TimeoutError after ten seconds and the
+          # `sys.exit` below -- the diagnostic naming the server and the
+          # interface, which is the whole point of this probe -- could only
+          # ever fire on a *busy* link. `dhcp.py` wraps this in
+          # `appliance.succeed`, so the failure it exists for surfaced as a
+          # Python traceback.
+          sniffer.settimeout(max(0.1, min(next_send, deadline) - time.monotonic()))
+          try:
+              frame = sniffer.recv(2048)
+          except TimeoutError:
+              continue
+
           # Everything else on the interface -- our own request included --
           # is skipped rather than waited on.
-          answer = reply(sniffer.recv(2048))
+          answer = reply(frame)
           if answer is None:
               continue
           # And whoever else is on this segment is skipped too. In the test

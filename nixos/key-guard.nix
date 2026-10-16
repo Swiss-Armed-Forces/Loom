@@ -203,14 +203,52 @@ let
           return 1
       }
 
-      arm_once() {
-          local node fingerprint
+      # Every node that might be the key stick.
+      #
+      # `KEY_DEVICE` is a by-partlabel symlink and that path is not unique -- the
+      # same reasoning `key_present` above already applies: with a second stick
+      # carrying a GPT partition named loom-key (a backup key, another
+      # appliance's) udev points it at whichever it linked last, and udev gives
+      # the loser a suffixed name rather than nothing. Resolving the one symlink
+      # and giving up was how a healthy box powered itself off 180 seconds after
+      # boot: the guard could never arm, published `idle`, and `countdown` acted
+      # on a witness file stage 1 had legitimately written.
+      key_candidates() {
+          local link node
+          local -a seen=()
+          for link in "''${KEY_DEVICE}" "''${KEY_DEVICE}"[0-9]* "''${KEY_DEVICE}"-*; do
+              [[ -e "''${link}" ]] || continue
+              node="$(readlink --canonicalize "''${link}" 2>/dev/null || true)"
+              [[ -b "''${node}" ]] || continue
+              if [[ " ''${seen[*]-} " == *" ''${node} "* ]]; then
+                  continue
+              fi
+              seen+=("''${node}")
+              printf '%s\n' "''${node}"
+          done
+      }
 
-          node="$(readlink --canonicalize "''${KEY_DEVICE}" 2>/dev/null || true)"
-          if [[ ! -b "''${node}" ]]; then
+      arm_once() {
+          local node
+          local tried=0
+
+          while read -r node; do
+              [[ -n "''${node}" ]] || continue
+              tried=1
+              if arm_on_node "''${node}"; then
+                  return 0
+              fi
+          done < <(key_candidates)
+
+          if [[ "''${tried}" -eq 0 ]]; then
               ARM_REASON="no block device at ''${KEY_DEVICE}"
-              return 1
           fi
+          return 1
+      }
+
+      # The oracle, for one candidate. ARM_REASON carries why it was not the one.
+      arm_on_node() {
+          local node="''${1}" fingerprint
 
           if ! fingerprint="$(read_fingerprint "''${node}")"; then
               ARM_REASON="''${node} could not be read"
@@ -281,7 +319,11 @@ let
       announce() {
           printf '%s\n' "''${1}"
           wall --nobanner "''${1}" 2>/dev/null || true
-          tmux -S "''${SOCKET}" display-message "''${1}" 2>/dev/null || true
+          # `-l`: display-message expands its argument as a tmux *format*. Every
+          # message this unit sends is a literal of its own, so nothing here is
+          # exploitable -- but loom-usb-ingest reaches the same call with text that
+          # came off a stranger's stick, and the two should not differ about it.
+          tmux -S "''${SOCKET}" display-message -l "''${1}" 2>/dev/null || true
       }
 
       alarm() {
@@ -453,11 +495,24 @@ let
 
       power_off_now() {
           announce "''${1}"
-          set_state tripped
           # A clean poweroff, not a forced one: unit teardown is bounded by
           # DefaultTimeoutStopSec, and the indexed data is worth more than the
           # seconds a sysrq would save.
-          systemctl poweroff
+          #
+          # Checked, and the state is only set once it was accepted. A refused or
+          # lost transaction -- a conflicting job already queued, logind not
+          # answering -- used to be ignored: the guard set `tripped`, exited 0,
+          # and `Restart = "on-failure"` did not bring it back. The box then went
+          # on running with an unlocked dm-crypt mapping, no key present and
+          # nothing watching, while the banner and `loom-key-guard status` both
+          # said `tripped`, which reads as "it worked". Exiting non-zero instead
+          # restarts the watcher, which tries again.
+          if ! systemctl poweroff; then
+              announce "[loom] Poweroff was refused. The key is still gone -- retrying."
+              set_state armed
+              exit 1
+          fi
+          set_state tripped
           exit 0
       }
 

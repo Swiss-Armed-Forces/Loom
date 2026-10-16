@@ -3,6 +3,7 @@ import zipfile
 from dataclasses import dataclass
 
 import pytest
+from minio.error import S3Error
 
 from common.services.s3_range_reader import BLOCK_SIZE, S3RangeReader
 from common.testing.s3_doubles import ObjectStore, s3_serving
@@ -49,6 +50,36 @@ def test_read_at_eof_returns_empty():
     reader.seek(0, io.SEEK_END)
 
     assert reader.read(16) == b""
+
+
+def test_a_range_starting_past_the_end_never_reaches_the_client():
+    """What the clamp in `fetch_range` is for.
+
+    Real object storage answers a range at or past the object's end with `InvalidRange`
+    (HTTP 416), not with an empty body -- so an unclamped probe would raise against
+    SeaweedFS while passing against a double that simply slices.
+    """
+    subject = _reader_for(b"0123456789")
+
+    assert subject.reader.fetch_range(10, 4) == b""
+    assert subject.reader.fetch_range(9999, 4) == b""
+    assert subject.store.request_count == 0
+
+
+def test_an_empty_object_is_never_range_requested():
+    """The shape the crawler prescreen meets for real: a zero-byte intake object."""
+    subject = _reader_for(b"")
+
+    assert subject.reader.fetch_range(0, 7) == b""
+    assert subject.store.request_count == 0
+
+
+def test_the_double_refuses_an_unsatisfiable_range_like_real_storage():
+    """Pin the double's behaviour, since the clamp above is only tested through it."""
+    double = s3_serving(b"0123456789", BUCKET, OBJECT)
+
+    with pytest.raises(S3Error):
+        double.store.get_object(BUCKET, OBJECT, offset=10, length=4)
 
 
 def test_an_invalid_whence_is_rejected():

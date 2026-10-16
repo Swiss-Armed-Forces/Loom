@@ -261,8 +261,15 @@ class Relay:
         if not translation.report:
             return
 
-        if event.bare_type == GPM_MOVE:
-            # Pure motion: coalesce.
+        if event.bare_type == GPM_MOVE and not event.wdy:
+            # Pure motion: coalesce. A wheel notch is *also* a GPM_MOVE -- sgr.py is
+            # explicit that a notch is not a type of its own, it is a move carrying
+            # `wdy`, and `translate` checks `wdy` before the type table for that
+            # reason -- so classifying on the type alone coalesced scrolling as if it
+            # were drift: one notch per frame survived, a motion report arriving
+            # before the flush replaced the notch outright, and a button press
+            # discarded it. The module's own rule, stated near the top, is that only
+            # motion with no button down is ever coalesced.
             self._motion.pending = translation.report
             return
 
@@ -287,7 +294,11 @@ class Relay:
         """
         timeout: float | None = None
         if self._motion.pending:
-            timeout = _MOTION_INTERVAL
+            # What is left of the frame, not a whole one: the report was coalesced
+            # part-way through the current interval, and sleeping a full interval
+            # would flush it up to one frame late. The `retry_at` branch below
+            # computes its remainder the same way.
+            timeout = max(0.0, self._motion.next_at - time.monotonic())
         if self._gpm.client is None:
             pending = max(0.0, self._gpm.retry_at - time.monotonic())
             timeout = pending if timeout is None else min(timeout, pending)

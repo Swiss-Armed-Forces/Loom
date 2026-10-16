@@ -23,10 +23,12 @@ from loom_portal.server import serve
 from loom_portal.settings import (
     DEFAULT_ACCENT,
     DEFAULT_STATE_DIR,
+    PortalBind,
     PortalBrand,
     PortalLimits,
     PortalSettings,
     PortalUrls,
+    validated_accent,
 )
 from loom_portal.spool import Spool
 
@@ -51,6 +53,11 @@ def build_settings(argv: list[str] | None = None) -> PortalSettings:
     parser.add_argument("--accent", default=_env("ACCENT", DEFAULT_ACCENT))
     parser.add_argument("--state-dir", default=_env("STATE_DIR", DEFAULT_STATE_DIR))
     parser.add_argument(
+        "--tls-placeholder",
+        default=_env("TLS_PLACEHOLDER", ""),
+        help="marker file that exists while the TLS listener is the stand-in pair",
+    )
+    parser.add_argument(
         "--mtls",
         action="store_true",
         default=_env("MTLS", "0") == "1",
@@ -67,19 +74,21 @@ def build_settings(argv: list[str] | None = None) -> PortalSettings:
     )
 
     return PortalSettings(
-        listen_address=arguments.listen,
-        port=arguments.port,
+        bind=PortalBind(address=arguments.listen, port=arguments.port),
         urls=PortalUrls(
             frontend=arguments.frontend_url,
             portal=arguments.portal_url,
             secure=arguments.secure_url,
         ),
         brand=PortalBrand(
-            tag=arguments.tag, accent=arguments.accent, logo_path=arguments.logo
+            tag=arguments.tag,
+            accent=validated_accent(arguments.accent),
+            logo_path=arguments.logo,
         ),
         limits=PortalLimits(),
         state_dir=arguments.state_dir,
         mtls=arguments.mtls,
+        tls_placeholder_path=arguments.tls_placeholder,
     )
 
 

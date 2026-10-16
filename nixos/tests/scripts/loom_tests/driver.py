@@ -30,12 +30,34 @@ resolve *this* module, so exactly one of the two checks can run, and the one tha
 runs on every commit is worth more than the one that runs when a VM boots.
 """
 
-from typing import Callable, ContextManager, Protocol
+from typing import Callable, ContextManager, NamedTuple, Protocol
 
 # `start_all()` and `with subtest("..."):`, which the driver provides as plain
 # globals.
 StartAll = Callable[[], None]
 Subtest = Callable[[str], ContextManager[None]]
+
+
+class CommandResult(NamedTuple):
+    """What `execute` answered, with the two halves named.
+
+    The Protocol below mirrors the upstream NixOS test driver, which really does return
+    a bare `tuple[int, str]` -- narrowing it there would make the Protocol a lie about
+    the object it describes, and `Machine` would stop satisfying it. So the tuple is
+    given names here instead, and this repo's own call sites go through `execute` below
+    rather than unpacking positionally.
+    """
+
+    status: int
+    output: str
+
+
+def execute(
+    machine: "Machine", command: str, timeout: int | None = 900
+) -> CommandResult:
+    """`machine.execute`, with the result named."""
+    status, output = machine.execute(command, timeout=timeout)
+    return CommandResult(status=status, output=output)
 
 
 class Machine(Protocol):
@@ -75,12 +97,6 @@ class Machine(Protocol):
     def wait_until_succeeds(self, command: str, timeout: int = 900) -> str:
         """Retry a command until it exits 0."""
 
-    def wait_until_fails(self, command: str, timeout: int = 900) -> str:
-        """Retry a command until it exits non-zero."""
-
-    def wait_for_console_text(self, regex: str, timeout: int | None = None) -> None:
-        """Block until the machine prints something matching `regex`."""
-
     def wait_until_tty_matches(self, tty: str, regexp: str, timeout: int = 900) -> None:
         """Block until one virtual console shows something matching `regexp`."""
 
@@ -92,15 +108,6 @@ class Machine(Protocol):
 
     def sleep(self, secs: int) -> None:
         """Wait, on the machine's own clock."""
-
-    def start(self, allow_reboot: bool = False) -> None:
-        """Boot the machine."""
-
-    def shutdown(self) -> None:
-        """Power it off and wait for it."""
-
-    def crash(self) -> None:
-        """Pull the plug."""
 
     def wait_for_shutdown(self) -> None:
         """Block until the machine is gone."""

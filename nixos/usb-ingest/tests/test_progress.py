@@ -14,7 +14,7 @@ import os
 
 from rich.console import Console
 
-from loom_usb_ingest.__main__ import parse_args, release
+from loom_usb_ingest.__main__ import IngestOptions, parse_args, release
 from loom_usb_ingest.progress import (
     Counts,
     DeviceProgress,
@@ -211,7 +211,7 @@ class _Box:
         ]
         if kernel_name is not None:
             argv.append(str(self.dev / kernel_name))
-        assert release(parse_args(argv)) == 0
+        assert release(IngestOptions.from_namespace(parse_args(argv))) == 0
 
     def stages(self) -> StagesByDevice:
         """Where every device the pane still knows about has got to."""

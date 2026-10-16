@@ -105,9 +105,16 @@ class CopyProgress:
         if self._poller is not None:
             self._poller.join(timeout=POLL_INTERVAL_S * 2)
         if exc is None and self._total is not None:
-            # The bar ends full. The measurement is the filesystem's, which includes
-            # neither the metadata ext4 keeps for itself nor the rounding every file
-            # costs, so it never quite reaches the NAR total on its own.
+            # The bar ends full, as the receipt. It does not get there on its own --
+            # and not for the reason this comment used to give. `_used_bytes` is
+            # `(f_blocks - f_bfree) * f_frsize`, i.e. *allocated blocks*, which by
+            # definition already includes the metadata ext4 keeps for itself and the
+            # rounding every file costs: a 100-byte store file takes a 4 KiB block
+            # and is counted as 4096. A NixOS closure is several hundred thousand
+            # mostly small files, so used-blocks grows materially faster than the NAR
+            # total `_closure_bytes` sums -- the bar is an upper-bounded estimate
+            # that may well saturate before the copy ends, which `_advance`'s clamp
+            # is what turns into "stuck at 100%" rather than "over 100%".
             self._progress.update(self._task, completed=self._total)
         self._progress.stop()
 

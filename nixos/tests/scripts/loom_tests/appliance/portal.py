@@ -62,10 +62,20 @@ def addresses(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         assert f"LOOM_BOX_ADDRESS={box}" in conf, conf
         assert f"LOOM_PORTAL_ADDRESS={portal}" in conf, conf
 
-        # Below the DHCP pool, or the box would hand a visitor the responder's
-        # address and the lease would collide with it.
-        pool_start = int(f"{params.loom_subnet}.100".rsplit(".", maxsplit=1)[-1])
-        assert int(portal.rsplit(".", maxsplit=1)[-1]) < pool_start, conf
+        # Outside the DHCP pool, or the box would hand a visitor one of these two
+        # addresses and the lease would collide with a listener.
+        #
+        # Read off `LOOM_DHCP_POOL`, which network.nix writes into the same file.
+        # It used to compare `f"{subnet}.100"` against `f"{subnet}.2"` -- both
+        # constructed here out of the same parameter -- so the assertion was
+        # `2 < 100` on every platform and every build, and nothing about the box
+        # was consulted at all.
+        pool = re.search(r"^LOOM_DHCP_POOL=(\S+)-(\S+)$", conf, re.M)
+        assert pool, conf
+        low, high = (int(end.rsplit(".", maxsplit=1)[-1]) for end in pool.groups())
+        for reserved in (box, portal):
+            host = int(reserved.rsplit(".", maxsplit=1)[-1])
+            assert not low <= host <= high, f"{reserved} is inside {pool.group(0)}"
 
 
 def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:

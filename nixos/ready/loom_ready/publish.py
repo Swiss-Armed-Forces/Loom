@@ -30,6 +30,13 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_INTERVAL_S = 5.0
 
+# The shortest gap between two login-screen repaints. A stage change restarts
+# `autovt@tty1`, and a flapping cluster can change stage every tick -- which under
+# systemd's default StartLimitBurst is never rate-limited for us. Thirty seconds is
+# far longer than a bring-up's real transitions take to matter and far shorter than
+# anybody waits to read a stale banner.
+BANNER_REFRESH_INTERVAL_S = 30.0
+
 
 @dataclass(frozen=True)
 class PublishSettings:
@@ -60,6 +67,9 @@ class Publisher:
         self._stage: Stage | None = None
         self._counts = Counts()
         self._changed = 0.0
+        # When the login screen was last repainted, for the rate limit in
+        # `_refresh_banner`.
+        self._refreshed = 0.0
 
     def tick(self, now: float | None = None) -> Readiness:
         """One observation, published.
@@ -70,7 +80,16 @@ class Publisher:
 
         observation = self._cluster.observe()
         stage = classify(observation, self._stage)
-        counts = tally(observation.workloads)
+        # The previous counts stand when the listing could not be read. They are not
+        # (0, 0): a kubectl that missed its deadline says nothing about the box, and
+        # publishing zeros collapsed the bar to `--/-- pods` *and* reset the stall
+        # timer below -- so `text.stall_note`, the one signal for a wedged bring-up,
+        # could never reach 300s on a cluster that timed out intermittently.
+        counts = (
+            tally(observation.workloads)
+            if observation.workloads_known
+            else self._counts
+        )
 
         # When the numbers last moved, not when this record was written. A box pulling a
         # multi-gigabyte image and a box whose scheduler has nowhere to put the next pod
@@ -102,7 +121,7 @@ class Publisher:
             # that opens the operator's session, and the first tick lands within seconds
             # of the login prompt appearing.
             if previous is not None:
-                self._refresh_banner()
+                self._refresh_banner(now)
 
         return readiness
 
@@ -115,9 +134,25 @@ class Publisher:
             self.tick()
             time.sleep(self._settings.interval)
 
-    def _refresh_banner(self) -> None:
+    def _refresh_banner(self, now: float) -> None:
+        """Repaint the login screen, at most once every `BANNER_REFRESH_INTERVAL_S`.
+
+        Rate-limited because a cluster that flaps -- one kubectl missing its
+        timeout, the next succeeding -- changes stage as often as every five
+        seconds, and every change restarts `autovt@tty1`. Two restarts per ten
+        seconds stays under systemd's default StartLimitBurst, so nothing upstream
+        stops it: the pre-login screen is cleared and repainted repeatedly on a box
+        that is fine, and there is a narrow race in which a keypress is eaten.
+        """
         if not self._settings.on_change:
             return
+        if self._refreshed and now - self._refreshed < BANNER_REFRESH_INTERVAL_S:
+            logger.debug(
+                "Banner refresh suppressed; the last one was %.0fs ago",
+                now - self._refreshed,
+            )
+            return
+        self._refreshed = now
         completed = self._commands.run(self._settings.on_change)
         if not completed.ok:
             # Best effort, always. The banner is a display, and a box whose login screen

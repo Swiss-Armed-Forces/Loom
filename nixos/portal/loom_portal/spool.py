@@ -213,6 +213,19 @@ class Spool:
             return False
 
     def _await(self, token: str, want: BundleFormat) -> IssuanceOutcome:
+        # Matched before it is joined to a path, which is the "validated on both sides"
+        # the module docstring promises -- the other side is the issuer's own `sed`
+        # guard in portal.nix. The token is generated three lines up by
+        # `secrets.token_hex`, so this can only fail if that changes; it is here
+        # because a value that reaches `os.path.join` is worth one regex whatever its
+        # provenance.
+        if not TOKEN_PATTERN.match(token):
+            logger.error("Refusing to wait on a malformed token")
+            return IssuanceOutcome(
+                state=IssuanceState.REFUSED,
+                detail="The request could not be written.",
+            )
+
         bundle_dir = os.path.join(self.bundles_dir, token)
         error_file = os.path.join(self.bundles_dir, token + ERROR_SUFFIX)
         deadline = self.clock.now() + self.timeout_s
@@ -256,7 +269,17 @@ class Spool:
             )
 
         if want is BundleFormat.P12:
+            # A failed read is told apart from a successful read of an empty file.
+            # They used to be the same `b""`, and `_await` deletes the bundle the
+            # moment this returns -- so an unreadable .p12 was delivered as a 0-byte
+            # download, logged as "Issued a client certificate", with the only copy
+            # already gone. On the one image where holding a certificate is the only
+            # way into Loom, and every install guide on the page then fails opaquely.
             payload = _read_file(os.path.join(bundle_dir, identity))
+            if not payload:
+                return IssuanceOutcome(
+                    state=IssuanceState.ISSUER_FAILED, detail="unreadable-bundle"
+                )
             return IssuanceOutcome(
                 state=IssuanceState.DELIVERED,
                 bundle=payload,
@@ -264,35 +287,53 @@ class Spool:
                 content_type="application/x-pkcs12",
             )
 
+        archive = _zip(bundle_dir, names)
+        if archive is None:
+            return IssuanceOutcome(
+                state=IssuanceState.ISSUER_FAILED, detail="unreadable-bundle"
+            )
+
         stem = identity[: -len(".p12")]
         return IssuanceOutcome(
             state=IssuanceState.DELIVERED,
-            bundle=_zip(bundle_dir, names),
+            bundle=archive,
             filename=f"{stem}.zip",
             content_type="application/zip",
         )
 
 
-def _zip(bundle_dir: str, names: list[str]) -> bytes:
-    """Everything the issuer wrote, in one archive.
+def _zip(bundle_dir: str, names: list[str]) -> bytes | None:
+    """Everything the issuer wrote, in one archive, or None if a member is unreadable.
 
     Stored rather than deflated: the five files are a few kilobytes of PEM and a README,
     and a stored archive is one that every unzip on every platform opens.
+
+    None rather than an archive with an empty member, for the same reason `_collect`
+    refuses an empty identity: a zip the visitor cannot use is worse than being told
+    the box could not make one, because the bundle is deleted either way.
     """
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:
         for name in names:
-            archive.writestr(name, _read_file(os.path.join(bundle_dir, name)))
+            member = _read_file(os.path.join(bundle_dir, name))
+            if member is None:
+                return None
+            archive.writestr(name, member)
     return buffer.getvalue()
 
 
-def _read_file(path: str) -> bytes:
+def _read_file(path: str) -> bytes | None:
+    """The file's bytes, or None when it could not be read.
+
+    None rather than b"": the two are indistinguishable to a caller, and one of them is
+    a visitor downloading an empty credential.
+    """
     try:
         with open(path, "rb") as handle:
             return handle.read()
     except OSError as error:
         logger.warning("Could not read %s: %s", path, error)
-        return b""
+        return None
 
 
 def _read_reason(path: str) -> str:
@@ -322,4 +363,9 @@ def _remove_tree(path: str) -> None:
             _remove(os.path.join(path, name))
         os.rmdir(path)
     except OSError as error:
-        logger.debug("Could not remove %s: %s", path, error)
+        # A warning, not a debug line. What is left behind when this fails is an
+        # unencrypted private key on disk until the issuer's next sweep -- which only
+        # runs when another request arrives -- so on a quiet box, until reboot. It was
+        # at debug level while a missing `g+w` on the bundle directory made it fail
+        # every time; nobody saw it.
+        logger.warning("Could not remove %s: %s", path, error)

@@ -17,7 +17,7 @@ from typing import Final, NamedTuple
 
 from rich.console import Console
 
-from loom_installer import constants, devices
+from loom_installer import constants, devices, keystore
 from loom_installer.commands import CommandResult
 from loom_installer.console import THEME, Ui
 
@@ -86,7 +86,14 @@ class FakeRunner:
         return self.commands.get(key, CommandResult(1, "", "no such answer"))
 
     def output(self, argv: list[str], *, timeout: int = 300) -> str:
-        return self.run(argv, timeout=timeout).stdout
+        """Standard output, or "" when the command failed -- as `Subprocess` does.
+
+        The real one consults `ok`, and several rules turn on the difference between
+        "answered nothing" and "did not answer", so a fake that handed back partial
+        output from a failing command would make those rules untestable here.
+        """
+        result = self.run(argv, timeout=timeout)
+        return result.stdout if result.ok else ""
 
     def check(
         self, argv: list[str], *, stdin: str | None = None, timeout: int = 300
@@ -106,9 +113,19 @@ class FakeRunner:
         self.commands[" ".join(argv)] = CommandResult(0, stdout, "")
 
     def fails_then_succeeds(self, argv: list[str], failures: int) -> None:
-        """Refuse this command `failures` times, then behave like `succeeds`."""
+        """Refuse this command `failures` times, then behave like `succeeds`.
+
+        Status 2, which is what cryptsetup exits with for "no key available with this
+        passphrase". The number matters: `keystore` only spends an attempt on that one,
+        so a double that refused with a generic 1 would exercise the branch for a
+        failure a retype cannot fix.
+        """
         self.queued[" ".join(argv)] = [
-            CommandResult(1, "", "No key available with this passphrase.")
+            CommandResult(
+                keystore.WRONG_PASSPHRASE_STATUS,
+                "",
+                "No key available with this passphrase.",
+            )
             for _ in range(failures)
         ]
         self.succeeds(argv)

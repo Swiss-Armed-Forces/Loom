@@ -137,7 +137,17 @@ let
         # one differ by colour rather than by shape; that is legible, and it is
         # a decision rather than an accident because this is where it would
         # fail loudly if the font ever dropped them.
-        for cp in 2588 2584 2580 00D7 2501 2578 257A; do
+        # 2500..253C are the box-drawing set tmux frames its panes with, and
+        # they are the set this file's own prose gives as the reason Cozette was
+        # chosen -- `console.nix` sets no `pane-border-lines`, so tmux's default
+        # `single` draws every one of them on every screen the operator ever
+        # sees. 2581..2587 are the partial eighth blocks btop's meters are made
+        # of under `--force-utf`. Both were argued for here and neither was
+        # asserted, which left the three rich glyphs above -- a dependency's
+        # choice -- as the only ones the build actually checked.
+        for cp in 2588 2584 2580 00D7 2501 2578 257A \
+          2500 2502 250C 2510 2514 2518 251C 2524 252C 2534 253C \
+          2581 2582 2583 2585 2586 2587; do
           if ! zcat --force "$src" | psfgettable - | grep --quiet --ignore-case "U+$cp\b"; then
             echo "$src has no U+$cp, one of the glyphs this appliance draws" >&2
             exit 1

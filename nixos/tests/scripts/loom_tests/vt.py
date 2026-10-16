@@ -59,12 +59,19 @@ class Screen:
 
     def _glyph(self, cell: int) -> str:
         offset = cell * 2
-        if offset >= len(self.cells):
+        if offset + 1 >= len(self.cells):
             return "."
-        character = self.cells[offset]
-        if 32 <= character < 127:
-            return chr(character)
-        return "#" if character else "."
+        # The ninth bit of the glyph index, out of the attribute byte. Past 256
+        # glyphs the Linux VT takes the index's high bit from `attr & 0x08` --
+        # the intensity bit -- and this appliance ships a 515-glyph Cozette
+        # exactly as branding.nix says. Reading the character byte alone made a
+        # glyph at index 256-382 come back as printable ASCII rather than as the
+        # `#` this module promises and `wifi.py` matches the Loom mark with. CI
+        # never saw it because the VM console cannot load a 6px font.
+        index = self.cells[offset] | ((self.cells[offset + 1] & 0x08) << 5)
+        if 32 <= index < 127:
+            return chr(index)
+        return "#" if index else "."
 
 
 def read(machine: "Machine", tty: str = "1") -> Screen:

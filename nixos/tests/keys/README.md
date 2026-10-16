@@ -13,8 +13,13 @@ network, with no data on it. It is never written to a stick. The real
 `build-appliance-image --debug` generates a fresh pair per image and keeps the
 private half out of the Nix store entirely — see `nixos/debug.nix`.
 
-This directory is listed in `/.secretsignore` so `ripsecrets` does not stop a
-commit over it. That is the whole reason it is a directory rather than a string
-inside the test: the suppression is scoped to these two files, so a real secret
-that lands anywhere else — `tests/appliance-debug.nix` included — is still
-caught. **Do not put anything else here**, and do not widen the ignore.
+This directory is listed in `/.secretsignore`, as `nixos/tests/keys/*`, so
+`ripsecrets` does not stop a commit over it. That is the whole reason it is a
+directory rather than a string inside the test: the suppression covers this
+directory and nothing above it, so a real secret that lands anywhere else —
+`tests/appliance-debug.nix` included — is still caught.
+
+Note what that scope is, exactly: the pattern is the *directory*, not the two
+files in it. Anything added here is unscanned from the moment it is written, and
+nothing reports that it was skipped. **Do not put anything else here**, and do
+not widen the ignore.

@@ -11,8 +11,11 @@ instead of downloading the body -- see crawler/archive_prescreen.py.
 """
 
 import logging
+import lzma
+import struct
+import zlib
 from typing import IO
-from zipfile import BadZipFile, ZipFile
+from zipfile import ZIP_DEFLATED, ZIP_STORED, BadZipFile, ZipFile
 
 from pydantic import ValidationError
 
@@ -87,6 +90,85 @@ def find_manifest_entry(names: list[str]) -> str | None:
 # path rather than one rejected file.
 MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 
+# The most a zip's central directory is allowed to weigh before the zip is refused
+# unopened.
+#
+# `ZipFile.__init__` parses the central directory eagerly: `_RealGetContents` issues a
+# single `read(size_cd)`, copies the result into a BytesIO and builds one ZipInfo per
+# member. The directory scales with member count rather than with compression, so it
+# needs no zip bomb -- a backup zip of a few million small files carries a
+# several-hundred-megabyte central directory and costs multiple gigabytes to parse,
+# against the crawler's `memory: "1.5Gi"`. Under a cgroup limit that is an OOMKill
+# rather than a catchable MemoryError, which is the permanent wedge MAX_MANIFEST_BYTES
+# is written to prevent.
+#
+# 32 MiB is roughly 300k members, far past any archive this deployment writes, and
+# bounds the parse at a few hundred megabytes.
+MAX_CENTRAL_DIRECTORY_BYTES = 32 * 1024 * 1024
+
+# How much of the tail to read looking for the end-of-central-directory record. The
+# record is 22 bytes plus a comment of at most 65535, and a range reader serves this
+# from one cached block.
+_EOCD_SEARCH_BYTES = 64 * 1024 + 22
+
+_EOCD_SIGNATURE = b"PK\x05\x06"
+_ZIP64_LOCATOR_SIGNATURE = b"PK\x06\x07"
+_ZIP64_EOCD_SIGNATURE = b"PK\x06\x06"
+_ZIP64_MARKER = 0xFFFFFFFF
+
+
+def _central_directory_bytes(fd: IO[bytes]) -> int | None:
+    """The size the zip declares for its central directory, or None if unreadable.
+
+    Read straight off the end-of-central-directory record -- and the Zip64 record behind
+    it when the 32-bit field is saturated -- so that the size is known *before* ZipFile
+    allocates it. None means "this does not look like a zip", which leaves the verdict
+    to ZipFile itself.
+    """
+    fd.seek(0, 2)
+    size = fd.tell()
+    window = min(size, _EOCD_SEARCH_BYTES)
+    fd.seek(size - window)
+    tail = fd.read(window)
+
+    start = tail.rfind(_EOCD_SIGNATURE)
+    if start < 0 or len(tail) - start < 22:
+        return None
+
+    declared = struct.unpack_from("<I", tail, start + 12)[0]
+    if declared != _ZIP64_MARKER:
+        return declared
+
+    locator = start - 20
+    if locator < 0 or tail[locator : locator + 4] != _ZIP64_LOCATOR_SIGNATURE:
+        return declared
+    record_offset = struct.unpack_from("<Q", tail, locator + 8)[0]
+    if record_offset + 56 > size:
+        return declared
+
+    fd.seek(record_offset)
+    record = fd.read(56)
+    if len(record) < 56 or not record.startswith(_ZIP64_EOCD_SIGNATURE):
+        return declared
+    return int(struct.unpack_from("<Q", record, 40)[0])
+
+
+def _central_directory_fits(fd: IO[bytes]) -> bool:
+    """True when the zip's declared central directory is small enough to parse."""
+    try:
+        declared = _central_directory_bytes(fd)
+    except (OSError, ValueError, struct.error):
+        return False
+    finally:
+        fd.seek(0)
+
+    if declared is not None and declared > MAX_CENTRAL_DIRECTORY_BYTES:
+        logger.warning(
+            "Ignoring zip with an oversized central directory: %d bytes", declared
+        )
+        return False
+    return True
+
 
 def is_loom_archive(fd: IO[bytes]) -> bool:
     """True when `fd` is a zip carrying a valid loom MANIFEST.json.
@@ -94,11 +176,13 @@ def is_loom_archive(fd: IO[bytes]) -> bool:
     `fd` must be seekable: ZipFile reads the end-of-central-directory record first.
     """
     try:
+        if not _central_directory_fits(fd):
+            return False
         with ZipFile(fd) as zip_file:
             manifest_entry = find_manifest_entry(zip_file.namelist())
             if manifest_entry is None:
                 return False
-            return is_loom_archive_manifest(_read_manifest(zip_file, manifest_entry))
+            return is_loom_archive_manifest(read_manifest(zip_file, manifest_entry))
     # RuntimeError covers two more things a stranger's stick routinely carries: a
     # member that wants a password, and -- as NotImplementedError, a subclass -- a
     # compression method zipfile has no decompressor for, which is what WinZip's AES
@@ -110,18 +194,51 @@ def is_loom_archive(fd: IO[bytes]) -> bool:
     # central directory entry whose general-purpose bit 11 claims UTF-8 over bytes that
     # are not: CPython decodes the name with no guard, and every archive written by a
     # CP932 or GBK tool does exactly that.
-    except (BadZipFile, ValueError, OSError, RuntimeError):
+    #
+    # zlib.error and lzma.LZMAError inherit straight from Exception, so neither is
+    # covered by the four above: a damaged deflate stream in a */MANIFEST.json member
+    # -- 0.46% of random mutations of a real archive -- would otherwise escape a
+    # function whose whole contract is to answer a question about a hostile blob.
+    # EOFError is the same case for a truncated member.
+    except (
+        BadZipFile,
+        ValueError,
+        OSError,
+        RuntimeError,
+        zlib.error,
+        lzma.LZMAError,
+        EOFError,
+    ):
         return False
 
 
-def _read_manifest(zip_file: ZipFile, entry: str) -> bytes:
+def read_manifest(zip_file: ZipFile, entry: str) -> bytes:
     """The manifest member, or b"" when it is too big to be one.
 
-    The declared size is checked first -- it costs nothing and rejects the honest zip
-    bomb -- and then the read itself is bounded anyway, because the central directory is
-    attacker-controlled and may understate what the member inflates to.
+    The compression method is checked first, then the declared size -- which costs
+    nothing and rejects the honest zip bomb -- and then the read itself is bounded
+    anyway, because the central directory is attacker-controlled and may understate what
+    the member inflates to.
     """
-    if zip_file.getinfo(entry).file_size > MAX_MANIFEST_BYTES:
+    info = zip_file.getinfo(entry)
+
+    # `ZipExtFile.read(n)` is output-bounded only for ZIP_DEFLATED, where `_read1` calls
+    # `decompress(data, n)`. Every other method takes the `else` branch and calls
+    # `self._decompressor.decompress(data)` with no max_length, truncating to the
+    # declared file_size only once the whole thing is already in memory -- so both
+    # guards below read an already-truncated value and see nothing. A 759-byte zip with
+    # one bzip2 member declaring file_size=100 costs 1.6 GiB that way, which on the
+    # crawler's `memory: "1.5Gi"` is an OOMKill. compress_files.py only ever writes
+    # ZIP_DEFLATED, so refusing anything else costs this deployment nothing.
+    if info.compress_type not in (ZIP_STORED, ZIP_DEFLATED):
+        logger.warning(
+            "Ignoring archive manifest with unsupported compression method %s: %s",
+            info.compress_type,
+            entry,
+        )
+        return b""
+
+    if info.file_size > MAX_MANIFEST_BYTES:
         logger.warning("Ignoring oversized archive manifest: %s", entry)
         return b""
 
@@ -154,8 +271,11 @@ def decrypts_to_a_loom_zip(service: ArchiveEncryptionService, head: bytes) -> bo
     transferring the entire object -- hundreds of gigabytes to learn that a `.loom`
     carried in from another box was never ours to begin with.
 
-    `archive_enc_master_key` is unset by default and every deployment then invents its
-    own, so a foreign archive is the *expected* case here, not an exotic one.
+    A foreign archive is an ordinary case here rather than an exotic one, because the
+    key is per deployment: `preInstall.generateSecret` mints one per cluster. Note what
+    *unset* means, though -- `Settings.parse_archive_enc_master_key` substitutes the
+    published all-zero `FIXED_AES_KEY` rather than inventing a random one, so two
+    deployments that were never given a key read each other's archives.
 
     Answering False is cheap and safe: the blob is indexed as the opaque file it is.
     Answering True commits only to *attempting* a real decrypt, which verifies the MAC

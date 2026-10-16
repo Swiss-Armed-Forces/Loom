@@ -59,18 +59,37 @@ spec:
   # So on this path the two agree, and the certificate really is what it claims
   # to be: a self-signed certificate that is its own issuer and may sign itself.
   #
-  # The cost is understood: a serving certificate that may sign others. It is
-  # bounded by what this is -- a certificate for `*.loom` hosts, generated per
-  # deployment, trusted only by clients that were handed it. The alternative is
-  # dropping `cert sign`, and that costs every BoringSSL client that uses it as
-  # an anchor, which on the appliance is `loom-chat` (nixos/console.nix) and
-  # `mc` (nixos/usb-ingest/loom_usb_ingest/transfer.py).
+  # The cost is understood, and it is **not** bounded by `dnsNames`: those
+  # constrain this certificate as a leaf, not what a CA:TRUE certificate holding
+  # `cert sign` may issue. With no nameConstraints and no maxPathLen, a key that
+  # can sign `*.loom` can sign any name -- and `guides.py` and
+  # cicd/generate_client_certificate.sh both tell visitors to install the serving
+  # certificate as a system trust root. What does bound it is that the key never
+  # leaves the cluster, the certificate is generated per deployment, and it is
+  # trusted only by clients that were handed it. cert-manager >= 1.15 can express
+  # the real bound with `nameConstraints`, but only behind its NameConstraints
+  # feature gate, which this chart cannot assume of someone else's cluster.
+  #
+  # Both of these are therefore emitted **only for the chart's own
+  # `-selfsigned-issuer`**, which is the issuer the whole argument above is
+  # about: a self-signed leaf that has to be its own anchor. Pointed at an
+  # external issuer (charts/values-external-tls-certificates.yaml, the one
+  # shipped configuration that sets `certificate.enabled`), asking for `isCA` is
+  # either refused outright -- ACME issuers reject it, a Vault role that does not
+  # permit CA issuance fails the CertificateRequest -- or granted, which hands a
+  # `*.loom` deployment a signing certificate under the organisation's own trust
+  # anchor. Neither is the thing being reasoned about here.
+  {{- $selfSigned := not .Values.certificate.issuerRef.name }}
+  {{- if $selfSigned }}
   isCA: true
+  {{- end }}
   usages:
     - server auth
     - digital signature
     - key encipherment
+    {{- if $selfSigned }}
     - cert sign
+    {{- end }}
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:
     name: {{ default (printf "%s-selfsigned-issuer" (include "app.fullname" .)) .Values.certificate.issuerRef.name }}

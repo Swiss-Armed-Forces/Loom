@@ -109,8 +109,17 @@ in
     {
       # What radios.nix gates the 802.11 stack on. Read from the option rather
       # than from the `enableWifi` argument above, because a test node turns the
-      # access point on by setting the option and never touches the build flag.
-      loom.radios.allowWifi = cfg.wifi.enable;
+      # access point on by setting the option and never touches the build flag --
+      # and a test node that sets it is in run mode, so `active` holds there too.
+      #
+      # Mode-gated, like everything that *uses* the radio. In setup mode nothing
+      # can run an access point and nothing ever calls `rfkill unblock wifi`, so
+      # relaxing the block there only left cfg80211/mac80211 loadable, skipped the
+      # `install cfg80211 .../false` chokepoint and had loom-rfkill-block block
+      # `bluetooth` instead of `all` -- on the one boot the box spends on somebody
+      # else's LAN. "`--wifi` opts a box into an access point, not into a radio
+      # free-for-all" is this module's own stated policy.
+      loom.radios.allowWifi = active;
 
       assertions = [
         {
@@ -258,10 +267,11 @@ in
         # should leave this unit failed and visible, not cascade into whatever
         # else wanted it.
         wants = [ "${cfg.wifi.bridge}-netdev.service" ];
+        # `systemd-udev-settle.service` is not on this nixpkgs pin, so naming it
+        # here ordered nothing; the two real edges are the netdev and hostapd.
         after = [
           "${cfg.wifi.bridge}-netdev.service"
           "hostapd.service"
-          "systemd-udev-settle.service"
         ];
         # As network.nix's wired counterpart: before the address, and before
         # network.target, which is what every unit that assembles an interface
@@ -353,10 +363,8 @@ in
       systemd.services.loom-wifi-check = {
         description = "Warn when the appliance access point is missing";
         wantedBy = [ "multi-user.target" ];
-        after = [
-          "systemd-udev-settle.service"
-          "hostapd.service"
-        ];
+        # As above: `systemd-udev-settle.service` does not exist on this pin.
+        after = [ "hostapd.service" ];
         # `before` names getty-pre.target as well as loom.service: `wants` pulls
         # the target into the transaction but orders nothing against it, and the
         # fragment written below is the one thing that corrects a login banner

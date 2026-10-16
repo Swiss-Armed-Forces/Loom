@@ -8,7 +8,11 @@ stick plugged into a real box, and a journal line about `getent`) is not the way
 
 import base64
 import os
+import shutil
+import subprocess
 import sys
+
+import pytest
 
 from loom_usb_ingest.transfer import (
     ALIAS,
@@ -361,3 +365,42 @@ def test_a_secret_that_is_not_base64_is_skipped_rather_than_written(tmp_path) ->
 
     assert not written
     assert not list((config_dir / "certs" / "CAs").iterdir())
+
+
+@pytest.mark.skipif(shutil.which("mc") is None, reason="mc is not on PATH")
+def test_mc_mirror_does_not_follow_symlinks(tmp_path):
+    """The containment story the mount options cannot tell.
+
+    `ro,nodev,nosuid,noexec` bound execution and writes; none of them bounds what a
+    recursive read walks, and this copy runs as root over a tree chosen by whoever
+    plugged the stick in. On a box without `--require-client-cert` the intake bucket
+    is reachable unauthenticated over `http://s3.loom`, so a `link -> /` that mc
+    followed would publish the box's own filesystem.
+
+    Pinned against the real binary rather than argued from the docs: the behaviour is
+    not configurable from this side, so if a future mc starts descending links this
+    has to fail here rather than on an appliance.
+    """
+    source = tmp_path / "stick"
+    (source / "sub").mkdir(parents=True)
+    (source / "document.txt").write_text("from the stick")
+    (source / "sub" / "nested.txt").write_text("also from the stick")
+    (source / "escape").symlink_to("/etc")
+    (source / "inside").symlink_to("sub")
+    (source / "broken").symlink_to("/nonexistent")
+    target = tmp_path / "bucket"
+    target.mkdir()
+
+    subprocess.run(
+        ["mc", "--json", "mirror", "--quiet", f"{source}/", f"{target}/"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env={**os.environ, "MC_UPDATE": "off"},
+    )
+
+    copied = sorted(
+        str(path.relative_to(target)) for path in target.rglob("*") if path.is_file()
+    )
+    assert copied == ["document.txt", "sub/nested.txt"], copied

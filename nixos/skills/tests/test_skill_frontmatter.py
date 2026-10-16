@@ -1,10 +1,9 @@
 """The frontmatter opencode reads, and the ways it can fail without saying so.
 
-opencode's registration guard is, in full: the parsed frontmatter is an object,
-`name` is a string, and `description` is absent or a string. A file that fails it
-is skipped -- no warning, no error, nothing in the log. These tests are the only
-thing standing between a mistyped `---` block and a skill that silently is not
-there.
+opencode's registration guard is, in full: the parsed frontmatter is an object, `name`
+is a string, and `description` is absent or a string. A file that fails it is skipped --
+no warning, no error, nothing in the log. These tests are the only thing standing
+between a mistyped `---` block and a skill that silently is not there.
 """
 
 from skill_tree import MAX_DESCRIPTION, RESERVED_NAMES, Skill, all_skills
@@ -35,9 +34,9 @@ def test_name_matches_its_directory() -> None:
 def test_description_is_a_string() -> None:
     """The realistic failure: an unquoted value containing a colon.
 
-    `description: Use for: the box` is valid YAML and parses to a mapping, which
-    fails opencode's guard. Quoting is what makes it a string, so this is worth a
-    test of its own rather than a style note.
+    `description: Use for: the box` is valid YAML and parses to a mapping, which fails
+    opencode's guard. Quoting is what makes it a string, so this is worth a test of its
+    own rather than a style note.
     """
     for skill in all_skills():
         assert isinstance(skill.description, str) and skill.description, (
@@ -50,8 +49,8 @@ def test_description_is_a_string() -> None:
 def test_description_is_affordable() -> None:
     """Every description is in the system prompt on every single request.
 
-    A skill with no description at all is filtered out of `<available_skills>`
-    entirely, so this is a budget rather than a style rule.
+    A skill with no description at all is filtered out of `<available_skills>` entirely,
+    so this is a budget rather than a style rule.
     """
     for skill in all_skills():
         description = skill.description
@@ -75,8 +74,8 @@ def test_description_is_one_line() -> None:
 def test_names_are_unique_and_unreserved() -> None:
     """Registration overwrites by name, concurrently, with only a log line.
 
-    So a duplicate is not an error on the box -- it is whichever of the two was
-    scanned last, which is not reproducible.
+    So a duplicate is not an error on the box -- it is whichever of the two was scanned
+    last, which is not reproducible.
     """
     seen: dict[object, Skill] = {}
     for skill in all_skills():

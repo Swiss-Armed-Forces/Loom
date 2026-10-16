@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import PurePosixPath
 from typing import (
     Annotated,
@@ -471,7 +471,10 @@ class File(RepositoryTaskObject):
     parent_id: UUID | None = None
     sha256: str
     uploaded_datetime: Annotated[datetime, DateHistogramStat()] = Field(
-        default_factory=datetime.now,
+        # Aware, like every explicit writer of this field: it is indexed as an
+        # Elasticsearch Date and ordered on, so a naive local timestamp sorts
+        # inconsistently against one that carries its offset.
+        default_factory=lambda: datetime.now(timezone.utc),
         description="Date and time the file was indexed by Loom",
     )
     size: Annotated[int, NumberHistogramStat(label="File Size (bytes)")] = Field(

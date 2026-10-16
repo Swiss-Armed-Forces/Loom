@@ -80,7 +80,14 @@ keep_existing_cert() {
         echo >&2 "[!] Error: could not read secret '${CERT_SECRET_NAME}'"
         exit 1
     fi
-    pem="$(base64 -d <<< "${encoded}")"
+    # Decoded in its own `if`, because this function runs inside one and `set -e`
+    # is therefore off: a corrupt tls.crt and an absent one are two different
+    # repairs -- let the hook run, or delete the Secret somebody wrote by hand --
+    # and reporting the first as the second points at neither.
+    if ! pem="$(base64 -d <<< "${encoded}")"; then
+        echo >&2 "[!] Error: tls.crt in '${CERT_SECRET_NAME}' is not valid base64"
+        exit 1
+    fi
     if [[ -z "${pem}" ]]; then
         echo >&2 "[!] Error: secret '${CERT_SECRET_NAME}' carries no tls.crt"
         exit 1
@@ -105,7 +112,18 @@ keep_existing_cert() {
         return 1
     fi
 
-    san="$(openssl x509 -noout -ext subjectAltName <<< "${pem}" 2>/dev/null || true)"
+    # Checked like every other read in this function. `|| true` here used to read
+    # as though it were load-bearing -- as though an unreadable SAN silently made
+    # every hostname "not covered" -- which it never was: this line is reached only
+    # for a certificate this Job issued, and `create_self_signed_cert` always passes
+    # a non-empty `-addext subjectAltName=`. The emptiness test is explicit because
+    # openssl does *not* signal a missing SAN through its exit status: on a
+    # certificate with no extensions at all it exits 0 with empty stdout.
+    san="$(openssl x509 -noout -ext subjectAltName <<< "${pem}" 2>/dev/null)"
+    if [[ -z "${san}" ]]; then
+        echo "[-] '${CERT_SECRET_NAME}' carries no subjectAltName"
+        return 1
+    fi
     for name in "${LOOM_HOSTNAMES[@]}"; do
         if ! grep -F "DNS:${name}.${LOOM_DOMAIN}" <<< "${san}" > /dev/null; then
             echo "[-] '${CERT_SECRET_NAME}' does not cover ${name}.${LOOM_DOMAIN}"

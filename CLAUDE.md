@@ -364,8 +364,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--json` (everything but the `fwupd` block, which shells out to a daemon), `--output`
 - `build-ingest-test-stick --device /dev/disk/by-id/usb-...` - Prepare any USB stick of 4 GiB or
   more as a USB-ingest test fixture: 26 partitions, one filesystem each, so that plugging it into an
-  appliance takes every branch of `nixos/usb-ingest`'s `plan_mount` at once — the fifteen `KNOWN`
-  types, the six `REFUSED` signatures, two tier-3 candidates and a deliberately blank partition —
+  appliance takes every branch of `nixos/usb-ingest`'s `plan_mount` at once — the sixteen `KNOWN`
+  types, the six `REFUSED` signatures, three tier-3 candidates and a deliberately blank partition —
   with `integrationtest/assets` on every mountable one. Nothing about the device is baked in: the
   table is a fixed 2976 MiB whatever the capacity, so any stick gives the identical layout and the
   remainder is left unallocated. **Destructive, and runs under sudo**; `sudo` resets `PATH`, so
@@ -624,9 +624,9 @@ in the *current* working tree — running one there moves the user's branch unde
 
 - `devenv.local.nix` → gitignored, holds `GITLAB_TOKEN`; copy it across or every `aitools` GitLab
   command fails (see `Documentation/devenv-setup.md`)
-- `charts/values-overwrites.yaml` and `charts/values-up-flags.yaml` → tracked but flagged
-  `--skip-worktree` in the primary index, so a worktree silently gets the near-empty committed
-  versions; copy them if local Helm overrides matter
+- `charts/values-overwrites.yaml`, `charts/values-up-flags.yaml` and `charts/values-user.yaml` →
+  tracked but flagged `--skip-worktree` in the primary index, so a worktree silently gets the
+  near-empty committed versions; copy them if local Helm overrides matter
 - `.claude/settings.local.json` → untracked, so expect extra permission prompts; never edit
   settings files to silence them
 
@@ -637,6 +637,16 @@ that minikube writes — so these commands do not fail in a worktree, they succe
 primary checkout's running system*: `up` redeploys it from the worktree's sources, and `wipe-data`
 and `kubernetes-delete` destroy it. Safe in a worktree: `backend-test`, `frontend-test`,
 `frontend-build`, `generate-frontend-api`, `poetry-lock`, and all `git` and `aitools` commands.
+
+**The appliance commands in a worktree:** `appliance-check`, `appliance-pytest`, `appliance-eval`,
+`appliance-test`, `ollama-test` and `aitools-test` are safe — they read the worktree's own sources,
+build nothing outside the nix store and never touch the cluster. `appliance-vm` is safe but keeps
+its state in `.appliance-vm/` *of the tree it ran in*, so a worktree gets its own disks and its own
+gigabytes, and `appliance-vm reset` in one does nothing for the other. `build-appliance-image` is
+safe in the sense that matters here and misleading in another: it seeds the image from a **git tag**,
+never from the working tree, so uncommitted worktree changes do not reach the stick however many
+times it is rebuilt. `build-ingest-test-stick` ignores the checkout entirely and erases a USB
+device under sudo — which worktree it is run from is the least of what to check first.
 
 **Finishing up:** commit and push from the worktree — git config and refs are shared. Then
 **take the MR out of Draft and start a pipeline for it** (see `### Finishing an MR` below), and

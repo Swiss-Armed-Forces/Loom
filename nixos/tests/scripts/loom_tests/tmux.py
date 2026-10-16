@@ -51,7 +51,14 @@ class Session:
         self.machine = machine
 
     def tmux(self, command: str) -> str:
-        return self.machine.succeed(f"tmux -S {SOCKET} {command}").strip()
+        """One tmux command, with the driver's trailing newline removed.
+
+        Only the newline: `.strip()` here ate significant leading and trailing
+        spaces, and `option("status-left")` is exactly where that shows -- the
+        value really is `"  LOOM  ..."`, and the status-line width assertions
+        turn on it.
+        """
+        return self.machine.succeed(f"tmux -S {SOCKET} {command}").rstrip("\n")
 
     def option(self, name: str) -> str:
         """One global option's value, for the assertions about the status line."""

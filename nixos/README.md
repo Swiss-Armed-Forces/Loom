@@ -27,6 +27,7 @@ this file is about the code.
 | `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
 | `portal.nix` | The captive portal: the probe responder, the page behind it, the certificate it publishes and the client identities it issues. Four units, two nginx listeners and a spool — see the section below. |
+| `mtls.nix` | `--require-client-cert`: the chart values that switch mutual TLS on, the two nginx loopback proxies that give the box's own `opencode` and `mc` clients a way through it, and the units that issue and renew the box's own identity. |
 | `portal/` | The program the page server runs — routing, rendering, the password gate and the visitor's side of the issuance spool — with its own pytest suite, run at build time. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `radios.nix` | Radios off, in both boot modes **and on the installer stick** — `evalConfig` hands it to both. A modprobe `install` directive refuses `cfg80211` and `bluetooth`, which every WiFi and Bluetooth driver depends on, so the driver cannot load however it is matched; `options rfkill default_state=0` makes every switch register blocked; `loom-rfkill-block` blocks whatever is left. `wifi.nix` sets `loom.radios.allowWifi` to take the 802.11 half back off. |
@@ -41,6 +42,8 @@ this file is about the code.
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer/` | The three programs the stick runs — `loom-menu`, `loom-install`, `loom-wipe` — as one Python package: the device interlock, the auto-install decision, the console drawing (rich), and a pytest suite run at build time. |
 | `scripts/platform_info.sh` | `loom-platform-info`: what the box actually is, next to what the platform file claims. Plain bash with no Nix dependency, because the box it most needs to run on is one that is not running Loom yet. |
+| `tests/appliance-mouse.nix` | VM test for point-and-click: a `uinput` mouse in the guest, through mousedev, gpm and the pty shim, to the pane tmux focuses. |
+| `tests/appliance-portal.nix` | VM test for the captive portal on a booted `--require-client-cert` box with no cluster behind it — the state every box is in for its first hours. |
 | `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
 | `tests/appliance-skills.nix` | Not a VM test: asserts that the assistant pane got skills on a platform that deploys Ollama and none on one that does not, that their frontmatter is what opencode will register, and that every `loom-*` command they name is one this image carries. |
 | `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
@@ -62,7 +65,7 @@ this file is about the code.
 Two reasons, either one sufficient:
 
 - **Flake inputs strip `.git`.** `up.sh`'s offline mode runs `git describe --exact-match --tags HEAD`
-  (`up.sh:236`) inside the embedded checkout. `builtins.path` copies a directory verbatim; flake `path:`
+  (`set_offline_mode`) inside the embedded checkout. `builtins.path` copies a directory verbatim; flake `path:`
   inputs do not.
 - **One nixpkgs pin.** `devenv.lock` plus the `# renovate:` comments in `devenv.yaml` already govern
   nixpkgs, and `cicd/sync_devenv_renovate.sh` only knows about `devenv.lock`. A second lockfile here
@@ -274,6 +277,7 @@ winning:
 | file | written by |
 | --- | --- |
 | `charts/values.yaml` | the chart |
+| `charts/values-development.yaml` | skaffold's dev profile, inserted here under `up -d`; never on a box |
 | `charts/values-user.yaml` | `loom.userValues` — `--values`, `--set` |
 | `charts/values-up-flags.yaml` | `up.sh`, from its own flags |
 | `charts/values-appliance.yaml` | `loom.applianceValues` — `modes.nix`, `mtls.nix` |
@@ -680,7 +684,7 @@ each runnable on its own, and it runs both even when the first one fails:
 
 | Command | What it does |
 | --- | --- |
-| `appliance-pytest` | The suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records), `console-mouse/tests` (the gpm wire format and the SGR translation), `ready/tests` (what counts as a workload, and the stage machine), `portal/tests` (the probe contract, the page, the password gate and the spool) and `tests/scripts/tests` (the VM tests' own screen and pane parsers). Extra arguments go to pytest. |
+| `appliance-pytest` | The suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records), `console-mouse/tests` (the gpm wire format and the SGR translation), `ready/tests` (what counts as a workload, and the stage machine), `portal/tests` (the probe contract, the page, the password gate and the spool), `tests/scripts/tests` (the VM tests' own screen and pane parsers) and `skills/tests` (the assistant pane's skills against the headings they cite in `Documentation/`). Seven, and `skills/tests` is the one with no derivation behind it: no `src` holds both the skills and the documentation they cite, so this is the only place it runs — everything else here is double-covered by a `checkPhase`. Extra arguments go to pytest. |
 | `appliance-eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
 
 Every suite also runs inside the derivation that owns it — each package's `checkPhase` — so a
@@ -739,27 +743,38 @@ the two type checks can run, and the one that runs on every commit is worth more
 | `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |
 | `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, the fallback switched off, and a platform that excludes the driver behind the only wired port. |
 | `key-store` | `tests.applianceKeyStore` | The `--lock-key` build's key guard, which arms on a weaker check than every other image's: a locked stick carries no plaintext key to test against the root. Getting that branch wrong leaves the guard idle for the life of the box, silently. |
+| `skills` | `tests.applianceSkills` | What the assistant pane was given to read: that a GPU platform got skills at all, that their frontmatter is what opencode will actually register, and that every `loom-*` command they name is one this image carries. **Not a VM test** — but bound to the host architecture, because it realises a store path built from the platform's own nixpkgs. |
+| `debug` | `tests.applianceDebug` | The `--debug` build's sshd: that the generated key opens it, that passwords and every other account are refused *in the server's own configuration*, and that the box says so on the login screen, in the motd and in the status line. |
 
 The script picks the platform matching the host architecture, passes the `*.loom` host list, the
 namespace and the chat model from `vars.sh` — `tests/appliance.nix` asserts the appliance restates
 those correctly, so defaults would fail the test for the wrong reason — and asks nix to collect
-garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--gc`,
-`--nixpkgs` and `--nixos-hardware` are the flags; `appliance-test --help` lists them.
+garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--max-free`, `--gc`, `--kvm`, `--no-kvm`, `--nixpkgs` and
+`--nixos-hardware` are the flags; `appliance-test --help` lists them. `--no-kvm` is the one to know
+about: it builds without the `kvm` system feature, so qemu falls back to software emulation —
+correct, and five to ten times slower — which is what lets these run on a CI runner with no nested
+virtualisation.
 
-`hardware` and `units` are the exceptions to everything in this section. They boot nothing — they read
-the evaluated configuration and exit — so they do not need KVM, do not build the appliance closure, and
-are not bound to the host's architecture. They therefore run first, and a selection made up only of
-them lifts the cross-architecture refusal:
+`hardware`, `units` and `skills` are the exceptions to everything in this section: they boot
+nothing, reading the evaluated configuration and exiting, so none of them needs KVM or builds the
+appliance closure. They run first.
+
+Two of the three are also free of the host's architecture, and `skills` is not -- it has to
+*realise* a store path, which on a foreign architecture is a platform mismatch rather than a
+verdict. So a selection made up only of `hardware` and `units` lifts the cross-architecture
+refusal, and one that includes `skills` does not:
 
 ```bash
 appliance-test hardware --platform spark      # works on an x86_64 workstation
 appliance-test hardware --platform all        # or all three at once
 appliance-test units --platform all           # the unit graph, every platform, both builds
+appliance-test skills                         # this machine's platform only
 ```
 
-`hardware` is the one to run after a renovate bump of the `nixos-hardware` pin, and `units` after a
-bump of `nixpkgs-stable`: all three platforms checked from one machine, in seconds. `--platform all` is refused for any selection that includes a VM test,
-which has to boot the kernel it built.
+`hardware` is the one to run after a renovate bump of the `nixos-hardware` pin, `units` after a
+bump of `nixpkgs-stable`, and `skills` after an `opencode` bump: all three platforms checked from
+one machine, in seconds. `--platform all` is refused for any selection that includes a VM test or
+`skills`.
 
 Underneath it is one `nix-build` per target, which is still the way to run one by hand:
 
@@ -909,10 +924,11 @@ run's disk images. A garbage collection clears those too.
 
 `box.nix` restates things that live in `up.sh` and `vars.sh`:
 
-- the eight sysctls from `setup_system` (`up.sh:616-684`)
+- the eight sysctls from `up.sh`'s `setup_system`
 - the `*.loom` host list, generated from `vars.sh` at build time rather than copied
-- every binary `up.sh` needs — the `validate_environment` list (`up.sh:402-428`), plus the `awk` it pipes
-  through at `up.sh:380` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold` reaches for
+- every binary `up.sh` needs — the `check_command` list in `validate_environment`, plus the `awk` it pipes
+  through in `set_skaffold_args` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold`
+  reaches for
 - `NAMESPACE`, passed through the same way the host list is and consumed by `console.nix`'s `k9s` view
 - `LOOM_CHAT_MODEL`, the same route again, consumed by `console.nix`'s `loom-chat` pane. It has a harder
   constraint than the rest: it must name a model `ollama/Dockerfile.models` bakes into the production image, because
@@ -925,6 +941,9 @@ run's disk images. A garbage collection clears those too.
   API server. `vars.sh` states it as `LOOM_MINIKUBE_IP` for `up.sh`, which pins the node to it with
   `minikube start --static-ip` and stops if the node lands elsewhere; a tag whose `vars.sh` lacks the
   variable cannot pin, and the build says so.
+
+Named by function rather than by line throughout: these move, and a line number that has drifted is
+worse than none — it reads as precise and points at unrelated code.
 
 `tests/appliance.nix` asserts all six, so a change on either side is caught rather than shipped. If you
 add a `check_command` to `up.sh`, add the package to `loom.toolchain` in `box.nix` and the name to the test.
@@ -1120,8 +1139,8 @@ Nothing about the device is baked in: the table is a fixed 2976 MiB whatever the
 remainder is left unallocated, and re-running it on another stick produces the identical layout.
 `--only N` reformats one partition without re-cutting the table, which is how you retry a single row.
 
-Partitions 1–15 are the `KNOWN` types (`vfat` twice, as FAT16 and FAT32), 17–19 are tier-3
-candidates, and 20–26 are the refusal signatures plus one deliberately blank partition. Each
+Partitions 1–16 are the `KNOWN` types (`vfat` twice, as FAT16 and FAT32), 17–19 are tier-3
+candidates, and 20–26 are the six refusal signatures plus one deliberately blank partition. Each
 mountable one carries a copy of `integrationtest/assets`.
 
 Four things about it are worth knowing before reading the script:
@@ -1144,6 +1163,11 @@ Four things about it are worth knowing before reading the script:
   (`ztest -f DIR -p LOOM21ZFS -s 128m -v 1`). libblkid reads label L0 at a fixed offset 16384, which
   is inside those 256 KiB, so the copy stands alone. Everything else uses the real tool — `mkswap`,
   `pvcreate`, `mdadm --create --metadata=1.2`, `cryptsetup luksFormat`.
+  That file is a **deliberate in-tree exception to the repository's "binaries live in LFS"
+  convention** (`.gitattributes` routes `*.svg *.png *.ico *.iso *.zst *.xz *.gz *.gif`, and not
+  `*.bin`): at 256 KiB and immutable it costs the object database nothing, and keeping it out of LFS
+  means a fixture this test depends on cannot be missing from a checkout that skipped `git lfs pull`.
+  A larger or regenerated binary fixture should go to LFS rather than follow it.
 - **MD RAID is built on a loop device and copied across.** `mdadm` opens its member `O_EXCL`, which
   the `mkfs` tools do not, and on a stick that has just had 26 partitions written to it something
   reliably holds that partition open — udev, udisks, whatever the desktop runs — so `mdadm --create`

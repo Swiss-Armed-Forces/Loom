@@ -59,9 +59,19 @@
   # air-gapped box has no way to fetch another model, and the production target
   # of ollama/Dockerfile.models bakes in exactly that one.
   #
-  # The default here is only so that `nix-build ./nixos -A tests.appliance`
-  # needs no arguments; every real build is given the chart's value.
-  loomChatModel ? "huihui_ai/qwen3.5-abliterated:9b",
+  # No default, like `loomHostsJson` and `repoSrc`. There used to be one --
+  # `huihui_ai/qwen3.5-abliterated:9b` -- and it named a model the production
+  # image does not carry: `ollama/Dockerfile.models` bakes `qwen3.8:27b`, and
+  # `check_ollama_models.sh` holds that Dockerfile to the chart while nothing
+  # compared this. No shipped or CI path reached it, but it is the kind of
+  # default that is eventually believed; `Documentation/appliance.md` believed
+  # it. Every caller passes the chart's value by way of vars.sh, so a build that
+  # does not is a build that should say so.
+  loomChatModel ? throw (
+    "nixos: loomChatModel is required. Pass the chart's own value, which is what "
+    + "vars.sh reads out of charts/values.yaml's _llmDefaults.model: "
+    + "nix-build ./nixos --argstr loomChatModel \"$(. ./vars.sh; echo \"$LOOM_CHAT_MODEL\")\""
+  ),
   # The address the minikube node comes up on, and so what `*.loom` resolves to
   # here and what the DNAT chain sends a visitor at. The authority is
   # `kubernetes.api` in the embedded tag's charts/values.yaml, which is also the
@@ -553,7 +563,6 @@ in
         specialArgs
         applianceModules
         loomHostsJson
-        loomChatModel
         minikubeIp
         loomSubnet
         ;

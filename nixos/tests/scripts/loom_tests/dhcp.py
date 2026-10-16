@@ -42,6 +42,7 @@ class Params(NamedTuple):
     box_address: str
     portal_address: str
     pool_start: str
+    pool_end: str
 
 
 class Offer(NamedTuple):
@@ -69,8 +70,20 @@ def _offer(appliance: "Machine", params: Params) -> Offer:
     # The address offered has to come out of the pool network.nix configured. The
     # probe already refuses an offer from any other server on the segment, so this
     # is the second half of that: the right server, handing out the right range.
-    pool = params.pool_start.rsplit(".", maxsplit=1)[0]
-    assert raw.splitlines()[0].startswith(f"yiaddr {pool}."), raw
+    #
+    # The last octet, not the /24 prefix. Comparing prefixes accepted any address
+    # on the segment -- including the box's own and the portal responder's, which
+    # is the collision `appliance-units.nix` calls out in prose and which nothing
+    # else in this suite covers.
+    offered = raw.splitlines()[0].split()[1]
+    low, high = (
+        int(end.rsplit(".", maxsplit=1)[-1])
+        for end in (params.pool_start, params.pool_end)
+    )
+    prefix = params.pool_start.rsplit(".", maxsplit=1)[0]
+    assert offered.startswith(f"{prefix}."), raw
+    assert low <= int(offered.rsplit(".", maxsplit=1)[-1]) <= high, raw
+    assert offered not in (params.box_address, params.portal_address), raw
 
     options = {
         int(line.split()[1]): line.split()[2]
@@ -221,12 +234,27 @@ def _survives_a_missing_interface(
         appliance.succeed(f"ip link set gone name {params.interface}")
         appliance.succeed(f"ip link set {params.interface} up")
 
-        # No restart between here and the offer. That is the assertion: the probe
-        # is retried rather than the daemon, so a lease coming back means dnsmasq
-        # bound an interface that appeared after it had started.
+        # No restart between here and the offer. That is the assertion -- and it
+        # is now made: `dnsmasq.service` carries `Restart=on-failure`, so a
+        # daemon that exited "unknown interface" would be restarted by systemd
+        # and would bind cleanly the moment the name came back, with
+        # `wait_until_succeeds` then getting its lease and the test passing
+        # having proved the opposite of what it claims.
+        restarts_before = _restarts(appliance)
         appliance.wait_until_succeeds(
             f"loom-dhcp-probe {params.interface} {params.box_address}"
         )
+        assert _restarts(appliance) == restarts_before, (
+            "dnsmasq was restarted before it answered; it did not bind the "
+            "interface that appeared under it"
+        )
+
+
+def _restarts(appliance: "Machine") -> int:
+    """How many times systemd has restarted dnsmasq on this boot."""
+    return int(
+        appliance.succeed("systemctl show -p NRestarts --value dnsmasq.service").strip()
+    )
 
 
 def run(

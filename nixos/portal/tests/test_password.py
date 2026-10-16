@@ -41,8 +41,19 @@ def test_yesterdays_password_is_accepted_too(tmp_path):
 
 
 def test_anything_else_is_refused(tmp_path):
+    """Including non-ASCII, which is the case a US-layout reading of the screen produces
+    on QWERTZ or AZERTY hardware -- and which `hmac.compare_digest` refuses to compare
+    as `str` at all, raising TypeError rather than answering "wrong"."""
     gate = gate_for(tmp_path)
-    for attempt in ["", "wrong", PASSWORD + "x", PASSWORD.upper()]:
+    for attempt in [
+        "",
+        "wrong",
+        PASSWORD + "x",
+        PASSWORD.upper(),
+        "pässwört",
+        "🔑🔑🔑",
+        PASSWORD + "ü",
+    ]:
         assert not gate.check(attempt).accepted
 
 

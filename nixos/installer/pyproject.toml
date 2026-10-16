@@ -3,6 +3,9 @@ name = "loom-installer"
 version = "0.1.0"
 description = "The Loom appliance installer: the USB stick's console menu, install and wipe"
 requires-python = ">=3.11"
+# As every first-party package declares it: without this the generated
+# attribution records the package as UNKNOWN.
+license = "MIT"
 dependencies = ["rich>=13"]
 
 [project.scripts]

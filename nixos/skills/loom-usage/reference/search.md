@@ -18,7 +18,9 @@ fault.
 Search is full-text over the extracted content **and** the extracted metadata, so a scanned image
 with no text layer becomes searchable once OCR has run on it. The web UI at
 `http://frontend.loom` is the way in; the same queries are available through `/v1/files` on the
-API.
+API — which answers with file *ids* and sort cursors, nothing else, so a hit needs
+`GET /v1/files/{file_id}` to become a name. When the question is a filename,
+`/v1/files/search_by_filename` answers it directly.
 
 Beyond plain text search, the UI offers filtering by tags and by extracted metadata, browsing the
 file tree, and per-file previews and thumbnails.

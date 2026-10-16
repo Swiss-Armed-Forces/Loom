@@ -354,6 +354,16 @@ set_skaffold_profile(){
         # because both flags arrive here and the integration tests are the half
         # that actually depends on it: they reach Loom over http://rabbit.loom
         # and http://elasticsearch.loom throughout.
+        #
+        # ENABLE_HTTP is set with it, not just the values file. This step runs before
+        # validate_environment, which refuses plain http beside
+        # certificate.requireClientCert -- and that guard reads ENABLE_HTTP, so
+        # widening every route to the `web` entrypoint while leaving the flag false
+        # would accept `up -d` on a deployment requiring a client certificate and
+        # serve every host in cleartext: the exact bypass the guard exists for. A
+        # duplicate values-file entry when --enable-http is also given is harmless,
+        # since yq deep-merges.
+        ENABLE_HTTP=true
         UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
     fi
     if [[ "${OFFLINE_MODE}" = true ]]; then

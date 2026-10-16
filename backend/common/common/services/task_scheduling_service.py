@@ -39,6 +39,13 @@ class ArchiveImportRequest(BaseModel):
     full_name: str
     source_id: str
     uploaded_datetime: datetime | None = None
+    # True when nobody asked for this import: the crawler found the blob in the intake
+    # bucket, which on an appliance means it came off a stick somebody carried in.
+    # `route_archive_blob` reads it to decide whether unpacking is affordable -- the
+    # unpack wants several simultaneous copies of the archive in `tempfile_dir`, and on
+    # a single-disk box with no operator in front of it, declining to plain-file
+    # indexing is the recoverable answer.
+    unattended: bool = False
 
 
 class TaskSchedulingService(TaskService):
@@ -129,12 +136,17 @@ class TaskSchedulingService(TaskService):
         """Dispatch a loom archive for import.
 
         The argument is an `ArchiveImportRequest` where it used to be a bare
-        `FileStorageLazyBytes`, under the same task name. A message enqueued by an older
-        worker and consumed by this one therefore fails Pydantic validation rather than
-        being understood. That is consistent with Loom's stated lack of an upgrade path
-        -- the whole cluster deploys as one unit and these queues are short-lived -- but
-        it is the reason a rolling replacement of the worker alone is not a thing to
-        attempt.
+        `FileStorageLazyBytes`, under the same task name -- and nothing on this path
+        notices the difference. The serializer is pickle (`_initialization.py` sets
+        `task_serializer = "pickle"`) and Celery coerces arguments to models only for a
+        task declared `pydantic=True`, which this one is not, so a message enqueued by
+        an older worker unpickles cleanly, passes through `dispatch_index_archive` and
+        `index_archive` -- both pure forwarders -- and raises `AttributeError` at
+        `request.file_content` inside the task. `index_archive_task` therefore checks
+        the type it was handed before touching it. That is consistent with Loom's
+        stated lack of an upgrade path -- the whole cluster deploys as one unit -- but
+        these queues are durable, so it is the reason a rolling replacement of the
+        worker alone is not a thing to attempt.
         """
         root_task_id = uuid4()
         self._send_task(

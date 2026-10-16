@@ -445,7 +445,11 @@ in
       environment.systemPackages = [ loom-client-certificate ];
 
       systemd.tmpfiles.rules = [
-        "d /var/lib/loom 0755 root root -"
+        # /var/lib/loom itself is box.nix's, declared once for the whole box --
+        # see the comment there. Declaring it again with another mode produced a
+        # duplicate systemd-tmpfiles refuses, keeping whichever module happened to
+        # be evaluated first.
+        #
         # 0750 root:nginx, not 0700 root:root. See `nginxGroup`: the
         # configuration test opens the key in here as the service user, and a
         # directory it cannot traverse stops nginx from starting at all.

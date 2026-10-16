@@ -85,6 +85,11 @@ def check_pool_size(runner: CommandRunner, disks: list[str]) -> None:
         )
 
 
+# What the NVRAM entry this installer creates is called. A constant because
+# `_remove_stale_boot_entries` has to recognise its own previous runs by it.
+BOOT_ENTRY_LABEL = "Loom appliance"
+
+
 def partition(runner: CommandRunner, disks: list[str], ui: Ui | None = None) -> None:
     """Lay out every disk that will join the pool.
 
@@ -96,7 +101,13 @@ def partition(runner: CommandRunner, disks: list[str], ui: Ui | None = None) -> 
     # Anything still holding these disks -- a pool from a previous install, its LUKS
     # mapping -- has to go first, or sgdisk finds the device busy and the install
     # dies with the disks in a worse state than it found them.
-    storage.discard_pool(runner)
+    #
+    # Scoped to the disks the operator confirmed: `vgremove` addresses LVM by group
+    # name and this stick configures no device filter, so a `loom` group on a disk
+    # `target_disks` excluded -- a SATA disk, a second NVMe, a pulled Loom NVMe in a
+    # USB caddy attached precisely to copy data off it -- would be destroyed without
+    # ever appearing in the "THE FOLLOWING WILL BE DESTROYED" list.
+    storage.discard_pool(runner, targets=disks)
 
     for index, disk in enumerate(disks):
         if ui is not None:
@@ -261,6 +272,25 @@ def mount_target(runner: CommandRunner) -> None:
             constants.ESP_MOUNT_OPTIONS,
             f"{constants.BY_PARTLABEL}/{constants.ESP_LABEL}",
             f"{constants.MOUNT}/boot",
+        ]
+    )
+
+
+def stamp_pool_installed(runner: CommandRunner) -> None:
+    """Label the container, which is what "this box is installed" means.
+
+    `storage.pool_claimed_by_key` reads this label in addition to testing the
+    passphrase, because the passphrase alone says only that `encrypt` ran -- and the
+    only state that said "half written" was `constants.AUTO_MARKER`, which lives in /run
+    on purpose so that a reboot clears it.
+    """
+    runner.check(
+        [
+            "cryptsetup",
+            "config",
+            "--label",
+            constants.INSTALLED_LABEL,
+            settings().storage.root_device,
         ]
     )
 
@@ -539,6 +569,14 @@ def fix_boot_order(
     efi_arch = settings().efi_arch
     ui.log("Making the internal disk the default boot entry")
 
+    # Reinstalls are documented and expected -- "the installer stays reachable from
+    # the firmware's own boot menu for reinstalls and wipes" -- and
+    # `efibootmgr --create` never deduplicates, so a box installed three times used to
+    # carry three identical Boot#### entries. Harmless on most firmware, cumulative on
+    # all of it, and NVRAM exhaustion is a known way to brick several of the platforms
+    # in nixos/platforms/.
+    _remove_stale_boot_entries(runner, ui)
+
     # efibootmgr does not check that the loader exists, so a wrong name here produces
     # an entry the firmware silently cannot boot.
     created = runner.run(
@@ -552,7 +590,7 @@ def fix_boot_order(
             "--loader",
             f"\\EFI\\systemd\\systemd-boot{efi_arch}.efi",
             "--label",
-            "Loom appliance",
+            BOOT_ENTRY_LABEL,
         ]
     )
     if not created.ok:
@@ -564,6 +602,28 @@ def fix_boot_order(
         return
 
     _move_stick_fallback(runner, ui, report, boot)
+
+
+# What `efibootmgr` prints for one entry: `Boot0003* Loom appliance\tHD(1,GPT,...)`.
+_BOOT_ENTRY = re.compile(r"^Boot([0-9A-Fa-f]{4})\*?\s+(?P<label>.*?)\s*$")
+
+
+def _remove_stale_boot_entries(runner: CommandRunner, ui: Ui) -> None:
+    """Delete every existing NVRAM entry labelled like the one about to be made.
+
+    Best effort: an entry that cannot be read or cannot be deleted costs nothing here,
+    and nothing downstream depends on it being gone.
+    """
+    listing = runner.output(["efibootmgr"])
+    for line in listing.splitlines():
+        match = _BOOT_ENTRY.match(line.split("\t")[0])
+        if match is None:
+            continue
+        if match.group("label").strip() != BOOT_ENTRY_LABEL:
+            continue
+        number = match.group(1)
+        ui.log(f"Removing the previous Boot{number} entry")
+        runner.run(["efibootmgr", "--bootnum", number, "--delete-bootnum"])
 
 
 def _move_stick_fallback(
@@ -592,7 +652,20 @@ def _move_stick_fallback(
 
         try:
             fallback = f"{mountpoint}/EFI/BOOT/BOOT{efi_arch.upper()}.EFI"
+            moved = f"{mountpoint}/EFI/loom/boot{efi_arch}.efi"
             if not os.path.isfile(fallback):
+                if os.path.isfile(moved):
+                    # A reinstall from the same stick, which is a documented flow. The
+                    # fallback is absent because a previous run already moved it, so
+                    # the stick does *not* own the removable-media path and saying it
+                    # does -- plus Degradation.BOOT_ORDER, plus
+                    # `hold_for_boot_order` holding the console indefinitely -- was
+                    # both wrong and the end of every reinstall.
+                    ui.log(
+                        f"Installer already at \\EFI\\loom\\boot{efi_arch}.efi"
+                        f" on {boot}."
+                    )
+                    return
                 # Not cosmetic: the stick stays plugged in forever, so as long as it
                 # owns the removable-media path most firmware boots the installer
                 # instead of the appliance on every restart.
@@ -600,14 +673,35 @@ def _move_stick_fallback(
                 _warn_stick_owns_fallback(ui, report)
                 return
 
-            os.makedirs(f"{mountpoint}/EFI/loom", exist_ok=True)
-            os.replace(fallback, f"{mountpoint}/EFI/loom/boot{efi_arch}.efi")
+            # The two filesystem mutations of this function, and the only ones in it
+            # that are not already routed through a warning. A vfat ESP that is full,
+            # or that the kernel mounted read-only after a dirty bit, raises OSError
+            # straight out -- and this runs after the closure, the loader entry and
+            # the recovery keyslot are all in place, where "this box will NOT boot"
+            # is the opposite of the truth.
+            try:
+                os.makedirs(f"{mountpoint}/EFI/loom", exist_ok=True)
+                os.replace(fallback, moved)
+            except OSError as error:
+                ui.warn(f"Could not move the stick's fallback loader: {error}")
+                _warn_stick_owns_fallback(ui, report)
+                return
+
             ui.log(
                 f"Installer moved to \\EFI\\loom\\boot{efi_arch}.efi on {boot};"
                 " reach it from the firmware boot menu."
             )
         finally:
-            runner.run(["umount", mountpoint])
+            # Checked, because `os.replace` on vfat leaves the directory change in
+            # page cache and this unmount is what commits it. On EBUSY the rename is
+            # lost, the stick keeps the removable-media path, and the box reboots in
+            # about thirty seconds -- so an unreported failure here means the firmware
+            # boots the installer again on every restart, having told the operator the
+            # loader had been moved.
+            os.sync()
+            if not runner.run(["umount", mountpoint]).ok:
+                ui.warn(f"Could not unmount the stick's ESP from {mountpoint}.")
+                _warn_stick_owns_fallback(ui, report)
     finally:
         try:
             os.rmdir(mountpoint)
@@ -683,13 +777,33 @@ def run(runner: CommandRunner, ui: Ui, auto: bool) -> InstallReport:
             install_system(runner, ui)
             select_setup_entry(runner, ui, report)
             report.passphrase = enroll_recovery_passphrase(runner, key_device)
-            # targets[0]: the ESP lives on the first pool member, and that is the
-            # disk the firmware has to be pointed at.
-            fix_boot_order(runner, ui, report, targets[0], boot)
-            unmount_target(runner)
+            # The last thing the destructive block does, because it is what makes
+            # "this stick installed this box" mean *finished*. From the moment
+            # `encrypt` returns, the disk already satisfies everything
+            # `pool_claimed_by_key` tests -- so a power loss during the twenty-minute
+            # `install_system` used to produce, on the very next boot, a FRESH box
+            # that `decide()` called ALREADY_INSTALLED: no bootloader, no NVRAM
+            # entry, and a menu insisting it had installed this box already.
+            stamp_pool_installed(runner)
         except BaseException:
             _abandon_disks(runner, ui)
             raise
+
+    # Outside the destructive guard on purpose. Everything above is "a way out of
+    # here leaves a box that cannot boot"; these two run *after* the closure, the
+    # loader entry, the recovery keyslot and the label are all in place, and they
+    # degrade rather than abandon. `_move_stick_fallback`'s own failures are already
+    # warnings; `unmount_target` uses `runner.check`, so a transient "target is busy"
+    # raises -- and `_abandon_disks` would then tell the operator to destroy a
+    # completed install.
+    try:
+        # targets[0]: the ESP lives on the first pool member, and that is the
+        # disk the firmware has to be pointed at.
+        fix_boot_order(runner, ui, report, targets[0], boot)
+        unmount_target(runner)
+    except (OSError, CommandError) as error:
+        ui.warn(f"The install finished, but tidying up did not: {error}")
+        report.degraded.add(Degradation.BOOT_ORDER)
 
     _completion_block(ui, report, config)
     return report

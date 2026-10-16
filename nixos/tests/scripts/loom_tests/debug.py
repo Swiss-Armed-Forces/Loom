@@ -21,6 +21,7 @@ not by booting; the second is a string in the bootloader entry, which the VM tes
 framework never writes (it boots the kernel directly).
 """
 
+import re
 import shlex
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -203,13 +204,27 @@ def _the_key_is_root(client: "Machine", params: Params, subtest: "Subtest") -> N
 
 
 def _passwords_are_refused(
-    client: "Machine", params: Params, subtest: "Subtest"
+    appliance: "Machine", client: "Machine", params: Params, subtest: "Subtest"
 ) -> None:
     with subtest("password authentication is refused outright"):
-        # The operator account has no password, so this could never have
-        # succeeded; what is asserted is that sshd does not offer the method at
-        # all. `PreferredAuthentications=password` with no key on the command
-        # line leaves ssh with nothing sshd will take.
+        # Asserted on the server, where the decision lives. The client probe
+        # below cannot fail: `BatchMode=yes` disables password and
+        # keyboard-interactive prompting *in ssh* -- `userauth_passwd` declines
+        # the method before a packet is sent -- and with `PubkeyAuthentication=no`
+        # on top there is nothing left to offer, so it exits non-zero whatever
+        # sshd_config says. Flip `PasswordAuthentication` to yes on the box and
+        # the old assertion stayed green, on the one flag that takes back the
+        # appliance's "no remote access" guarantee.
+        effective = appliance.succeed("sshd -T")
+        assert re.search(
+            r"^passwordauthentication no$", effective, re.M | re.I
+        ), effective
+        assert re.search(
+            r"^kbdinteractiveauthentication no$", effective, re.M | re.I
+        ), effective
+
+        # Kept as a smoke test: a client with neither a key nor a password gets
+        # nowhere.
         client.fail(
             "ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no"
             " -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -218,12 +233,19 @@ def _passwords_are_refused(
 
 
 def _other_accounts_are_refused(
-    client: "Machine", params: Params, subtest: "Subtest"
+    appliance: "Machine", client: "Machine", params: Params, subtest: "Subtest"
 ) -> None:
     with subtest("AllowUsers keeps every other account out"):
-        # root has a locked shadow entry and no authorized key, so this fails
-        # twice over. The point is the first of the two: `AllowUsers` is what
-        # makes a future change to either of those harmless.
+        # On the server, for the same reason as above: root has a locked shadow
+        # entry and no authorized key, so the client probe fails twice over and
+        # would fail with `AllowUsers` gone. What `AllowUsers` says is readable
+        # from `sshd -T`, and it is the thing that makes a future change to
+        # either of those harmless.
+        effective = appliance.succeed("sshd -T")
+        allowed = re.search(r"^allowusers (.+)$", effective, re.M | re.I)
+        assert allowed, effective
+        assert allowed.group(1).split() == [params.user], effective
+
         client.fail(_ssh(params, "true", user="root"))
 
 
@@ -317,7 +339,7 @@ def run(
     _the_key_gets_in(client, params, subtest)
     _the_session_is_a_plain_shell(client, params, subtest)
     _the_key_is_root(client, params, subtest)
-    _passwords_are_refused(client, params, subtest)
-    _other_accounts_are_refused(client, params, subtest)
+    _passwords_are_refused(appliance, client, params, subtest)
+    _other_accounts_are_refused(appliance, client, params, subtest)
     _the_motd_says_so(client, params, subtest)
     _the_bundle_collects(client, params, subtest)

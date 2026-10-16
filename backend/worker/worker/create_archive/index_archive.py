@@ -19,8 +19,10 @@ pass.
 """
 
 import logging
+import shutil
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 from common.archive.archive_detection import (
     decrypts_to_a_loom_zip,
@@ -37,10 +39,12 @@ from common.dependencies import (
 )
 from common.services.lazybytes_service import (
     FileStorageLazyBytes,
-    FileStorageLazyBytesService,
+    FileStorageTag,
+    LazyBytesService,
 )
 from common.services.task_scheduling_service import ArchiveImportRequest
-from minio.error import MinioException
+from common.settings import settings
+from minio.error import MinioException, S3Error
 
 from worker.create_archive.decrypt_archive import decrypt_loom_archive
 from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
@@ -49,6 +53,16 @@ from worker.create_archive.tasks import unzip_loom_archive
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+# How many simultaneous copies of the archive the unpack wants on local disk.
+#
+# `unzip_loom_archive` is a group of three branches, each of which independently calls
+# `load_file(archive_zip)` -- a full download plus a full copy into `tempfile_dir` --
+# and being a group they run at the same time.
+UNZIP_CONCURRENT_COPIES = 3
+
+# How many retries a transport fault gets before the blob is indexed as a plain file.
+INDEX_ARCHIVE_MAX_RETRIES = 5
 
 
 @dataclass(frozen=True)
@@ -61,7 +75,7 @@ class ArchiveServices:
     dependency globals behind the code's back.
     """
 
-    file_storage: FileStorageLazyBytesService
+    file_storage: LazyBytesService[FileStorageTag]
     encryption: ArchiveEncryptionService
 
     @classmethod
@@ -125,8 +139,77 @@ def _is_importable_archive(
         return is_loom_archive(fd)
 
 
+def _unpack_fits_on_disk(size: int) -> bool:
+    """Whether three concurrent copies of this archive would fit in `tempfile_dir`.
+
+    The appliance is a single-disk box, and the unpack is unattended there: the crawler
+    routes every archive-shaped object in the intake bucket here, off a stick somebody
+    carried in. Filling the disk takes the whole deployment down, while declining to
+    unpack costs only that the blob is indexed as the opaque zip it is -- so the archive
+    has to be measured against the free space before it is accepted.
+    """
+    target = settings.tempfile_dir or Path("/tmp")
+    try:
+        free = shutil.disk_usage(target).free
+    except OSError:
+        logger.warning("Could not read the free space of %s", target, exc_info=True)
+        return True
+    return size * UNZIP_CONCURRENT_COPIES <= free
+
+
+def _route_decrypted(
+    file_content: FileStorageLazyBytes, services: ArchiveServices
+) -> ArchiveRouting:
+    """Open a container this deployment's key fits, and route what came out.
+
+    Its own function rather than a branch of `route_archive_blob`, because the decrypted
+    copy has to be deleted on every way out that does not hand it on and that is easier
+    to see -- and to keep right -- in one short scope.
+    """
+    decrypted = decrypt_loom_archive(
+        file_content, services.file_storage, services.encryption
+    )
+    if decrypted is None:
+        # The header probe already said the key fits, so reaching here means
+        # the body failed its MAC: truncation or corruption, not a foreign
+        # archive. Worth distinguishing in the log -- the two have different
+        # causes and different fixes.
+        return ArchiveRouting(
+            ArchiveDecision.INDEX_AS_FILE,
+            None,
+            "encrypted, and decryption failed",
+        )
+
+    # Deleted on every way out that does not hand it on -- the failed read
+    # included. `decrypt_loom_archive` has already written a full plaintext copy
+    # into permanent file storage, and once this returns nothing holds its service
+    # id. It is not leaked forever: `flush_file_storage_service_task` runs on the
+    # beat schedule, walks the bucket from a random start point and removes objects
+    # older than a day that no repository references. But that is a randomised,
+    # 1000-objects-per-run, idle-gated sweep, so the copy sits on disk for at least
+    # 24 hours -- on a single-disk appliance, reached unattended off a USB stick
+    # rather than by an operator calling the import endpoint. Reading an
+    # attacker-shaped zip is exactly where this raises, so the exception path is
+    # the one that matters.
+    handed_on = False
+    try:
+        if not _is_importable_archive(decrypted, services):
+            return ArchiveRouting(
+                ArchiveDecision.INDEX_AS_FILE,
+                None,
+                "decrypted, but not a loom archive",
+            )
+        handed_on = True
+        return ArchiveRouting(ArchiveDecision.IMPORT_DECRYPTED, decrypted, "")
+    finally:
+        if not handed_on:
+            services.file_storage.delete(decrypted)
+
+
 def route_archive_blob(
-    file_content: FileStorageLazyBytes, services: ArchiveServices | None = None
+    file_content: FileStorageLazyBytes,
+    services: ArchiveServices | None = None,
+    unattended: bool = False,
 ) -> ArchiveRouting:
     """Decide what a blob actually is, doing any decryption it takes to find out.
 
@@ -135,8 +218,21 @@ def route_archive_blob(
     part that used to get this wrong. `services` defaults to the deployment's own
     and is a parameter so a caller can hand in doubles -- the same shape as
     `loom_installer.install.run` taking its CommandRunner.
+
+    `unattended` says nobody asked for this import, which is the crawler's case and
+    the one where a too-large archive is declined rather than unpacked.
     """
     services = services or ArchiveServices.resolved()
+
+    if unattended:
+        size = services.file_storage.size(file_content)
+        if not _unpack_fits_on_disk(size):
+            return ArchiveRouting(
+                ArchiveDecision.INDEX_AS_FILE,
+                None,
+                f"{size} bytes, too large to unpack unattended on this disk",
+            )
+
     verdict = _inspect_encrypted_header(file_content, services)
 
     if verdict is EncryptedBlobVerdict.FOREIGN_KEY:
@@ -150,35 +246,7 @@ def route_archive_blob(
         )
 
     if verdict is EncryptedBlobVerdict.DECRYPTS_TO_ZIP:
-        decrypted = decrypt_loom_archive(
-            file_content, services.file_storage, services.encryption
-        )
-        if decrypted is None:
-            # The header probe already said the key fits, so reaching here means
-            # the body failed its MAC: truncation or corruption, not a foreign
-            # archive. Worth distinguishing in the log -- the two have different
-            # causes and different fixes.
-            return ArchiveRouting(
-                ArchiveDecision.INDEX_AS_FILE,
-                None,
-                "encrypted, and decryption failed",
-            )
-
-        if not _is_importable_archive(decrypted, services):
-            # Deleted rather than dropped on the floor. `decrypt_loom_archive` has
-            # already written a full plaintext copy into permanent file storage, and
-            # nothing from here on holds its service id: no `File` entity references
-            # it, so no later pass reaps it. On a single-disk appliance that is a
-            # permanent leak the size of the archive, now reached unattended off a USB
-            # stick rather than by an operator calling the import endpoint.
-            services.file_storage.delete(decrypted)
-            return ArchiveRouting(
-                ArchiveDecision.INDEX_AS_FILE,
-                None,
-                "decrypted, but not a loom archive",
-            )
-
-        return ArchiveRouting(ArchiveDecision.IMPORT_DECRYPTED, decrypted, "")
+        return _route_decrypted(file_content, services)
 
     if not _is_importable_archive(file_content, services):
         return ArchiveRouting(
@@ -204,24 +272,70 @@ def _index_as_ordinary_file(request: ArchiveImportRequest, reason: str) -> None:
     )
 
 
-@app.task(base=ArchiveProcessingTask)
-def index_archive_task(request: ArchiveImportRequest) -> None:
+@app.task(
+    base=ArchiveProcessingTask,
+    bind=True,
+    # Transport faults only. A `MinioException` that is not an `S3Error` -- a connection
+    # reset, an unparsable response -- is a property of the object store rather than of
+    # the document, so it is worth the backoff; everything else below degrades instead.
+    autoretry_for=(MinioException,),
+    max_retries=INDEX_ARCHIVE_MAX_RETRIES,
+    retry_backoff=True,
+)
+def index_archive_task(
+    self: ArchiveProcessingTask, request: ArchiveImportRequest
+) -> None:
     """Import a loom archive, or index the blob as a file when it is not one."""
+    # The message was pickled by whichever worker enqueued it and nothing on the way
+    # here validates its shape, so an older message carrying a bare
+    # `FileStorageLazyBytes` arrives intact and only fails at the first attribute
+    # access. Named and loud beats `AttributeError`, which the fallback below would
+    # otherwise turn into an opaque file with no name and no source.
+    if not isinstance(request, ArchiveImportRequest):
+        raise TypeError(
+            "index_archive_task was handed a "
+            f"{type(request).__name__}, not an ArchiveImportRequest. This is a message "
+            "from a worker of a different version; the queues are durable and Loom has "
+            "no upgrade path."
+        )
+
     try:
-        routing = route_archive_blob(request.file_content)
+        routing = route_archive_blob(
+            request.file_content, unattended=request.unattended
+        )
     # The never-drop guarantee this module exists for, held even when deciding *what*
     # the blob is fails. Everything above is parsing attacker-shaped bytes -- a zip
-    # central directory, a container header -- off a stranger's USB stick, and a
-    # failure here would otherwise take the task round the retry chain into the
-    # graveyard queue with no `File` entity and no trace, which is precisely the
-    # failure this module's docstring says is no longer possible. Indexing the blob
-    # as the opaque thing it is stays the recoverable outcome.
+    # central directory, a container header -- off a stranger's USB stick. Indexing the
+    # blob as the opaque thing it is stays the recoverable outcome.
     #
-    # The same three as `crawler.archive_prescreen`, and for the same reason: a
-    # genuinely exotic error still propagates, which leaves the message to the retry
-    # chain rather than quietly indexing the wrong thing on a transport fault.
-    except (OSError, ValueError, MinioException) as exc:
+    # The same three as `crawler.archive_prescreen`: `S3Error` rather than the wider
+    # `MinioException`, because a 404 or a 416 on this object is a verdict about the
+    # object, while the rest of the family is a transport fault that the `autoretry_for`
+    # above is there to ride out.
+    except (OSError, ValueError, S3Error) as exc:
         logger.exception("Could not decide what '%s' is", request.full_name)
+        _index_as_ordinary_file(request, f"routing failed: {exc}")
+        return
+    except MinioException as exc:
+        # Retried by the decorator above until the budget is gone, and only then
+        # degraded -- rather than failing, which would lose the blob: the app sets
+        # `task_acks_late` *and* `task_acks_on_failure_or_timeout`, so an exception
+        # leaving this task is acked, never redelivered, never dead-lettered to
+        # `graveyard`, and the `POST /v1/archive/import` that produced it answered 202
+        # long ago.
+        if not self.is_last_attempt:
+            raise
+        logger.exception(
+            "Gave up reaching the object store for '%s'", request.full_name
+        )
+        _index_as_ordinary_file(request, f"the object store could not be read: {exc}")
+        return
+    # Total, deliberately: with acks-on-failure there is no retry chain behind this
+    # task, so anything that escapes is a silent drop -- an `AttributeError` or a
+    # `KeyError` in the routing would disappear the file the module docstring promises
+    # cannot disappear.
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.exception("Unexpected failure deciding what '%s' is", request.full_name)
         _index_as_ordinary_file(request, f"routing failed: {exc}")
         return
 
@@ -251,13 +365,12 @@ def index_archive_task(request: ArchiveImportRequest) -> None:
     # up to three simultaneous 300 GB temp files, and `dispatch_archive_file_stats_task`
     # streams the object end to end twice more for its checksum and its size.
     #
-    # Pre-existing in unzip_loom_archive.py, which this MR does not touch -- but the
-    # crawler prescreen now reaches this path with no operator in it, so on a
-    # single-disk appliance it bites once an archive passes a third of the free
-    # space. The fix is a chain over one `load_file` (or one `load_file_named` path
-    # shared by the three passes), with checksum and size folded into the same pass;
-    # `calculate_size_task` in particular streams a whole object to learn a number
-    # `stat_object` already returns.
+    # Pre-existing in unzip_loom_archive.py -- but the crawler prescreen now reaches
+    # this path with no operator in it, so on a single-disk appliance it bites once an
+    # archive passes a third of the free space. `route_archive_blob` therefore declines
+    # an unattended archive that large outright, which bounds the exposure; the proper
+    # fix is still a chain over one `load_file` (or one `load_file_named` path shared
+    # by the three passes), with the checksum folded into the same pass.
     unzip_loom_archive.signature(
         encrypted_archive_zip=encrypted_archive_zip
     ).apply_async(args=(routing.archive_zip,)).forget()

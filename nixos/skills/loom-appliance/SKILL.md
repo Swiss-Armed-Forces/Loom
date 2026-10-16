@@ -23,7 +23,7 @@ loom-platform-info    # what this hardware actually is, beside what the image ex
 | Kubernetes namespace | `loom` |
 | Loom checkout (source and docs, writable) | `/home/loom/loom` |
 | Operator account | `loom` — in `wheel`, passwordless `sudo` |
-| Service names | `*.loom`, pinned in `/etc/hosts`. Both `http` and `https` are served |
+| Service names | `*.loom`, pinned in `/etc/hosts`. Both `http` and `https` are served — `https` only on a `--require-client-cert` box |
 | Consoles | tty1 is the Loom session; `Alt-F2`…`Alt-F6` are plain shells |
 
 Paths in this skill are absolute on purpose. `loom-chat` started from an `Alt-F2` prompt has a
@@ -66,7 +66,7 @@ Mutating. Do not run these to investigate — say what you would run and let the
 ```bash
 loom-up                         # bring the cluster up
 loom-down                       # take it down
-loom-expose                     # (re)install the DNAT rules that publish Loom
+sudo systemctl restart loom-expose   # (re)install the DNAT rules that publish Loom
 ```
 
 Never propose `kubectl edit`, `helm upgrade`, or editing anything under `/nix/store`. The store is
@@ -75,7 +75,9 @@ back up, and the image itself is rebuilt elsewhere and reflashed.
 
 ## Going deeper
 
-Each file below is self-contained. Read the one that matches; they do not refer to each other.
+Read the one that matches the question. A few of them point at each other where the answer
+genuinely spans two — `reference/wifi.md` starts from `loom-appliance/facts.md`, and
+`reference/kubernetes.md` sends a unit question back to `reference/units.md`.
 
 | File | What is in it |
 | --- | --- |
@@ -85,7 +87,7 @@ Each file below is self-contained. Read the one that matches; they do not refer 
 | `reference/storage-usb.md` | The LUKS root, the USB key, the key guard, USB ingest |
 | `reference/gpu.md` | The GPU, Ollama, and why the AI services follow it |
 | `reference/wifi.md` | The optional access point |
-| `facts.md` | What this particular image was built with |
+| `loom-appliance/facts.md` | What this particular image was built with |
 
 ## The documentation on this box
 

@@ -133,8 +133,23 @@ let
       (check "${label}: dnsmasq answers on ${iface} and nothing else" (
         asList (settings.interface or [ ]) == [ iface ]
       ))
+      # The address, not the attribute key. `networking.interfaces.loom0 = { }`
+      # satisfies `? loom0`, and so does
+      # `networking.interfaces.loom0.ipv4.addresses = lib.mkForce [ ]` -- which
+      # is precisely the override `tests/appliance-debug.nix` applies, so the
+      # shape that leaves dnsmasq and nginx with nothing to bind was already in
+      # the tree and would have evaluated green. This file exists to pin that
+      # ordering ("network.target does not imply a static address under this
+      # nixpkgs pin"), so it has to assert the address.
       (check "${label}: the appliance address is declared on ${iface}" (
-        cfg.networking.interfaces ? ${iface}
+        lib.any (a: a.address == cfg.loom.boxAddress) (
+          cfg.networking.interfaces.${iface}.ipv4.addresses or [ ]
+        )
+      ))
+      (check "${label}: the portal address is declared on ${iface}" (
+        lib.any (a: a.address == cfg.loom.portalAddress) (
+          cfg.networking.interfaces.${iface}.ipv4.addresses or [ ]
+        )
       ))
     ];
 

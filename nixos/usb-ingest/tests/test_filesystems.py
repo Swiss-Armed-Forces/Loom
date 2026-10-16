@@ -8,11 +8,10 @@ from loom_usb_ingest.filesystems import (
 
 UID = 1000
 GID = 100
-KERNEL = frozenset({"ext4", "vfat", "minix", "jfs", "ufs"})
 
 
 def _plan(fstype):
-    return plan_mount(fstype, UID, GID, KERNEL)
+    return plan_mount(fstype, UID, GID)
 
 
 @pytest.mark.parametrize("fstype", ["vfat", "exfat", "ntfs", "ext4", "xfs", "hfsplus"])
@@ -97,12 +96,22 @@ def test_an_unrecognised_but_supported_filesystem_gets_a_generic_attempt():
     assert plan.options == BASE_OPTIONS
 
 
-def test_a_filesystem_the_kernel_cannot_mount_is_refused():
-    plan = _plan("befs")
+def test_a_filesystem_outside_the_table_is_attempted_rather_than_refused():
+    """The third tier, which used to be dead.
 
-    assert plan.policy is VolumePolicy.REFUSED
-    assert "no driver" in plan.reason
+    It was gated on /proc/filesystems, and `nixos/usb-ingest.nix` registers exactly the
+    KNOWN set -- so jfs, ufs, minix, reiserfs, erofs and squashfs were all reported to
+    the operator as "the kernel has no driver for ...", which is untrue: the modules
+    ship with the kernel and mount(8) autoloads them. The ingest test stick's three
+    tier-3 rows were therefore exercising the refusal branch.
+    """
+    for fstype in ("jfs", "minix", "squashfs", "befs"):
+        plan = _plan(fstype)
+
+        assert plan.policy is VolumePolicy.GENERIC, fstype
+        assert plan.fstype is None, fstype
+        assert plan.options == BASE_OPTIONS, fstype
 
 
 def test_a_volume_with_no_filesystem_is_refused():
-    assert plan_mount(None, UID, GID, KERNEL).policy is VolumePolicy.REFUSED
+    assert plan_mount(None, UID, GID).policy is VolumePolicy.REFUSED

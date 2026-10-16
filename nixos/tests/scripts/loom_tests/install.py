@@ -261,6 +261,20 @@ def _only_its_own_stick_claims_the_pool(
     # The guard that replaces the typed INSTALL word. It has to answer yes to the key
     # that built this pool and no to any other, or an unattended install either
     # destroys a working box or refuses to provision a new one.
+    #
+    # First, the half-written box: everything up to here has run `encrypt` and
+    # nothing after it, which is exactly the state a power loss during
+    # `install_system` leaves. The container opens with the key and there is no
+    # system on it, so "claimed" must still be False -- otherwise the next boot
+    # reports "this stick already installed this box" and the operator is stuck at a
+    # menu that will not retry.
+    half_written = steps.step(
+        "print(storage.pool_claimed_by_key(runner, '/tmp/key'))"
+    ).strip()
+    assert half_written == "False", half_written
+
+    steps.step("storage.activate(runner); install.stamp_pool_installed(runner)")
+
     claimed = steps.step(
         "print(storage.pool_claimed_by_key(runner, '/tmp/key'))"
     ).strip()
@@ -282,9 +296,28 @@ def _the_wipe_reaches_the_key_material(
     # `wipe_disk`'s per-partition sweep no longer finds it. With layer 1 skipped the
     # wipe says nothing and falls through to layers that are slower and weaker -- a
     # silent downgrade of the only step that matters.
-    steps.step("wipe.erase_pool_keys(runner)")
+    # Before: the container really does open with this stick's key.
+    steps.step("storage.activate(runner)")
+    installer.succeed(
+        f"cryptsetup luksOpen --test-passphrase --key-file /tmp/key "
+        f"--keyfile-size 4096 {root_device}"
+    )
+
+    # The erase itself is what this subtest is named for, and the teardown that
+    # follows it is not evidence of it: `erase_pool_keys` calls `discard_pool` on
+    # *both* arms of its `if`, so `vgs` failing and the device disappearing happen
+    # whether or not layer 1 ran. A recording Ui is how the branch is read back.
+    log = steps.step(
+        "from loom_installer.console import build_ui;"
+        "wipe.erase_pool_keys(runner, build_ui())"
+    )
+    assert f"luksErase {root_device}" in log, log
+    assert "No pooled LUKS container found" not in log, log
+
     installer.fail(f"vgs {volume_group}")
-    installer.succeed(f"vgchange --activate y {volume_group} || true")
+    # Not `|| true`: a command that cannot fail asserts nothing. The group is gone,
+    # so activating it has to fail -- and the device node with it.
+    installer.fail(f"vgchange --activate y {volume_group}")
     installer.fail(f"test -b {root_device}")
 
 

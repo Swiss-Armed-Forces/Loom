@@ -187,3 +187,8 @@ def mode_sessions(appliance: "Machine", subtest: "Subtest", setup_sys: str) -> N
         assert "loom-fetch.service" not in run_pane, run_pane
         setup_pane = progress_script(f"{setup_sys}/etc/profile")
         assert "loom-fetch.service" in setup_pane, setup_pane
+        # The negative too, so both modes are checked the same way. The subtest is
+        # about each mode following *its own* unit, and with only the positive half
+        # a setup pane that followed both would pass. `"loom-fetch.service"` does
+        # not contain `"loom.service"`, so the mirrored check is unambiguous.
+        assert "loom.service" not in setup_pane, setup_pane

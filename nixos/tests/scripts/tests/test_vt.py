@@ -14,12 +14,21 @@ import machines
 from loom_tests import vt
 
 
-def screen(rows: int, columns: int, text: list[str]) -> vt.Screen:
-    """A console with `text` laid into it, padded with never-written cells."""
+def screen(
+    rows: int, columns: int, text: list[str], attribute: int = 0x07
+) -> vt.Screen:
+    """A console with `text` laid into it, padded with never-written cells.
+
+    `attribute` is written into the second byte of every cell the text touches,
+    because that byte is not decoration: past 256 glyphs the Linux VT takes the
+    ninth bit of the glyph index out of it. 0x07 is the ordinary grey-on-black a
+    VT writes, and the tests below pass 0x0f for the bit that matters.
+    """
     cells = bytearray(rows * columns * 2)
     for row, line in enumerate(text):
         for column, character in enumerate(line):
             cells[(row * columns + column) * 2] = ord(character)
+            cells[(row * columns + column) * 2 + 1] = attribute
     return vt.Screen(rows=rows, columns=columns, cells=bytes(cells))
 
 
@@ -81,3 +90,20 @@ def test_the_screen_is_read_from_the_tty_it_was_asked_for():
     assert "/dev/vcsa1" in machine.calls[0]
     vt.read(machine, tty="2")
     assert "/dev/vcsa2" in machine.calls[1]
+
+
+def test_a_glyph_past_the_first_256_is_not_read_as_ascii():
+    """The appliance ships a 515-glyph font, which costs the intensity bit.
+
+    `branding.nix` says so, and `banner.py` says what it costs: with more than 256
+    glyphs the VT stores the index's high bit in `attr & 0x08`. A decoder that read the
+    character byte alone turned the Loom mark -- index 256-382 -- into printable ASCII,
+    so `wifi.py`'s `#` match would have failed against real hardware while passing in a
+    VM that cannot load the font.
+    """
+    high = screen(1, 1, ["A"], attribute=0x0F)
+
+    assert high.line(0) == "#"
+
+    # And the same cell without the bit is the letter it looks like.
+    assert screen(1, 1, ["A"], attribute=0x07).line(0) == "A"

@@ -10,7 +10,9 @@ that happens before a byte moves, which is where the mistakes that matter live: 
 the wrong device, or mounting the right one wrongly.
 """
 
+import json
 import re
+import shlex
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
@@ -270,7 +272,57 @@ def _wrapper_path(appliance: "Machine", subtest: "Subtest", params: Params) -> N
 
 def _status_before_ingest(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("status reports cleanly before anything has been ingested"):
-        appliance.succeed("loom-usb-status")
+        # The output, not the exit status: with no state.json `loom-usb-status`
+        # takes its `exit 0` branch before jq is ever reached, so `succeed` alone
+        # asserted nothing -- and in particular nothing about the jq branch, which
+        # is the half that can break (a reshuffled `Manifest`, against
+        # `writeShellApplication`'s `set -euo pipefail`).
+        empty = appliance.succeed("loom-usb-status")
+        assert "nothing ingested since boot" in empty, empty
+        # And the jq branch, over a document of the shape `report.write_state`
+        # writes. The five rendered lines are what an operator reads, and every
+        # one of them is a path into a nested structure.
+        # Built as a dict and dumped rather than written as a literal: a
+        # triple-quoted shell snippet in this position is indistinguishable from a
+        # docstring to docformatter, which reflows it and leaves a command that
+        # cannot run.
+        state = json.dumps(
+            {
+                "status": "complete",
+                "prefix": "usb-crawled/KINGSTON-4c53",
+                "stick": {
+                    "device": "/dev/sdb",
+                    "name": "KINGSTON",
+                    "identifier": "4c53",
+                    "size_bytes": 1,
+                    "udev": {},
+                },
+                "key_guard": {"state": "armed", "authoritative": True},
+                "totals": {
+                    "objects": 12,
+                    "bytes": 2048,
+                    "failures": 0,
+                    "skipped": 0,
+                    "blank": 0,
+                },
+                "volumes": [],
+            }
+        )
+        appliance.succeed(
+            "mkdir --parents /run/loom/usb-state",
+            f"printf '%s' {shlex.quote(state)} > /run/loom/usb-state/state.json",
+        )
+        rendered = appliance.succeed("loom-usb-status")
+        for expected in (
+            "loom-usb-ingest: complete",
+            "/dev/sdb",
+            "usb-crawled/KINGSTON-4c53",
+            "12",
+            "0",
+        ):
+            assert expected in rendered, rendered
+        assert "null" not in rendered, rendered
+        appliance.succeed("rm --force /run/loom/usb-state/state.json")
 
 
 def _mc_runs_in_the_units_environment(

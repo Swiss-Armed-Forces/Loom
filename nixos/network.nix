@@ -349,6 +349,18 @@ in
 
   # Exported for the same reason serviceInterface is: portal.nix binds it and
   # the tests assert it, and neither should be recomputing a subnet.
+  options.loom.boxAddress = lib.mkOption {
+    type = lib.types.str;
+    default = boxAddress;
+    readOnly = true;
+    internal = true;
+    description = ''
+      The appliance's own address on `serviceInterface`: what `*.loom` resolves
+      to, what the DHCP lease names as the resolver, and what `loom-expose`
+      DNATs 80 and 443 on.
+    '';
+  };
+
   options.loom.portalAddress = lib.mkOption {
     type = lib.types.str;
     default = portalAddress;
@@ -630,10 +642,10 @@ in
         # from the other side: there `wants` without `after` ordered nothing,
         # here `after` without `wants` started nothing.
         wants = [ "${bridgeInterface}-netdev.service" ];
-        after = [
-          "${bridgeInterface}-netdev.service"
-          "systemd-udev-settle.service"
-        ];
+        # `systemd-udev-settle.service` was named here and removed: it does not
+        # exist on this nixpkgs pin, so the edge ordered nothing. What this unit
+        # genuinely waits for is the netdev above.
+        after = [ "${bridgeInterface}-netdev.service" ];
         # Before the address, so a cabled client cannot get a DHCP lease over a
         # port that is not in the bridge yet -- and before network.target, which
         # is the rule every unit that assembles an interface follows: upstream's
@@ -756,8 +768,14 @@ in
         before = [ "network-pre.target" ];
         wants = [ "network-pre.target" ];
         # udev has to have finished renaming whatever it was going to rename,
-        # otherwise this races the .link file it exists to back up.
-        after = [ "systemd-udev-settle.service" ];
+        # otherwise this races the .link file it exists to back up -- and on a box
+        # with a slow-enumerating NIC that means claiming a port by PCI order on a
+        # supported platform whose `netMatch` was about to hit. The wait is a
+        # `udevadm settle` at the top of the script rather than an `After=` on
+        # `systemd-udev-settle.service`, which does not exist on this nixpkgs pin:
+        # it is nowhere under nixos/modules/ and not in upstreamSystemUnits, so the
+        # edge ordered nothing and `wants` would name a unit that is never loaded.
+        # nixpkgs' own modules moved to `udevadm settle` for the same reason.
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -769,8 +787,13 @@ in
           coreutils
           iproute2
           loom-wired-nics
+          systemd
         ];
         script = ''
+          # The wait the missing `After=` never provided. Bounded, because a box
+          # whose udev queue never drains must still come up with whatever it has.
+          udevadm settle --timeout=30 || true
+
           readonly OVERRIDE=${lib.escapeShellArg loomInterface}
           readonly AUTO_SELECT=${if config.loom.autoSelectInterface then "1" else "0"}
 
@@ -794,10 +817,19 @@ in
             echo "[*] Claimed ''${chosen} as ${applianceInterface} (''${reason})."
 
             mkdir --parents /run/loom
+            # %q on the one value that can contain a space. The record is
+            # `.`-sourced by loom-network-check, and `claim` is called with
+            # "''${candidates[*]:1}" -- so two or more leftover ports produced
+            # `LOOM_FALLBACK_ALTERNATIVES=enp2s0 enp3s0`, which bash reads as an
+            # assignment followed by the *command* `enp3s0`. Under the `set -e`
+            # nixpkgs wraps a unit script in, that aborted loom-network-check: no
+            # issue fragment naming the claimed port, and a stale one from the
+            # previous boot left in place -- on exactly the box the fallback
+            # exists for, with unknown hardware and several wired ports.
             {
-              printf 'LOOM_FALLBACK_INTERFACE=%s\n' "''${chosen}"
-              printf 'LOOM_FALLBACK_REASON=%s\n' "''${reason}"
-              printf 'LOOM_FALLBACK_ALTERNATIVES=%s\n' "''${alternatives}"
+              printf 'LOOM_FALLBACK_INTERFACE=%q\n' "''${chosen}"
+              printf 'LOOM_FALLBACK_REASON=%q\n' "''${reason}"
+              printf 'LOOM_FALLBACK_ALTERNATIVES=%q\n' "''${alternatives}"
             } >${fallbackRecord}.tmp
             mv ${fallbackRecord}.tmp ${fallbackRecord}
           }
@@ -846,10 +878,9 @@ in
       systemd.services.loom-network-check = {
         description = "Report how the appliance interface was selected";
         wantedBy = [ "multi-user.target" ];
-        after = [
-          "systemd-udev-settle.service"
-          "loom-interface-fallback.service"
-        ];
+        # Only the fallback: `systemd-udev-settle.service` does not exist on this
+        # pin, and the fallback is already ordered behind udev's own settle.
+        after = [ "loom-interface-fallback.service" ];
         # Same ordering trick as box.nix's loom-issue.service, and for the same
         # reason: the warning below is written as an issue fragment, so it has
         # to exist before any getty renders the issue. getty-pre.target is

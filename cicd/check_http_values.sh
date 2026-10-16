@@ -21,14 +21,25 @@
 # matches `*.<domain>` on `web` and answers before any of the widened routers,
 # so leaving it on makes the whole values file invisible at request time.
 #
+# Rendered twice: once with the chart's defaults, and once with
+# charts/values-development.yaml beneath it, because up.sh now applies
+# values-http.yaml for the dev and integration-test profiles too. A component that
+# values-development.yaml enables and values.yaml leaves off would otherwise get an
+# Ingress in dev that this check never renders -- and the dev deployment is
+# load-bearing for the integration tests, which reach Loom over http://rabbit.loom and
+# http://elasticsearch.loom.
+#
 # Runs `helm template`, which is client-side -- no cluster, no network.
 set -eou pipefail
 
 CONTEXT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHART_DIR="${CONTEXT_DIR}/charts"
 HTTP_VALUES=""
+DEV_VALUES=""
 RELEASE="loom"
 MANIFEST=""
+# Which render the messages below are talking about.
+LAYER="the chart defaults"
 
 # In a quoted heredoc rather than inline single quotes: the program carries jq
 # variables and a regex, which a shell reads as syntax of its own.
@@ -59,6 +70,9 @@ redirect is off.
 OPTIONS:
   --chart DIR    chart to check (default: ${CHART_DIR})
   --values FILE  http values file (default: <chart>/values-http.yaml)
+  --dev-values FILE
+                development values file rendered as a second pass
+                (default: <chart>/values-development.yaml)
   -h|--help      show this help
 EOF
 }
@@ -78,12 +92,13 @@ check_every_ingress_on_web(){
     stray="$(yq --raw-output "${NO_WEB_ENTRYPOINT_PROGRAM}" <<< "${MANIFEST}")"
     if [[ -z "${stray}" ]]; then
         count="$(grep --count . <<< "${rendered}")"
-        echo "[*] values-http.yaml puts all ${count} Ingresses on the web entrypoint"
+        echo "[*] values-http.yaml puts all ${count} Ingresses rendered with" \
+            "${LAYER} on the web entrypoint"
         return 0
     fi
 
-    echo >&2 "[!] Error: ${HTTP_VALUES} leaves an Ingress off the 'web' entrypoint,"
-    echo >&2 "    so --enable-http would not reach it:"
+    echo >&2 "[!] Error: with ${LAYER}, ${HTTP_VALUES} leaves an Ingress off the"
+    echo >&2 "    'web' entrypoint, so --enable-http would not reach it:"
     printf '%s\n' "${stray}" | sed 's/^/      /' >&2
     echo >&2 ""
     echo >&2 "    Add the component's path to ${HTTP_VALUES}, mirroring how it is"
@@ -109,20 +124,36 @@ check_global_redirect_off(){
     return 1
 }
 
-main(){
-    [[ -n "${HTTP_VALUES}" ]] || HTTP_VALUES="${CHART_DIR}/values-http.yaml"
+check_layer(){
+    # Renders one layering and asserts both properties of it. The values files are
+    # given in skaffold's own order, so values-http.yaml is applied last here exactly
+    # as up.sh's UP_FLAG_VALUES are.
+    LAYER="${1}"
+    shift
 
-    if [[ ! -f "${HTTP_VALUES}" ]]; then
-        echo >&2 "[!] Error: values file not found: ${HTTP_VALUES}"
-        return 1
-    fi
-
-    MANIFEST="$(helm template "${RELEASE}" "${CHART_DIR}" --values "${HTTP_VALUES}")"
+    MANIFEST="$(helm template "${RELEASE}" "${CHART_DIR}" "${@}")"
 
     # Plain calls rather than `||`-collected: `set -e` takes the first failure,
     # and either one on its own is a stop.
     check_every_ingress_on_web
     check_global_redirect_off
+}
+
+main(){
+    [[ -n "${HTTP_VALUES}" ]] || HTTP_VALUES="${CHART_DIR}/values-http.yaml"
+    [[ -n "${DEV_VALUES}" ]] || DEV_VALUES="${CHART_DIR}/values-development.yaml"
+
+    if [[ ! -f "${HTTP_VALUES}" ]]; then
+        echo >&2 "[!] Error: values file not found: ${HTTP_VALUES}"
+        return 1
+    fi
+    if [[ ! -f "${DEV_VALUES}" ]]; then
+        echo >&2 "[!] Error: values file not found: ${DEV_VALUES}"
+        return 1
+    fi
+
+    check_layer "the chart defaults" --values "${HTTP_VALUES}"
+    check_layer "the dev profile" --values "${DEV_VALUES}" --values "${HTTP_VALUES}"
 }
 
 while (( $# )); do
@@ -135,6 +166,11 @@ while (( $# )); do
         --values)
             shift
             HTTP_VALUES="${1?Missing FILE}"
+            shift
+        ;;
+        --dev-values)
+            shift
+            DEV_VALUES="${1?Missing FILE}"
             shift
         ;;
         -h|--help)

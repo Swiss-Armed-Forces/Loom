@@ -768,7 +768,7 @@
         "title": "Archives",
         "importButton": "Import Archive",
         "importDropzoneText": "Drop a .loom or .zip archive here",
-        "importSuccess": "Archive import started",
+        "importSuccess": "Archive import started. A file that turns out not to be a Loom archive is indexed as an ordinary file and appears under Files.",
         "importError": "Archive import failed: ",
         "encryptionKeyTitle": "Archive encryption key",
         "encryptionKeyCopied": "Archive encryption key copied",

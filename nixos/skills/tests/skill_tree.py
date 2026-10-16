@@ -1,19 +1,18 @@
 """Shared parsing for the skill-tree suites.
 
-Named `skill_tree` rather than `conftest` on purpose. `appliance-pytest` runs all
-of the appliance's suites in one session with pytest's default import mode, so
-every module basename has to be unique across them -- and `conftest` is the one
-name five of them already have.
+Named `skill_tree` rather than `conftest` on purpose. `appliance-pytest` runs all of the
+appliance's suites in one session with pytest's default import mode, so every module
+basename has to be unique across them -- and `conftest` is the one name five of them
+already have.
 
-
-These tests read the sources under `nixos/skills/`, not an assembled image. What
-they are for is the class of mistake opencode does not report: a skill whose
-frontmatter does not satisfy its registration guard is dropped with no log line
-and no error, and the only symptom is an assistant that has never heard of Loom.
+These tests read the sources under `nixos/skills/`, not an assembled image. What they
+are for is the class of mistake opencode does not report: a skill whose frontmatter does
+not satisfy its registration guard is dropped with no log line and no error, and the
+only symptom is an assistant that has never heard of Loom.
 
 The image-build-time half of the checking lives in `nixos/tests/appliance-skills.nix`,
-which can see the evaluated configuration and the assembled output. This half can
-see `Documentation/`, which that one cannot -- hence two places.
+which can see the evaluated configuration and the assembled output. This half can see
+`Documentation/`, which that one cannot -- hence two places.
 """
 
 import re
@@ -53,9 +52,9 @@ _QUOTED_HEADING = re.compile(r"`(#{1,6} [^`]+)`")
 class Skill(NamedTuple):
     """One `<name>/SKILL.md`, parsed.
 
-    `name` and `description` are deliberately untyped: what these tests exist to
-    catch is frontmatter that is the wrong *type*, so they have to be able to
-    hold a mapping or a None and let a test say so.
+    `name` and `description` are deliberately untyped: what these tests exist to catch
+    is frontmatter that is the wrong *type*, so they have to be able to hold a mapping
+    or a None and let a test say so.
     """
 
     name: object
@@ -100,6 +99,16 @@ def all_markdown() -> list[Path]:
     return sorted(SKILLS_ROOT.rglob("*.md"))
 
 
+class CitedHeading(NamedTuple):
+    """One quoted heading, and the documentation file it was quoted under."""
+
+    source: Path
+    heading: str
+    # None when the heading appears before any path -- the file's own headings,
+    # typically, which are checked against the file itself.
+    document: DocReference | None
+
+
 def doc_references(path: Path) -> list[DocReference]:
     """The Loom documentation files a skill file points the agent at."""
     text = path.read_text(encoding="utf-8")
@@ -116,6 +125,30 @@ def doc_references(path: Path) -> list[DocReference]:
 def quoted_headings(path: Path) -> list[str]:
     """Markdown headings a skill file quotes, e.g. `## Troubleshooting`."""
     return _QUOTED_HEADING.findall(path.read_text(encoding="utf-8"))
+
+
+def cited_headings(path: Path) -> list[CitedHeading]:
+    """Each quoted heading, paired with the doc it was quoted *near*.
+
+    The pairing is what matters and what a union over every doc a file cites
+    cannot check: the agent is sent to one specific file, and
+    `reference/network.md` cites both appliance.md and installation.md -- both of
+    which have a `## Troubleshooting`. Attributed to the nearest preceding
+    reference, which is how these files are written: the path, then the heading
+    inside it.
+    """
+    cited: list[CitedHeading] = []
+    current: DocReference | None = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        for relative in _DOC_PATH.findall(line):
+            current = DocReference(
+                source=path,
+                repo_path=REPO_ROOT / relative,
+                as_written=f"{ON_BOX_REPO}/{relative}",
+            )
+        for heading in _QUOTED_HEADING.findall(line):
+            cited.append(CitedHeading(source=path, heading=heading, document=current))
+    return cited
 
 
 def headings_in(path: Path) -> set[str]:

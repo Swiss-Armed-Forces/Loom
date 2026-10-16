@@ -8,6 +8,12 @@ license = "MIT"
 packages = [
     { include = "common" }
 ]
+# `common/testing` is test doubles shared by the common, crawler and worker suites. It
+# lives inside the package because `common`'s own tests are not packaged and the other
+# suites therefore cannot import anything kept beside them -- but no production module
+# imports it, so it has no business in the wheel that ships to every api, worker and
+# crawler pod.
+exclude = ["common/testing"]
 
 [tool.poetry.dependencies]
 python = "~3.14"

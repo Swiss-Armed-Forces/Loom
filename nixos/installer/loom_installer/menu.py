@@ -302,10 +302,16 @@ def halt_console(ui: Ui, subcommand: str, message: str) -> None:
     Without the block afterwards the loop redraws the menu on top of the shutdown
     messages and offers a prompt that nobody should be answering.
     """
-    ui.log(message)
-    subprocess.run(["systemctl", subcommand], check=False)
-    while True:
-        time.sleep(3600)
+    # Uninterruptible, which is the whole point of the block: `time.sleep` raises
+    # KeyboardInterrupt, `loop` catches it and draws the menu again -- on top of a
+    # shutdown, with `inspect` probing disks and, on a FRESH box,
+    # `storage.pool_claimed_by_key` activating a volume group while systemd is
+    # tearing the system down. `_run_child` already wraps its children this way.
+    with ignoring_interrupts():
+        ui.log(message)
+        subprocess.run(["systemctl", subcommand], check=False)
+        while True:
+            time.sleep(3600)
 
 
 def countdown_to_reboot(ui: Ui) -> None:
@@ -379,6 +385,15 @@ def run_install(ui: Ui, extra: list[str]) -> None:
     nothing for it. How long it waits first is the only thing the exit status
     decides.
     """
+    # Marked for a *manual* install too, not only the unattended one. The marker
+    # means "this stick has acted on this box", which is as true of a run somebody
+    # typed INSTALL for -- and installer.nix gives this unit Restart=always with the
+    # default KillMode, so a menu that dies mid-`partition` comes back to
+    # BootState.FRESH, probes half-written disks, gets ARMED and counts down a second
+    # install onto them. The likelier case is worse for being quiet: after a
+    # completed manual Erase the next pass would be ARMED, so the box would start
+    # installing itself a minute after the operator left the wipe screen.
+    _mark_attempted()
     status = _run_child(ui, [os.path.join(settings().bin_dir, "loom-install"), *extra])
 
     if status == 0:
@@ -397,6 +412,10 @@ def run_install(ui: Ui, extra: list[str]) -> None:
 
 
 def run_wipe(ui: Ui) -> None:
+    # See `run_install`: the marker is about this stick having acted on this box, and
+    # a completed Erase is the case where an unattended install must not follow of
+    # its own accord.
+    _mark_attempted()
     status = _run_child(ui, [os.path.join(settings().bin_dir, "loom-wipe")])
     if status == constants.EXIT_CANCELLED:
         ui.warn("Wipe cancelled.")
@@ -457,12 +476,11 @@ def _one_pass(ui: Ui, runner: CommandRunner) -> None:
 
     if state.verdict is AutoInstall.ARMED:
         if auto_countdown(ui):
-            # Marked before the run, not after. This service is Restart=always
-            # (installer.nix), so a menu that dies part way through an install has to
-            # come back to a prompt -- not to a second countdown onto a disk the
-            # first attempt already began partitioning. A reboot clears it, which is
-            # how a retry works.
-            _mark_attempted()
+            # `run_install` marks it, before the run rather than after. This service
+            # is Restart=always (installer.nix), so a menu that dies part way through
+            # an install has to come back to a prompt -- not to a second countdown
+            # onto a disk the first attempt already began partitioning. A reboot
+            # clears it, which is how a retry works.
             run_install(ui, ["--auto"])
         else:
             # Stopping the countdown has to stick for the same reason, and for one
@@ -485,7 +503,13 @@ def _one_pass(ui: Ui, runner: CommandRunner) -> None:
         case Choice.RESCUE:
             rescue_shell(ui)
         case _:
+            # Paired with a wait, like every other non-happy path in this file. The
+            # next pass starts with `show_status` -> `ui.clear()`, which on a VT is
+            # ESC[2J ESC[H -- so without this the only feedback for a mistyped key is
+            # a line that is wiped before it can be read, on a menu whose option 2 is
+            # ERASE ALL DATA.
             ui.warn(f"Not a choice: {answer}")
+            ui.wait_for_enter("  Press enter to return to the menu. ")
 
 
 def _mark_attempted() -> None:

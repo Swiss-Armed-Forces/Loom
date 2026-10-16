@@ -26,11 +26,19 @@ class FakeMachine:
     calls: list[str] = field(default_factory=list)
 
     def succeed(self, *commands: str, timeout: int | None = None) -> str:
+        """As the driver's own `succeed`: the output, trailing newline included.
+
+        The newline is not cosmetic. `tmux.Session.tmux` strips it, so a fake that
+        returned its canned string verbatim made that strip inert here while it was
+        load-bearing in production -- which is how `.strip()` could eat the leading
+        spaces of `"  LOOM  "` without a test noticing.
+        """
         del timeout
         out = []
         for command in commands:
             self.calls.append(command)
-            out.append(self._answer(command))
+            answer = self._answer(command)
+            out.append(answer if answer.endswith("\n") else answer + "\n")
         return "".join(out)
 
     def _answer(self, command: str) -> str:

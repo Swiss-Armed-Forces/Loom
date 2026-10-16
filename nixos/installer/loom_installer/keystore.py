@@ -33,6 +33,12 @@ class KeystoreError(RuntimeError):
 # has hung.
 PASSPHRASE_ATTEMPTS = 3
 
+# What cryptsetup exits with for "no key available with this passphrase". Every other
+# non-zero status means something a retype cannot fix -- 3 is out of memory for
+# argon2id, 127 is cryptsetup not being executable at all -- and nixos/key-store.nix's
+# stage-1 prompt cases on exactly this number for the same reason.
+WRONG_PASSPHRASE_STATUS = 2
+
 
 def mapping_path() -> str:
     """Where the unlocked container appears, when there is one."""
@@ -103,6 +109,19 @@ def _open(runner: CommandRunner, ui: Ui) -> None:
         )
         if opened.ok:
             return
+        # Only status 2 is a wrong passphrase, and only that may cost an attempt.
+        # nixos/key-store.nix's stage-1 script reasons the same way about the same
+        # prompt -- retrying anything else "would burn the operator's remaining tries
+        # while telling them something untrue" -- and CLAUDE.md states the contract
+        # for `--lock-key`. What is reachable here is status 3 (out of memory for
+        # argon2id) and rc 127 (cryptsetup not executable); 1 and 4 are ruled out by
+        # `unlocked_key`'s container check and 5 by the `cryptsetup close` above.
+        if opened.returncode != WRONG_PASSPHRASE_STATUS:
+            raise KeystoreError(
+                "cryptsetup could not open the key container "
+                f"(exit status {opened.returncode}): "
+                f"{(opened.stderr or opened.stdout).strip() or 'no output'}"
+            )
         if attempt < PASSPHRASE_ATTEMPTS:
             ui.warn(f"  Wrong passphrase. {PASSPHRASE_ATTEMPTS - attempt} left.")
 

@@ -29,10 +29,14 @@ def signature_encrypted_file(archive_id: UUID):
 
 @app.task(base=ArchiveProcessingTask)
 def calculate_size_task(storage_data: FileStorageLazyBytes) -> int:
-    size = 0
-    for chunk in get_file_storage_service().load_generator(storage_data):
-        size += len(chunk)
-    return size
+    """The object's size, taken from a stat rather than from a pass over the body.
+
+    `load_seekable` is a range reader over the object, so seeking to the end is one
+    `stat_object`. Counting the bytes of the generator was a full extra transfer of an
+    archive that the unpack is already downloading three times.
+    """
+    with get_file_storage_service().load_seekable(storage_data) as fd:
+        return fd.seek(0, 2)
 
 
 @persisting_task(app, ArchiveCreationPersister)

@@ -22,6 +22,12 @@ name, so that address works with no configuration on the client side.
 self-signed and nothing on the client can verify it — which is why the plain `http` spelling is the
 one to hand to a visitor.
 
+**Unless this box was built with `--require-client-cert`.** There only `https` is served, and only
+to a client holding a certificate this box issued: port 80 carries nothing but the redirect, and a
+visitor with no identity is refused during the TLS handshake, which is the intended answer rather
+than a fault. A visitor gets an identity from the captive portal at `http://portal.loom`, using the
+password shown on the box's own login screen. `loom-appliance/facts.md` says which image this is.
+
 ## Getting documents in
 
 Two ways, and on an appliance the first is the normal one:
@@ -41,7 +47,7 @@ one is for. The ones worth knowing without looking:
 
 | Address | What it is |
 | --- | --- |
-| `http://frontend.loom` | The Loom web UI — this is the one to use |
+| `http://frontend.loom` | The Loom web UI — this is the one to use (`https` on a `--require-client-cert` box) |
 | `http://api.loom/docs` | The REST API, with interactive documentation |
 | `http://grafana.loom` | Dashboards and metrics |
 

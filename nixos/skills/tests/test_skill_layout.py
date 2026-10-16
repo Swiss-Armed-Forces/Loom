@@ -1,9 +1,9 @@
 """The shape of the tree, which is dictated by how opencode scans it.
 
-A `skills.paths` entry is globbed with `**/SKILL.md` -- not the wider pattern the
-newer in-tree engine uses, which is not the one that reads this key. So a skill is
-`<name>/SKILL.md` and nothing else is a skill, and a file in the wrong place is
-either ignored or registered as something nobody meant.
+A `skills.paths` entry is globbed with `**/SKILL.md` -- not the wider pattern the newer
+in-tree engine uses, which is not the one that reads this key. So a skill is
+`<name>/SKILL.md` and nothing else is a skill, and a file in the wrong place is either
+ignored or registered as something nobody meant.
 """
 
 from skill_tree import MAX_REFERENCE_FILES, SKILLS_ROOT, all_skills
@@ -44,9 +44,9 @@ def test_reference_files_live_in_reference() -> None:
 def test_supporting_files_stay_within_the_listing() -> None:
     """The `<skill_files>` list the skill tool returns is capped at ten entries.
 
-    Past that the model is told only about some of them, and the tool's own output
-    says the list is sampled -- so a skill with more references than this cannot
-    rely on any particular one being offered.
+    Past that the model is told only about some of them, and the tool's own output says
+    the list is sampled -- so a skill with more references than this cannot rely on any
+    particular one being offered.
     """
     for skill in all_skills():
         supporting = [
@@ -59,7 +59,7 @@ def test_supporting_files_stay_within_the_listing() -> None:
 
 
 def test_skills_open_with_a_heading() -> None:
-    """markdownlint's MD041, which the repository's hooks enforce on every page.
+    """Markdownlint's MD041, which the repository's hooks enforce on every page.
 
     Worth asserting here too: the frontmatter is stripped before that rule runs,
     so the first body line is what it sees, and a skill that fails it fails the

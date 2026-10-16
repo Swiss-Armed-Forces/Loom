@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -13,6 +14,7 @@ from common.services.lazybytes_service import (
 )
 
 LAZYBYTES_THRESHOLD_BYTES = 64
+UPLOADED_AT = datetime(2026, 3, 1, 8, 30, tzinfo=timezone.utc)
 
 
 def test_index_file(lazybytes_service_inmemory: InMemoryTempLazyBytesService):
@@ -121,6 +123,7 @@ def test_reindex_file_resets_recursion_depth(
     old_file.tags = []
     old_file.archives = []
     old_file.flagged = False
+    old_file.uploaded_datetime = UPLOADED_AT
 
     file_repository.get_by_id.return_value = old_file
 
@@ -129,3 +132,61 @@ def test_reindex_file_resets_recursion_depth(
     file_repository.save.assert_called_once()
     saved_file = file_repository.save.call_args.args[0]
     assert saved_file.recursion_depth == 0
+
+
+def test_reindex_file_keeps_the_original_upload_time(
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
+):
+    """A reindex is not a re-upload.
+
+    `File.uploaded_datetime` defaults to now and this document is saved over the
+    original id, so defaulting it would restamp the file -- and `reindex_lost_files.py`
+    drives reindexing unattended while sorting on that very field, so every reindexed
+    file would jump to the front of every date-ordered view.
+    """
+    file_repository = get_file_repository()
+    file_scheduling_service = FileSchedulingService(
+        file_repository,
+        lazybytes_service_inmemory,
+        get_task_scheduling_service(),
+        lazybytes_service_inmemory,
+    )
+
+    old_file = MagicMock(spec=File)
+    old_file.storage_data = lazybytes_service_inmemory.from_bytes(b"content")
+    old_file.recursion_depth = 2
+    old_file.full_name = FilePurePath("test.txt")
+    old_file.source = "test-source"
+    old_file.parent_id = None
+    old_file.sha256 = "abc123"
+    old_file.size = 7
+    old_file.reindex_count = 0
+    old_file.tags = []
+    old_file.archives = []
+    old_file.flagged = False
+    old_file.uploaded_datetime = UPLOADED_AT
+
+    file_repository.get_by_id.return_value = old_file
+
+    file_scheduling_service.reindex_file(uuid4())
+
+    saved_file = file_repository.save.call_args.args[0]
+    assert saved_file.uploaded_datetime == UPLOADED_AT
+
+
+def test_a_file_defaults_its_upload_time_to_an_aware_one():
+    """Every explicit writer of this field passes an aware value; so must the default.
+
+    The field is indexed as an Elasticsearch Date and ordered on, and a naive value
+    compares inconsistently with an aware one in Python long before Elasticsearch sees
+    either.
+    """
+    file = File(
+        storage_data=None,
+        full_name=FilePurePath("test.txt"),
+        source="test-source",
+        sha256="abc123",
+        size=7,
+    )
+
+    assert file.uploaded_datetime.tzinfo is not None

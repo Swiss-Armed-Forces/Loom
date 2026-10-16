@@ -212,7 +212,10 @@ in
         # the ConditionPathExists guard would then skip.
         mv ${lib.escapeShellArg tmp} ${lib.escapeShellArg loomRepoDir}
 
-        echo "[*] Seeded Loom ${tag} into ${loomRepoDir}"
+        # Escaped, like every other interpolation in this script: `tag` is the
+        # other operator-supplied string on the box (`--tag`), and this runs as
+        # root in a unit script.
+        echo "[*] Seeded Loom ${lib.escapeShellArg tag} into ${lib.escapeShellArg loomRepoDir}"
       '';
   };
 }

@@ -1026,7 +1026,7 @@ issued one yet, or the placeholder is still in place. `journalctl -u loom-mtls-i
 And the portal half:
 
 ```bash
-cat /run/loom-portal/password             # what a visitor has to type, also on tty1
+sudo cat /run/loom-portal/password        # what a visitor has to type, also on tty1
 systemctl status loom-portal              # the page server
 systemctl status loom-portal-certificate  # published the anchor, or waiting for the cluster
 journalctl -u loom-portal-issue           # every certificate the page has handed out
@@ -1070,6 +1070,7 @@ of the override layers. Skaffold applies these in order, later winning:
 | file | holds |
 | --- | --- |
 | `charts/values.yaml` | the chart's defaults |
+| `charts/values-development.yaml` | nothing here — skaffold's dev profile inserts it at this position under `up -d` / `up --integrationtest`, so on a developer's machine `values-user.yaml` wins over it |
 | `charts/values-user.yaml` | `--values` and `--set` |
 | `charts/values-up-flags.yaml` | whatever `up.sh`'s own flags turned on — `--gpus`, `--scaling`, `--enable-http`, `--no-resources` |
 | `charts/values-appliance.yaml` | facts about this box: the platform's deployment decisions, and whether the image requires a client certificate |
@@ -1340,7 +1341,8 @@ SD cards).
 Everything lands under a prefix naming the stick, so it can be searched for as a unit:
 
 ```text
-usb-crawled/{label-or-vendor}-{serial}/{path on the stick}
+usb-crawled/{label-or-vendor}-{serial}/data/{path on the stick}      one volume
+usb-crawled/{label-or-vendor}-{serial}/p1/{path on the stick}        several
 usb-crawled/{label-or-vendor}-{serial}/_loom-usb.json
 ```
 
@@ -1348,13 +1350,17 @@ usb-crawled/{label-or-vendor}-{serial}/_loom-usb.json
 used, file and byte counts, and the original spelling of any name that had to be sanitised. It is indexed
 alongside the data, so it is searchable next to it.
 
-A stick carrying more than one volume gets a `p1`, `p2`, … level beneath that. Re-plugging the same stick is
-cheap: files already uploaded at the same size are skipped.
+A single-volume stick's files land under `data/`, and a stick carrying more than one volume gets a `p1`,
+`p2`, … level instead — one level either way, so nothing off the stick can ever collide with the
+`_loom-usb.json` provenance record written beside it. Re-plugging the same stick is cheap: files already
+uploaded at the same size are skipped.
 
 **Loom archives are imported, not indexed as zips.** The crawler recognises them from their content rather
 than their filename, and sends them to the archive importer. An encrypted `.loom` from a _different_ box will
-not decrypt — `archive_enc_master_key` is unset by default, so every deployment generates its own — and is
-indexed as an opaque encrypted blob rather than being discarded.
+not decrypt — the chart's `preInstall.generateSecret` mints `archive_enc_master_key` per cluster — and is
+indexed as an opaque encrypted blob rather than being discarded. (Note what _unset_ means, if a deployment
+is ever built without that hook: `Settings` substitutes the published all-zero `FIXED_AES_KEY` rather than
+inventing a random one, so two such deployments read each other's archives.)
 
 **This costs disk twice.** Every ingested byte is stored once in the intake bucket and again in file storage
 after indexing, and nothing empties intake automatically. Ingest is never refused on space grounds; the
@@ -1621,8 +1627,11 @@ nothing on the console could reach it; this is what reaches it. There is no acco
 and no traffic off the box.
 
 It goes in through Traefik because that is the only door from outside the cluster — the workers reach the same
-Ollama by its in-cluster Service instead. `https`, not `http`: every ingress is bound to the `websecure`
-entrypoint alone, so nothing answers for `ollama.loom` on port 80.
+Ollama by its in-cluster Service instead. `https`, not `http`, and the reason is the pane's own choice rather
+than the absence of a plaintext route: every image but `--require-client-cert` is built with `--enable-http`,
+so `ollama.loom` does answer on port 80. The pane takes the authenticated path, which is the one that stays
+correct on both images — and on the mTLS box `loom.assistant.ollamaBaseUrl` points it at the loopback proxy
+that holds the client certificate instead.
 
 That certificate is the one the chart generates for itself at install time, and it is self-signed, which an
 HTTP client will not accept on trust the way a human clicks through a browser warning. So `loom-chat` builds a
@@ -1707,9 +1716,14 @@ Two things worth knowing before leaning on it:
   `wheel` and `docker`. On a box whose trust boundary is physical possession that changes little — but it is a
   different proposition once `--wifi` is on, and worth re-reading [the threat model](#threat-model) in that
   case.
-- **The model is small.** It is a 9B, which is capable at short, well-scoped questions and gets unreliable as
-  the number of tools in play grows. Treat it as a knowledgeable colleague who has seen this box but not your
-  cluster, rather than as something to hand a long autonomous task.
+- **The model is the one the chart names.** A built stick pins it from the _embedded tag's_ chart, not from
+  a Nix default: `vars.sh` reads `._llmDefaults.model` out of `charts/values.yaml` -- `qwen3.8:27b` -- and
+  `cicd/build_appliance_image.sh` passes it through as `--argstr loomChatModel`, which is also the only model
+  `ollama/Dockerfile.models` bakes into the production image. It is capable at short, well-scoped questions
+  and gets less reliable as the number of tools in play grows: treat it as a knowledgeable colleague who has
+  seen this box but not your cluster, rather than as something to hand a long autonomous task.
+  (`appliance-vm` and the VM tests substitute a much smaller stand-in, because nothing bakes a 27B into a
+  test node.)
 
 #### Skills
 

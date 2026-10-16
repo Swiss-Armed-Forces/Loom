@@ -8,7 +8,7 @@
 #
 ollama:
   # Tells the container to read its GPU memory from amdgpu sysfs rather than shell out
-  # to nvidia-smi, which the ROCm image does not carry -- and to refuse to start if
+  # to `rocm-smi`, which the ROCm image does not carry -- and to refuse to start if
   # /dev/kfd never arrived.
   gpuVendor: amd
   runtimeImage:

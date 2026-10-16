@@ -12,6 +12,7 @@ stop` does not hang on a wait that nobody is reading any more.
 """
 
 import logging
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from loom_portal.http import Header, Request
@@ -105,11 +106,22 @@ def serve(portal: Portal, settings: PortalSettings) -> None:
             only something dialling the loopback port directly can reach it -- one
             nginx-config change away from mattering.
             """
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-            except ValueError:
+            # `http.server` implements no chunked decoding at all, so a
+            # `Transfer-Encoding` request would have its chunk octets left on the
+            # socket and parsed as the next request line. This service never needs
+            # chunked: the connection is closed and nothing is read.
+            if self.headers.get("Transfer-Encoding"):
                 self.close_connection = True
                 return b""
+
+            # A digits-only match rather than `int()`, which accepts "1_000", "+5" and
+            # surrounding whitespace -- three spellings of a length that nginx and this
+            # side would not have to agree about.
+            declared = self.headers.get("Content-Length", "0").strip()
+            if not re.fullmatch(r"[0-9]+", declared):
+                self.close_connection = True
+                return b""
+            length = int(declared)
             if length <= 0:
                 return b""
             if length > MAX_BODY_BYTES:
@@ -132,9 +144,9 @@ def serve(portal: Portal, settings: PortalSettings) -> None:
             """
             return "-"
 
-    httpd = ThreadingHTTPServer((settings.listen_address, settings.port), Handler)
+    httpd = ThreadingHTTPServer((settings.bind.address, settings.bind.port), Handler)
     httpd.daemon_threads = True
     logger.info(
-        "Serving the appliance page on %s:%d", settings.listen_address, settings.port
+        "Serving the appliance page on %s:%d", settings.bind.address, settings.bind.port
     )
     httpd.serve_forever()

@@ -21,6 +21,10 @@ class Params(NamedTuple):
     """What the .nix file knows and this file cannot."""
 
     operator: str
+    # Whether the console session carries the assistant pane, which decides how
+    # many panes the layout settles at. Taken from the node's own
+    # `loom.platform.runsAiServices`, the way appliance/params.py takes it.
+    ai_enabled: bool
 
 
 def _gpm_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
@@ -209,8 +213,21 @@ def run(
 
     # Wait for the layout to stop moving. `create` respawns panes after the last
     # split, and a click landing mid-respawn would be testing nothing.
+    #
+    # The *final* pane count, not "at least one": `wc -l | grep -qvx 0` is
+    # satisfied the moment tmux has a session, which `pgrep -f tmux` in
+    # `_session_runs_under_the_shim` has already established -- so the race this
+    # is written for was never waited out. Three panes with the assistant, two
+    # without, the way `appliance/session.py` derives it.
+    panes = 3 if params.ai_enabled else 2
     appliance.wait_until_succeeds(
-        f"tmux -S {tmux.SOCKET} list-panes -t loom | wc -l | grep -qvx 0"
+        f"tmux -S {tmux.SOCKET} list-panes -t loom | wc -l | grep -qx {panes}"
+    )
+    # And no pane still dead from a respawn: `respawn-pane -k` leaves
+    # `pane_dead` 1 for the instant between kill and start.
+    appliance.wait_until_succeeds(
+        f"tmux -S {tmux.SOCKET} list-panes -t loom -F '#{{pane_dead}}' "
+        "| sort --unique | grep -qx 0"
     )
     _, cols = (
         int(value) for value in appliance.succeed("stty size < /dev/tty1").split()

@@ -165,4 +165,7 @@ def test_a_declared_vendor_whose_node_is_there_is_measured(tmp_path: Path) -> No
     assert detection.status is GpuStatus.DETECTED
     assert detection.memory is not None
     assert detection.memory.vendor is GpuVendor.AMD
-    assert detection.memory.shared_bytes == 64 * GIB
+    # Carve-out plus GTT: an APU's "VRAM" is the same system memory, so
+    # `probe_amd` reports one pool rather than two (see
+    # test_gpu_probes.test_an_apu_is_planned_as_unified_memory).
+    assert detection.memory.shared_bytes == 64 * GIB + 512 * MIB

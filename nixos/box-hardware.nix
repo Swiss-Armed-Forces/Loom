@@ -93,11 +93,29 @@ in
     # PATH is /bin:/sbin in the initrd, which carries coreutils. /run is kept
     # across the switch-root, which is what makes this readable in stage 2.
     script = ''
-      node="$(readlink --canonicalize ${lib.escapeShellArg guard.keyDevice} 2>/dev/null || true)"
-      if [ -b "$node" ]; then
-          mkdir --parents ${lib.escapeShellArg (builtins.dirOf guard.witnessFile)}
-          : >${lib.escapeShellArg guard.witnessFile}
-      fi
+      # Looked for repeatedly rather than once. The node is probed *after* the
+      # unlock, so a stick that is pulled -- or that merely re-enumerates -- in
+      # the seconds between systemd-cryptsetup finishing and this running left no
+      # witness at all, and `deadline_applies` then answered false for the whole
+      # boot: the box ran indefinitely on an unlocked dm-crypt mapping with
+      # nothing watching the key, which is the gap key-guard.nix exists to close,
+      # while the banner said "idle -- no USB key present" exactly as it does for
+      # a legitimate recovery-passphrase boot.
+      #
+      # Still a probe rather than a flag set by the unlock itself: "the key node
+      # is there" is what tells a stick boot from a recovery boot, and a marker
+      # written before the unlock would also be written on a box whose stick
+      # carries the *wrong* key -- where the operator types the passphrase and
+      # the guard must not then apply its deadline.
+      for _ in $(seq 20); do
+          node="$(readlink --canonicalize ${lib.escapeShellArg guard.keyDevice} 2>/dev/null || true)"
+          if [ -b "$node" ]; then
+              mkdir --parents ${lib.escapeShellArg (builtins.dirOf guard.witnessFile)}
+              : >${lib.escapeShellArg guard.witnessFile}
+              exit 0
+          fi
+          sleep 0.5
+      done
     '';
   };
 

@@ -457,6 +457,8 @@ appliance_test:
     # the diff against the target branch. On main, a tag or a new branch every
     # file counts as changed, which would start a multi-hour job on each. Manual
     # there instead.
+    # `allow_failure` is required on a manual job, not a judgement about it:
+    # without it the pipeline blocks waiting to be started by hand.
     - if: $CI_PIPELINE_SOURCE != "merge_request_event"
       when: manual
       allow_failure: true
@@ -477,9 +479,13 @@ appliance_test:
         - charts/values.yaml
         - devenv.nix
         - devenv.lock
-      # TODO: drop once a run has been green end to end on a runner. Until then
-      # neither the KVM question nor the cold-cache cost is answered.
-      allow_failure: true
+      # Blocking, deliberately. This is the only job that boots the appliance --
+      # `appliance_check` is eval-and-pytest and boots nothing -- so with
+      # `allow_failure` the whole of nixos/tests/ could not turn a pipeline red,
+      # and the MR's headline deliverable shipped with its only end-to-end
+      # verification unable to fail. If a runner turns out not to manage it, the
+      # answer is a narrower `changes:` list or a smaller selection, not a job
+      # whose result nobody has to read.
       when: on_success
     - when: never
   script:

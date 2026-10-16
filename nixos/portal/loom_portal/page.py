@@ -219,15 +219,19 @@ def _identity_section(model: PageModel) -> str:
         )
 
     if not model.urls.secure:
-        # Should not be reachable: portal.nix only sets `mtls` on an image that also has
-        # the TLS listener. Said out loud anyway, because a half-configured box that
-        # silently served private keys in the clear is the failure worth being loud about.
+        # Reachable, and on two supported configurations: `portal.nix` sets
+        # `LOOM_PORTAL_MTLS` from `cfg.mtls.enable` alone, while the TLS listener also
+        # needs `cfg.portal.tls.enable` (a documented option) and a tag whose chart
+        # lists `portal` in `hostnames.extra` (every tag before this MR). An assertion
+        # in portal.nix refuses the first; the second cannot be refused at build time
+        # without declining to build against an older tag at all, so the page says so
+        # rather than serving a private key in the clear or pretending to.
         return (
             f'<section id="identity">{heading}{explain}'
             '<div class="notice bad"><strong>Not configured.</strong>'
             "<p>This box has no encrypted listener, so it will not hand out a "
             "certificate. Ask the operator to issue one from the console with "
-            "<code>generate-client-certificate</code>.</p></div></section>"
+            "<code>loom-client-certificate</code>.</p></div></section>"
         )
 
     return (

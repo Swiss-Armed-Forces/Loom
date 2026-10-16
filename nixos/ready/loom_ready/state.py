@@ -65,6 +65,54 @@ class Stage(StrEnum):
 SETTLED_STAGES = frozenset({Stage.ROLLING_OUT, Stage.READY, Stage.DEGRADED})
 
 
+class WorkloadKind(StrEnum):
+    """The four kinds `WORKLOAD_KINDS` asks kubectl for.
+
+    A closed set rather than a bare `str`, so that a fifth kind added to that request
+    becomes a type error at every site that has to handle it rather than a silent
+    fall-through -- `cluster._workload` compares against four literals and returns
+    None for anything else.
+    """
+
+    DEPLOYMENT = "Deployment"
+    STATEFUL_SET = "StatefulSet"
+    DAEMON_SET = "DaemonSet"
+    JOB = "Job"
+
+    @classmethod
+    def parse(cls, raw: str) -> "WorkloadKind | None":
+        """The kind kubectl stamped on a document, or None if it is not one of ours."""
+        try:
+            return cls(raw)
+        except ValueError:
+            return None
+
+
+class UnitState(StrEnum):
+    """Systemd's `ActiveState`, as the two readers of it spell it.
+
+    `cluster.classify` decides a Stage from it and `pane._preamble` decides which one-
+    line note to print, so they legitimately ask different questions -- but nothing
+    checked that they shared a vocabulary, and a misspelt literal silently makes a
+    branch dead. UNKNOWN is the answer when systemctl could not be asked, and anything
+    unrecognised folds into it.
+    """
+
+    UNKNOWN = "unknown"
+    ACTIVATING = "activating"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    FAILED = "failed"
+    DEACTIVATING = "deactivating"
+
+    @classmethod
+    def parse(cls, raw: str) -> "UnitState":
+        try:
+            return cls(raw.strip())
+        except ValueError:
+            return cls.UNKNOWN
+
+
 @dataclass(frozen=True)
 class Workload:
     """One Deployment, StatefulSet, DaemonSet or Job, reduced to two numbers.
@@ -74,7 +122,7 @@ class Workload:
     cluster.py.
     """
 
-    kind: str
+    kind: WorkloadKind
     name: str
     desired: int
     ready: int
@@ -160,8 +208,17 @@ def publish(state_dir: str, readiness: Readiness, summary: str) -> None:
     Through a temporary file in the same directory, so a reader can never catch a half-
     written document. The status line reads this every five seconds and the banner
     generator reads it from a unit that can start at any moment; neither may see half a
-    number. Same mechanism as `loom_usb_ingest.progress.publish` and key-guard.nix's
-    `put`.
+    number.
+
+    The same mechanism as `loom_usb_ingest.jsonfile.write_atomic` and key-guard.nix's
+    `put`, and **deliberately a third copy of it** rather than a shared one. The three
+    disagree about what they write and about what a failure means: this one writes two
+    files, one of them a plain line of text rather than a document, and may never
+    raise -- it is a display, and a box that cannot draw its own progress is still
+    coming up. Sharing would also mean `loom-ready`, which draws the console, taking
+    a dependency on `loom-usb-ingest`, which copies USB sticks; twenty lines is less
+    than that edge is worth. The installer's copy of the size helpers is argued the
+    same way.
     """
     try:
         os.makedirs(state_dir, mode=0o755, exist_ok=True)
@@ -235,7 +292,11 @@ def _parse(raw: object) -> Readiness | None:
             ),
             workloads=[
                 Workload(
-                    kind=str(item["kind"]),
+                    # Read back through the enum: this document was written by a
+                    # publisher that may be a version older, and an unrecognised
+                    # kind is a reason to drop the record rather than to carry a
+                    # string the rest of this package cannot compare.
+                    kind=WorkloadKind(item["kind"]),
                     name=str(item["name"]),
                     desired=int(item["desired"]),
                     ready=int(item["ready"]),

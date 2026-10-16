@@ -83,6 +83,21 @@ class Portal:
             return redirect(PAGE_PATH)
         return self._read(request, route)
 
+    def _secure_enough(self, request: Request) -> bool:
+        """Whether this connection may carry an unencrypted private key.
+
+        `X-Loom-Secure` records which *listener* answered, not which certificate is in
+        force -- and 443 comes up on `loom-portal-tls-placeholder`'s one-day self-signed
+        `CN=portal.loom` pair, which nothing can verify. On a first boot that is the
+        state for hours, which is exactly the period this page exists to cover. So the
+        marker that unit leaves behind is consulted too, and the form is only offered
+        once `loom-portal-certificate` has published the cluster's own certificate --
+        the one the visitor was told to trust.
+        """
+        if not _is_secure(request):
+            return False
+        return not self.settings.tls_is_placeholder
+
     def _read(self, request: Request, route: Route) -> Response:
         """Everything that only reads: the page and the three downloads.
 
@@ -93,7 +108,7 @@ class Portal:
         out of it.
         """
         if route is Route.PAGE:
-            return html(render(self._model(_is_secure(request))))
+            return html(render(self._model(self._secure_enough(request))))
         if route is Route.LOGO:
             return self._logo()
         if route in (Route.ANCHOR_PEM, Route.ANCHOR_CRT):
@@ -128,7 +143,9 @@ class Portal:
         status: int,
         extra: list[Header] | None = None,
     ) -> Response:
-        response = html(render(self._model(_is_secure(request), notice)), status=status)
+        response = html(
+            render(self._model(self._secure_enough(request), notice)), status=status
+        )
         if extra:
             return Response(
                 status=response.status,
@@ -145,7 +162,7 @@ class Portal:
             # 503 rather than 404: the file is missing because Loom has not come up, not
             # because this box has nothing to offer, and a visitor who reloads in ten
             # minutes gets it.
-            return html(render(self._model(_is_secure(request))), status=503)
+            return html(render(self._model(self._secure_enough(request))), status=503)
 
         if route is Route.ANCHOR_CRT:
             # The MIME type is the whole reason this second name exists: iOS Safari and
@@ -165,10 +182,12 @@ class Portal:
     # -- the certificate only an mTLS box hands out ---------------------------------
 
     def _issue(self, request: Request) -> Response:
-        if not _is_secure(request):
+        if not self._secure_enough(request):
             # The page does not show the form over plaintext, and this is the other half
             # of that: a PKCS#12 holds an unencrypted private key, and the appliance
             # segment is a wire that -- on a --wifi box -- is everybody in radio range.
+            # "Encrypted" also has to mean "by a certificate somebody can verify" --
+            # see `_secure_enough`.
             return self._page(
                 request,
                 Notice(

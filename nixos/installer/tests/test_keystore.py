@@ -19,6 +19,7 @@ import pytest
 from fakes import FakeRunner, scripted_ui
 
 from loom_installer import constants, keystore
+from loom_installer.commands import CommandResult
 from loom_installer.settings import settings
 
 MAPPING = "loom-keystore"
@@ -125,12 +126,42 @@ def test_giving_up_raises_rather_than_installing_with_no_key() -> None:
     # bytes nobody could read back would produce a box that never boots again.
     runner = FakeRunner()
     runner.succeeds(IS_CONTAINER)
+    # Three wrong passphrases, spelled as cryptsetup spells them: only status 2 may
+    # cost an attempt, so a generic failure here would be testing the other branch.
+    runner.queued[" ".join(OPEN)] = [
+        CommandResult(
+            keystore.WRONG_PASSPHRASE_STATUS,
+            "",
+            "No key available with this passphrase.",
+        )
+        for _ in range(keystore.PASSPHRASE_ATTEMPTS)
+    ]
 
     with pytest.raises(keystore.KeystoreError):
         with keystore.unlocked_key(runner, scripted_ui(["a", "b", "c"])):
             pytest.fail("the body must not run when the container stayed shut")
 
     assert sum(1 for call in runner.calls if call == OPEN) == 3
+
+
+@pytest.mark.usefixtures("locked")
+def test_a_failure_a_retype_cannot_fix_is_named_rather_than_counted() -> None:
+    """Status 3 is argon2id running out of memory, 127 is no cryptsetup at all.
+
+    Reporting either as "Wrong passphrase. 2 left." spends the operator's remaining
+    tries while telling them something untrue -- which is the rule key-store.nix's
+    stage-1 prompt already follows at the same prompt on the same box.
+    """
+    runner = FakeRunner()
+    runner.succeeds(IS_CONTAINER)
+    runner.commands[" ".join(OPEN)] = CommandResult(3, "", "Not enough memory.")
+
+    with pytest.raises(keystore.KeystoreError, match="exit status 3"):
+        with keystore.unlocked_key(runner, scripted_ui(["a", "b", "c"])):
+            pytest.fail("the body must not run when the container stayed shut")
+
+    # One attempt, not three: there is nothing to retype.
+    assert sum(1 for call in runner.calls if call == OPEN) == 1
 
 
 @pytest.mark.usefixtures("locked")

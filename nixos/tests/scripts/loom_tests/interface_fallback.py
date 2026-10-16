@@ -8,6 +8,7 @@ Nothing here is interpolated from the Nix file -- every value this asserts is a 
 appliance itself chooses.
 """
 
+import re
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
@@ -30,8 +31,18 @@ def _single_nic_claimed(single: "Machine", subtest: "Subtest") -> None:
 
         record = single.succeed("cat /run/loom/interface-fallback")
         assert "LOOM_FALLBACK_REASON=auto" in record, record
-        # Nothing is left carrying the kernel-assigned name it arrived with.
-        assert "LOOM_FALLBACK_INTERFACE=loom0" not in record, record
+
+        # Nothing is left carrying the kernel-assigned name it arrived with --
+        # asserted against the box rather than against the record. `claim` writes
+        # the *pre-rename* name here and exits early when loom0 already exists,
+        # so `LOOM_FALLBACK_INTERFACE=loom0` was a string that could never appear
+        # under any configuration: an assertion that cannot fail.
+        recorded = re.search(r"^LOOM_FALLBACK_INTERFACE=(\S+)$", record, re.M)
+        assert recorded, record
+        claimed = recorded.group(1).strip("'\"")
+        assert claimed != "loom0", record
+        single.fail(f"test -e /sys/class/net/{claimed}")
+        single.succeed("test -e /sys/class/net/loom0")
 
 
 def _claimed_nic_is_real(single: "Machine", subtest: "Subtest") -> None:

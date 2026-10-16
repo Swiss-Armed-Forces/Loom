@@ -47,11 +47,18 @@ def test_non_amdgpu_card_does_not_shadow_the_real_one(tmp_path: Path) -> None:
 
     assert result.memory is not None
     assert result.memory.source.endswith("card1 (amdgpu)")
-    assert result.memory.shared_bytes == 64 * GIB
+    # An APU: the 512 MiB carve-out is part of the same pool, so the two are
+    # reported as one shared figure rather than as a card with its own memory.
+    assert result.memory.shared_bytes == 64 * GIB + 512 * MIB
 
 
-def test_apu_reports_carve_out_and_gtt_separately(tmp_path: Path) -> None:
-    """The EVO-X2 shape: a tiny carve-out plus the GTT pool that actually matters."""
+def test_an_apu_is_planned_as_unified_memory(tmp_path: Path) -> None:
+    """The EVO-X2 shape: a tiny carve-out plus the GTT pool that actually matters.
+
+    Both are system memory, so both go in `shared_bytes` and the card has no dedicated
+    VRAM at all -- the same shape `probe_nvidia` produces for a GB10, and the reason the
+    two vendors now plan the same box the same way.
+    """
     sysfs = make_sysfs(
         tmp_path,
         {"card0": FakeCard(vram=str(512 * MIB), gtt=str(64 * GIB))},
@@ -60,13 +67,19 @@ def test_apu_reports_carve_out_and_gtt_separately(tmp_path: Path) -> None:
     result = probe_amd(sysfs)
 
     assert result.memory is not None
-    assert result.memory.dedicated_bytes == 512 * MIB
-    assert result.memory.shared_bytes == 64 * GIB
+    assert result.memory.dedicated_bytes == 0
+    assert result.memory.shared_bytes == 64 * GIB + 512 * MIB
     assert result.memory.vendor is GpuVendor.AMD
 
 
-def test_two_cards_do_not_have_their_gtt_summed(tmp_path: Path) -> None:
-    """Both cards report the same system-wide pool; summing claims the box twice."""
+def test_a_discrete_card_is_planned_at_its_own_vram(tmp_path: Path) -> None:
+    """An iGPU beside a dGPU, which is the topology this used to get wrong.
+
+    Both cards report the same system-wide GTT pool, so summing them claims the box
+    twice -- and booking GTT *at all* for the discrete card claims host memory it cannot
+    place KV cache in. 24 GiB of card is 24 GiB to plan with, which is what
+    `probe_nvidia` answers for the same hardware.
+    """
     sysfs = make_sysfs(
         tmp_path,
         {
@@ -78,8 +91,8 @@ def test_two_cards_do_not_have_their_gtt_summed(tmp_path: Path) -> None:
     result = probe_amd(sysfs)
 
     assert result.memory is not None
-    assert result.memory.shared_bytes == 64 * GIB
     assert result.memory.dedicated_bytes == 24 * GIB
+    assert result.memory.shared_bytes == 0
     assert result.memory.source.endswith("card1 (amdgpu)")
 
 

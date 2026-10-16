@@ -16,7 +16,6 @@ Two things this deliberately does NOT do:
 """
 
 import argparse
-import ctypes
 import os
 import re
 import signal
@@ -29,6 +28,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Final
+
+# The ctypes layer, in a module of its own -- see ollama/nvml.py.
+from nvml import NvmlReading, read_nvml
 
 # --- Sizing constants ---
 # The floor, and a ceiling that stops an unexpected reading turning into an absurd
@@ -51,6 +53,9 @@ MIN_PER_SLOT_RESERVE_BYTES = 512 * (1024**2)
 # Host memory the GPU may not plan against, because the rest of Loom is living in it.
 # This is LOOM_MIN_MEMORY from vars.sh -- what up.sh already refuses to start below --
 # and it applies only to a shared pool, never to a card's own VRAM.
+# This container cannot read vars.sh, so `cicd/check_ollama_models.sh` holds the
+# two spellings equal: on a unified-memory box it is the only thing between
+# ollama's budget and the rest of the stack.
 HOST_RESERVE_BYTES = 25 * (1024**3)
 
 # A reported GPU total at or above this fraction of host RAM is unified memory (a
@@ -58,6 +63,12 @@ HOST_RESERVE_BYTES = 25 * (1024**3)
 # rather than a list of board names: it needs nothing but /proc/meminfo, and it does
 # not rot.
 UNIFIED_MEMORY_RATIO = 0.8
+
+# Below this much reported VRAM an amdgpu card is an APU, whose "VRAM" is the
+# firmware's carve-out of system memory (512 MiB on a Strix Halo) rather than
+# memory of its own. A threshold rather than UNIFIED_MEMORY_RATIO: an APU's
+# carve-out is deliberately small, so a ratio over it calls every APU discrete.
+AMD_DISCRETE_VRAM_BYTES = 4 * (1024**3)
 
 # Ollama's own automatic context ladder, mirrored from server/routes.go so that a slot
 # is priced against the context Ollama will actually choose. RE-CHECK ON EVERY OLLAMA
@@ -82,12 +93,6 @@ OLLAMA_SHUTDOWN_TIMEOUT = 5.0
 # entrypoint runs these before `os.execvpe` and an unbounded wait there is a pod that
 # never starts and never fails.
 OLLAMA_COMMAND_TIMEOUT = 60.0
-# NVML rather than `nvidia-smi`: on a NixOS host the container toolkit injects the
-# driver's executables without the ELF interpreter they need, so nvidia-smi cannot exec
-# in a container at all, while NVML is a library and loads.
-NVML_LIBRARY = "libnvidia-ml.so.1"
-NVML_SUCCESS: Final = 0
-
 # --- Filesystem roots ---
 # Parameterised everywhere below so the probes can be pointed at a fixture tree,
 # which is what lets them be tested without patching anything.
@@ -132,62 +137,6 @@ DEVICE_NODES = {
 # Preferred order when nothing was declared. NVIDIA first: on a box with both, the
 # discrete card is the one worth having.
 AUTODETECT_ORDER = (GpuVendor.NVIDIA, GpuVendor.AMD)
-
-
-@dataclass(frozen=True)
-class NvmlReading:
-    """What NVML said about the GPUs it found.
-
-    `available` separates "no NVML here" from "NVML answered": only the second is
-    evidence about the hardware. `totals_bytes` is empty for a part reporting no total
-    -- a GB10 answers `NVML_ERROR_NOT_SUPPORTED`.
-    """
-
-    available: bool
-    device_count: int
-    totals_bytes: tuple[int, ...]
-    detail: str
-
-
-def nvml_unavailable(detail: str) -> NvmlReading:
-    """A reading that says nothing about the hardware, and why."""
-    return NvmlReading(False, device_count=0, totals_bytes=(), detail=detail)
-
-
-def nvml_device_total_bytes(nvml: ctypes.CDLL, index: int) -> int:
-    """One device's total, or 0 if it reports none or cannot be read at all."""
-    handle = ctypes.c_void_p()
-    if nvml.nvmlDeviceGetHandleByIndex_v2(index, ctypes.byref(handle)) != NVML_SUCCESS:
-        return 0
-    # nvmlMemory_t is three unsigned long longs: total, free, used.
-    memory = (ctypes.c_ulonglong * 3)()
-    if nvml.nvmlDeviceGetMemoryInfo(handle, ctypes.byref(memory)) != NVML_SUCCESS:
-        return 0
-    return int(memory[0])
-
-
-def read_nvml() -> NvmlReading:
-    """Ask the real NVML about every device, never raising."""
-    try:
-        nvml = ctypes.CDLL(NVML_LIBRARY)
-    except OSError as error:
-        return nvml_unavailable(f"{NVML_LIBRARY} did not load: {error}")
-    if nvml.nvmlInit_v2() != NVML_SUCCESS:
-        return nvml_unavailable("nvmlInit failed")
-    try:
-        count = ctypes.c_uint()
-        if nvml.nvmlDeviceGetCount_v2(ctypes.byref(count)) != NVML_SUCCESS:
-            return nvml_unavailable("nvmlDeviceGetCount failed")
-        reported = (nvml_device_total_bytes(nvml, i) for i in range(count.value))
-        totals = [total for total in reported if total > 0]
-        return NvmlReading(
-            available=True,
-            device_count=count.value,
-            totals_bytes=tuple(totals),
-            detail=f"{count.value} device(s), {len(totals)} with a memory total",
-        )
-    finally:
-        nvml.nvmlShutdown()
 
 
 @dataclass(frozen=True)
@@ -481,15 +430,23 @@ def probe_amd(sysfs_root: Path) -> GpuProbeResult:
             detail=f"no amdgpu card under {sysfs_root}/class/drm",
         )
     names = ", ".join(card.name for card in cards)
+    # GTT counts only for an APU, where it and the carve-out are one pool. On a
+    # discrete card GTT is host RAM over PCIe and not where ROCm puts KV cache,
+    # so booking it gave the same 24 GiB card twice the slots this probe's
+    # NVIDIA counterpart gives it -- which makes the two exclusive on purpose.
+    apu = chosen.vram_bytes < AMD_DISCRETE_VRAM_BYTES
     return GpuProbeResult(
         memory=GpuMemory(
             vendor=GpuVendor.AMD,
-            dedicated_bytes=chosen.vram_bytes,
-            shared_bytes=chosen.gtt_bytes,
+            dedicated_bytes=0 if apu else chosen.vram_bytes,
+            shared_bytes=(chosen.vram_bytes + chosen.gtt_bytes) if apu else 0,
             device_count=len(cards),
             source=f"{sysfs_root}/class/drm/{chosen.name} (amdgpu)",
         ),
-        detail=f"amdgpu cards: {names}; planning against {chosen.name}",
+        detail=(
+            f"amdgpu cards: {names}; planning against {chosen.name}"
+            f" ({'unified memory' if apu else 'dedicated VRAM'})"
+        ),
     )
 
 
@@ -742,6 +699,18 @@ def estimate_parallelism(
             parallelism=MIN_PARALLELISM,
             context_tokens=DEFAULT_CONTEXT_TOKENS,
             detail=f"no GPU memory to plan against ({detection.status.value})",
+        )
+    if models.count == 0:
+        # The floor, explicitly. Left to the arithmetic below an empty set
+        # produces the *ceiling*: the default context prices a slot at exactly
+        # MIN_PER_SLOT_RESERVE_BYTES and `max(1, 0)` models divides the budget
+        # into MAX_PARALLELISM of them -- the backstop against an absurd
+        # reading, reached when `ollama list` times out or the init container
+        # copied nothing.
+        return ParallelismEstimate(
+            parallelism=MIN_PARALLELISM,
+            context_tokens=DEFAULT_CONTEXT_TOKENS,
+            detail="no installed models",
         )
     budget = build_memory_budget(detection.memory, host_memory_bytes)
     # The tier follows everything the GPU can reach, because that is what Ollama

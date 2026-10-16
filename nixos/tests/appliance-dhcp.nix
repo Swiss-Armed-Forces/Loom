@@ -30,6 +30,9 @@ let
   boxAddress = "${loomSubnet}.1";
   portalAddress = "${loomSubnet}.2";
   poolStart = "${loomSubnet}.100";
+  # The other end of the same range network.nix configures, so the offer can be
+  # judged against the pool rather than against its /24.
+  poolEnd = "${loomSubnet}.200";
 
   dhcp-probe = import ./dhcp-probe.nix { inherit pkgs; };
 in
@@ -109,6 +112,7 @@ pkgs.testers.runNixOSTest {
             box_address="${boxAddress}",
             portal_address="${portalAddress}",
             pool_start="${poolStart}",
+            pool_end="${poolEnd}",
         ),
     )
   '';

@@ -168,3 +168,38 @@ def _get_abyss_queue() -> Queue:
 def get_terminal_queues() -> list[Queue]:
     """Return all terminal queues — queues that no worker consumes."""
     return [_get_abyss_queue(), _get_unroutable_queue()]
+
+
+# Tasks this codebase used to have, whose durable queues have to be cleaned up.
+#
+# Queues are declared one per task with durable=True and auto_delete=False, so deleting
+# a task module removes the *consumer* and nothing else: the queue and its binding
+# survive, and a message that was in flight at deploy time is never delivered again.
+# No delivery means x-delivery-limit never trips, so nothing is dead-lettered to
+# graveyard either, and the binding still exists so the alternate-exchange path does
+# not apply.
+#
+# The damage is not confined to those messages. CeleryInspectService.is_idle() sums
+# every loom:-prefixed queue the broker reports, excluding only abyss and unroutable,
+# so one stranded message makes is_idle() permanently False — and
+# throttle_and_flush_lazybytes_task can then never reach its flush, on a single-disk
+# appliance under disk pressure, which is the one situation it exists for.
+#
+# Add a task name here when its module is deleted; `remove_retired_queues` drains and
+# deletes the queue at worker start, and `register_task_groups` drops the name from the
+# Redis group sets, which are otherwise sadd-only.
+RETIRED_TASK_NAMES: tuple[str, ...] = (
+    "worker.create_archive.tasks.detect_loom_archive.detect_loom_archive",
+    (
+        "worker.create_archive.tasks.load_loom_archive_encrypted"
+        ".load_loom_archive_encrypted"
+    ),
+)
+
+
+def get_retired_queue_names() -> list[str]:
+    """The broker queue names of tasks this codebase no longer carries."""
+    return [
+        f"{settings.celery_queue_name_prefix}{name}"[:CELERY_QUEUE_NAME_MAXLEN]
+        for name in RETIRED_TASK_NAMES
+    ]

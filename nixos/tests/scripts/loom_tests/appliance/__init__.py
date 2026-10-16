@@ -69,7 +69,7 @@ def run(
 
     # After the session exists: two of the three screens readiness draws on are in it,
     # and the third is the banner, which is asserted where the rest of the banner is.
-    readiness.published(appliance, subtest)
+    readiness.published(appliance, subtest, params)
     readiness.status_line(appliance, subtest)
     readiness.one_shot(appliance, subtest, params)
     banner.readiness_line(appliance, subtest)
@@ -77,7 +77,6 @@ def run(
     # What Loom itself is started through.
     startup.repository(appliance, subtest, params)
     startup.loom_up_flags(appliance, subtest, params)
-    startup.loom_up_on_path(appliance, subtest)
     startup.state_directories(appliance, subtest, params)
     startup.skaffold_metrics(appliance, subtest, params)
     startup.docker(appliance, subtest)

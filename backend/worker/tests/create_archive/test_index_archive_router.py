@@ -14,7 +14,8 @@ through the `install_services` fixture so it is put back afterwards.
 import io
 import json
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
+from unittest.mock import MagicMock
 
 import pytest
 from common.archive.archive_detection import ENCRYPTED_ARCHIVE_MAGIC, MANIFEST_FILENAME
@@ -32,14 +33,17 @@ from common.services.task_scheduling_service import ArchiveImportRequest
 from worker.create_archive.index_archive import (
     ArchiveDecision,
     ArchiveServices,
+    _unpack_fits_on_disk,
     index_archive_task,
     route_archive_blob,
 )
+from worker.create_archive.infra.archive_processing_task import ArchiveProcessingTask
 
 ARCHIVE_ROOT_DIR = "loom_archive_2026-06-07_09_14_40.812597"
 FULL_NAME = "//loom-intake/usb-crawled/KINGSTON-4c53/report.zip"
 SOURCE_ID = "crawler/loom-intake"
 THRESHOLD_BYTES = 64
+UPLOADED_AT = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc)
 
 
 class _CountingFileStorage(InMemoryFileStorageLazyBytesService):
@@ -66,6 +70,33 @@ class _CountingFileStorage(InMemoryFileStorageLazyBytesService):
     def _load_to_generator(self, service_id):
         self.full_transfer_bytes += len(self._storage[service_id])
         yield from super()._load_to_generator(service_id)
+
+
+class _SeekableFailsAfter(_CountingFileStorage):
+    """Storage whose Nth seekable read raises, to reach the routing failure path."""
+
+    def __init__(self, *, threshold_bytes: int, allowed_reads: int):
+        super().__init__(threshold_bytes=threshold_bytes)
+        self._allowed_reads = allowed_reads
+
+    def _load_seekable(self, service_id):
+        if self._allowed_reads <= 0:
+            raise OSError("connection reset by peer")
+        self._allowed_reads -= 1
+        return super()._load_seekable(service_id)
+
+
+class _OversizedBlob(_CountingFileStorage):
+    """Storage that reports an enormous object without holding one.
+
+    The size ceiling is about disks, not about bytes in a test: reporting the size is
+    the one thing that has to be large.
+    """
+
+    reported_size = 10**18
+
+    def size(self, lazy_bytes) -> int:
+        return self.reported_size
 
 
 @pytest.fixture(name="storage")
@@ -136,17 +167,35 @@ def _request(payload: bytes) -> ArchiveImportRequest:
         file_content=get_file_storage_service().from_bytes(payload),
         full_name=FULL_NAME,
         source_id=SOURCE_ID,
-        uploaded_datetime=datetime(2026, 9, 18, 12, 0, 0),
+        # Aware, like every writer of this field: it is indexed as an Elasticsearch
+        # Date and ordered on, and the fallback path below is what carries it through.
+        uploaded_datetime=UPLOADED_AT,
     )
+
+
+def _run_task(request: ArchiveImportRequest, *, last_attempt: bool = True) -> None:
+    """Call the bound task with a stand-in for the task instance.
+
+    `app.task` is a no-op decorator under the mocked dependencies, so `bind=True`
+    injects nothing and the caller supplies `self`. Only `is_last_attempt` is read.
+    """
+    task = MagicMock(spec=ArchiveProcessingTask)
+    task.is_last_attempt = last_attempt
+    index_archive_task(task, request)
 
 
 @pytest.mark.usefixtures("task_services")
 def test_a_plain_file_is_indexed_rather_than_dropped(dispatched_files):
-    index_archive_task(_request(b"%PDF-1.7\nnot an archive at all"))
+    _run_task(_request(b"%PDF-1.7\nnot an archive at all"))
 
     dispatched_files.assert_called_once()
     assert dispatched_files.call_args.kwargs["full_name"] == FULL_NAME
     assert dispatched_files.call_args.kwargs["source_id"] == SOURCE_ID
+    # The provenance is the whole reason `ArchiveImportRequest` carries these: without
+    # them the fallback has nothing to index the blob *as*. Asserted here because
+    # `_index_as_ordinary_file` could drop either and nothing else would notice.
+    assert dispatched_files.call_args.kwargs["uploaded_datetime"] == UPLOADED_AT
+    assert dispatched_files.call_args.kwargs["parent_id"] is None
 
 
 @pytest.mark.usefixtures("task_services")
@@ -155,7 +204,7 @@ def test_an_ordinary_zip_is_indexed_rather_than_dropped(dispatched_files):
     with zipfile.ZipFile(buffer, "w") as zip_file:
         zip_file.writestr("notes/report.pdf", b"no manifest here")
 
-    index_archive_task(_request(buffer.getvalue()))
+    _run_task(_request(buffer.getvalue()))
 
     dispatched_files.assert_called_once()
 
@@ -164,10 +213,12 @@ def test_an_ordinary_zip_is_indexed_rather_than_dropped(dispatched_files):
 def test_an_undecryptable_loom_blob_is_indexed_rather_than_dropped(dispatched_files):
     """The common case for a `.loom` carried in from another box.
 
-    archive_enc_master_key is unset by default, so FileEncryptionService invents a
-    random key per process and this never decrypts.
+    The key is per deployment -- `preInstall.generateSecret` mints one per cluster -- so
+    a container built elsewhere does not open here. (Unset means the published all-zero
+    `FIXED_AES_KEY` rather than a random one, so two deployments that were never given a
+    key are the exception.) This blob is not a real container at all.
     """
-    index_archive_task(_request(ENCRYPTED_ARCHIVE_MAGIC + b"\x7f" * 4096))
+    _run_task(_request(ENCRYPTED_ARCHIVE_MAGIC + b"\x7f" * 4096))
 
     dispatched_files.assert_called_once()
     assert dispatched_files.call_args.kwargs["full_name"] == FULL_NAME
@@ -251,8 +302,10 @@ def test_a_blob_that_cannot_even_be_inspected_is_indexed_rather_than_dropped(
 
     Everything routing does is parse attacker-shaped bytes off a stranger's stick, so
     "deciding what this is raised" is a real outcome -- and letting it out of the task
-    sends the message round the retry chain into the graveyard queue with no File entity
-    and no trace, which is the exact disappearance this module replaced.
+    loses the blob outright: the app sets `task_acks_late` together with
+    `task_acks_on_failure_or_timeout`, so a failed task is acked rather than
+    redelivered, nothing is dead-lettered to `graveyard`, and the endpoint answered 202
+    long ago. That is the exact disappearance this module replaced.
     """
 
     class _UnreadableStorage(InMemoryFileStorageLazyBytesService):
@@ -263,7 +316,7 @@ def test_a_blob_that_cannot_even_be_inspected_is_indexed_rather_than_dropped(
     storage = _UnreadableStorage(threshold_bytes=THRESHOLD_BYTES)
     install_services(file_storage=storage, archive_encryption=services.encryption)
 
-    index_archive_task(_request(b"%PDF-1.7\nsomething went wrong reading this"))
+    _run_task(_request(b"%PDF-1.7\nsomething went wrong reading this"))
 
     dispatched_files.assert_called_once()
     assert dispatched_files.call_args.kwargs["full_name"] == FULL_NAME
@@ -287,10 +340,71 @@ def test_a_foreign_loom_blob_is_rejected_without_transferring_it(
     request = _request(ENCRYPTED_ARCHIVE_MAGIC + b"\x7f" * 4096)
     storage.full_transfer_bytes = 0
 
-    index_archive_task(request)
+    _run_task(request)
 
     assert storage.full_transfer_bytes == 0
     dispatched_files.assert_called_once()
+
+
+def test_a_decrypted_copy_is_removed_when_inspecting_it_raises(services, storage):
+    """The failure path of the same leak the test above covers for the clean path.
+
+    Reading the decrypted copy is reading an attacker-shaped zip, so it is exactly where
+    this raises -- and the copy is a full-size plaintext archive in permanent storage
+    that nothing downstream holds the id of.
+    """
+    # One seekable read is allowed -- the header probe -- and the next one, over the
+    # decrypted copy, fails.
+    storage = _SeekableFailsAfter(threshold_bytes=THRESHOLD_BYTES, allowed_reads=1)
+    file_content = storage.from_bytes(_encrypted(services, _loom_archive_bytes()))
+    stored_before = storage.stored_objects
+
+    with pytest.raises(OSError):
+        route_archive_blob(
+            file_content,
+            ArchiveServices(file_storage=storage, encryption=services.encryption),
+        )
+
+    assert storage.stored_objects == stored_before
+
+
+def test_an_unattended_archive_that_cannot_fit_three_times_over_is_declined():
+    """The unpack wants three concurrent copies in `tempfile_dir`.
+
+    On a single-disk appliance, with no operator in front of it, filling the disk takes
+    the deployment down -- while declining costs only that the blob is indexed as the
+    zip it is.
+    """
+    assert _unpack_fits_on_disk(1) is True
+    assert _unpack_fits_on_disk(10**18) is False
+
+
+def test_an_unattended_oversized_archive_is_indexed_as_a_file(services):
+    huge = _OversizedBlob(threshold_bytes=THRESHOLD_BYTES)
+    file_content = huge.from_bytes(_loom_archive_bytes())
+
+    routing = route_archive_blob(
+        file_content,
+        ArchiveServices(file_storage=huge, encryption=services.encryption),
+        unattended=True,
+    )
+
+    assert routing.decision is ArchiveDecision.INDEX_AS_FILE
+    assert "too large to unpack unattended" in routing.reason
+
+
+def test_an_operator_supplied_oversized_archive_is_still_imported(services):
+    """The ceiling is about the unattended path; an operator asked for this one."""
+    huge = _OversizedBlob(threshold_bytes=THRESHOLD_BYTES)
+    file_content = huge.from_bytes(_loom_archive_bytes())
+
+    routing = route_archive_blob(
+        file_content,
+        ArchiveServices(file_storage=huge, encryption=services.encryption),
+        unattended=False,
+    )
+
+    assert routing.decision is ArchiveDecision.IMPORT_PLAIN
 
 
 def test_a_plain_archive_is_routed_without_transferring_it(services, storage):

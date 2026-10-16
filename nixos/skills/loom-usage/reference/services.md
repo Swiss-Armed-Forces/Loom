@@ -1,11 +1,18 @@
 # The services on this box
 
 Every name below resolves on the appliance network and is served by the box. Both `http` and
-`https` work; `https` costs a self-signed-certificate warning in a browser.
+`https` work; `https` costs a self-signed-certificate warning in a browser. On a
+`--require-client-cert` box only `https` is served, and only to a client holding an issued
+certificate.
 
-The authoritative list for this deployment is `hostnames` in
-`/home/loom/loom/charts/values.yaml`, and `grep loom /etc/hosts` on the box shows what actually
-resolves.
+The authoritative list for the *cluster's* names is `hostnames` in
+`/home/loom/loom/charts/values.yaml`. `grep loom /etc/hosts` shows what the box resolves for
+itself, which is those names and not `portal.loom`: `nixos/box.nix` deliberately leaves the portal
+out of /etc/hosts, because the portal is answered by the box rather than by the cluster.
+
+| Address | What it is |
+| --- | --- |
+| `portal.loom` | The captive portal page — served by the box itself, not the cluster. Where a visitor gets a client certificate on a `--require-client-cert` box, and what a phone's "Sign in to network" lands on |
 
 ## What people use
 

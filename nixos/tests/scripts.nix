@@ -39,5 +39,24 @@ pythonPackages.buildPythonPackage {
   # Nothing in this closure imports the package -- the test driver does -- so this is
   # the only thing standing between a module that does not import and a VM that boots
   # for ten minutes before saying so.
-  pythonImportsCheck = [ "loom_tests" ];
+  #
+  # The leaves, not the package: `loom_tests/__init__.py` is a docstring and
+  # nothing else, so `[ "loom_tests" ]` realised none of the modules a test
+  # actually runs, and a NameError at module scope in install.py still cost a
+  # ten-minute boot to discover. (`loom_tests.appliance` is the exception and
+  # imports its own submodules, which is why it stands for the whole subpackage.)
+  pythonImportsCheck = [
+    "loom_tests.appliance"
+    "loom_tests.debug"
+    "loom_tests.dhcp"
+    "loom_tests.install"
+    "loom_tests.interface_fallback"
+    "loom_tests.key_store"
+    "loom_tests.mouse"
+    "loom_tests.portal_page"
+    "loom_tests.tmux"
+    "loom_tests.usb_ingest"
+    "loom_tests.vt"
+    "loom_tests.wifi"
+  ];
 }

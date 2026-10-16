@@ -17,7 +17,9 @@ import threading
 import time
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import asdict, dataclass
+from typing import IO, TypedDict, cast
 
+from loom_usb_ingest.commands import run_checked
 from loom_usb_ingest.manifest import Manifest
 
 logger = logging.getLogger(__name__)
@@ -73,9 +75,8 @@ MANIFEST_TIMEOUT_S = 120
 
 
 def _run(argv: list[str], env: Mapping[str, str], timeout: int = 300) -> str:
-    return subprocess.run(
-        argv, check=True, capture_output=True, text=True, timeout=timeout, env=dict(env)
-    ).stdout
+    """The shared checked runner, with this module's environment -- see `commands`."""
+    return run_checked(argv, env=env, timeout=timeout)
 
 
 def _reason(error: Exception) -> str:
@@ -288,7 +289,8 @@ def mirror(
     for event in _stream_json(argv, env):
         if event.get("status") == "error":
             failures += 1
-            message = str(event.get("error", {}).get("message") or "").strip()
+            error: McError = event.get("error") or {}
+            message = str(error.get("message") or "").strip()
             logger.warning("mirror error: %s", message)
             first_error = first_error or message
             continue
@@ -318,8 +320,34 @@ def mirror(
 # of megabytes in a root unit on an appliance.
 MAX_CAPTURED_STDERR = 64 * 1024
 
+# How long the stderr pump gets to finish after the child has exited. It has nothing
+# left to read by then, so this is a backstop rather than a budget.
+DRAIN_JOIN_TIMEOUT_S = 30
 
-def _drain_in_background(stream, sink: list[str]) -> threading.Thread:
+
+class McError(TypedDict, total=False):
+    """The `error` object in an `mc --json` event."""
+
+    message: str
+    cause: str
+
+
+class McEvent(TypedDict, total=False):
+    """One line of `mc --json` output, as far as this module reads it.
+
+    Every key is optional because mc emits several shapes down one stream -- a
+    per-object success, a closing summary that carries no `target`, an error -- and
+    because the format is not a contract: `devices.LsblkNode` is the same pattern
+    applied to the other tool this package parses.
+    """
+
+    status: str
+    target: str
+    size: int
+    error: McError
+
+
+def _drain_in_background(stream: IO[str] | None, sink: list[str]) -> threading.Thread:
     """Read a pipe to exhaustion on a thread, keeping the first `MAX_CAPTURED_STDERR`.
 
     Daemonised so a stream that never closes cannot keep the process alive; the caller
@@ -348,7 +376,7 @@ def _drain_in_background(stream, sink: list[str]) -> threading.Thread:
     return thread
 
 
-def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
+def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[McEvent]:
     """Run a command and yield its newline-delimited JSON events as they arrive.
 
     A command that fails without having said so in JSON -- mc refusing to start at all
@@ -377,12 +405,25 @@ def _stream_json(argv: list[str], env: Mapping[str, str]) -> Iterator[dict]:
             if not line:
                 continue
             try:
-                yield json.loads(line)
+                # `mc --json` writes one object per line; anything else is not an
+                # event. The cast is the one unchecked step, and it is why `McEvent`
+                # is a TypedDict with every key optional: the shape below is read
+                # through `.get`, so a format change degrades to "no such key"
+                # rather than to an attribute error on a half-parsed object.
+                yield cast(McEvent, json.loads(line))
             except json.JSONDecodeError:
                 logger.debug("Ignoring non-JSON output from mc: %s", line)
 
         process.wait()
-        drain.join()
+        # With a deadline. The thread is daemonised precisely because the pipe might
+        # never close -- if mc ever left a grandchild holding the stderr fd,
+        # `process.wait()` would return and an unbounded join would block here
+        # forever, inside the exclusive ingest lock, which is the failure this
+        # module's docstring says it must avoid. mc does not fork today; the deadline
+        # costs nothing if it never does.
+        drain.join(timeout=DRAIN_JOIN_TIMEOUT_S)
+        if drain.is_alive():
+            logger.warning("Gave up waiting for %s's stderr to close", argv[0])
         stderr = "".join(captured)
 
         if process.returncode:

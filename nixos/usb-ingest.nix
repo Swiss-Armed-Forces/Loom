@@ -119,12 +119,21 @@ let
         printf 'loom-usb-ingest: nothing ingested since boot.\n'
         exit 0
       fi
+      # The paths follow `Manifest`, which nests: `.device` lives under `.stick`
+      # and the counts under `.totals`. Asked for at the top level they came back
+      # as jq's `null` -- silently, since `.status` and `.prefix` really are top
+      # level -- so the operator's only supported way to ask what happened printed
+      # `null` for the device, the object count and the failure count.
+      #
+      # `// "?"` rather than a bare path, so that the next reshuffle of `Manifest`
+      # shows up as a question mark rather than as a plausible-looking answer.
       jq --raw-output '
-        "loom-usb-ingest: \(.status)",
-        "  device:   \(.device)",
-        "  prefix:   \(.prefix)",
-        "  objects:  \(.objects)",
-        "  failures: \(.failures)"
+        "loom-usb-ingest: \(.status // "?")",
+        "  device:   \(.stick.device // "?")",
+        "  prefix:   \(.prefix // "?")",
+        "  objects:  \(.totals.objects // "?")",
+        "  skipped:  \(.totals.skipped // "?")",
+        "  failures: \(.totals.failures // "?")"
       ' <"''${state}"
     '';
   };
@@ -344,8 +353,21 @@ in
         # copy that stopped without finishing leaves a row that would otherwise
         # say "copying" for as long as the stick stayed in, and only the unit
         # that ran it knows which row that is.
+        #
+        # The unmount iterates the per-volume mountpoints rather than naming the
+        # device's directory. `${cfg.mountRoot}/%i` is a plain directory created by
+        # `os.makedirs`; the mounts are one level down at `.../p1`, `.../p2`, and
+        # `umount --recursive` derives its recursion set from the *target's own*
+        # entry in /proc/self/mountinfo -- so it always exited "not mounted", with
+        # the leading `-` hiding it. That left a stranger's filesystem mounted
+        # indefinitely after a SIGKILL or a stick pulled mid-copy, and re-plugging
+        # stacked a second mount on the same path.
         ExecStopPost = [
-          "-${pkgs.util-linux}/bin/umount --recursive --lazy ${cfg.mountRoot}/%i"
+          (
+            "-${pkgs.bash}/bin/sh -c 'for m in ${cfg.mountRoot}/%i/*; do "
+            + "[ -d \"$m\" ] && ${pkgs.util-linux}/bin/umount --lazy \"$m\"; "
+            + "done; exit 0'"
+          )
           "-${lib.getExe loom-usb-ingest} ${ingestArgs} --release /dev/%i"
         ];
 

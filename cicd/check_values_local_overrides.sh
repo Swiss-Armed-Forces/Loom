@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 # Checks that local-override Helm values files contain no actual content.
 #
-# charts/values-overwrites.yaml and charts/values-up-flags.yaml are committed
-# as empty templates. Any non-comment, non-blank line means content was
-# accidentally staged for commit.
+# Four files are committed as empty templates and must stay that way:
+#
+#   charts/values-overwrites.yaml  the operator's last word, on a box or a laptop
+#   charts/values-user.yaml        what `build-appliance-image --values/--set` writes
+#   charts/values-up-flags.yaml    written by up.sh from its own flags
+#   charts/values-appliance.yaml   written by nixos/repo.nix from the box's own facts
+#
+# The first three are also `--skip-worktree` (devenv.nix), so a local edit is
+# invisible to git; the fourth deliberately is not, which makes this check the
+# only thing standing between a seeded checkout's box-specific values and a
+# commit. Any non-comment, non-blank line means content was accidentally staged.
 #
 # Usage:
 #   ./check_values_local_overrides.sh <file1> [file2] ...

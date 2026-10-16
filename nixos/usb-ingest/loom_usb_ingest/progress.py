@@ -236,6 +236,14 @@ class Reporter:
         self._dir = progress_dir
         self._kernel_name = kernel_name
         self._record = DeviceProgress(device=device, kernel_name=kernel_name, name=name)
+        # What the volumes *before* the one in flight moved. `mc mirror` reports
+        # absolute per-volume totals and resets to zero for each invocation, so
+        # `advance` publishes `carried + objects`: without it the counter ran
+        # backwards on a multi-partition stick -- "8431 files" dropping to "1 files"
+        # the moment p2 started -- which `finish` then overwrote with the device
+        # total, so the end state looked right and nobody noticed.
+        self._carried_objects = 0
+        self._carried_bytes = 0
         # Rate-limited: `mc mirror` reports every object, and a stick of small files
         # would otherwise be one write per file.
         self._last_write = 0.0
@@ -246,12 +254,22 @@ class Reporter:
         return self._record.stage
 
     def start_volume(self, volume: str, index: int, count: int, total: int) -> None:
-        """Begin one volume, carrying the object count from the ones before it."""
+        """Begin one volume, carrying the counts from the ones before it."""
+        self._carried_objects = self._record.counts.objects
+        self._carried_bytes = self._record.counts.copied
         self._record = replace(
             self._record,
             outcome=replace(self._record.outcome, stage=Stage.COPYING),
             volume=VolumeProgress(path=volume, index=index, count=count),
-            counts=replace(self._record.counts, total=total, copied=0),
+            counts=replace(
+                self._record.counts,
+                # Cumulative, like `copied` beside it: the bar is drawn as
+                # copied-of-total, so carrying one and not the other would have it
+                # saturate the moment a second volume started.
+                total=self._carried_bytes + total,
+                copied=self._carried_bytes,
+                objects=self._carried_objects,
+            ),
         )
         self.update(force=True)
 
@@ -270,10 +288,18 @@ class Reporter:
         self.update(force=True)
 
     def advance(self, objects: int, copied: int) -> None:
-        """One `mc mirror` event: totals for the volume in flight."""
+        """One `mc mirror` event: the volume in flight's totals, plus the ones before.
+
+        `mc` counts from zero per invocation, so these are added to what the earlier
+        volumes of this stick moved rather than assigned over them.
+        """
         self._record = replace(
             self._record,
-            counts=replace(self._record.counts, objects=objects, copied=copied),
+            counts=replace(
+                self._record.counts,
+                objects=self._carried_objects + objects,
+                copied=self._carried_bytes + copied,
+            ),
         )
         self.update()
 

@@ -26,6 +26,16 @@ from enum import StrEnum
 # below. `nodev`/`nosuid` stop a crafted image from carrying a device node or a
 # setuid binary into the box's namespace; `noexec` stops anything on the volume
 # being run at all.
+#
+# What none of them bounds is what a recursive *read* walks, and the copy runs as
+# root over a tree whose contents are chosen by whoever plugged the stick in. The
+# answer is mc's, and it is the one this package relies on: **`mc mirror` does not
+# follow symlinks** -- it copies neither a link pointing out of the tree, nor one
+# pointing inside it, nor a broken one. Verified against the vendored mc and pinned
+# by `tests/test_transfer.py::test_mc_mirror_does_not_follow_symlinks`, because the
+# alternative -- a `link -> /` on a stranger's stick publishing the box's own
+# filesystem to `http://s3.loom` -- is the one boundary where the threat model and
+# the code have to agree explicitly.
 BASE_OPTIONS: tuple[str, ...] = ("ro", "nodev", "nosuid", "noexec")
 
 # The options that make "read-only" actually mean it.
@@ -139,17 +149,21 @@ KNOWN: frozenset[str] = frozenset(
 )
 
 
-def plan_mount(
-    fstype: str | None,
-    uid: int,
-    gid: int,
-    kernel_filesystems: frozenset[str] = frozenset(),
-) -> MountPlan:
+def plan_mount(fstype: str | None, uid: int, gid: int) -> MountPlan:
     """Decide how -- or whether -- to mount a volume of this type.
 
-    `kernel_filesystems` is what /proc/filesystems reports. It only gates tier 3; a
-    known type is attempted regardless, because its module may simply not be loaded yet
-    and mount(8) will autoload it.
+    There is no `kernel_filesystems` argument any more, and its removal is the fix
+    rather than a simplification. It was /proc/filesystems, which lists the
+    filesystems *currently registered* -- built-in plus already-loaded modules -- and
+    `nixos/usb-ingest.nix` sets `boot.supportedFilesystems` to exactly the KNOWN set.
+    So on a freshly booted appliance jfs, ufs, minix, reiserfs, erofs and squashfs are
+    never in it, and tier 3 refused every one of them with "the kernel has no driver
+    for 'jfs'" -- which is untrue: the module ships with the kernel and `mount -t jfs`
+    autoloads it. The whole third tier, the thing that stops coverage being capped by
+    the table, could not fire at all.
+
+    The same autoload rule the docstring already stated for tier 1 therefore applies
+    here: attempt the generic mount and let mount(8)'s own error be the reason.
     """
     if not fstype:
         return MountPlan(
@@ -160,14 +174,6 @@ def plan_mount(
         return MountPlan(VolumePolicy.REFUSED, fstype, (), None, REFUSED[fstype])
 
     if fstype not in KNOWN:
-        if fstype not in kernel_filesystems:
-            return MountPlan(
-                VolumePolicy.REFUSED,
-                fstype,
-                (),
-                None,
-                f"the kernel has no driver for '{fstype}'",
-            )
         # Baseline options only. Anything type-specific would be a guess, and a
         # wrong mount option fails the mount outright rather than being ignored.
         return MountPlan(

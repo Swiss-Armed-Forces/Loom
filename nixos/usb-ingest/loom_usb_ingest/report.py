@@ -12,9 +12,9 @@ operator's session.
 
 import logging
 import os
-import subprocess
 from dataclasses import asdict
 
+from loom_usb_ingest.commands import run_tolerant
 from loom_usb_ingest.jsonfile import Formatting, Permissions, write_atomic
 from loom_usb_ingest.manifest import Manifest
 from loom_usb_ingest.sizes import gib
@@ -37,14 +37,19 @@ def announce(message: str, console_socket: str) -> None:
 
     for argv in (
         ["wall", "--nobanner", message],
-        ["tmux", "-S", console_socket, "display-message", message],
+        # `-l` makes tmux take the argument literally. Without it `display-message`
+        # expands its argument as a *format*, and this text is attacker-controlled:
+        # `failure` interpolates `condense(detail)`, which comes from `mc mirror
+        # --json`'s error message and routinely embeds a filename off the stick, or
+        # from mount(8)'s stderr. `#(...)` is parsed but not executed there, so this
+        # is not command execution -- what a crafted name buys is garbling the one
+        # status-line message the operator sees and reading back `#{session_name}`,
+        # `#{pane_current_command}` and `#{socket_path}`. `loom_ready/text.py` knows
+        # the hazard ("No `#`. tmux re-expands ...") and applies it to the other
+        # path; nothing scrubbed tool stderr.
+        ["tmux", "-S", console_socket, "display-message", "-l", message],
     ):
-        try:
-            subprocess.run(
-                argv, check=False, capture_output=True, timeout=_ANNOUNCE_TIMEOUT_S
-            )
-        except (subprocess.SubprocessError, OSError):
-            continue
+        run_tolerant(argv, _ANNOUNCE_TIMEOUT_S)
 
 
 def condense(detail: str) -> str:

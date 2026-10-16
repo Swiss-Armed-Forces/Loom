@@ -429,5 +429,12 @@ loom_archive_*.zip
 # and the two qemu sockets. Gigabytes, per platform, and regenerable --
 # 'appliance-vm reset' is the supported way to remove it.
 .appliance-vm/
+# A developer's own Claude Code configuration and skills. Untracked, and
+# therefore present in a working checkout -- which is how `.claude/skills/**`
+# leaked a developer's personal skills into locally built appliance images
+# (fixed in 4d0c94fd6, which is also why this line exists). CI asserts a clean
+# tree, so without it this is both persistent noise and one `git add -A` away
+# from being committed.
+.claude/
 result
 result-*

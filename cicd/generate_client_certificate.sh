@@ -224,8 +224,12 @@ assert_ca_outlives_client() {
     echo >&2 "    The pre-install Job replaces that CA within ${CA_REPLACEMENT_WINDOW_DAYS}"
     echo >&2 "    days of expiry, and the replacement verifies nothing the old one"
     echo >&2 "    signed -- so certificates issued now would stop working silently."
-    echo >&2 "    Either pass a shorter --days, or redeploy the chart to roll the CA"
-    echo >&2 "    and reissue every client afterwards."
+    echo >&2 "    Pass a shorter --days, which is the answer that needs nothing else."
+    echo >&2 "    Rolling the CA instead is an operator-initiated step with a cost:"
+    echo >&2 "    the replacement verifies none of the certificates already handed"
+    echo >&2 "    out, nothing reissues them, and the only symptom is a handshake"
+    echo >&2 "    that starts failing -- so reissue every client in the same sitting"
+    echo >&2 "    and collect the old ones."
     exit 1
 }
 
@@ -327,7 +331,16 @@ write_identity() {
         )
     fi
 
-    openssl pkcs12 "${args[@]}"
+    # Created at 0600 rather than chmodded to it afterwards. This bundle carries an
+    # unencrypted private key, and `chmod` after `openssl` leaves it world-readable
+    # at the process umask for the length of the openssl run -- in a directory whose
+    # own mode is whatever the checkout has, since --out-dir defaults to `.` and the
+    # `chmod 700` on it is skipped when it already exists. The PEM pair beside it is
+    # already written through `install -m 600`; this is the one file that was not.
+    (
+        umask 077
+        openssl pkcs12 "${args[@]}"
+    )
     chmod 600 "${OUT_P12}"
 }
 
@@ -408,8 +421,9 @@ and deliberately. That is step 2, and it is the one people skip.
     security add-trusted-cert -r trustRoot \\
       -k ~/Library/Keychains/login.keychain-db ${anchor_name}
   Linux
-    Copy it into /usr/local/share/ca-certificates/ and run
-    update-ca-certificates, or pass it per call with curl --cacert.
+    Copy it to /usr/local/share/ca-certificates/loom-server-ca.crt -- the .crt
+    extension is required, update-ca-certificates skips a .pem and still exits
+    0 -- and run update-ca-certificates. Or pass it per call with curl --cacert.
 
 3. Check it
 

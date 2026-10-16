@@ -217,7 +217,7 @@ def test_timetransformer_today():
     """Check for correct range translation using TODAY."""
     search_string = "upload:TODAY"
     result = TimeTransformer().visit(parse(search_string))
-    assert str(result) == "upload:[2022-08-27T00:00:00 TO 2022-08-27T17:42:30]"
+    assert str(result) == "upload:[2022-08-27T00:00:00Z TO 2022-08-27T17:42:30Z]"
 
 
 @freeze_time("2022-08-27T17:42:30")
@@ -225,7 +225,7 @@ def test_timetransformer_yesterday():
     """Check for correct range translation using YESTERDAY."""
     search_string = "upload:YESTERDAY"
     result = TimeTransformer().visit(parse(search_string))
-    assert str(result) == "upload:[2022-08-26T00:00:00 TO 2022-08-27T00:00:00]"
+    assert str(result) == "upload:[2022-08-26T00:00:00Z TO 2022-08-27T00:00:00Z]"
 
 
 @freeze_time("2022-08-27T17:42:30")
@@ -233,7 +233,7 @@ def test_timetransformer_thisweek():
     """ " check for correct range translation using THISWEEK."""
     search_string = "upload:THISWEEK"
     result = TimeTransformer().visit(parse(search_string))
-    assert str(result) == "upload:[2022-08-22T00:00:00 TO 2022-08-27T17:42:30]"
+    assert str(result) == "upload:[2022-08-22T00:00:00Z TO 2022-08-27T17:42:30Z]"
 
 
 @freeze_time("2022-08-27T17:42:30")
@@ -241,7 +241,7 @@ def test_timetransformer_thismonth():
     """ " check for correct range translation using THISMONTH."""
     search_string = "upload:THISMONTH"
     result = TimeTransformer().visit(parse(search_string))
-    assert str(result) == "upload:[2022-08-01T00:00:00 TO 2022-08-27T17:42:30]"
+    assert str(result) == "upload:[2022-08-01T00:00:00Z TO 2022-08-27T17:42:30Z]"
 
 
 @freeze_time("2022-08-27T17:42:30")
@@ -249,7 +249,7 @@ def test_timetransformer_thisyear():
     """ " check for correct range translation using THISYEAR."""
     search_string = "upload:THISYEAR"
     result = TimeTransformer().visit(parse(search_string))
-    assert str(result) == "upload:[2022-01-01T00:00:00 TO 2022-08-27T17:42:30]"
+    assert str(result) == "upload:[2022-01-01T00:00:00Z TO 2022-08-27T17:42:30Z]"
 
 
 @freeze_time("2022-08-27T17:42:30")

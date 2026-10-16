@@ -69,6 +69,15 @@ df --human-readable
 du --max-depth 1 --human-readable /home/loom 2>/dev/null | sort --human-numeric-sort
 ```
 
-The usual consumers are container images, the Elasticsearch index and the object store. Clearing
-indexed data is `wipe-data` from the checkout, which destroys everything Loom has ingested — say
-so plainly and let the operator decide.
+The usual consumers are container images, the Elasticsearch index and the object store.
+
+Clearing indexed data has two routes **on the box**, and `wipe-data` is not one of them: that is a
+devenv script that shells out to poetry, and this box has neither (`nixos/box.nix`: "devenv is
+deliberately not used on the appliance").
+
+- `POST /v1/wipe-data` on the API — see `loom-usage/reference/api.md`. Destroys everything Loom has
+  ingested and leaves the box running.
+- The installer menu's **ERASE ALL DATA** entry, booted from the stick. Destroys the pool itself.
+
+Both are destructive: say which one you would run and what it takes with it, and let the operator
+decide.

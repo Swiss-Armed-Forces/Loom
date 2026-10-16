@@ -179,14 +179,23 @@ pkgs.testers.runNixOSTest {
   # The test itself is loom_tests/mouse.py, so that the repository's Python
   # hooks reach it -- see loom_tests/driver.py for why, and for why `skipTypeCheck` is
   # set above.
-  testScript = ''
-    from loom_tests.mouse import Params, run
+  # `{ nodes, ... }` so the pane count can be read off the node's own
+  # `runsAiServices` rather than hardcoded -- the console session has three panes
+  # where Ollama is deployed and two where it is not (platforms/nuc12.nix), and
+  # the layout wait below is what a click races.
+  testScript =
+    { nodes, ... }:
+    ''
+      from loom_tests.mouse import Params, run
 
-    run(
-        appliance,
-        start_all=start_all,
-        subtest=subtest,
-        params=Params(operator="${loomUser}"),
-    )
-  '';
+      run(
+          appliance,
+          start_all=start_all,
+          subtest=subtest,
+          params=Params(
+              operator="${loomUser}",
+              ai_enabled=${if nodes.appliance.loom.platform.runsAiServices then "True" else "False"},
+          ),
+      )
+    '';
 }

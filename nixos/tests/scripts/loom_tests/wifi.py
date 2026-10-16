@@ -4,6 +4,7 @@ loom_tests/appliance deliberately does not cover any of this: it forces off dnsm
 the static addresses, which are exactly what this one exercises on a bridge.
 """
 
+import json
 from typing import TYPE_CHECKING, NamedTuple
 
 from loom_tests import vt
@@ -141,9 +142,20 @@ def _radios_state(appliance: "Machine", subtest: "Subtest") -> None:
         # rather than the absence of a block.
         appliance.wait_for_unit("loom-rfkill-block.service")
         appliance.wait_for_unit("loom-rfkill-unblock-wifi.service")
-        rfkill = appliance.succeed("rfkill list")
-        assert "Wireless LAN" in rfkill, rfkill
-        assert "yes" not in rfkill.split("Wireless LAN")[1].split("\n\n")[0], rfkill
+        # Structured output rather than a slice of prose. `rfkill list` writes no
+        # blank line between devices -- each entry is a header plus two
+        # tab-indented lines, back to back -- so `split("\n\n")[0]` returned
+        # everything from "Wireless LAN" to the end, and any later switch
+        # reporting `Soft blocked: yes` failed this subtest with a message about
+        # wifi. On a box that blocks Bluetooth unconditionally there is reliably a
+        # later entry.
+        rows = json.loads(appliance.succeed("rfkill --json"))["rfkilldevices"]
+        wlan = [row for row in rows if row.get("type") == "wlan"]
+        assert wlan, rows
+        assert all(
+            row.get("soft") == "unblocked" and row.get("hard") == "unblocked"
+            for row in wlan
+        ), rows
 
 
 def _login_credentials(

@@ -250,6 +250,10 @@ Skaffold applies five of them on every deploy, in this order — later wins:
 4. `values-appliance.yaml` — empty unless this is a Loom appliance, which writes its own facts here.
 5. `values-overwrites.yaml` — your last word.
 
+Under `up -d` and `up --integrationtest` there is a sixth: skaffold's dev profile inserts
+`values-development.yaml` directly above the defaults — so it loses to all four layers above, including
+`values-user.yaml`.
+
 - **[`values-overwrites.yaml`](../charts/values-overwrites.yaml)** — Your personal override file.
   Skaffold picks it up automatically on every deploy and applies it last, so put any local
   customisations here rather than editing the defaults. Nothing else ever writes it.
@@ -402,19 +406,28 @@ So the anchor is a separate file with a deliberate install step, and that step i
 - **Chrome** — on Linux the same NSS database; on Windows and macOS the system store, below.
 - **Windows** — `certutil -user -addstore Root loom-server-ca.pem`, and confirm the prompt.
 - **macOS** — `security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db loom-server-ca.pem`
-- **Linux CLI** — drop it in `/usr/local/share/ca-certificates/` and run `update-ca-certificates`, or
-  pass it per call with `curl --cacert`.
+- **Linux CLI** — copy it to `/usr/local/share/ca-certificates/loom-server-ca.crt` (**the `.crt`
+  extension is required**: `update-ca-certificates` only picks up `.crt` files there, and skips a
+  `.pem` while still exiting 0) and run `update-ca-certificates`. Or pass it per call with
+  `curl --cacert`.
 
 Check both halves at once, and check that the negative fails too:
 
 ```bash
 curl --cacert certs/loom-server-ca.pem --cert certs/alice.crt --key certs/alice.key https://frontend.loom/
 curl --cacert certs/loom-server-ca.pem https://frontend.loom/   # must fail in the handshake
-curl http://frontend.loom/                                      # must also fail
+curl -sS -o /dev/null -w '%{http_code}\n' http://frontend.loom/  # expect 301
 ```
 
-If the second call succeeds, mutual TLS is not actually on. If the third one succeeds, it has been
-bypassed rather than weakened — see below.
+If the second call succeeds, mutual TLS is not actually on.
+
+The third is about plain HTTP, and it is written as a status code on purpose. `globalHttpRedirect`
+is on by default, so a correctly configured deployment answers port 80 with a **301** to https —
+and a bare `curl` exits 0 on a redirect, which would read as "bypassed" on a deployment that is
+working exactly as intended. What must not happen is a `200`: that means the route is served in
+cleartext, where no certificate is asked for at all. `curl -L http://frontend.loom/` is the other
+way to check it — following the redirect has to end in the same refused handshake as the second
+call.
 
 #### Plain HTTP goes around it, it does not weaken it
 

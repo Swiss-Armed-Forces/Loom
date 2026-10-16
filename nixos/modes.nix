@@ -123,7 +123,17 @@ let
   # portal its destination: the redirect still points a visitor at the frontend,
   # and the visitor is then refused at the handshake like every other client
   # with no certificate, which on that box is the intended answer.
-  httpArgs = lib.optionalString (!cfg.mtls.enable) " --enable-http";
+  #
+  # Gated on `upShKnows`, like `resumeArgs` above and for the reason stated with
+  # it: these modules come from the working tree, but Loom is deployed from an
+  # embedded *tag*, and `--enable-http` is newer than the newest release. A tag
+  # that has never heard of the flag would take it through up.sh's catch-all into
+  # skaffold and die at boot on `unknown flag`, naming neither -- on a box with no
+  # remote access. An older tag simply serves https only, which is what every
+  # image did before the flag existed; the captive portal's destination is the
+  # cost, and `tests/appliance-units.nix` cannot see it because it reads this
+  # checkout's up.sh, where the flag is present.
+  httpArgs = lib.optionalString (!cfg.mtls.enable && upShKnows "--enable-http") " --enable-http";
 
   # How long setup mode leaves its closing message on screen before powering the
   # box off. Long enough for whoever walks past to read why the box is going

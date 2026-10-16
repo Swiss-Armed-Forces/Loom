@@ -51,7 +51,7 @@ from rich.live import Live
 
 from loom_ready import render, text
 from loom_ready.cluster import Commands
-from loom_ready.state import Readiness, read
+from loom_ready.state import Readiness, UnitState, read
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,10 @@ class Journal:
 
     def __init__(self, unit: str):
         self._unit = unit
-        self._process: subprocess.Popen | None = None
+        # Parameterised: `Popen` is generic in the type of its streams, and left bare
+        # `self._process.stdout` is Any -- so the read loop and the `rstrip` on each
+        # line are unchecked, even though `text=True` fixes them to `str`.
+        self._process: subprocess.Popen[str] | None = None
 
     def lines(self) -> Iterator[str]:
         """Every line, until journalctl ends -- which under `--follow` means `stop`.
@@ -197,9 +200,9 @@ class Pane:
             self._console.print("  and becomes the pod list once Loom is up.")
 
         state = self._unit_state()
-        if state == "inactive":
+        if state is UnitState.INACTIVE:
             self._console.print(self._inactive_note())
-        elif state == "failed":
+        elif state is UnitState.FAILED:
             self._console.print(
                 f"  {self._settings.unit} FAILED. The end of its log is below."
             )
@@ -228,7 +231,14 @@ class Pane:
             )
         return f"  {self._settings.unit} has not started yet; output appears here when it does."
 
-    def _unit_state(self) -> str:
+    def _unit_state(self) -> UnitState:
+        """The same question `cluster.Cluster` asks, in the same vocabulary.
+
+        Two readers of systemd's ActiveState that ask different things of it -- this one
+        picks a note, the other decides a Stage -- but nothing checked that they spelled
+        the states the same way, and a misspelt literal silently makes a branch dead.
+        `UnitState` is that shared vocabulary.
+        """
         completed = self._commands.run(
             [
                 "systemctl",
@@ -238,7 +248,7 @@ class Pane:
                 self._settings.unit,
             ]
         )
-        return completed.stdout.strip() if completed.ok else "unknown"
+        return UnitState.parse(completed.stdout) if completed.ok else UnitState.UNKNOWN
 
     def _drain(self) -> None:
         """The journal, printed through the console rather than around it.

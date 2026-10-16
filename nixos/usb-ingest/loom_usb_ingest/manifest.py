@@ -78,11 +78,18 @@ class Stick:
 
 @dataclass(frozen=True)
 class Totals:
-    """How much came off it."""
+    """How much came off it, and how much of it was never opened."""
 
     objects: int = 0
     bytes: int = 0
     failures: int = 0
+    # Volumes with a filesystem that could not be mounted -- an encrypted partition,
+    # a type the table refuses. Separate from `failures`, which counts objects, and
+    # the reason a stick that produced nothing is not reported as a complete read.
+    skipped: int = 0
+    # Partitions with no filesystem at all: a Microsoft Reserved Partition, a blank
+    # one. Nobody expected documents from these, so they are not "unread media".
+    blank: int = 0
 
 
 @dataclass(frozen=True)

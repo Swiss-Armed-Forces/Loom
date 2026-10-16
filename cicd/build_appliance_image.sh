@@ -31,7 +31,8 @@ OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
 # Which box this stick is for. The nix system follows from it unless --system
 # says otherwise; see nixos/platforms/ for what else each one carries.
 PLATFORM="spark"
-KNOWN_PLATFORMS=(spark evo-x2 nuc12)
+# The platform list and its validation live in cicd/appliance_common.sh --
+# see KNOWN_PLATFORMS and require_platform there.
 NIX_SYSTEM=""
 # The chosen platform's GPU vendor, resolved once in Main below rather than at
 # each use: calling platform_gpu inside a condition would disable `set -e` in
@@ -118,10 +119,23 @@ USER_VALUES_SOURCES=""
 #                    subjectAltName, and what the box resolves to itself
 #   image.registry   where the images come from, on a box that has none left to
 #                    fetch
+#   intakeStorage.s3Storage.bucketName
+#                    where USB ingest writes. `nixos/usb-ingest.nix` says it in
+#                    as many words -- "Must match `intake_storage.bucket_name`
+#                    in backend/common/common/settings.py" -- and the appliance
+#                    hardcodes `loom-intake` in two further places. `init_s3.py`
+#                    creates buckets from the *setting*, so a one-character typo
+#                    here means the bucket never exists, `wait_for_cluster` gates
+#                    on `mc ls loom/loom-intake` and never succeeds, and after an
+#                    hour every stick is refused on the console
+#   intakeStorage.s3Storage.host
+#                    the same shape, against `endpoint = "https://s3.loom"`
 RESERVED_VALUE_PATHS=(
     kubernetes.api
     hostnames
     image.registry
+    intakeStorage.s3Storage.bucketName
+    intakeStorage.s3Storage.host
 )
 
 # Seven EFF words is ~90 bits, which is more than argon2id needs to be out of
@@ -184,6 +198,8 @@ INCLUDE_RC=false
 SUBNET=""
 FLASH_DEVICE=""
 KEY_BACKUP=""
+# Whether `report` ran. See `atexit`.
+REPORTED=false
 # Build the CPU-only image for a platform that offloads to a GPU. Set by
 # --no-gpu; see the flag's own comment for when that is the right answer.
 DISABLE_GPU=false
@@ -260,6 +276,33 @@ FLASH_STEPS=(
 # Helpers
 #
 
+# Refuse a --skip-STEP naming something that is not a step.
+require_step(){
+    local candidate="${1}" step
+    for step in "${STEPS[@]}" "${FLASH_STEPS[@]}"; do
+        if [[ "${step}" == "${candidate}" ]]; then
+            return 0
+        fi
+    done
+    echo >&2 "[!] Error: --skip-${candidate} names no step."
+    echo >&2 "    Steps: ${STEPS[*]} ${FLASH_STEPS[*]}"
+    exit 1
+}
+
+# Whether this step was skipped, by exact name. Prints `yes` or nothing rather
+# than answering with an exit status: a function called in a condition has
+# `set -e` disabled for its whole body, which is the trap --platform's own
+# validation avoids the same way.
+step_skipped(){
+    local step
+    for step in ${SKIP[@]+"${SKIP[@]}"}; do
+        if [[ "${step}" == "${1}" ]]; then
+            printf 'yes'
+            return 0
+        fi
+    done
+}
+
 # The GPU vendor each platform offloads Ollama to, empty for the CPU-only ones.
 # Mirrors `gpuVendor` in the matching nixos/platforms/<id>.nix, which is the
 # authority -- this copy exists so that --no-gpu can reject a platform with
@@ -297,7 +340,14 @@ validate_environment(){
     # `partx` and `blockdev` rather than `partprobe`: see flash_image for why
     # parted is the wrong tool for re-reading an image-sized GPT on a larger
     # stick. Both are util-linux, which `lsblk` already requires.
-    for command in git git-lfs nix-build jq lsblk sgdisk dd sync udevadm partx blockdev sudo head cmp install file; do
+    # `sgdisk` is deliberately absent: nothing in this script partitions
+    # anything -- `flash_image` dd's a whole image -- so requiring gptfdisk
+    # refused a build on a host that had no need of it. `findmnt` and `yq` are
+    # here instead: both are used on every run, and a host missing yq used to
+    # fetch the tags, prompt, clone and repack before failing, which is exactly
+    # what a preflight exists to prevent.
+    for command in git git-lfs nix-build jq yq lsblk findmnt dd sync udevadm \
+        partx blockdev sudo head cmp install file; do
         check_command "${command}"
     done
 
@@ -308,11 +358,20 @@ validate_environment(){
         check_command diceware
     fi
 
+    # Where every secret this run may write is checked, for the reason stated on
+    # `assert_secret_path`: a path typo must cost nothing, and both of these are
+    # otherwise only touched after the stick has been written.
+    if [[ -n "${KEY_BACKUP}" ]]; then
+        assert_secret_path "${KEY_BACKUP}" "--key-backup"
+    fi
+    if [[ -n "${LOCK_KEY_OUT}" ]]; then
+        assert_secret_path "${LOCK_KEY_OUT}" "--lock-key-out"
+    fi
+
     # Likewise, and the files are read here rather than in resolve_user_values so
     # that a path typo costs nothing: that step runs after the tag has been
     # fetched and the checkout prepared.
     if [[ ${#USER_VALUES_FILES[@]} -gt 0 || ${#USER_VALUES_SETS[@]} -gt 0 ]]; then
-        check_command yq
         check_command comm
         if [[ "${USER_VALUES_SKIP_CHECK}" != true ]]; then
             check_command helm
@@ -492,10 +551,39 @@ resolve_tag(){
     fi
 }
 
+# The three octets every appliance address is built from, as `a.b.c`.
+#
+# Checked, because the obvious mistake builds a stick that serves nothing:
+# `--subnet 10.1.2.0` is natural -- `report` prints the value back as
+# `10.1.2.0/24` and the usage string says only "appliance subnet prefix" -- and
+# it yields `boxAddress = "10.1.2.0.1"`, a dnsmasq pool of `10.1.2.0.100-200`,
+# matching /etc/hosts entries and an nftables DNAT rule, none of which fail at
+# Nix eval because the address option is a plain string. Every other free-form
+# flag with a shape is checked: --platform, --wifi-ssid, --wifi-psk,
+# --lock-key-words.
+SUBNET_PATTERN='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
+
+validate_subnet(){
+    local octet
+
+    if [[ ! "${1}" =~ ${SUBNET_PATTERN} ]]; then
+        echo >&2 "[!] Error: --subnet takes the first THREE octets, e.g. 10.42.7"
+        echo >&2 "    Got: ${1}"
+        exit 1
+    fi
+    for octet in ${1//./ }; do
+        if (( octet > 255 )); then
+            echo >&2 "[!] Error: --subnet octet out of range: ${octet} in ${1}"
+            exit 1
+        fi
+    done
+}
+
 resolve_subnet(){
     local a b
 
     if [[ -n "${SUBNET}" ]]; then
+        validate_subnet "${SUBNET}"
         return
     fi
 
@@ -615,7 +703,26 @@ resolve_lock_key(){
 # no attempt here to judge where an operator keeps their secrets, which is not
 # this script's business.
 assert_secret_path(){
-    local path="${1}" flag="${2}" resolved
+    local path="${1}" flag="${2}" resolved directory
+
+    # The parent has to exist, and this is checked where a path typo still costs
+    # nothing. `readlink --canonicalize` exits 1 with empty output when a parent
+    # directory is missing, and the bare assignment below then kills the script
+    # under `set -e` with nothing but "[*] Exiting..". For --key-backup that used
+    # to happen in `backup_luks_key`, *after* `write_locked_key_partition` had
+    # already luksFormatted the stick with KEY_PASSPHRASE -- so the steps that
+    # print the passphrase never ran, the value existed only in that dead shell,
+    # and the result was an hour of build plus a stick nobody can open.
+    directory="$(dirname "${path}")"
+    if [[ ! -d "${directory}" ]]; then
+        echo >&2 "[!] Error: ${flag} names a directory that does not exist: ${directory}"
+        exit 1
+    fi
+    if [[ ! -w "${directory}" ]]; then
+        echo >&2 "[!] Error: ${flag} names a directory that is not writable: ${directory}"
+        exit 1
+    fi
+
     resolved="$(readlink --canonicalize "${path}")"
     if [[ "${resolved}" == "${CONTEXT_DIR}"/* ]]; then
         echo >&2 "[!] Error: refusing to write ${flag} inside the repository."
@@ -953,6 +1060,31 @@ generate_loom_hosts(){
         echo "    against '_llmDefaults.model' in the embedded charts/values.yaml."
     fi
 
+    # The namespace gets the same treatment as LOOM_CHAT_MODEL above, and for
+    # the same reason: `NAMESPACE` does not exist in vars.sh at 1.2.0 and first
+    # appears at 1.3.0, while `resolve_tag` accepts any tag that exists. An empty
+    # `--argstr loomNamespace ""` *overrides* nixos/default.nix's `? "loom"` -- a
+    # default cannot rescue a value that is explicitly passed empty -- and
+    # reaches ready.nix, portal.nix, console.nix and debug.nix as `--namespace
+    # ''`, so the readiness pane, the portal and `loom-debug-bundle` all watch a
+    # namespace that does not exist, on a box with no remote access.
+    if [[ -z "${NAMESPACE}" ]]; then
+        NAMESPACE="$(
+            # shellcheck disable=SC1091
+            # shellcheck source=../vars.sh
+            source "${CONTEXT_DIR}/vars.sh"
+            printf '%s' "${NAMESPACE}"
+        )"
+        if [[ -z "${NAMESPACE}" ]]; then
+            echo >&2 "[!] Error: neither ${TAG}'s vars.sh nor this checkout's defines"
+            echo >&2 "    NAMESPACE, and every unit on the box that asks Kubernetes"
+            echo >&2 "    anything needs one."
+            exit 1
+        fi
+        echo "[!] ${TAG}'s vars.sh defines no NAMESPACE -- it predates the variable."
+        echo "    Using this checkout's value instead: ${NAMESPACE}"
+    fi
+
     # The node address comes straight out of the tag's chart rather than through
     # its vars.sh, unlike everything else here. `kubernetes.api` is what that
     # tag's `-allow-k8s-api` NetworkPolicy renders into an ipBlock, so the chart
@@ -1233,15 +1365,29 @@ build_image(){
 }
 
 confirm_flash(){
-    local image size answer mounted root_source
+    local image size answer mounted root_source root_disk
 
     if [[ ! -b "${FLASH_DEVICE}" ]]; then
         echo >&2 "[!] Error: not a block device: ${FLASH_DEVICE}"
         exit 1
     fi
 
+    # Resolved down to the disk under it before it is compared. `findmnt
+    # --target /` prints `/dev/mapper/vg-root` on the common LVM, LUKS or mdraid
+    # workstation, which can never prefix-match a physical device node -- so this
+    # branch was unreachable there, the device was caught two checks below by
+    # `MOUNTPOINTS` instead, and the operator was told "has mounted partitions.
+    # Unmount them first": following that instruction is how you get past the
+    # only check that caught it.
     root_source="$(findmnt --noheadings --output SOURCE --target / | head --lines=1)"
-    if [[ "${root_source}" == "${FLASH_DEVICE}"* ]]; then
+    root_disk="$(
+        lsblk --noheadings --output PKNAME --paths "${root_source}" 2>/dev/null \
+            | grep --max-count=1 . || true
+    )"
+    if [[ -z "${root_disk}" ]]; then
+        root_disk="${root_source}"
+    fi
+    if [[ "${root_source}" == "${FLASH_DEVICE}"* || "${root_disk}" == "${FLASH_DEVICE}"* ]]; then
         echo >&2 "[!] Error: ${FLASH_DEVICE} backs this machine's root filesystem."
         exit 1
     fi
@@ -1510,6 +1656,15 @@ write_locked_key_partition(){
         bs="${KEY_BYTES}" count=1 conv=fsync status=none
     sync
     sudo cryptsetup close "${KEYSTORE_MAPPING}"
+
+    # Printed the instant it is committed to the stick, not six steps later in
+    # `report`. From here the stick only opens with this value, so anything that
+    # stops the run in between -- a failing backup path, a Ctrl-C, a sync error
+    # -- used to take the only copy with it: the passphrase lived in that shell
+    # and nowhere else, and what was left was an hour of build plus a brick.
+    # `report` prints it again at the end, where it is also the last thing on
+    # the screen.
+    print_key_passphrase
 }
 
 verify_flash(){
@@ -1643,6 +1798,10 @@ print_key_passphrase(){
 
 report(){
     local image checksum gpu
+
+    # Read by `atexit`: a run that never reported has not told anybody where the
+    # --debug key directory is, so that directory is scratch rather than output.
+    REPORTED=true
 
     image="$(image_file "${IMAGE_LINK}")"
     gpu="$(gpu_report)"
@@ -1840,17 +1999,39 @@ usage(){
 #
 
 atexit(){
+    # Before KEY_DIR, and the thing that most has to go: under --lock-key two
+    # steps open ${KEYSTORE_MAPPING} and write the raw key through it, and a
+    # failing dd, a failing sync or a Ctrl-C in between left the decrypted
+    # mapping in place -- so the handler carefully deleted the *file* copy of
+    # the key while a device node holding the same bytes stayed open. It also
+    # made the next `--flash --lock-key` run fail at `cryptsetup open` with
+    # "device already exists", on a step nobody would connect to the last run.
+    if [[ -e "/dev/mapper/${KEYSTORE_MAPPING}" ]]; then
+        sudo cryptsetup close "${KEYSTORE_MAPPING}" || true
+    fi
     if [[ -n "${KEY_DIR}" && -d "${KEY_DIR}" ]]; then
         rm --recursive --force "${KEY_DIR}"
     fi
     if [[ -n "${WORK_DIR}" && -d "${WORK_DIR}" ]]; then
         rm --recursive --force "${WORK_DIR}"
     fi
-    # DEBUG_KEY_DIR is deliberately absent from this list. Unlike the two above
-    # it is not scratch: it holds the only copy of the private key that opens
-    # the image this run just built, and deleting it here would make --debug a
-    # flag that produces an unreachable box. `report` prints where it is, and
-    # removing it is the operator's call.
+    # DEBUG_KEY_DIR is deliberately not deleted on a run that *reported*: it
+    # holds the only copy of the private key that opens the image this run just
+    # built, and removing it would make --debug a flag that produces an
+    # unreachable box. `report` prints where it is, and disposing of it is the
+    # operator's call.
+    #
+    # A run that never got that far is the other case, and it used to leak: any
+    # failure before `report` -- `prepare_repo`, `verify_repo`, the hour-long
+    # `build_image` -- left a 0700 directory in $TMPDIR holding an ed25519
+    # private key with nobody told it existed, accumulating one per failed
+    # build. No image was produced, so the key opens nothing; it is still key
+    # material on disk, which is the thing the rest of this script is careful
+    # about.
+    if [[ -n "${DEBUG_KEY_DIR}" && -d "${DEBUG_KEY_DIR}" && "${REPORTED}" != true ]]; then
+        echo "[*] Removing the unreported debug key directory: ${DEBUG_KEY_DIR}"
+        rm --recursive --force "${DEBUG_KEY_DIR}"
+    fi
     echo "[*] Exiting.."
 }
 trap atexit EXIT
@@ -1858,8 +2039,14 @@ trap atexit EXIT
 #
 # Argument parsing
 #
+# `${1:?...}` throughout, not `${1?...}`: the second fires only when the
+# argument is *unset*, so `--flash ''` from a wrapper with an empty variable
+# silently built an image and flashed nothing, ending with "Flash it with:
+# build-appliance-image --flash /dev/sdX" after an hour. The same applied to
+# `--key-backup ''` (no backup) and `--lock-key-out ''` (no file, and the
+# "given without --lock-key" guard cannot see it).
+#
 
-ARGS=()
 while [[ $# -gt 0 ]]; do
     case "${1}" in
         -h|--help)
@@ -1873,7 +2060,7 @@ while [[ $# -gt 0 ]]; do
         ;;
         -t|--tag)
             shift
-            TAG="${1?Missing TAG}"
+            TAG="${1:?Missing TAG}"
             shift
         ;;
         --include-rc)
@@ -1882,17 +2069,17 @@ while [[ $# -gt 0 ]]; do
         ;;
         -o|--output)
             shift
-            OUTPUT_DIR="${1?Missing OUTPUT_DIR}"
+            OUTPUT_DIR="${1:?Missing OUTPUT_DIR}"
             shift
         ;;
         -f|--flash)
             shift
-            FLASH_DEVICE="${1?Missing DEVICE}"
+            FLASH_DEVICE="${1:?Missing DEVICE}"
             shift
         ;;
         -k|--key-backup)
             shift
-            KEY_BACKUP="${1?Missing FILE}"
+            KEY_BACKUP="${1:?Missing FILE}"
             shift
         ;;
         --lock-key)
@@ -1905,12 +2092,12 @@ while [[ $# -gt 0 ]]; do
         ;;
         --values)
             shift
-            USER_VALUES_FILES+=("${1?Missing FILE}")
+            USER_VALUES_FILES+=("${1:?Missing FILE}")
             shift
         ;;
         --set)
             shift
-            USER_VALUES_SETS+=("${1?Missing PATH=VALUE}")
+            USER_VALUES_SETS+=("${1:?Missing PATH=VALUE}")
             shift
         ;;
         --values-allow-new-keys)
@@ -1923,17 +2110,17 @@ while [[ $# -gt 0 ]]; do
         ;;
         --lock-key-words)
             shift
-            LOCK_KEY_WORDS="${1?Missing N}"
+            LOCK_KEY_WORDS="${1:?Missing N}"
             shift
         ;;
         --lock-key-out)
             shift
-            LOCK_KEY_OUT="${1?Missing FILE}"
+            LOCK_KEY_OUT="${1:?Missing FILE}"
             shift
         ;;
         --keymap)
             shift
-            KEYMAP="${1?Missing NAME}"
+            KEYMAP="${1:?Missing NAME}"
             shift
         ;;
         --vm-serial)
@@ -1961,34 +2148,25 @@ while [[ $# -gt 0 ]]; do
         ;;
         -p|--platform)
             shift
-            PLATFORM="${1?Missing PLATFORM}"
+            PLATFORM="${1:?Missing PLATFORM}"
             # Matched against the list rather than by calling platform_system,
             # which in a condition would silently disable `set -e` inside it.
-            case " ${KNOWN_PLATFORMS[*]} " in
-                *" ${PLATFORM} "*)
-                    :
-                ;;
-                *)
-                    echo >&2 "[!] Error: unknown platform: ${PLATFORM}"
-                    echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
-                    exit 1
-                ;;
-            esac
+            require_platform "${PLATFORM}"
             shift
         ;;
         -s|--system)
             shift
-            NIX_SYSTEM="${1?Missing SYSTEM}"
+            NIX_SYSTEM="${1:?Missing SYSTEM}"
             shift
         ;;
         -i|--interface)
             shift
-            LOOM_INTERFACE="${1?Missing INTERFACE}"
+            LOOM_INTERFACE="${1:?Missing INTERFACE}"
             shift
         ;;
         --subnet)
             shift
-            SUBNET="${1?Missing SUBNET}"
+            SUBNET="${1:?Missing SUBNET}"
             shift
         ;;
         --wifi)
@@ -1997,32 +2175,32 @@ while [[ $# -gt 0 ]]; do
         ;;
         --wifi-ssid)
             shift
-            WIFI_SSID="${1?Missing SSID}"
+            WIFI_SSID="${1:?Missing SSID}"
             shift
         ;;
         --wifi-psk)
             shift
-            WIFI_PSK="${1?Missing PSK}"
+            WIFI_PSK="${1:?Missing PSK}"
             shift
         ;;
         --wifi-country)
             shift
-            WIFI_COUNTRY="${1?Missing COUNTRY}"
+            WIFI_COUNTRY="${1:?Missing COUNTRY}"
             shift
         ;;
         --wifi-interface)
             shift
-            WIFI_INTERFACE="${1?Missing INTERFACE}"
+            WIFI_INTERFACE="${1:?Missing INTERFACE}"
             shift
         ;;
         --nixpkgs)
             shift
-            NIXPKGS="${1?Missing NIXPKGS}"
+            NIXPKGS="${1:?Missing NIXPKGS}"
             shift
         ;;
         --nixos-hardware)
             shift
-            NIXOS_HARDWARE="${1?Missing NIXOS_HARDWARE}"
+            NIXOS_HARDWARE="${1:?Missing NIXOS_HARDWARE}"
             shift
         ;;
         -y|--yes)
@@ -2034,12 +2212,33 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         --skip-*)
-            SKIP+=("${1}")
+            # Validated at parse time, and matched exactly later. A substring
+            # test against a space-joined array accepted any misspelling in
+            # silence -- the step then ran anyway, which contradicts the
+            # operator -- and, worse, skipped more than was asked:
+            # `--skip-report-only` contains `report`, and on a `--lock-key
+            # --flash` run that means the passphrase block is never printed and
+            # the stick is a brick.
+            require_step "${1#--skip-}"
+            SKIP+=("${1#--skip-}")
             shift
         ;;
+        -*)
+            # Refused rather than collected. This script's flags decide the
+            # security properties of the artefact -- `--require-client-certs`
+            # (plural) builds an image with no mutual TLS, `--wifi-pks hunter2`
+            # leaves a randomly generated PSK -- and the three sibling scripts
+            # added alongside it all refuse an unknown option. The `ARGS` idiom
+            # this inherited from up.sh collected them into an array no step
+            # ever read.
+            echo >&2 "[!] Error: unknown option: ${1}"
+            usage >&2
+            exit 1
+        ;;
         *)
-            ARGS+=("${1}")
-            shift
+            echo >&2 "[!] Error: unexpected argument: ${1}"
+            usage >&2
+            exit 1
         ;;
     esac
 done
@@ -2119,11 +2318,15 @@ if [[ -n "${FLASH_DEVICE}" ]]; then
 fi
 
 # execute steps
+skipped=""
 for step in "${STEPS[@]}"; do
-    if [[ "${SKIP[*]}" == *"--skip-${step}"* ]]; then
+    # An exact element match, not a substring of the joined array -- see the
+    # `--skip-*` arm.
+    skipped="$(step_skipped "${step}")"
+    if [[ -n "${skipped}" ]]; then
         echo "[*] Skipping: ${step}"
         continue
     fi
     echo "[*] Running: ${step}"
-    "${step}" "${ARGS[@]}"
+    "${step}"
 done

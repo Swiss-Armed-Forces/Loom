@@ -1052,7 +1052,23 @@ in
   # would then move the staging tree *inside* the directory instead of becoming
   # it.
   systemd.tmpfiles.rules = [
-    "d /var/lib/loom 0750 root wheel -"
+    # The one declaration of this directory on the box, and it has to serve two
+    # consumers. It used to be declared here *and* in mtls.nix, with different
+    # modes -- and `systemd.tmpfiles.rules` from every module is concatenated into
+    # one file, where systemd-tmpfiles refuses incompatible duplicates for a path,
+    # logs `Duplicate line for path "/var/lib/loom", ignoring.` and keeps the
+    # first. Which module came first was an artefact of module evaluation order,
+    # so a reorder of `applianceModules` would have silently swapped the modes:
+    # one way the hardening on the directory holding
+    # /var/lib/loom/recovery-passphrase was discarded, the other way nginx could
+    # no longer traverse to /var/lib/loom/mtls and the captive portal never
+    # started.
+    #
+    # 0751, not 0750: others need `x` to reach ${stateDir}-style subdirectories
+    # they are named into -- nginx's key lives in one -- and they still cannot
+    # *list* this directory. The recovery passphrase inside it is 0440 root:wheel
+    # in its own right.
+    "d /var/lib/loom 0751 root wheel -"
     "d ${operatorHome}/.skaffold 0755 ${loomUser} users -"
     "C ${operatorHome}/.skaffold/config 0644 ${loomUser} users - ${skaffoldGlobalConfig}"
   ];

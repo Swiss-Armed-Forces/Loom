@@ -1,7 +1,7 @@
 # The WiFi access point
 
 Radios are disabled on every appliance image except one built with `build-appliance-image --wifi`.
-**Check `facts.md` first** — it says whether this box has the access point at all. If it does not,
+**Check `loom-appliance/facts.md` first** — it says whether this box has the access point at all. If it does not,
 there is nothing to diagnose here and no way to turn one on from the console; it takes a new stick.
 
 The access point is bridged onto the same segment as the wired port, so a client that associates

@@ -36,7 +36,14 @@ import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from loom_ready.state import Blocker, Counts, Stage, Workload
+from loom_ready.state import (
+    Blocker,
+    Counts,
+    Stage,
+    UnitState,
+    Workload,
+    WorkloadKind,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,12 +94,20 @@ class Completed:
 class Observation:
     """One tick's worth of facts, before anything has been decided about them."""
 
-    unit_state: str = "unknown"
+    unit_state: UnitState = UnitState.UNKNOWN
     reachable: bool = False
     namespace_present: bool = False
     workloads: list[Workload] = field(default_factory=list)
     blockers: list[Blocker] = field(default_factory=list)
     detail: str = ""
+    # Whether the workload listing was *read*, as opposed to read and empty. Without
+    # it a kubectl that missed its 5s `--request-timeout` -- `get
+    # deployments,statefulsets,daemonsets,jobs -o json` across the namespace, which
+    # is not hypothetical on a busy appliance -- was indistinguishable from "the
+    # cluster answered and nothing is ready": `classify` said DEGRADED on a box that
+    # was fine, the bar collapsed to `--/-- pods`, and `publish` reset its
+    # no-change timer so the stall note could never fire either.
+    workloads_known: bool = False
 
 
 class Commands:
@@ -183,15 +198,16 @@ class Cluster:
             namespace_present=True,
             workloads=workloads,
             blockers=blockers,
+            workloads_known=True,
         )
 
-    def _unit_state(self) -> str:
+    def _unit_state(self) -> UnitState:
         completed = self._commands.run(
             ["systemctl", "show", "--property=ActiveState", "--value", self._unit]
         )
         if not completed.ok:
-            return "unknown"
-        return completed.stdout.strip() or "unknown"
+            return UnitState.UNKNOWN
+        return UnitState.parse(completed.stdout)
 
     def _kubectl(self, arguments: list[str], namespaced: bool = True) -> Completed:
         argv = ["kubectl", f"--request-timeout={REQUEST_TIMEOUT}"]
@@ -234,7 +250,7 @@ def parse_workloads(items: list[object]) -> list[Workload]:
     return workloads
 
 
-def _workload(item: dict) -> Workload | None:
+def _workload(item: Mapping[str, object]) -> Workload | None:
     spec = _mapping(item.get("spec"))
     status = _mapping(item.get("status"))
     name = str(_mapping(item.get("metadata")).get("name", ""))
@@ -245,38 +261,38 @@ def _workload(item: dict) -> Workload | None:
     # reason the four kinds can be asked for in one call. A document without one is
     # sniffed rather than dropped: the fields are distinctive, and a silently skipped
     # workload would understate the denominator in a way nobody would notice.
-    kind = str(item.get("kind") or _sniff_kind(spec, status))
+    kind = WorkloadKind.parse(str(item.get("kind", ""))) or _sniff_kind(spec, status)
 
-    if kind == "DaemonSet":
+    if kind is WorkloadKind.DAEMON_SET:
         return Workload(
             kind=kind,
             name=name,
             desired=_int(status.get("desiredNumberScheduled")),
             ready=_int(status.get("numberReady")),
         )
-    if kind == "Job":
+    if kind is WorkloadKind.JOB:
         return Workload(
             kind=kind,
             name=name,
             desired=_int(spec.get("completions"), default=1),
             ready=_int(status.get("succeeded")),
         )
-    if kind in ("Deployment", "StatefulSet"):
-        return Workload(
-            kind=kind,
-            name=name,
-            desired=_int(spec.get("replicas"), default=1),
-            ready=_int(status.get("readyReplicas")),
-        )
-    return None
+    return Workload(
+        kind=kind,
+        name=name,
+        desired=_int(spec.get("replicas"), default=1),
+        ready=_int(status.get("readyReplicas")),
+    )
 
 
-def _sniff_kind(spec: Mapping[str, object], status: Mapping[str, object]) -> str:
+def _sniff_kind(
+    spec: Mapping[str, object], status: Mapping[str, object]
+) -> WorkloadKind:
     if "desiredNumberScheduled" in status or "numberReady" in status:
-        return "DaemonSet"
+        return WorkloadKind.DAEMON_SET
     if "completions" in spec or "succeeded" in status:
-        return "Job"
-    return "Deployment"
+        return WorkloadKind.JOB
+    return WorkloadKind.DEPLOYMENT
 
 
 def _int(value: object, default: int = 0) -> int:
@@ -299,7 +315,7 @@ def parse_blockers(items: list[object]) -> list[Blocker]:
     return blockers
 
 
-def _blocker(item: dict) -> Blocker | None:
+def _blocker(item: Mapping[str, object]) -> Blocker | None:
     status = _mapping(item.get("status"))
     name = str(_mapping(item.get("metadata")).get("name", ""))
     if not name:
@@ -353,7 +369,7 @@ def classify(observation: Observation, previous: Stage | None = None) -> Stage:
     apart from one that was and is not any more. Everything else is a function of what
     is true now.
     """
-    if observation.unit_state == "failed":
+    if observation.unit_state is UnitState.FAILED:
         return Stage.FAILED
 
     if not observation.reachable or not observation.namespace_present:
@@ -362,10 +378,22 @@ def classify(observation: Observation, previous: Stage | None = None) -> Stage:
     # Deliberately the same condition console.nix's pane used to evaluate for itself:
     # the unit is Type=oneshot with RemainAfterExit, so it reads `activating` for the
     # hours of a bring-up and `active` only once up.sh has exited 0.
-    settled = observation.unit_state == "active"
+    settled = observation.unit_state is UnitState.ACTIVE
     if not settled:
         return Stage.DEPLOYING
 
+    # A listing that could not be read says nothing about the box, so nothing about
+    # the box changes: the previous stage stands, and a box that has never had one
+    # is still WAITING. Treating it as "nothing is ready" turned one slow kubectl
+    # into `Loom: degraded`, a red status line and `loom-ready` exiting 1.
+    if not observation.workloads_known:
+        return previous or Stage.WAITING
+
+    return _classify_settled(observation, previous)
+
+
+def _classify_settled(observation: Observation, previous: Stage | None) -> Stage:
+    """The stage of a box whose unit has returned and whose workloads were read."""
     counted = [workload for workload in observation.workloads if workload.counted]
     converged = bool(counted) and all(workload.converged for workload in counted)
     if converged:

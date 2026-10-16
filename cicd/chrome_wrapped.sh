@@ -106,6 +106,8 @@ usage(){
     echo "                 default: ${DEFAULT_LOOM_HTTP_PORT}, or ${DEFAULT_LOOM_HTTP_PORT_SET} with LOOM_SERVER given"
     echo "LOOM_HTTPS_PORT: The port serving traefik's 'websecure' entrypoint"
     echo "                 default: ${DEFAULT_LOOM_HTTPS_PORT}, or ${DEFAULT_LOOM_HTTPS_PORT_SET} with LOOM_SERVER given"
+    echo
+    echo "The two ports are given together or not at all; one alone is refused."
 }
 
 #
@@ -143,6 +145,17 @@ fi
 
 if [[ "${#ARGS[@]}" -gt 3 ]]; then
     echo >&2 "[!] Error: at most 3 positional arguments, got ${#ARGS[@]}"
+    usage >&2
+    exit 1
+fi
+
+# The ports are given as a pair or not at all. One of them alone leaves the
+# other at its default, which is the mismatched mapping this script exists to
+# avoid: an http forward on 8080 beside an https default of 443 sends every
+# redirect at a port nothing listens on. Refused rather than guessed, because
+# the symptom is a 404 from a healthy stack.
+if [[ "${#ARGS[@]}" -eq 2 ]]; then
+    echo >&2 "[!] Error: the two ports must be given together, got only LOOM_HTTP_PORT"
     usage >&2
     exit 1
 fi

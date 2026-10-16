@@ -13,7 +13,10 @@ over a real SeaweedFS, with real range requests rather than a MagicMock.
 
 Every negative assertion below is made *after* a positive one that proves the object has
 been through the pipeline. Asserting "no such file" against a bucket the crawler has not
-polled yet would pass for the wrong reason.
+polled yet would pass for the wrong reason. The positive half is not enough on its own
+where the two pipelines have different lengths -- an archive reaches `imported` before a
+wrongly-indexed File becomes searchable -- so those calls also pass
+`wait_for_celery_idle`, which is the only option here that actually waits.
 """
 
 import io
@@ -41,6 +44,7 @@ from utils.upload_asset import upload_asset
 ARCHIVE_OBJECT_NAME = "loom_archive_2026-09-18_12_00_00.000000.zip"
 ENCRYPTED_OBJECT_NAME = "loom_archive_2026-09-18_12_00_00.000000.loom"
 PLAIN_ZIP_OBJECT_NAME = "holiday_photos.zip"
+TRUNCATED_OBJECT_NAME = "loom_archive_2026-09-18_12_00_00.000000.truncated.loom"
 
 
 def _put_in_intake(object_name: str, payload: bytes) -> None:
@@ -109,9 +113,14 @@ def test_a_loom_archive_in_the_intake_bucket_is_imported_not_indexed_as_a_zip():
     assert imported[0].file_id == archive_id
 
     # Only now is this meaningful: the import above proves the object was seen.
+    # `wait_for_celery_idle` is what makes it an assertion rather than one look: the
+    # helper returns as soon as `0 == 0`, and this is the *other*, longer pipeline --
+    # a router that wrongly took both branches would reach `imported` first and have
+    # its File become searchable seconds later.
     fetch_files_from_api(
         search_string=f'filename:"{ARCHIVE_OBJECT_NAME}"',
         expected_no_of_files=0,
+        wait_for_celery_idle=True,
     )
 
 
@@ -143,10 +152,12 @@ def test_an_encrypted_loom_archive_this_box_can_open_is_imported():
 
     # Only now is this meaningful: the import above proves the object was seen. A
     # decrypted archive that was *also* indexed as an opaque blob would mean the
-    # prescreen and the router each took their own branch.
+    # prescreen and the router each took their own branch -- and that File appears
+    # later than the archive does, so this waits for Celery rather than looking once.
     fetch_files_from_api(
         search_string=f'filename:"{ENCRYPTED_OBJECT_NAME}"',
         expected_no_of_files=0,
+        wait_for_celery_idle=True,
     )
 
 
@@ -172,14 +183,17 @@ def test_an_ordinary_zip_in_the_intake_bucket_is_still_indexed_as_a_file():
     )
 
 
-def test_an_undecryptable_loom_archive_is_indexed_rather_than_dropped():
-    """The never-drop guarantee, on its most likely trigger.
+def test_a_foreign_loom_header_is_indexed_rather_than_dropped():
+    """The never-drop guarantee, on its most likely trigger: a foreign `.loom`.
 
-    A `.loom` carried in from another box carries the right magic and will not decrypt
-    here, because `archive_enc_master_key` is per-deployment. It has to end up findable
-    as an opaque blob rather than silently going nowhere -- and on the way there it must
-    not fail the task into the graveyard queue either, which is what the bare
-    `ValueError` from the MAC check used to do.
+    What this reaches is the **header probe**, and only that: the payload is random
+    bytes behind the archive magic, so `_inspect_encrypted_header` answers `FOREIGN_KEY`
+    from seventeen bytes and `decrypt_loom_archive` is never called. The MAC check --
+    the other way a `.loom` fails -- needs a container this box really wrote, and the
+    case below is the one that produces it.
+
+    The blob has to end up findable as an opaque file rather than silently going
+    nowhere, which is what routing used to do with it.
     """
     payload = LOOM_ARCHIVE_MAGIC_BYTES + bytes(range(256)) * 16
 
@@ -198,3 +212,28 @@ def test_an_undecryptable_loom_archive_is_indexed_rather_than_dropped():
     # otherwise returns an empty list, so wrapping it in `assert not` would be
     # dead code rather than a second check.
     fetch_archives_from_api(expected_no_of_archives=0, expected_state=None)
+
+
+def test_a_truncated_archive_of_our_own_is_indexed_rather_than_dropped():
+    """The MAC path, which nothing else in this suite reaches over a real cluster.
+
+    `?encrypted=true` hands back a container written with this cluster's own key, so the
+    header probe says the key fits and the body is decrypted for real -- and a truncated
+    body then fails `cipher.verify(mac)` with a bare `ValueError`, which is what used to
+    fail the task into the graveyard queue with no File entity at all.
+    """
+    upload_asset("empty_file.txt")
+    get_file_preview_by_name("empty_file.txt")
+
+    archive_id = _create_archive_of_everything()
+    encrypted = _download_archive(archive_id, encrypted=True)
+
+    _put_in_intake(TRUNCATED_OBJECT_NAME, encrypted[: len(encrypted) - 32])
+
+    preview = get_file_preview_by_name(TRUNCATED_OBJECT_NAME)
+
+    assert preview.name == TRUNCATED_OBJECT_NAME
+    assert (
+        preview.path
+        == f"//{settings.intake_storage.bucket_name}/{TRUNCATED_OBJECT_NAME}"
+    )

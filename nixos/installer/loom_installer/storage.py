@@ -10,9 +10,13 @@ logical volume, so closing dm-crypt has to come first or the group is still in u
 import glob
 import os
 
-from loom_installer import constants
+from loom_installer import constants, devices
 from loom_installer.commands import CommandRunner
 from loom_installer.settings import settings
+
+
+class StorageError(RuntimeError):
+    """Something about the box makes a destructive step unsafe to take."""
 
 
 def mappings_to_close(present: list[str], key_store: str | None) -> list[str]:
@@ -62,13 +66,71 @@ def release_storage(runner: CommandRunner) -> None:
     deactivate(runner)
 
 
-def discard_pool(runner: CommandRunner) -> None:
+def pool_members(runner: CommandRunner) -> list[str]:
+    """The physical volumes the pool is built on, as device paths."""
+    listing = runner.output(
+        [
+            "vgs",
+            "--noheadings",
+            "--options",
+            "pv_name",
+            "--select",
+            f"vg_name={settings().storage.volume_group}",
+        ]
+    )
+    return [line.strip() for line in listing.splitlines() if line.strip()]
+
+
+def pool_disks_outside(runner: CommandRunner, targets: list[str]) -> list[str]:
+    """Disks carrying a volume group of this name that are not in `targets`.
+
+    `vgremove` and `vgchange` address LVM **by group name**, and this stick configures
+    no LVM device filter -- so every one of these is destroyed by a `vgremove loom`
+    despite never appearing in the "THE FOLLOWING WILL BE DESTROYED" list that
+    `target_disks` built:
+
+      * a SATA or SAS disk carrying a `loom` VG, excluded by the NVMe regex;
+      * a second NVMe excluded as removable, USB or mounted;
+      * a pulled Loom NVMe in a USB caddy -- attached by the operator precisely to
+        copy data off it.
+
+    `wipe.erase_pool_keys` makes it worse: it activates the group globally and then
+    `luksErase`s a name-resolved device-mapper path, which is unrecoverable.
+    """
+    allowed = set(targets)
+    outside = []
+    for member in pool_members(runner):
+        parent = devices.parent_of(runner, member)
+        # No parent means the PV is a whole disk rather than a partition.
+        disk = parent or member
+        if disk not in allowed:
+            outside.append(disk)
+    return sorted(set(outside))
+
+
+def discard_pool(runner: CommandRunner, targets: list[str] | None = None) -> None:
     """Destroy the pool itself, so the disks under it can be repartitioned.
 
     Deliberately separate from `release_storage`: the probe deactivates, the installer
     destroys, and conflating the two would make looking at a box indistinguishable from
     reinstalling it.
+
+    `targets` is the set of disks the operator was shown and confirmed. When it is
+    given, a volume group of this name that reaches outside it stops the run rather than
+    being destroyed -- see `pool_disks_outside`. It defaults to None only for the
+    callers that have already established there is nothing else attached.
     """
+    if targets is not None:
+        outside = pool_disks_outside(runner, targets)
+        if outside:
+            raise StorageError(
+                "A volume group named "
+                f"{settings().storage.volume_group} also lives on "
+                f"{', '.join(outside)}, which is not one of the disks this run may "
+                "write to. Destroying it by name would take that disk's data with it. "
+                "Detach it and try again."
+            )
+
     release_storage(runner)
     runner.run(["vgremove", "--force", settings().storage.volume_group])
     # Drop what lvm cached about devices that are about to stop existing. Without
@@ -78,6 +140,25 @@ def discard_pool(runner: CommandRunner) -> None:
 
 def activate(runner: CommandRunner) -> None:
     runner.run(["vgchange", "--activate", "y", settings().storage.volume_group])
+
+
+def is_active(runner: CommandRunner) -> bool:
+    """Whether the volume group is active right now.
+
+    `vg_attr`'s sixth character is the activation state: `a` for active. Read so that a
+    read-only probe can put the box back exactly as it found it rather than deactivating
+    unconditionally.
+    """
+    attributes = runner.output(
+        [
+            "vgs",
+            "--noheadings",
+            "--options",
+            "vg_attr",
+            settings().storage.volume_group,
+        ]
+    ).strip()
+    return len(attributes) >= 6 and attributes[5] == "a"
 
 
 def deactivate(runner: CommandRunner) -> None:
@@ -98,12 +179,27 @@ def pool_claimed_by_key(runner: CommandRunner, key_device: str) -> bool:
 
     A re-flashed stick carries a fresh key, so this never blocks re-provisioning. It
     only blocks a stick meeting the box it already installed.
+
+    Two conditions, not one. The passphrase test alone is satisfied from the instant
+    `install.encrypt` returns -- twenty minutes before there is a system on the disk
+    -- so a power loss during `install_system` produced a box that answered "already
+    installed" with no bootloader and no NVRAM entry, and sat at the menu refusing to
+    try again. The LUKS2 label is written last, by `install.stamp_pool_installed`, so
+    it means *finished*.
     """
     root_device = settings().storage.root_device
+
+    # Whether the group was already active decides whether this probe may deactivate
+    # it afterwards. It is read-only by contract, and an operator who activated the
+    # group from the rescue shell to copy data off an ALREADY_INSTALLED box -- the one
+    # box where this runs -- would otherwise have it torn down under them on the next
+    # menu redraw.
+    was_active = is_active(runner)
 
     activate(runner)
     claimed = (
         runner.is_block_device(root_device)
+        and _is_labelled_installed(runner, root_device)
         and runner.run(
             [
                 "cryptsetup",
@@ -117,8 +213,20 @@ def pool_claimed_by_key(runner: CommandRunner, key_device: str) -> bool:
             ]
         ).ok
     )
-    # Leave the box as it was found. An active group would also make the partition
-    # table busy if the operator picks Install off the menu anyway.
-    deactivate(runner)
+    # Leave the box as it was found -- which is what this says and now also does. An
+    # active group would make the partition table busy if the operator picks Install
+    # off the menu, so the common case still deactivates.
+    if not was_active:
+        deactivate(runner)
 
     return claimed
+
+
+def _is_labelled_installed(runner: CommandRunner, root_device: str) -> bool:
+    """Whether the container carries the label a finished install stamps on it."""
+    dump = runner.output(["cryptsetup", "luksDump", root_device])
+    return any(
+        line.split(":", 1)[1].strip() == constants.INSTALLED_LABEL
+        for line in dump.splitlines()
+        if line.strip().lower().startswith("label:")
+    )

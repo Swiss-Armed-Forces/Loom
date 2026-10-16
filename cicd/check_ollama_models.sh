@@ -16,12 +16,20 @@
 # Dockerfile that it "pulls exactly `_llmDefaults.model`" -- which is the
 # sentence this script makes true.
 #
+# It also holds `ollama_wrapper.py`'s HOST_RESERVE_BYTES to vars.sh's
+# LOOM_MIN_MEMORY, for the same reason: the wrapper ships inside a container
+# that cannot read vars.sh, the constant is a second copy of that value, and on
+# a unified-memory box it is the only thing standing between ollama's budget and
+# the rest of the stack.
+#
 # Needs no cluster and no network: it is one yq and one grep.
 set -eou pipefail
 
 CONTEXT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VALUES_FILE="${CONTEXT_DIR}/charts/values.yaml"
 DOCKERFILE="${CONTEXT_DIR}/ollama/Dockerfile.models"
+VARS_FILE="${CONTEXT_DIR}/vars.sh"
+WRAPPER="${CONTEXT_DIR}/ollama/ollama_wrapper.py"
 
 # The `pull-production` stage's own ARG, not the `pull-dev` one above it -- that
 # one carries qwen2.5:0.5b and moondream, which is deliberately not what the
@@ -51,11 +59,18 @@ for path in '._llmDefaults.model' '.llm.embedding.model'; do
     declared+=("${value}")
 done
 
+# One model name per line, so each can be compared whole.
+#
+# `grep --word-regexp` is not that comparison and the counterexample is the one
+# this check is about: `-w` only requires the match to be bounded by non-word
+# characters, and `-`, `.` and `:` are all non-word -- so a Dockerfile baking
+# `qwen3.8:27b-instruct` satisfied a chart asking for `qwen3.8:27b`, and the box
+# carried no model the chart names. `-x` against the split list compares tokens.
+baked_lines="$(tr ' ' '\n' <<< "${baked}")"
+
 missing=()
 for model in "${declared[@]}"; do
-    # Word-boundary match rather than a substring: model names share prefixes,
-    # and `qwen3.5` must not be satisfied by `qwen3.5-abliterated`.
-    if ! grep --quiet --word-regexp --fixed-strings -- "${model}" <<< "${baked}"; then
+    if ! grep --quiet --line-regexp --fixed-strings -- "${model}" <<< "${baked_lines}"; then
         missing+=("${model}")
     fi
 done
@@ -70,3 +85,47 @@ if (( ${#missing[@]} > 0 )); then
 fi
 
 echo "[*] ollama/Dockerfile.models bakes every model charts/values.yaml names."
+
+# --- the host reserve, which is LOOM_MIN_MEMORY in another spelling ---
+
+# shellcheck disable=SC1090
+source "${VARS_FILE}"
+
+if [[ -z "${LOOM_MIN_MEMORY:-}" ]]; then
+    echo >&2 "[!] Error: ${VARS_FILE} defines no LOOM_MIN_MEMORY."
+    exit 1
+fi
+
+# `25Gi` -> gibibytes. The two spellings are deliberately different -- one is a
+# Kubernetes quantity, the other a Python expression -- so the comparison is of
+# the numbers, not of the text.
+want_gib="${LOOM_MIN_MEMORY%Gi}"
+if [[ "${want_gib}" == "${LOOM_MIN_MEMORY}" ]]; then
+    echo >&2 "[!] Error: LOOM_MIN_MEMORY is '${LOOM_MIN_MEMORY}', which this check only"
+    echo >&2 "[!] understands in gibibytes (e.g. 25Gi)."
+    exit 1
+fi
+
+have_gib="$(
+    sed --quiet --regexp-extended \
+        's/^HOST_RESERVE_BYTES = ([0-9]+) \* \(1024\*\*3\)$/\1/p' "${WRAPPER}" |
+        head --lines=1
+)"
+
+if [[ -z "${have_gib}" ]]; then
+    echo >&2 "[!] Error: no 'HOST_RESERVE_BYTES = N * (1024**3)' line in ${WRAPPER}."
+    echo >&2 "[!] If the constant changed shape, this check needs rewriting rather than"
+    echo >&2 "[!] deleting -- see the header."
+    exit 1
+fi
+
+if [[ "${have_gib}" != "${want_gib}" ]]; then
+    echo >&2 "[!] Error: the host reserve is spelled twice and the two disagree."
+    echo >&2 "[!]   vars.sh LOOM_MIN_MEMORY:        ${want_gib}Gi"
+    echo >&2 "[!]   ollama_wrapper.py HOST_RESERVE: ${have_gib}Gi"
+    echo >&2 "[!] On a unified-memory box that constant is what keeps ollama's budget off"
+    echo >&2 "[!] the memory the rest of Loom is living in."
+    exit 1
+fi
+
+echo "[*] ollama_wrapper.py reserves the ${want_gib}Gi vars.sh asks for."

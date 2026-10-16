@@ -9,10 +9,9 @@ without patching if the commands come in from outside.
 
 import logging
 import os
-import subprocess
-from collections.abc import Callable
 from dataclasses import dataclass
 
+from loom_usb_ingest.commands import Runner, run_tolerant
 from loom_usb_ingest.devices import Volume
 from loom_usb_ingest.filesystems import MountPlan, VolumePolicy, plan_mount
 
@@ -23,38 +22,10 @@ BLOCKDEV_TIMEOUT_S = 30
 UMOUNT_TIMEOUT_S = 60
 
 
-@dataclass(frozen=True)
-class CommandOutcome:
-    """How one command went.
-
-    A command that could not be run at all is a failure too.     `stderr` carries the
-    reason either way -- what the tool printed, or what Python     said about not being
-    able to start it -- because both end up in front of the     operator as the reason a
-    volume was skipped.
-    """
-
-    returncode: int
-    stderr: str = ""
-
-    @property
-    def ok(self) -> bool:
-        return self.returncode == 0
-
-
-# `mount`, `blockdev` and `umount`, as this module reaches them.
-Runner = Callable[[list[str], int], CommandOutcome]
-
-
-def run_command(argv: list[str], timeout: int) -> CommandOutcome:
-    """The real runner."""
-    try:
-        completed = subprocess.run(
-            argv, check=False, capture_output=True, text=True, timeout=timeout
-        )
-    except (subprocess.SubprocessError, OSError) as error:
-        # 127 is the shell's "could not execute", which is what this is.
-        return CommandOutcome(127, str(error))
-    return CommandOutcome(completed.returncode, completed.stderr or "")
+# The tolerant runner from `commands`, re-exported under the name this module's
+# callers and tests already use. `CommandOutcome` and `Runner` come from there too, so
+# there is one shape of "how a command went" in this package.
+run_command = run_tolerant
 
 
 @dataclass(frozen=True)
@@ -68,15 +39,6 @@ class MountedVolume:
 class SkippedVolume:
     volume: Volume
     reason: str
-
-
-def kernel_filesystems() -> frozenset[str]:
-    """What /proc/filesystems reports, for the generic tier's support check."""
-    try:
-        with open("/proc/filesystems", "r", encoding="utf-8") as handle:
-            return frozenset(line.split()[-1] for line in handle if line.strip())
-    except OSError:
-        return frozenset()
 
 
 def set_block_read_only(device: str, run: Runner = run_command) -> bool:
@@ -120,12 +82,22 @@ def mount_volume(
     mountpoint: str,
     uid: int,
     gid: int,
-    supported: frozenset[str],
     run: Runner = run_command,
 ) -> MountedVolume | SkippedVolume:
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Mount one volume read-only, or explain why it was not mounted."""
-    plan = plan_mount(volume.fstype, uid, gid, supported)
+    # A volume somebody else already mounted is left exactly as it is. `blockdev
+    # --setro` is enforced below the filesystem driver -- which is the stated reason
+    # it is used here -- so flipping it under a live read-write mount puts that
+    # filesystem into I/O errors or a forced remount-ro, the one write-side effect
+    # this module exists to prevent. `classify_disk` only refuses a disk whose
+    # volumes are *all* mounted, so a half-mounted one reaches here.
+    if volume.mountpoint:
+        reason = f"already mounted at {volume.mountpoint}"
+        logger.info("Skipping %s: %s", volume.path, reason)
+        return SkippedVolume(volume, reason)
+
+    plan = plan_mount(volume.fstype, uid, gid)
 
     if plan.policy is VolumePolicy.REFUSED:
         logger.info("Skipping %s: %s", volume.path, plan.reason)

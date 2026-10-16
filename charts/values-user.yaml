@@ -17,6 +17,8 @@
 # The full order, later wins (skaffold.yaml):
 #
 #   charts/values.yaml              defaults
+#   charts/values-development.yaml  under `up -d` / `up --integrationtest` only
+#                                   (skaffold's dev profile inserts it here)
 #   charts/values-user.yaml         this file
 #   charts/values-up-flags.yaml     whatever up.sh's flags turned on
 #   charts/values-appliance.yaml    facts about an appliance box, if this is one

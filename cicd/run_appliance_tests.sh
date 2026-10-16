@@ -43,7 +43,8 @@ NIXOS_HARDWARE=""
 # machine's architecture, because a VM test boots a real kernel: cross-building
 # one produces a closure that cannot be run here.
 PLATFORM=""
-KNOWN_PLATFORMS=(spark evo-x2 nuc12)
+# The platform list and its validation live in cicd/appliance_common.sh --
+# see KNOWN_PLATFORMS and require_platform there.
 # Both resolved in Main, once, rather than at each use.
 NIX_SYSTEM=""
 HOST_ARCH=""
@@ -81,6 +82,21 @@ KNOWN_TESTS=(hardware units skills install interface-fallback dhcp portal key-st
 # `--platform spark` on an x86_64 machine is a platform mismatch rather than a
 # verdict. `hardware` and `units` read values alone and have no such limit.
 EVAL_ONLY_TESTS=(hardware units skills)
+
+# Of those, the ones still bound to this machine's architecture -- see the
+# `skills` paragraph above. Membership of EVAL_ONLY_TESTS is what lifts the KVM
+# and disk requirements; membership here puts the architecture check and the
+# `--platform all` refusal back, which that membership had taken away. Without
+# it `appliance-test skills --platform all` was accepted and ran `skills` for
+# spark and nuc12 on an x86_64 workstation, failing deep inside nix-build --
+# "a platform mismatch rather than a verdict", as the paragraph above puts it.
+HOST_ARCH_TESTS=(skills)
+
+# What `--platform all` is for: eval-only *and* architecture-free. Spelled out
+# rather than computed, because the usage text prints it.
+ARCH_FREE_TESTS=(hardware units)
+# Resolved in Main beside SELECTION_NEEDS_VM, and for the same reason.
+SELECTION_NEEDS_HOST_ARCH=false
 # Resolved in Main, once, like NIX_SYSTEM -- not computed inside a condition,
 # which would switch `set -e` off for the duration.
 SELECTION_NEEDS_VM=true
@@ -171,20 +187,28 @@ validate_environment(){
         exit 1
     fi
 
-    # Everything from here down is about booting a VM. An eval-only selection
-    # does none of that -- see EVAL_ONLY_TESTS -- so it skips the lot.
-    if [[ "${SELECTION_NEEDS_VM}" = false ]]; then
+    # Everything from here down is about booting a VM, except the architecture
+    # check: an eval-only selection skips the KVM and disk requirements, and a
+    # HOST_ARCH_TESTS selection still has to run on a matching machine.
+    if [[ "${SELECTION_NEEDS_VM}" = false && "${SELECTION_NEEDS_HOST_ARCH}" = false ]]; then
         return 0
     fi
 
     # No --allow-cross to go with build-appliance-image's: an image can be built
-    # under emulation and flashed, but a test has to boot the kernel it built.
+    # under emulation and flashed, but a test has to boot the kernel it built --
+    # and `skills` has to realise a store path built from the platform's own
+    # nixpkgs.
     if [[ "${NIX_SYSTEM}" != "${HOST_ARCH}-linux" ]]; then
         echo >&2 "[!] Error: platform '${PLATFORM}' is ${NIX_SYSTEM}, but this host is ${HOST_ARCH}."
-        echo >&2 "    The tests boot a VM, so they cannot be cross-built. Run them on a"
-        echo >&2 "    ${NIX_SYSTEM} host, or pass --platform for one that matches this machine."
-        echo >&2 "    'appliance-test hardware --platform ${PLATFORM}' needs no VM and runs here."
+        echo >&2 "    These tests cannot be cross-built. Run them on a ${NIX_SYSTEM} host,"
+        echo >&2 "    or pass --platform for one that matches this machine."
+        echo >&2 "    'appliance-test hardware units --platform ${PLATFORM}' reads values"
+        echo >&2 "    alone and runs here."
         exit 1
+    fi
+
+    if [[ "${SELECTION_NEEDS_VM}" = false ]]; then
+        return 0
     fi
 
     # Read *and* write, because that is the test nix itself applies before it
@@ -296,8 +320,12 @@ usage(){
     echo "  -v|--verbose                  pass --show-trace to nix-build"
     echo "  -p|--platform PLATFORM        box to build the nodes for: ${KNOWN_PLATFORMS[*]}"
     echo "                                (default: the one matching this machine). 'all' runs"
-    echo "                                every platform, for the targets that boot nothing:"
-    echo "                                ${EVAL_ONLY_TESTS[*]}"
+    echo "                                every platform, for the targets that need neither a"
+    echo "                                VM nor this machine's architecture:"
+    echo "                                ${ARCH_FREE_TESTS[*]}"
+    echo "                                ('skills' boots nothing either, but realises a store"
+    echo "                                path from the platform's own nixpkgs, so it needs a"
+    echo "                                matching host.)"
     echo "  --kvm                         fail unless /dev/kvm is usable (default: detect)"
     echo "  --no-kvm                      build without the 'kvm' system feature, so qemu falls"
     echo "                                back to software emulation -- correct, and much slower"
@@ -398,22 +426,9 @@ done
 HOST_ARCH="$(uname -m)"
 
 if [[ -z "${PLATFORM}" ]]; then
-    case "${HOST_ARCH}" in
-        x86_64)
-            # nuc12 is the same architecture; evo-x2 is the platform that
-            # declares a GPU, so it exercises the toolchain assertions the
-            # other two cannot.
-            PLATFORM="evo-x2"
-        ;;
-        aarch64)
-            PLATFORM="spark"
-        ;;
-        *)
-            echo >&2 "[!] Error: no platform for architecture ${HOST_ARCH}; pass --platform."
-            echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
-            exit 1
-        ;;
-    esac
+    # The platform matching this machine -- see `default_platform_for_arch` in
+    # cicd/appliance_common.sh, which is the one copy of this rule.
+    PLATFORM="$(default_platform_for_arch)"
 fi
 
 if (( ${#TESTS[@]} == 0 )); then
@@ -423,6 +438,7 @@ fi
 # True as soon as one selected test boots something. Computed here rather than
 # in a condition inside validate_environment, for the `set -e` reason above.
 SELECTION_NEEDS_VM=false
+SELECTION_NEEDS_HOST_ARCH=false
 for test in "${TESTS[@]}"; do
     case " ${EVAL_ONLY_TESTS[*]} " in
         *" ${test} "*)
@@ -432,6 +448,14 @@ for test in "${TESTS[@]}"; do
             SELECTION_NEEDS_VM=true
         ;;
     esac
+    case " ${HOST_ARCH_TESTS[*]} " in
+        *" ${test} "*)
+            SELECTION_NEEDS_HOST_ARCH=true
+        ;;
+        *)
+            :
+        ;;
+    esac
 done
 
 # `all` is for the eval-only targets: nothing is built for a machine, so the
@@ -439,10 +463,12 @@ done
 # and refusing here says so before the first of them boots.
 PLATFORMS=("${PLATFORM}")
 if [[ "${PLATFORM}" = all ]]; then
-    if [[ "${SELECTION_NEEDS_VM}" = true ]]; then
-        echo >&2 "[!] Error: --platform all covers the targets that boot nothing: ${EVAL_ONLY_TESTS[*]}."
-        echo >&2 "    The rest build a kernel for one machine and run it here, so each needs a"
-        echo >&2 "    host of its own architecture. Name a platform, or select only those."
+    if [[ "${SELECTION_NEEDS_VM}" = true || "${SELECTION_NEEDS_HOST_ARCH}" = true ]]; then
+        echo >&2 "[!] Error: --platform all covers the targets that need neither a VM nor"
+        echo >&2 "    this machine's architecture: ${ARCH_FREE_TESTS[*]}."
+        echo >&2 "    The rest build something for one machine -- a kernel, or a store path"
+        echo >&2 "    from the platform's own nixpkgs -- so each needs a host of its own"
+        echo >&2 "    architecture. Name a platform, or select only those."
         exit 1
     fi
     PLATFORMS=("${KNOWN_PLATFORMS[@]}")

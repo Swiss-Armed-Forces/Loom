@@ -12,7 +12,10 @@
   specialArgs,
   applianceModules,
   loomHostsJson,
-  loomChatModel,
+  # No `loomChatModel`: this file never used it, and `appliance/session.py`
+  # deliberately re-derives the model from the box's own vars.sh rather than
+  # being told -- which is what makes the assertion cover the
+  # build_appliance_image.sh -> console.nix plumbing rather than restating it.
   minikubeIp,
   loomSubnet,
   loomUser,
@@ -170,7 +173,12 @@ pkgs.testers.runNixOSTest {
               appliance_values_json=${builtins.toJSON (builtins.toJSON nodes.appliance.loom.applianceValues)},
               loom_hosts=${builtins.toJSON loomHosts},
               minikube_ip="${minikubeIp}",
-              upsh_commands=${builtins.toJSON upshCommands} + ["sudo"],
+              # No `+ ["sudo"]` here: `upstream.unit_path` appends it itself,
+              # where the reason it is special -- a setuid wrapper rather than a
+              # package -- is asserted alongside it. Both doing so checked it
+              # twice and made the comment above `upshCommands` read as though
+              # this were the only place it happened.
+              upsh_commands=${builtins.toJSON upshCommands},
               loom_subnet="${loomSubnet}",
               console_socket="${nodes.appliance.loom.consoleSocket}",
               operator=Operator(

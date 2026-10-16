@@ -51,6 +51,14 @@ spec:
   policyTypes:
     - Egress
   egress:
+    # One rule, deliberately: `to` and `ports` have to be in the *same* rule to
+    # mean "port 443 of that address". As two rules they are two independent
+    # permissions, and an egress rule with no `to` means every destination -- so
+    # the second one allowed every pod not labelled `net: fenced` (everything
+    # except tika and gotenberg) to reach any address on the internet over 443,
+    # which is the port model pulls, package fetches and exfiltration all use. On
+    # an air-gapped appliance that silently contradicts the default-deny posture
+    # the rest of this file is built on.
     - to:
       # Allow access to kubernetes-api
       - ipBlock:
@@ -60,7 +68,7 @@ spec:
           # and asserts it after `minikube start`.
           # see better version below..
           cidr: {{ .Values.kubernetes.api }}/32
-    - ports:
+      ports:
       - protocol: TCP
         port: 443
 #---

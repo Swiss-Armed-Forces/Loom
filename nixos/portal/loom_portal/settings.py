@@ -15,7 +15,9 @@ reads and writes. `page.py` takes two of them straight out of here, so the page 
 service cannot disagree about a URL or about the brand.
 """
 
+import logging
 import os
+import re
 from dataclasses import dataclass, field
 
 # Where the appliance publishes what this service reads. portal.nix creates it.
@@ -57,10 +59,28 @@ DEFAULT_ATTEMPT_WINDOW_S = 60.0
 # resubmits on its own.
 DEFAULT_WRONG_PASSWORD_DELAY_S = 1.0
 
+logger = logging.getLogger(__name__)
+
 # The logo amber, `loom.branding.amberRgb` and `Frontend/public/favicon.svg`. Declared
 # here rather than in `page.py` so there is one copy of it in this package; portal.nix
 # passes the box's own value in, so a brand change moves both at once.
 DEFAULT_ACCENT = "#f7b718"
+
+# An accent is interpolated into a `<style>` block, which is the one place on this page
+# where `html.escape` buys nothing: a value containing `}` injects arbitrary CSS into
+# the first page a visitor meets, and one containing `</style>` closes the block and
+# has the rest parsed as markup. The input is operator-supplied rather than
+# visitor-supplied, so this is hardening -- but a regex is the right guard for a CSS
+# context, where escaping is not.
+_ACCENT_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def validated_accent(value: str) -> str:
+    """`value` if it is a six-digit hex colour, else the default."""
+    if _ACCENT_PATTERN.match(value):
+        return value
+    logger.warning("Ignoring accent %r, which is not a #rrggbb colour", value)
+    return DEFAULT_ACCENT
 
 
 @dataclass(frozen=True)
@@ -106,12 +126,22 @@ class PortalLimits:
 
 
 @dataclass(frozen=True)
+class PortalBind:
+    """Where the server listens.
+
+    Loopback by default: nginx is what faces the appliance segment, and this process
+    answers only what nginx forwards to it.
+    """
+
+    address: str = "127.0.0.1"
+    port: int = 18082
+
+
+@dataclass(frozen=True)
 class PortalSettings:
     """What this box is, and what the page may offer."""
 
-    # Where the server binds. Loopback: nginx is what faces the appliance segment.
-    listen_address: str = "127.0.0.1"
-    port: int = 18082
+    bind: PortalBind = field(default_factory=PortalBind)
 
     urls: PortalUrls = field(default_factory=PortalUrls)
     brand: PortalBrand = field(default_factory=PortalBrand)
@@ -119,9 +149,24 @@ class PortalSettings:
 
     state_dir: str = DEFAULT_STATE_DIR
 
-    # Whether this box requires a client certificate. The whole issuance half of the page
-    # and of the router exists only when it does.
+    # Whether this box requires a client certificate *and* has the TLS listener to
+    # hand one out over. `portal.nix` derives it from `enableTls` rather than from
+    # `loom.mtls.enable` alone, because the listener also needs
+    # `loom.portal.tls.enable` and a tag whose chart names `portal`.
     mtls: bool = False
+
+    # Where `loom-portal-tls-placeholder` leaves its marker. While that file exists,
+    # 443 is answered by a one-day self-signed pair nothing can verify, and the page
+    # must not hand a private key over it. Empty means "never ask", which is every
+    # image without a TLS listener.
+    tls_placeholder_path: str = ""
+
+    @property
+    def tls_is_placeholder(self) -> bool:
+        """Whether the TLS listener is still on the unverifiable stand-in pair."""
+        return bool(self.tls_placeholder_path) and os.path.exists(
+            self.tls_placeholder_path
+        )
 
     @property
     def anchor_path(self) -> str:

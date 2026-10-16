@@ -3,6 +3,9 @@ name = "loom-ready"
 version = "0.1.0"
 description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
 requires-python = ">=3.11"
+# As every first-party package declares it: without this the generated
+# attribution records the package as UNKNOWN.
+license = "MIT"
 # The panel, the bar and the pane (loom_ready/render.py, loom_ready/pane.py).
 dependencies = ["rich>=13"]
 

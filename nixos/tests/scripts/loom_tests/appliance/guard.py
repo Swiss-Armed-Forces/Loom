@@ -180,11 +180,24 @@ def foreign_key(
         other_loop = appliance.succeed(
             "losetup --find --show /var/keyguard-other.img"
         ).strip()
+        # Counted, not grepped for. `cancels` above has already put a
+        # 'USB KEY REMOVED' in this same journal, so a plain grep returns on the
+        # first poll whatever the foreign loop device did -- which is exactly the
+        # bug this subtest is named for. `key_store.py` was given the count and
+        # this variant, the one that runs on every platform, was not.
+        removed_before = _removals(appliance)
+        rearmed_before = _rearms(appliance)
+
         appliance.succeed(f"losetup --detach {key_loop}")
         appliance.succeed(f"ln -sf {other_loop} {params.key_guard.key_device}")
-        appliance.wait_until_succeeds(
-            "journalctl --unit loom-key-guard.service | grep 'USB KEY REMOVED' >/dev/null"
-        )
+        appliance.wait_until_succeeds(f"test $({_REMOVALS}) -gt {removed_before}")
+
+        # And the half neither file had: the guard must not re-arm on the foreign
+        # container. Without this the subtest still passes if the guard arms on
+        # any LUKS device at all, which is the only failure it is named for.
+        assert (
+            _rearms(appliance) == rearmed_before
+        ), "the guard re-armed while a foreign key was in place"
 
         # Put the real one back so the next subtest starts from a known state.
         appliance.succeed(f"losetup --detach {other_loop}")
@@ -231,3 +244,20 @@ def powers_off(appliance: "Machine", subtest: "Subtest", key_loop: str) -> None:
         # that the box a stick was pulled from actually stops.
         appliance.succeed(f"losetup --detach {key_loop}")
         appliance.wait_for_shutdown()
+
+
+# `|| true`: grep exits non-zero on no matches, and zero is a legitimate count.
+_REMOVALS = (
+    "journalctl --unit loom-key-guard.service | grep -c 'USB KEY REMOVED' || true"
+)
+_REARMS = (
+    "journalctl --unit loom-key-guard.service | grep -c 'Key guard armed on' || true"
+)
+
+
+def _removals(appliance: "Machine") -> int:
+    return int(appliance.succeed(_REMOVALS).strip())
+
+
+def _rearms(appliance: "Machine") -> int:
+    return int(appliance.succeed(_REARMS).strip())

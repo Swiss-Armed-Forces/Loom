@@ -7,6 +7,7 @@ real box, so that changing a constant has to be argued for rather than noticed l
 from doubles import GIB, MIB
 
 from ollama_wrapper import (
+    DEFAULT_CONTEXT_TOKENS,
     MAX_PARALLELISM,
     MIN_PARALLELISM,
     GpuDetection,
@@ -26,12 +27,19 @@ from ollama_wrapper import (
 
 HOST_BYTES = 125 * GIB
 
-# What the production models image ships: a 9B chat model with a 40960-token trained
-# context, and an embedding model.
+# What the production models image actually ships, which is what the whole-box
+# guards below have to be calibrated against.
+#
+# `ollama/Dockerfile.models` pulls `qwen3.8:27b nomic-embed-text-v2-moe`, and
+# charts/values.yaml sizes the PVC off "qwen3.8:27b ~18GB + nomic-embed ~0.5GB".
+# `ollama list` prints decimal, so those are 10^9 bytes -- about 17.2 GiB
+# together, not the 6.5 GiB this used to claim for a 9B model that no shipped
+# image carries. The guards exist to make changing a constant something that has
+# to be argued for, and they were arguing about the wrong box.
 PRODUCTION_MODELS = ModelSet(
     models=[
-        ModelInfo("chat", 6 * GIB, 40960),
-        ModelInfo("embed", 512 * MIB, 2048),
+        ModelInfo("chat", 18 * (1000**3), 40960),
+        ModelInfo("embed", 500 * (1000**2), 2048),
     ]
 )
 
@@ -151,15 +159,21 @@ def test_an_enormous_budget_is_capped() -> None:
 
 # --- Whole-box regression guards ---
 def test_evo_x2_shape() -> None:
-    """Strix Halo: a 512 MiB carve-out plus a 64 GiB GTT ceiling."""
+    """Strix Halo: the carve-out and the GTT pool are one unified budget.
+
+    On the real models this box lands on the floor, which is worth knowing: it is the
+    platform most likely to be moved off it by a change to the reserve or to the context
+    ladder, and a guard calibrated to a 6.5 GiB model set said 5 and would have stayed
+    green through exactly that change.
+    """
     estimate = estimate_parallelism(
-        _detected(dedicated=512 * MIB, shared=64 * GIB),
+        _detected(dedicated=0, shared=64 * GIB + 512 * MIB),
         PRODUCTION_MODELS,
         HOST_BYTES,
     )
 
     assert estimate.context_tokens == 40960
-    assert estimate.parallelism == 5
+    assert estimate.parallelism == MIN_PARALLELISM
 
 
 def test_dgx_spark_shape() -> None:
@@ -171,7 +185,7 @@ def test_dgx_spark_shape() -> None:
     )
 
     assert estimate.context_tokens == 40960
-    assert estimate.parallelism == 9
+    assert estimate.parallelism == 8
 
 
 def test_discrete_24_gib_card_shape() -> None:
@@ -194,7 +208,29 @@ def test_discrete_80_gib_card_shape() -> None:
         HOST_BYTES,
     )
 
-    assert estimate.parallelism == 7
+    assert estimate.parallelism == 6
+
+
+def test_an_empty_model_set_falls_back_to_the_floor() -> None:
+    """The error path, which used to produce the *ceiling*.
+
+    Reached when the temporary server will not start, when `ollama list` times out, or
+    when the init container's `cp ... || true` copied nothing. With no models the
+    context falls to the default, the per-slot reserve lands exactly on its floor and
+    `max(1, 0)` models divided the budget into MAX_PARALLELISM slots -- 16, the backstop
+    against an absurd reading -- which inverts this file's stated policy of erring
+    toward fewer slots.
+    """
+    for dedicated, shared in ((0, 119 * GIB), (24 * GIB, 0)):
+        estimate = estimate_parallelism(
+            _detected(dedicated=dedicated, shared=shared),
+            ModelSet(models=[]),
+            HOST_BYTES,
+        )
+
+        assert estimate.parallelism == MIN_PARALLELISM
+        assert estimate.context_tokens == DEFAULT_CONTEXT_TOKENS
+        assert "no installed models" in estimate.detail
 
 
 def test_no_gpu_falls_back_to_the_floor() -> None:

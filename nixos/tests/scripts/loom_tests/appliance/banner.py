@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from loom_tests.appliance import readiness
 from loom_tests.appliance.params import Params
+from loom_tests.driver import execute
 
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, Subtest
@@ -168,6 +169,15 @@ def readiness_line(appliance: "Machine", subtest: "Subtest") -> None:
         # scrolls the Loom mark off the top -- and on a --wifi box a QR code is already
         # competing for those rows.
         assert appliance.succeed(f"cat {readiness.SUMMARY}").strip() == ""
+        # Regenerated before it is read. `publish.py` refreshes the banner on
+        # every stage change but the first and `loom-banner-repaint` makes one
+        # pass shortly after getty.target, so by the time this subtest runs the
+        # issue file is minutes and several transitions old -- it was rendered
+        # when `loom-info` found nothing to read, which is the state being
+        # asserted, but reading a stale file to assert it is luck. The next
+        # subtest already does this; `loom-banner-refresh` rewrites the file even
+        # when it returns 1 (an operator is logged in).
+        execute(appliance, "loom-banner-refresh")
         issue = appliance.succeed(f"cat {ISSUE}")
         assert "Loom:" not in issue, issue
 
@@ -184,8 +194,8 @@ def readiness_line(appliance: "Machine", subtest: "Subtest") -> None:
         # it must NOT restart the getty -- that would blank the session somebody is
         # sitting in, which on a box whose console is the entire user interface is the
         # worst thing this feature could do. Exit 1 is how it says it did not.
-        status, _ = appliance.execute("loom-banner-refresh")
-        assert status == 1, "redrew the login screen under a logged-in operator"
+        refresh = execute(appliance, "loom-banner-refresh")
+        assert refresh.status == 1, "redrew the login screen under a logged-in operator"
 
         issue = appliance.succeed(f"cat {ISSUE}")
         assert "Loom: starting -- 12/18 pods ready." in issue, issue

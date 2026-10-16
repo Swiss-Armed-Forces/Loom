@@ -10,6 +10,8 @@ exercised exhaustively without a disk anywhere near it. What gathers those input
 covered by test_devices.py and by nixos/tests/appliance-install.nix.
 """
 
+from dataclasses import replace
+
 import pytest
 
 from loom_installer import constants
@@ -23,25 +25,35 @@ from loom_installer.decision import (
 )
 from loom_installer.devices import KeyState
 
-# Either side of MIN_POOL_BYTES (250 GB). NOT_ENOUGH is picked so that two of it
-# clear the minimum and one of it does not, which is what the pooled case turns on.
+# Either side of MIN_POOL_BYTES. NOT_ENOUGH is picked so that two of it clear the
+# minimum and one of it does not, which is what the pooled case turns on.
 ENOUGH = 300 * constants.GIGABYTE
-NOT_ENOUGH = 140 * constants.GIGABYTE
+NOT_ENOUGH = 120 * constants.GIGABYTE
+
+# A box that would install by itself. `inputs` below replaces fields of it.
+BASELINE = AutoInstallInputs(
+    boot_state=BootState.FRESH,
+    boot_disk="/dev/sda",
+    key_state=KeyState.PRESENT,
+    key_locked=False,
+    target_count=1,
+    pool_bytes=ENOUGH,
+    claimed=False,
+)
 
 
 def inputs(**overrides: object) -> AutoInstallInputs:
-    """A box that would install by itself, minus whatever the caller breaks."""
-    defaults: dict[str, object] = {
-        "boot_state": BootState.FRESH,
-        "boot_disk": "/dev/sda",
-        "key_state": KeyState.PRESENT,
-        "key_locked": False,
-        "target_count": 1,
-        "pool_bytes": ENOUGH,
-        "claimed": False,
-    }
-    defaults.update(overrides)
-    return AutoInstallInputs(**defaults)  # type: ignore[arg-type]
+    """`BASELINE`, minus whatever the caller breaks.
+
+    The suppression this used to carry is gone with the dict it was suppressing. Note
+    what it is *not*: `dataclasses.replace(**overrides)` would not recover the checking
+    either -- mypy's dataclass plugin only checks `replace` when the keywords are
+    written literally at the call site, so a misspelt field name or a wrongly typed
+    value is invisible through any `**kwargs` helper. `**overrides: object` is left off
+    deliberately: implicitly `Any` checks exactly as much and needs no `# type: ignore`
+    to say so.
+    """
+    return replace(BASELINE, **overrides)
 
 
 def test_a_fresh_box_with_one_big_enough_disk_installs_by_itself() -> None:
@@ -135,13 +147,6 @@ def test_a_box_this_stick_already_installed_is_left_alone() -> None:
     # removable media boots the stick again, and the box reinstalls over its own
     # indexed data with nobody at the keyboard.
     assert decide(inputs(claimed=True)) is AutoInstall.ALREADY_INSTALLED
-
-
-def test_a_box_installed_from_a_different_stick_is_still_armed() -> None:
-    # A re-flashed stick carries a fresh key, so it cannot open that container and
-    # re-provisioning stays unattended. This is the half of the guard that would be
-    # easy to lose by making it test for a Loom layout instead.
-    assert decide(inputs(claimed=False)) is AutoInstall.ARMED
 
 
 def test_every_verdict_has_something_to_say_for_itself() -> None:

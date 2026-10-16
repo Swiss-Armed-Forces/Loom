@@ -44,6 +44,8 @@ Everything is under `/v1`. The routes are grouped by what they act on:
 | `/v1/beat` | Scheduled tasks |
 | `/v1/websocket` | Live updates |
 | `/v1/wipe-data` | Destroys all indexed data |
+| `/v1/init/elasticsearch` | Rebuilds every search index (slow; search is degraded while it runs) |
+| `/v1/about`, `/v1/complete-estimate` | Version information, and the indexing-progress estimate |
 
 ## Reading the box's own copy
 
@@ -59,3 +61,9 @@ The source is on this box and is the final authority:
 `/v1/wipe-data` destroys everything Loom has ingested, and some `/v1/files` routes dispatch work
 that takes a long time on a loaded box. Say what a call would do before suggesting anyone make it,
 and never issue a destructive one to answer a question.
+
+`/v1/init/elasticsearch` is the one to be careful of for a different reason: it is a no-body `POST`
+with an inviting name, and it is **expensive rather than destructive**. It clones every index to a
+backup, waits for green, then deletes, recreates and reindexes from the clone -- so no data is
+lost, search is degraded for as long as the async reindex takes, and a backup index is left behind.
+Nothing about the schema above says any of that, which is why it is said here.

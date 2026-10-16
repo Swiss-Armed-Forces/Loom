@@ -93,6 +93,11 @@ let
   tlsDir = "/var/lib/loom/portal/tls";
   tlsCert = "${tlsDir}/cert.pem";
   tlsKey = "${tlsDir}/key.pem";
+  # Present exactly while the pair above is the one-day self-signed stand-in
+  # `loom-portal-tls-placeholder` wrote. The page refuses to hand out a private
+  # key over a connection authenticated by it -- see that unit, and
+  # `page.py`'s identity section.
+  tlsPlaceholderMarker = "${tlsDir}/placeholder";
 
   issueFragment = "/run/issue.d/62-loom-portal.issue";
 
@@ -155,7 +160,15 @@ let
       # handed to a web page without a second guard.
       "--set LOOM_PORTAL_LOGO ${config.loom.branding.logoPng}"
       "--set LOOM_PORTAL_ACCENT ${lib.escapeShellArg "#${config.loom.branding.amberRgb}"}"
-      "--set LOOM_PORTAL_MTLS ${if cfg.mtls.enable then "1" else "0"}"
+      # Derived from `enableTls`, not from `cfg.mtls.enable` alone. The two used
+      # to differ: `cfg.portal.tls.enable = false` is a documented option, and a
+      # tag whose chart does not list `portal` in `hostnames.extra` -- every tag
+      # before this MR -- also leaves the listener off. The page then advertised
+      # an identity form on a box that could never answer it, and `page.py`'s
+      # own "should not be reachable" branch was the thing being reached. The
+      # assertion below pins the other half.
+      "--set LOOM_PORTAL_MTLS ${if enableTls then "1" else "0"}"
+      "--set LOOM_PORTAL_TLS_PLACEHOLDER ${lib.escapeShellArg tlsPlaceholderMarker}"
       "--set LOOM_PORTAL_PORT ${toString cfg.portal.listenPort}"
     ];
 
@@ -223,10 +236,18 @@ let
       chgrp ${lib.escapeShellArg nginxGroup} ${lib.escapeShellArg tlsDir}
       chmod 750 ${lib.escapeShellArg tlsDir}
 
-      # Only when there is nothing there. Writing a placeholder over the real
-      # certificate would put the warning back for a day, on the one page that
-      # exists to take it away.
-      if [ -s ${lib.escapeShellArg tlsCert} ] && [ -s ${lib.escapeShellArg tlsKey} ]; then
+      # Only when there is nothing usable there. Writing a placeholder over the
+      # real certificate would put the warning back for a day, on the one page
+      # that exists to take it away -- but `-s` alone also kept an *expired*
+      # pair: `tlsDir` is on the encrypted root and survives reboots, this
+      # certificate is `-days 1`, and `loom-portal-certificate` loops until the
+      # cluster answers without ever consulting expiry. On a box whose cluster
+      # never comes up, every boot after the first short-circuited past replacing
+      # it and nginx served an expired certificate indefinitely. `-checkend 0` is
+      # the one-line version of what `loom-mtls-identity` does daily.
+      if [ -s ${lib.escapeShellArg tlsCert} ] && [ -s ${lib.escapeShellArg tlsKey} ] \
+        && openssl x509 -noout -checkend 0 -in ${lib.escapeShellArg tlsCert} \
+          >/dev/null 2>&1; then
         exit 0
       fi
 
@@ -240,6 +261,17 @@ let
       chgrp ${lib.escapeShellArg nginxGroup} ${lib.escapeShellArg tlsKey} ${lib.escapeShellArg tlsCert}
       chmod 640 ${lib.escapeShellArg tlsKey}
       chmod 644 ${lib.escapeShellArg tlsCert}
+
+      # The marker the page reads. While it exists, 443 is answered by a
+      # certificate nothing can verify -- `-days 1`, rsa:2048, self-signed
+      # `CN=portal.loom` -- and the page must not offer a PKCS#12 over it: the
+      # bundle carries an unencrypted private key, and "the connection was
+      # encrypted" is not the property that matters when the key exchange is
+      # authenticated by nothing. `loom-portal-certificate` removes it once the
+      # cluster's own pair is in place, which on a first boot is hours away.
+      : > ${lib.escapeShellArg tlsPlaceholderMarker}
+      chgrp ${lib.escapeShellArg portalUser} ${lib.escapeShellArg tlsPlaceholderMarker}
+      chmod 644 ${lib.escapeShellArg tlsPlaceholderMarker}
     '';
   };
 
@@ -362,6 +394,12 @@ let
             "$work/key.pem" ${lib.escapeShellArg tlsKey}
           changed=1
         fi
+        # The listener is now the cluster's own certificate -- the one the page
+        # has been telling the visitor to trust -- so the page may offer a
+        # private key over it. Until this point `_is_secure` was true of a
+        # connection carrying the one-day placeholder, which is authenticated by
+        # nothing and is in force for the hours a first boot takes.
+        rm --force ${lib.escapeShellArg tlsPlaceholderMarker}
       fi
 
       if [ "$changed" = 1 ]; then
@@ -411,9 +449,20 @@ let
       # readable, and nothing touches it afterwards.
       refuse() {
         local temporary
-        temporary="$bundles/.$1.error.tmp"
+        # `mktemp`, not a name derived from the token. `bundlesDir` is
+        # 0730 root:loom-portal, so the portal user may create entries in it by
+        # name -- and the portal generates the token itself, so it could plant
+        # `bundles/.<token>.error.tmp` as a symlink before writing its request.
+        # The redirect below opens O_CREAT|O_TRUNC through such a link, and the
+        # chgrp and chmod follow it too: root truncating a file of the portal's
+        # choosing, writing `cluster-not-ready` into it and handing it to the
+        # portal group. `refuse` is reached on the ordinary cluster-not-ready
+        # branch during every bring-up, so this was not an exotic path. The same
+        # reasoning `put()` below already applies to the password file.
+        temporary="$(mktemp --tmpdir="$bundles" ".tmp.XXXXXXXX")"
         printf '%s\n' "$2" > "$temporary"
-        chgrp ${lib.escapeShellArg portalUser} "$temporary"
+        # --no-dereference for the same reason, belt to mktemp's braces.
+        chgrp --no-dereference ${lib.escapeShellArg portalUser} "$temporary"
         chmod 640 "$temporary"
         # Cleared before the rename rather than after it: once the answer is
         # visible the trap below must not write a second one, and a failure
@@ -452,9 +501,19 @@ let
           continue
         fi
 
+        # The glob was expanded once, and a visitor whose page times out takes
+        # their own request back -- so by the time this loop reaches an entry the
+        # file may be gone. Under `set -euo pipefail` the sed below would then
+        # exit 2 and abort the whole run mid-batch, with `current` still empty so
+        # the trap writes no answer: a spurious `loom-portal-issue` failure in
+        # `systemctl --failed`, which is a primary diagnostic on this box. The
+        # batch itself recovers either way -- `PathExistsGlob` re-checks the
+        # moment a triggered service exits -- but the noise is worth not making.
+        [ -f "$request" ] || continue
+
         # Re-validated rather than trusted: the page checked it too, and a
         # downstream check is not a substitute for the one that decides.
-        label="$(sed --quiet 's/^label=\([a-z0-9][a-z0-9-]\{0,23\}\)$/\1/p' "$request" | head --lines=1)"
+        label="$(sed --quiet 's/^label=\([a-z0-9][a-z0-9-]\{0,23\}\)$/\1/p' "$request" 2>/dev/null | head --lines=1)" || label=""
 
         # Consumed before any work, so a retrigger of the path unit cannot hand
         # the same request to a second run.
@@ -484,6 +543,16 @@ let
           --out-dir "$work"; then
           chgrp --recursive ${lib.escapeShellArg portalUser} "$work"
           chmod --recursive g+rX "$work"
+          # The directory itself also g+w, which is what lets the page shred the
+          # bundle the moment it has handed it over: removing an entry needs
+          # write on the containing directory, so with r-x alone every
+          # `os.unlink` in `Spool._remove_tree` failed with EACCES and the rmdir
+          # then failed ENOTEMPTY -- leaving an unencrypted private key on disk
+          # until another request arrived to trigger the five-minute sweep, or
+          # until reboot. It grants nothing new: `bundlesDir` is 0730
+          # root:loom-portal, so the page can already unlink entries there by
+          # name. The files stay g+r only.
+          chmod g+w "$work"
           # A rename within one directory, so the page can never see a partial
           # bundle: either the directory is there and complete, or it is not.
           mv "$work" "$bundles/$token"
@@ -987,7 +1056,16 @@ in
           # ------------------------------------------------------------------
           systemd.services.loom-portal-password = {
             description = "Rotate the portal's certificate password";
-            wantedBy = [ "multi-user.target" ];
+            # Started by its timer alone -- `OnBootSec` for the first one and
+            # `OnCalendar` for every day after. It used to be `wantedBy
+            # multi-user.target` *as well*, so a box that had been powered off
+            # across midnight ran it twice within seconds: once from the target
+            # and once from the timer's missed elapse. Nothing was lost (stateDir
+            # is tmpfs, so there is no yesterday's password at boot) but the
+            # password an operator was reading off the login screen changed under
+            # them, and `loom-banner-refresh` restarted the getty twice inside the
+            # window publish.py goes out of its way to keep clear of the
+            # operator's first keypress.
             after = [ "systemd-tmpfiles-setup.service" ];
             serviceConfig = {
               Type = "oneshot";
@@ -1062,8 +1140,24 @@ in
               fragment=${lib.escapeShellArg issueFragment}
               {
                 printf '  [*] Portal password (today): %s\n' "$passphrase"
-                printf '  [*] Visitors need it at %s to get a certificate.\n' \
-                  ${lib.escapeShellArg "http://${cfg.portal.host}"}
+                ${
+                  if enableTls then
+                    ''
+                      printf '  [*] Visitors need it at %s to get a certificate.\n' \
+                        ${lib.escapeShellArg "http://${cfg.portal.host}"}
+                    ''
+                  else
+                    # mTLS without a TLS listener: `tagNamesPortal` is false, i.e.
+                    # the embedded tag's chart does not name `portal` in
+                    # `hostnames.extra`, so the page degrades to "Not configured"
+                    # and `_issue` refuses every plaintext POST. Pointing visitors
+                    # at a URL that can never issue one would be worse than saying
+                    # nothing; the operator gets the route that does work.
+                    ''
+                      printf '  [*] This image issues no certificates from the portal.\n'
+                      printf '  [*] Issue one from this console: loom-client-certificate --name NAME --out-dir DIR\n'
+                    ''
+                }
               } > "$fragment.tmp"
               mv "$fragment.tmp" "$fragment"
 
@@ -1077,6 +1171,10 @@ in
             description = "Rotate the portal's certificate password daily";
             wantedBy = [ "timers.target" ];
             timerConfig = {
+              # The boot trigger as well as the daily one, since the service is no
+              # longer wanted by multi-user.target: /run is empty at boot, so the
+              # first password of a boot has to be written by something.
+              OnBootSec = "10s";
               OnCalendar = "daily";
               Persistent = true;
             };

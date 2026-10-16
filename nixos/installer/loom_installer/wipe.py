@@ -37,7 +37,9 @@ class WipeError(RuntimeError):
     """A precondition that makes wiping impossible or unsafe."""
 
 
-def erase_pool_keys(runner: CommandRunner, ui: Ui | None = None) -> None:
+def erase_pool_keys(
+    runner: CommandRunner, ui: Ui | None = None, targets: list[str] | None = None
+) -> None:
     """Layer 1, and the only one that matters: destroy the key material.
 
     It lives on the logical volume rather than on a partition, so the per-partition
@@ -47,6 +49,17 @@ def erase_pool_keys(runner: CommandRunner, ui: Ui | None = None) -> None:
     partition tables underneath are free.
     """
     root_device = settings().storage.root_device
+    # Before anything is activated or erased: `luksErase` on a name-resolved
+    # device-mapper path is unrecoverable, so a volume group of this name living on a
+    # disk the operator was never shown stops the run instead.
+    if targets is not None:
+        outside = storage.pool_disks_outside(runner, targets)
+        if outside:
+            raise WipeError(
+                f"A volume group named {settings().storage.volume_group} also lives "
+                f"on {', '.join(outside)}, which this wipe may not touch. Detach it "
+                "and try again."
+            )
     storage.release_storage(runner)
     storage.activate(runner)
 
@@ -65,7 +78,7 @@ def erase_pool_keys(runner: CommandRunner, ui: Ui | None = None) -> None:
         # Loom box at all.
         ui.log("No pooled LUKS container found; the per-partition sweep still runs.")
 
-    storage.discard_pool(runner)
+    storage.discard_pool(runner, targets=targets)
 
 
 def wipe_disk(runner: CommandRunner, ui: Ui, disk: str) -> None:
@@ -161,7 +174,7 @@ def run(runner: CommandRunner, ui: Ui) -> None:
     # and an active group keeps the partition tables busy -- which matters because the
     # menu's next option may be another wipe.
     try:
-        erase_pool_keys(runner, ui)
+        erase_pool_keys(runner, ui, targets)
         for disk in targets:
             wipe_disk(runner, ui, disk)
     except BaseException:

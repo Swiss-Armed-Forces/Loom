@@ -77,9 +77,10 @@ def upload_file(
     file will be indexed asynchronously.
     """
     # Aware, not naive. This is indexed as an Elasticsearch Date and used for ordering,
-    # and the crawler and the archive router write the same field from a box whose local
-    # zone is not UTC -- two writers disagreeing about what a bare timestamp means sort
-    # against each other wrongly. This is the path most files actually arrive by.
+    # and the crawler and the archive router write the same field -- two writers
+    # disagreeing about what a bare timestamp means sort against each other wrongly.
+    # This is the browser-upload path; the crawler (`s3_crawler.py`) is the
+    # appliance's, and on a box with a stick in it that is the busier one.
     uploaded_at = datetime.now(timezone.utc)
     file_content = file_storage_service.from_file(file.file)
 

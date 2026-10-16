@@ -27,12 +27,30 @@ def console_font(appliance: "Machine", subtest: "Subtest") -> None:
         # skipped" and the login screen kept the kernel's 16x32 built-in even
         # though /etc/vconsole.conf named the right font and `setfont` worked by
         # hand. branding.nix therefore applies it a second time, late.
-        appliance.succeed("systemctl is-active loom-console-font.service")
+        # Not `is-active`: the unit is `Type=oneshot` with `RemainAfterExit` and
+        # an ExecStart prefixed `-`, so it reports active whether the font loaded,
+        # failed, or could never open a console -- which makes that assertion
+        # "the unit was scheduled", and `wait_for_unit` says that more honestly.
+        # What is checkable in a VM whose console cannot take a 6px font is the
+        # shape of the unit, and the `-` is the part the comment below is about.
+        appliance.wait_for_unit("loom-console-font.service")
+        exec_start = appliance.succeed(
+            "systemctl show -p ExecStart --value loom-console-font.service"
+        )
+        assert "ignore_errors=yes" in exec_start, exec_start
 
-        # The `-` on ExecStart. A console that will not take the font must still
-        # reach a login prompt: on a box with no remote access a wrong-sized
-        # font is cosmetic, a missing getty is unrecoverable. This VM exercises
-        # that path for real -- its console cannot load a 6px-wide font at all.
+        # And the ordering that makes it the *late* pass rather than a second
+        # early one.
+        ordering = appliance.succeed(
+            "systemctl show -p After -p Before --value loom-console-font.service"
+        )
+        assert "plymouth-quit-wait.service" in ordering, ordering
+        assert "getty-pre.target" in ordering, ordering
+
+        # The `-` on ExecStart, from the other side. A console that will not take
+        # the font must still reach a login prompt: on a box with no remote access
+        # a wrong-sized font is cosmetic, a missing getty is unrecoverable. This
+        # VM exercises that path for real.
         appliance.succeed("systemctl is-active getty@tty1.service")
 
         # And the takeover that unit cannot be ordered against. It is late only

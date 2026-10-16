@@ -37,7 +37,8 @@ NIXOS_HARDWARE=""
 
 # Every platform by default -- that is the point of a check that builds nothing.
 # Must agree with `platformModules` in nixos/default.nix.
-KNOWN_PLATFORMS=(spark evo-x2 nuc12)
+# The platform list and its validation live in cicd/appliance_common.sh --
+# see KNOWN_PLATFORMS and require_platform there.
 PLATFORMS=()
 
 # Both resolved in Main, once. HOST_PLATFORM is the platform whose tests are
@@ -249,16 +250,8 @@ while [[ $# -gt 0 ]]; do
         ;;
         -p|--platform)
             shift
-            case " ${KNOWN_PLATFORMS[*]} " in
-                *" ${1?Missing PLATFORM} "*)
-                    PLATFORMS+=("${1}")
-                ;;
-                *)
-                    echo >&2 "[!] Error: unknown platform: ${1}"
-                    echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
-                    exit 1
-                ;;
-            esac
+            require_platform "${1?Missing PLATFORM}"
+            PLATFORMS+=("${1}")
             shift
         ;;
         --nixpkgs)

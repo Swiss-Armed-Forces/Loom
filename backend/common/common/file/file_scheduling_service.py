@@ -142,6 +142,13 @@ class FileSchedulingService:
             parent_id=old_file.parent_id,
             sha256=old_file.sha256,
             size=old_file.size,
+            # Carried forward rather than defaulted: a reindex is not a re-upload.
+            # `File.uploaded_datetime` defaults to now, and this document is saved over
+            # the original id -- so without this the file's "uploaded" time becomes the
+            # moment of reindexing. `reindex_lost_files.py` drives that unattended and
+            # sorts on the very field it would rewrite, so a reindexed file jumps to
+            # the front of every date-ordered view and date-histogram bucket.
+            uploaded_datetime=old_file.uploaded_datetime,
             state="reindexing",
             reindex_count=old_file.reindex_count + 1,
             tags=old_file.tags,

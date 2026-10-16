@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from loom_tests import tmux, vt
 from loom_tests.appliance.params import Params
+from loom_tests.driver import execute
 
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, Subtest
@@ -27,7 +28,7 @@ SUMMARY = "/run/loom/ready/summary"
 WIDEST = "  LOOM  degraded 17/18  "
 
 
-def published(appliance: "Machine", subtest: "Subtest") -> None:
+def published(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("readiness is published for the pane, the status line and the banner"):
         appliance.wait_for_unit("loom-ready.service")
         appliance.wait_for_file(STATE)
@@ -48,9 +49,17 @@ def published(appliance: "Machine", subtest: "Subtest") -> None:
 
         # Both readers run as the operator -- two of them are spawned by the tmux
         # server -- while the writer is root, so neither file may be root-only.
+        #
+        # Asked of the operator rather than read off the mode digits. `endswith("6")`
+        # accepted 0666 and 0646, which is world-*writable*: `box.nix`'s `loom-info`
+        # prints `summary` straight into the pre-login banner, and `text.py`'s header
+        # exists to guarantee that line is one ASCII line with no backslash, because
+        # agetty reads a backslash as an escape. A mode that assertion permitted would
+        # hand that guarantee to any local account. It also silently rejected 5 and 7,
+        # which are just as readable, and said nothing about the directory.
         for path in [STATE, SUMMARY]:
-            mode = appliance.succeed(f"stat -c %a {path}").strip()
-            assert mode.endswith("4") or mode.endswith("6"), f"{path} is {mode}"
+            appliance.succeed(f"runuser -u {params.operator.user} -- cat {path}")
+            appliance.fail(f"runuser -u {params.operator.user} -- test -w {path}")
 
 
 def status_line(appliance: "Machine", subtest: "Subtest") -> None:
@@ -89,8 +98,6 @@ def one_shot(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # Typed at an Alt-F2 prompt, and by anything scripting against it. A box with
         # no cluster must not exit 0 from a command whose whole question is whether
         # Loom is serving.
-        status, output = appliance.execute(
-            f"runuser -u {params.operator.user} -- loom-ready"
-        )
-        assert status != 0, output
-        assert "waiting for the cluster" in output, output
+        ready = execute(appliance, f"runuser -u {params.operator.user} -- loom-ready")
+        assert ready.status != 0, ready.output
+        assert "waiting for the cluster" in ready.output, ready.output

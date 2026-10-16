@@ -103,7 +103,14 @@ def unit_path(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
 
         # `sudo` belongs here too. It is a setuid wrapper rather than a package,
         # so it can only arrive via /run/wrappers/bin being on the unit's PATH.
-        for cmd in params.upsh_commands + ["sudo"]:
+        #
+        # And `loom-up`, which is what the unit's ExecStart actually names.
+        # `startup.loom_up_on_path` used to assert that by searching the whole
+        # `Environment=` block for the substring "loom-up" -- several kilobytes
+        # of PATH and unrelated variables, where any future store path containing
+        # those seven characters would satisfy it, and which proves nothing about
+        # whether the name resolves. This does.
+        for cmd in params.upsh_commands + ["sudo", "loom-up"]:
             appliance.succeed(
                 f"env -i PATH=\"$(cat /tmp/unit-path)\" sh -c 'command -v {cmd}'"
             )

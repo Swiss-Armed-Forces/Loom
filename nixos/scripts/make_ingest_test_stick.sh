@@ -267,6 +267,37 @@ parse_arguments(){
     if [[ -n "${ONLY}" && -n "${EXCLUDE}" ]]; then
         die "--only and --skip are mutually exclusive"
     fi
+    validate_selection "--only" "${ONLY}"
+    validate_selection "--skip" "${EXCLUDE}"
+    return 0
+}
+
+# Refuse a selection that names something that is not a partition number.
+#
+# `is_selected` is a substring test over a comma list and the ROWS numbers are
+# unpadded 1..26, so `--only 07`, `--only 27` and `--only "1 2"` each selected
+# *nothing* -- and the run then wrote nothing, skipped `partition_disk` as it
+# does for any selection, reported a header-only table and declared "All
+# partitions written and identified". The next person to use that stick is
+# debugging `plan_mount` against whatever the previous run left.
+validate_selection(){
+    local flag="${1}" list="${2}" token row number
+    [[ -n "${list}" ]] || return 0
+
+    local IFS=,
+    for token in ${list}; do
+        local found=false
+        for row in "${ROWS[@]}"; do
+            IFS='|' read -r number _ _ _ _ _ _ <<< "${row}"
+            if [[ "${token}" == "${number}" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "${found}" != true ]]; then
+            die "${flag}: '${token}' is not a partition number (1-${#ROWS[@]})"
+        fi
+    done
     return 0
 }
 
@@ -403,6 +434,7 @@ report_plan(){
         IFS='|' read -r number short size want label payload maker <<< "${row}"
         pick=$(is_selected "${number}")
         [[ "${pick}" == true ]] || continue
+        selected=$(( selected + 1 ))
 
         printf -v partlabel 'fstest%02d-%s' "${number}" "${short}"
         printf '%-4s %-22s %-6s %-18s %-12s %s\n' \
@@ -522,6 +554,7 @@ format_rows(){
         IFS='|' read -r number short size want label payload maker <<< "${row}"
         pick=$(is_selected "${number}")
         [[ "${pick}" == true ]] || continue
+        selected=$(( selected + 1 ))
 
         printf -v partlabel 'fstest%02d-%s' "${number}" "${short}"
         device=$(partition_path "${number}")
@@ -1008,15 +1041,17 @@ make_blank(){
 
 report_result(){
     local row number short size want label payload maker partlabel pick
-    local status
+    local status selected
 
     FAILURES=0
+    selected=0
     echo
     printf '%-4s %-22s %-8s %s\n' "#" "PARTLABEL" "STATUS" "DETAIL"
     for row in "${ROWS[@]}"; do
         IFS='|' read -r number short size want label payload maker <<< "${row}"
         pick=$(is_selected "${number}")
         [[ "${pick}" == true ]] || continue
+        selected=$(( selected + 1 ))
 
         printf -v partlabel 'fstest%02d-%s' "${number}" "${short}"
         status="${ROW_STATUS[${number}]:-skipped}"
@@ -1025,6 +1060,14 @@ report_result(){
             "${number}" "${partlabel}" "${status}" "${ROW_DETAIL[${number}]:-}"
     done
     echo
+
+    # A selection that matched no row is a no-op run, and saying "All partitions
+    # written" about it is worse than saying nothing. `validate_selection`
+    # refuses the ways this can happen at parse time; this is the backstop.
+    if [[ "${selected}" -eq 0 ]]; then
+        warn "No partition was selected, so nothing was written."
+        return 1
+    fi
 
     if [[ "${FAILURES}" -gt 0 ]]; then
         warn "${FAILURES} partition(s) did not come out as intended; they have been blanked."

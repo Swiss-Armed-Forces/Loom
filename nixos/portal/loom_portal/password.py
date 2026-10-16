@@ -18,6 +18,7 @@ wait.
 
 import hmac
 import logging
+import threading
 from dataclasses import dataclass
 
 from loom_portal.clock import Clock
@@ -86,16 +87,25 @@ class AttemptBucket:
         self.limit = limit
         self.window_s = window_s
         self._attempts: list[float] = []
+        # `server.serve` is a ThreadingHTTPServer with daemon threads, so `take` runs
+        # concurrently -- and the rebuild-then-append below is not atomic: two threads
+        # can both read `len(...) == limit - 1` and both append, and the comprehension
+        # can drop an entry a third appended between the read and the rebind. This is
+        # the one shared mutable object on the request path of the listener that gates
+        # getting into Loom, and `Spool._take_slot` next door already takes the same
+        # care.
+        self._lock = threading.Lock()
 
     def take(self) -> AttemptAllowance:
         now = self.clock.now()
-        self._attempts = [at for at in self._attempts if now - at < self.window_s]
-        if len(self._attempts) >= self.limit:
-            oldest = min(self._attempts)
-            return AttemptAllowance(
-                allowed=False, retry_after_s=self.window_s - (now - oldest)
-            )
-        self._attempts.append(now)
+        with self._lock:
+            self._attempts = [at for at in self._attempts if now - at < self.window_s]
+            if len(self._attempts) >= self.limit:
+                oldest = min(self._attempts)
+                return AttemptAllowance(
+                    allowed=False, retry_after_s=self.window_s - (now - oldest)
+                )
+            self._attempts.append(now)
         return AttemptAllowance(allowed=True)
 
 
@@ -134,12 +144,22 @@ class PasswordGate:
         current = self.passwords.current()
         previous = self.passwords.previous()
 
+        # Compared as bytes, not as str. `hmac.compare_digest` raises TypeError for a
+        # str argument containing any non-ASCII character, and `given` is whatever a
+        # browser sent: `parse_form` UTF-8-decodes arbitrary bytes and is documented
+        # never to raise, `server.py` has no try/except around `portal.handle`, so one
+        # umlaut typed into the form drops the connection and leaves a traceback in
+        # the journal instead of saying "wrong password". On the one image built with
+        # `--keymap` support, where a non-US layout is the expected case. The encoding
+        # is deterministic, so the constant-time property is preserved.
+        given_bytes = given.encode()
+
         # Both comparisons always run, and an empty stored password never matches. A box
         # whose rotation unit has not run yet has no password, and `"" == ""` would
         # otherwise let everybody in during exactly that window.
         matched = False
         if current:
-            matched |= hmac.compare_digest(given, current)
+            matched |= hmac.compare_digest(given_bytes, current.encode())
         if previous:
-            matched |= hmac.compare_digest(given, previous)
+            matched |= hmac.compare_digest(given_bytes, previous.encode())
         return matched

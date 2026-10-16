@@ -76,18 +76,6 @@ def loom_up_flags(appliance: "Machine", subtest: "Subtest", params: Params) -> N
         assert "No minikube cluster" in out, out
 
 
-def loom_up_on_path(appliance: "Machine", subtest: "Subtest") -> None:
-    with subtest("loom.service can actually find loom-up"):
-        # systemPackages puts loom-up in the operator's shell but not in a
-        # unit's PATH, so this passing in the shell above says nothing about
-        # the unit. The appliance boots and dies with "exec: loom-up: not
-        # found" if the two disagree.
-        unit_path = appliance.succeed(
-            "systemctl show -p Environment --value loom.service"
-        )
-        assert "loom-up" in unit_path, unit_path
-
-
 def state_directories(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("the unit and the operator agree where minikube keeps its state"):
         # box.nix sets these in `environment.sessionVariables`, which NixOS

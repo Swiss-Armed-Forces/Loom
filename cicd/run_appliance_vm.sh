@@ -65,7 +65,8 @@ FIRMWARE_DIR=""
 # for the same reason the VM tests do: a VM boots a real kernel, so a
 # cross-built one cannot run here.
 PLATFORM=""
-KNOWN_PLATFORMS=(spark evo-x2 nuc12)
+# The platform list and its validation live in cicd/appliance_common.sh --
+# see KNOWN_PLATFORMS and require_platform there.
 NIX_SYSTEM=""
 HOST_ARCH=""
 
@@ -373,7 +374,12 @@ run_box_vm(){
         qemu_net_opts="hostfwd=tcp::${DEBUG_SSH_PORT}-:22"
     fi
 
-    runner="$(find -L "${STATE_DIR}/boxvm/bin" -name 'run-*-vm' -type f | head --lines=1)"
+    # `|| true` on the substitution, because `set -o pipefail` makes a `find`
+    # over a missing directory fail the whole assignment -- and `set -e` then
+    # killed the script with a bare "find: ... No such file or directory",
+    # before the three lines below that name the directory and say what should
+    # be in it.
+    runner="$(find -L "${STATE_DIR}/boxvm/bin" -name 'run-*-vm' -type f 2>/dev/null | head --lines=1 || true)"
     if [[ -z "${runner}" ]]; then
         echo >&2 "[!] Error: no runner script under ${STATE_DIR}/boxvm/bin."
         exit 1
@@ -531,13 +537,37 @@ create_usb_stick(){
     size_kb="$(du --summarize --block-size=1K "${USB_DIR}" | cut --fields=1)"
     size_kb=$(( size_kb + 65536 ))
 
+    # dotglob as well as nullglob: without the first, a payload of dotfiles is
+    # silently skipped; without the second, an empty directory passes the
+    # literal `.../*` to mcopy. Both produced a formatted-but-empty stick.
+    shopt -s nullglob dotglob
+    local payload=("${USB_DIR}"/*)
+    shopt -u nullglob dotglob
+    if (( ${#payload[@]} == 0 )); then
+        echo >&2 "[!] Error: --usb ${USB_DIR} is empty; there is nothing to put on the stick."
+        exit 1
+    fi
+
     echo "[*] Building ${image} from ${USB_DIR}"
     rm --force "${image}"
     truncate --size="${size_kb}K" "${image}"
     mkfs.vfat -n LOOMDATA "${image}" > /dev/null
-    # `::` is mtools for the root of the image. The glob is deliberate: mcopy
-    # cannot copy a directory onto itself as the root.
-    mcopy -s -i "${image}" "${USB_DIR}"/* :: 2>/dev/null || true
+    # `::` is mtools for the root of the image. The files are listed rather than
+    # the directory: mcopy cannot copy a directory onto itself as the root.
+    #
+    # Checked, and stderr kept. The whole point of --usb is watching what
+    # usb-ingest makes of the stick, and with `2>/dev/null || true` a payload
+    # larger than the computed size, or a filename mtools rejects, produced an
+    # empty stick with no diagnostic -- so the operator watched usb-ingest
+    # correctly report an empty stick and debugged the ingest path.
+    if ! mcopy -s -i "${image}" "${payload[@]}" ::; then
+        echo >&2 "[!] Error: could not copy ${USB_DIR} into ${image}."
+        echo >&2 "    mtools refuses some names, and the image is sized from the payload"
+        echo >&2 "    plus 64 MB -- a large tree may simply not fit."
+        exit 1
+    fi
+    echo "[*] The stick now holds:"
+    mdir -i "${image}" :: | sed 's/^/      /'
 }
 
 prepare_firmware(){
@@ -857,16 +887,7 @@ while [[ $# -gt 0 ]]; do
             PLATFORM="${1?Missing PLATFORM}"
             # Matched against the list rather than by calling platform_system,
             # which in a condition would disable `set -e` inside it.
-            case " ${KNOWN_PLATFORMS[*]} " in
-                *" ${PLATFORM} "*)
-                    :
-                ;;
-                *)
-                    echo >&2 "[!] Error: unknown platform: ${PLATFORM}"
-                    echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
-                    exit 1
-                ;;
-            esac
+            require_platform "${PLATFORM}"
             shift
         ;;
         -t|--tag)
@@ -997,22 +1018,9 @@ fi
 HOST_ARCH="$(uname -m)"
 
 if [[ -z "${PLATFORM}" ]]; then
-    case "${HOST_ARCH}" in
-        x86_64)
-            # As run_appliance_tests.sh: nuc12 is the same architecture, but
-            # evo-x2 is the one that declares a GPU and so exercises the
-            # toolchain the other two do not.
-            PLATFORM="evo-x2"
-        ;;
-        aarch64)
-            PLATFORM="spark"
-        ;;
-        *)
-            echo >&2 "[!] Error: no platform for architecture ${HOST_ARCH}; pass --platform."
-            echo >&2 "    Known platforms: ${KNOWN_PLATFORMS[*]}"
-            exit 1
-        ;;
-    esac
+    # The platform matching this machine -- see `default_platform_for_arch` in
+    # cicd/appliance_common.sh, which is the one copy of this rule.
+    PLATFORM="$(default_platform_for_arch)"
 fi
 
 NIX_SYSTEM="$(platform_system "${PLATFORM}")"

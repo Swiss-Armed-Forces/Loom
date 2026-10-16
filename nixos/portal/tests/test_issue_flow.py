@@ -30,12 +30,13 @@ from loom_portal.spool import BundleFormat, IssuanceOutcome, IssuanceState
 SECURE = [Header("X-Loom-Secure", "1")]
 
 
-def portal_for(tmp_path, spool=None, mtls=True, limits=None):
+def portal_for(tmp_path, spool=None, mtls=True, limits=None, placeholder=""):
     settings = settings_for(
         tmp_path,
         mtls=mtls,
         secure_url="https://portal.loom/",
         limits=limits,
+        tls_placeholder_path=placeholder,
     )
     write_passwords(settings)
     write_anchor(settings)
@@ -237,3 +238,25 @@ def test_the_form_is_on_the_page_the_tls_listener_serves(tmp_path):
     assert b'<form method="post" action="/certificate">' in secure.body
     assert b"<form" not in plain.body
     assert b"https://portal.loom/#identity" in plain.body
+
+
+def test_no_certificate_is_handed_out_over_the_placeholder_listener(tmp_path):
+    """443 comes up long before the cluster does, on a pair nothing can verify.
+
+    `loom-portal-tls-placeholder` writes a one-day self-signed `CN=portal.loom`
+    certificate so that nginx starts at all, and on a first boot that is in force for
+    hours -- exactly the period this page exists to cover. `X-Loom-Secure` records which
+    listener answered, not which certificate it answered with, so the marker that unit
+    leaves behind is what the form is really gated on.
+    """
+    marker = tmp_path / "placeholder"
+    marker.write_text("")
+    portal, _ = portal_for(tmp_path, placeholder=str(marker))
+
+    refused = portal.handle(post(PASSWORD))
+    assert refused.status == 403
+    assert "Not over this connection" in refused.body.decode()
+
+    # And the page offers the form the moment the real certificate is published.
+    marker.unlink()
+    assert portal.handle(post(PASSWORD)).status == 200

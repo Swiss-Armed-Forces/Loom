@@ -77,8 +77,10 @@ See `## The two boot modes` in `/home/loom/loom/Documentation/appliance.md`.
 | `loom-usb-ingest@.service` | Templated per device — mounts USB media and ingests it |
 | `loom-usb-release` | Forgets media that has been unplugged |
 
-There are no timers on this box. Anything periodic inside Loom is Celery beat, in the cluster, not
-systemd.
+Three timers, and only three: `loom-portal-certificate` (hourly), `loom-portal-password` (daily,
+`Persistent`) and — on a `--require-client-cert` box only — `loom-mtls-identity` (daily). Check them
+with `systemctl list-timers`. Everything else periodic inside Loom is Celery beat, in the cluster,
+not systemd.
 
 ## When a unit will not start
 

@@ -12,7 +12,8 @@ from common.archive.archive_encryption_service import ArchiveEncryptionService
 from common.services.encryption_service import FileEncryptionServiceException
 from common.services.lazybytes_service import (
     FileStorageLazyBytes,
-    FileStorageLazyBytesService,
+    FileStorageTag,
+    LazyBytesService,
 )
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def decrypt_loom_archive(
     encrypted_file: FileStorageLazyBytes,
-    file_storage_service: FileStorageLazyBytesService,
+    file_storage_service: LazyBytesService[FileStorageTag],
     archive_encryption_service: ArchiveEncryptionService,
 ) -> FileStorageLazyBytes | None:
     """Decrypt an encrypted loom archive; return the plain zip, or None.
@@ -36,9 +37,12 @@ def decrypt_loom_archive(
     be exercised against a real encryptor on a known key without anything being patched
     into place. `index_archive.ArchiveServices` is what resolves them in production.
 
-    Failure is expected rather than exceptional. `archive_enc_master_key` is unset by
-    default and `FileEncryptionService` then invents a random key per process, so an
-    archive from any other deployment arrives here.
+    Failure is expected rather than exceptional: the master key is minted per cluster
+    by `preInstall.generateSecret`, so an archive from any other deployment arrives
+    here. Note what *unset* means, though -- `Settings.parse_archive_enc_master_key`
+    substitutes the published all-zero `FIXED_AES_KEY` rather than inventing a random
+    one, so two deployments that were never given a key open each other's archives.
+    Under `charts/values-development.yaml` that is every developer's Loom.
     """
     try:
         encrypted_generator = file_storage_service.load_generator(encrypted_file)

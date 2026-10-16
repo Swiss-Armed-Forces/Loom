@@ -48,9 +48,16 @@ journalctl --unit dnsmasq --no-pager --lines 50
 getent hosts frontend.loom
 ```
 
-The appliance serves **both** `http` and `https`. It is built with Loom's `--enable-http`, which
-widens every ingress to Traefik's `web` entrypoint as well as `websecure`, so that the captive
-portal has a page a visitor's phone can reach without being handed a CA.
+The appliance serves **both** `http` and `https` — on every image except one. It is built with
+Loom's `--enable-http`, which widens every ingress to Traefik's `web` entrypoint as well as
+`websecure`, so that the captive portal has a page a visitor's phone can reach without being
+handed a CA.
+
+**`--require-client-cert` changes this.** There `--enable-http` is deliberately dropped, so port 80
+carries only the global redirect to https and nothing is served in cleartext — a plaintext
+entrypoint beside a client-certificate requirement would be a way around it. On that box a refused
+TLS handshake from a client holding no certificate is the *correct* answer, not a fault to debug.
+`loom-appliance/facts.md` says which image this is.
 
 The certificate is self-signed, so `curl` over `https` needs `--insecure`:
 
@@ -95,7 +102,7 @@ On a box built with `--require-client-cert` the page also issues client certific
 units are involved:
 
 ```bash
-cat /run/loom-portal/password             # today's password, also on the login screen
+sudo cat /run/loom-portal/password        # today's password, also on the login screen
 journalctl --unit loom-portal-password    # it rotates at midnight
 journalctl --unit loom-portal-issue       # every certificate the page has handed out
 curl --insecure --silent https://portal.loom/ | grep '<form'

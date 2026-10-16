@@ -7,7 +7,10 @@ renamed over the old one. `os.replace` is atomic within a filesystem, so a reade
 either the previous document or the new one and never half of either.
 
 One helper rather than the routine written once per module, so the cleanup on the error
-path only has to be right in one place.
+path only has to be right in one place -- within this package. `loom_ready.state` keeps
+a **deliberate** copy of the same routine: it writes a plain line of text beside its
+document, it may never raise, and sharing would make the console's readiness pane depend
+on the package that copies USB sticks. Neither is a cost worth twenty lines.
 """
 
 import json

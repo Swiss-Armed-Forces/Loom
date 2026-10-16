@@ -38,20 +38,30 @@ let
   # so the lockfile beside each one is what keeps `poetry lock` honest about the
   # versions the devenv's virtualenv gets. nixos/tests/scripts is the VM tests,
   # which the driver installs the same way (nixos/tests/scripts.nix).
+  # Every directory of first-party Python, and whether it is a Poetry project.
+  # The hooks are generated per directory -- there is no repository-wide Python
+  # hook -- so a directory missing from this list has no formatter, no linter
+  # and no type checker at all.
   pythonSubdirs = [
-    "backend/api"
-    "backend/common"
-    "backend/crawler"
-    "backend/worker"
-    "integrationtest"
-    "cicd/aitools"
-    "ollama"
-    "nixos/console-mouse"
-    "nixos/installer"
-    "nixos/portal"
-    "nixos/ready"
-    "nixos/tests/scripts"
-    "nixos/usb-ingest"
+    { subdir = "backend/api"; }
+    { subdir = "backend/common"; }
+    { subdir = "backend/crawler"; }
+    { subdir = "backend/worker"; }
+    { subdir = "integrationtest"; }
+    { subdir = "cicd/aitools"; }
+    { subdir = "ollama"; }
+    { subdir = "nixos/console-mouse"; }
+    { subdir = "nixos/installer"; }
+    { subdir = "nixos/portal"; }
+    { subdir = "nixos/ready"; }
+    { subdir = "nixos/tests/scripts"; }
+    { subdir = "nixos/usb-ingest"; }
+    # Tests and a parser, with no package around them: the skill tree is data in
+    # Markdown, and what is checked here is the Python that reads it.
+    {
+      subdir = "nixos/skills";
+      poetry = false;
+    }
   ];
 
   # Where the appliance's own pytest suites live, for `appliance-check`.
@@ -159,7 +169,17 @@ let
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
-    { subdir }:
+    # `poetry`: whether this directory is a Poetry project. False for a
+    # directory of Python that is not packaged at all -- nixos/skills is tests
+    # and nothing else -- where the two lockfile hooks have nothing to check and
+    # `poetry check` would fail on the missing manifest. Everything else, which
+    # is every formatter and linter, applies either way: that directory was the
+    # only Python in the tree with no gate at all, which also left the typing
+    # rules the rest of the repository is held to unenforced there.
+    {
+      subdir,
+      poetry ? true,
+    }:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
       # %ROOT% is substituted by the wrapper script, not by Nix -- see
@@ -246,6 +266,8 @@ let
         require_serial = true;
       };
 
+    }
+    // lib.optionalAttrs poetry {
       "poetry-check_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir [ "check" ];
@@ -359,7 +381,7 @@ let
 
   # Merge all hooks
   pythonHooks = builtins.foldl' (
-    acc: subdir: acc // (createPythonHooksForSubdir { inherit subdir; })
+    acc: entry: acc // (createPythonHooksForSubdir entry)
   ) { } pythonSubdirs;
   # The root project cannot go through createPythonHooksForSubdir: `subdir = "."`
   # renders `files = "^./.*\.py$"`, where the dot is a regex wildcard, so the
@@ -793,11 +815,27 @@ in
       ];
     };
 
-    trim-trailing-whitespace.enable = true;
+    # `*.patch` and `*.diff` are excluded from both, and that is not cosmetic: a
+    # unified diff's context line for a blank source line is a single space, and
+    # these hooks strip it. They had already rewritten every patch in the tree
+    # -- nixos/patches/btop-aarch64-gpu.patch has two such lines, the two
+    # Frontend patches five between them -- so a regenerated patch shows
+    # spurious noise and anyone comparing against upstream sees a mismatch that
+    # has nothing to do with the change. (`patch` and `git apply` both accept a
+    # wholly empty line as blank context, which is why the hunks still applied.)
+    trim-trailing-whitespace = {
+      enable = true;
+      excludes = [
+        "\\.patch$"
+        "\\.diff$"
+      ];
+    };
     end-of-file-fixer = {
       enable = true;
       excludes = [
         ".*/assets/.*"
+        "\\.patch$"
+        "\\.diff$"
       ];
     };
 
@@ -901,7 +939,9 @@ in
     "check-ollama-models" = {
       enable = true;
       entry = "./cicd/check_ollama_models.sh";
-      files = "^(charts/values\\.yaml$|ollama/Dockerfile\\.models$|cicd/check_ollama_models\\.sh$|vars\\.sh$)";
+      # `ollama_wrapper.py` too: the script also holds its HOST_RESERVE_BYTES to
+      # vars.sh's LOOM_MIN_MEMORY, which is the other value spelled twice.
+      files = "^(charts/values\\.yaml$|ollama/Dockerfile\\.models$|ollama/ollama_wrapper\\.py$|cicd/check_ollama_models\\.sh$|vars\\.sh$)";
       pass_filenames = false;
     };
 
@@ -968,7 +1008,12 @@ in
     "check-values-local-overrides" = {
       enable = true;
       entry = "./cicd/check_values_local_overrides.sh";
-      files = "charts/values-(overwrites|user|up-flags)\\.yaml$";
+      # `appliance` too: it is tracked, committed empty, part of skaffold's default
+      # valuesFiles and written with real content by nixos/repo.nix -- and unlike
+      # the other three it is deliberately *not* skip-worktree'd, so without this
+      # it was the one override layer that was neither ignored nor checked, and
+      # box-specific values staged from a seeded checkout committed silently.
+      files = "charts/values-(overwrites|user|up-flags|appliance)\\.yaml$";
       types = [ "file" ];
     };
 
@@ -1840,7 +1885,7 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/install_runner.sh
+        ./cicd/install_runner.sh \
           "''${@}"
       )
     '';

@@ -1,7 +1,7 @@
 import copy
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Literal
 
 from luqum.check import LuceneCheck
@@ -167,7 +167,11 @@ class TimeTransformer(TreeTransformer):
         return ts.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
     def _format_datetime(self, ts: datetime) -> str:
-        return ts.strftime("%Y-%m-%dT%H:%M:%S")
+        # With the zone, because every writer of `uploaded_datetime` now writes an
+        # aware UTC value and this is the reader of that same field: a bare timestamp
+        # is parsed by Elasticsearch as UTC, so leaving it off would silently shift
+        # every relative date filter by the pod's offset the moment one is set.
+        return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def visit_word(self, node: Word, context: dict):
         """Replace words like today, yesterday...
@@ -175,7 +179,7 @@ class TimeTransformer(TreeTransformer):
         with real date values in ranges
         """
         keyword = node.value.upper()
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         from_date: datetime
         to_date: datetime
         match keyword:

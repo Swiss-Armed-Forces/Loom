@@ -103,6 +103,19 @@ let
   debugText = "DEBUG -- SSH OPEN";
   debugSegment = lib.optionalString cfg.debug.enable "#[fg=red,bold]${debugText}#[default]  ";
 
+  # What `loom-ready --oneline` can produce, markup included. The longest stage
+  # word is `rolling-out` (11), the counts are `NNN/NNN pods` with a colour pair
+  # around them, and `text.py` caps the note it appends. 72 is that measured at
+  # its widest -- `degraded 91` with markup -- rounded up, and it is a budget
+  # rather than a promise: anything shorter simply does not use it.
+  readinessBudget = 72;
+
+  # 8 for `"  LOOM  "`, plus the two optional segments. Computed rather than
+  # written out, because the thing being budgeted for is invisible: the trim
+  # happens before `#[...]` is parsed, so every escape in here counts against it.
+  statusLeftLength =
+    8 + builtins.stringLength debugSegment + (if readinessPublished then readinessBudget else 0);
+
   # Taken from the host list rather than written out again, so the name the chat
   # pane dials is by construction one of the names box.nix pins in /etc/hosts.
   # Spelling it "ollama.loom" here instead would be a second copy of the domain,
@@ -251,12 +264,21 @@ let
     # console is exactly the one this box shipped with before any of this.
     # -------------------------------------------------------------------------
     ${lib.optionalString readinessPublished "set -g status-interval 5"}
-    # 80 only on a --debug box, where the marker is 17 characters plus its
-    # separator and would otherwise push the readiness segment off the end.
-    # Conditional rather than widened for everyone: an image built without the
-    # flag should get the status line it always had, not one that merely looks
-    # the same because the extra room happens to go unused.
-    set -g status-left-length ${if cfg.debug.enable then "80" else "60"}
+    # Counted, not estimated. `status-format[0]` trims with
+    # `#{T;=/#{status-left-length}:...}` *before* the markup is parsed -- this
+    # file says so about `status-right-length` a few lines up -- so the budget has
+    # to cover the `#[fg=red,bold]` and `#[default]` sequences too, which the
+    # hand-counted 80 did not: every readiness stage but `ready` was cut, and the
+    # cut landed inside the segment's trailing `#[default]`, so the line rendered
+    # half-complete (`...degraded 24/2`) on the box where the status line is the
+    # only persistent indicator.
+    #
+    # `"  LOOM  "` is 8, the readiness segment is at most
+    # `${toString readinessBudget}` including its two trailing spaces, and the
+    # debug marker carries ${toString (builtins.stringLength debugSegment)}
+    # characters of text and markup on a --debug box. Still conditional: an image
+    # built without the flag gets the status line it always had.
+    set -g status-left-length ${toString statusLeftLength}
     set -g status-left "  LOOM  ${debugSegment}${readinessSegment}"
     # The two controls are last, so they sit flush against the right-hand edge
     # of the screen. That is deliberate on two counts: a target in the corner
@@ -760,7 +782,19 @@ let
       probe=${lib.escapeShellArg "${ollamaBaseUrl}/"}
       # Ollama's native routes, which the OpenAI-compatible /v1 does not mirror:
       # /api/ps and /api/show are where the context size is readable at all.
-      api=${lib.escapeShellArg "https://${ollamaHost}/api"}
+      #
+      # Built from `ollamaBaseUrl` like the two above, not hardcoded to the
+      # ingress: on a --require-client-cert box mtls.nix sets that option to
+      # `http://127.0.0.1:18080` precisely because Traefik there demands a client
+      # certificate this pane cannot present, and the loopback proxy forwards
+      # `locations."/"` so /api/ps and /api/show work through it unchanged. Hard-
+      # coded, both curls failed on every mTLS box, `context_length` returned 1,
+      # the jq patch never ran, and the model kept `limit.context = 0` -- which
+      # is the state the comment further down says turns compaction off and gets
+      # long sessions silently truncated by Ollama. The option's own description
+      # says a box behind its own mutual TLS "has to move both at once"; there
+      # are three readers, not two.
+      api=${lib.escapeShellArg "${ollamaBaseUrl}/api"}
       namespace=${lib.escapeShellArg loomNamespace}
 
       # Both are runtime flags (packages/core/src/flag/flag.ts), and neither is
@@ -1345,8 +1379,21 @@ let
 
       create() {
         local main mon${lib.optionalString aiEnabled " chat"}
-        main=$("''${tm[@]}" new-session -d -x "$cols" -y "$lines" -s loom -n loom \
-          -P -F '#{pane_id}' "$supervise" ${lib.getExe loom-progress})
+        # Guarded, because `create || true` below turns `errexit` off for the
+        # whole of this function -- bash suppresses it for every command on the
+        # left of `||`, function bodies included, so `writeShellApplication`'s
+        # `set -e` is inert in here. A lost race therefore left `main` empty and
+        # ran every line below with `-t ""`, which tmux resolves to the *current*
+        # session, window and pane: the winner's. The loser then split, respawned
+        # and set `@loom-main` inside the session the operator was looking at --
+        # and usb-ingest/pane.py searches for that option. Reachable today:
+        # vm-serial.nix runs `loom-console -d` from its own login hook at the
+        # same time as tty1's.
+        if ! main=$("''${tm[@]}" new-session -d -x "$cols" -y "$lines" -s loom \
+          -n loom -P -F '#{pane_id}' "$supervise" ${lib.getExe loom-progress}); then
+          return 1
+        fi
+        [ -n "$main" ] || return 1
       ${lib.optionalString aiEnabled ''
         # -c so the assistant starts in the checkout: it is what an operator
         # asking about this box would want it looking at, and `respawn-pane`
