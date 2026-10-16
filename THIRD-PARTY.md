@@ -674,6 +674,14 @@ The complete source code for Traefik is publicly available at https://github.com
 | librt                                    | 0.15.0          | MIT                                                                              |
 | logfire                                  | 5.1.0           | MIT                                                                              |
 | logfire-api                              | 5.1.0           | MIT                                                                              |
+| loom-banner                              | 0.1.0           | MIT                                                                              |
+| loom-console-mouse                       | 0.1.0           | MIT                                                                              |
+| loom-installer                           | 0.1.0           | MIT                                                                              |
+| loom-ollama                              | 0.1.0           | MIT                                                                              |
+| loom-portal                              | 0.1.0           | MIT                                                                              |
+| loom-ready                               | 0.1.0           | MIT                                                                              |
+| loom-tests                               | 0.1.0           | MIT                                                                              |
+| loom-usb-ingest                          | 0.1.0           | MIT                                                                              |
 | more-itertools                           | 11.1.0          | MIT                                                                              |
 | mypy                                     | 1.20.2          | MIT                                                                              |
 | mypy_extensions                          | 1.1.0           | MIT                                                                              |
@@ -790,13 +798,6 @@ The complete source code for Traefik is publicly available at https://github.com
 | email-validator                          | 2.3.0           | The Unlicense (Unlicense)                                                        |
 | IMAPClient                               | 4.0.1           | UNKNOWN                                                                          |
 | crashtest                                | 0.4.1           | UNKNOWN                                                                          |
-| loom-console-mouse                       | 0.1.0           | UNKNOWN                                                                          |
-| loom-installer                           | 0.1.0           | UNKNOWN                                                                          |
-| loom-ollama                              | 0.1.0           | UNKNOWN                                                                          |
-| loom-portal                              | 0.1.0           | UNKNOWN                                                                          |
-| loom-ready                               | 0.1.0           | UNKNOWN                                                                          |
-| loom-tests                               | 0.1.0           | UNKNOWN                                                                          |
-| loom-usb-ingest                          | 0.1.0           | UNKNOWN                                                                          |
 
 ## JavaScript
 
