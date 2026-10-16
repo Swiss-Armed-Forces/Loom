@@ -4438,7 +4438,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | coreutils | 9.5-1ubuntu2+0.0.0~ubuntu25 | GPL-3.0-only | dpkg-db-cataloger |
 | coreutils-from-uutils | 0.0.0~ubuntu25 | GPL-3.0-only | dpkg-db-cataloger |
 | cryptography | 46.0.5 | Apache-2.0 OR BSD-3-Clause | python-installed-package-cataloger |
-| curl | 8.18.0-1ubuntu2.7 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| curl | 8.18.0-1ubuntu2.8 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | curvesapi | 1.08 |  | java-archive-cataloger |
 | cxf-core | 4.0.11 |  | java-archive-cataloger |
 | cxf-rt-frontend-jaxrs | 4.0.11 |  | java-archive-cataloger |
@@ -4609,8 +4609,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | libcfitsio10t64 | 4.6.3-1 | FSFAP, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, X11 | dpkg-db-cataloger |
 | libcom-err2 | 1.47.2-3ubuntu4 | 0BSD, Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libcrypt1 | 1:4.5.1-1 |  | dpkg-db-cataloger |
-| libcurl3t64-gnutls | 8.18.0-1ubuntu2.7 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
-| libcurl4t64 | 8.18.0-1ubuntu2.7 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl3t64-gnutls | 8.18.0-1ubuntu2.8 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
+| libcurl4t64 | 8.18.0-1ubuntu2.8 | BSD-4-Clause-UC, FSFUL, FSFULLR, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-or-later, ISC, OLDAP-2.8, X11, curl | dpkg-db-cataloger |
 | libdatrie1 | 0.2.14-1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libdav1d7 | 1.5.3-1 | BSD-2-Clause, ISC | dpkg-db-cataloger |
 | libdb5.3t64 | 5.3.28+dfsg2-10ubuntu1 | BSD-3-Clause, GPL-3.0-only, MS-PL, Sleepycat, X11, Zlib | dpkg-db-cataloger |
