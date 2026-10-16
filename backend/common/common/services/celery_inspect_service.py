@@ -8,7 +8,6 @@ from kombu.exceptions import DecodeError
 from redis import StrictRedis
 
 from common.celery_app import (
-    RETIRED_TASK_NAMES,
     TaskGroupName,
     _task_groups,
     get_terminal_queues,
@@ -212,22 +211,10 @@ class CeleryInspectService:
         """Persist all in-process task group registrations to Redis.
 
         Call on worker startup so the API process can look up group members.
-
-        The group sets are otherwise sadd-only, so a task that has been deleted from
-        the codebase stays in them forever: `set_taskgroup_paused` then cancels a
-        consumer for a queue nothing serves, and `wait_for_processing_idle` waits on a
-        name no worker will ever report. Retired names are therefore removed from every
-        group here, which is the Redis half of what `remove_retired_queues` does to the
-        broker.
         """
         for group_name, task_names in _task_groups.items():
             for task_name in task_names:
                 self.register_task_in_group(group_name, task_name)
-
-        for group_name in TaskGroupName:
-            self._redis_client.srem(
-                f"{_TASK_GROUP_KEY_PREFIX}:{group_name.value}", *RETIRED_TASK_NAMES
-            )
 
     def set_taskgroup_paused(
         self, task_group_name: TaskGroupName, paused: bool

@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Protocol
 
-from amqp.exceptions import NotFound, PreconditionFailed  # type: ignore[attr-defined]
+from amqp.exceptions import PreconditionFailed  # type: ignore[attr-defined]
 from celery import Celery, Task, signals
 
-from common.celery_app._queues import get_retired_queue_names, get_terminal_queues
+from common.celery_app._queues import get_terminal_queues
 from common.utils.oom_score_adjust import adjust_oom_score
 
 logger = logging.getLogger(__name__)
@@ -61,35 +61,6 @@ def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
                         queue.exchange(ch).delete(if_unused=False)  # type: ignore[operator, misc]
                 with conn.channel() as ch:  # type: ignore[attr-defined, operator, misc]
                     queue(ch).declare()  # type: ignore[operator, misc]
-
-
-@signals.worker_ready.connect
-def remove_retired_queues(sender: _WorkerReadySender, **__: Any) -> None:
-    """Drain and delete the queues of tasks this codebase no longer carries.
-
-    Deleting a task module leaves its durable queue and binding behind, and anything
-    still in it is never delivered, never dead-lettered, and never counted as anything
-    but "the system is busy" -- see RETIRED_TASK_NAMES for what that costs. The queue is
-    deleted rather than purged so the binding goes with it.
-    """
-    with sender.app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
-        for name in get_retired_queue_names():
-            try:
-                with conn.channel() as channel:  # type: ignore[attr-defined, operator, misc]
-                    stranded = channel.queue_delete(queue=name)
-            except NotFound:
-                # The ordinary case on any cluster that never ran the old code, and on
-                # every boot after the first.
-                logger.debug("No retired queue %r to remove", name)
-                continue
-            if stranded:
-                logger.warning(
-                    "Removed retired queue %r, discarding %s undeliverable message(s)",
-                    name,
-                    stranded,
-                )
-            else:
-                logger.info("Removed retired queue %r", name)
 
 
 @signals.task_prerun.connect
