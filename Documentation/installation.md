@@ -471,7 +471,9 @@ API server's ClusterIP. Two things read it, and they have to agree:
   it suggests is still cheap at that point.
 - The chart renders it into the `-allow-k8s-api` NetworkPolicy as an `ipBlock`. A NetworkPolicy is matched
   _after_ kube-proxy has rewritten `10.96.0.1:443` to the node, so the node's own address — not the
-  ClusterIP — is what a pod's packet carries by the time the policy sees it.
+  ClusterIP — is what a pod's packet carries by the time the policy sees it. The rewrite moves the port
+  too, to whatever the API server listens on (`8443` on minikube), which is why the rule names an address
+  and no port.
 
 If the two disagree, every pod in the namespace is denied the API server. Calico drops rather than
 rejects, so the symptoms are timeouts far downstream: secret-generation Jobs that never finish, and the
