@@ -2,7 +2,6 @@ import { SearchOff } from "@mui/icons-material";
 import {
     Badge,
     Box,
-    Card,
     CardContent,
     Chip,
     Skeleton,
@@ -32,6 +31,7 @@ import { isInteractiveTarget } from "../interactiveTarget";
 
 import { FieldSections } from "./FieldSections";
 import styles from "./ResultCard.module.css";
+import { ResultCardSurface } from "./ResultCardSurface";
 
 interface ResultCardProps {
     fileId: string;
@@ -182,16 +182,9 @@ export const ResultCard = React.memo(
                         <Skeleton variant="text" />
                     </div>
                 ) : (
-                    <Card
-                        sx={{
-                            borderLeft: "3px solid",
-                            borderColor: isHighlighted
-                                ? "primary.main"
-                                : "transparent",
-                            bgcolor: isHighlighted
-                                ? "action.selected"
-                                : undefined,
-                        }}
+                    <ResultCardSurface
+                        isHighlighted={isHighlighted}
+                        seen={filePreview.seen}
                     >
                         <FileCardHeader
                             filePreview={filePreview}
@@ -313,7 +306,7 @@ export const ResultCard = React.memo(
                                 )}
                             </CardContent>
                         )}
-                    </Card>
+                    </ResultCardSurface>
                 )}
             </Box>
         );
