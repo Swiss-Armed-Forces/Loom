@@ -123,6 +123,20 @@ STEPS_SETUP_CLUSTER=(
     warn_dev_or_integration
 )
 
+# Steps main appends depending on the flags. Listed here so that --skip-STEP
+# accepts them regardless of whether this run assembles them into STEPS.
+STEPS_CONDITIONAL=(
+    expose_minikube
+    run_skaffold
+)
+
+# Every step name --skip-STEP accepts.
+ALL_STEPS=(
+    "${STEPS_SETUP_SYSTEM[@]}"
+    "${STEPS_SETUP_CLUSTER[@]}"
+    "${STEPS_CONDITIONAL[@]}"
+)
+
 #
 # Runtime vars
 #
@@ -175,6 +189,52 @@ check_command() {
         echo >&2 "[!] Please install ${cmd} and try again."
         exit 1
     fi
+}
+
+# Abort on a malformed command line.
+#
+# Argument parsing runs with the atexit trap already armed, and atexit tears the
+# deployment down once --development or --delete has been parsed. A usage error
+# must leave a running deployment untouched, so disarm the trap before exiting.
+die_usage() {
+    local message
+    message="${1}" && shift
+
+    echo >&2 "[!] Error: ${message}"
+    echo >&2 ""
+    usage >&2
+    trap - EXIT
+    exit 1
+}
+
+# Exact match against ALL_STEPS. A substring test would let a step name that is
+# a prefix of another skip both.
+is_known_step() {
+    local candidate
+    candidate="${1}" && shift
+
+    local step
+    for step in "${ALL_STEPS[@]}"; do
+        if [[ "${step}" == "${candidate}" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+is_skipped() {
+    local candidate
+    candidate="${1}" && shift
+
+    local skipped
+    for skipped in "${SKIP[@]}"; do
+        if [[ "${skipped}" == "${candidate}" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 wait_for(){
@@ -904,8 +964,7 @@ install_traefik(){
 
         "${CICD_SKAFFOLD}" traefik run \
             --profile "${SKAFFOLD_PROFILE}" \
-            "${THIRD_PARTY_SKAFFOLD_ARGS[@]}" \
-            "${@}"
+            "${THIRD_PARTY_SKAFFOLD_ARGS[@]}"
     )
 }
 
@@ -921,8 +980,7 @@ install_keda(){
 
         "${CICD_SKAFFOLD}" keda run \
             --profile "${SKAFFOLD_PROFILE}" \
-            "${THIRD_PARTY_SKAFFOLD_ARGS[@]}" \
-            "${@}"
+            "${THIRD_PARTY_SKAFFOLD_ARGS[@]}"
 
         # Wait for all CRDs to be established.
         # KEDA deploys its CRDs via helm templates (not the chart-level crds/ dir),
@@ -937,11 +995,11 @@ install_keda(){
 install_third_party(){
     local pids=()
 
-    install_traefik "$@" &
+    install_traefik &
     pids+=($!)
 
     if [[ "${SCALING}" = true ]]; then
-        install_keda "$@" &
+        install_keda &
         pids+=($!)
     fi
 
@@ -1087,8 +1145,7 @@ run_skaffold(){
     # set_docker_platform() and read by skaffold itself.
     skaffold "${SKAFFOLD_COMMAND}" \
         --profile "${SKAFFOLD_PROFILE}" \
-        "${SKAFFOLD_ARGS[@]}" \
-        "${@}"
+        "${SKAFFOLD_ARGS[@]}"
 }
 
 #
@@ -1169,7 +1226,6 @@ usage(){
 # Argument parsing
 #
 
-ARGS=()
 while [[ $# -gt 0 ]]; do
     case "${1}" in
         -h|--help)
@@ -1214,8 +1270,7 @@ while [[ $# -gt 0 ]]; do
                     UP_FLAG_VALUES+=("${NVIDIA_GPU_VALUES_FILE}")
                 ;;
                 *)
-                    echo >&2 "[!] Error: Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
-                    exit 1
+                    die_usage "Invalid GPU type '${GPUS}'. Valid options: amd, nvidia"
                 ;;
             esac
             shift
@@ -1254,8 +1309,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ARCHIVE_ENC_KEY="${1?Missing key value for --archive-enc-key}"
             if [[ "${#ARCHIVE_ENC_KEY}" -ne 32 ]]; then
-                echo >&2 "[!] Error: --archive-enc-key must be exactly 32 characters"
-                exit 1
+                die_usage "--archive-enc-key must be exactly 32 characters"
             fi
             shift
         ;;
@@ -1282,12 +1336,23 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         --skip-*)
-            SKIP+=("${1}")
+            skip_step="${1#--skip-}"
+            # shellcheck disable=SC2310
+            if ! is_known_step "${skip_step}"; then
+                echo >&2 "[!] Error: unknown step '${skip_step}' for --skip"
+                echo >&2 "[!] Valid steps:"
+                printf >&2 '[!]   %s\n' "${ALL_STEPS[@]}"
+                trap - EXIT
+                exit 1
+            fi
+            SKIP+=("${skip_step}")
             shift
         ;;
         *)
-            ARGS+=("${1}")
-            shift
+            # No catch-all passthrough: an unrecognised argument is a typo, and a
+            # typo on a negating flag (--no-resource for --no-resources) would
+            # otherwise deploy the very thing it was meant to switch off.
+            die_usage "unknown argument '${1}'"
         ;;
     esac
 done
@@ -1313,6 +1378,8 @@ STEPS+=(
     "${STEPS_SETUP_SYSTEM[@]}"
     "${STEPS_SETUP_CLUSTER[@]}"
 )
+# Any step appended below must also be listed in STEPS_CONDITIONAL, which is what
+# --skip-STEP validates against.
 
 if [[ "${EXPOSE}" = true ]]; then
     STEPS+=(expose_minikube)
@@ -1326,10 +1393,11 @@ fi
 
 # execute steps
 for step in "${STEPS[@]}"; do
-    if [[ "${SKIP[*]}" == *"--skip-${step}"* ]]; then
+    # shellcheck disable=SC2310
+    if is_skipped "${step}"; then
         echo "[*] Skipping: ${step}"
         continue
     fi
     echo "[*] Running: ${step}"
-    "${step}" "${ARGS[@]}"
+    "${step}"
 done
