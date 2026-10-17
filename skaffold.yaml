@@ -384,6 +384,60 @@ profiles:
       - op: add
         path: /manifests/helm/releases/0/valuesFiles/1
         value: charts/values-development.yaml
+      # Debug port-forwards, declared rather than discovered.
+      #
+      # `skaffold dev` forwards exactly what is listed here and nothing else. The list belongs to
+      # this profile because `resourceName` embeds the Helm release name, which only the patch
+      # above sets to `development` - a `nameOverride` in `charts/values-overwrites.yaml` renames
+      # every workload and leaves each entry retrying against a name that no longer exists.
+      #
+      # Each port is where that component's debugpy listens: api and crawler from their image CMD
+      # (`backend/*/Dockerfile`), the celery components from their `command` in
+      # `charts/values-development.yaml`. The attach configurations in `.vscode/launch.json`
+      # connect to the same ports, so the two lists have to be changed together.
+      #
+      # `localPort` is a request, not a reservation: skaffold moves to the next free port when
+      # something already holds one, and the debugger then attaches to nothing. Read the
+      # `Port forwarding ... -> 127.0.0.1:<port>` lines skaffold prints on startup.
+      - op: add
+        path: /portForward
+        value:
+          - resourceType: deployment
+            resourceName: development-loom-api
+            namespace: loom
+            port: 4401
+            localPort: 4401
+            address: 127.0.0.1
+          - resourceType: deployment
+            resourceName: development-loom-worker
+            namespace: loom
+            port: 5500
+            localPort: 5500
+            address: 127.0.0.1
+          - resourceType: deployment
+            resourceName: development-loom-reaper
+            namespace: loom
+            port: 5501
+            localPort: 5501
+            address: 127.0.0.1
+          - resourceType: statefulset
+            resourceName: development-loom-persister
+            namespace: loom
+            port: 5502
+            localPort: 5502
+            address: 127.0.0.1
+          - resourceType: deployment
+            resourceName: development-loom-beat
+            namespace: loom
+            port: 5503
+            localPort: 5503
+            address: 127.0.0.1
+          - resourceType: deployment
+            resourceName: development-loom-crawler
+            namespace: loom
+            port: 6601
+            localPort: 6601
+            address: 127.0.0.1
 
   - name: offline
     activation:
