@@ -146,6 +146,8 @@ default:
       - changed-files/
       # for: integrationtest
       - logs/
+      # for: appliance_test
+      - appliance-test.log
     expire_in: 1 week
     when: always
   # Dependency caching
@@ -493,7 +495,15 @@ appliance_test:
     # store here is the container's writable layer, which nothing else is
     # sharing and nothing survives, so it is collected to a smaller margin than
     # a workstation's.
-    - devenv shell -- appliance-test --platform evo-x2 --min-free 10 --max-free 20
+    #
+    # Kept as an artifact as well as printed. The driver logs every machine's
+    # console, which passes GitLab's 4 MB trace ceiling partway through the
+    # boot-and-test targets -- and what is dropped is the end, where the
+    # per-target verdicts and the summary are. `pipefail` so the pipeline's
+    # status is the test run's rather than tee's.
+    - |
+      set -o pipefail
+      devenv shell -- appliance-test --platform evo-x2 --min-free 10 --max-free 20 2>&1 | tee appliance-test.log
 
 aitools_test:
   stage: test
