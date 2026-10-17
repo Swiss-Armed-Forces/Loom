@@ -1365,7 +1365,20 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/git_delete_merged_branches.sh \
+        ./cicd/git_delete_merged_branches.py \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.git-cleanup-worktrees = {
+    description = "Remove worktrees whose merge request is finished";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        ./cicd/git_cleanup_worktrees.py \
           "''${@}"
       )
     '';

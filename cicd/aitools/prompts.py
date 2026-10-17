@@ -81,6 +81,11 @@ sections like "Added:", "Changed:", "Removed:", "Fixed:" with bullet points
 Under the Issue Reference section, repeat the issue reference carried by the current
 description ("Closes #123", "Related to #456"). Leave that section empty only when the
 current description carries no such reference.
+
+Reproduce the template's headings exactly, and emit no heading the template does not
+contain. Do not add sections of your own - no "Notes for review", "Testing",
+"Background", "Implementation notes", and no closing summary of the work. Do not copy
+the template's HTML comment lines into the output.
 """
 
     current_mr_hint = ""
@@ -93,8 +98,15 @@ current description carries no such reference.
 
     prompt = f"""Generate a git commit message and MR description for the following diff.
 
+The title and body you produce become the title and message of the squashed commit on
+the target branch, so write them as that commit message and nothing else.
+
 Format:
-- First line: conventional commit format (type(scope): description), max 72 characters
+- First line: conventional commit format (type(scope): description), max 72 characters,
+  lowercase after the colon, with the scope naming the area that changed - for example
+  "feat(api): serve chart metadata from the cluster on /v1/about" or
+  "fix(worker): retry on the exceptions services actually raise". A sentence-style title
+  such as "Add X and port Y to Python" is wrong however descriptive it reads.
 - Blank line
 {template_instruction}
 Rules:
