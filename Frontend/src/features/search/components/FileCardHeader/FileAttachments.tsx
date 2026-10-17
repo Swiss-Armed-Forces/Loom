@@ -112,7 +112,12 @@ export const FileAttachments = ({
                     label={summaryLabel}
                     size="small"
                     variant="outlined"
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setAnchorEl(e.currentTarget);
+                    }}
+                    // MUI stops the delete icon's click at the chip already,
+                    // so this one never reaches the card.
                     onDelete={(e) => setAnchorEl(e.currentTarget)}
                     deleteIcon={<ExpandMore />}
                     className={styles.attachmentChip}
@@ -126,9 +131,13 @@ export const FileAttachments = ({
                             label={attachment.name}
                             size="small"
                             variant="outlined"
-                            onClick={(e) =>
-                                handleOpenDirect(attachment.id, e.ctrlKey)
-                            }
+                            onClick={(e) => {
+                                // The chip sits inside the result card's own
+                                // click target: letting this through opens a
+                                // tab for the card's file as well.
+                                e.stopPropagation();
+                                handleOpenDirect(attachment.id, e.ctrlKey);
+                            }}
                             className={styles.attachmentChip}
                         />
                     ))}

@@ -42,9 +42,17 @@ export const AttachmentsPopover = ({
             {attachments.map((attachment) => (
                 <MenuItem
                     key={attachment.id}
-                    onClick={(e) => handleOpen(attachment.id, e.ctrlKey)}
+                    // MUI renders the menu through a portal, but React
+                    // synthetic events travel the React tree, not the DOM
+                    // tree - so without this the entry's click still reaches
+                    // the result card wrapping this popover.
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpen(attachment.id, e.ctrlKey);
+                    }}
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && e.ctrlKey) {
+                            e.stopPropagation();
                             handleOpen(attachment.id, true);
                         }
                     }}

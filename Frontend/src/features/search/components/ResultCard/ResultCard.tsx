@@ -28,6 +28,8 @@ import { FileDetailTab } from "@features/common/utils/enums";
 import { formatCompactNumber } from "@features/common/utils/helpers";
 import { FileCardHeader } from "@features/search/components";
 
+import { isInteractiveTarget } from "../interactiveTarget";
+
 import { FieldSections } from "./FieldSections";
 import styles from "./ResultCard.module.css";
 
@@ -112,10 +114,11 @@ export const ResultCard = React.memo(
                 | React.MouseEvent<HTMLDivElement>
                 | React.FocusEvent<HTMLDivElement>,
         ) => {
-            const target = e.target as HTMLElement;
-
-            // Ignore clicks from IconButtons
-            if (!target.closest(".MuiIconButton-root")) {
+            // Only the card body acts for the card. Anything interactive
+            // inside it - an action button, a breadcrumb link, an attachment
+            // chip, a popover entry - already performed its own action, and
+            // must not open a tab for this file on top of it.
+            if (!isInteractiveTarget(e.target)) {
                 if (
                     e.type === "click" &&
                     (e as React.MouseEvent<HTMLDivElement>).ctrlKey
@@ -143,8 +146,7 @@ export const ResultCard = React.memo(
         };
 
         const handleCardDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-            const target = e.target as HTMLElement;
-            if (!target.closest(".MuiIconButton-root")) {
+            if (!isInteractiveTarget(e.target)) {
                 handleOpenDetailsOnTabClick(FileDetailTab.Rendered, false);
             }
         };
