@@ -252,6 +252,12 @@ All values files are located in the [`./charts`](../charts) directory. They can 
 - **[`values-development.yaml`](../charts/values-development.yaml)** — Use this when actively
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
+- **[`values-debug-probes.yaml`](../charts/values-debug-probes.yaml)** — Development only, and
+  applied automatically by `up --development`; there is no reason to pass it by hand. It stops
+  Kubernetes restarting a pod that is parked on a breakpoint, by stretching the api's probe
+  timeouts and switching liveness off for the celery components. Deliberately kept out of
+  `values-development.yaml`, because `up --integrationtest` loads that file too and integration
+  tests have to run with production probe behaviour.
 
 ### Hostnames and the self-signed certificate
 
