@@ -745,6 +745,32 @@ before the work exists, or one the user asked you to leave alone.
 - Or dump all logs: `kubernetes-fetch-all-pod-logs`
 - RabbitMQ UI shows queue depths and message routing
 
+**Attaching a debugger.** `up --development` runs `skaffold dev` and forwards exactly the ports
+listed under `portForward` in the `dev` profile of `skaffold.yaml` — nothing is discovered
+automatically. Each one matches an attach configuration in `.vscode/launch.json`, so the two lists
+have to be changed together:
+
+| Component | Port | Listener declared in |
+| --------- | ---- | -------------------- |
+| api | 4401 | `backend/api/Dockerfile` (dev stage `CMD`) |
+| worker | 5500 | `charts/values-development.yaml` (`worker.command`) |
+| reaper | 5501 | `charts/values-development.yaml` (`reaper.command`) |
+| persister | 5502 | `charts/values-development.yaml` (`persister.command`) |
+| beat | 5503 | `charts/values-development.yaml` (`beat.command`) |
+| crawler | 6601 | `backend/crawler/Dockerfile` (dev stage `CMD`) |
+
+Two things to know when a debugger will not attach:
+
+- **`localPort` is a request, not a reservation.** If anything already holds 4401 — a leftover
+  `kubectl port-forward` from a previous run is the usual culprit — skaffold forwards on the next
+  free port instead and says so. Read its `Port forwarding ... -> 127.0.0.1:<port>` lines rather
+  than assuming the configured port.
+- **Only one pod per workload is forwarded.** Scale a component past one replica (`replicaCount`,
+  HPA or KEDA) and the other replicas have no forward at all.
+
+A pod paused on a breakpoint would normally be restarted by its probes;
+`charts/values-debug-probes.yaml` prevents that and is applied automatically by `--development`.
+
 ## Important Technical Details
 
 ### Python Package Dependencies

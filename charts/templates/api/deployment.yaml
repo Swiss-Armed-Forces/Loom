@@ -91,6 +91,7 @@ spec:
               port: {{ .Values.api.service.port }}
             initialDelaySeconds: {{ default 3 .Values.api.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 20 .Values.api.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 1 .Values.api.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ default 3 .Values.api.readinessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.api.livenessProbe.enabled }}
@@ -100,6 +101,7 @@ spec:
               port: {{ .Values.api.service.port }}
             initialDelaySeconds: {{ default 3 .Values.api.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ default 20 .Values.api.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ default 1 .Values.api.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ default 6 .Values.api.livenessProbe.failureThreshold }}
           {{- end }}
           {{- if .Values.api.resources }}

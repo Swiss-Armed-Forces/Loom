@@ -34,6 +34,7 @@ AMD_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-amd-gpu.yaml"
 DISABLE_AI_VALUES_FILE="${SCRIPT_DIR}/charts/values-disable-ai-services.yaml"
 SCALING_VALUES_FILE="${SCRIPT_DIR}/charts/values-scaling.yaml"
 HTTP_VALUES_FILE="${SCRIPT_DIR}/charts/values-http.yaml"
+DEBUG_PROBES_VALUES_FILE="${SCRIPT_DIR}/charts/values-debug-probes.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
@@ -433,7 +434,7 @@ set_skaffold_profile(){
 
 set_skaffold_command(){
     if [[ "${DEVELOPMENT}" = true ]]; then
-        SKAFFOLD_COMMAND="debug"
+        SKAFFOLD_COMMAND="dev"
     fi
 }
 
@@ -443,6 +444,11 @@ set_skaffold_args(){
             "--auto-build"
             "--auto-deploy"
             "--auto-sync"
+            # Forward the ports listed under `portForward` in the dev profile of skaffold.yaml,
+            # and nothing else. Without this, skaffold decides for itself which containers look
+            # debuggable, which forwards ports into Jobs that never listen on them and into
+            # third-party services nobody attaches to.
+            "--port-forward=user"
         )
     fi
     if [[ "${OFFLINE_MODE}" = true ]]; then
@@ -1604,6 +1610,9 @@ while [[ $# -gt 0 ]]; do
         ;;
         -d|--development)
             DEVELOPMENT=true
+            # Probe relaxation rides on this flag rather than on values-development.yaml, which
+            # --integrationtest also loads: integration tests must keep production probe behaviour.
+            UP_FLAG_VALUES+=("${DEBUG_PROBES_VALUES_FILE}")
             shift
         ;;
         -i|--integrationtest)

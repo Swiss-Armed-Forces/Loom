@@ -1,0 +1,45 @@
+# Debug Probes
+#
+# Keeps Kubernetes from killing a pod that is parked on a breakpoint. `up --development` adds this
+# file to the flag-driven values merged into `charts/values-up-flags.yaml`; nothing else loads it,
+# which is the point: `--integrationtest` shares the `dev` profile and therefore
+# `charts/values-development.yaml`, and integration tests have to keep production probe behaviour.
+#
+# Because up.sh copies this file into values-up-flags.yaml rather than handing it to skaffold,
+# it is not one of skaffold's watched `valuesFiles` - editing it mid-session redeploys nothing.
+#
+# Two mechanisms, because one probe style cannot use the other:
+#
+#   - The api probes are httpGet. A long `timeoutSeconds` leaves liveness and readiness working
+#     for a process that is genuinely dead, while a paused one simply keeps the probe waiting.
+#     Readiness matters as much as liveness here: at the stock 1s timeout, pausing for a minute
+#     drops the api out of its Service endpoints and `api.loom` starts answering 503.
+#   - The celery components probe by `exec`. Their ping timeout is derived from the same
+#     `timeoutSeconds`, so raising it only buys a slower death, and beat's liveness asks whether
+#     the heartbeat file was touched recently - a paused beat stops touching it no matter how
+#     long the probe is allowed to wait. Turning liveness off is the only thing that helps.
+#
+# Each component is listed on its own: `reaper` inherits `worker` through a YAML merge key in
+# charts/values.yaml, and that merge is resolved while values.yaml is parsed, so overriding
+# `worker` here would never reach `reaper`.
+api:
+  readinessProbe:
+    timeoutSeconds: 600
+  livenessProbe:
+    timeoutSeconds: 600
+
+worker:
+  livenessProbe:
+    enabled: false
+
+reaper:
+  livenessProbe:
+    enabled: false
+
+persister:
+  livenessProbe:
+    enabled: false
+
+beat:
+  livenessProbe:
+    enabled: false

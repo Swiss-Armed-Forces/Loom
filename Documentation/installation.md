@@ -291,6 +291,12 @@ Under `up -d` and `up --integrationtest` there is a sixth: skaffold's dev profil
 - **[`values-development.yaml`](../charts/values-development.yaml)** — Use this when actively
   developing Loom locally. It trades model quality for fast iteration: lightweight models, hot
   reload, and all internal services exposed via ingress. Not suitable for production.
+- **[`values-debug-probes.yaml`](../charts/values-debug-probes.yaml)** — Development only, and
+  applied automatically by `up --development`; there is no reason to pass it by hand. It stops
+  Kubernetes restarting a pod that is parked on a breakpoint, by stretching the api's probe
+  timeouts and switching liveness off for the celery components. Deliberately kept out of
+  `values-development.yaml`, because `up --integrationtest` loads that file too and integration
+  tests have to run with production probe behaviour.
 - **[`values-http.yaml`](../charts/values-http.yaml)** — Use this when the deployment's network is
   already trusted and a self-signed certificate is more trouble than it is worth. Every ingress is
   served on Traefik's `web` entrypoint as well as `websecure`, and the global http-to-https
