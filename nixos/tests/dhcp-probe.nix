@@ -166,7 +166,8 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
           # ever fire on a *busy* link. `dhcp.py` wraps this in
           # `appliance.succeed`, so the failure it exists for surfaced as a
           # Python traceback.
-          sniffer.settimeout(max(0.1, min(next_send, deadline) - time.monotonic()))
+          remaining = min(next_send, deadline) - time.monotonic()
+          sniffer.settimeout(max(0.1, remaining))
           try:
               frame = sniffer.recv(2048)
           except TimeoutError:
