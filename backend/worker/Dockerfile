@@ -61,6 +61,15 @@ ARG TRUFFLEHOG_VERSION="v3.90.6"
 ARG BINUTILS_VERSION="2.40-*"
 ARG SEAWEEDFS_VERSION="4.17"
 
+# Checksums for verifying downloaded binaries
+# These are verified at build time to prevent supply chain attacks
+ARG TRUFFLEHOG_AMD64_SHA256="edbca2465f76a7a4aa2f87ed02559975e366b7e9142a5dee035f65fd51a970ae"
+ARG TRUFFLEHOG_ARM64_SHA256="badf4d2ad147a91c99adcde5c40e69fc3808496d72aa9b1f8265824862488277"
+# ripsecrets: only amd64 available (upstream publishes no linux/arm64 binary)
+ARG RIPSECRETS_AMD64_SHA256="9daf017dfdea242a58f672450a2526f0406211afe9e872c740adc49b42feccf5"  # nosec ripsecrets
+ARG SEAWEEDFS_AMD64_SHA256="b7f68af1d4d90c14130c5d0d719a14d78194ac7deb9983f485fffe6a3c5d56ce"
+ARG SEAWEEDFS_ARM64_SHA256="186a1ec831bed8cd37349425ae176eda9ff1b628463a0a3fbb846c5fa61fbff7"
+
 SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
 # Target architecture of this build ("amd64", "arm64"). BuildKit populates the
@@ -79,43 +88,24 @@ RUN set -exu \
     tshark=${TSHARK_VERSION} \
     curl=${CURL_VERSION} \
     binutils=${BINUTILS_VERSION} \
-    && TRUFFLEHOG_ARCH="" \
-    && if [ "${TARGETARCH}" = "amd64" ]; then TRUFFLEHOG_ARCH="linux_amd64"; fi \
-    && if [ "${TARGETARCH}" = "arm64" ]; then TRUFFLEHOG_ARCH="linux_arm64"; fi \
-    && if [ -z "${TRUFFLEHOG_ARCH}" ]; then echo "Unsupported architecture: ${TARGETARCH}" && exit 1; fi \
-    && curl -sSfL "https://github.com/trufflesecurity/trufflehog/releases/download/${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION#v}_${TRUFFLEHOG_ARCH}.tar.gz" \
-        -o /tmp/trufflehog.tar.gz \
-    && tar -xzf /tmp/trufflehog.tar.gz -C /usr/local/bin trufflehog \
-    && mv /usr/local/bin/trufflehog /usr/local/bin/.trufflehog-wrapped \
-    && printf '#!/bin/sh\nexec /usr/local/bin/.trufflehog-wrapped --no-update "$@"\n' > /usr/local/bin/trufflehog \
-    && chmod +x /usr/local/bin/trufflehog \
-    && rm /tmp/trufflehog.tar.gz \
-    && trufflehog --version \
-    && RIPSECRETS_INSTALLED="" \
-    && if [ "${TARGETARCH}" = "amd64" ]; then \
-        curl -LO "https://github.com/sirwart/ripsecrets/releases/download/v${RIPSECRETS_VERSION}/ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-        && tar -xzf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-        && mv "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu/ripsecrets" /usr/local/bin/ripsecrets \
-        && rm "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
-        && rm -rf "ripsecrets-${RIPSECRETS_VERSION}-x86_64-unknown-linux-gnu" \
-        && echo "ripsecrets installed for amd64" \
-        && RIPSECRETS_INSTALLED="yes"; \
-    fi \
-    && if [ -z "${RIPSECRETS_INSTALLED}" ]; then \
-        echo "WARNING: ripsecrets is not installed on ${TARGETARCH}: upstream publishes" \
-        "no linux ${TARGETARCH} release artifact. ripsecrets_scan_task detects the" \
-        "missing binary at runtime and reports 'not scanned' for every file."; \
-    fi \
-    && SW_ARCH="" \
-    && if [ "${TARGETARCH}" = "amd64" ]; then SW_ARCH="linux_amd64"; fi \
-    && if [ "${TARGETARCH}" = "arm64" ]; then SW_ARCH="linux_arm64"; fi \
-    && if [ -z "${SW_ARCH}" ]; then echo "Unsupported architecture: ${TARGETARCH}" && exit 1; fi \
-    && curl -LO "https://github.com/seaweedfs/seaweedfs/releases/download/${SEAWEEDFS_VERSION}/${SW_ARCH}.tar.gz" \
-    && tar -xzf "${SW_ARCH}.tar.gz" \
-    && mv weed /usr/local/bin/weed \
-    && chmod +x /usr/local/bin/weed \
-    && rm "${SW_ARCH}.tar.gz" \
     && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+
+# install binaries downloaded from GitHub releases. Versions and checksums stay
+# here so the pinned values sit next to the package versions above; the script
+# does the downloading, verifying and unpacking.
+COPY worker/docker/install-third-party-binaries.sh /tmp/install-third-party-binaries.sh
+RUN set -exu \
+    && /tmp/install-third-party-binaries.sh \
+        --target-arch "${TARGETARCH}" \
+        --trufflehog-version "${TRUFFLEHOG_VERSION}" \
+        --trufflehog-amd64-sha256 "${TRUFFLEHOG_AMD64_SHA256}" \
+        --trufflehog-arm64-sha256 "${TRUFFLEHOG_ARM64_SHA256}" \
+        --ripsecrets-version "${RIPSECRETS_VERSION}" \
+        --ripsecrets-amd64-sha256 "${RIPSECRETS_AMD64_SHA256}" \
+        --seaweedfs-version "${SEAWEEDFS_VERSION}" \
+        --seaweedfs-amd64-sha256 "${SEAWEEDFS_AMD64_SHA256}" \
+        --seaweedfs-arm64-sha256 "${SEAWEEDFS_ARM64_SHA256}" \
+    && rm /tmp/install-third-party-binaries.sh
 
 
 # Set timezone and permit Celery uid 0 to hide deserialisation warnings
@@ -125,7 +115,7 @@ RUN set -exu \
     && echo $TZ > /etc/timezone
 
 WORKDIR /usr/share/misc/magic
-COPY ./worker/magic/email.magic /usr/share/misc/magic/email.magic
+COPY ./worker/docker/email.magic /usr/share/misc/magic/email.magic
 RUN set -exu \
     && file -C -m /usr/share/misc/magic/email.magic
 
