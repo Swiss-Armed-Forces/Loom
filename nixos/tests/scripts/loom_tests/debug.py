@@ -110,7 +110,12 @@ def _ssh(
         # driver's 900-second timeout rather than ending the login. Sending a
         # line the remote shell can act on is the only thing that closes it.
         return f"echo exit | {prefix}"
-    return f"{prefix} {shlex.quote(command)}"
+    # `</dev/null` for the same reason, from the other side: nothing here reads
+    # stdin, and the stdin a command inherits from the driver is the machine's
+    # backdoor -- a real tty, which `-t` then puts into raw mode and reads from.
+    # What it swallows is the `echo ${PIPESTATUS[0]}` the driver sends next, and
+    # a driver that never sees its status line waits out the whole timeout.
+    return f"{prefix} {shlex.quote(command)} </dev/null"
 
 
 def _sshd_is_running(appliance: "Machine", subtest: "Subtest") -> None:
