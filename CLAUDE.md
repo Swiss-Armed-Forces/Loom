@@ -576,6 +576,24 @@ headings and their emoji verbatim — they are what makes issues scannable.
 paragraph followed by `Added:` / `Changed:` / `Removed:` / `Fixed:` bullet lists; `## 🔗 Issue
 Reference` gets `Closes #<issue-number>`.
 
+**The MR title and description are not commentary about the change — they become the title and
+message of the squashed commit on `main`.** Write both as the commit message you want in the
+history, and nothing else.
+
+That has two consequences, and both are gotten wrong by default:
+
+- **The title is a conventional commit subject**, `type(scope): description`, max 72 characters,
+  lowercase after the colon, describing *what* changed — exactly the rule in `### Git Commit
+  Format` below, because it ends up being that commit's subject. Use the same types the history
+  uses: `feat`, `fix`, `refactor`, `docs`, `chore`, with the scope naming the area
+  (`feat(api): serve chart metadata from the cluster on /v1/about`,
+  `fix(worker): retry on the exceptions services actually raise`). A sentence-style title like
+  "Add X and port Y to Python" is wrong, however descriptive it reads.
+- **The description contains the template's headings and nothing else.** Do not add sections of
+  your own — no "Notes for review", "Testing", "Background", "Implementation notes", no trailing
+  summary of what you did. Anything extra becomes permanent commit message on `main`. Review
+  commentary belongs in an MR *comment*, which is not part of the commit.
+
 The `%{...}` placeholder under the Summary heading is a GitLab expansion variable that only fires
 when an MR is created through the **web UI**. Sent through the REST API it stays in the
 description verbatim, so replace it with the real summary text whenever you write a description
@@ -673,8 +691,11 @@ Per `CONTRIBUTING.md`:
 - Use GitLab's "Create Merge Request" button from the issue (auto-links and names branch)
 - Open MR early as **Draft**, with the description following
   `.gitlab/merge_request_templates/Default.md`
-- MR title becomes release note entry - make it descriptive
-- Squash merging used - individual commit messages don't matter
+- MR title is a conventional commit subject (`type(scope): description`, max 72 chars) and
+  becomes the release note entry — see `### Issue and Merge Request Templates` above
+- Squash merging used - individual commit messages don't matter, but the **MR title and
+  description do**: they become the squashed commit on `main`. Keep the description to the
+  template's headings and add no sections of your own
 - Use `Closes #issue-number` under the MR description's `## 🔗 Issue Reference` heading
 - Remove Draft status when the work is done, and start a pipeline yourself (see below)
 
