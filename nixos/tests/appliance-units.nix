@@ -469,8 +469,15 @@ let
       (check "portal: rotating the password repaints the login screen" (
         lib.hasInfix "loom-banner-refresh" password.script
       ))
-      (check "portal: the password lands in its own issue fragment" (
-        lib.hasInfix "/run/issue.d/62-loom-portal.issue" password.script
+      # The screen reads the password out of a file when it is painted, so the
+      # two halves of that are the rotation writing the file and the banner
+      # being told which file to read. Lose either and the box rotates a
+      # password nobody is ever shown.
+      (check "portal: the rotation writes the file the screen reads" (
+        lib.hasInfix portal.passwordFile password.script
+      ))
+      (check "portal: the login screen is told where the password is" (
+        lib.hasInfix "--portal-password ${portal.passwordFile}" cfg.loom.banner.info.text
       ))
 
       # ---- gating, in both directions ----

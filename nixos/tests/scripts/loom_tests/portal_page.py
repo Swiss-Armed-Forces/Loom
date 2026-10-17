@@ -26,8 +26,13 @@ gets for the first hours of a box's life.
 
 from typing import TYPE_CHECKING, NamedTuple
 
+from loom_tests.driver import execute
+
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, StartAll, Subtest
+
+# What box.nix renders the banner into, and what agetty paints from.
+ISSUE = "/run/issue.d/50-loom.issue"
 
 # One real probe path per vendor. Restated rather than read off the configuration, for
 # the reason loom_tests/appliance/portal.py gives: a test that took the list from the
@@ -180,11 +185,18 @@ def _the_password_is_on_the_login_screen(
         assert password.count(".") == 3, password
         assert "y" not in password and "z" not in password, password
 
-        fragment = appliance.succeed("cat /run/issue.d/62-loom-portal.issue")
-        assert password in fragment, fragment
+        # The banner reads the file above at print time, so the password reaches the
+        # screen through a repaint rather than through a fragment of its own. The
+        # rotation ends in `loom-banner-refresh` for that reason, and it is run again
+        # here because the issue on disk was written when the box had no password yet:
+        # it rewrites the file even when it returns 1, which is what it does whenever
+        # an operator is logged in.
+        execute(appliance, "loom-banner-refresh")
+        issue = appliance.succeed(f"cat {ISSUE}")
+        assert password in issue, issue
         # agetty reads a backslash in an issue file as the start of an escape of its own
         # and eats it, taking whatever follows with it.
-        assert "\\" not in fragment, fragment
+        assert "\\" not in issue, issue
 
         # And the file the page reads is not world-readable: it is the credential.
         mode = appliance.succeed("stat --format=%a /run/loom-portal/password").strip()
