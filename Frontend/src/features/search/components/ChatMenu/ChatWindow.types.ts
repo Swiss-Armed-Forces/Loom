@@ -28,15 +28,24 @@ export interface ChatMessage {
     activity?: ActivityRecord[];
 }
 
+export interface PendingQuestionPrompt {
+    question: string;
+    options: string[];
+}
+
 export interface ChatWindowProps {
     messages: ChatMessage[];
     isLoading: boolean;
     query: string | null;
     onSuggestedQuestion: (q: string) => void;
     isInterrupted: boolean;
-    pendingQuestion?: { question: string; options: string[] } | null;
+    pendingQuestion?: PendingQuestionPrompt | null;
     onQuestionAnswer?: (answer: string) => void;
     scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+    turnActivity: ActivityRecord[];
+    isTurnActive: boolean;
+    reasoningText: string;
+    reasoningPhase: "idle" | "thinking" | "done";
 }
 
 export const ALL_SUGGESTED_QUESTIONS = [

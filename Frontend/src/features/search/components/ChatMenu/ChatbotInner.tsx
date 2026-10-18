@@ -3,7 +3,6 @@ import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ChatWindow } from "./ChatWindow";
-import type { ChatMessage } from "./ChatWindow.types";
 import { MessageInput } from "./MessageInput";
 import { useChatbotAgent } from "./useChatbotAgent";
 
@@ -21,13 +20,13 @@ export const ChatbotInner = ({
         chatMessages,
         isLoading,
         isInterrupted,
-        inFlightToolCalls,
         reasoningPhase,
         reasoningText,
         pendingQuestion,
         pendingModeRequest,
         activeMode,
         turnActivity,
+        isTurnActive,
         handleSendMessage,
         handleQuestionAnswer,
         handleModeAnswer,
@@ -35,39 +34,15 @@ export const ChatbotInner = ({
         abortRun,
     } = useChatbotAgent(contextId, onRunComplete);
 
-    const messagesWithActivity = useMemo<ChatMessage[]>(
-        () => [
-            ...chatMessages,
-            ...((Object.keys(inFlightToolCalls).length > 0 ||
-            reasoningPhase !== "idle"
-                ? [
-                      {
-                          id: "__inflight__",
-                          text: "",
-                          isUser: false as const,
-                          citations: [],
-                          activity: [
-                              ...turnActivity,
-                              ...(reasoningPhase === "thinking"
-                                  ? [
-                                        {
-                                            type: "reasoning" as const,
-                                            text: reasoningText,
-                                        },
-                                    ]
-                                  : []),
-                          ],
-                      },
-                  ]
-                : []) satisfies ChatMessage[]),
-        ],
-        [
-            chatMessages,
-            inFlightToolCalls,
-            reasoningPhase,
-            reasoningText,
-            turnActivity,
-        ],
+    const questionPrompt = useMemo(
+        () =>
+            pendingQuestion
+                ? {
+                      question: pendingQuestion.question,
+                      options: pendingQuestion.options,
+                  }
+                : null,
+        [pendingQuestion],
     );
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -80,21 +55,18 @@ export const ChatbotInner = ({
                 data-tour="chat-messages"
             >
                 <ChatWindow
-                    messages={messagesWithActivity}
+                    messages={chatMessages}
                     isLoading={isLoading}
                     query={null}
                     onSuggestedQuestion={handleSendMessage}
                     isInterrupted={isInterrupted}
                     scrollContainerRef={scrollContainerRef}
-                    pendingQuestion={
-                        pendingQuestion
-                            ? {
-                                  question: pendingQuestion.question,
-                                  options: pendingQuestion.options,
-                              }
-                            : null
-                    }
+                    pendingQuestion={questionPrompt}
                     onQuestionAnswer={handleQuestionAnswer}
+                    turnActivity={turnActivity}
+                    isTurnActive={isTurnActive}
+                    reasoningText={reasoningText}
+                    reasoningPhase={reasoningPhase}
                 />
             </Box>
             {pendingModeRequest && (

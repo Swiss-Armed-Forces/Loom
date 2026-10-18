@@ -11,6 +11,8 @@ import {
     createErrorMessage,
     getToolLabel,
     mapToChatMessages,
+    replaceToolCall,
+    replaceToolCallInActivityMap,
 } from "./chatbotUtils";
 import type {
     ActivityRecord,
@@ -24,7 +26,6 @@ export interface UseChatbotAgentResult {
     chatMessages: ChatMessage[];
     isLoading: boolean;
     isInterrupted: boolean;
-    inFlightToolCalls: Record<string, ToolCallRecord>;
     reasoningPhase: "idle" | "thinking" | "done";
     reasoningText: string;
     pendingQuestion: {
@@ -39,6 +40,7 @@ export interface UseChatbotAgentResult {
     } | null;
     activeMode: string;
     turnActivity: ActivityRecord[];
+    isTurnActive: boolean;
     handleSendMessage: (text: string) => Promise<void>;
     handleQuestionAnswer: (answer: string) => void;
     handleModeAnswer: (allow: boolean) => Promise<void>;
@@ -46,6 +48,8 @@ export interface UseChatbotAgentResult {
     abortRun: () => void;
     contextId: string;
 }
+
+const NO_ACTIVITY: ActivityRecord[] = [];
 
 export const useChatbotAgent = (
     contextId: string,
@@ -57,9 +61,6 @@ export const useChatbotAgent = (
 
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [inFlightToolCalls, setInFlightToolCalls] = useState<
-        Record<string, ToolCallRecord>
-    >({});
     const [reasoningText, setReasoningText] = useState("");
     const [reasoningPhase, setReasoningPhase] = useState<
         "idle" | "thinking" | "done"
@@ -79,12 +80,25 @@ export const useChatbotAgent = (
         reason: string;
     } | null>(null);
     const agentRef = useRef<HttpAgent | null>(null);
-    const citationsRef = useRef<Record<string, ChatCitation[]>>({});
-    const runToolCallsRef = useRef<Record<string, ToolCallRecord>>({});
     const streamingMsgIdRef = useRef<string | null>(null);
-    const activityRef = useRef<Record<string, ActivityRecord[]>>({});
-    const turnActivityRef = useRef<ActivityRecord[]>([]);
     const finalMsgIdsRef = useRef<Set<string>>(new Set());
+
+    // Citations and per-message activity are the inputs mapToChatMessages
+    // compares by reference, so they are always replaced, never mutated. They
+    // are held in refs because the agent's event handlers read them
+    // synchronously; `refreshChatMessages` pushes the result into state.
+    const citationsRef = useRef<Record<string, ChatCitation[]>>({});
+    const activityRef = useRef<Record<string, ActivityRecord[]>>({});
+
+    // The activity of the turn currently running, shown live above the answer.
+    const [turnActivity, setTurnActivityState] =
+        useState<ActivityRecord[]>(NO_ACTIVITY);
+    const turnActivityRef = useRef<ActivityRecord[]>(NO_ACTIVITY);
+    const [isTurnActive, setIsTurnActive] = useState(false);
+
+    // Working buffer for tool calls whose arguments are still streaming. Only
+    // snapshots of these ever reach the rendered activity lists.
+    const runToolCallsRef = useRef<Record<string, ToolCallRecord>>({});
 
     const frontendToolsRef = useRef(
         createFrontendTools(() => store.getState(), store.dispatch),
@@ -104,9 +118,61 @@ export const useChatbotAgent = (
 
     const getToolDefs = () => frontendToolDefsRef.current;
 
+    const setTurnActivity = useCallback((next: ActivityRecord[]) => {
+        turnActivityRef.current = next;
+        setTurnActivityState(next);
+    }, []);
+
+    /**
+     * Re-derives the rendered list from the agent's messages. Passing the
+     * previous list lets `mapToChatMessages` hand back the objects that did
+     * not change, so only the affected bubbles re-render.
+     */
+    const refreshChatMessages = useCallback(() => {
+        const agent = agentRef.current;
+        if (!agent) return;
+        setChatMessages((prev) =>
+            mapToChatMessages(
+                agent.messages,
+                citationsRef.current,
+                activityRef.current,
+                finalMsgIdsRef.current,
+                prev,
+            ),
+        );
+    }, []);
+
+    /**
+     * Records a change to a tool call and republishes it everywhere it is
+     * rendered — the live turn, and the message it was committed to once the
+     * answer started streaming.
+     */
+    const updateToolCall = useCallback(
+        (toolCallId: string, patch: Partial<ToolCallRecord>) => {
+            const record = runToolCallsRef.current[toolCallId];
+            if (!record) return;
+            Object.assign(record, patch);
+            const snapshot: ToolCallRecord = { ...record };
+
+            const nextTurn = replaceToolCall(turnActivityRef.current, snapshot);
+            if (nextTurn !== turnActivityRef.current) setTurnActivity(nextTurn);
+
+            const nextActivity = replaceToolCallInActivityMap(
+                activityRef.current,
+                snapshot,
+            );
+            if (nextActivity !== activityRef.current) {
+                activityRef.current = nextActivity;
+                refreshChatMessages();
+            }
+        },
+        [refreshChatMessages, setTurnActivity],
+    );
+
     const appendError = useCallback((text: string) => {
         setChatMessages((prev) => [...prev, createErrorMessage(text)]);
         setIsLoading(false);
+        setIsTurnActive(false);
     }, []);
 
     useEffect(() => {
@@ -124,6 +190,7 @@ export const useChatbotAgent = (
                 }
                 if (!questions || questions.length === 0) return;
 
+                const restored: Parameters<HttpAgent["addMessage"]>[0][] = [];
                 for (const q of questions) {
                     const assistantMsgId = crypto.randomUUID();
                     finalMsgIdsRef.current.add(assistantMsgId);
@@ -165,72 +232,58 @@ export const useChatbotAgent = (
                         citationsRef.current[assistantMsgId] = citations;
                     }
 
-                    agent.addMessage({
+                    restored.push({
                         role: "user",
                         id: crypto.randomUUID(),
                         content: q.question,
                     });
-                    agent.addMessage({
+                    restored.push({
                         role: "assistant",
                         id: assistantMsgId,
                         content: q.answer,
                     });
                 }
-                setChatMessages(
-                    mapToChatMessages(
-                        agent.messages,
-                        citationsRef.current,
-                        activityRef.current,
-                        finalMsgIdsRef.current,
-                    ),
-                );
+                // One notification for the whole history: addMessage schedules
+                // its own async onMessagesChanged, so adding them one by one
+                // would re-render the growing list once per restored message.
+                // Anything sent before the history arrived keeps its place
+                // after it.
+                agent.setMessages([...restored, ...agent.messages]);
             },
         );
 
         const subscriber: AgentSubscriber = {
             onRunInitialized: () => {
                 setIsLoading(true);
+                setIsTurnActive(true);
                 runToolCallsRef.current = {};
                 streamingMsgIdRef.current = null;
             },
             onToolCallStartEvent: ({ event }) => {
-                const label = getToolLabel(t, event.toolCallName);
                 const record: ToolCallRecord = {
                     id: event.toolCallId,
                     name: event.toolCallName,
-                    label,
+                    label: getToolLabel(t, event.toolCallName),
                     args: "",
                     result: "",
                     status: "running",
                 };
                 runToolCallsRef.current[event.toolCallId] = record;
-                turnActivityRef.current.push({
-                    type: "tool_call",
-                    toolCall: record,
-                });
-                setInFlightToolCalls((prev) => ({
-                    ...prev,
-                    [event.toolCallId]: record,
-                }));
+                setTurnActivity([
+                    ...turnActivityRef.current,
+                    { type: "tool_call", toolCall: { ...record } },
+                ]);
             },
             onToolCallArgsEvent: ({ event }) => {
+                // Arguments are not rendered while they stream, so this stays
+                // on the working buffer and triggers no render.
                 const record = runToolCallsRef.current[event.toolCallId];
                 if (record) record.args += event.delta;
             },
             onToolCallResultEvent: ({ event }) => {
-                const record = runToolCallsRef.current[event.toolCallId];
-                if (record) record.result = event.content;
-                setInFlightToolCalls((prev) => {
-                    const existing = prev[event.toolCallId];
-                    if (!existing) return prev;
-                    return {
-                        ...prev,
-                        [event.toolCallId]: {
-                            ...existing,
-                            result: event.content,
-                            status: "done",
-                        },
-                    };
+                updateToolCall(event.toolCallId, {
+                    result: event.content,
+                    status: "done",
                 });
             },
             onToolCallEndEvent: ({ event, toolCallName, toolCallArgs }) => {
@@ -241,16 +294,7 @@ export const useChatbotAgent = (
                         args: toolCallArgs,
                     });
                 }
-                const record = runToolCallsRef.current[event.toolCallId];
-                if (record) record.status = "done";
-                setInFlightToolCalls((prev) => {
-                    const existing = prev[event.toolCallId];
-                    if (!existing) return prev;
-                    return {
-                        ...prev,
-                        [event.toolCallId]: { ...existing, status: "done" },
-                    };
-                });
+                updateToolCall(event.toolCallId, { status: "done" });
             },
             onReasoningStartEvent: () => {
                 reasoningTextRef.current = "";
@@ -263,10 +307,10 @@ export const useChatbotAgent = (
             },
             onReasoningEndEvent: () => {
                 if (reasoningTextRef.current) {
-                    turnActivityRef.current.push({
-                        type: "reasoning",
-                        text: reasoningTextRef.current,
-                    });
+                    setTurnActivity([
+                        ...turnActivityRef.current,
+                        { type: "reasoning", text: reasoningTextRef.current },
+                    ]);
                 }
                 setReasoningPhase("done");
             },
@@ -275,25 +319,21 @@ export const useChatbotAgent = (
             },
             onRunErrorEvent: ({ event }) => {
                 errorHandledRef.current = true;
-                setInFlightToolCalls({});
                 appendError(event.message ?? "Agent error");
             },
             onTextMessageStartEvent: ({ event }) => {
                 streamingMsgIdRef.current = event.messageId;
                 finalMsgIdsRef.current.add(event.messageId);
                 setReasoningPhase("idle");
+                // Hand the turn's activity over to the message it belongs to.
+                // Tools still running keep updating in place from there.
                 if (turnActivityRef.current.length > 0) {
-                    activityRef.current[event.messageId] = [
-                        ...turnActivityRef.current,
-                    ];
+                    activityRef.current = {
+                        ...activityRef.current,
+                        [event.messageId]: turnActivityRef.current,
+                    };
+                    setTurnActivity(NO_ACTIVITY);
                 }
-                setInFlightToolCalls((prev) => {
-                    const running: Record<string, ToolCallRecord> = {};
-                    for (const [id, chip] of Object.entries(prev)) {
-                        if (chip.status === "running") running[id] = chip;
-                    }
-                    return running;
-                });
             },
             onCustomEvent: ({ event }) => {
                 if (event.name !== "citation" || !streamingMsgIdRef.current) {
@@ -309,33 +349,21 @@ export const useChatbotAgent = (
                     ...citationsRef.current,
                     [msgId]: [...(citationsRef.current[msgId] ?? []), citation],
                 };
+                refreshChatMessages();
             },
-            onMessagesChanged: ({ messages }) => {
-                setChatMessages(
-                    mapToChatMessages(
-                        messages,
-                        citationsRef.current,
-                        activityRef.current,
-                        finalMsgIdsRef.current,
-                    ),
-                );
+            onMessagesChanged: () => {
+                refreshChatMessages();
             },
-            onRunFinalized: ({ messages }) => {
-                if (!errorHandledRef.current) {
-                    setChatMessages(
-                        mapToChatMessages(
-                            messages,
-                            citationsRef.current,
-                            activityRef.current,
-                            finalMsgIdsRef.current,
-                        ),
-                    );
-                }
+            onRunFinalized: () => {
+                if (!errorHandledRef.current) refreshChatMessages();
                 errorHandledRef.current = false;
+                // Without this the live turn keeps spinning after a run that
+                // ended without an answer — an error, an interrupt, ask_user
+                // or request_mode.
+                setReasoningPhase("idle");
             },
             onRunFailed: () => {
                 errorHandledRef.current = true;
-                setInFlightToolCalls({});
                 appendError("Cannot get a response");
             },
         };
@@ -347,7 +375,14 @@ export const useChatbotAgent = (
             unsubscribe();
             agent.abortRun();
         };
-    }, [contextId, t, appendError]);
+    }, [
+        contextId,
+        t,
+        appendError,
+        refreshChatMessages,
+        setTurnActivity,
+        updateToolCall,
+    ]);
 
     const runAgentLoop = async (agent: HttpAgent) => {
         try {
@@ -374,22 +409,9 @@ export const useChatbotAgent = (
                     if (!tool || tool.interactive === true) continue;
                     const result = await tool.handler(item.args);
 
-                    const record = runToolCallsRef.current[item.toolCallId];
-                    if (record) {
-                        record.result = result;
-                        record.status = "done";
-                    }
-                    setInFlightToolCalls((prev) => {
-                        const existing = prev[item.toolCallId];
-                        if (!existing) return prev;
-                        return {
-                            ...prev,
-                            [item.toolCallId]: {
-                                ...existing,
-                                result,
-                                status: "done",
-                            },
-                        };
+                    updateToolCall(item.toolCallId, {
+                        result,
+                        status: "done",
                     });
 
                     agent.addMessage({
@@ -439,7 +461,7 @@ export const useChatbotAgent = (
         }
 
         setIsLoading(false);
-        setInFlightToolCalls({});
+        setIsTurnActive(false);
         onRunCompleteRef.current();
     };
 
@@ -447,12 +469,11 @@ export const useChatbotAgent = (
         const agent = agentRef.current;
         if (!agent) return;
 
-        setInFlightToolCalls({});
         reasoningTextRef.current = "";
         setReasoningText("");
         setReasoningPhase("idle");
         setIsInterrupted(false);
-        turnActivityRef.current = [];
+        setTurnActivity(NO_ACTIVITY);
         streamingMsgIdRef.current = null;
         errorHandledRef.current = false;
 
@@ -461,14 +482,7 @@ export const useChatbotAgent = (
             id: crypto.randomUUID(),
             content: text,
         });
-        setChatMessages(
-            mapToChatMessages(
-                agent.messages,
-                citationsRef.current,
-                activityRef.current,
-                finalMsgIdsRef.current,
-            ),
-        );
+        refreshChatMessages();
 
         await runAgentLoop(agent);
     };
@@ -478,19 +492,7 @@ export const useChatbotAgent = (
         if (!agent || !pendingQuestion) return;
         const { toolCallId, question } = pendingQuestion;
 
-        setInFlightToolCalls((prev) => {
-            const existing = prev[toolCallId];
-            if (!existing) return prev;
-            return {
-                ...prev,
-                [toolCallId]: { ...existing, result: answer, status: "done" },
-            };
-        });
-        const record = runToolCallsRef.current[toolCallId];
-        if (record) {
-            record.result = answer;
-            record.status = "done";
-        }
+        updateToolCall(toolCallId, { result: answer, status: "done" });
 
         // Tool result must immediately follow the assistant tool_call message.
         agent.addMessage({
@@ -522,7 +524,7 @@ export const useChatbotAgent = (
             // Let the user type a free-form answer as their next message.
             setIsLoading(false);
             setReasoningPhase("idle");
-            setInFlightToolCalls({});
+            setIsTurnActive(false);
         } else {
             setIsLoading(true);
             await runAgentLoop(agent);
@@ -579,13 +581,13 @@ export const useChatbotAgent = (
         chatMessages,
         isLoading,
         isInterrupted,
-        inFlightToolCalls,
         reasoningPhase,
         reasoningText,
         pendingQuestion,
         pendingModeRequest,
         activeMode,
-        turnActivity: turnActivityRef.current,
+        turnActivity,
+        isTurnActive,
         handleSendMessage,
         handleQuestionAnswer,
         handleModeAnswer,

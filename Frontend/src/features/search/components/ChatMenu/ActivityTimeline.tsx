@@ -23,11 +23,13 @@ const ActivityTimelineContent = ({
     isActive: boolean;
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    // Keyed on the entry count, not the array: reading scrollHeight forces a
+    // reflow, and the array is replaced on every reasoning delta.
     useEffect(() => {
         if (isActive && containerRef.current) {
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
-    }, [activity, isActive]);
+    }, [activity.length, isActive]);
     return (
         <Box
             ref={containerRef}
@@ -124,7 +126,10 @@ export const ActivityTimeline = ({
                     <ExpandMore sx={{ fontSize: 14 }} />
                 )}
             </Box>
-            <Collapse in={expanded}>
+            {/* unmountOnExit: a collapsed timeline still renders its full
+                contents otherwise, so every tool chip of every past message
+                re-renders on every streamed token. */}
+            <Collapse in={expanded} unmountOnExit>
                 <ActivityTimelineContent
                     activity={activity}
                     isActive={isActive}
