@@ -1,0 +1,166 @@
+# What can change each image's package inventory, and therefore its section of
+# THIRD-PARTY.md.
+#
+# Every image is keyed on its Dockerfile and on the build arguments, target and
+# platforms its Skaffold configuration declares. That already covers most of
+# them: every FROM in this repository pins its base image by digest through an
+# ARG in the Dockerfile itself, and the apt, apk, plugin and model versions are
+# pinned there too. Only the images whose dependencies live outside their
+# Dockerfile need anything here.
+#
+# files:      repo-relative paths or globs whose content can change which
+#             packages the image ships. A literal path that does not exist is an
+#             error, because a renamed file that silently leaves the key is how
+#             an image stops being rescanned when its dependencies change.
+# not_keyed:  COPY and ADD sources deliberately left out of the key, written as
+#             the Dockerfile writes them. Application source, configuration,
+#             static assets, or a directory whose relevant contents are listed
+#             in `files` instead.
+#
+# Every image and every COPY source has to appear, which is what the tests in
+# cicd/tests/test_third_party_inputs.py assert. When in doubt, key the file:
+# over-keying costs one rescan that produces no diff, under-keying ships a
+# licence document that is quietly wrong.
+
+images:
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda-metrics-apiserver: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api:
+    # The venv poetry resolves is copied into the runtime image, so the lockfiles
+    # decide what ships. `common` is a path dependency and resolves with it.
+    files:
+      - backend/api/pyproject.toml
+      - backend/api/poetry.lock
+      - backend/common/pyproject.toml
+      - backend/common/poetry.lock
+    not_keyed:
+      - common/
+      - api/
+      - common/README.md
+      - api/README.md
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker:
+    # Besides the venv, this image apt-installs seven packages pinned by ARGs in
+    # its Dockerfile and downloads three release binaries through a script whose
+    # versions and checksums arrive as ARGs. The script is keyed because it
+    # decides what is fetched and how it is named; email.magic ships as data
+    # under /usr/share/misc.
+    files:
+      - backend/worker/pyproject.toml
+      - backend/worker/poetry.lock
+      - backend/common/pyproject.toml
+      - backend/common/poetry.lock
+      - backend/worker/docker/install-third-party-binaries.sh
+      - backend/worker/docker/email.magic
+    not_keyed:
+      - common/
+      - worker/
+      - common/README.md
+      - worker/README.md
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler:
+    files:
+      - backend/crawler/pyproject.toml
+      - backend/crawler/poetry.lock
+      - backend/common/pyproject.toml
+      - backend/common/poetry.lock
+    not_keyed:
+      - common/
+      - crawler/
+      - common/README.md
+      - crawler/README.md
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend:
+    # The production target ships nginx plus the built dist, so the npm tree does
+    # not reach the image - the JavaScript list in THIRD-PARTY.md comes from
+    # license-report instead, and is regenerated on every run. These are keyed
+    # anyway because the dev target does ship node_modules, and over-keying costs
+    # only a rescan that produces no diff.
+    files:
+      - Frontend/package.json
+      - Frontend/pnpm-lock.yaml
+      - Frontend/pnpm-workspace.yaml
+      - Frontend/.npmrc
+      - Frontend/patches/*.patch
+    not_keyed:
+      - ./
+      - patches
+      - nginx.conf
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit:
+    not_keyed:
+      # Enables plugins the base image already ships; installs nothing.
+      - enabled_plugins
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika:
+    not_keyed:
+      # A maintenance script that reaps temporary files; installs nothing.
+      - tmp-reaper.sh
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana:
+    not_keyed:
+      - grafana.ini
+      - provisioning/
+      - dashboards/
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia:
+    not_keyed:
+      # The entrypoint, which is first-party source.
+      - ollama_wrapper.py
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm:
+    not_keyed:
+      - ollama_wrapper.py
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models:
+    not_keyed:
+      # Pulls whatever LLM_MODELS names; that ARG is in the Dockerfile and keyed
+      # with it. The script itself pins nothing.
+      - pull_models.sh
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot:
+    not_keyed:
+      - auth.conf
+      - dovecot.conf
+      - fts.conf
+      - storage.conf
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/roundcube:
+    # The build runs the upstream entrypoint, which composer-requires the plugins
+    # named in ROUNDCUBEMAIL_COMPOSER_PLUGINS. There is no composer.lock in the
+    # context, so the resolved versions are whatever Packagist serves - this
+    # image's inventory is not reproducible from repository content, and only a
+    # --refresh run can notice it drifting.
+    files:
+      - roundcube/plugins/alwayslogon/composer.json
+    not_keyed:
+      - config.inc.php
+      - plugins/alwayslogon/
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redisinsight: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg: {}
+
+  registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics: {}
