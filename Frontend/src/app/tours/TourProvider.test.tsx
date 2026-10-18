@@ -17,22 +17,28 @@ const {
     mockDispatch,
     mockFiles,
     mockIsMobile,
+    mockQuery,
+    mockSelectQuery,
     mockTranslate,
 } = vi.hoisted(() => ({
     mockCreateTourStepHashes: vi.fn(),
     mockDispatch: vi.fn(),
     mockFiles: { current: {} as Record<string, unknown> },
     mockIsMobile: { current: false },
+    mockQuery: { current: null as Record<string, unknown> | null },
+    mockSelectQuery: vi.fn(),
     mockTranslate: vi.fn((key: string) => key),
 }));
 
 vi.mock("@app/hooks", () => ({
     useAppDispatch: () => mockDispatch,
-    useAppSelector: () => mockFiles.current,
+    useAppSelector: (selector: unknown) =>
+        selector === mockSelectQuery ? mockQuery.current : mockFiles.current,
 }));
 
 vi.mock("@app/slices/searchSlice", () => ({
     selectFiles: vi.fn(),
+    selectQuery: mockSelectQuery,
     updateQuery: vi.fn((payload) => ({
         type: "search/updateQuery",
         payload,
@@ -242,6 +248,7 @@ describe("TourProvider", () => {
         window.localStorage.clear();
         mockFiles.current = {};
         mockIsMobile.current = false;
+        mockQuery.current = null;
         mockCreateTourStepHashes.mockImplementation(
             async (steps: typeof GLOBAL_TOUR_STEPS) =>
                 Object.fromEntries(steps.map(({ id }) => [id, `hash-${id}`])),
@@ -849,6 +856,94 @@ describe("TourProvider", () => {
                 .acknowledgedStepHashes.welcome,
         ).toEqual(["hash-welcome"]);
         expect(driverInstance.destroy).toHaveBeenCalled();
+    });
+
+    it("hands the search back when the tour completes", async () => {
+        const userQuery = {
+            query: "eml",
+            sortField: "tika_meta.dcterms_created",
+            sortDirection: "desc",
+        };
+        mockQuery.current = userQuery;
+        renderProvider(<TourViewHarness />);
+        await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
+
+        await act(async () => {
+            await capturedConfig.steps?.[4].popover?.onNextClick?.(
+                undefined,
+                capturedConfig.steps?.[4] as DriveStep,
+                {
+                    config: capturedConfig,
+                    state: {},
+                    driver: driverInstance,
+                    index: 4,
+                },
+            );
+        });
+        expect(updateQuery).toHaveBeenCalledWith({
+            query: "*",
+            sortField: null,
+            sortDirection: "desc",
+        });
+
+        const finalIndex = capturedConfig.steps!.length - 1;
+        await act(async () => {
+            await capturedConfig.steps?.[finalIndex].popover?.onDoneClick?.(
+                undefined,
+                capturedConfig.steps?.[finalIndex] as DriveStep,
+                {
+                    config: capturedConfig,
+                    state: {},
+                    driver: driverInstance,
+                    index: finalIndex,
+                },
+            );
+        });
+
+        expect(updateQuery).toHaveBeenLastCalledWith(userQuery);
+        expect(updateQuery).not.toHaveBeenCalledWith({
+            query: "",
+            sortField: null,
+        });
+    });
+
+    it("hands the search back when the tour is dismissed half way", async () => {
+        const userQuery = {
+            query: "eml",
+            sortField: null,
+            sortDirection: null,
+        };
+        mockQuery.current = userQuery;
+        renderProvider(<TourViewHarness />);
+        await waitFor(() => expect(driverInstance.drive).toHaveBeenCalled());
+
+        await act(async () => {
+            await capturedConfig.steps?.[4].popover?.onNextClick?.(
+                undefined,
+                capturedConfig.steps?.[4] as DriveStep,
+                {
+                    config: capturedConfig,
+                    state: {},
+                    driver: driverInstance,
+                    index: 4,
+                },
+            );
+        });
+
+        act(() => {
+            capturedConfig.onCloseClick?.(
+                undefined,
+                capturedConfig.steps?.[5] as DriveStep,
+                {
+                    config: capturedConfig,
+                    state: {},
+                    driver: driverInstance,
+                    index: 5,
+                },
+            );
+        });
+
+        expect(updateQuery).toHaveBeenLastCalledWith(userQuery);
     });
 
     it("stays on search-all when the query fails", async () => {

@@ -12,7 +12,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { isLoadedResult } from "@app/slices/searchFileEntry";
-import { selectFiles, updateQuery } from "@app/slices/searchSlice";
+import { selectFiles, selectQuery, updateQuery } from "@app/slices/searchSlice";
+import { SearchQuery } from "@features/common/utils/model";
 
 import {
     GLOBAL_TOUR_STEPS,
@@ -56,6 +57,7 @@ const QUERY_OVERVIEW_STEPS = new Set([
 export const TourProvider = ({ children }: TourProviderProps) => {
     const dispatch = useAppDispatch();
     const files = useAppSelector(selectFiles);
+    const query = useAppSelector(selectQuery);
     const isMobile = useMediaQuery("(max-width:600px)");
     const location = useLocation();
     const navigate = useNavigate();
@@ -82,6 +84,13 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     const pendingPreparationCancelRef = useRef<(() => void) | null>(null);
     const pathnameRef = useRef(location.pathname);
     pathnameRef.current = location.pathname;
+    const queryRef = useRef(query);
+    queryRef.current = query;
+    // The search the user had before the tour took the search over to show
+    // results of its own. Handed back when the tour ends, however it ends,
+    // but only once the tour has actually run a search of its own.
+    const preTourQueryRef = useRef<SearchQuery | null>(null);
+    const tourDroveSearchRef = useRef(false);
     // Stale cards count as loaded results elsewhere, but the tour drives a real
     // card: a stale entry has no usable preview, so it is skipped here on
     // purpose rather than by drift from `isLoadedResult`.
@@ -134,6 +143,39 @@ export const TourProvider = ({ children }: TourProviderProps) => {
         cancel?.();
     }, []);
 
+    /** Remember the search the tour is about to take over.
+     *
+     *  Keeps the first snapshot: once the tour has installed a query of its
+     *  own, that query is not what the user was looking at. */
+    const captureQueryForTour = useCallback(() => {
+        if (preTourQueryRef.current) return;
+        preTourQueryRef.current = queryRef.current;
+    }, []);
+
+    /** Put the search back the way the tour found it.
+     *
+     *  The tour drives the search itself - `search-all` and the incremental
+     *  preparation both run `*` - so whatever the user was looking at is gone
+     *  by the time it ends. Restoring from here rather than from the
+     *  conclusion step covers a dismissal half way through as well. A tour
+     *  that never reached a search of its own leaves the query alone; one that
+     *  started with no query to speak of has nothing to give back and ends the
+     *  way it always did, on the empty query the conclusion sets. */
+    const restorePreTourQuery = useCallback(() => {
+        const preTourQuery = preTourQueryRef.current;
+        const tookOverSearch = tourDroveSearchRef.current;
+        preTourQueryRef.current = null;
+        tourDroveSearchRef.current = false;
+        if (!tookOverSearch || !preTourQuery?.query) return;
+        dispatch(
+            updateQuery({
+                query: preTourQuery.query,
+                sortField: preTourQuery.sortField ?? null,
+                sortDirection: preTourQuery.sortDirection ?? null,
+            }),
+        );
+    }, [dispatch]);
+
     const persistOutcome = useCallback(
         ({ acknowledgedSteps, mode, outcome }: TourFinishResult) => {
             const hashes = stepHashesRef.current;
@@ -153,8 +195,9 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                 saveTourState(nextState);
             }
             resetTourScene();
+            restorePreTourQuery();
         },
-        [resetTourScene],
+        [resetTourScene, restorePreTourQuery],
     );
     const handleStepChange = useCallback((stepId: string) => {
         setActiveTourStepId(stepId);
@@ -168,11 +211,17 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                 return true;
             }
             if (stepId === "conclusion") {
-                dispatch(updateQuery({ query: "", sortField: null }));
+                // A query the tour took over is handed back by persistOutcome
+                // once the tour ends; clearing it here as well would be two
+                // dispatches racing for the same state.
+                if (!preTourQueryRef.current?.query) {
+                    dispatch(updateQuery({ query: "", sortField: null }));
+                }
                 navigate("/search");
                 return true;
             }
             if (stepId !== "search-all") return true;
+            tourDroveSearchRef.current = true;
             try {
                 const result = await dispatch(
                     updateQuery({
@@ -214,6 +263,8 @@ export const TourProvider = ({ children }: TourProviderProps) => {
             }
 
             cancelPendingPreparation();
+            captureQueryForTour();
+            tourDroveSearchRef.current = true;
             const request = dispatch(
                 updateQuery({
                     query: "*",
@@ -241,7 +292,12 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                 }
             }
         },
-        [cancelPendingPreparation, dispatch, existingResultFileId],
+        [
+            cancelPendingPreparation,
+            captureQueryForTour,
+            dispatch,
+            existingResultFileId,
+        ],
     );
 
     const startConfiguredTour = useCallback(
@@ -278,6 +334,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
             }
             if (requestId !== startRequestRef.current) return true;
             if (automatic && !isLoomPage(pathnameRef.current)) return false;
+            captureQueryForTour();
             start({
                 mode,
                 steps:
@@ -293,7 +350,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
             });
             return true;
         },
-        [isMobile, prepareIncrementalTour, start],
+        [captureQueryForTour, isMobile, prepareIncrementalTour, start],
     );
 
     const startTour = useCallback(() => {
@@ -312,9 +369,16 @@ export const TourProvider = ({ children }: TourProviderProps) => {
                 return;
             }
 
+            captureQueryForTour();
             start({ mode: "full", steps: GLOBAL_TOUR_STEPS });
         });
-    }, [cancelPendingPreparation, loadStepHashes, start, startConfiguredTour]);
+    }, [
+        cancelPendingPreparation,
+        captureQueryForTour,
+        loadStepHashes,
+        start,
+        startConfiguredTour,
+    ]);
 
     const dismissActiveTour = useCallback(() => {
         cancelPendingPreparation();

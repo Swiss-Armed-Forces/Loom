@@ -60,10 +60,26 @@ export const Search = () => {
     // activeTabFileId is seeded from the URL hash in Redux initialState, so
     // the Redux→URL effect returns early on mount without clearing the hash.
     const syncedHashRef = useRef<string>("");
+    // The search string the Redux→URL effect last wrote. The URL→Redux effect
+    // skips exactly that one value, which is what breaks the feedback loop
+    // between the two without also swallowing a URL the user arrived with.
+    // Initialized to null so no real location.search can match it on mount.
+    const syncedSearchRef = useRef<string | null>(null);
+    // Whether the URL→Redux effect has seen the URL the page was opened with.
+    // Only that first one may re-run a query restored from localStorage.
+    const initialUrlSyncDoneRef = useRef(false);
+    // Guards the Redux→URL effect: its mount run writes nothing, and the first
+    // write it does make replaces the entry the page was opened with.
+    const isFirstUrlWriteRenderRef = useRef(true);
+    const hasWrittenUrlRef = useRef(false);
     const filesRef = useRef(files);
     useEffect(() => {
         filesRef.current = files;
     }, [files]);
+    // Read inside the URL→Redux effect, which must not re-run when the query
+    // changes - running it again on a Redux change is the loop it guards.
+    const searchQueryRef = useRef(searchQuery);
+    searchQueryRef.current = searchQuery;
 
     // Initialize keyboard navigation
     useKeyboardNavigation();
@@ -130,43 +146,51 @@ export const Search = () => {
         };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // URL → Redux: sync search params into Redux state.
-    // Runs on every searchParams change (not just initial load) so that
-    // Back/Forward navigation updates the search results accordingly.
-    // When the URL carries no ?query= param we leave Redux (and its cached
-    // stale data) untouched — the absence of a param is not the same as an
-    // explicit instruction to re-fetch or clear.
+    // URL → Redux: run the search the URL describes.
+    // Runs on every location.search change (not just initial load) so that
+    // Back/Forward navigation updates the search results accordingly, and on
+    // the search string rather than the searchParams object, whose identity
+    // also changes on a hash-only navigation.
+    //
+    // A URL carrying ?query= is searched every time it arrives, including on
+    // first load. Matching it against Redux would not do: the query is
+    // restored from localStorage while the results are not, so a reloaded or
+    // shared URL would fill the fields and show nothing.
     useEffect(() => {
+        // Our own write, already in Redux - taking it for a navigation is the
+        // Redux→URL→Redux loop.
+        if (location.search === syncedSearchRef.current) return;
+        syncedSearchRef.current = location.search;
+        const isInitialSync = !initialUrlSyncDoneRef.current;
+        initialUrlSyncDoneRef.current = true;
+
         const urlQuery = searchParams.get("query");
-
-        // No explicit query in the URL → keep whatever is cached in Redux.
-        if (urlQuery === null) return;
-
-        const sortField = searchParams.get("sortField") ?? undefined;
-        const sortDirection = searchParams.get("sortDirection");
-        const urlSortDirection =
-            sortDirection !== null && isSortDirection(sortDirection)
-                ? sortDirection
-                : undefined;
-
-        // No-op when Redux already reflects the URL (avoids loop after
-        // the Redux→URL effect writes the same params back)
-        if (
-            searchQuery &&
-            searchQuery.query === urlQuery &&
-            (searchQuery.sortField ?? undefined) === sortField &&
-            (searchQuery.sortDirection ?? undefined) === urlSortDirection
-        )
+        if (urlQuery === null) {
+            // No query in the URL. On arrival, re-run the one restored from
+            // localStorage so the search fields and the results agree; a later
+            // param-less navigation leaves Redux alone. updateQuery falls back
+            // to the last query for every field it is not given.
+            if (isInitialSync && searchQueryRef.current?.query) {
+                dispatch(updateQuery({}));
+            }
             return;
+        }
 
+        const sortDirection = searchParams.get("sortDirection");
+        // A URL that names a query describes the whole search, so a sort it
+        // does not name is no sort - passing null rather than undefined is
+        // what keeps the reader's own sort out of a shared link.
         dispatch(
             updateQuery({
                 query: urlQuery || undefined,
-                sortField: sortField,
-                sortDirection: urlSortDirection,
+                sortField: searchParams.get("sortField"),
+                sortDirection:
+                    sortDirection !== null && isSortDirection(sortDirection)
+                        ? sortDirection
+                        : null,
             }),
         );
-    }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Redux → URL hash: navigate when the active tab changes.
     // Push a new history entry when opening the first tab (null → fileId) so
@@ -205,11 +229,21 @@ export const Search = () => {
     // Redux → URL: persist search state in URL query params.
     // Skips navigate when the URL already reflects the current state (avoids
     // the Redux→URL→Redux feedback loop on Back/Forward and initial load).
-    // Always pushes a new history entry when the URL actually changes so that
-    // every query/sort interaction is navigable via Back/Forward.
+    // Pushes a new history entry when the URL actually changes so that every
+    // query/sort interaction is navigable via Back/Forward - except for the
+    // first write, which only spells out what the page was opened with and
+    // would otherwise leave Back pointing at a URL describing no search.
     // Use navigate (not setSearchParams) to preserve the hash — React
     // Router's setSearchParams navigates to "?..." which clears the hash.
+    //
+    // The mount run is skipped entirely: on arrival the URL is what the user
+    // asked for, and writing the query restored from localStorage over it
+    // would replace a shared link before it is read.
     useEffect(() => {
+        if (isFirstUrlWriteRenderRef.current) {
+            isFirstUrlWriteRenderRef.current = false;
+            return;
+        }
         if (!searchQuery) return;
 
         const params = new URLSearchParams();
@@ -227,13 +261,16 @@ export const Search = () => {
         const newSearch = params.toString() ? `?${params.toString()}` : "";
         if (newSearch === location.search) return;
 
+        const isFirstWrite = !hasWrittenUrlRef.current;
+        hasWrittenUrlRef.current = true;
+        syncedSearchRef.current = newSearch;
         navigate(
             {
                 pathname: location.pathname,
                 search: params.toString(),
                 hash: location.hash,
             },
-            { replace: false },
+            { replace: isFirstWrite },
         );
     }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
