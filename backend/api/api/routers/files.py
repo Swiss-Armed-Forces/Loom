@@ -20,6 +20,7 @@ from common.file.file_repository import (
     Tag,
 )
 from common.file.file_statistics import AvailableStat
+from common.models.cursor_pagination import SearchAfterCursor
 from common.models.es_repository import (
     InvalidSortFieldExceptions,
     PaginationParameters,
@@ -122,7 +123,21 @@ class GetFilesResponse(BaseModel):
     sort_by_field: str
 
 
-class GetFilesQuery(QueryParameters, SortingParameters, PaginationParameters):
+class PitBoundQueryParameters(QueryParameters):
+    """Query parameters for an endpoint whose pages have to agree with each other.
+
+    ``query_id`` is optional on QueryParameters because most endpoints answer one
+    question once and do not care which snapshot they read.  A paginated endpoint
+    does: ``search_after`` resumes from literal sort values, which only keep their
+    meaning inside the snapshot that produced them.  Requiring the point-in-time here
+    makes the client open one (``POST /v1/files/query``) before it starts paging,
+    rather than leaving it to find out that its pages disagree.
+    """
+
+    query_id: str
+
+
+class GetFilesQuery(PitBoundQueryParameters, SortingParameters, PaginationParameters):
     pass
 
 
@@ -223,33 +238,56 @@ def get_files_tree(
     )
 
 
-class SearchByFilenameQuery(QueryParameters):
+class SearchByFilenameRequest(PitBoundQueryParameters):
+    """Body of a search_by_filename page.
+
+    A POST rather than a GET because of ``after``: a query parameter cannot hold a
+    structure, and keeping the cursor a structure is what lets it travel as itself
+    instead of as a string this endpoint has to encode and decode.
+    """
+
     filename: str
-    after: str | None = None
+    after: SearchAfterCursor | None = None
 
 
-@router.get("/search_by_filename")
+class SearchByFilenameResponse(BaseModel):
+    """One page of a filename search.
+
+    Separate from GetFilesTreeResponse because the two cursors are not the same kind
+    of thing: the tree resumes from an aggregation bucket key, this resumes from a
+    sort tuple.  total_count and count_relation only ever apply here.
+    """
+
+    nodes: list[TreeNodeModel]
+    next_cursor: SearchAfterCursor | None = None
+    total_count: int | None = None
+    count_relation: str | None = None
+
+
+@router.post("/search_by_filename")
 def search_by_filename(
-    query: Annotated[SearchByFilenameQuery, Query()],
+    request: SearchByFilenameRequest,
     file_repository: FileRepository = default_file_repository,
-) -> GetFilesTreeResponse:
+) -> SearchByFilenameResponse:
     """Search for files whose path contains the given filename string.
 
-    Returns a flat paginated list of matching leaf files across the whole index. The
-    `after` parameter is an opaque cursor from a previous response's `next_page_cursor`
-    field and enables cursor-based pagination.
+    Returns a flat paginated list of matching leaf files across the whole index. Pass a
+    previous response's `next_cursor` back as `after` to fetch the next page, and the
+    same `query_id` with it — every page of a run reads one index snapshot.
     """
-    logger.info("Search by filename with query: '%s'", query)
+    logger.info("Search by filename with request: '%s'", request)
     result = file_repository.get_flat_files_by_query(
-        query=query,
-        after=query.after,
-        filename=query.filename,
+        query=request,
+        after=request.after,
+        filename=request.filename,
     )
-    return GetFilesTreeResponse(
+    return SearchByFilenameResponse(
         nodes=[
             TreeNodeModel.model_validate(node.model_dump()) for node in result.nodes
         ],
-        next_page_cursor=result.next_page_cursor,
+        next_cursor=result.next_cursor,
+        total_count=result.total_count,
+        count_relation=result.count_relation,
     )
 
 

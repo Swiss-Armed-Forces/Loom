@@ -33,7 +33,11 @@ import {
 } from "@app/slices/commonSlice";
 import { isLoadedResult, SearchFileEntry } from "@app/slices/searchFileEntry";
 import { FileDetailTab } from "@features/common/utils/enums";
-import { CombinedStats, SearchQuery } from "@features/common/utils/model";
+import {
+    CombinedStats,
+    PitBoundSearchQuery,
+    SearchQuery,
+} from "@features/common/utils/model";
 import { shortcutRegistry } from "@features/search/hooks/shortcutRegistry";
 import {
     DEFAULT_HISTOGRAM_STAT,
@@ -456,7 +460,7 @@ export const updateQuery = createAsyncThunk(
             return;
         }
 
-        const newQuery: SearchQuery = {
+        const newQuery: PitBoundSearchQuery = {
             id: queryId,
             query: queryQuery,
             keepAlive: query.keepAlive ?? lastQuery?.keepAlive ?? null,
@@ -523,6 +527,26 @@ export const updateQuery = createAsyncThunk(
         } catch (error: any) {
             if (thunkAPI.signal.aborted) return;
             cleanupQuerySubscription();
+            // 409 means the point-in-time this query was paging against has expired.
+            // Pages cannot be resumed across snapshots, so the only correct recovery
+            // is a fresh snapshot read from the first page: drop the id so a new one
+            // is opened, and the sortId that pointed into the old one.
+            //
+            // Retried only when the caller supplied the id — "load more" does, and
+            // that is the request that outlives a snapshot. The retry carries no id,
+            // so a 409 on a snapshot opened moments earlier surfaces as the real
+            // error it is instead of looping.
+            if (
+                error instanceof ResponseError &&
+                error.response.status === 409 &&
+                query.id !== undefined
+            ) {
+                toast.info(t("generalSearchView.queryExpired"));
+                dispatch(
+                    updateQuery({ ...query, id: undefined, sortId: null }),
+                );
+                return;
+            }
             // Get error detail
             let errorDetail = error.toString();
             if (error instanceof ResponseError) {

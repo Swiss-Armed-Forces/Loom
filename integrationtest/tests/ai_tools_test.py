@@ -28,7 +28,7 @@ def _execute_query(query_string: str) -> ExecuteQueryResult:
         get_celery_app()
         .send_task(
             execute_query_tool_task.name,
-            args=[query_string, uuid4(), None],
+            args=[query_string, uuid4(), None, None],
         )
         .get(timeout=GET_TIMEOUT)
     )

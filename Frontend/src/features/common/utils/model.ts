@@ -36,36 +36,15 @@ export interface SearchQuery {
     pageSize: number | null;
 }
 
-export const SearchQuerySchema = {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-        id: { type: ["string", "null"] },
-        query: { type: "string" },
-
-        keepAlive: { type: ["string", "null"], enum: ["10s", "30m", null] },
-
-        sortField: { type: ["string", "null"] },
-
-        sortDirection: {
-            type: ["string", "null"],
-            enum: ["asc", "desc", null],
-        },
-
-        sortId: { type: ["array", "null"], items: {} },
-
-        pageSize: { type: ["number", "null"] },
-    },
-    required: [
-        "id",
-        "query",
-        "keepAlive",
-        "sortField",
-        "sortDirection",
-        "sortId",
-        "pageSize",
-    ],
-} as const;
+/**
+ * A query that has a point-in-time, which the paginated endpoints require.
+ *
+ * Their pages resume from literal sort values that only mean anything inside the
+ * snapshot that produced them, so the backend rejects a request without one. Callers
+ * narrow to this by checking `id`, which is also what stops a page being requested
+ * before the snapshot has been opened.
+ */
+export type PitBoundSearchQuery = SearchQuery & { id: string };
 
 export interface CombinedStats {
     termsData: TermsStatisticsModel | null;

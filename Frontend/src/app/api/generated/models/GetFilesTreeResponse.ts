@@ -46,6 +46,18 @@ export interface GetFilesTreeResponse {
      * @memberof GetFilesTreeResponse
      */
     rootStats?: TreeNodeModel;
+    /**
+     *
+     * @type {number}
+     * @memberof GetFilesTreeResponse
+     */
+    totalCount?: number;
+    /**
+     *
+     * @type {string}
+     * @memberof GetFilesTreeResponse
+     */
+    countRelation?: string;
 }
 
 /**
@@ -79,6 +91,10 @@ export function GetFilesTreeResponseFromJSONTyped(
             json["root_stats"] == null
                 ? undefined
                 : TreeNodeModelFromJSON(json["root_stats"]),
+        totalCount:
+            json["total_count"] == null ? undefined : json["total_count"],
+        countRelation:
+            json["count_relation"] == null ? undefined : json["count_relation"],
     };
 }
 
@@ -98,5 +114,7 @@ export function GetFilesTreeResponseToJSONTyped(
         nodes: (value["nodes"] as Array<any>).map(TreeNodeModelToJSON),
         next_page_cursor: value["nextPageCursor"],
         root_stats: TreeNodeModelToJSON(value["rootStats"]),
+        total_count: value["totalCount"],
+        count_relation: value["countRelation"],
     };
 }

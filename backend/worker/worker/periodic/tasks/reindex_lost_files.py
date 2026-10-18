@@ -7,8 +7,8 @@ from common.dependencies import (
     get_celery_app,
     get_file_repository,
 )
-from common.models.es_repository import SortingParameters
-from common.services.query_builder import QueryParameters
+from common.models.es_repository import PointInTimeExpiredError, SortingParameters
+from common.services.query_builder import SCAN_PIT_KEEPALIVE, QueryParameters
 
 from worker.index_file.dispatch_tasks import dispatch_reindex_file
 from worker.periodic.infra.periodic_task import PeriodicTask
@@ -28,12 +28,23 @@ def signature() -> Signature:
     return reindex_lost_files.s()
 
 
-@app.task(bind=True, base=PeriodicTask)
+# A lapsed point-in-time is transient: the sweep succeeds against a fresh snapshot.
+# Retrying restarts the scan from the beginning, which is the only correct way to
+# finish it — resuming across snapshots would skip or duplicate files.
+@app.task(
+    bind=True,
+    base=PeriodicTask,
+    autoretry_for=(PointInTimeExpiredError,),
+    retry_backoff=True,
+)
 def reindex_lost_files(self: PeriodicTask, *_, **__):
     logger.info("Reindexing files")
     file_repository = get_file_repository()
+    # Both halves of the snapshot's lifetime are set here: open_point_in_time gives it
+    # its initial one, and keep_alive is what every page extends it by.
     query = QueryParameters(
-        query_id=file_repository.open_point_in_time(),
+        query_id=file_repository.open_point_in_time(keep_alive=SCAN_PIT_KEEPALIVE),
+        keep_alive=SCAN_PIT_KEEPALIVE,
         search_string=LOST_FILES_QUERY,
     )
     sort_params = SortingParameters(

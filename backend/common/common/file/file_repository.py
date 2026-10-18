@@ -12,6 +12,7 @@ from typing import (
     Callable,
     Generator,
     Literal,
+    NamedTuple,
     Protocol,
     Sequence,
     cast,
@@ -63,6 +64,7 @@ from common.file.file_statistics import (
     discover_stats,
 )
 from common.messages.pubsub_service import PubSubService
+from common.models.cursor_pagination import SearchAfterCursor
 from common.models.es_repository import (
     BaseEsRepository,
     PaginationParameters,
@@ -73,7 +75,7 @@ from common.services.query_builder import (
     QueryBuilder,
     QueryParameters,
 )
-from common.settings import settings
+from common.settings import TREE_PATH_MAX_ELEMENT_COUNT, settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
 from common.utils.unique_list import unique_list
 
@@ -81,7 +83,10 @@ logger = logging.getLogger(__name__)
 
 PATH_SEPARATOR = "/"
 PATH_ROOT = "//"
-TREE_PATH_MAX_ELEMENT_COUNT = 50
+# Where full_path.keyword sits in the sort tuple get_flat_files_by_query sorts on.
+# Elasticsearch appends its own tiebreaker behind it when a point-in-time is attached,
+# so the tuple is longer than the sort clause but never shorter.
+_FLAT_FILES_PATH_SORT_POSITION = 1
 ES_RESERVED_PATTERN = re.compile(r"([\".?+*|{}\][\\()])")
 KNN_CANDIDATES_FACTOR = 5  # how many more candidates to select for KNN per shared
 
@@ -706,8 +711,9 @@ class TreePathsResult(BaseModel):
 
     Attributes:
         nodes: The tree path nodes for this page.
-        next_page_cursor: Opaque cursor for fetching the next page, or None
-            when all pages have been returned.
+        next_page_cursor: Aggregation bucket key to resume after, or None when all
+            pages have been returned.  A plain key, not a SearchAfterCursor: callers
+            that need one bound to their query wrap it themselves.
         root_stats: Aggregate counts for the virtual root node (total files,
             unseen and flagged across the whole query).  Only populated when
             the request targets the root path (``tree_node_directory_path="/"``).
@@ -716,6 +722,37 @@ class TreePathsResult(BaseModel):
     nodes: list[TreePathsNode]
     next_page_cursor: str | None = None
     root_stats: TreePathsNode | None = None
+    total_count: int | None = None
+    count_relation: str | None = None
+
+
+class FlatFilesResult(BaseModel):
+    """Result of a paginated flat file query.
+
+    Attributes:
+        nodes: The leaf file nodes for this page.
+        next_cursor: Where the next page resumes, or None when all pages have been
+            returned.  A cursor, not a key: only a caller handing it to an HTTP
+            client encodes it.
+    """
+
+    nodes: list[TreePathsNode]
+    next_cursor: SearchAfterCursor | None = None
+    total_count: int | None = None
+    count_relation: str | None = None
+
+
+class _DirectoryBucketPage(NamedTuple):
+    """One page of direct-children aggregation buckets.
+
+    Attributes:
+        buckets: The buckets to turn into nodes, cursor duplicates removed.
+        next_cursor: Bucket key to resume after, or None when the directory has
+            been fully listed.
+    """
+
+    buckets: list[Any]
+    next_cursor: str | None
 
 
 # `elasticsearch-dsl` only exports AttrDict-based dynamic wrappers, so we define
@@ -751,7 +788,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         query_builder: QueryBuilder,
         pubsub_service: PubSubService,
         search_factory: (
-            Callable[[QueryParameters, bool], Search[_EsFile]] | None
+            Callable[[QueryParameters, bool, bool], Search[_EsFile]] | None
         ) = None,
     ):
         super().__init__(query_builder, pubsub_service)
@@ -761,10 +798,13 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         self,
         query: QueryParameters,
         full_highlight_context: bool = False,
+        with_highlight: bool = True,
     ) -> Search[_EsFile]:
         if self._search_factory is not None:
-            return self._search_factory(query, full_highlight_context)
-        return super()._get_search_by_query(query, full_highlight_context)
+            return self._search_factory(query, full_highlight_context, with_highlight)
+        return super()._get_search_by_query(
+            query, full_highlight_context, with_highlight
+        )
 
     @property
     def _object_type(self) -> type[File]:
@@ -1242,6 +1282,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         query: QueryParameters,
         tree_node_directory_path: str,
         after: str | None = None,
+        page_size: int = TREE_PATH_MAX_ELEMENT_COUNT,
     ) -> TreePathsResult:
         """Return the direct children of ``tree_node_directory_path`` for tree browsing.
 
@@ -1253,45 +1294,30 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
 
         Cursor pagination works via a ``range`` filter on ``full_path.tree``.  Because
         the field is multi-value, the filter admits a document when *any* token exceeds
-        the cursor.  This means the cursor bucket itself may be returned by ES (its
-        deeper-path tokens satisfy the range); it is excluded explicitly after the
-        aggregation.
+        the cursor, while the bucket that document contributes to can sort before it —
+        a document ``//f/report/inner.pdf`` passes a cursor of ``//f/report.txt`` and
+        re-creates the already emitted bucket ``//f/report``.  Every bucket at or
+        before the cursor has therefore already been handed out and is dropped after
+        the aggregation, which is what keeps pages duplicate-free.
+
+        Args:
+            page_size: Maximum number of children per page.
         """
         # Build a Java-compatible regex matching direct children only.
         # re.escape covers all Java regex metacharacters that appear in file paths.
         include_regex = re.escape(tree_node_directory_path) + "/[^/]+"
 
-        dir_aggregation: Agg[_EsFile] = A(
-            "terms",
-            field="full_path.tree",
-            include=include_regex,
-            # +1 to detect whether more pages exist. When `after` is set the
-            # range filter on the multi-value full_path.tree field re-admits
-            # the cursor bucket (its leaf token cursor/doc exceeds the cursor),
-            # which is then excluded post-aggregation. An extra +1 covers that
-            # slot so the "is there a next page?" check still sees N+1 results.
-            size=TREE_PATH_MAX_ELEMENT_COUNT + 1 + (1 if after is not None else 0),
-            order={"_key": "asc"},  # alphabetical ensures stable cursor pagination
-        )
-        dir_aggregation.bucket(
-            "first_hit",
-            A(
-                "top_hits",
-                size=1,
-                sort=[{"full_path.keyword": "asc"}],
-                _source=["full_path", "seen", "flagged"],
-            ),
-        )
-        dir_aggregation.bucket(
-            "unseen",
-            A("filter", filter=Q("term", seen=False)),
-        )
-        dir_aggregation.bucket(
-            "flagged",
-            A("filter", filter=Q("term", flagged=True)),
-        )
-
-        search = self._get_search_by_query(query=query)
+        # Clamped exactly as get_flat_files_by_query clamps it, so one browse page
+        # size cannot mean two different things. The ceiling is what the aggregation
+        # can carry: every bucket brings a top_hits and two filter sub-aggregations.
+        page_size = min(max(page_size, 1), TREE_PATH_MAX_ELEMENT_COUNT)
+        # +1 to detect whether more pages exist. When `after` is set the range
+        # filter on the multi-value full_path.tree field re-admits buckets at or
+        # before the cursor, which are then dropped post-aggregation. An extra +1
+        # covers the common case of a single such bucket, so the "is there a next
+        # page?" check still sees N+1 results.
+        requested_bucket_count = page_size + 1 + (1 if after is not None else 0)
+        search = self._get_search_by_query(query=query, with_highlight=False)
         # Scope the aggregation to documents at or below the requested path.
         # The path_hierarchy tokenizer emits one token per path prefix, so a
         # term filter on full_path.tree restricts results to documents whose path
@@ -1306,22 +1332,29 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         # correctly includes documents contributing to unseen child buckets.
         if after is not None:
             search = search.filter("range", **{"full_path.tree": {"gt": after}})
-        search.aggs.bucket("directory", dir_aggregation)
-        parent_path_agg: Agg[_EsFile] = A(
-            "terms",
-            field="parent_path",
-            include=include_regex,
-            size=TREE_PATH_MAX_ELEMENT_COUNT + 1 + (1 if after is not None else 0),
-            order={"_key": "asc"},
+        search.aggs.bucket(
+            "directory",
+            self._build_directory_aggregation(
+                include_regex=include_regex, size=requested_bucket_count
+            ),
         )
-        search.aggs.bucket("direct_children_by_parent", parent_path_agg)
+        search.aggs.bucket(
+            "direct_children_by_parent",
+            A(
+                "terms",
+                field="parent_path",
+                include=include_regex,
+                size=requested_bucket_count,
+                order={"_key": "asc"},
+            ),
+        )
         # When querying the root, add global aggregations to compute the
         # virtual root node's totals directly in ES.  These run over all
         # documents that match the user's search query (no path filter is
         # applied at root level), giving exact counts without summing the
         # individual child buckets on the client.
         is_root = tree_node_directory_path == "/"
-        if is_root:
+        if is_root and after is None:
             search.aggs.bucket("total_files", A("filter", filter=Q("match_all")))
             search.aggs.bucket(
                 "total_unseen", A("filter", filter=Q("term", seen=False))
@@ -1341,10 +1374,12 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             for b in result.aggregations.direct_children_by_parent.buckets
         }
 
-        # Exclude the cursor bucket in case it was re-admitted by the range filter.
-        raw_buckets = [
-            b for b in result.aggregations.directory.buckets if str(b.key) != after
-        ]
+        bucket_page = self._page_directory_buckets(
+            raw_buckets=list(result.aggregations.directory.buckets),
+            after=after,
+            page_size=page_size,
+            requested_bucket_count=requested_bucket_count,
+        )
         nodes = [
             self._build_tree_paths_node(
                 key=str(b.key),
@@ -1354,15 +1389,10 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 flagged_bucket=b.flagged,
                 direct_children_count=direct_children_counts.get(str(b.key), 0),
             )
-            for b in raw_buckets[:TREE_PATH_MAX_ELEMENT_COUNT]
+            for b in bucket_page.buckets
         ]
-        next_cursor = (
-            str(raw_buckets[TREE_PATH_MAX_ELEMENT_COUNT - 1].key)
-            if len(raw_buckets) > TREE_PATH_MAX_ELEMENT_COUNT
-            else None
-        )
         root_stats: TreePathsNode | None = None
-        if is_root:
+        if is_root and after is None:
             root_stats = TreePathsNode(
                 full_path=FilePurePath("/"),
                 file_count=cast(int, result.aggregations.total_files.doc_count),
@@ -1373,42 +1403,25 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 ),
             )
         return TreePathsResult(
-            nodes=nodes, next_page_cursor=next_cursor, root_stats=root_stats
+            nodes=nodes,
+            next_page_cursor=bucket_page.next_cursor,
+            root_stats=root_stats,
         )
 
-    def get_flat_files_by_query(
-        self,
-        query: QueryParameters,
-        after: str | None = None,
-        filename: str | None = None,
-    ) -> TreePathsResult:
-        """Return a paginated flat list of all leaf files matching the query.
+    @staticmethod
+    def _build_directory_aggregation(include_regex: str, size: int) -> Agg[_EsFile]:
+        """Build the terms aggregation over the direct children of a directory.
 
-        Uses a ``terms`` aggregation on ``full_path.keyword`` so each bucket is exactly
-        one file.  Used by the folder-view filter box to search files by name across the
-        whole index.
-
-        Cursor pagination works via a ``range`` filter on ``full_path.keyword``. Because
-        the field is single-value, the filter is unambiguous — the cursor bucket is
-        never readmitted (unlike the multi-value ``full_path.tree`` field used by the
-        tree variant).
-
-        If ``filename`` is provided, a case-insensitive wildcard query is applied on
-        ``full_path.keyword`` (must match) with an additional boost on
-        ``short_name.keyword`` (should match) so that hits where the filename itself
-        matches rank above hits where only a parent folder matches.  Results are sorted
-        by descending score; without a filename query they are sorted alphabetically.
+        One bucket per child path, each carrying the top hit and the seen/flagged counts
+        needed to turn it into a TreePathsNode.
         """
-        order: dict[str, str] = {"max_score": "desc"} if filename else {"_key": "asc"}
         dir_aggregation: Agg[_EsFile] = A(
             "terms",
-            field="full_path.keyword",
-            size=TREE_PATH_MAX_ELEMENT_COUNT
-            + 1,  # +1 to detect whether more pages exist
-            order=order,
+            field="full_path.tree",
+            include=include_regex,
+            size=size,
+            order={"_key": "asc"},  # alphabetical ensures stable cursor pagination
         )
-        if filename:
-            dir_aggregation.metric("max_score", A("max", script={"source": "_score"}))
         dir_aggregation.bucket(
             "first_hit",
             A(
@@ -1426,10 +1439,105 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             "flagged",
             A("filter", filter=Q("term", flagged=True)),
         )
+        return dir_aggregation
 
-        search = self._get_search_by_query(query=query)
-        if after is not None:
-            search = search.filter("range", **{"full_path.keyword": {"gt": after}})
+    @staticmethod
+    def _page_directory_buckets(
+        raw_buckets: list[Any],
+        after: str | None,
+        page_size: int,
+        requested_bucket_count: int,
+    ) -> _DirectoryBucketPage:
+        """Cut one page out of the direct-children buckets ES returned.
+
+        Buckets at or before the cursor are dropped, not just the cursor bucket
+        itself: the range filter on the multi-value ``full_path.tree`` re-admits any
+        bucket that has a document with a deeper token past the cursor, and all of
+        them were already handed out on an earlier page.
+        """
+        fresh_buckets = [b for b in raw_buckets if after is None or str(b.key) > after]
+        page_buckets = fresh_buckets[:page_size]
+        # ES filled the requested window, so further buckets exist even when dropping
+        # re-admitted ones shortened this page below the page size.
+        has_more = (
+            len(fresh_buckets) > page_size or len(raw_buckets) >= requested_bucket_count
+        )
+        if not has_more or not page_buckets:
+            # A cursor is only ever the key of a bucket just handed out, so it always
+            # exceeds the one it replaces.  With nothing handed out there is no such
+            # key: every bucket ES returned was already seen, and resuming from the
+            # highest of them would ask for the same window again, forever.
+            return _DirectoryBucketPage(buckets=page_buckets, next_cursor=None)
+        # The last bucket handed out, so the next page resumes right after it.
+        return _DirectoryBucketPage(
+            buckets=page_buckets, next_cursor=str(page_buckets[-1].key)
+        )
+
+    def get_flat_files_by_query(
+        self,
+        query: QueryParameters,
+        after: SearchAfterCursor | None = None,
+        filename: str | None = None,
+        page_size: int = TREE_PATH_MAX_ELEMENT_COUNT,
+    ) -> FlatFilesResult:
+        """Return a paginated flat list of all leaf files matching the query.
+
+        Used by the AI search_by_filename tool to search files by name across the whole index.
+
+        If ``filename`` is provided, a case-insensitive wildcard query is applied on
+        ``full_path.keyword`` (must match) with an additional boost on
+        ``short_name.keyword`` (should match) so that hits where the filename itself
+        matches rank above hits where only a parent folder matches.
+
+        Hits are sorted by ``[_score desc, full_path.keyword asc]``, so the boost above
+        decides the order and the path only breaks ties — which it has to, because
+        ``search_after`` can only resume a total order.
+
+        Re-indexing a changed file under the same path leaves two live documents, and
+        they are deduplicated here rather than by collapsing: Elasticsearch accepts
+        ``collapse`` alongside ``search_after`` only when the sort is the collapse field
+        and nothing else, which rules it out as soon as ``_score`` leads the sort.  Two
+        documents for one path score identically for this query in every ordinary case,
+        so they arrive next to each other; the path the cursor carries closes the one
+        gap that leaves, a pair split across a page boundary.
+
+        Cursor pagination uses ``search_after`` over that same sort: the cursor is the
+        sort tuple of the last hit of the previous page rather than a value that has
+        to be interpreted.  A page can therefore hold fewer than ``page_size`` nodes
+        without meaning the result set is exhausted — ``next_cursor`` decides that.
+
+        Resumability depends on the sort keys staying put, which only a snapshot
+        guarantees.  A query carrying a point-in-time is therefore paged against that
+        snapshot, and the cursor carries the id so every page reads the same one.
+        Without a point-in-time the pages read the live index, where ``_score`` — the
+        primary sort key — drifts as documents are indexed, deleted and merged, so
+        the ordering is only resumable while the index is unchanged.
+
+        Args:
+            page_size: Maximum number of distinct paths per page.
+
+        Raises:
+            InvalidPaginationCursorError: ``after`` was not produced by this search,
+                or belongs to a different query.
+        """
+        # At least one hit, because the lookahead hit that answers "is there a next
+        # page?" is the hit beyond the page, which an empty page has no cursor to
+        # resume from. The ceiling is the shared browse page size rather than
+        # anything this search needs — it fetches hits and runs no aggregation — so
+        # that one setting cannot mean two sizes across the two browse tools.
+        page_size = min(max(page_size, 1), TREE_PATH_MAX_ELEMENT_COUNT)
+        # Binds the cursor to the result set it was minted for.  Both inputs
+        # matter: the REST caller varies search_string, the AI tool varies
+        # filename, and either changes which hits the sort positions refer to.
+        digest = SearchAfterCursor.digest(query.search_string, filename or "")
+        cursor = after
+        if cursor is not None:
+            cursor.validate_for(expected_src="flat_files", expected_digest=digest)
+        if cursor is not None and cursor.pit is not None:
+            # Keep paging on the snapshot the previous page read instead of a
+            # fresh one, so the sort positions the cursor refers to still hold.
+            query = query.model_copy(update={"query_id": cursor.pit})
+        search = self._get_search_by_query(query=query, with_highlight=False)
         if filename:
             search = search.query(
                 "bool",
@@ -1457,28 +1565,47 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                     )
                 ],
             )
-        search.aggs.bucket("directory", dir_aggregation)
-        search = search[0:0]  # do not fetch hits
-        result = search.using(self._elasticsearch).execute()
+        search = search.source(includes=["full_path", "seen", "flagged"])
+        # Relevance leads: the should-clause above exists to rank a hit whose own name
+        # matches over one where only a parent folder does, which means nothing unless
+        # _score is a sort key. The path breaks ties into a total order for
+        # search_after.
+        search = search.sort(
+            {"_score": {"order": "desc"}},
+            {"full_path.keyword": {"order": "asc"}},
+        )
+        if cursor is not None:
+            search = search.extra(search_after=cursor.last_sort)
+        # +1 to detect whether more pages exist
+        search = search.extra(size=page_size + 1)
+        result = self._execute_search_with_query(search=search, query=query)
 
-        raw_buckets = list(result.aggregations.directory.buckets)
-        nodes = [
-            self._build_tree_paths_node(
-                key=str(b.key),
-                doc_count=b.doc_count,
-                first_hit_bucket=b.first_hit,
-                unseen_bucket=b.unseen,
-                flagged_bucket=b.flagged,
-                direct_children_count=0,
-            )
-            for b in raw_buckets[:TREE_PATH_MAX_ELEMENT_COUNT]
-        ]
+        hits = list(result.hits)
+        page = hits[:page_size]
+        nodes = self._distinct_flat_file_nodes(page, cursor)
         next_cursor = (
-            str(raw_buckets[TREE_PATH_MAX_ELEMENT_COUNT - 1].key)
-            if len(raw_buckets) > TREE_PATH_MAX_ELEMENT_COUNT
+            SearchAfterCursor(
+                src="flat_files",
+                last_sort=list(page[-1].meta.sort),
+                # The snapshot this page was read against, so the next one reads the
+                # same. None when the caller paged without one, which leaves the sort
+                # keys free to drift between pages.
+                pit=query.query_id,
+                query_digest=digest,
+            )
+            if len(hits) > len(page)
             else None
         )
-        return TreePathsResult(nodes=nodes, next_page_cursor=next_cursor)
+        return FlatFilesResult(
+            nodes=nodes,
+            next_cursor=next_cursor,
+            # Left at the ES default of 10k rather than tracked exactly: this count
+            # exists to tell the caller roughly how much is left, and count_relation
+            # reports "gte" once the cap is hit, which is honest. Counting every hit
+            # of a wildcard search on every page is not worth that.
+            total_count=result.hits.total.value,  # type: ignore[attr-defined]
+            count_relation=result.hits.total.relation,  # type: ignore[attr-defined]
+        )
 
     def get_spine_by_path(
         self,
@@ -1526,7 +1653,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             size=len(spine_paths),
         )
 
-        search = self._get_search_by_query(query=query)
+        search = self._get_search_by_query(query=query, with_highlight=False)
         search.aggs.bucket("spine", terms_agg)
         search.aggs.bucket("direct_children_by_parent", parent_path_spine_agg)
         search.aggs.bucket("total_files", A("filter", filter=Q("match_all")))
@@ -1598,6 +1725,49 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             is_flagged=is_flagged,
             direct_children_count=direct_children_count,
         )
+
+    @staticmethod
+    def _build_flat_file_node(hit: _EsFile) -> TreePathsNode:
+        """Build a TreePathsNode for a single leaf file hit.
+
+        The descendant counts are always zero: a leaf file has no children, and
+        its own seen/flagged state is reported through is_unseen / is_flagged.
+        Missing flags default to seen and unflagged, as in _build_tree_paths_node.
+        """
+        return TreePathsNode(
+            full_path=FilePurePath(str(hit.full_path)),
+            file_count=0,
+            file_id=hit.meta.id,
+            unseen_count=0,
+            is_unseen=not bool(getattr(hit, "seen", True)),
+            flagged_count=0,
+            is_flagged=bool(getattr(hit, "flagged", False)),
+        )
+
+    @classmethod
+    def _distinct_flat_file_nodes(
+        cls, page: list[_EsFile], cursor: SearchAfterCursor | None
+    ) -> list[TreePathsNode]:
+        """Build the nodes of one flat-file page, one per path.
+
+        See get_flat_files_by_query for why the duplicates are dropped here instead of
+        by collapsing, and why the cursor's own path has to be dropped with them.
+        """
+        previous_path = (
+            str(cursor.last_sort[_FLAT_FILES_PATH_SORT_POSITION])
+            if cursor is not None
+            and len(cursor.last_sort) > _FLAT_FILES_PATH_SORT_POSITION
+            else None
+        )
+        seen_paths = {previous_path}
+        nodes: list[TreePathsNode] = []
+        for hit in page:
+            node = cls._build_flat_file_node(hit)
+            if str(node.full_path) in seen_paths:
+                continue
+            seen_paths.add(str(node.full_path))
+            nodes.append(node)
+        return nodes
 
     @staticmethod
     def _parse_tree_bucket(path: Any) -> TreePathsNode:

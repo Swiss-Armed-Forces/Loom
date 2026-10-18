@@ -15,6 +15,7 @@ from common.ai_context.tool_models import (
     TranslateFileResult,
 )
 from common.file.file_repository import TranslatedLanguage
+from common.models.cursor_pagination import SearchAfterCursor
 from common.services.task_service import TaskService
 
 
@@ -39,30 +40,38 @@ class TaskCallService(TaskService):
         context_id: UUID,
         query_string: str,
         folder_path: str | None = None,
+        after_cursor: SearchAfterCursor | None = None,
     ) -> ExecuteQueryResult:
         result = self._send_task(
             "worker.ai.tasks.execute_query_tool.execute_query_tool_task",
-            args=[query_string, context_id, folder_path],
+            args=[query_string, context_id, folder_path, after_cursor],
             root_id=str(uuid4()),
         ).get()
         return ExecuteQueryResult.model_validate(result)
 
     def call_list_folder_contents_tool(
-        self, context_id: UUID, folder_path: str
+        self,
+        context_id: UUID,
+        folder_path: str,
+        after_cursor: SearchAfterCursor | None = None,
     ) -> ListFolderContentsResult:
         result = self._send_task(
             "worker.ai.tasks.list_folder_contents_tool.list_folder_contents_tool_task",
-            args=[folder_path, context_id],
+            args=[folder_path, context_id, after_cursor],
             root_id=str(uuid4()),
         ).get()
         return ListFolderContentsResult.model_validate(result)
 
     def call_search_by_filename_tool(
-        self, context_id: UUID, filename: str
+        self,
+        context_id: UUID,
+        filename: str,
+        search_string: str = "*",
+        after_cursor: SearchAfterCursor | None = None,
     ) -> SearchByFilenameResult:
         result = self._send_task(
             "worker.ai.tasks.search_by_filename_tool.search_by_filename_tool_task",
-            args=[filename, context_id],
+            args=[filename, context_id, search_string, after_cursor],
             root_id=str(uuid4()),
         ).get()
         return SearchByFilenameResult.model_validate(result)

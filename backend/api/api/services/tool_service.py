@@ -1,25 +1,33 @@
 """Tool functions that dispatch work to Celery tasks."""
 
+import secrets
+from collections import deque
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from typing import NamedTuple
 from uuid import UUID
 
 from ag_ui.core import Tool as AGUITool
-from common.ai_context.ai_context_repository import AiContext, CapabilityId, ModeId
+from common.ai_context.ai_context_repository import (
+    AiContext,
+    CapabilityId,
+    ModeId,
+)
 from common.ai_context.tool_models import (
+    CursorHandle,
     DescribeImageResult,
-    ExecuteQueryResult,
+    ExecuteQueryAgentResult,
     GetFileFieldResult,
     GetFileResult,
-    ListFolderContentsResult,
+    ListFolderContentsAgentResult,
     RagSearchResult,
-    SearchByFilenameResult,
+    SearchByFilenameAgentResult,
     SuggestQueriesResult,
     SummarizeFileResult,
     ToolSource,
     TranslateFileResult,
 )
+from common.models.cursor_pagination import CursorSource, SearchAfterCursor
 from common.settings import settings
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
@@ -32,12 +40,31 @@ from api.services.task_call_service import TaskCallService
 
 _MAX_CITATION_CHARS = 300
 
+# Enough for the three paginated tools to page in parallel without an older page's
+# handles being evicted under them.
+_MAX_TRACKED_CURSORS = 32
+
+
+class StoredCursor(NamedTuple):
+    """A pagination cursor kept out of the agent's context, and the handle naming it."""
+
+    handle: CursorHandle
+    cursor: SearchAfterCursor
+
 
 @dataclass
 class AgentDeps:
+    """State one agent run carries alongside its context."""
+
     context: AiContext
     source_collector: list[ToolSource] = dataclass_field(default_factory=list)
     active_mode: ModeId = ModeId.WORK
+    # Handles only have to outlive the paging run that minted them, and the agent pages
+    # forward, so the oldest is always the one to drop. A hard bound is all the
+    # housekeeping this needs: the deps themselves live for one agent run.
+    cursors: deque[StoredCursor] = dataclass_field(
+        default_factory=lambda: deque(maxlen=_MAX_TRACKED_CURSORS)
+    )
 
 
 class RoutedTools(NamedTuple):
@@ -48,7 +75,10 @@ class RoutedTools(NamedTuple):
 class ToolService:
     """Provides tool functions for the pydantic-ai agent."""
 
-    def __init__(self, task_call_service: TaskCallService) -> None:
+    def __init__(
+        self,
+        task_call_service: TaskCallService,
+    ) -> None:
         self._task_call_service = task_call_service
         t = settings.llm.agent.tool_timeout
 
@@ -139,6 +169,49 @@ class ToolService:
             ),
             tools=[PydanticTool(self.rag_search, timeout=t)],
         )
+
+    def _store_cursor(
+        self, deps: AgentDeps, cursor: SearchAfterCursor | None
+    ) -> CursorHandle | None:
+        """Keep a cursor in the run's state and return the handle that names it.
+
+        The cursor carries a point-in-time id that is both long and of no use to the
+        agent, which would otherwise pay for it twice per page — once reading it, once
+        passing it back.
+        """
+        if cursor is None:
+            return None
+        handle = CursorHandle(secrets.token_urlsafe(16))
+        deps.cursors.append(StoredCursor(handle=handle, cursor=cursor))
+        return handle
+
+    def _resolve_cursor(
+        self,
+        deps: AgentDeps,
+        handle: CursorHandle | None,
+        expected_src: CursorSource,
+    ) -> SearchAfterCursor | None:
+        if handle is None:
+            return None
+
+        stored = next((c for c in deps.cursors if c.handle == handle), None)
+        if stored is None:
+            raise ModelRetry(
+                "Unknown after_cursor. Cursors are only valid within the "
+                "run that produced them, and only the most recent ones are kept. "
+                "Call this tool again without after_cursor to start from the "
+                "first page."
+            )
+        # The worker rejects a cursor from another search as well, but it is the agent
+        # confusing two tools that this catches, and there is no reason to spend a task
+        # round-trip on finding that out.
+        if stored.cursor.src != expected_src:
+            raise ModelRetry(
+                "That after_cursor belongs to a different tool. Pass a cursor back "
+                "only to the tool that returned it, or omit it to start from the "
+                "first page."
+            )
+        return stored.cursor
 
     def capabilities_for_mode(self, mode: ModeId) -> list[Capability[AgentDeps]]:
         """Return the capabilities available for the given mode."""
@@ -250,22 +323,39 @@ class ToolService:
         ctx: RunContext[AgentDeps],
         query_string: str,
         folder_path: str | None = None,
-    ) -> ExecuteQueryResult:
+        after_cursor: CursorHandle | None = None,
+    ) -> ExecuteQueryAgentResult:
         """Execute a Lucene query string and return matching files with content
         snippets.
 
         You can use a query string returned by suggest_queries or compose your
         own Lucene query when you already know the right terms.
 
+        Results are paginated, best matches first. The response includes
+        total_count, count_relation, has_more, and next_cursor. When has_more is True,
+        call this tool again with the same query_string and folder_path, and
+        the returned next_cursor as after_cursor, to retrieve the next page.
+        Count_relation is set to "eq" if the total_count is exact. If set to "gte"
+        the total_count is a lower bound.
+
         Args:
             query_string: A valid Elasticsearch Lucene query string, as
                 returned by suggest_queries.
             folder_path: Optional absolute folder path to restrict results to
-                a subtree, e.g. "/" or "//source/subfolder".
+                a subtree, e.g. "/" or "//source/subfolder". Must be repeated
+                unchanged when paging.
+            after_cursor: Opaque pagination cursor from a previous call's
+                next_cursor field. Cursors belong to the tool that produced
+                them; do not pass one from a different tool. Omit for the
+                first page.
         """
+        resolved_cursor = self._resolve_cursor(ctx.deps, after_cursor, "execute_query")
         try:
             result = self._task_call_service.call_execute_query_tool(
-                ctx.deps.context.id_, query_string, folder_path
+                ctx.deps.context.id_,
+                query_string,
+                folder_path,
+                resolved_cursor,
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
@@ -276,7 +366,9 @@ class ToolService:
             )
             for f in result.files
         )
-        return result
+        return ExecuteQueryAgentResult.from_tool_result(
+            result, self._store_cursor(ctx.deps, result.next_cursor)
+        )
 
     def get_file(self, ctx: RunContext[AgentDeps], file_id: str) -> GetFileResult:
         """Get the full path and available fields for a file by its UUID.
@@ -408,43 +500,92 @@ class ToolService:
         return result
 
     def list_folder_contents(
-        self, ctx: RunContext[AgentDeps], folder_path: str
-    ) -> ListFolderContentsResult:
+        self,
+        ctx: RunContext[AgentDeps],
+        folder_path: str,
+        after_cursor: CursorHandle | None = None,
+    ) -> ListFolderContentsAgentResult:
         """List the direct children (subfolders and files) of a folder path.
 
         Returns names, types, file counts, and file IDs for each entry.
         Use "/" for the root. Use this to explore the folder structure or
         answer questions about what files exist in a given location.
 
+        Results are paginated. The response includes has_more and next_cursor.
+        When has_more is True, call this tool again with the same folder_path
+        and the returned next_cursor as after_cursor to retrieve the next page.
+
         Args:
             folder_path: Absolute folder path to list, e.g. "/" or "//source/subfolder".
+            after_cursor: Opaque pagination cursor from a previous call's
+                next_cursor field. Cursors belong to the tool that produced
+                them; do not pass one from a different tool. Omit for the
+                first page.
         """
+        resolved_cursor = self._resolve_cursor(
+            ctx.deps, after_cursor, "list_folder_contents"
+        )
         try:
-            return self._task_call_service.call_list_folder_contents_tool(
-                ctx.deps.context.id_, folder_path
+            result = self._task_call_service.call_list_folder_contents_tool(
+                ctx.deps.context.id_,
+                folder_path,
+                resolved_cursor,
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
 
+        return ListFolderContentsAgentResult.from_tool_result(
+            result, self._store_cursor(ctx.deps, result.next_cursor)
+        )
+
     def search_by_filename(
-        self, ctx: RunContext[AgentDeps], filename: str
-    ) -> SearchByFilenameResult:
+        self,
+        ctx: RunContext[AgentDeps],
+        filename: str,
+        search_string: str = "*",
+        after_cursor: CursorHandle | None = None,
+    ) -> SearchByFilenameAgentResult:
         """Search for files whose name contains the given substring.
 
         Returns matching files with their full paths and IDs. Use this when
         the user asks to find a file by name rather than by content.
 
+        The name match can be narrowed with a Lucene query so that only files
+        the query matches are searched by name, e.g. to find a filename within
+        one file type or date range.
+
+        Results are paginated, best matches first. The response includes
+        has_more, next_cursor, total_count and count_relation.
+        When has_more is True, call this tool again with the same filename
+        and search_string and the returned next_cursor as after_cursor to
+        retrieve the next page.
+        Count_relation is set to "eq" if the total_count is exact.
+        If it is set to "gte" the total_count is a lower bound.
+
         Args:
             filename: Substring to match against filenames (case-insensitive).
+            search_string: Optional Elasticsearch Lucene query the files have
+                to match as well, as returned by suggest_queries. Defaults to
+                "*", which searches the whole index. Must be repeated
+                unchanged when paging.
+            after_cursor: Opaque pagination cursor from a previous call's
+                next_cursor field. Cursors belong to the tool that produced
+                them; do not pass one from a different tool. Omit for the
+                first page.
         """
+        resolved_cursor = self._resolve_cursor(ctx.deps, after_cursor, "flat_files")
         try:
             result = self._task_call_service.call_search_by_filename_tool(
-                ctx.deps.context.id_, filename
+                ctx.deps.context.id_,
+                filename,
+                search_string,
+                resolved_cursor,
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
+
         ctx.deps.source_collector.extend(
             ToolSource(
                 file_id=UUID(f.file_id),
@@ -452,7 +593,10 @@ class ToolService:
             )
             for f in result.files
         )
-        return result
+
+        return SearchByFilenameAgentResult.from_tool_result(
+            result, self._store_cursor(ctx.deps, result.next_cursor)
+        )
 
     def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
         """Run the full RAG pipeline: retrieve and synthesize an answer from documents.

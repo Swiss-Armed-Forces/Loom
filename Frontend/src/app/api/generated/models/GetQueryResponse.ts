@@ -39,6 +39,7 @@ export interface GetQueryResponse {
  */
 export const GetQueryResponseKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetQueryResponseKeepAliveEnum =
