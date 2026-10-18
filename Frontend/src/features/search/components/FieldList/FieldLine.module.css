@@ -1,0 +1,16 @@
+/* Columns come from the list container, so every card breaks at the same x
+positions and the column header above them lines up with the values. */
+.line {
+    composes: fieldGrid from "./columnLayout.module.css";
+    align-items: baseline;
+    line-height: var(--loom-row-line-height, 1.4);
+}
+
+.cell {
+    composes: cell from "./columnLayout.module.css";
+}
+
+.cell em {
+    font-style: normal;
+    background-color: var(--mui-palette-warning-light, #ffb74d);
+}

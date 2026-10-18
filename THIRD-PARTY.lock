@@ -14,7 +14,7 @@ registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot prod-c7ec9
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch prod-d2f97a7a0f3e6b7fbb083d14891b0ffb68c1828bf234cdd4ab4b35e78ddcf8c6
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter prod-e0636b4420eb787bdf3f9d893ede1fe6d815b7137b716df4b8c21e5a6a469ed2
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue prod-3088bcf3f332b0053fb7ed60db65855ab5e20cf932d5c6dcfbaaea762d0aec46
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend prod-489a9e8c9ace11117efee0bc8c35e5a27254d4fa3b4d7f446c572526b5e6322c
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend prod-6070c4f5b6b943cfc0e27034fc11691d0ac36230d9c3f936c9ace41afdce1f26
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg prod-1e195b2caad126c7628632ed5d59d176062058b5dc95ff97e3840003511a6659
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana prod-5196f82701fb7a3ac4e671b95a2f5d7bbea840ce3f4e524282ab3cf7f5347737
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda 2.20.1

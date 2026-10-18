@@ -12,6 +12,9 @@ export interface ResultCardSurfaceInput {
     isHighlighted: boolean;
     /** Whether the file is still unread. */
     unread: boolean;
+    /** Whether the card sits in a gapless list, where the rows meet and a
+     *  halo around one card would land on its neighbours. */
+    flat: boolean;
 }
 
 export interface ResultCardSurfaceStyle {
@@ -60,15 +63,39 @@ const cursorGlow = (theme: Theme): string => {
     return `${elevation}, 0 0 ${CURSOR_GLOW_BLUR} ${CURSOR_GLOW_SPREAD} ${tint}`;
 };
 
+/** Width of the ring the cursor is drawn with in a gapless list. */
+const CURSOR_RING_WIDTH = "2px";
+
+/**
+ * Cursor mark for a gapless list, drawn inside the card's own edges.
+ *
+ * A halo needs clear space around the card to read as a halo; where the rows
+ * meet there is none, and the blur would land on the neighbouring rows
+ * instead. A ring claims only the card it belongs to.
+ */
+const cursorRing = (theme: Theme): string => {
+    const tint = theme.vars
+        ? `rgba(${theme.vars.palette.primary.mainChannel} / ${CURSOR_GLOW_OPACITY})`
+        : alpha(theme.palette.primary.main, CURSOR_GLOW_OPACITY);
+    return `inset 0 0 0 ${CURSOR_RING_WIDTH} ${tint}`;
+};
+
 /**
  * Elevation of a result card.
  *
  * The highlighted card lifts above the list. The scheme's shadows are black,
  * which is weak against the dark paper, so this reinforces the tint and the
- * glow rather than standing on its own.
+ * glow rather than standing on its own. A gapless list has nothing to lift
+ * into - the shadow would fall on the row below - so it stays flat and the
+ * ring does the marking.
  */
-export const resultCardElevation = (isHighlighted: boolean): number =>
-    isHighlighted ? CURSOR_ELEVATION : BASE_ELEVATION;
+export const resultCardElevation = (
+    isHighlighted: boolean,
+    flat: boolean,
+): number => {
+    if (flat) return 0;
+    return isHighlighted ? CURSOR_ELEVATION : BASE_ELEVATION;
+};
 
 /**
  * Surface styling of a result card, taken from theme tokens only so both
@@ -89,10 +116,13 @@ export const resultCardElevation = (isHighlighted: boolean): number =>
  * in `FileCardHeader` and keep the distinction readable in greyscale.
  */
 export const resultCardSurfaceStyle = (
-    { isHighlighted, unread }: ResultCardSurfaceInput,
+    { isHighlighted, unread, flat }: ResultCardSurfaceInput,
     theme: Theme,
-): ResultCardSurfaceStyle => ({
-    borderColor: unread ? "primary.main" : "transparent",
-    bgcolor: isHighlighted ? cursorTint(theme) : undefined,
-    boxShadow: isHighlighted ? cursorGlow(theme) : undefined,
-});
+): ResultCardSurfaceStyle => {
+    const cursorShadow = flat ? cursorRing(theme) : cursorGlow(theme);
+    return {
+        borderColor: unread ? "primary.main" : "transparent",
+        bgcolor: isHighlighted ? cursorTint(theme) : undefined,
+        boxShadow: isHighlighted ? cursorShadow : undefined,
+    };
+};

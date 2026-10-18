@@ -12,6 +12,8 @@ interface ResultCardSurfaceProps {
     isHighlighted: boolean;
     /** The file's `seen` flag - the card is unread while this is false. */
     seen: boolean;
+    /** Whether the list draws its rows gapless; see `resultCardSurfaceStyle`. */
+    flat?: boolean;
     children: ReactNode;
 }
 
@@ -30,18 +32,19 @@ interface ResultCardSurfaceProps {
 export const ResultCardSurface = ({
     isHighlighted,
     seen,
+    flat = false,
     children,
 }: ResultCardSurfaceProps) => {
     const theme = useTheme();
     return (
         <Card
-            elevation={resultCardElevation(isHighlighted)}
+            elevation={resultCardElevation(isHighlighted, flat)}
             data-read-state={seen ? "read" : "unread"}
             data-cursor={isHighlighted ? "true" : undefined}
             sx={{
                 borderLeft: "3px solid",
                 ...resultCardSurfaceStyle(
-                    { isHighlighted, unread: !seen },
+                    { isHighlighted, unread: !seen, flat },
                     theme,
                 ),
             }}
