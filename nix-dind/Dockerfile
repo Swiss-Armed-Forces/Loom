@@ -89,8 +89,8 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.14.1-r3"
-ARG XZ_VERSION="5.8.1-r0"
+ARG CURL_VERSION="8.14.1-r4"
+ARG XZ_VERSION="5.8.4-r0"
 RUN set -exu \
     && apk add --no-cache \
     curl=${CURL_VERSION} \
