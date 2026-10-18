@@ -409,12 +409,25 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `up -d` and `up --integrationtest` implicitly) back at the http port, where Traefik answers 404 on
   a perfectly healthy stack. Expect one self-signed certificate interstitial
 - `generate-third-party` - Regenerate `THIRD-PARTY.md`, its `Frontend/public/` copy and
-  `THIRD-PARTY.lock`. The lock records which image tag produced each image's section; a section
-  is reused byte-for-byte while its tag is unchanged, so a pipeline that changed no image scans
-  nothing and builds nothing. **The generated file must depend on the repository alone** - it is
-  committed by CI, and a generator that answers differently on two runners pushes a commit per
-  pipeline forever. Pass `--refresh` to rescan every image regardless of the lock, which is how
-  package drift inside an unchanged image is picked up deliberately rather than at random
+  `THIRD-PARTY.lock`. A section is a syft scan of an image's *package inventory*, so the lock keys
+  it on the inputs that can change that inventory and on nothing else: the image's Dockerfile
+  (where every `FROM` pins its base by digest, and the apt, apk, plugin and model versions are
+  pinned too), the build arguments its Skaffold configuration declares, and whatever
+  `cicd/third_party_inputs.yaml` adds for it - dependency lockfiles and installer scripts. A
+  section is reused byte-for-byte while that key is unchanged, so a change to application source,
+  configuration or documentation scans nothing, builds nothing and leaves the lock alone.
+  **The generated file must depend on the repository alone** - it is committed by CI, and a
+  generator that answers differently on two runners pushes a commit per pipeline forever, which is
+  why build arguments are hashed as written rather than as resolved (`DOCKER_REGISTRY` expands to a
+  dependency-proxy prefix in CI and to `docker.io` elsewhere). **Adding an image, or a `COPY` that
+  installs something, means declaring it in `cicd/third_party_inputs.yaml`** - the tests in
+  `cicd/tests/test_third_party_inputs.py` fail until every image has an entry and every `COPY`
+  source is either keyed or listed as `not_keyed`, because the alternative fails silently: a
+  licence document that no longer describes what the image ships. Pass `--refresh` to rescan every
+  image regardless of the lock, which is the only way to notice inventories no file hash can track
+  - `roundcube` composer-requires its plugins at build time with no lockfile, `alpine` uses `~=`
+  apk pins, `worker` and `tika` use apt version wildcards, and `ollama-models` pulls mutable model
+  tags
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
   HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a

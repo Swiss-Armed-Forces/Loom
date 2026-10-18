@@ -226,6 +226,10 @@ export const documentPreview = (
         ...(document.authors.length > 0
             ? { dc_creator: { value: document.authors.join(", ") } }
             : {}),
+        // Every demo document has both, so unlike the metadata above they are
+        // not conditional - the column is never empty.
+        "tika_meta.dcterms_created": { value: document.createdAt },
+        "tika_meta.dcterms_modified": { value: document.modifiedAt },
         ...(document.messageFrom
             ? {
                   message_from: {

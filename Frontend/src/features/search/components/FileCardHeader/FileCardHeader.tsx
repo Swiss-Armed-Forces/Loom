@@ -19,6 +19,9 @@ import styles from "./FileCardHeader.module.css";
 import { NavigateToParent } from "./NavigateToParent";
 import { hasVisibleProcessingStatus } from "./processingStatusTour";
 
+/** Avatar edge length on a dense card. */
+const COMPACT_AVATAR_SIZE_PX = 24;
+
 const stateChipColor: Record<string, "warning" | "error"> = {
     started: "warning",
     reindexing: "warning",
@@ -98,11 +101,34 @@ export const FileCardHeader = ({
     return (
         <CardHeader
             ref={headerRef}
-            className={styles.resultCardHeader}
-            sx={{ flex: 1 }}
+            className={
+                isCompact
+                    ? `${styles.resultCardHeader} ${styles.compactHeader}`
+                    : styles.resultCardHeader
+            }
+            sx={{
+                flex: 1,
+                ...(isCompact && {
+                    p: 0.75,
+                    // The action cluster reserves a row of 40px buttons that a
+                    // dense card cannot spare, so it is claimed only while the
+                    // card is under the pointer or holds focus.
+                    "& .MuiCardHeader-action": {
+                        opacity: 0,
+                        transition: "opacity 0.15s",
+                    },
+                    [`&:hover .MuiCardHeader-action,
+                      &:focus-within .MuiCardHeader-action`]: { opacity: 1 },
+                    // Nothing ever hovers on a touch screen, so show them there.
+                    "@media (hover: none)": {
+                        "& .MuiCardHeader-action": { opacity: 1 },
+                    },
+                }),
+            }}
             avatar={
                 showExtensionIcon ? (
                     <FileAvatar
+                        size={isCompact ? COMPACT_AVATAR_SIZE_PX : undefined}
                         mimeType={filePreview.mimeType}
                         mimeTypeGroup={filePreview.mimeTypeGroup}
                         performSearch={(negate, accumulate) =>
@@ -126,7 +152,12 @@ export const FileCardHeader = ({
             }
             title={
                 <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: isCompact ? 0.5 : 1,
+                        minWidth: 0,
+                    }}
                     data-tour="result-card-path"
                 >
                     {showParentNavigation && filePreview.parentId && (

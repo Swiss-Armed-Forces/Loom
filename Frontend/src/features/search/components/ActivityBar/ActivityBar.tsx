@@ -112,7 +112,7 @@ export const ActivityBar = () => {
             panel: LeftSidebarPanel.CUSTOMIZATION,
             icon: <Tune />,
             label: t("sideMenu.customizations.title"),
-            dataTour: "sidebar-card-customization",
+            dataTour: "sidebar-customization",
         },
         {
             panel: LeftSidebarPanel.CHAT,

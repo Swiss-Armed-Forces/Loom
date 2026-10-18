@@ -1,0 +1,79 @@
+/* The header is laid out exactly like a card's content row - a field grid
+that takes the remaining width, then the thumbnail slot - so the labels sit
+over the values by construction. Its padding reproduces the card's own left
+inset, the unread bar plus the content padding, and the content padding on
+the right. */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 1rem 0.25rem calc(1rem + 3px);
+    background-color: var(--mui-palette-background-default);
+    border-bottom: 1px solid var(--mui-palette-divider);
+}
+
+.labels {
+    composes: fieldGrid from "./columnLayout.module.css";
+    flex: 1;
+    align-items: center;
+}
+
+.cell {
+    composes: cell from "./columnLayout.module.css";
+    position: relative;
+    display: flex;
+}
+
+.thumbnailColumn {
+    composes: thumbnailSlot from "./columnLayout.module.css";
+    position: relative;
+}
+
+.label {
+    justify-content: flex-start;
+    min-width: 0;
+    flex: 1;
+    border-radius: 4px;
+}
+
+/* A column being dragged to a new position fades, and the column it would
+land on takes a line down the edge it would land against. */
+.cell[data-dragging="true"] {
+    opacity: 0.4;
+}
+
+.cell[data-drop-target="true"] {
+    box-shadow: inset 2px 0 0 var(--mui-palette-primary-main);
+}
+
+/* Sits astride the divider it drags, wider than the line it covers so it can
+be caught with a pointer, and above the label so the grab does not sort. */
+.resizeHandle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -4px;
+    width: 9px;
+    z-index: 1;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.resizeHandle::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    width: 1px;
+    background-color: var(--mui-palette-primary-main);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.resizeHandle:hover::after,
+.resizeHandle:active::after {
+    opacity: 1;
+}

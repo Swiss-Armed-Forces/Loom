@@ -28,6 +28,24 @@
     z-index: 1;
 }
 
+/* A deep path wraps to two or three lines and silently sets the card's
+height, so a dense header keeps it on one line and cuts each crumb short. */
+.compactHeader {
+    gap: 0.5rem;
+    word-break: normal;
+}
+
+.compactHeader :global .MuiBreadcrumbs-ol {
+    flex-wrap: nowrap;
+}
+
+.compactHeader :global .MuiBreadcrumbs-li {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .clickableChip {
     cursor: pointer;
 }

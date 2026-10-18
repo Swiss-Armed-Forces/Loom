@@ -5,27 +5,22 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 TOPLEVEL_DIR="${SCRIPT_DIR}/.."
 
 FRONTEND_DIR="${TOPLEVEL_DIR}/Frontend"
-THIRD_PARTY_LICENCES="THIRD-PARTY.md"
-THIRD_PARTY_LICENCES_OUTPUT="${TOPLEVEL_DIR}/${THIRD_PARTY_LICENCES}"
 FRONTEND_STATIC_DIR="${FRONTEND_DIR}/public"
 LICENSE_TXT="${TOPLEVEL_DIR}/LICENSE.txt"
 CONTRIBUTING_MD="${TOPLEVEL_DIR}/CONTRIBUTING.md"
 CODE_OF_CONDUCT_MD="${TOPLEVEL_DIR}/CODE_OF_CONDUCT.md"
 
 VERBOSE=false
+# THIRD-PARTY.md is not copied here. generate_third_party writes the frontend's
+# copy itself, in the same run that writes the root file, so that the two cannot
+# disagree; this script runs beside it rather than after it.
 STEPS=(
-    copy_third_party_license
     copy_license
     copy_contributing
     copy_code_of_conduct
     fix_frontend
 )
 SKIP=()
-
-copy_third_party_license(){
-    cp \
-        "${THIRD_PARTY_LICENCES_OUTPUT}" "${FRONTEND_STATIC_DIR}"
-}
 
 copy_license(){
     cp \

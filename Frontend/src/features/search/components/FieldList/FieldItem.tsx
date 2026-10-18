@@ -9,7 +9,6 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import { Fragment, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -20,9 +19,7 @@ import {
 
 import styles from "./FieldItem.module.css";
 import { HighlightContent } from "./HighlightContent";
-
-const PATTERN_HIGHLIGHT_TAG = /(<highlight>.*?<\/highlight>)/g;
-const STRIP_TAGS = /<\/?highlight>/g;
+import { renderHighlight } from "./renderHighlight";
 
 interface FieldItemProps {
     field: string;
@@ -36,6 +33,9 @@ interface FieldItemProps {
     /** When true the accordion is always expanded and does not write to
      *  global expansion state (e.g. FileDetailPanel full-details view). */
     fullDetails?: boolean;
+    /** Drops the separating top border, so an accordion can sit among the
+     *  divider-free rows of the compact field layout. */
+    disableDivider?: boolean;
 }
 
 export const FieldItem = ({
@@ -46,6 +46,7 @@ export const FieldItem = ({
     onSort,
     onRemove,
     fullDetails,
+    disableDivider,
 }: FieldItemProps) => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
@@ -65,20 +66,6 @@ export const FieldItem = ({
         }
     };
 
-    // Parses text with <highlight> tags into JSX
-    const renderHighlight = (text: string): ReactNode => {
-        return text.split(PATTERN_HIGHLIGHT_TAG).map((part, i) => {
-            if (part.startsWith("<highlight>")) {
-                return (
-                    <em key={`${i}-${part.slice(0, 8)}`}>
-                        {part.replace(STRIP_TAGS, "")}
-                    </em>
-                );
-            }
-            return <Fragment key={`${i}-${part.slice(0, 8)}`}>{part}</Fragment>;
-        });
-    };
-
     return (
         <Accordion
             disableGutters
@@ -89,9 +76,13 @@ export const FieldItem = ({
             sx={{
                 bgcolor: "transparent",
                 "&:before": { display: "none" },
-                borderTop: "1px solid",
-                borderColor: "divider",
-                "&:first-of-type": { borderTop: 0 },
+                ...(disableDivider
+                    ? {}
+                    : {
+                          borderTop: "1px solid",
+                          borderColor: "divider",
+                          "&:first-of-type": { borderTop: 0 },
+                      }),
             }}
         >
             <AccordionSummary

@@ -172,21 +172,25 @@
                 "title": "Customise the shortcuts",
                 "description": "The Key Customisation panel lets you customize the shortcuts to suit to your needs."
             },
-            "cardCustomization": {
+            "customization": {
                 "title": "Customise how results look",
-                "description": "The Card Customisation panel lets you control what each result card shows and how it behaves. It is divided into three sections: Card Display, Card Fields, and Auto Actions."
+                "description": "The Customisation panel controls how results look and behave. It has three tabs: Card for how a result is drawn, Auto Actions for what happens when you open one, and Keyboard for the shortcuts."
             },
-            "cardCustomizationDisplay": {
+            "customizationCardDisplay": {
                 "title": "Card Display",
-                "description": "Choose a density preset to control how much information each card shows. Compact fits more results on screen; Comfortable shows more detail. Switch to Custom to fine-tune individual elements such as thumbnails, highlights, tags, and action buttons."
+                "description": "Preset picks a whole look at once, Auto letting the window decide it. Spacing sets how much room a card takes on its own, and the switches below turn individual elements such as thumbnails, highlights, tags and action buttons on or off without disturbing the spacing."
             },
-            "cardCustomizationFields": {
+            "customizationCardFields": {
                 "title": "Card Fields",
                 "description": "Toggle individual metadata fields on or off to control which values appear on each card. Only fields that exist in your indexed data are listed here."
             },
-            "cardCustomizationAutoActions": {
+            "customizationAutoActions": {
                 "title": "Auto Actions",
                 "description": "Automatic actions run when you open or interact with a result. Enable any combination of mark-as-seen, flag, translate, summarise, describe images, or reindex, so routine tasks happen without manual steps."
+            },
+            "customizationShortcuts": {
+                "title": "Keyboard shortcuts",
+                "description": "Every shortcut Loom listens for is listed here, and each one can be rebound: click a binding and press the keys you want. Reset All puts them back the way they shipped."
             },
             "filteredFolder": {
                 "title": "Filtered folder view",
@@ -334,6 +338,11 @@
         "queryExpired": "Query expired – refreshing results",
         "queryThisField": "Add to search query",
         "sortThisField": "Sort by this",
+        "sortThisFieldDescending": "Sort by this, descending",
+        "sortThisFieldAscending": "Sort by this, ascending",
+        "resizeThisColumn": "Drag to resize the column, double-click to even it out",
+        "resizeThumbnailColumn": "Drag to resize the preview column, double-click to reset it",
+        "thumbnailColumn": "Preview",
         "contentTruncatedIcon": "Content is truncated",
         "attachmentsSkippedIcon": "Attachments skipped (max recursion depth reached)",
         "spamIcon": "SPAM",
@@ -474,15 +483,20 @@
             "resetDefault": "Reset to default",
             "resetAll": "Reset All Customizations"
         },
-        "cardCustomization": {
-            "title": "Card",
+        "customization": {
+            "cardTab": "Card",
+            "actionsTab": "Auto Actions",
+            "keyTab": "Key",
             "cardDisplay": "Card Display",
+            "preset": "Preset",
+            "spacing": "Spacing",
+            "elements": "Elements",
             "cardFields": "Card Fields",
-            "autoActions": "Auto Actions",
-            "addField": "Add field"
-        },
-        "keyCustomization": {
-            "title": "Key"
+            "addField": "Add field",
+            "dragToOrder": "Drag to reorder the columns",
+            "fieldLayoutRows": "Rows — one expandable section per field",
+            "fieldLayoutCompact": "Compact — one line per field",
+            "fieldLayoutLine": "Line — every field on one shared line"
         },
         "fields": {
             "title": "Preview Fields",
@@ -516,7 +530,6 @@
             "deleteQuery": "Delete this query"
         },
         "autoActions": {
-            "title": "Auto Actions",
             "markAsSeen": "Mark as seen",
             "flag": "Flag file",
             "reindex": "Re-index file",
@@ -596,8 +609,7 @@
             "auto": "Auto (width-based)",
             "compact": "Compact",
             "standard": "Standard",
-            "full": "Full",
-            "custom": "Custom"
+            "full": "Full"
         },
         "cardFields": {
             "label": "Always-shown fields",

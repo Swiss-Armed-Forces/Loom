@@ -38,16 +38,36 @@
     transform: scale(0.98);
 }
 
-.skeletonLoadingContainer {
-    padding: 1rem;
-}
-
-.skeletonLoadingAvatar {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-}
-
 .thumbnailBadge {
     align-self: flex-start;
+}
+
+/* Line layout: the fields and the thumbnail share one row whose thumbnail
+side is the width the list reserved, so the field grid is as wide on a card
+with an image as on one without, and as wide as the column header. */
+.lineContentRow {
+    display: flex;
+    align-items: center;
+}
+
+/* Held open on every card, empty or not, and the same declaration the header
+gives its thumbnail column. */
+.lineThumbnailSlot {
+    composes: thumbnailSlot from "../FieldList/columnLayout.module.css";
+}
+
+/* Both bounds are absolute lengths. A percentage would resolve against the
+MUI Badge wrapping the image, which is `flex-shrink: 0` and sized by the image
+itself, so it clamps nothing and a landscape thumbnail spills over the last
+field. No hover scale either: a row this dense has no room to grow into. */
+.lineThumbnailImage {
+    cursor: pointer;
+    max-width: var(--loom-thumb-size, 0px);
+    max-height: var(--loom-thumb-size, 0px);
+    object-fit: contain;
+    transition: opacity 0.2s ease;
+}
+
+.lineThumbnailImage:hover {
+    opacity: 0.8;
 }

@@ -26,12 +26,31 @@ from generate_third_party import (
     render_lock,
     render_section,
 )
+from third_party_inputs import ArtifactDeclaration, ImageInputs
 
 SYFT_VERSION = "1.51.0"
-TIKA = ImageRef(
-    name="registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika",
-    tag="prod-098abbec50f6b3bf0c4a007c32988a67103ec90b3158365e4d84466ee62cb0fd",
-)
+TIKA_NAME = "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika"
+TIKA_KEY = "lic-098abbec50f6b3bf0c4a007c32988a67103ec90b3158365e4d84466ee62cb0fd"
+
+
+def _image_inputs(name: str, key: str) -> ImageInputs:
+    """A synthetic image, so the decision tests need no repository on disk."""
+    return ImageInputs(
+        declaration=ArtifactDeclaration(
+            name=name,
+            config=Path("skaffold.yaml"),
+            context=Path("tika-server"),
+            dockerfile=Path("tika-server/Dockerfile"),
+            build_args={},
+            target=None,
+            platforms=(),
+        ),
+        files=(Path("tika-server/Dockerfile"),),
+        key=key,
+    )
+
+
+TIKA = _image_inputs(TIKA_NAME, TIKA_KEY)
 
 
 def _split_once(text: str, separator: str) -> tuple[str, str]:
@@ -115,16 +134,16 @@ def test_the_lock_round_trips() -> None:
     rendered = render_lock(SYFT_VERSION, [TIKA])
 
     assert parse_lock(rendered) == Lock(
-        syft_version=SYFT_VERSION, tags={TIKA.name: TIKA.tag}
+        syft_version=SYFT_VERSION, keys={TIKA.name: TIKA.key}
     )
 
 
 def test_the_lock_is_sorted(tmp_path: Path) -> None:
-    """A stable order keeps the diff of a tag change to that tag."""
+    """A stable order keeps the diff of a key change to that key."""
     images = [
-        ImageRef(name="c/image", tag="prod-3"),
-        ImageRef(name="a/image", tag="prod-1"),
-        ImageRef(name="b/image", tag="prod-2"),
+        _image_inputs("c/image", "lic-3"),
+        _image_inputs("a/image", "lic-1"),
+        _image_inputs("b/image", "lic-2"),
     ]
     lock_file = tmp_path / "THIRD-PARTY.lock"
     lock_file.write_text(render_lock(SYFT_VERSION, images), encoding="utf-8")
@@ -134,16 +153,16 @@ def test_the_lock_is_sorted(tmp_path: Path) -> None:
         for line in lock_file.read_text(encoding="utf-8").splitlines()
         if not line.startswith("#")
     ]
-    assert entries == ["a/image prod-1", "b/image prod-2", "c/image prod-3"]
+    assert entries == ["a/image lic-1", "b/image lic-2", "c/image lic-3"]
 
 
 def _document_with_tika() -> str:
     return f"## Container\n{render_section(TIKA.name, 'body\n')}"
 
 
-def test_an_unchanged_tag_is_reused() -> None:
-    """The whole point: a tag the lock vouches for is not scanned again."""
-    lock = Lock(syft_version=SYFT_VERSION, tags={TIKA.name: TIKA.tag})
+def test_an_unchanged_key_is_reused() -> None:
+    """The whole point: a key the lock vouches for is not scanned again."""
+    lock = Lock(syft_version=SYFT_VERSION, keys={TIKA.name: TIKA.key})
 
     decision = decide_scan(
         TIKA, lock, _document_with_tika(), SYFT_VERSION, refresh=False
@@ -155,24 +174,24 @@ def test_an_unchanged_tag_is_reused() -> None:
 @pytest.mark.parametrize(
     "lock,refresh,expected_reason",
     [
-        (Lock(syft_version="", tags={}), False, "syft unknown -> 1.51.0"),
+        (Lock(syft_version="", keys={}), False, "syft unknown -> 1.51.0"),
         (
-            Lock(syft_version="0.9.0", tags={TIKA.name: TIKA.tag}),
+            Lock(syft_version="0.9.0", keys={TIKA.name: TIKA.key}),
             False,
             "syft 0.9.0 -> 1.51.0",
         ),
         (
-            Lock(syft_version=SYFT_VERSION, tags={TIKA.name: "prod-older"}),
+            Lock(syft_version=SYFT_VERSION, keys={TIKA.name: "lic-older"}),
             False,
-            f"tag prod-older -> {TIKA.tag}",
+            f"inputs lic-older -> {TIKA.key}",
         ),
         (
-            Lock(syft_version=SYFT_VERSION, tags={}),
+            Lock(syft_version=SYFT_VERSION, keys={}),
             False,
-            f"tag unlocked -> {TIKA.tag}",
+            f"inputs unlocked -> {TIKA.key}",
         ),
         (
-            Lock(syft_version=SYFT_VERSION, tags={TIKA.name: TIKA.tag}),
+            Lock(syft_version=SYFT_VERSION, keys={TIKA.name: TIKA.key}),
             True,
             "--refresh was given",
         ),
@@ -192,7 +211,7 @@ def test_an_image_is_rescanned_when_the_lock_cannot_vouch_for_it(
 
 def test_an_image_the_document_lost_is_rescanned() -> None:
     """A lock entry without a section cannot be trusted."""
-    lock = Lock(syft_version=SYFT_VERSION, tags={TIKA.name: TIKA.tag})
+    lock = Lock(syft_version=SYFT_VERSION, keys={TIKA.name: TIKA.key})
 
     decision = decide_scan(TIKA, lock, "## Container\n", SYFT_VERSION, refresh=False)
 

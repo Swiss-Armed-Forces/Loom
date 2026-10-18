@@ -9,9 +9,10 @@ describe("tour scenes", () => {
         ["folders", LeftSidebarPanel.FOLDER],
         ["tags", LeftSidebarPanel.TAGS],
         ["saved-queries", LeftSidebarPanel.QUERIES],
-        ["card-customization-display", LeftSidebarPanel.CUSTOMIZATION],
-        ["card-customization-fields", LeftSidebarPanel.CUSTOMIZATION],
-        ["card-customization-auto-actions", LeftSidebarPanel.CUSTOMIZATION],
+        ["customization-card-display", LeftSidebarPanel.CUSTOMIZATION],
+        ["customization-card-fields", LeftSidebarPanel.CUSTOMIZATION],
+        ["customization-auto-actions", LeftSidebarPanel.CUSTOMIZATION],
+        ["customization-shortcuts", LeftSidebarPanel.CUSTOMIZATION],
         ["chat-input", LeftSidebarPanel.CHAT],
         ["chat-history", LeftSidebarPanel.CHAT],
         ["chat-new-chat", LeftSidebarPanel.CHAT],
@@ -33,7 +34,7 @@ describe("tour scenes", () => {
         "filtered-folder",
         "statistics",
         "bulk-actions",
-        "card-customization",
+        "customization",
         "chat",
     ])("forces both sidebars closed for the %s tour step", (stepId) => {
         expect(getTourLeftPanel(true, stepId)).toBeNull();

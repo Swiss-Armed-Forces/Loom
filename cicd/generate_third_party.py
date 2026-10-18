@@ -5,10 +5,11 @@ The document lists every third-party component Loom ships: the licence files
 checked in beside each component, the Python and JavaScript dependency trees,
 and a syft scan of every container image.
 
-Scanning an image is the expensive part, so each image's section is pinned to
-the Skaffold tag that produced it. That tag is the hash of the image's build
-inputs, so while it is unchanged the committed section is still the answer and
-is reused byte-for-byte; only images whose tag moved are rebuilt and rescanned.
+Scanning an image is the expensive part, so each image's section is pinned to a
+key over the inputs that can change what the scan reports - see
+third_party_inputs.py for what those are. While the key is unchanged the
+committed section is still the answer and is reused byte-for-byte; only images
+whose key moved are rebuilt and rescanned.
 
 That pinning is what keeps the output a function of this repository. Scanning
 whatever image a runner happens to hold under a tag does not: two runners hold
@@ -29,6 +30,7 @@ from pathlib import Path
 from typing import Mapping, Sequence
 
 from minikube_env import get_minikube_docker_environment
+from third_party_inputs import ImageInputs, load_image_inputs
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TOPLEVEL_DIR = SCRIPT_DIR.parent
@@ -74,14 +76,18 @@ the owners of "Loom" by opening a new issue via the following link:
 Your diligence in bringing such matters to our attention is greatly appreciated and will
 enable us to take appropriate and timely action to rectify any concerns."""
 
-LOCK_PREAMBLE = f"""# Which image tag produced each section of {THIRD_PARTY_LICENCES}.
+LOCK_PREAMBLE = f"""# What produced each section of {THIRD_PARTY_LICENCES}.
 #
-# Skaffold tags an image by the hash of its build inputs, so a section stays
-# valid for as long as its tag does: while the tag is unchanged the committed
-# section is reused byte-for-byte instead of rescanned. That makes the
-# generated file a function of this repository rather than of whichever runner
-# happened to build the image, which is what keeps the file stable across
-# pipelines. Rescan everything with: generate-third-party --refresh"""
+# Each key hashes the inputs that can change which packages an image ships -
+# its Dockerfile, its build arguments, and the dependency lockfiles and
+# installer scripts cicd/third_party_inputs.yaml declares for it. While the key
+# is unchanged the committed section is reused byte-for-byte instead of
+# rescanned, so a change that cannot alter an inventory - application source,
+# configuration, documentation - leaves this file alone.
+#
+# The key is a function of this repository and of nothing else, which is what
+# keeps the generated document stable across runners and pipelines. Rescan
+# everything with: generate-third-party --refresh"""
 
 
 @dataclass(frozen=True)
@@ -110,18 +116,18 @@ class Lock:
     """What the committed document's sections were generated from."""
 
     syft_version: str
-    tags: Mapping[str, str]
+    keys: Mapping[str, str]
 
-    def tag_for(self, image_name: str) -> str | None:
-        """The tag that produced this image's committed section, if any."""
-        return self.tags.get(image_name)
+    def key_for(self, image_name: str) -> str | None:
+        """The key that produced this image's committed section, if any."""
+        return self.keys.get(image_name)
 
 
 @dataclass(frozen=True)
 class ScanDecision:
     """Whether an image has to be rescanned, and what decided it."""
 
-    image: ImageRef
+    inputs: ImageInputs
     scan: bool
     reason: str
 
@@ -131,6 +137,14 @@ class CommandEnvironment:
     """Environment for the external tools this script drives."""
 
     variables: Mapping[str, str]
+
+
+@dataclass(frozen=True)
+class SkaffoldInvocation:
+    """How one Skaffold configuration is driven: the command, and where from."""
+
+    argv: tuple[str, ...]
+    cwd: Path | None
 
 
 def run_command(
@@ -169,40 +183,81 @@ def get_image_tags(skaffold_output: str) -> list[ImageRef]:
     return [ImageRef.parse(build["tag"]) for build in builds]
 
 
-def list_all_images(environment: CommandEnvironment) -> list[ImageRef]:
-    """Every image the deployment builds, with the tag its inputs hash to.
+def get_build_invocation(config: Path) -> SkaffoldInvocation:
+    """How to drive Skaffold for the configuration an image was declared in.
 
-    `--dry-run` computes those tags without building anything, so the scan decision can
-    be taken before paying for a build.
+    traefik and keda go through cicd/skaffold, which untars their bundled chart and
+    exports the versions their configurations read; the root configuration is run
+    directly.
     """
-    images: list[ImageRef] = []
-    for argv, cwd in (
-        ([str(CICD_SKAFFOLD), "traefik"], None),
-        ([str(CICD_SKAFFOLD), "keda"], None),
-        (["skaffold"], TOPLEVEL_DIR),
-    ):
-        output = run_command(
-            [*argv, "build", "--dry-run", "--quiet", "--profile", PROFILE],
-            environment,
-            cwd=cwd,
-        )
-        images.extend(get_image_tags(output))
-    return images
+    traefik = TOPLEVEL_DIR / "traefik" / "skaffold.yaml"
+    keda = TOPLEVEL_DIR / "keda" / "skaffold.yaml"
+    root = TOPLEVEL_DIR / "skaffold.yaml"
+    invocations = {
+        traefik: SkaffoldInvocation(argv=(str(CICD_SKAFFOLD), "traefik"), cwd=None),
+        keda: SkaffoldInvocation(argv=(str(CICD_SKAFFOLD), "keda"), cwd=None),
+        root: SkaffoldInvocation(argv=("skaffold",), cwd=TOPLEVEL_DIR),
+    }
+    invocation = invocations.get(config)
+    if invocation is None:
+        raise RuntimeError(f"No build invocation is defined for '{config}'")
+    return invocation
 
 
-def build_all_images(environment: CommandEnvironment) -> None:
-    """Build every image locally, so that syft has something to scan."""
-    for argv, cwd in (
-        ([str(CICD_SKAFFOLD), "traefik"], None),
-        ([str(CICD_SKAFFOLD), "keda"], None),
-        (["skaffold"], TOPLEVEL_DIR),
-    ):
+def group_by_config(inputs: Sequence[ImageInputs]) -> dict[Path, list[ImageInputs]]:
+    """Group images by the Skaffold configuration that declares them."""
+    grouped: dict[Path, list[ImageInputs]] = {}
+    for image in inputs:
+        grouped.setdefault(image.declaration.config, []).append(image)
+    return grouped
+
+
+def build_images(
+    inputs: Sequence[ImageInputs], environment: CommandEnvironment
+) -> None:
+    """Build exactly the images that have to be scanned, so syft has something to read.
+
+    `--build-image` restricts the build to the named artifacts. Building the rest
+    would be work with no output: their sections are reused from the document.
+    """
+    for config, images in group_by_config(inputs).items():
+        invocation = get_build_invocation(config)
+        selected = [argument for image in images for argument in ("-b", image.name)]
         run_command(
-            [*argv, "build", "--profile", PROFILE, "--push=false"],
+            [
+                *invocation.argv,
+                "build",
+                "--profile",
+                PROFILE,
+                "--push=false",
+                *selected,
+            ],
             environment,
-            cwd=cwd,
+            cwd=invocation.cwd,
             capture=False,
         )
+
+
+def resolve_references(
+    inputs: Sequence[ImageInputs], environment: CommandEnvironment
+) -> dict[str, ImageRef]:
+    """Ask Skaffold what it tagged the images it just built.
+
+    Only reached when something has to be scanned. `--dry-run` recomputes the tags
+    without building, and they are deterministic, so it reports the tags the build above
+    produced.
+    """
+    references: dict[str, ImageRef] = {}
+    for config in group_by_config(inputs):
+        invocation = get_build_invocation(config)
+        output = run_command(
+            [*invocation.argv, "build", "--dry-run", "--quiet", "--profile", PROFILE],
+            environment,
+            cwd=invocation.cwd,
+        )
+        for image in get_image_tags(output):
+            references[image.name] = image
+    return references
 
 
 def get_syft_version(environment: CommandEnvironment) -> str:
@@ -282,38 +337,38 @@ def get_committed_section(document: str, image_name: str) -> str | None:
 def parse_lock(content: str) -> Lock:
     """Read a lock file: a syft version in a comment, then one image per line."""
     syft_version = ""
-    tags: dict[str, str] = {}
+    keys: dict[str, str] = {}
     for line in content.splitlines():
         if line.startswith(LOCK_SYFT_PREFIX):
             syft_version = line[len(LOCK_SYFT_PREFIX) :].strip()
             continue
         if not line or line.startswith("#"):
             continue
-        name, _, tag = line.partition(" ")
-        tags[name] = tag.strip()
-    return Lock(syft_version=syft_version, tags=tags)
+        name, _, key = line.partition(" ")
+        keys[name] = key.strip()
+    return Lock(syft_version=syft_version, keys=keys)
 
 
 def read_lock(path: Path) -> Lock:
     """Read the lock, treating a missing one as "nothing is pinned"."""
     if not path.is_file():
         logging.info("No %s: scanning every image", path)
-        return Lock(syft_version="", tags={})
+        return Lock(syft_version="", keys={})
     return parse_lock(path.read_text(encoding="utf-8"))
 
 
-def render_lock(syft_version: str, images: Sequence[ImageRef]) -> str:
+def render_lock(syft_version: str, inputs: Sequence[ImageInputs]) -> str:
     """Render the lock for the images this run documented."""
     lines = [
         LOCK_PREAMBLE,
         f"{LOCK_SYFT_PREFIX}{syft_version}",
-        *sorted(f"{image.name} {image.tag}" for image in images),
+        *sorted(f"{image.name} {image.key}" for image in inputs),
     ]
     return "\n".join(lines) + "\n"
 
 
 def decide_scan(
-    image: ImageRef,
+    inputs: ImageInputs,
     lock: Lock,
     document: str,
     syft_version: str,
@@ -321,25 +376,25 @@ def decide_scan(
 ) -> ScanDecision:
     """Decide whether an image must be rescanned, and record why."""
     if refresh:
-        return ScanDecision(image=image, scan=True, reason="--refresh was given")
+        return ScanDecision(inputs=inputs, scan=True, reason="--refresh was given")
     if lock.syft_version != syft_version:
         return ScanDecision(
-            image=image,
+            inputs=inputs,
             scan=True,
             reason=f"syft {lock.syft_version or 'unknown'} -> {syft_version}",
         )
-    locked_tag = lock.tag_for(image.name)
-    if locked_tag != image.tag:
+    locked_key = lock.key_for(inputs.name)
+    if locked_key != inputs.key:
         return ScanDecision(
-            image=image,
+            inputs=inputs,
             scan=True,
-            reason=f"tag {locked_tag or 'unlocked'} -> {image.tag}",
+            reason=f"inputs {locked_key or 'unlocked'} -> {inputs.key}",
         )
-    if get_committed_section(document, image.name) is None:
+    if get_committed_section(document, inputs.name) is None:
         return ScanDecision(
-            image=image, scan=True, reason="the document has no such section"
+            inputs=inputs, scan=True, reason="the document has no such section"
         )
-    return ScanDecision(image=image, scan=False, reason="tag unchanged")
+    return ScanDecision(inputs=inputs, scan=False, reason="inputs unchanged")
 
 
 def get_component_licenses() -> str:
@@ -386,27 +441,28 @@ def get_javascript_licenses(environment: CommandEnvironment) -> str:
 
 
 def get_container_licenses(
-    images: Sequence[ImageRef],
     decisions: Sequence[ScanDecision],
+    references: Mapping[str, ImageRef],
     environment: CommandEnvironment,
     document: str,
 ) -> str:
     """Assemble every image's section, scanning only what the lock cannot vouch for."""
     logging.info("Getting: container_licenses")
-    by_name = {decision.image.name: decision for decision in decisions}
-
     sections: list[str] = []
-    for image in images:
-        decision = by_name[image.name]
+    for decision in decisions:
+        name = decision.inputs.name
         if decision.scan:
-            body = scan_image(image, environment).strip("\n")
-            sections.append(render_section(image.name, body + "\n"))
+            reference = references.get(name)
+            if reference is None:
+                raise RuntimeError(f"Skaffold reported no tag for '{name}'")
+            body = scan_image(reference, environment).strip("\n")
+            sections.append(render_section(name, body + "\n"))
             continue
 
-        logging.info("Reusing committed section: %s", image.reference)
-        section = get_committed_section(document, image.name)
+        logging.info("Reusing committed section: %s", name)
+        section = get_committed_section(document, name)
         if section is None:
-            raise RuntimeError(f"No committed section to reuse for '{image.name}'")
+            raise RuntimeError(f"No committed section to reuse for '{name}'")
         sections.append(section)
     return "".join(sections)
 
@@ -447,33 +503,37 @@ def generate(refresh: bool, environment: CommandEnvironment) -> None:
     lock = read_lock(THIRD_PARTY_LOCK)
     syft_version = get_syft_version(environment)
 
-    logging.info("Listing all images")
-    images = list_all_images(environment)
+    logging.info("Reading the declared images and their licence inputs")
+    inputs = load_image_inputs()
     decisions = [
-        decide_scan(image, lock, document, syft_version, refresh) for image in images
+        decide_scan(image, lock, document, syft_version, refresh) for image in inputs
     ]
 
-    to_scan = [decision for decision in decisions if decision.scan]
-    for decision in to_scan:
-        logging.info("Will scan %s: %s", decision.image.name, decision.reason)
+    to_scan = [decision.inputs for decision in decisions if decision.scan]
+    for decision in decisions:
+        if decision.scan:
+            logging.info("Will scan %s: %s", decision.inputs.name, decision.reason)
 
-    # Images are only built when something has to be scanned: a pipeline that
-    # changed no image needs none of them.
+    # Images are only built when something has to be scanned, and then only the
+    # ones that are: a change that cannot alter any package inventory needs no
+    # build, no scan and no skaffold at all.
+    references: dict[str, ImageRef] = {}
     if to_scan:
-        logging.info("Building all images: %d image(s) to scan", len(to_scan))
-        build_all_images(environment)
+        logging.info("Building %d image(s) to scan", len(to_scan))
+        build_images(to_scan, environment)
+        references = resolve_references(to_scan, environment)
     else:
-        logging.info("No image tag changed: reusing every committed section")
+        logging.info("No licence input changed: reusing every committed section")
 
     rendered = render_document(
         get_component_licenses(),
         get_python_licenses(environment),
         get_javascript_licenses(environment),
-        get_container_licenses(images, decisions, environment, document),
+        get_container_licenses(decisions, references, environment, document),
     )
 
     THIRD_PARTY_LICENCES.write_text(rendered, encoding="utf-8")
-    THIRD_PARTY_LOCK.write_text(render_lock(syft_version, images), encoding="utf-8")
+    THIRD_PARTY_LOCK.write_text(render_lock(syft_version, inputs), encoding="utf-8")
     # The frontend serves its own copy of the file. Writing it here keeps the
     # two in step within a single run; left to generate_frontend_static, which
     # runs beside this script rather than after it, the copy trails a pipeline

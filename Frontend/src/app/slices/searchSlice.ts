@@ -69,8 +69,18 @@ export const RightSidebarTab = {
 export type RightSidebarTab =
     (typeof RightSidebarTab)[keyof typeof RightSidebarTab];
 
-export type CardDensity = "auto" | "compact" | "standard" | "full" | "custom";
+/** How much room a card takes: a named spacing, or one picked from the width
+ *  available. Spacing is one axis of the card's look; which elements are on is
+ *  the other, and the two are set independently - see `DENSITY_PRESETS`. */
+export type CardDensity = "auto" | NamedDensity;
 export type NamedDensity = "compact" | "standard" | "full";
+
+/** How a single metadata field is rendered on a card.
+ *  "rows" → one expandable accordion per field; "compact" → one `label: value`
+ *  line per field, with the accordion kept for truncated values only;
+ *  "line" → every selected field side by side on one line, values only, the
+ *  way a mail client lays a message list out. */
+export type FieldLayout = "rows" | "compact" | "line";
 
 // All card-element visibility settings in one shape, shared by presets and state.
 export interface CardVisibilitySettings {
@@ -132,6 +142,18 @@ export const DENSITY_PRESETS: Record<NamedDensity, CardVisibilitySettings> = {
         showFieldActions: true,
     },
 };
+
+/** The flags a preset sets, named once so state and preset can be compared
+ *  without listing them again. */
+export const CARD_VISIBILITY_KEYS = Object.keys(
+    DENSITY_PRESETS.standard,
+) as (keyof CardVisibilitySettings)[];
+
+const matchesPreset = (
+    visibility: CardVisibilitySettings,
+    preset: CardVisibilitySettings,
+): boolean =>
+    CARD_VISIBILITY_KEYS.every((key) => visibility[key] === preset[key]);
 
 export interface FileTabState {
     fileId: string;
@@ -240,7 +262,10 @@ export interface SearchState {
     expandFilePaths: boolean;
     cardDensity: CardDensity;
     autoDetectedDensity: NamedDensity;
+    fieldLayout: FieldLayout;
     previewFields: string[];
+    fieldColumnWidths: Record<string, number>;
+    thumbnailColumnWidth: number | null;
     availablePreviewFields: PreviewField[];
     fieldExpansion: Record<string, boolean>;
     showThumbnails: boolean;
@@ -300,10 +325,16 @@ export const SEARCH_STATE_DOCS = {
     expandFilePaths:
         "boolean — whether long file paths are shown in full on every result card",
     cardDensity:
-        "CardDensity — card display density preset (auto|compact|standard|full|custom)",
+        "CardDensity — how much room a card takes (auto|compact|standard|full); which elements are shown is the separate show* set",
     autoDetectedDensity:
-        "NamedDensity — density detected from available screen space",
+        "NamedDensity — spacing detected from available screen space, used while cardDensity is auto",
+    fieldLayout:
+        "FieldLayout — how card metadata fields are rendered (rows|compact|line)",
     previewFields: "string[] — field names shown as preview on cards",
+    fieldColumnWidths:
+        "Record<fieldName, number> — width in fr of each column in the line field layout, as left by dragging the column borders; a field absent from the map is one that was never dragged",
+    thumbnailColumnWidth:
+        "number | null — edge length in px of the thumbnail column in the line field layout, as left by dragging its border; null means the density decides",
     availablePreviewFields:
         "PreviewField[] — all fields available for card preview",
     fieldExpansion:
@@ -365,15 +396,43 @@ export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
 
 export const SEARCH_STATE_LOCAL_STORAGE_KEY = "SEARCH_STATE";
 
+/**
+ * Coerce a persisted card density back into the current shape.
+ *
+ * Browsers that were left on the "custom" density hold a value the union no
+ * longer has. They are handed back to "auto": the switches they customised
+ * are now always in effect, so the only thing "custom" still had to say was
+ * that it was not a preset - and nothing is lost by letting the spacing
+ * follow the window again.
+ */
+const normalizeCardDensity = (raw: unknown): CardDensity | undefined => {
+    if (
+        raw === "auto" ||
+        raw === "compact" ||
+        raw === "standard" ||
+        raw === "full"
+    ) {
+        return raw;
+    }
+    return raw === undefined ? undefined : "auto";
+};
+
 export const loadPersistedSearchState = (): Partial<SearchState> => {
     const data = window.localStorage.getItem(SEARCH_STATE_LOCAL_STORAGE_KEY);
     if (!data) return {};
     try {
         const parsed = JSON.parse(data) as Partial<SearchState>;
-        if (!("customQueries" in parsed)) return parsed;
+        const density = normalizeCardDensity(parsed.cardDensity);
         return {
             ...parsed,
-            customQueries: normalizeCustomQueries(parsed.customQueries),
+            ...(density ? { cardDensity: density } : {}),
+            ...("customQueries" in parsed
+                ? {
+                      customQueries: normalizeCustomQueries(
+                          parsed.customQueries,
+                      ),
+                  }
+                : {}),
         };
     } catch {
         return {};
@@ -402,9 +461,12 @@ const initialState: SearchState = {
     expandFilePaths: false,
     cardDensity: "auto",
     autoDetectedDensity: "standard",
+    fieldLayout: "compact",
     previewFields: ["content"],
+    fieldColumnWidths: {},
+    thumbnailColumnWidth: null,
     availablePreviewFields: [],
-    // Individual vis flags — used only in "custom" mode; start from standard.
+    // The element switches, always authoritative; they start from standard.
     ...DENSITY_PRESETS.standard,
     fieldExpansion: {},
     autoActionsPreferences: {
@@ -916,33 +978,66 @@ export const searchSlice = createSlice({
         setExpandFilePaths: (state, action: PayloadAction<boolean>) => {
             state.expandFilePaths = action.payload;
         },
+        // Spacing only. Which elements are shown is the other axis and is
+        // left exactly as the user left it - that separation is what removed
+        // the "custom" mode, which existed only to say "do not overwrite my
+        // switches".
         setCardDensity: (state, action: PayloadAction<CardDensity>) => {
-            const next = action.payload;
-            if (next === "custom") {
-                // Seed individual flags from the currently-effective preset so
-                // the user starts customising from what they were already seeing.
-                const effective =
-                    state.cardDensity === "auto"
-                        ? state.autoDetectedDensity
-                        : state.cardDensity !== "custom"
-                          ? state.cardDensity
-                          : null;
-                if (effective) Object.assign(state, DENSITY_PRESETS[effective]);
-            } else if (next !== "auto") {
-                // Named preset: copy values so they're ready if user later
-                // switches to custom.
-                Object.assign(state, DENSITY_PRESETS[next]);
-            }
-            state.cardDensity = next;
+            state.cardDensity = action.payload;
+        },
+        // Both axes at once: the preset buttons are a shortcut to a whole
+        // look, not a mode the card stays in. "auto" is a preset like the
+        // others - it applies the look the window resolved to and leaves the
+        // spacing free to follow it.
+        applyDensityPreset: (state, action: PayloadAction<CardDensity>) => {
+            const preset =
+                action.payload === "auto"
+                    ? state.autoDetectedDensity
+                    : action.payload;
+            state.cardDensity = action.payload;
+            Object.assign(state, DENSITY_PRESETS[preset]);
         },
         setAutoDetectedDensity: (
             state,
             action: PayloadAction<NamedDensity>,
         ) => {
+            const previous = state.autoDetectedDensity;
             state.autoDetectedDensity = action.payload;
+            // While the switches still read exactly as some preset left them,
+            // nobody has expressed a preference and auto keeps adapting them
+            // to the width. The first switch the user flips ends that for
+            // good: a deliberate choice is never overwritten by a resize.
+            if (
+                state.cardDensity === "auto" &&
+                matchesPreset(state, DENSITY_PRESETS[previous])
+            ) {
+                Object.assign(state, DENSITY_PRESETS[action.payload]);
+            }
+        },
+        // Deliberately does NOT force cardDensity to "custom": the density
+        // preset decides which card elements are visible, while fieldLayout
+        // only decides how a visible field is drawn. Coupling them would drop
+        // the user out of "auto" and freeze visibility behind their back.
+        setFieldLayout: (state, action: PayloadAction<FieldLayout>) => {
+            state.fieldLayout = action.payload;
         },
         setPreviewFields: (state, action: PayloadAction<string[]>) => {
             state.previewFields = action.payload;
+        },
+        // Replaces the whole map rather than one column: a drag moves the
+        // border between two columns, so it always settles two of them.
+        setFieldColumnWidths: (
+            state,
+            action: PayloadAction<Record<string, number>>,
+        ) => {
+            state.fieldColumnWidths = action.payload;
+        },
+        // null hands the column back to the density preset.
+        setThumbnailColumnWidth: (
+            state,
+            action: PayloadAction<number | null>,
+        ) => {
+            state.thumbnailColumnWidth = action.payload;
         },
         setFieldExpansion: (
             state,
@@ -959,51 +1054,39 @@ export const searchSlice = createSlice({
         },
         setShowThumbnails: (state, action: PayloadAction<boolean>) => {
             state.showThumbnails = action.payload;
-            state.cardDensity = "custom";
         },
         setShowHighlights: (state, action: PayloadAction<boolean>) => {
             state.showHighlights = action.payload;
-            state.cardDensity = "custom";
         },
         setShowFieldSections: (state, action: PayloadAction<boolean>) => {
             state.showFieldSections = action.payload;
-            state.cardDensity = "custom";
         },
         setShowExtensionIcon: (state, action: PayloadAction<boolean>) => {
             state.showExtensionIcon = action.payload;
-            state.cardDensity = "custom";
         },
         setShowFilePath: (state, action: PayloadAction<boolean>) => {
             state.showFilePath = action.payload;
-            state.cardDensity = "custom";
         },
         setShowParentNavigation: (state, action: PayloadAction<boolean>) => {
             state.showParentNavigation = action.payload;
-            state.cardDensity = "custom";
         },
         setShowStatusIndicators: (state, action: PayloadAction<boolean>) => {
             state.showStatusIndicators = action.payload;
-            state.cardDensity = "custom";
         },
         setShowAttachments: (state, action: PayloadAction<boolean>) => {
             state.showAttachments = action.payload;
-            state.cardDensity = "custom";
         },
         setShowTags: (state, action: PayloadAction<boolean>) => {
             state.showTags = action.payload;
-            state.cardDensity = "custom";
         },
         setShowActions: (state, action: PayloadAction<boolean>) => {
             state.showActions = action.payload;
-            state.cardDensity = "custom";
         },
         setShowSortIndicator: (state, action: PayloadAction<boolean>) => {
             state.showSortIndicator = action.payload;
-            state.cardDensity = "custom";
         },
         setShowFieldActions: (state, action: PayloadAction<boolean>) => {
             state.showFieldActions = action.payload;
-            state.cardDensity = "custom";
         },
         setFolderViewExpandedNodes: (
             state,
@@ -1269,9 +1352,13 @@ export const {
     setFilteredFolderViewExpandedNodes,
     setPendingFullscreenFileId,
     setCardDensity,
+    applyDensityPreset,
     setAutoDetectedDensity,
+    setFieldLayout,
 
     setPreviewFields,
+    setFieldColumnWidths,
+    setThumbnailColumnWidth,
     setAvailablePreviewFields,
     setFieldExpansion,
     setShowThumbnails,
@@ -1525,10 +1612,32 @@ export const selectCardDensity = createSelector(
 
 export const selectResolvedCardDensity = createSelector(
     selectSearch,
-    (search): NamedDensity | "custom" =>
+    (search): NamedDensity =>
         search.cardDensity === "auto"
             ? search.autoDetectedDensity
             : search.cardDensity,
+);
+
+export const selectFieldLayout = createSelector(
+    selectSearch,
+    (search) => search.fieldLayout,
+);
+
+/**
+ * Whether the result list draws its rows gapless, with a hairline and
+ * alternating backgrounds instead of a gap between cards.
+ *
+ * Single owner of that decision: the list sets the chrome and each card marks
+ * its cursor to match, and the two must agree - a halo needs the gap the flat
+ * list does not have.
+ *
+ * Read from the spacing alone. The field layout decides how a field is drawn
+ * and nothing else: a renderer that also rewrote the list's chrome is why
+ * neither control could be trusted to say what the cards would look like.
+ */
+export const selectFlatRowChrome = createSelector(
+    selectResolvedCardDensity,
+    (density) => density === "compact",
 );
 
 export const selectFieldExpansion = createSelector(
@@ -1539,6 +1648,16 @@ export const selectFieldExpansion = createSelector(
 export const selectPreviewFields = createSelector(
     selectSearch,
     (search) => search.previewFields,
+);
+
+export const selectFieldColumnWidths = createSelector(
+    selectSearch,
+    (search) => search.fieldColumnWidths,
+);
+
+export const selectThumbnailColumnWidth = createSelector(
+    selectSearch,
+    (search) => search.thumbnailColumnWidth,
 );
 
 export const selectAvailablePreviewFields = createSelector(
@@ -1558,31 +1677,35 @@ export const selectShowHighlights = createSelector(
 
 export const selectCardElementVisibility = createSelector(
     selectSearch,
-    (search): CardVisibilitySettings => {
-        if (search.cardDensity === "custom") {
-            // Custom: use individual boolean flags directly.
-            return {
-                showThumbnails: search.showThumbnails,
-                showHighlights: search.showHighlights,
-                showFieldSections: search.showFieldSections,
-                showExtensionIcon: search.showExtensionIcon,
-                showFilePath: search.showFilePath,
-                showParentNavigation: search.showParentNavigation,
-                showStatusIndicators: search.showStatusIndicators,
-                showAttachments: search.showAttachments,
-                showTags: search.showTags,
-                showActions: search.showActions,
-                showSortIndicator: search.showSortIndicator,
-                showFieldActions: search.showFieldActions,
-            };
-        }
-        // auto → resolve via autoDetectedDensity; named preset → use directly.
-        const effective =
-            search.cardDensity === "auto"
-                ? search.autoDetectedDensity
-                : search.cardDensity;
-        return DENSITY_PRESETS[effective];
-    },
+    (search): CardVisibilitySettings => ({
+        showThumbnails: search.showThumbnails,
+        showHighlights: search.showHighlights,
+        showFieldSections: search.showFieldSections,
+        showExtensionIcon: search.showExtensionIcon,
+        showFilePath: search.showFilePath,
+        showParentNavigation: search.showParentNavigation,
+        showStatusIndicators: search.showStatusIndicators,
+        showAttachments: search.showAttachments,
+        showTags: search.showTags,
+        showActions: search.showActions,
+        showSortIndicator: search.showSortIndicator,
+        showFieldActions: search.showFieldActions,
+    }),
+);
+
+/**
+ * The preset the card currently reads as, or null once the switches have been
+ * taken somewhere no preset describes.
+ *
+ * Derived rather than stored: a "custom" flag is this same observation kept
+ * as state, and state that restates what is already knowable is state that
+ * can disagree with it.
+ */
+export const selectMatchingDensityPreset = createSelector(
+    selectCardElementVisibility,
+    selectResolvedCardDensity,
+    (visibility, density): NamedDensity | null =>
+        matchesPreset(visibility, DENSITY_PRESETS[density]) ? density : null,
 );
 
 export const selectShowChatReasoning = createSelector(

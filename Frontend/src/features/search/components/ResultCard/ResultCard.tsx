@@ -1,12 +1,5 @@
 import { SearchOff } from "@mui/icons-material";
-import {
-    Badge,
-    Box,
-    CardContent,
-    Chip,
-    Skeleton,
-    Typography,
-} from "@mui/material";
+import { Badge, Box, CardContent, Chip, Typography } from "@mui/material";
 import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
@@ -17,6 +10,8 @@ import {
     selectQuery,
     selectFileById,
     selectCardElementVisibility,
+    selectFieldLayout,
+    selectFlatRowChrome,
     selectResolvedCardDensity,
     setFileInViewState,
     setHighlightedFileId,
@@ -26,11 +21,13 @@ import { webApiGetFileThumbnail } from "@features/common/urls";
 import { FileDetailTab } from "@features/common/utils/enums";
 import { formatCompactNumber } from "@features/common/utils/helpers";
 import { FileCardHeader } from "@features/search/components";
+import { reservesThumbnailSlot } from "@features/search/components/FieldList/fieldColumns";
 
 import { isInteractiveTarget } from "../interactiveTarget";
 
 import { FieldSections } from "./FieldSections";
 import styles from "./ResultCard.module.css";
+import { ResultCardSkeleton } from "./ResultCardSkeleton";
 import { ResultCardSurface } from "./ResultCardSurface";
 
 interface ResultCardProps {
@@ -55,6 +52,8 @@ export const ResultCard = React.memo(
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
         const visFromStore = useAppSelector(selectCardElementVisibility);
         const resolvedDensity = useAppSelector(selectResolvedCardDensity);
+        const fieldLayout = useAppSelector(selectFieldLayout);
+        const flatRowChrome = useAppSelector(selectFlatRowChrome);
         // Highlighted card always shows every element regardless of toggles.
         const vis = isHighlighted
             ? {
@@ -72,6 +71,21 @@ export const ResultCard = React.memo(
                   showFieldActions: true,
               }
             : visFromStore;
+        // Answered from the store's visibility, never from `vis`: the slot is
+        // reserved once for the whole list, so the highlighted card's
+        // show-everything override has no say in whether it exists.
+        const hasThumbnailSlot = reservesThumbnailSlot(
+            fieldLayout,
+            visFromStore,
+        );
+        const thumbnailFileId = vis.showThumbnails
+            ? filePreview?.thumbnailFileId
+            : null;
+        // The highlighted card shows its thumbnail even where the list
+        // reserved no column for one - below the line rather than beside it,
+        // because a card that widened its own image would take the width out
+        // of its own columns and fall out of line with every other row.
+        const thumbnailBelowLine = !hasThumbnailSlot && fieldLayout === "line";
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
@@ -151,6 +165,47 @@ export const ResultCard = React.memo(
             }
         };
 
+        const thumbnail =
+            filePreview && thumbnailFileId ? (
+                <Badge
+                    data-tour="result-card-preview"
+                    color="primary"
+                    badgeContent={
+                        filePreview.thumbnailTotalFrames != null
+                            ? formatCompactNumber(
+                                  filePreview.thumbnailTotalFrames,
+                              )
+                            : undefined
+                    }
+                    anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                    }}
+                    className={
+                        hasThumbnailSlot ? undefined : styles.thumbnailBadge
+                    }
+                >
+                    <img
+                        onClick={(e) =>
+                            handleOpenDetailsOnTabClick(
+                                FileDetailTab.Rendered,
+                                e.ctrlKey,
+                            )
+                        }
+                        className={
+                            hasThumbnailSlot
+                                ? styles.lineThumbnailImage
+                                : styles.resultImage
+                        }
+                        src={webApiGetFileThumbnail(
+                            filePreview.fileId,
+                            thumbnailFileId,
+                        )}
+                        alt="Thumbnail"
+                    />
+                </Badge>
+            ) : null;
+
         return (
             <Box
                 className="resultCardParent"
@@ -168,34 +223,21 @@ export const ResultCard = React.memo(
                 }}
             >
                 {!filePreview ? (
-                    <div className={styles.skeletonLoadingContainer}>
-                        <div className={styles.skeletonLoadingAvatar}>
-                            <Skeleton
-                                variant="circular"
-                                width={50}
-                                height={50}
-                            />
-                            <Skeleton variant="text" style={{ flexGrow: 1 }} />
-                        </div>
-                        <Skeleton variant="text" />
-                        <Skeleton variant="text" />
-                        <Skeleton variant="text" />
-                    </div>
+                    <ResultCardSkeleton />
                 ) : (
                     <ResultCardSurface
                         isHighlighted={isHighlighted}
                         seen={filePreview.seen}
+                        flat={flatRowChrome}
                     >
                         <FileCardHeader
                             filePreview={filePreview}
                             onStateChipClick={() =>
                                 handleOpenDetailsOnTabClick(FileDetailTab.Tasks)
                             }
-                            compact={
-                                !vis.showFieldSections ||
-                                resolvedDensity === "compact" ||
-                                undefined
-                            }
+                            // Spacing owns how tall the header is, the same
+                            // as it owns the rest of the card's chrome.
+                            compact={resolvedDensity === "compact" || undefined}
                             showExtensionIcon={vis.showExtensionIcon}
                             showFilePath={vis.showFilePath}
                             showParentNavigation={vis.showParentNavigation}
@@ -204,26 +246,35 @@ export const ResultCard = React.memo(
                             showTags={vis.showTags}
                             showActions={vis.showActions}
                         />
-                        {(vis.showFieldSections ||
-                            (filePreview.thumbnailFileId &&
-                                vis.showThumbnails)) && (
+                        {(vis.showFieldSections || thumbnail) && (
                             <CardContent
                                 sx={{
-                                    py: 1,
+                                    py: "var(--loom-card-padding, 0.5rem)",
                                     px: { xs: 1, sm: 2 },
                                     wordBreak: "break-word",
-                                    "&:last-child": { pb: 1 },
+                                    "&:last-child": {
+                                        pb: "var(--loom-card-padding, 0.5rem)",
+                                    },
                                 }}
                             >
                                 <Box
-                                    sx={{
-                                        display: "flex",
-                                        gap: 2,
-                                        flexDirection: {
-                                            xs: "column",
-                                            md: "row",
-                                        },
-                                    }}
+                                    className={
+                                        hasThumbnailSlot
+                                            ? styles.lineContentRow
+                                            : undefined
+                                    }
+                                    sx={
+                                        hasThumbnailSlot
+                                            ? undefined
+                                            : {
+                                                  display: "flex",
+                                                  gap: 2,
+                                                  flexDirection: {
+                                                      xs: "column",
+                                                      md: "row",
+                                                  },
+                                              }
+                                    }
                                     data-tour="result-card-content"
                                 >
                                     {vis.showFieldSections && (
@@ -233,46 +284,22 @@ export const ResultCard = React.memo(
                                             />
                                         </Box>
                                     )}
-                                    {filePreview.thumbnailFileId &&
-                                        vis.showThumbnails && (
-                                            <Badge
-                                                data-tour="result-card-preview"
-                                                color="primary"
-                                                badgeContent={
-                                                    filePreview.thumbnailTotalFrames !=
-                                                    null
-                                                        ? formatCompactNumber(
-                                                              filePreview.thumbnailTotalFrames,
-                                                          )
-                                                        : undefined
-                                                }
-                                                anchorOrigin={{
-                                                    vertical: "bottom",
-                                                    horizontal: "right",
-                                                }}
-                                                className={
-                                                    styles.thumbnailBadge
-                                                }
-                                            >
-                                                <img
-                                                    onClick={(e) =>
-                                                        handleOpenDetailsOnTabClick(
-                                                            FileDetailTab.Rendered,
-                                                            e.ctrlKey,
-                                                        )
-                                                    }
-                                                    className={
-                                                        styles.resultImage
-                                                    }
-                                                    src={webApiGetFileThumbnail(
-                                                        filePreview.fileId,
-                                                        filePreview.thumbnailFileId,
-                                                    )}
-                                                    alt="Thumbnail"
-                                                />
-                                            </Badge>
-                                        )}
+                                    {hasThumbnailSlot ? (
+                                        // Empty on a file without a thumbnail:
+                                        // the slot is what keeps this card's
+                                        // columns under the header's.
+                                        <Box
+                                            className={styles.lineThumbnailSlot}
+                                        >
+                                            {thumbnail}
+                                        </Box>
+                                    ) : (
+                                        !thumbnailBelowLine && thumbnail
+                                    )}
                                 </Box>
+                                {thumbnailBelowLine && thumbnail && (
+                                    <Box sx={{ mt: 1 }}>{thumbnail}</Box>
+                                )}
                                 {(isTemporary || vis.showSortIndicator) && (
                                     <Box
                                         sx={{
