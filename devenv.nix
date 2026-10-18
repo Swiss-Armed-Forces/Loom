@@ -808,6 +808,13 @@ in
     before = [ "devenv:git-hooks:install" ];
   };
 
+  # Give git a driver for the files CI generates, which .gitattributes names --
+  # see cicd/set_generated_file_merge_driver.sh.
+  tasks."loom:git:generated-file-merge-driver" = {
+    exec = "${config.devenv.root}/cicd/set_generated_file_merge_driver.sh";
+    before = [ "devenv:enterShell" ];
+  };
+
   tasks."devenv:git-hooks:run" = {
     # Print the output of the git hooks that "devenv test" runs, otherwise a
     # failing hook only reports that it failed.

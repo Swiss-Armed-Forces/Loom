@@ -427,7 +427,15 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   image regardless of the lock, which is the only way to notice inventories no file hash can track
   - `roundcube` composer-requires its plugins at build time with no lockfile, `alpine` uses `~=`
   apk pins, `worker` and `tika` use apt version wildcards, and `ollama-models` pulls mutable model
-  tags
+  tags.
+  **All three files are merged by keeping the copy of the branch being merged into**, through the
+  `keep-ours` driver `.gitattributes` names and `cicd/set_generated_file_merge_driver.sh`
+  configures on devenv entry. A pipeline commits them on every branch, so two branches that have
+  each run one differ in files nobody edited, and both sides are right for the branch that
+  produced them - there is nothing to review in that conflict. The next pipeline recomputes the
+  keys, rescans whatever the merge actually changed and commits the correction, which is what
+  resolving by hand was doing anyway. A checkout that has never entered devenv has no such driver
+  and conflicts the way it always did
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
   HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a
