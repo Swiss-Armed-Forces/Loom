@@ -6,8 +6,13 @@ from uuid import uuid4
 
 import pytest
 from ag_ui.core import Tool as AGUITool
-from common.ai_context.ai_context_repository import AiContext, CapabilityId, ModeId
+from common.ai_context.ai_context_repository import (
+    AiContext,
+    CapabilityId,
+    ModeId,
+)
 from common.ai_context.tool_models import (
+    CursorHandle,
     ExecuteQueryResult,
     ExecuteQueryResultFile,
     FolderEntry,
@@ -18,17 +23,33 @@ from common.ai_context.tool_models import (
     SuggestQueriesResult,
     ToolSource,
 )
+from common.models.cursor_pagination import CursorSource, SearchAfterCursor
 from pydantic_ai import ModelRetry
 from pydantic_ai.exceptions import ToolFailed
 
 from api.services.task_call_service import TaskCallService
-from api.services.tool_service import AgentDeps, ToolService
+from api.services.tool_service import (
+    _MAX_TRACKED_CURSORS,
+    AgentDeps,
+    StoredCursor,
+    ToolService,
+)
 
 
 def _make_ctx(deps: AgentDeps) -> MagicMock:
     ctx = MagicMock()
     ctx.deps = deps
     return ctx
+
+
+def _seed_cursor(deps: AgentDeps, src: CursorSource) -> StoredCursor:
+    """Store a cursor the way a previous page would have, and hand back both halves."""
+    stored = StoredCursor(
+        handle=CursorHandle(f"handle-{len(deps.cursors)}"),
+        cursor=SearchAfterCursor(src=src, last_sort=["//a"]),
+    )
+    deps.cursors.append(stored)
+    return stored
 
 
 def _make_agui_tool(
@@ -76,7 +97,7 @@ def test_execute_query_success(
     ctx = _make_ctx(deps)
     result = tool_service.execute_query(ctx, "content:hello")
 
-    assert result is expected
+    assert result.files == expected.files
     assert deps.source_collector == [ToolSource(file_id=file_id, text="snippet")]
 
 
@@ -203,11 +224,14 @@ def test_get_file_field_lookup_error_raises_tool_failed(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("paginated", [False, True])
 def test_list_folder_contents_dispatches_and_returns(
     tool_service: ToolService,
     task_call_service_mock: MagicMock,
     deps: AgentDeps,
+    paginated: bool,
 ):
+
     expected = ListFolderContentsResult(
         folder_path="/",
         entries=[
@@ -223,11 +247,16 @@ def test_list_folder_contents_dispatches_and_returns(
     task_call_service_mock.call_list_folder_contents_tool.return_value = expected
 
     ctx = _make_ctx(deps)
-    result = tool_service.list_folder_contents(ctx, "/")
+    seeded = _seed_cursor(deps, "list_folder_contents") if paginated else None
+    result = tool_service.list_folder_contents(
+        ctx, "/", after_cursor=seeded.handle if seeded else None
+    )
 
-    assert result is expected
+    assert result.entries == expected.entries
+    assert result.folder_path == expected.folder_path
+    # The handle is resolved before dispatch: the task gets the cursor itself.
     task_call_service_mock.call_list_folder_contents_tool.assert_called_once_with(
-        deps.context.id_, "/"
+        deps.context.id_, "/", seeded.cursor if seeded else None
     )
 
 
@@ -236,21 +265,67 @@ def test_list_folder_contents_dispatches_and_returns(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("paginated", [False, True])
 def test_search_by_filename_dispatches_and_returns(
     tool_service: ToolService,
     task_call_service_mock: MagicMock,
     deps: AgentDeps,
+    paginated: bool,
 ):
+
     expected = SearchByFilenameResult(query="report", files=[])
     task_call_service_mock.call_search_by_filename_tool.return_value = expected
 
     ctx = _make_ctx(deps)
-    result = tool_service.search_by_filename(ctx, "report")
-
-    assert result is expected
-    task_call_service_mock.call_search_by_filename_tool.assert_called_once_with(
-        deps.context.id_, "report"
+    seeded = _seed_cursor(deps, "flat_files") if paginated else None
+    result = tool_service.search_by_filename(
+        ctx, "report", after_cursor=seeded.handle if seeded else None
     )
+
+    assert result.query == expected.query
+    assert result.files == expected.files
+    # The handle is resolved before dispatch: the task gets the cursor itself.
+    task_call_service_mock.call_search_by_filename_tool.assert_called_once_with(
+        deps.context.id_, "report", "*", seeded.cursor if seeded else None
+    )
+
+
+def test_search_by_filename_passes_the_search_string(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """The query narrows which files are name-matched, so it has to reach the task."""
+    task_call_service_mock.call_search_by_filename_tool.return_value = (
+        SearchByFilenameResult(query="report", search_string="file_type:pdf", files=[])
+    )
+
+    result = tool_service.search_by_filename(
+        _make_ctx(deps), "report", search_string="file_type:pdf"
+    )
+
+    task_call_service_mock.call_search_by_filename_tool.assert_called_once_with(
+        deps.context.id_, "report", "file_type:pdf", None
+    )
+    # Echoed back so the agent repeats it unchanged on the next page.
+    assert result.search_string == "file_type:pdf"
+
+
+def test_search_by_filename_reports_an_invalid_query_as_a_retry(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """A query the model composed is the model's to fix, so the failure has to come back
+    as something it can act on rather than as a tool error."""
+    task_call_service_mock.call_search_by_filename_tool.side_effect = ValueError(
+        "Invalid Lucene query 'content:('"
+    )
+
+    with pytest.raises(ModelRetry):
+        tool_service.search_by_filename(
+            _make_ctx(deps), "report", search_string="content:("
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -291,9 +366,9 @@ def test_execute_query_passes_folder_path(
     ctx = _make_ctx(deps)
     result = tool_service.execute_query(ctx, "content:hello", folder_path="//docs")
 
-    assert result is expected
+    assert result.files == expected.files
     task_call_service_mock.call_execute_query_tool.assert_called_once_with(
-        deps.context.id_, "content:hello", "//docs"
+        deps.context.id_, "content:hello", "//docs", None
     )
 
 
@@ -459,3 +534,130 @@ def test_route_frontend_tools_unknown_tools_are_always_on(
 
     always_on_names = {t.name for t in routed.always_on}
     assert always_on_names == {"unknown_tool", "another_unknown"}
+
+
+# ---------------------------------------------------------------------------
+# execute_query pagination handles
+# ---------------------------------------------------------------------------
+
+_REAL_CURSOR = SearchAfterCursor(
+    src="execute_query", last_sort=[1.0, "abc"], pit="a-long-pit-id"
+)
+
+
+def test_execute_query_hands_out_a_handle_instead_of_the_cursor(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """The cursor embeds a point-in-time id far too large to spend model context on
+    twice per page, so the model only ever sees a short handle."""
+    task_call_service_mock.call_execute_query_tool.return_value = ExecuteQueryResult(
+        files=[], has_more=True, next_cursor=_REAL_CURSOR
+    )
+
+    ctx = _make_ctx(deps)
+    result = tool_service.execute_query(ctx, "content:hello")
+
+    assert result.next_cursor is not None
+    assert "a-long-pit-id" not in result.next_cursor
+    assert deps.cursors[-1].cursor == _REAL_CURSOR
+
+
+def test_execute_query_resolves_a_handle_back_into_its_cursor(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+
+    task_call_service_mock.call_execute_query_tool.return_value = ExecuteQueryResult(
+        files=[]
+    )
+
+    ctx = _make_ctx(deps)
+    deps.cursors.append(
+        StoredCursor(handle=CursorHandle("handle-1"), cursor=_REAL_CURSOR)
+    )
+    tool_service.execute_query(
+        ctx, "content:hello", after_cursor=CursorHandle("handle-1")
+    )
+
+    task_call_service_mock.call_execute_query_tool.assert_called_once_with(
+        deps.context.id_, "content:hello", None, _REAL_CURSOR
+    )
+
+
+def test_execute_query_rejects_a_handle_from_another_run(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """Handles live only as long as the agent run, so a stale one has to be reported
+    rather than dispatched as an opaque cursor."""
+    ctx = _make_ctx(deps)
+    with pytest.raises(ModelRetry):
+        tool_service.execute_query(
+            ctx, "content:hello", after_cursor=CursorHandle("stale-handle")
+        )
+
+    task_call_service_mock.call_execute_query_tool.assert_not_called()
+
+
+def test_execute_query_rejects_a_handle_minted_by_another_tool(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """A cursor only makes sense to the search that minted it, and the agent mixing two
+    up is worth catching before it costs a task round-trip."""
+    ctx = _make_ctx(deps)
+    seeded = _seed_cursor(deps, "list_folder_contents")
+
+    with pytest.raises(ModelRetry, match="different tool"):
+        tool_service.execute_query(ctx, "content:hello", after_cursor=seeded.handle)
+
+    task_call_service_mock.call_execute_query_tool.assert_not_called()
+
+
+def test_only_the_most_recent_handles_stay_resolvable(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """The store is bounded rather than swept on a clock.
+
+    The agent pages forward, so the oldest handle is the one that may fall off.
+    """
+    task_call_service_mock.call_execute_query_tool.return_value = ExecuteQueryResult(
+        files=[], has_more=True, next_cursor=_REAL_CURSOR
+    )
+
+    ctx = _make_ctx(deps)
+    handles = [
+        tool_service.execute_query(ctx, "content:hello").next_cursor
+        for _ in range(_MAX_TRACKED_CURSORS + 1)
+    ]
+    assert len(deps.cursors) == _MAX_TRACKED_CURSORS
+
+    with pytest.raises(ModelRetry):
+        tool_service.execute_query(ctx, "content:hello", after_cursor=handles[0])
+
+    newest = handles[-1]
+    assert newest is not None
+    tool_service.execute_query(ctx, "content:hello", after_cursor=newest)
+
+
+def test_execute_query_without_a_further_page_hands_out_no_handle(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    task_call_service_mock.call_execute_query_tool.return_value = ExecuteQueryResult(
+        files=[], has_more=False, next_cursor=None
+    )
+
+    ctx = _make_ctx(deps)
+    result = tool_service.execute_query(ctx, "content:hello")
+
+    assert result.next_cursor is None
+    assert not deps.cursors

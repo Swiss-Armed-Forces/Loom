@@ -8,13 +8,13 @@
 # pipelines. Rescan everything with: generate-third-party --refresh
 # syft 1.51.0
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine prod-f4cf29d80309b13f94d35306ab1320ce8c7fc9c94ed44e0b7f8c3a30f048a788
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api prod-5931a290557eaea75d309503e19a7d9187163cfe60c55a2585555ed723afff25
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler prod-b1552a01333b0d79394c6dcbb7129ba9fcba22a9bf7e1d17c9b81f451a1be221
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api prod-194e84be5e30711c6abe4a7b0b32023ee9d11de54215a532a58268ad0785b839
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler prod-015190137baa4a05c39e30ee2b765881dc0aae1a1163753d83c7e06afe7e0fd1
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot prod-c7ec92aba65329c9d02d036c375908d7e89396c12d8f2913fa0cc2dcf9316300
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch prod-d2f97a7a0f3e6b7fbb083d14891b0ffb68c1828bf234cdd4ab4b35e78ddcf8c6
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter prod-e0636b4420eb787bdf3f9d893ede1fe6d815b7137b716df4b8c21e5a6a469ed2
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue prod-3088bcf3f332b0053fb7ed60db65855ab5e20cf932d5c6dcfbaaea762d0aec46
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend prod-dcce46f1fbc8e8998e16644e32a88a8e315fa299610119846802e2f455e4acc0
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend prod-489a9e8c9ace11117efee0bc8c35e5a27254d4fa3b4d7f446c572526b5e6322c
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg prod-1e195b2caad126c7628632ed5d59d176062058b5dc95ff97e3840003511a6659
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana prod-5196f82701fb7a3ac4e671b95a2f5d7bbea840ce3f4e524282ab3cf7f5347737
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda 2.20.1
@@ -33,4 +33,4 @@ registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd prod-46a95d
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs prod-2b741652b88668882bd92ff2948c3694299e6c14b8671a92f4bca97ffcabeeb5
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika prod-098abbec50f6b3bf0c4a007c32988a67103ec90b3158365e4d84466ee62cb0fd
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik v3.6.15
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker prod-ac53686307e40eb4d87993e64f6ee3a56b455600120bc2c55ed21bce73ee941d
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker prod-6f3ebe9f7f59f3fe78c717b75f26ba8e291f3fcd938fcaae374fa366c33547a3

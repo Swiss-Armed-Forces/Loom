@@ -15,6 +15,7 @@ from common.file.file_repository import (
     TAG_LEN_MIN,
     File,
     FilePurePath,
+    FlatFilesResult,
     TreePathsNode,
     TreePathsResult,
 )
@@ -25,6 +26,7 @@ from common.file.file_statistics import (
     StatisticsEntry,
     TermsStatistics,
 )
+from common.models.cursor_pagination import SearchAfterCursor
 from common.models.es_repository import EsIdObject, _EsMeta
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
@@ -47,6 +49,7 @@ from api.routers.files import (
     GetFilesQuery,
     GetStatsQuery,
     PreviewQueryParameters,
+    SearchByFilenameResponse,
     UpdateFilesRequest,
 )
 
@@ -733,22 +736,22 @@ def test_search_by_filename_calls_flat_files(client: TestClient):
         file_count=0,
         file_id="abc-123",
     )
-    get_file_repository().get_flat_files_by_query.return_value = TreePathsResult(
+    get_file_repository().get_flat_files_by_query.return_value = FlatFilesResult(
         nodes=[node],
-        next_page_cursor=None,
+        next_cursor=None,
     )
 
-    response = client.get(
+    response = client.post(
         "/v1/files/search_by_filename",
-        params={"query_id": "abc123", "filename": "report"},
+        json={"query_id": "abc123", "filename": "report"},
     )
 
     assert response.status_code == 200
-    body = GetFilesTreeResponse.model_validate(response.json())
+    body = SearchByFilenameResponse.model_validate(response.json())
     assert len(body.nodes) == 1
     assert body.nodes[0].full_path == FilePurePath("//source/report.pdf")
     assert body.nodes[0].file_id == "abc-123"
-    assert body.next_page_cursor is None
+    assert body.next_cursor is None
     get_file_repository().get_flat_files_by_query.assert_called_once_with(
         query=ANY,
         after=None,
@@ -757,23 +760,70 @@ def test_search_by_filename_calls_flat_files(client: TestClient):
 
 
 def test_search_by_filename_passes_after_cursor(client: TestClient):
-    get_file_repository().get_flat_files_by_query.return_value = TreePathsResult(
+    """The cursor travels as a structure, so the repository is handed it unchanged."""
+    get_file_repository().get_flat_files_by_query.return_value = FlatFilesResult(
         nodes=[],
-        next_page_cursor=None,
+        next_cursor=None,
     )
+    cursor = SearchAfterCursor(src="flat_files", last_sort=["//source/last.pdf"])
 
-    response = client.get(
+    response = client.post(
         "/v1/files/search_by_filename",
-        params={
+        json={
             "query_id": "abc123",
             "filename": "report",
-            "after": "//source/last.pdf",
+            "after": cursor.model_dump(),
         },
     )
 
     assert response.status_code == 200
     get_file_repository().get_flat_files_by_query.assert_called_once_with(
         query=ANY,
-        after="//source/last.pdf",
+        after=cursor,
         filename="report",
     )
+
+
+def test_search_by_filename_hands_out_the_cursor_as_a_structure(client: TestClient):
+    """A POST body can hold one, so nothing is encoded on the way out either."""
+    cursor = SearchAfterCursor(src="flat_files", last_sort=["//source/last.pdf"])
+    get_file_repository().get_flat_files_by_query.return_value = FlatFilesResult(
+        nodes=[],
+        next_cursor=cursor,
+    )
+
+    response = client.post(
+        "/v1/files/search_by_filename",
+        json={"query_id": "abc123", "filename": "report"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["next_cursor"]["last_sort"] == ["//source/last.pdf"]
+
+
+def test_search_by_filename_rejects_a_malformed_cursor(client: TestClient):
+    """The shape check lives on the cursor model, so FastAPI rejects the body before the
+    endpoint runs."""
+    response = client.post(
+        "/v1/files/search_by_filename",
+        json={
+            "query_id": "abc123",
+            "filename": "report",
+            "after": {"src": "flat_files", "last_sort": [1.0, {"not": "scalar"}]},
+        },
+    )
+
+    assert response.status_code == 422
+    get_file_repository().get_flat_files_by_query.assert_not_called()
+
+
+def test_search_by_filename_requires_a_point_in_time(client: TestClient):
+    """Pages resume from sort values that only mean something inside one snapshot, so
+    the client has to open one before it can page at all."""
+    response = client.post(
+        "/v1/files/search_by_filename",
+        json={"filename": "report"},
+    )
+
+    assert response.status_code == 422
+    get_file_repository().get_flat_files_by_query.assert_not_called()

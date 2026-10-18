@@ -34,17 +34,17 @@ def init():
         common_dependencies.get_root_task_information_repository(),
     )
 
-    global _tool_service
-    _tool_service = ToolService(_task_call_service)
-
-    global _agent_service
-    _agent_service = AgentService(get_tool_service())
-
     global _ai_service
     _ai_service = AiService(
         common_dependencies.get_ai_context_repository(),
         common_dependencies.get_task_scheduling_service(),
     )
+
+    global _tool_service
+    _tool_service = ToolService(_task_call_service)
+
+    global _agent_service
+    _agent_service = AgentService(_tool_service)
 
 
 def mock_init():

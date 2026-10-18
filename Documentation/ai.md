@@ -348,6 +348,51 @@ After streaming completes, `AiService` emits `CustomEvent` messages for each ded
 then `RunFinishedEvent`, then fires a background Celery task (`persist_question_task`) to append the
 `AiQuestion` to the context in Elasticsearch — without blocking the response.
 
+### Pagination
+
+The three search and browse tools (`execute_query`, `list_folder_contents`,
+`search_by_filename`) return one page of results at a time. Each response carries
+`has_more` and `next_cursor`; the agent continues by calling the same tool again with
+`next_cursor` passed as `after_cursor`. Paging is therefore part of the tool-call loop:
+every additional page costs one more model turn and adds its results to the context, so
+a broad query can consume a significant share of the run's request and token budget.
+
+Page sizes are deployment settings: `tool__execute_query__page_size` (default 10) for
+`execute_query`, and `tool__browse__page_size` (default 50, and also its maximum) shared
+by `list_folder_contents` and `search_by_filename`. They decide how much of the model's
+context one tool call can consume, which is why an operator running a small-context
+model can lower them. The browse ceiling is what one tree-path aggregation can carry —
+every bucket brings a top hit and two filter sub-aggregations — so a larger value is
+rejected at startup rather than silently clamped by one of the two tools.
+
+Cursors are opaque, tool-specific and query-specific: each one records which tool minted
+it and a digest of the arguments that produced the result set, so passing a cursor to a
+different tool — or back to the same tool with a changed `query_string`, `folder_path`,
+`filename` or `search_string` — is rejected rather than silently returning a page of
+unrelated results.
+
+`execute_query` and `search_by_filename` pages all read one Elasticsearch
+point-in-time, so a paging run sees a single index snapshot. Both sort on `_score`, which
+Elasticsearch computes from index-wide statistics, so a score shifts whenever anything is
+indexed — including documents the search does not match. A cursor stores that score as a
+literal value, so without a snapshot to hold the sort keys still, pages read a moment
+apart overlap or skip. `list_folder_contents` needs no snapshot: it resumes from a path,
+which means the same thing whenever it is read.
+
+The point-in-time id is large, so the agent never sees it: the tool returns a short handle
+and keeps the real cursor in the agent run's own state. Handles are therefore only valid
+inside the run that issued them — a cursor replayed in a later conversation turn is
+rejected, and the agent is told to start over. A run also keeps only its most recent
+handles, so one from much earlier in a long run is rejected the same way.
+
+Cursors themselves never leave the backend: the tool and the Celery task behind it pass
+the cursor object, and the REST endpoints that hand one to a browser pass it as a
+structure too. A page resumed after its point-in-time has lapsed **is** an error: a fresh
+snapshot numbers its documents differently, so the stored sort values no longer point
+where they did. The tools report it as an unusable cursor and the agent starts the result
+set again; the REST endpoints answer `409`, and the frontend opens a new point-in-time and
+reloads from the first page.
+
 ---
 
 ## Frontend Tool Architecture
@@ -443,15 +488,15 @@ toolset) so the agent focuses on research rather than UI control.
 | Tool | Capability | Description |
 | --- | --- | --- |
 | `suggest_queries` | `search_and_browse` | Generates ranked Lucene query candidates from a natural language description. Optional `folder_path` parameter restricts results to a subtree. |
-| `list_folder_contents` | `search_and_browse` | Lists direct children (subfolders and files) of a folder path |
-| `search_by_filename` | `search_and_browse` | Finds files whose name contains a given substring |
+| `list_folder_contents` | `search_and_browse` | Lists direct children (subfolders and files) of a folder path. Paginated: optional `after_cursor`; the response carries `has_more` and `next_cursor`. |
+| `search_by_filename` | `search_and_browse` | Finds files whose name contains a given substring, best matches first. Optional `search_string` parameter (default `*`) restricts the name match to the files a Lucene query matches. Paginated: optional `after_cursor`; the response carries `has_more` and `next_cursor`. |
 | `get_file` | `file_access` | Returns the full path and available field list for a file by UUID |
 | `get_file_field` | `file_access` | Reads the value of a specific field for a file (e.g. `content`, `summary`) |
 | `summarize_file` | `ai_processing` | Triggers AI summarization for a file and returns the summary |
 | `translate_file` | `ai_processing` | Triggers AI translation for a file and returns the translated text |
 | `describe_image` | `ai_processing` | Triggers AI image description for an image file |
-| `execute_query` | `research_mode` | Executes a Lucene query and returns matching files with snippets. Optional `folder_path` parameter restricts results to a subtree. |
-| `rag_search` | `research_mode` | Runs the full RAG pipeline and returns a synthesized answer |
+| `execute_query` | `search_and_browse` | Executes a Lucene query and returns matching files with snippets, best matches first. Optional `folder_path` parameter restricts results to a subtree. Paginated: optional `after_cursor`; the response carries `total_count`, `has_more` and `next_cursor`. |
+| `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer |
 
 ### Frontend tools
 

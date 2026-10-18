@@ -22,6 +22,14 @@ logger = logging.getLogger(__name__)
 
 CELERY_QUEUE_NAME_MAXLEN = 255
 
+# NOTE: ES determines upper limit for MAX_PAGE_SIZE
+# (< index.max_result_window default 10000 and < search.max_buckets default 65536).
+MAX_PAGE_SIZE = 10000
+
+# What one tree-path aggregation can carry: every bucket brings a top_hits and two
+# filter sub-aggregations. Both repository methods behind the browse tools clamp to it.
+TREE_PATH_MAX_ELEMENT_COUNT = 50
+
 
 def _get_persister_id_from_hostname() -> int:
     """Extract persister ID from StatefulSet pod hostname.
@@ -202,8 +210,34 @@ class SuggestQueriesToolSettings(BaseModel):
     max_results: int = 3
 
 
+class ExecuteQueryToolSettings(BaseModel):
+    """Settings for the execute_query AI tool.
+
+    Attributes:
+        page_size: Files returned per page.
+    """
+
+    page_size: int = Field(default=10, ge=1, le=MAX_PAGE_SIZE)
+
+
+class BrowseToolsSettings(BaseModel):
+    """Settings shared by the list_folder_contents and search_by_filename AI tools.
+
+    Attributes:
+        page_size: Entries returned per page.  Bounded by what one tree-path
+            aggregation can carry, which is also what both repository methods behind
+            these tools clamp to — a larger value would be silently cut down.
+    """
+
+    page_size: int = Field(
+        default=TREE_PATH_MAX_ELEMENT_COUNT, ge=1, le=TREE_PATH_MAX_ELEMENT_COUNT
+    )
+
+
 class ToolSettings(BaseModel):
     suggest_queries: SuggestQueriesToolSettings = SuggestQueriesToolSettings()
+    execute_query: ExecuteQueryToolSettings = ExecuteQueryToolSettings()
+    browse: BrowseToolsSettings = BrowseToolsSettings()
 
 
 class LLMSettings(BaseModel):

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import logging
 import time
 from abc import abstractmethod
@@ -27,7 +28,6 @@ from pydantic.main import IncEx
 
 from common.messages.messages import (
     MessageFileUpdate,
-    MessageQueryIdExpired,
     PubSubMessage,
 )
 from common.messages.pubsub_service import PubSubService
@@ -44,6 +44,7 @@ from common.services.query_builder import (
     QueryBuilder,
     QueryParameters,
 )
+from common.settings import MAX_PAGE_SIZE
 from common.utils.pydantic_field_paths import iter_field_paths_by_type
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,29 @@ _ID_SCAN_PAGE_SIZE = 5000
 
 class InvalidSortFieldExceptions(Exception):
     pass
+
+
+class PointInTimeExpiredError(Exception):
+    """Raised when a query's point-in-time no longer exists in Elasticsearch.
+
+    Transient by nature: the snapshot lapsed because its keep_alive ran out, and the
+    same work succeeds against a fresh one.  It is an error rather than something
+    papered over because a search cannot be resumed across snapshots — ``search_after``
+    holds literal sort values, and both ``_score`` and the ``_shard_doc`` tiebreaker ES
+    appends under a point-in-time mean something different in the next one.  Reopening
+    silently and replaying the tuple hands back a page positioned against values that
+    no longer exist, which reads as duplicated or skipped documents.
+    """
+
+    MESSAGE = (
+        "The point-in-time for this query has expired. Open a new one and start "
+        "again from the first page."
+    )
+
+    # The message is an argument so that the exception survives the pickle
+    # round-trip Celery does when re-raising it in the caller.
+    def __init__(self, message: str = MESSAGE) -> None:
+        super().__init__(message)
 
 
 class _EsMeta(BaseModel):
@@ -223,6 +247,46 @@ class QuerySearchResult(BaseModel, Generic[EsRepositoryObjectT]):
     total: int
 
 
+class PagedSearchResult(BaseModel, Generic[EsRepositoryObjectT]):
+    """A single page of search results with the true ES total.
+
+    Attributes:
+        objs: The objects on this page.
+        total_hits: Total number of documents matching the query, across all
+            pages.  Named differently from ``QuerySearchResult.total``, which
+            is a per-page count.
+        count_relation: For ``eq`` the count is exact, while ``gte`` marks
+            that there are more than 10k hits.
+        has_more: Whether a further page exists.  Determined by fetching one
+            document beyond the page, so it stays correct when the result set
+            size is an exact multiple of the page size.  This is the
+            authoritative termination signal for callers.
+        next_sort_id: Sort values of the last hit on this page, to be passed as
+            ``PaginationParameters.sort_id`` to fetch the next page.  ``None``
+            when the page is empty.
+    """
+
+    objs: list[EsRepositoryObjectT]
+    total_hits: int
+    count_relation: str | None = None
+    has_more: bool = False
+    next_sort_id: list[Any] | None = None
+
+    @model_validator(mode="after")
+    def _more_pages_require_a_cursor(self) -> "PagedSearchResult[EsRepositoryObjectT]":
+        """Reject the one combination no caller can act on.
+
+        A caller told that a further page exists has to be given the sort values to
+        fetch it with, so the two fields are only ever consistent together.
+        """
+        if self.has_more and self.next_sort_id is None:
+            raise ValueError(
+                "has_more is True without a next_sort_id: the caller would be told "
+                "to page on with no cursor to page with."
+            )
+        return self
+
+
 class SortingParameters(BaseModel):
     sort_by_field: str = "_score"
     sort_direction: Literal["asc", "desc"] = "asc"
@@ -231,6 +295,24 @@ class SortingParameters(BaseModel):
 class PaginationParameters(BaseModel):
     sort_id: list[Any] = Field(default_factory=list)
     page_size: int = DEFAULT_PAGE_SIZE
+
+
+class LeadingSnippetHighlight(BaseModel):
+    """Highlight that falls back to the start of a field when nothing matched.
+
+    ES answers with the first ``max_chars`` characters of ``field`` for hits the
+    query did not match inside it, which turns the highlighter into the source of
+    the fallback snippet.  Callers that only need a capped snippet can therefore
+    leave the field out of ``_source`` instead of shipping all of it and cutting
+    it down afterwards.
+
+    Attributes:
+        field: Field to highlight.
+        max_chars: Number of leading characters to return when nothing matched.
+    """
+
+    field: str
+    max_chars: int
 
 
 class BaseEsRepository(  # pylint: disable=too-many-public-methods
@@ -291,12 +373,15 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         return obj
 
     def _get_sort_by_field(self, field: str) -> str:
+        # Checked before the mapping lookup: _score is not a mapped field, so
+        # fetching the mapping for it is a wasted round-trip on every page.
+        if field == "_score":
+            return field
+
         field_name = field.split(".")[-1]
         field_mapping = self._index.get_field_mapping(
             using=self._elasticsearch, fields=[field]
         )
-        if field == "_score":
-            return field
 
         try:
             sort_field_mapping = field_mapping[self._index_name]["mappings"][field][
@@ -329,6 +414,29 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
                 sort_field = field
         return sort_field
 
+    def _apply_page_params(
+        self,
+        search: Search[EsRepositoryDocumentT],
+        sort_params: SortingParameters,
+        pagination_params: PaginationParameters,
+    ) -> Search[EsRepositoryDocumentT]:
+        """Apply sorting, the search_after cursor and the page size for a single page of
+        results."""
+        sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
+        search = search.sort(
+            {sort_by_field: {"order": sort_params.sort_direction}},
+            # We append "sort_unique" here on purpose, see comment in
+            # EsRepositoryObject
+            "sort_unique",
+        )
+        if pagination_params.sort_id:
+            search = search.extra(
+                search_after=pagination_params.sort_id,
+            )
+        return search.extra(
+            size=pagination_params.page_size,
+        )
+
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _paginate_search(
         self,
@@ -345,35 +453,31 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         every page."""
         search_after: list[Any] | None = None
 
-        sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
-
-        # When scanning all results (no pagination_params), _score sorting is
-        # non-deterministic: identical scores cause search_after to skip or
-        # duplicate documents across pages. Fall back to sort_unique which is
-        # guaranteed unique and stable.
-        if pagination_params is None and sort_by_field == "_score":
-            search = search.sort(
-                {"sort_unique": {"order": sort_params.sort_direction}},
-            )
-        else:
-            search = search.sort(
-                {sort_by_field: {"order": sort_params.sort_direction}},
-                # We append "sort_unique" here on purpose, see comment in
-                # EsRepositoryObject
-                "sort_unique",
-            )
-
         if pagination_params is not None:
-            if pagination_params.sort_id:
-                search = search.extra(
-                    search_after=pagination_params.sort_id,
-                )
-            search = search.extra(
-                size=pagination_params.page_size,
+            search = self._apply_page_params(
+                search=search,
+                sort_params=sort_params,
+                pagination_params=pagination_params,
             )
         else:
+            sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
+            # When scanning all results (no pagination_params), _score sorting is
+            # non-deterministic: identical scores cause search_after to skip or
+            # duplicate documents across pages. Fall back to sort_unique which is
+            # guaranteed unique and stable.
+            if sort_by_field == "_score":
+                search = search.sort(
+                    {"sort_unique": {"order": sort_params.sort_direction}},
+                )
+            else:
+                search = search.sort(
+                    {sort_by_field: {"order": sort_params.sort_direction}},
+                    # We append "sort_unique" here on purpose, see comment in
+                    # EsRepositoryObject
+                    "sort_unique",
+                )
             if query.query_id is None:
-                query.query_id = self.open_point_in_time()
+                query.query_id = self.open_point_in_time(keep_alive=query.keep_alive)
             search = search.extra(size=scan_page_size)
 
         while True:
@@ -400,20 +504,24 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         self,
         query: QueryParameters,
         full_highlight_context: bool = False,
+        with_highlight: bool = True,
     ) -> Search[EsRepositoryDocumentT]:
         search: Search[EsRepositoryDocumentT] = self._document_type.search(
             using=self._elasticsearch
         )
 
-        search = search.highlight_options(
-            order="score",
-            pre_tags=["<highlight>"],
-            post_tags=["</highlight>"],
-        )
-        if full_highlight_context:
-            search = search.highlight("*", number_of_fragments=0)
-        else:
-            search = search.highlight("*")
+        # Highlighting every field is expensive, so searches that fetch hits
+        # without rendering snippets can opt out of it.
+        if with_highlight:
+            search = search.highlight_options(
+                order="score",
+                pre_tags=["<highlight>"],
+                post_tags=["</highlight>"],
+            )
+            if full_highlight_context:
+                search = search.highlight("*", number_of_fragments=0)
+            else:
+                search = search.highlight("*")
 
         query_string = self._query_builder.build(query)
         search = search.query(
@@ -489,6 +597,64 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         return QuerySearchResult[EsRepositoryObjectT](
             objs=objs,
             total=len(objs),
+        )
+
+    def get_page_by_query(
+        self,
+        query: QueryParameters,
+        pagination_params: PaginationParameters,
+        sort_params: SortingParameters | None = None,
+        source_includes: list[str] | None = None,
+        leading_snippet_highlight: LeadingSnippetHighlight | None = None,
+    ) -> PagedSearchResult[EsRepositoryObjectT]:
+        """Return one page of results with the true ES total hit count.
+
+        Unlike get_by_query, whose ``total`` is the size of the returned page, the
+        returned ``total_hits`` is the exact number of matching documents across all
+        pages (cutoff by ES at 10k). One document beyond the page is fetched so that
+        ``has_more`` is exact even when the result set size is a multiple of the page size.
+
+        Args:
+            source_includes: When given, restricts the fetched _source to these
+                fields.  It has to list every field required to build the object,
+                not only the ones the caller goes on to read.
+            leading_snippet_highlight: When given, the field gets a highlight that
+                falls back to the start of the field, see LeadingSnippetHighlight.
+        """
+        sort_params = sort_params or SortingParameters()
+        # has_more is answered from a hit fetched beyond the page, so a page size
+        # below one would report a further page with no cursor to reach it with.
+        # The upper bound is what ES returns in a single search at all.
+        page_size = min(max(pagination_params.page_size, 1), MAX_PAGE_SIZE - 1)
+        search = self._get_search_by_query(query=query)
+        if source_includes is not None:
+            search = search.source(includes=source_includes)
+        if leading_snippet_highlight is not None:
+            # Registered after the wildcard highlight of _get_search_by_query so
+            # that this field's options win over the ones inherited from "*".
+            search = search.highlight(
+                leading_snippet_highlight.field,
+                no_match_size=leading_snippet_highlight.max_chars,
+            )
+        search = self._apply_page_params(
+            search=search,
+            sort_params=sort_params,
+            # +1 to detect whether more pages exist
+            pagination_params=pagination_params.model_copy(
+                update={"page_size": page_size + 1}
+            ),
+        )
+        result = self._execute_search_with_query(search=search, query=query)
+        hits = list(result.hits)
+        page = hits[:page_size]
+        return PagedSearchResult(
+            objs=[self._document_to_object(hit) for hit in page],
+            total_hits=result.hits.total.value,  # type: ignore[attr-defined]
+            count_relation=result.hits.total.relation,  # type: ignore[attr-defined]
+            # Derived from the page actually returned, so has_more can never
+            # disagree with next_sort_id.
+            has_more=len(hits) > len(page),
+            next_sort_id=list(page[-1].meta.sort) if page else None,
         )
 
     # pylint:disable=duplicate-code
@@ -573,22 +739,13 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
                 .extra(pit={"id": query.query_id, "keep_alive": query.keep_alive})
                 .execute()
             )
-        except NotFoundError:
-            # Returned when the PIT for the query is not found. Probably expired.
-            logger.info("Query %s expired, creating new one", query)
-            old_query_id = query.query_id
-            # Mutate the query's PIT so the caller has access to the new PIT
-            query.query_id = self.open_point_in_time()
-
-            self._pubsub_service.publish_message(
-                PubSubMessage(
-                    channel=old_query_id,
-                    message=MessageQueryIdExpired(
-                        old_id=old_query_id, new_id=query.query_id
-                    ),
-                ),
-            )
-            return self._execute_search_with_query(search, query)
+        except NotFoundError as exc:
+            # Returned when the PIT for the query is not found, so it has expired.
+            # Opening a fresh one here and retrying would answer with a page read
+            # against a different snapshot than the caller's cursor refers to, which
+            # is why this is reported instead. See PointInTimeExpiredError.
+            logger.info("Point-in-time for query %s expired", query)
+            raise PointInTimeExpiredError() from exc
 
     def count_by_query(self, query: QueryParameters) -> int:
         """Counts the number of files returned by the given query."""

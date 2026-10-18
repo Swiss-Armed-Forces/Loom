@@ -408,6 +408,10 @@ tool:
   suggest_queries:
     num_candidates: 10
     max_results: null
+  execute_query:
+    page_size: null
+  browse:
+    page_size: null
 
 preInstall:
   image:

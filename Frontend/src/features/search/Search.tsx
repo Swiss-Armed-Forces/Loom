@@ -1,5 +1,4 @@
 import { useMediaQuery } from "@mui/material";
-import { t } from "i18next";
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -9,7 +8,6 @@ import {
     MessageFileUpdate,
     loadSummarizationSystemPrompt,
     loadVisionSystemPrompt,
-    MessageQueryIdExpired,
     MessageError,
 } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -47,8 +45,6 @@ import { isSortDirection, SearchQuery } from "../common/utils/model";
 
 import styles from "./Search.module.css";
 
-const UPDATE_QUERY_DEBOUNCE_MS = 2_000;
-
 export const Search = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -73,10 +69,6 @@ export const Search = () => {
     useKeyboardNavigation();
 
     const [searchParams] = useSearchParams();
-
-    const updateQueryDebounceTimeoutRef = useRef<ReturnType<
-        typeof setTimeout
-    > | null>(null);
 
     const isFirstQueryRenderRef = useRef(true);
     useEffect(() => {
@@ -112,7 +104,7 @@ export const Search = () => {
                 dispatch(websocketConnect);
                 // If the Redux state already holds a cached query (restored from
                 // localStorage), subscribe its WS channel immediately so we receive
-                // fileUpdate and queryIdExpired messages without a full re-fetch.
+                // fileUpdate messages without a full re-fetch.
                 // SocketApi queues this until the connection is open.
                 if (searchQuery?.id) {
                     dispatch(
@@ -266,30 +258,6 @@ export const Search = () => {
             }
         }
     }, [webSocketPubSubMessage]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // update query id and show toast
-    useEffect(() => {
-        const message =
-            webSocketPubSubMessage?.message as MessageQueryIdExpired;
-        if (message?.type !== "queryIdExpired") return;
-        const oldQueryId = message.oldId;
-        if (searchQuery?.id !== oldQueryId) return;
-
-        if (updateQueryDebounceTimeoutRef.current)
-            clearTimeout(updateQueryDebounceTimeoutRef.current);
-
-        updateQueryDebounceTimeoutRef.current = setTimeout(() => {
-            dispatch(updateQuery({ id: message.newId }));
-            toast.info(t("generalSearchView.queryExpired"));
-            updateQueryDebounceTimeoutRef.current = null;
-        }, UPDATE_QUERY_DEBOUNCE_MS);
-
-        return () => {
-            if (updateQueryDebounceTimeoutRef.current) {
-                clearTimeout(updateQueryDebounceTimeoutRef.current);
-            }
-        };
-    }, [webSocketPubSubMessage, searchQuery?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className={styles.searchWrapper}>

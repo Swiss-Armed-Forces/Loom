@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Any
 
+from common.models.cursor_pagination import InvalidPaginationCursorError
+from common.models.es_repository import PointInTimeExpiredError
 from common.services.query_builder import QueryBuilderException
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,6 +62,17 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.add_exception_handler(
         QueryBuilderException,
         lambda _, ex: JSONResponse(status_code=400, content={"detail": str(ex)}),
+    )
+    api.add_exception_handler(
+        InvalidPaginationCursorError,
+        lambda _, ex: JSONResponse(status_code=400, content={"detail": str(ex)}),
+    )
+    # 409 rather than the 400 above so a client can tell the two apart: a bad cursor
+    # is the client's mistake and resending will not help, while an expired snapshot
+    # is recoverable by opening a new point-in-time and starting over.
+    api.add_exception_handler(
+        PointInTimeExpiredError,
+        lambda _, ex: JSONResponse(status_code=409, content={"detail": str(ex)}),
     )
 
     # static assets

@@ -28,10 +28,16 @@ logger = logging.getLogger(__name__)
 # Units can be nanos, micros, ms (milliseconds),
 # s (seconds), m (minutes), h (hours) and d (days).
 # Also accepts "0" without a unit and "-1" to indicate an unspecified value.
-KeepAlive = Literal["10s", "30m"]
+KeepAlive = Literal["10s", "5m", "30m"]
 
 # Default keepalive for point in time
 DEFAULT_PIT_KEEPALIVE: KeepAlive = "10s"
+AI_PIT_KEEPALIVE: KeepAlive = "5m"
+# For searches that page over the whole index rather than answering one request. The
+# snapshot has to outlive the gaps between pages, and a scan hands every page to a
+# callback that dispatches work, so those gaps are the caller's work and not a query
+# round-trip. Ten seconds is comfortably shorter than that.
+SCAN_PIT_KEEPALIVE: KeepAlive = "5m"
 
 
 class QueryBuilderException(Exception):

@@ -42,12 +42,6 @@ class MessageFileSave(BaseModel):
     fileId: str
 
 
-class MessageQueryIdExpired(BaseModel):
-    type: Literal["queryIdExpired"] = "queryIdExpired"
-    old_id: str
-    new_id: str
-
-
 class PubSubMessage(BaseModel):
     channel: str | None = (
         None  # None means the message will be delivered on the meta channel
@@ -61,6 +55,5 @@ class PubSubMessage(BaseModel):
         MessageUnsubscribeConfirmation,
         MessageFileUpdate,
         MessageFileSave,
-        MessageQueryIdExpired,
         MessageError,
     ] = Field(discriminator="type")
