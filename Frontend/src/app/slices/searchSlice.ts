@@ -498,7 +498,9 @@ const initialState: SearchState = {
     showChatReasoning: false,
     bindings: {},
     ...persistedState,
-    // Restore the last query (text + sort) so stale data renders immediately.
+    // Restore the last query (text + sort) so the search fields come back
+    // filled. The results do not survive a reload, so Search re-runs this
+    // query on mount whenever the URL does not name one of its own.
     // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
     // activeTabFileId always comes from the URL hash.
     query: persistedState.query
@@ -530,8 +532,13 @@ export const updateQuery = createAsyncThunk(
                 query.sortField !== undefined
                     ? query.sortField?.trim() || null
                     : (lastQuery?.sortField ?? null),
+            // Same undefined-check as sortField above, so that a caller
+            // describing a whole search - the URL sync does - can say "no
+            // direction" with null instead of inheriting the last one.
             sortDirection:
-                query.sortDirection ?? lastQuery?.sortDirection ?? null,
+                query.sortDirection !== undefined
+                    ? query.sortDirection
+                    : (lastQuery?.sortDirection ?? null),
             sortId: query.sortId ?? null,
             pageSize: query.pageSize ?? null,
         };
