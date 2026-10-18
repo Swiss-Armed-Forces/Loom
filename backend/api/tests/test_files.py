@@ -31,6 +31,7 @@ from common.models.es_repository import EsIdObject, _EsMeta
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
+from elasticsearch import BadRequestError
 from fastapi.testclient import TestClient
 
 from api.models.statistics_model import (
@@ -121,6 +122,28 @@ def test_get_files_searches_in_repository(client: TestClient):
     get_file_repository().get_id_generator_by_query.assert_called_once_with(
         query=query, sort_params=query, pagination_params=query
     )
+
+
+def test_get_files_reports_a_rejected_cursor_as_a_bad_request(client: TestClient):
+    """The sort field, the cursor and the search string are the caller's, and only
+    Elasticsearch sees that they do not go together — a cursor means something for the
+    sort it was issued for and nothing for another one.
+
+    Answering 500 blames the server for a request only the caller can correct.
+    """
+    get_file_repository().get_id_generator_by_query.side_effect = BadRequestError(
+        message="search_phase_execution_exception",
+        meta=MagicMock(status=400),
+        body={"error": {"type": "search_phase_execution_exception"}},
+    )
+
+    response = client.get(
+        "/v1/files",
+        params=GetFilesQuery(query_id="0123456789").model_dump(),
+    )
+
+    assert response.status_code == 400
+    assert "search_phase_execution_exception" in response.json()["detail"]
 
 
 def test_get_files_count_searches_in_repository(client: TestClient):

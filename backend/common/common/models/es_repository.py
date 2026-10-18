@@ -58,6 +58,22 @@ INDEX_CLOSE_POLL_INTERVAL_S = 0.5
 DEFAULT_PAGE_SIZE = 10
 _ID_SCAN_PAGE_SIZE = 5000
 
+# Substituted for documents that have no value for a date sort field, per sort
+# direction, so that they keep sorting last.
+#
+# Left to itself Elasticsearch sorts them with Long.MIN_VALUE descending and
+# Long.MAX_VALUE ascending, and its date parser rejects Long.MIN_VALUE as out of
+# range.  Those numbers are handed to the client as the page's cursor, so the
+# search_after that resumes from such a document answers 400 and paging stops at
+# the first document without a date.  An explicit bound inside the range the
+# parser accepts survives that round trip.
+_DATE_SORT_MISSING_BOUNDS: dict[str, int] = {
+    # 0001-01-01T00:00:00Z
+    "desc": -62135596800000,
+    # 9999-12-31T23:59:59.999Z
+    "asc": 253402300799999,
+}
+
 
 class InvalidSortFieldExceptions(Exception):
     pass
@@ -292,6 +308,20 @@ class SortingParameters(BaseModel):
     sort_direction: Literal["asc", "desc"] = "asc"
 
 
+class SortField(NamedTuple):
+    """A sort field resolved against the index mapping.
+
+    Attributes:
+        name: Field to sort on. For a text field this is its keyword sub-field,
+            which is the only part of it that can be sorted on.
+        mapping_type: Mapping type of ``name``, or None for ``_score``, which is
+            scored per query rather than mapped.
+    """
+
+    name: str
+    mapping_type: str | None
+
+
 class PaginationParameters(BaseModel):
     sort_id: list[Any] = Field(default_factory=list)
     page_size: int = DEFAULT_PAGE_SIZE
@@ -372,11 +402,11 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         obj = self._object_type.model_validate(document_dict)
         return obj
 
-    def _get_sort_by_field(self, field: str) -> str:
+    def _get_sort_by_field(self, field: str) -> SortField:
         # Checked before the mapping lookup: _score is not a mapped field, so
         # fetching the mapping for it is a wasted round-trip on every page.
         if field == "_score":
-            return field
+            return SortField(name=field, mapping_type=None)
 
         field_name = field.split(".")[-1]
         field_mapping = self._index.get_field_mapping(
@@ -412,7 +442,25 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
             case _:
                 # The default is just to return the field supplied:
                 sort_field = field
-        return sort_field
+        return SortField(name=sort_field, mapping_type=sort_field_type)
+
+    def _apply_sort(
+        self,
+        search: Search[EsRepositoryDocumentT],
+        sort_field: SortField,
+        sort_direction: Literal["asc", "desc"],
+    ) -> Search[EsRepositoryDocumentT]:
+        """Sort by the given field, breaking ties on sort_unique."""
+        sort_options: dict[str, Any] = {"order": sort_direction}
+        if sort_field.mapping_type == "date":
+            # see comment on _DATE_SORT_MISSING_BOUNDS
+            sort_options["missing"] = _DATE_SORT_MISSING_BOUNDS[sort_direction]
+        return search.sort(
+            {sort_field.name: sort_options},
+            # We append "sort_unique" here on purpose, see comment in
+            # EsRepositoryObject
+            "sort_unique",
+        )
 
     def _apply_page_params(
         self,
@@ -422,12 +470,10 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
     ) -> Search[EsRepositoryDocumentT]:
         """Apply sorting, the search_after cursor and the page size for a single page of
         results."""
-        sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
-        search = search.sort(
-            {sort_by_field: {"order": sort_params.sort_direction}},
-            # We append "sort_unique" here on purpose, see comment in
-            # EsRepositoryObject
-            "sort_unique",
+        search = self._apply_sort(
+            search=search,
+            sort_field=self._get_sort_by_field(sort_params.sort_by_field),
+            sort_direction=sort_params.sort_direction,
         )
         if pagination_params.sort_id:
             search = search.extra(
@@ -460,21 +506,20 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
                 pagination_params=pagination_params,
             )
         else:
-            sort_by_field = self._get_sort_by_field(sort_params.sort_by_field)
+            sort_field = self._get_sort_by_field(sort_params.sort_by_field)
             # When scanning all results (no pagination_params), _score sorting is
             # non-deterministic: identical scores cause search_after to skip or
             # duplicate documents across pages. Fall back to sort_unique which is
             # guaranteed unique and stable.
-            if sort_by_field == "_score":
+            if sort_field.name == "_score":
                 search = search.sort(
                     {"sort_unique": {"order": sort_params.sort_direction}},
                 )
             else:
-                search = search.sort(
-                    {sort_by_field: {"order": sort_params.sort_direction}},
-                    # We append "sort_unique" here on purpose, see comment in
-                    # EsRepositoryObject
-                    "sort_unique",
+                search = self._apply_sort(
+                    search=search,
+                    sort_field=sort_field,
+                    sort_direction=sort_params.sort_direction,
                 )
             if query.query_id is None:
                 query.query_id = self.open_point_in_time(keep_alive=query.keep_alive)
@@ -707,12 +752,17 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
                     )
                 else:
                     paths = sort_by_field.split(".")
-                    current_val = document_dict
+                    current_val: Any = document_dict
                     # descend into document
                     for path in paths:
                         try:
                             current_val = current_val[path]
-                        except KeyError:
+                        except (KeyError, TypeError):
+                            # The document has no value at this path.  Dropping
+                            # what the descent reached so far matters: keeping it
+                            # stringifies the half-walked document into the value
+                            # the client displays.
+                            current_val = None
                             break
                     sort_value = str(current_val) if current_val is not None else ""
                 document_dict.update({"sort_value": sort_value})
