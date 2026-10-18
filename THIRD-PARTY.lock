@@ -12,21 +12,21 @@
 # everything with: generate-third-party --refresh
 # syft 1.51.0
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine lic-ad3a863fb94c55d2d359a3ebd0cdbb93d85082a03419dd854583305725f95169
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api lic-4e83d9cf38772b8cea1882c731c35e004ac7f1d81d9eb6f3ef5986a2da271bdc
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler lic-cc7a11db59a1a35ceec36021272c9a6931aab041ae4abdb94f536baf74d7bfe1
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api lic-22ebd02b12d87a1b7b373759f38a0997d1670808a4f23b9c3df2ac59a8976c17
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler lic-72f2b56663db93e2ca91c4826e32bcac09e24324c05f8ca67c3195a7d061d519
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot lic-dd14227c46713632f780d1414592db2639ebd37a66a3400f93c9cf00175934e6
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch lic-b04901bb1054b206a26aa1a0b8ec228d42185e9e844fce1d8e1824c5857ffa60
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter lic-1c6046afef9782662ab14b86f6ca34beb88d8d73386ee974eef0b018ae1717fd
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticvue lic-bf42789944040fb370a6b52f9e9c1a52898c6a23c3b4c1efbd62226286ea8400
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/frontend lic-dec2f948cea8a3aa4b19615d0335753a087f2e31c226d2e0105b26612471a9a9
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg lic-f0474548c34e6b1fe991c3f098d7389e74f0315994901349430bd141dbf27509
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/gotenberg lic-f2969689c32a3611b168242e9d018c73f81c593a610f5b216e9af094e5dc6442
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/grafana lic-6752071c90fcf198da11ca2dd0b55ad44337904999edb29aba81a4d690f398e8
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda lic-1cbcaa06d182cfb7a02def3d72d336f8a2511e44b4d675649a173e4351e18519
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda-metrics-apiserver lic-c584e369d0161cf4f555b7a03c8f2a7dbae9e0d6290336bc0d3c7afa4d982d3b
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics lic-589ecf178d2057699b972f88fb73095f8228a061d8ad30796f1e17d44ee7fc2a
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models lic-01d892429ba7380152b2bd114b0fe0c7ab9236c6f9f5641b99e15aae89f7dbcc
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia lic-36a90d70b078f858cd5ab1c9b90cfb3715e108428faa0866c2cb8555bc793b73
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm lic-44dea96192355d68542fd9a83a929f9e40f437f54783e5259aa7039b412d757d
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia lic-97ccdad5ba5e33fd02ef396d4be763c2833e3723c1f01616eefaffae6a21b642
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm lic-339680b5aa0e85ed7528958107016b001fc904cd06bdeda088833127519b8ef9
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus lic-3d4f51f2446d337a4ac880d842c2cf7602fdf8ce565cf2ed75f27e0a14be2597
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit lic-636bb982b682e3104321b788853929f096182055bebce4cc7976cc570294a517
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis lic-0d122d5ec394fbf55c24b3da23c75b6da572fa78dbef27514a526214061ba2fd
@@ -37,4 +37,4 @@ registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rspamd lic-ae9ef59
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/seaweedfs lic-84f1b2ae9f66083226c9649a43ccc37171288fdb34626ab205c6a17e5609112b
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/tika lic-31c08c045eff4111b86c0b2aef4f8769a8ff257206d30eed6f138c8cbbf2d7b5
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/traefik lic-29242ee07bc7b96c339b3209ba4e5def40d53805c3417897bfadc5dd8033a17d
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker lic-6d6f2e666794d998251e879d8baceb23f1463beee8402defd12f7658c313f713
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker lic-63726f3e284fb7b1be9743972d26de43160cb9f28707c8f3231d60338374f6a5
