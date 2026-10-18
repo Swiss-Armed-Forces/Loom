@@ -141,6 +141,12 @@ let
     # Rendered through a temporary file so agetty can never read a
     # half-written banner from a getty that respawns mid-write.
     #
+    # The name is unique per run, the way loom-issue-fragment's is. Three units
+    # render this file and ready.nix's publisher runs one of them every time the
+    # bring-up reaches a new stage, so two renders overlap -- and a shared name
+    # means the first to finish renames the other's file out from under it,
+    # which fails the loser's unit over a banner that was written correctly.
+    #
     # LOOM_INFO_COLOR=vt because the redirection hides the console from
     # loom-info: without it the one screen the colour exists for -- the
     # login prompt nobody has touched yet -- would be the one that renders
@@ -153,10 +159,16 @@ let
     #
     # --for-issue leaves the danger block to its own fragment below, which is what
     # puts it beneath every other unit's.
+    tmp="$(${pkgs.coreutils}/bin/mktemp /run/issue.d/.50-loom.issue.XXXXXX)"
+    trap '${pkgs.coreutils}/bin/rm --force "$tmp"' EXIT
+
     LOOM_INFO_COLOR=vt ${lib.getExe config.loom.banner.info} --for-issue \
-      >/run/issue.d/50-loom.issue.tmp
-    ${pkgs.coreutils}/bin/mv /run/issue.d/50-loom.issue.tmp \
-      /run/issue.d/50-loom.issue
+      >"$tmp"
+    # Readable by agetty, which is root, and by anybody who wants to see what
+    # the screen says -- it is on a monitor in the room either way. mktemp
+    # creates it readable by nobody else.
+    ${pkgs.coreutils}/bin/chmod 0644 "$tmp"
+    ${pkgs.coreutils}/bin/mv "$tmp" /run/issue.d/50-loom.issue
     ${debugFragment}
   '';
 

@@ -2,9 +2,19 @@
 
 Some of what this appliance does can only be asserted by looking at the screen: the login
 banner is written straight to the VT by agetty, and tmux's status line is drawn by tmux
-into a terminal nothing else can query. `/dev/vcsaN` is that screen -- a four-byte header
-of rows, columns and cursor position, then two bytes per cell, character first and
-attribute second.
+into a terminal nothing else can query. Two devices answer that question and this module
+reads both: `/dev/vcsaN` for its four-byte header of rows, columns and cursor position,
+and `/dev/vcsuN` for the contents -- one four-byte codepoint per cell, row-major.
+
+The contents come from the unicode device rather than from the cells behind that header,
+and that is the whole of what makes this reliable. `/dev/vcsa` hands back a VGA-style
+cell: a *font index* and an attribute byte, neither of which is the character. The index
+is only a character while the font maps it to one, the attribute's bit 3 is the ninth bit
+of that index under some fonts and the intensity under others, and the appliance paints
+its banner bright under a 512-glyph Cozette -- so the two readings disagree on every cell
+of the login screen, and the one that says "block glyph everywhere" is the wrong one.
+`/dev/vcsu` is the codepoint the kernel recorded when the cell was written, whatever font
+was loaded then or now.
 
 The rendering is one function on purpose, because the two callers want the same three-way
 distinction and it is not the obvious one:
@@ -13,11 +23,10 @@ distinction and it is not the obvious one:
     anything else   -> '#'
     an empty cell   -> '.'
 
-A block-drawing glyph is stored as its index in the console font, not as a codepoint, so
-the Loom mark cannot be read back as text at all -- it comes back as a run of '#', which
-is exactly what tests/scripts/loom_tests/wifi.py matches the logo with. A cell that was
-never written is 0 and comes back as '.', which is what distinguishes "the screen is
-blank here" from "a space was printed here".
+The Loom mark is drawn in block characters, so it comes back as a run of '#', which is
+exactly what tests/scripts/loom_tests/wifi.py matches the logo with. A cell that was never
+written is 0 and comes back as '.', which is what distinguishes "the screen is blank here"
+from "a space was printed here".
 
 This module owns the decoding for every test. Two of them grew their own copy of it while
 the scripts were concatenated rather than imported, which is one of the things that
@@ -33,6 +42,9 @@ if TYPE_CHECKING:
 
 HEADER = 4
 
+# One cell of /dev/vcsu: a codepoint as a little-endian 32-bit word.
+CELL = 4
+
 
 @dataclass(frozen=True)
 class Screen:
@@ -40,7 +52,7 @@ class Screen:
 
     rows: int
     columns: int
-    # The body after the header: two bytes per cell, row-major.
+    # The unicode screen: four bytes per cell, row-major, no header of its own.
     cells: bytes
 
     def line(self, row: int, width: int | None = None) -> str:
@@ -58,20 +70,13 @@ class Screen:
         return self.line(self.rows - 1, width)
 
     def _glyph(self, cell: int) -> str:
-        offset = cell * 2
-        if offset + 1 >= len(self.cells):
+        offset = cell * CELL
+        if offset + CELL > len(self.cells):
             return "."
-        # The ninth bit of the glyph index, out of the attribute byte. Past 256
-        # glyphs the Linux VT takes the index's high bit from `attr & 0x08` --
-        # the intensity bit -- and this appliance ships a 515-glyph Cozette
-        # exactly as branding.nix says. Reading the character byte alone made a
-        # glyph at index 256-382 come back as printable ASCII rather than as the
-        # `#` this module promises and `wifi.py` matches the Loom mark with. CI
-        # never saw it because the VM console cannot load a 6px font.
-        index = self.cells[offset] | ((self.cells[offset + 1] & 0x08) << 5)
-        if 32 <= index < 127:
-            return chr(index)
-        return "#" if index else "."
+        codepoint = int.from_bytes(self.cells[offset : offset + CELL], "little")
+        if 32 <= codepoint < 127:
+            return chr(codepoint)
+        return "#" if codepoint else "."
 
 
 def read(machine: "Machine", tty: str = "1") -> Screen:
@@ -80,6 +85,13 @@ def read(machine: "Machine", tty: str = "1") -> Screen:
     Through base64 rather than `cat`, because this is binary and the driver's `succeed`
     hands back text: a raw read would mangle every byte that is not valid UTF-8, which
     here is most of the interesting ones.
+
+    Two reads rather than one, and separate calls rather than one `succeed` with two
+    commands: `base64 -w0` writes no trailing newline, so two outputs handed back
+    together would be one string with no boundary in it.
     """
-    raw = base64.b64decode(machine.succeed(f"base64 -w0 /dev/vcsa{tty}"))
-    return Screen(rows=raw[0], columns=raw[1], cells=raw[HEADER:])
+    header = base64.b64decode(
+        machine.succeed(f"head -c {HEADER} /dev/vcsa{tty} | base64 -w0")
+    )
+    cells = base64.b64decode(machine.succeed(f"base64 -w0 /dev/vcsu{tty}"))
+    return Screen(rows=header[0], columns=header[1], cells=cells)

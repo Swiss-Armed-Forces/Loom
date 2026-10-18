@@ -13,6 +13,13 @@ if TYPE_CHECKING:
     from loom_tests.driver import Machine, StartAll, Subtest
 
 
+# box.nix's `bannerRepaintWindow`: how long loom-banner-repaint watches the
+# console before it exits. Restated here because the unit is restarted below and
+# then waited on, and waiting longer than the watcher watches would be waiting
+# for a redraw nothing is going to ask for.
+BANNER_REPAINT_WINDOW = 60
+
+
 class Params(NamedTuple):
     """The credentials and the address the image was built with."""
 
@@ -265,17 +272,34 @@ def _banner_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         # The mark's own signature: two block groups with a gap. The QR code is
         # dense and irregular and never produces it, so this distinguishes "the
         # mark is on screen" from "some block glyph is on screen". It reads as
-        # '#' rather than as U+2588 because a console cell holds a font index --
-        # see loom_tests/vt.py, which owns that decoding for every test.
+        # '#' rather than as U+2588 because everything but printable ASCII does
+        # -- see loom_tests/vt.py, which owns that decoding for every test.
         mark = "######    ######"
 
         def marked() -> bool:
             return any(mark in line for line in vt.read(appliance).top(10, width=40))
 
+        def wait_for_mark() -> None:
+            """Poll until the mark is back on screen, and fail with what is.
+
+            A redraw is a getty restart: the VT is cleared, agetty renders the
+            issue again and the mark lands when it reaches the top of it. The
+            render alone costs tens of seconds on an emulated console, so a
+            single read right after the event that asked for the redraw asserts
+            the speed of the host. Bounded by the watcher's own window, since a
+            mark that is not back by the time the watcher has stopped watching
+            is not coming back at all.
+            """
+            for _ in range(BANNER_REPAINT_WINDOW // 2):
+                if marked():
+                    return
+                appliance.sleep(2)
+            raise AssertionError(vt.read(appliance).top(10, width=40))
+
         # The resize below has to happen while the watcher is watching, which is
         # the whole of what this reproduces -- see restart_banner_watcher.
         restart_banner_watcher(appliance)
-        assert marked(), vt.read(appliance).top(10, width=40)
+        wait_for_mark()
 
         appliance.succeed("setfont -d -C /dev/tty1 2>&1 || true")
         appliance.sleep(2)
@@ -284,12 +308,11 @@ def _banner_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         appliance.succeed(
             "/run/current-system/systemd/lib/systemd/systemd-vconsole-setup || true"
         )
-        appliance.sleep(14)
 
         # The whole assertion: the banner was redrawn for the console that is
         # there now, rather than left as the tail of one drawn for a console
         # that no longer exists.
-        assert marked(), vt.read(appliance).top(10, width=40)
+        wait_for_mark()
 
 
 def _missing_radio_reported(appliance: "Machine", subtest: "Subtest") -> None:
