@@ -75,6 +75,16 @@ import {
     PreviewFieldToJSON,
 } from "../models/PreviewField";
 import {
+    type SearchByFilenameRequest,
+    SearchByFilenameRequestFromJSON,
+    SearchByFilenameRequestToJSON,
+} from "../models/SearchByFilenameRequest";
+import {
+    type SearchByFilenameResponse,
+    SearchByFilenameResponseFromJSON,
+    SearchByFilenameResponseToJSON,
+} from "../models/SearchByFilenameResponse";
+import {
     type SummarizeFileRequest,
     SummarizeFileRequestFromJSON,
     SummarizeFileRequestToJSON,
@@ -156,11 +166,11 @@ export interface GetFilesTreeV1FilesTreeGetRequest {
 }
 
 export interface GetFilesV1FilesGetRequest {
+    queryId: string;
     sortId?: Array<any>;
     pageSize?: number;
     sortByField?: string;
     sortDirection?: GetFilesV1FilesGetSortDirectionEnum;
-    queryId?: string;
     keepAlive?: GetFilesV1FilesGetKeepAliveEnum;
     searchString?: string;
 }
@@ -211,12 +221,8 @@ export interface IndexFileV1FilesFileIdIndexPostRequest {
     fileId: string;
 }
 
-export interface SearchByFilenameV1FilesSearchByFilenameGetRequest {
-    filename: string;
-    queryId?: string;
-    keepAlive?: SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum;
-    searchString?: string;
-    after?: string;
+export interface SearchByFilenameV1FilesSearchByFilenamePostRequest {
+    searchByFilenameRequest: SearchByFilenameRequest;
 }
 
 export interface SummarizeFileV1FilesFileIdSummarizePostRequest {
@@ -916,6 +922,13 @@ export class FilesApi extends runtime.BaseAPI {
     async getFilesV1FilesGetRequestOpts(
         requestParameters: GetFilesV1FilesGetRequest,
     ): Promise<runtime.RequestOpts> {
+        if (requestParameters["queryId"] == null) {
+            throw new runtime.RequiredError(
+                "queryId",
+                'Required parameter "queryId" was null or undefined when calling getFilesV1FilesGet().',
+            );
+        }
+
         const queryParameters: any = {};
 
         if (requestParameters["sortId"] != null) {
@@ -982,7 +995,7 @@ export class FilesApi extends runtime.BaseAPI {
      * Get Files
      */
     async getFilesV1FilesGet(
-        requestParameters: GetFilesV1FilesGetRequest = {},
+        requestParameters: GetFilesV1FilesGetRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<GetFilesResponse> {
         const response = await this.getFilesV1FilesGetRaw(
@@ -1643,82 +1656,66 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for searchByFilenameV1FilesSearchByFilenameGet without sending the request
+     * Creates request options for searchByFilenameV1FilesSearchByFilenamePost without sending the request
      */
-    async searchByFilenameV1FilesSearchByFilenameGetRequestOpts(
-        requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
+    async searchByFilenameV1FilesSearchByFilenamePostRequestOpts(
+        requestParameters: SearchByFilenameV1FilesSearchByFilenamePostRequest,
     ): Promise<runtime.RequestOpts> {
-        if (requestParameters["filename"] == null) {
+        if (requestParameters["searchByFilenameRequest"] == null) {
             throw new runtime.RequiredError(
-                "filename",
-                'Required parameter "filename" was null or undefined when calling searchByFilenameV1FilesSearchByFilenameGet().',
+                "searchByFilenameRequest",
+                'Required parameter "searchByFilenameRequest" was null or undefined when calling searchByFilenameV1FilesSearchByFilenamePost().',
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters["queryId"] != null) {
-            queryParameters["query_id"] = requestParameters["queryId"];
-        }
-
-        if (requestParameters["keepAlive"] != null) {
-            queryParameters["keep_alive"] = requestParameters["keepAlive"];
-        }
-
-        if (requestParameters["searchString"] != null) {
-            queryParameters["search_string"] =
-                requestParameters["searchString"];
-        }
-
-        if (requestParameters["filename"] != null) {
-            queryParameters["filename"] = requestParameters["filename"];
-        }
-
-        if (requestParameters["after"] != null) {
-            queryParameters["after"] = requestParameters["after"];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters["Content-Type"] = "application/json";
 
         let urlPath = `/v1/files/search_by_filename`;
 
         return {
             path: urlPath,
-            method: "GET",
+            method: "POST",
             headers: headerParameters,
             query: queryParameters,
+            body: SearchByFilenameRequestToJSON(
+                requestParameters["searchByFilenameRequest"],
+            ),
         };
     }
 
     /**
-     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. Pass a previous response\'s `next_cursor` back as `after` to fetch the next page, and the same `query_id` with it — every page of a run reads one index snapshot.
      * Search By Filename
      */
-    async searchByFilenameV1FilesSearchByFilenameGetRaw(
-        requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
+    async searchByFilenameV1FilesSearchByFilenamePostRaw(
+        requestParameters: SearchByFilenameV1FilesSearchByFilenamePostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<GetFilesTreeResponse>> {
+    ): Promise<runtime.ApiResponse<SearchByFilenameResponse>> {
         const requestOptions =
-            await this.searchByFilenameV1FilesSearchByFilenameGetRequestOpts(
+            await this.searchByFilenameV1FilesSearchByFilenamePostRequestOpts(
                 requestParameters,
             );
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) =>
-            GetFilesTreeResponseFromJSON(jsonValue),
+            SearchByFilenameResponseFromJSON(jsonValue),
         );
     }
 
     /**
-     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. The `after` parameter is an opaque cursor from a previous response\'s `next_page_cursor` field and enables cursor-based pagination.
+     * Search for files whose path contains the given filename string.  Returns a flat paginated list of matching leaf files across the whole index. Pass a previous response\'s `next_cursor` back as `after` to fetch the next page, and the same `query_id` with it — every page of a run reads one index snapshot.
      * Search By Filename
      */
-    async searchByFilenameV1FilesSearchByFilenameGet(
-        requestParameters: SearchByFilenameV1FilesSearchByFilenameGetRequest,
+    async searchByFilenameV1FilesSearchByFilenamePost(
+        requestParameters: SearchByFilenameV1FilesSearchByFilenamePostRequest,
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<GetFilesTreeResponse> {
+    ): Promise<SearchByFilenameResponse> {
         const response =
-            await this.searchByFilenameV1FilesSearchByFilenameGetRaw(
+            await this.searchByFilenameV1FilesSearchByFilenamePostRaw(
                 requestParameters,
                 initOverrides,
             );
@@ -2127,6 +2124,7 @@ export type GetAvailableStatsByTypeV1FilesStatsRegistryTypeGetRegistryTypeEnum =
  */
 export const GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum =
@@ -2136,6 +2134,7 @@ export type GetFilePreviewV1FilesFileIdPreviewGetKeepAliveEnum =
  */
 export const GetFileV1FilesFileIdGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetFileV1FilesFileIdGetKeepAliveEnum =
@@ -2145,6 +2144,7 @@ export type GetFileV1FilesFileIdGetKeepAliveEnum =
  */
 export const GetFilesCountV1FilesCountGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetFilesCountV1FilesCountGetKeepAliveEnum =
@@ -2154,6 +2154,7 @@ export type GetFilesCountV1FilesCountGetKeepAliveEnum =
  */
 export const GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum =
@@ -2163,6 +2164,7 @@ export type GetFilesTreeSpineV1FilesTreeSpineGetKeepAliveEnum =
  */
 export const GetFilesTreeV1FilesTreeGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetFilesTreeV1FilesTreeGetKeepAliveEnum =
@@ -2181,6 +2183,7 @@ export type GetFilesV1FilesGetSortDirectionEnum =
  */
 export const GetFilesV1FilesGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetFilesV1FilesGetKeepAliveEnum =
@@ -2191,6 +2194,7 @@ export type GetFilesV1FilesGetKeepAliveEnum =
 export const GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum =
     {
         _10s: "10s",
+        _5m: "5m",
         _30m: "30m",
     } as const;
 export type GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKeepAliveEnum =
@@ -2200,6 +2204,7 @@ export type GetHistogramStatsGroupedV1FilesStatsHistogramStatGroupedGroupByGetKe
  */
 export const GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum =
@@ -2209,6 +2214,7 @@ export type GetHistogramStatsV1FilesStatsHistogramStatGetKeepAliveEnum =
  */
 export const GetQueryV1FilesQueryPostKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetQueryV1FilesQueryPostKeepAliveEnum =
@@ -2218,16 +2224,8 @@ export type GetQueryV1FilesQueryPostKeepAliveEnum =
  */
 export const GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum = {
     _10s: "10s",
+    _5m: "5m",
     _30m: "30m",
 } as const;
 export type GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum =
     (typeof GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum)[keyof typeof GetTermsStatsV1FilesStatsTermsStatGetKeepAliveEnum];
-/**
- * @export
- */
-export const SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum = {
-    _10s: "10s",
-    _30m: "30m",
-} as const;
-export type SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum =
-    (typeof SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum)[keyof typeof SearchByFilenameV1FilesSearchByFilenameGetKeepAliveEnum];

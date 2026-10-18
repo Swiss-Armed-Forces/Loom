@@ -531,6 +531,16 @@ data:
     tool__suggest_queries__max_results: {{ .Values.tool.suggest_queries.max_results | quote }}
     {{- end }}
 
+    # tool execute_query
+    {{- if ne .Values.tool.execute_query.page_size nil }}
+    tool__execute_query__page_size: {{ .Values.tool.execute_query.page_size | quote }}
+    {{- end }}
+
+    # tool browse (list_folder_contents and search_by_filename)
+    {{- if ne .Values.tool.browse.page_size nil }}
+    tool__browse__page_size: {{ .Values.tool.browse.page_size | quote }}
+    {{- end }}
+
     # llm rag_rerank
     {{- if ne .Values.llm.rag_rerank.provider nil }}
     llm__rag_rerank__provider: {{ .Values.llm.rag_rerank.provider | quote }}

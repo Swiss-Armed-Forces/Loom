@@ -24,8 +24,13 @@ import { useTranslation } from "react-i18next";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 
-import type { TreeNodeModel } from "@app/api/index";
-import { getTreeSpine, searchByFilename, searchTree } from "@app/api/index";
+import type { SearchAfterCursor, TreeNodeModel } from "@app/api/index";
+import {
+    getTreeSpine,
+    ResponseError,
+    searchByFilename,
+    searchTree,
+} from "@app/api/index";
 import {
     subscribeChannel,
     unsubscribeChannel,
@@ -51,7 +56,7 @@ import {
     setTemporaryFileId,
 } from "@app/slices/searchSlice";
 import { AppDispatch, store } from "@app/store";
-import { SearchQuery } from "@features/common/utils/model";
+import { PitBoundSearchQuery, SearchQuery } from "@features/common/utils/model";
 
 import {
     FolderViewNode,
@@ -641,45 +646,68 @@ export const FolderView = ({
     const [filterResults, setFilterResults] = useState<TreeNodeModel[]>([]);
     const [filterLoading, setFilterLoading] = useState(false);
     const [filterLoadingMore, setFilterLoadingMore] = useState(false);
-    const [filterNextPageCursor, setFilterNextPageCursor] = useState<
-        string | null
-    >(null);
+    const [filterNextPageCursor, setFilterNextPageCursor] =
+        useState<SearchAfterCursor | null>(null);
+
+    // searchQuery.id is the point-in-time every page of a filter run reads, so there
+    // is nothing to search until one has been opened. It is also what makes this
+    // effect reset the filter to its first page when the snapshot is replaced.
+    const pitBoundQuery = searchQuery?.id
+        ? (searchQuery as PitBoundSearchQuery)
+        : null;
 
     useEffect(() => {
-        if (!filter || !searchQuery) {
+        if (!filter || !pitBoundQuery) {
             setFilterResults([]);
             setFilterNextPageCursor(null);
             return;
         }
         const timer = setTimeout(() => {
             setFilterLoading(true);
-            searchByFilename(searchQuery, filter)
+            searchByFilename(pitBoundQuery, filter)
                 .then((result) => {
-                    setFilterNextPageCursor(result.nextPageCursor ?? null);
+                    setFilterNextPageCursor(result.nextCursor ?? null);
                     setFilterResults(
                         result.nodes.filter((n) => n.fileId !== undefined),
                     );
                 })
-                .catch(() => toast.error("Cannot load filter results."))
+                .catch(() => toast.error(t("folderView.filterLoadError")))
                 .finally(() => setFilterLoading(false));
         }, 300);
         return () => clearTimeout(timer);
-    }, [filter, searchQuery]);
+    }, [filter, pitBoundQuery, t]);
 
     const handleFilterLoadMore = useCallback(() => {
-        if (!filterNextPageCursor || !searchQuery || !filter) return;
+        if (!filterNextPageCursor || !pitBoundQuery || !filter) return;
         setFilterLoadingMore(true);
-        searchByFilename(searchQuery, filter, filterNextPageCursor)
+        searchByFilename(pitBoundQuery, filter, filterNextPageCursor)
             .then((result) => {
-                setFilterNextPageCursor(result.nextPageCursor ?? null);
+                setFilterNextPageCursor(result.nextCursor ?? null);
                 setFilterResults((prev) => [
                     ...prev,
                     ...result.nodes.filter((n) => n.fileId !== undefined),
                 ]);
             })
-            .catch(() => toast.error("Cannot load more filter results."))
+            .catch((error: unknown) => {
+                // Drop the cursor either way: the backend rejects one it did not
+                // mint — a cursor held across a deploy, for instance — so keeping it
+                // would make every further click fail the same way.
+                setFilterNextPageCursor(null);
+                // 409 is the point-in-time having expired, which the search slice
+                // answers by opening a new one. That swaps searchQuery.id, which
+                // re-runs the effect above and refills the filter from its first
+                // page, so saying anything here would report a failure that is
+                // already being recovered from.
+                if (
+                    error instanceof ResponseError &&
+                    error.response.status === 409
+                ) {
+                    return;
+                }
+                toast.error(t("folderView.filterLoadMoreError"));
+            })
             .finally(() => setFilterLoadingMore(false));
-    }, [filterNextPageCursor, searchQuery, filter]);
+    }, [filterNextPageCursor, pitBoundQuery, filter, t]);
 
     if (isLoading && !folderState.tree.children) return <LoadingIndicator />;
     if (!Object.keys(folderState.tree.children ?? {}).length) return null;

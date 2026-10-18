@@ -1,7 +1,11 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from common.ai_context.ai_context_repository import AiQuestion, CapabilityId, ModeId
+from common.ai_context.ai_context_repository import (
+    AiQuestion,
+    CapabilityId,
+    ModeId,
+)
 from common.dependencies import get_root_task_information_repository
 from common.task_object.root_task_information_repository import RootTaskInformation
 from fastapi import APIRouter, Depends, Request

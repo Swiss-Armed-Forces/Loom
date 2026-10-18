@@ -247,20 +247,58 @@ const treeSpineHandler = http.get(
     },
 );
 
-const filenameHandler = http.get(
+// Mirrors the real cursor: the path sits behind the score, which is what makes the
+// tuple a total order the next page can resume from.
+const FILENAME_CURSOR_PATH_INDEX = 1;
+
+interface SearchAfterCursorBody {
+    src: string;
+    last_sort: unknown[];
+}
+
+const paginateFilenameSearch = <Node extends { full_path: string }>(
+    nodes: Node[],
+    after: SearchAfterCursorBody | null,
+): { nodes: Node[]; next_cursor?: SearchAfterCursorBody } => {
+    const afterPath = after
+        ? String(after.last_sort[FILENAME_CURSOR_PATH_INDEX])
+        : null;
+    const cursorIndex = afterPath
+        ? nodes.findIndex((node) => node.full_path === afterPath)
+        : -1;
+    if (afterPath && cursorIndex < 0) return { nodes: [] };
+    const page = nodes.slice(cursorIndex + 1, cursorIndex + 1 + TREE_PAGE_SIZE);
+    const hasMore = cursorIndex + 1 + page.length < nodes.length;
+    const lastPath = page.at(-1)?.full_path;
+    return {
+        nodes: page,
+        next_cursor:
+            hasMore && lastPath !== undefined
+                ? { src: "flat_files", last_sort: [0, lastPath] }
+                : undefined,
+    };
+};
+
+const filenameHandler = http.post(
     /\/api\/v1\/files\/search_by_filename$/,
-    ({ request }) => {
-        const url = new URL(request.url);
-        const result = safeSearch(queryFromUrl(url));
+    async ({ request }) => {
+        const body = (await request.json()) as {
+            query_id?: string;
+            search_string?: string;
+            filename?: string;
+            after?: SearchAfterCursorBody | null;
+        };
+        if (!body.query_id) return error("query_id is required", 422);
+        const result = safeSearch(body.search_string ?? "*");
         if (!result.ok) return result.response;
-        const filename = url.searchParams.get("filename")?.toLowerCase();
+        const filename = body.filename?.toLowerCase();
         if (filename === undefined) return error("filename is required", 422);
         const nodes = result.documents
             .filter((document) =>
                 document.name.toLowerCase().includes(filename),
             )
             .map((document) => documentTreeNode(document, result.documents));
-        return json(paginateTree(nodes, url.searchParams.get("after")));
+        return json(paginateFilenameSearch(nodes, body.after ?? null));
     },
 );
 

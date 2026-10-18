@@ -1,4 +1,4 @@
-import { SearchQuery } from "@features/common/utils/model";
+import { PitBoundSearchQuery, SearchQuery } from "@features/common/utils/model";
 
 import { apiConfiguration } from "./apiConfiguration";
 import {
@@ -26,6 +26,8 @@ import {
     UpdateFileRequest,
     PreviewField,
     ModeUpdate,
+    SearchAfterCursor,
+    SearchByFilenameResponse,
 } from "./generated";
 
 const filesApi = new FilesApi(apiConfiguration);
@@ -54,10 +56,10 @@ export const getLongRunningQuery = async (): Promise<GetQueryResponse> => {
 };
 
 export const searchFiles = async (
-    query: SearchQuery,
+    query: PitBoundSearchQuery,
 ): Promise<GetFilesResponse> => {
     return filesApi.getFilesV1FilesGet({
-        queryId: query.id ?? undefined,
+        queryId: query.id,
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
 
@@ -93,16 +95,18 @@ export const searchTree = async (
 };
 
 export const searchByFilename = async (
-    query: SearchQuery,
+    query: PitBoundSearchQuery,
     filename: string,
-    after?: string,
-): Promise<GetFilesTreeResponse> => {
-    return filesApi.searchByFilenameV1FilesSearchByFilenameGet({
-        queryId: query.id ?? undefined,
-        keepAlive: query.keepAlive ?? undefined,
-        searchString: query.query,
-        filename,
-        after,
+    after?: SearchAfterCursor,
+): Promise<SearchByFilenameResponse> => {
+    return filesApi.searchByFilenameV1FilesSearchByFilenamePost({
+        searchByFilenameRequest: {
+            queryId: query.id,
+            keepAlive: query.keepAlive ?? undefined,
+            searchString: query.query,
+            filename,
+            after,
+        },
     });
 };
 

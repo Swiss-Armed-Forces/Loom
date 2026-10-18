@@ -27,6 +27,11 @@ interface TreeNodeResponse {
     next_page_cursor?: string;
 }
 
+// The paginated endpoints require a point-in-time. The demo repository holds one
+// snapshot and never expires it, so any id satisfies the handlers — what matters is
+// that the client sends one, the way the real API insists on.
+const DEMO_QUERY_ID = "demo-query-id";
+
 const responseJson = async <Response>(response: globalThis.Response) =>
     (await response.json()) as Response;
 
@@ -67,6 +72,7 @@ describe("demo API handlers", () => {
         );
 
         const results = await filesApi.getFilesV1FilesGet({
+            queryId: DEMO_QUERY_ID,
             searchString: "tags:security",
         });
 
@@ -81,10 +87,12 @@ describe("demo API handlers", () => {
             new Configuration({ basePath: "http://loom.test/api" }),
         );
         const first = await filesApi.getFilesV1FilesGet({
+            queryId: DEMO_QUERY_ID,
             searchString: "*",
             pageSize: 2,
         });
         const second = await filesApi.getFilesV1FilesGet({
+            queryId: DEMO_QUERY_ID,
             searchString: "*",
             pageSize: 2,
             sortId: first.files.at(-1)?.sortId,
@@ -345,6 +353,7 @@ describe("demo API handlers", () => {
         const archives = await archivesApi.getAllArchivesV1ArchiveGet();
         const archive = archives.hits[0];
         const files = await filesApi.getFilesV1FilesGet({
+            queryId: DEMO_QUERY_ID,
             searchString: `archives:${archive.fileId}`,
         });
 

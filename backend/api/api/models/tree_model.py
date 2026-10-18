@@ -8,6 +8,8 @@ class GetFilesTreeResponse(BaseModel):
     nodes: list["TreeNodeModel"]
     next_page_cursor: str | None = None
     root_stats: "TreeNodeModel | None" = None
+    total_count: int | None = None
+    count_relation: str | None = None
 
 
 class TreeNodeModel(BaseModel):

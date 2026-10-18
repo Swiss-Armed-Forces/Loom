@@ -561,7 +561,9 @@
         "directChildrenCountTooltip": "Files directly in this folder",
         "filterResultsLimitNote": "Showing first {{limit}} results — refine your filter to narrow down",
         "loadMore": "Load more",
-        "filterPlaceholder": "Filter by filename"
+        "filterPlaceholder": "Filter by filename",
+        "filterLoadError": "Cannot load filter results.",
+        "filterLoadMoreError": "Cannot load more filter results."
     },
     "tags": {
         "addTag": "Add tag",

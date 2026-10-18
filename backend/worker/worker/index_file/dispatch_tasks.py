@@ -9,8 +9,9 @@ from common.dependencies import (
     get_file_scheduling_service,
 )
 from common.file.file_repository import File, Tag
+from common.models.es_repository import PointInTimeExpiredError
 from common.services.lazybytes_service import FileStorageLazyBytes
-from common.services.query_builder import QueryParameters
+from common.services.query_builder import SCAN_PIT_KEEPALIVE, QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
 
 logger = logging.getLogger(__name__)
@@ -122,14 +123,21 @@ def dispatch_add_tags_to_file(
     get_file_scheduling_service().add_tags(file_id=file_id, tags=tags)
 
 
-@app.task()
+# A lapsed point-in-time is transient: the sweep succeeds against a fresh snapshot.
+# Retrying restarts the scan from the beginning, which is the only correct way to
+# finish it — resuming across snapshots would skip or duplicate files.
+@app.task(autoretry_for=(PointInTimeExpiredError,), retry_backoff=True)
 def dispatch_remove_tag(
     tag: Tag,
 ):
     logger.info("dispatch remove tag: '%s' ", tag)
     file_repository = get_file_repository()
+    # Both halves of the snapshot's lifetime are set here: open_point_in_time gives it
+    # its initial one, and keep_alive is what every page extends it by.
     query = QueryParameters(
-        query_id=file_repository.open_point_in_time(), search_string=f'tags: "{tag}"'
+        query_id=file_repository.open_point_in_time(keep_alive=SCAN_PIT_KEEPALIVE),
+        keep_alive=SCAN_PIT_KEEPALIVE,
+        search_string=f'tags: "{tag}"',
     )
     for file in file_repository.get_generator_by_query(query=query):
         dispatch_remove_tag_from_file.s(file_id=file.id_, tag=tag).delay().forget()

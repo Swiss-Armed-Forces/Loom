@@ -64,7 +64,6 @@ models/MessageError.ts
 models/MessageFileSave.ts
 models/MessageFileUpdate.ts
 models/MessageNoop.ts
-models/MessageQueryIdExpired.ts
 models/MessageSubscribe.ts
 models/MessageSubscribeConfirmation.ts
 models/MessageUnsubscribe.ts
@@ -80,6 +79,9 @@ models/ReasoningActivityEntry.ts
 models/ReinitAllResult.ts
 models/ReinitResult.ts
 models/RenderedFile.ts
+models/SearchAfterCursor.ts
+models/SearchByFilenameRequest.ts
+models/SearchByFilenameResponse.ts
 models/SummarizationRequest.ts
 models/SummarizeFileRequest.ts
 models/TaskGroupName.ts
