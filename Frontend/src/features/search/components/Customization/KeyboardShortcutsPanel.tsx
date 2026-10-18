@@ -30,7 +30,7 @@ export const KeyboardShortcutsPanel = () => {
     };
 
     return (
-        <Box data-tour="card-customization-shortcuts">
+        <Box data-tour="customization-shortcuts">
             <Box
                 sx={{
                     display: "flex",

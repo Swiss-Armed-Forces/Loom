@@ -374,6 +374,12 @@ const previewFieldsHandler = http.get(/\/api\/v1\/files\/preview-fields$/, () =>
             { id: "dc_description", label: "Description" },
             { id: "dc_subject", label: "Subject" },
             { id: "dc_creator", label: "Creator" },
+            // Carries the `tika_meta.` prefix the API gives it, which is also
+            // the name this demo's own query layer indexes it under, so the
+            // column sorts as well as it displays. The entries around it are
+            // older and have drifted from the ids the registry serves.
+            { id: "tika_meta.dcterms_created", label: "Created" },
+            { id: "tika_meta.dcterms_modified", label: "Modified" },
             { id: "message_from", label: "From" },
             { id: "message_to", label: "To" },
             { id: "message_cc", label: "Cc" },

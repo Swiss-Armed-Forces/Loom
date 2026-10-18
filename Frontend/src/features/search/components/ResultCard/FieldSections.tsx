@@ -5,13 +5,19 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectAvailablePreviewFields,
     selectCardElementVisibility,
+    selectFieldLayout,
     selectPreviewFields,
     selectQuery,
     updateQuery,
 } from "@app/slices/searchSlice";
-import { updateFieldOfQuery } from "@features/common/utils/helpers";
+import {
+    nextSortSelection,
+    updateFieldOfQuery,
+} from "@features/common/utils/helpers";
 import { FieldItem } from "@features/search/components/FieldList/FieldItem";
+import { FieldLine } from "@features/search/components/FieldList/FieldLine";
 import { FieldList } from "@features/search/components/FieldList/FieldList";
+import { FieldRow } from "@features/search/components/FieldList/FieldRow";
 
 export interface FieldSectionsProps {
     filePreview: GetFilePreviewResponse;
@@ -29,6 +35,10 @@ export const FieldSections = ({
     const { showHighlights, showFieldActions } = useAppSelector(
         selectCardElementVisibility,
     );
+    const fieldLayout = useAppSelector(selectFieldLayout);
+    // Full details wants the verbose, always-expanded form of every field.
+    const compact = fieldLayout === "compact" && !fullDetails;
+    const line = fieldLayout === "line" && !fullDetails;
 
     const responseFields = useMemo(
         () => filePreview.fields ?? {},
@@ -55,6 +65,19 @@ export const FieldSections = ({
         [previewFields, responseFields, labelFor],
     );
 
+    // Every selected field takes its column, including the ones this file has
+    // no value for: a skipped cell would shift the rest of the card's line out
+    // of line with the column header and with every other card.
+    const lineCells = useMemo(
+        () =>
+            previewFields.map((id) => ({
+                id,
+                label: labelFor[id] ?? id,
+                value: responseFields[id]?.value ?? "",
+            })),
+        [previewFields, responseFields, labelFor],
+    );
+
     const handleQuery = useCallback(
         (
             fieldId: string,
@@ -78,12 +101,35 @@ export const FieldSections = ({
         [dispatch, query],
     );
 
+    // Same rule as the column header: asking again for the field already
+    // sorted reverses it, and the direction written here is the one the
+    // search bar's direction toggle shows.
     const handleSort = useCallback(
         (fieldId: string) => {
-            dispatch(updateQuery({ sortField: fieldId }));
+            dispatch(updateQuery(nextSortSelection(query, fieldId)));
         },
-        [dispatch],
+        [dispatch, query],
     );
+
+    const highlightList = showHighlights &&
+        Object.keys(highlights).length > 0 && (
+            <FieldList
+                highlights={highlights}
+                fullDetails={fullDetails}
+                showActions={showFieldActions || !!fullDetails}
+            />
+        );
+
+    // One line for the whole card: the fields are read by position, so they
+    // are drawn together rather than one renderer call per field.
+    if (line) {
+        return (
+            <>
+                <FieldLine cells={lineCells} />
+                {highlightList}
+            </>
+        );
+    }
 
     return (
         <>
@@ -92,39 +138,39 @@ export const FieldSections = ({
                 const value = fieldData.isTruncated
                     ? [fieldData.value + "…"]
                     : [fieldData.value];
+                const actionsShown = showFieldActions || fullDetails;
+                const onQuery = actionsShown
+                    ? (negate: boolean, accumulate: boolean) =>
+                          handleQuery(id, fieldData.value, negate, accumulate)
+                    : undefined;
+                const onSort = actionsShown ? () => handleSort(id) : undefined;
+                // An expand control only earns its place on a value the
+                // backend actually cut short - everything else is one line.
+                if (compact && !fieldData.isTruncated) {
+                    return (
+                        <FieldRow
+                            key={id}
+                            field={label}
+                            value={fieldData.value}
+                            onQuery={onQuery}
+                            onSort={onSort}
+                        />
+                    );
+                }
                 return (
                     <FieldItem
                         key={id}
                         field={label}
                         fieldKey={id}
                         value={value}
-                        onQuery={
-                            showFieldActions || fullDetails
-                                ? (negate, accumulate) =>
-                                      handleQuery(
-                                          id,
-                                          fieldData.value,
-                                          negate,
-                                          accumulate,
-                                      )
-                                : undefined
-                        }
-                        onSort={
-                            showFieldActions || fullDetails
-                                ? () => handleSort(id)
-                                : undefined
-                        }
+                        onQuery={onQuery}
+                        onSort={onSort}
                         fullDetails={fullDetails}
+                        disableDivider={compact}
                     />
                 );
             })}
-            {showHighlights && Object.keys(highlights).length > 0 && (
-                <FieldList
-                    highlights={highlights}
-                    fullDetails={fullDetails}
-                    showActions={showFieldActions || !!fullDetails}
-                />
-            )}
+            {highlightList}
         </>
     );
 };

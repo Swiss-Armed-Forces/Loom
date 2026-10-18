@@ -71,8 +71,8 @@ describe("ResultCardSurface", () => {
 });
 
 describe("resultCardSurfaceStyle", () => {
-    const styleOf = (isHighlighted: boolean, unread: boolean) =>
-        resultCardSurfaceStyle({ isHighlighted, unread }, globalTheme);
+    const styleOf = (isHighlighted: boolean, unread: boolean, flat = false) =>
+        resultCardSurfaceStyle({ isHighlighted, unread, flat }, globalTheme);
 
     it("marks unread with the left bar and nothing else", () => {
         const unread = styleOf(false, true);
@@ -115,9 +115,25 @@ describe("resultCardSurfaceStyle", () => {
     });
 
     it("lifts the highlighted card above the list", () => {
-        expect(resultCardElevation(true)).toBeGreaterThan(
-            resultCardElevation(false),
+        expect(resultCardElevation(true, false)).toBeGreaterThan(
+            resultCardElevation(false, false),
         );
+    });
+
+    it("keeps the cursor inside the card in a gapless list", () => {
+        // A halo needs clear space around the card. Where the rows meet, the
+        // blur would land on the neighbouring rows instead.
+        const flat = styleOf(true, false, true);
+
+        expect(flat.boxShadow).toContain("inset");
+        expect(flat.boxShadow).toContain("palette-primary");
+        expect(flat.bgcolor).toBeTruthy();
+    });
+
+    it("does not lift a card that has nowhere to lift into", () => {
+        // The drop shadow of a gapless row falls on the row below it.
+        expect(resultCardElevation(true, true)).toBe(0);
+        expect(resultCardElevation(false, true)).toBe(0);
     });
 
     it("resolves every colour to a real theme token", () => {

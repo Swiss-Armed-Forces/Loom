@@ -1,0 +1,38 @@
+/* Geometry shared by the column header and every card's line, composed into
+both rather than written twice: the header's labels and the cards' values are
+one column only for as long as the two agree to the pixel. */
+
+/* The field tracks. Identical declaration on both sides, fed by the template
+and the gap the list publishes. */
+.fieldGrid {
+    display: grid;
+    grid-template-columns: var(--loom-field-columns, 1fr);
+    gap: var(--loom-row-gap, 0.5rem);
+    min-width: 0;
+}
+
+/* The width kept free for a thumbnail, held open whether or not there is an
+image to put in it. It is a column like the others, so it carries the same
+divider; the padding is the gap to that divider, which leaves a square image
+box however the inset is composed. */
+.thumbnailSlot {
+    box-sizing: border-box;
+    flex: 0 0 var(--loom-thumb-inset, 0px);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-left: 1px solid var(--mui-palette-divider);
+    padding-left: var(--loom-thumb-gap, 0px);
+    min-width: 0;
+}
+
+/* A cell is flush with its column's left edge; the ones after the first carry
+the divider and the inset that goes with it. */
+.cell {
+    min-width: 0;
+}
+
+.cell + .cell {
+    border-left: 1px solid var(--mui-palette-divider);
+    padding-left: 0.5rem;
+}

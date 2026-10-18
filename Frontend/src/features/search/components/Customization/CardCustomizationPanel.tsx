@@ -1,18 +1,12 @@
 import {
     Add,
     AutoModeOutlined,
-    Check,
-    Close,
     DensityLarge,
     DensityMedium,
     DensitySmall,
-    FlagOutlined,
-    ImageSearch,
-    MarkEmailUnreadOutlined,
-    SummarizeOutlined,
-    Translate,
-    TuneOutlined,
-    YoutubeSearchedForOutlined,
+    ViewAgendaOutlined,
+    ViewColumnOutlined,
+    ViewHeadlineOutlined,
 } from "@mui/icons-material";
 import {
     Box,
@@ -21,8 +15,6 @@ import {
     IconButton,
     List,
     ListItem,
-    ListItemButton,
-    ListItemIcon,
     ListItemText,
     Menu,
     MenuItem,
@@ -38,16 +30,20 @@ import { useTranslation } from "react-i18next";
 import { getPreviewFields } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
-    AutoActionsPreferences,
     CardDensity,
-    selectAutoActionsPreferences,
+    FieldLayout,
+    NamedDensity,
+    applyDensityPreset,
     selectAvailablePreviewFields,
     selectCardDensity,
     selectCardElementVisibility,
+    selectFieldLayout,
+    selectMatchingDensityPreset,
     selectPreviewFields,
-    setAutoActionPreference,
+    selectResolvedCardDensity,
     setAvailablePreviewFields,
     setCardDensity,
+    setFieldLayout,
     setPreviewFields,
     setShowActions,
     setShowAttachments,
@@ -62,17 +58,14 @@ import {
     setShowTags,
     setShowThumbnails,
 } from "@app/slices/searchSlice";
+import { useFieldReorder } from "@features/search/hooks/useFieldReorder";
 
-const DENSITY_OPTIONS: {
-    value: CardDensity;
+/** The spacings, in the order they read: tightest first. */
+const SPACING_OPTIONS: {
+    value: NamedDensity;
     icon: React.ReactNode;
     labelKey: string;
 }[] = [
-    {
-        value: "auto",
-        icon: <AutoModeOutlined />,
-        labelKey: "toolbar.cardDensity.auto",
-    },
     {
         value: "compact",
         icon: <DensitySmall />,
@@ -88,12 +81,74 @@ const DENSITY_OPTIONS: {
         icon: <DensityLarge />,
         labelKey: "toolbar.cardDensity.full",
     },
+];
+
+/** A preset is a shortcut to a whole look - a spacing *and* a set of
+ *  elements - so it offers the same names plus "auto", which hands the
+ *  spacing back to the window. */
+const PRESET_OPTIONS: {
+    value: CardDensity;
+    icon: React.ReactNode;
+    labelKey: string;
+}[] = [
     {
-        value: "custom",
-        icon: <TuneOutlined />,
-        labelKey: "toolbar.cardDensity.custom",
+        value: "auto",
+        icon: <AutoModeOutlined />,
+        labelKey: "toolbar.cardDensity.auto",
+    },
+    ...SPACING_OPTIONS,
+];
+
+const FIELD_LAYOUT_OPTIONS: {
+    value: FieldLayout;
+    icon: React.ReactNode;
+    labelKey: string;
+}[] = [
+    {
+        value: "rows",
+        icon: <ViewAgendaOutlined />,
+        labelKey: "sideMenu.customization.fieldLayoutRows",
+    },
+    {
+        value: "compact",
+        icon: <ViewHeadlineOutlined />,
+        labelKey: "sideMenu.customization.fieldLayoutCompact",
+    },
+    {
+        value: "line",
+        icon: <ViewColumnOutlined />,
+        labelKey: "sideMenu.customization.fieldLayoutLine",
     },
 ];
+
+/** One labelled row of the display section: a caption and the control it
+ *  names, so the two toggle groups do not read as one five-button row. */
+const SettingRow = ({
+    label,
+    children,
+}: {
+    label: string;
+    children: ReactNode;
+}) => (
+    <Box
+        sx={{
+            px: 2,
+            pb: 0.5,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+        }}
+    >
+        <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ flex: "0 0 4.5rem" }}
+        >
+            {label}
+        </Typography>
+        {children}
+    </Box>
+);
 
 export const CardCustomizationPanel = () => {
     const dispatch = useAppDispatch();
@@ -101,37 +156,22 @@ export const CardCustomizationPanel = () => {
     const availableFields = useAppSelector(selectAvailablePreviewFields);
     const previewFields = useAppSelector(selectPreviewFields);
     const cardDensity = useAppSelector(selectCardDensity);
+    const resolvedDensity = useAppSelector(selectResolvedCardDensity);
+    const matchingPreset = useAppSelector(selectMatchingDensityPreset);
+    // "auto" is a preset of its own: it is the one that leaves the spacing to
+    // the window. It only counts as the current preset while the switches
+    // still read as the preset the window resolved to.
+    const selectedPreset =
+        matchingPreset === null
+            ? null
+            : cardDensity === "auto"
+              ? "auto"
+              : matchingPreset;
+    const fieldLayout = useAppSelector(selectFieldLayout);
     const vis = useAppSelector(selectCardElementVisibility);
-    const autoActionsPrefs = useAppSelector(selectAutoActionsPreferences);
     const [error, setError] = useState<string | null>(null);
     const [addAnchorEl, setAddAnchorEl] = useState<HTMLElement | null>(null);
-
-    const autoActionRow = (
-        key: keyof AutoActionsPreferences,
-        icon: ReactNode,
-        label: string,
-    ) => {
-        const enabled = autoActionsPrefs[key];
-        return (
-            <ListItemButton
-                key={key}
-                onClick={() =>
-                    dispatch(setAutoActionPreference({ key, value: !enabled }))
-                }
-                dense
-            >
-                <ListItemIcon sx={{ minWidth: 36 }}>{icon}</ListItemIcon>
-                <ListItemText primary={label} />
-                {enabled ? (
-                    <Check sx={{ fontSize: 16, color: "success.main" }} />
-                ) : (
-                    <Close
-                        sx={{ fontSize: 16, color: "error.main", opacity: 0.5 }}
-                    />
-                )}
-            </ListItemButton>
-        );
-    };
+    const { dragProps, isDragging, isDropTarget } = useFieldReorder();
 
     const fetchFields = useCallback(async () => {
         try {
@@ -154,9 +194,13 @@ export const CardCustomizationPanel = () => {
         dispatch(setPreviewFields(next));
     };
 
-    const selectedFields = availableFields.filter((f) =>
-        previewFields.includes(f.id),
-    );
+    // Walked in selection order, not in the order the API lists the fields:
+    // the selection is the order the columns are drawn in, and a chip that
+    // does not sit where its column does is not a label for it.
+    const selectedFields = previewFields.flatMap((id) => {
+        const field = availableFields.find((f) => f.id === id);
+        return field ? [field] : [];
+    });
     const unselectedFields = availableFields.filter(
         (f) => !previewFields.includes(f.id),
     );
@@ -247,62 +291,113 @@ export const CardCustomizationPanel = () => {
     return (
         <>
             {/* ── Section 1: Card Display ──────────────────────── */}
-            <Box data-tour="card-customization-display">
+            <Box data-tour="customization-card-display">
                 <Typography
                     variant="subtitle2"
                     sx={{ px: 2, pt: 1.5, pb: 0.5 }}
                 >
-                    {t("sideMenu.cardCustomization.cardDisplay")}
+                    {t("sideMenu.customization.cardDisplay")}
                 </Typography>
-                <ToggleButtonGroup
-                    value={cardDensity}
-                    exclusive
-                    onChange={(_, v) => {
-                        if (v) dispatch(setCardDensity(v));
-                    }}
-                    size="small"
-                    fullWidth
-                    sx={{ px: 1, pb: 0.5 }}
-                >
-                    {DENSITY_OPTIONS.map(({ value, icon, labelKey }) => (
-                        <Tooltip key={value} title={t(labelKey)}>
-                            <ToggleButton value={value}>{icon}</ToggleButton>
-                        </Tooltip>
-                    ))}
-                </ToggleButtonGroup>
-                {cardDensity === "custom" && (
-                    <List dense disablePadding>
-                        {displayToggles.map(({ label, checked, action }) => (
-                            <ListItem
-                                key={label}
-                                secondaryAction={
-                                    <Switch
-                                        edge="end"
-                                        size="small"
-                                        checked={checked}
-                                        onChange={(e) =>
-                                            action(e.target.checked)
-                                        }
-                                    />
-                                }
-                            >
-                                <ListItemText primary={label} />
-                            </ListItem>
+
+                {/* A preset sets both rows below at once. Nothing is selected
+                here once the switches have been taken somewhere no preset
+                describes - the row reports what the card reads as rather than
+                holding a mode of its own. */}
+                <SettingRow label={t("sideMenu.customization.preset")}>
+                    <ToggleButtonGroup
+                        value={selectedPreset}
+                        exclusive
+                        onChange={(_, v) => {
+                            if (v) dispatch(applyDensityPreset(v));
+                        }}
+                        size="small"
+                        fullWidth
+                    >
+                        {PRESET_OPTIONS.map(({ value, icon, labelKey }) => (
+                            <Tooltip key={value} title={t(labelKey)}>
+                                <ToggleButton value={value}>
+                                    {icon}
+                                </ToggleButton>
+                            </Tooltip>
                         ))}
-                    </List>
-                )}
+                    </ToggleButtonGroup>
+                </SettingRow>
+
+                {/* Spacing alone: the room a card takes, leaving every switch
+                below exactly as it is. While the preset is "auto" this shows
+                the spacing the width resolved to, and picking one pins it. */}
+                <SettingRow label={t("sideMenu.customization.spacing")}>
+                    <ToggleButtonGroup
+                        value={resolvedDensity}
+                        exclusive
+                        onChange={(_, v) => {
+                            if (v) dispatch(setCardDensity(v));
+                        }}
+                        size="small"
+                        fullWidth
+                    >
+                        {SPACING_OPTIONS.map(({ value, icon, labelKey }) => (
+                            <Tooltip key={value} title={t(labelKey)}>
+                                <ToggleButton value={value}>
+                                    {icon}
+                                </ToggleButton>
+                            </Tooltip>
+                        ))}
+                    </ToggleButtonGroup>
+                </SettingRow>
+
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", px: 2, pt: 0.5 }}
+                >
+                    {t("sideMenu.customization.elements")}
+                </Typography>
+                <List dense disablePadding>
+                    {displayToggles.map(({ label, checked, action }) => (
+                        <ListItem
+                            key={label}
+                            secondaryAction={
+                                <Switch
+                                    edge="end"
+                                    size="small"
+                                    checked={checked}
+                                    onChange={(e) => action(e.target.checked)}
+                                />
+                            }
+                        >
+                            <ListItemText primary={label} />
+                        </ListItem>
+                    ))}
+                </List>
             </Box>
 
             <Divider />
 
             {/* ── Section 2: Card Fields ───────────────────────── */}
-            <Box data-tour="card-customization-fields">
+            <Box data-tour="customization-card-fields">
                 <Typography
                     variant="subtitle2"
                     sx={{ px: 2, pt: 1.5, pb: 0.5 }}
                 >
-                    {t("sideMenu.cardCustomization.cardFields")}
+                    {t("sideMenu.customization.cardFields")}
                 </Typography>
+                <ToggleButtonGroup
+                    value={fieldLayout}
+                    exclusive
+                    onChange={(_, v) => {
+                        if (v) dispatch(setFieldLayout(v));
+                    }}
+                    size="small"
+                    fullWidth
+                    sx={{ px: 1, pb: 0.5 }}
+                >
+                    {FIELD_LAYOUT_OPTIONS.map(({ value, icon, labelKey }) => (
+                        <Tooltip key={value} title={t(labelKey)}>
+                            <ToggleButton value={value}>{icon}</ToggleButton>
+                        </Tooltip>
+                    ))}
+                </ToggleButtonGroup>
                 <Box
                     sx={{
                         px: 1.5,
@@ -313,15 +408,30 @@ export const CardCustomizationPanel = () => {
                         alignItems: "center",
                     }}
                 >
-                    {selectedFields.map((field) => (
-                        <Chip
+                    {selectedFields.map((field, index) => (
+                        <Tooltip
                             key={field.id}
-                            label={field.label}
-                            size="small"
-                            onDelete={() => handlePreviewFieldToggle(field.id)}
-                        />
+                            title={t("sideMenu.customization.dragToOrder")}
+                        >
+                            <Chip
+                                label={field.label}
+                                size="small"
+                                onDelete={() =>
+                                    handlePreviewFieldToggle(field.id)
+                                }
+                                {...dragProps(index)}
+                                sx={{
+                                    cursor: "grab",
+                                    opacity: isDragging(index) ? 0.4 : 1,
+                                    boxShadow: isDropTarget(index)
+                                        ? (theme) =>
+                                              `inset 2px 0 0 ${theme.palette.primary.main}`
+                                        : undefined,
+                                }}
+                            />
+                        </Tooltip>
                     ))}
-                    <Tooltip title={t("sideMenu.cardCustomization.addField")}>
+                    <Tooltip title={t("sideMenu.customization.addField")}>
                         <span>
                             <IconButton
                                 size="small"
@@ -351,50 +461,6 @@ export const CardCustomizationPanel = () => {
                         ))}
                     </Menu>
                 </Box>
-            </Box>
-
-            <Divider />
-
-            {/* ── Section 3: Auto Actions ──────────────────────── */}
-            <Box data-tour="card-customization-auto-actions">
-                <Typography
-                    variant="subtitle2"
-                    sx={{ px: 2, pt: 1.5, pb: 0.5 }}
-                >
-                    {t("sideMenu.cardCustomization.autoActions")}
-                </Typography>
-                <List dense disablePadding>
-                    {autoActionRow(
-                        "flag",
-                        <FlagOutlined />,
-                        t("sideMenu.autoActions.flag"),
-                    )}
-                    {autoActionRow(
-                        "markAsSeen",
-                        <MarkEmailUnreadOutlined />,
-                        t("sideMenu.autoActions.markAsSeen"),
-                    )}
-                    {autoActionRow(
-                        "translate",
-                        <Translate />,
-                        t("sideMenu.autoActions.translate"),
-                    )}
-                    {autoActionRow(
-                        "summarize",
-                        <SummarizeOutlined />,
-                        t("sideMenu.autoActions.summarize"),
-                    )}
-                    {autoActionRow(
-                        "describeImage",
-                        <ImageSearch />,
-                        t("sideMenu.autoActions.describeImage"),
-                    )}
-                    {autoActionRow(
-                        "reindex",
-                        <YoutubeSearchedForOutlined />,
-                        t("sideMenu.autoActions.reindex"),
-                    )}
-                </List>
             </Box>
         </>
     );
