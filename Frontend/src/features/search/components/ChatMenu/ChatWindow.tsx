@@ -1,15 +1,60 @@
 import { KeyboardArrowDown } from "@mui/icons-material";
 import { Box, Button, Fab, List, ListItem, Typography } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import type { Theme } from "@mui/material/styles";
 import { useRef, useEffect, useState, useCallback } from "react";
 
 import { AssistantAvatar } from "./AssistantAvatar";
 import type { ChatWindowProps } from "./ChatWindow.types";
 import { MAX_VISIBLE_MESSAGES } from "./ChatWindow.types";
 import { EmptyState } from "./EmptyState";
-import { MessageBubble } from "./MessageBubble";
+import { LiveTurn } from "./LiveTurn";
+import { MessageList } from "./MessageList";
 import { PendingQuestion } from "./PendingQuestion";
 import { TypingIndicator } from "./TypingIndicator";
+
+// Module constants rather than literals in the render body, so emotion is not
+// asked to re-serialise them on every streamed token.
+const LOAD_EARLIER_SX = {
+    display: "flex",
+    justifyContent: "center",
+    pt: 1,
+} as const;
+
+const ROW_SX = { px: 0.5, py: 0.5 } as const;
+const ASSISTANT_ROW_SX = {
+    ...ROW_SX,
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
+} as const;
+
+const TYPING_BUBBLE_SX = (theme: Theme) => ({
+    backgroundColor: alpha(theme.palette.text.primary, 0.06),
+    borderRadius: "18px 18px 18px 4px",
+    px: 1.5,
+    py: 0.5,
+});
+
+const INTERRUPTED_SX = (theme: Theme) => ({
+    px: 1.5,
+    py: 0.75,
+    borderRadius: 2,
+    bgcolor: alpha(theme.palette.warning.main, 0.08),
+    border: "1px solid",
+    borderColor: alpha(theme.palette.warning.main, 0.3),
+});
+
+const SCROLL_FAB_SX = {
+    position: "sticky",
+    bottom: 8,
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 1,
+    opacity: 0.85,
+    width: 32,
+    height: 32,
+    minHeight: 32,
+} as const;
 
 export const ChatWindow = ({
     messages,
@@ -20,8 +65,11 @@ export const ChatWindow = ({
     pendingQuestion,
     onQuestionAnswer,
     scrollContainerRef,
+    turnActivity,
+    isTurnActive,
+    reasoningText,
+    reasoningPhase,
 }: ChatWindowProps) => {
-    const theme = useTheme();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [showAll, setShowAll] = useState(false);
     const [showScrollButton, setShowScrollButton] = useState(false);
@@ -57,15 +105,25 @@ export const ChatWindow = ({
         return () => el.removeEventListener("scroll", onScroll);
     }, [scrollContainerRef, checkAtBottom]);
 
+    // Deliberately keyed on the message count rather than the array: reading
+    // scrollHeight forces a synchronous reflow, and depending on `messages`
+    // would do that once per streamed token. The scroll listener above keeps
+    // the flag honest in between.
     useEffect(() => {
         setShowScrollButton(!checkAtBottom());
-    }, [messages, isLoading, pendingQuestion, isInterrupted, checkAtBottom]);
+    }, [
+        messages.length,
+        isLoading,
+        pendingQuestion,
+        isInterrupted,
+        checkAtBottom,
+    ]);
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, []);
 
-    if (messages.length === 0 && !isLoading) {
+    if (messages.length === 0 && !isLoading && !isTurnActive) {
         return (
             <EmptyState
                 query={query}
@@ -77,7 +135,7 @@ export const ChatWindow = ({
     return (
         <>
             {!showAll && hiddenCount > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "center", pt: 1 }}>
+                <Box sx={LOAD_EARLIER_SX}>
                     <Button size="small" variant="text" onClick={handleShowAll}>
                         Load {hiddenCount} earlier message
                         {hiddenCount !== 1 ? "s" : ""}
@@ -85,23 +143,18 @@ export const ChatWindow = ({
                 </Box>
             )}
             <List disablePadding>
-                {visibleMessages.map((message, index) => (
-                    <ListItem
-                        key={message.id ?? index}
-                        sx={{
-                            justifyContent: message.isUser
-                                ? "flex-end"
-                                : "flex-start",
-                            alignItems: "flex-end",
-                            px: 0.5,
-                            py: 0.5,
-                        }}
-                    >
-                        <MessageBubble message={message} />
+                <MessageList messages={visibleMessages} />
+                {isTurnActive && (
+                    <ListItem sx={ASSISTANT_ROW_SX}>
+                        <LiveTurn
+                            activity={turnActivity}
+                            reasoningText={reasoningText}
+                            isThinking={reasoningPhase === "thinking"}
+                        />
                     </ListItem>
-                ))}
+                )}
                 {pendingQuestion && (
-                    <ListItem sx={{ px: 0.5, py: 0.5 }}>
+                    <ListItem sx={ROW_SX}>
                         <PendingQuestion
                             question={pendingQuestion.question}
                             options={pendingQuestion.options}
@@ -110,48 +163,16 @@ export const ChatWindow = ({
                     </ListItem>
                 )}
                 {isLoading && (
-                    <ListItem
-                        sx={{
-                            justifyContent: "flex-start",
-                            alignItems: "flex-end",
-                            px: 0.5,
-                            py: 0.5,
-                        }}
-                    >
+                    <ListItem sx={ASSISTANT_ROW_SX}>
                         <AssistantAvatar />
-                        <Box
-                            sx={{
-                                backgroundColor: alpha(
-                                    theme.palette.text.primary,
-                                    0.06,
-                                ),
-                                borderRadius: "18px 18px 18px 4px",
-                                px: 1.5,
-                                py: 0.5,
-                            }}
-                        >
+                        <Box sx={TYPING_BUBBLE_SX}>
                             <TypingIndicator />
                         </Box>
                     </ListItem>
                 )}
                 {isInterrupted && (
-                    <ListItem sx={{ px: 0.5, py: 0.5 }}>
-                        <Box
-                            sx={{
-                                px: 1.5,
-                                py: 0.75,
-                                borderRadius: 2,
-                                bgcolor: alpha(
-                                    theme.palette.warning.main,
-                                    0.08,
-                                ),
-                                border: "1px solid",
-                                borderColor: alpha(
-                                    theme.palette.warning.main,
-                                    0.3,
-                                ),
-                            }}
-                        >
+                    <ListItem sx={ROW_SX}>
+                        <Box sx={INTERRUPTED_SX}>
                             <Typography variant="caption" color="warning.main">
                                 Agent paused — waiting for confirmation
                             </Typography>
@@ -161,21 +182,7 @@ export const ChatWindow = ({
             </List>
             <div ref={messagesEndRef} />
             {showScrollButton && (
-                <Fab
-                    size="small"
-                    onClick={scrollToBottom}
-                    sx={{
-                        position: "sticky",
-                        bottom: 8,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        zIndex: 1,
-                        opacity: 0.85,
-                        width: 32,
-                        height: 32,
-                        minHeight: 32,
-                    }}
-                >
+                <Fab size="small" onClick={scrollToBottom} sx={SCROLL_FAB_SX}>
                     {isLoading ? (
                         <TypingIndicator color="primary" />
                     ) : (

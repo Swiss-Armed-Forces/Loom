@@ -32,7 +32,9 @@ export const CitationList = ({ citations }: { citations: ChatCitation[] }) => {
                     <ExpandMore sx={{ fontSize: 14 }} />
                 )}
             </Box>
-            <Collapse in={open}>
+            {/* unmountOnExit: without it every citation's Tooltip and Chip
+                keeps rendering while the list is collapsed. */}
+            <Collapse in={open} unmountOnExit>
                 <Box
                     sx={{
                         mt: 0.75,
