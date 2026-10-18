@@ -108,25 +108,38 @@ _EMAIL_TAG_ATTRIBUTES: dict[str, set[str]] = {
 
 # flake8: noqa: B950
 
-EMAIL_HTML_HEAD = """
+# The element carrying the page gutter. Everything the renderer generates lives
+# inside it, out of reach of the email's own stylesheet.
+EMAIL_PAGE_CLASS = "loom-email-page"
+
+# The element wrapping the sanitized email. Prefixed so an email's own CSS is
+# unlikely to address it by name.
+EMAIL_BODY_CLASS = "loom-email-body"
+
+EMAIL_HTML_HEAD = f"""
 <head>
     <meta charset="utf-8">
     <title>Email Preview</title>
     <style>
-        body { margin: 20px; font-family: sans-serif; background-color: #ffffff; }
+        body {{ margin: 0; font-family: sans-serif; background-color: #ffffff; }}
 
-        .email-body { width: 100%; max-width: 100%; overflow: hidden; }
-        .email-body img { max-width: 100%; height: auto; }
-        .email-body img:not([src]) { display: inline-block; background-color: #e0e0e0; }
-        .email-body table { max-width: 100%; table-layout: fixed; }
-        .email-body pre { white-space: pre-wrap; overflow-wrap: break-word; }
-        .email-body * { max-width: 100%; }
+        /* The page gutter belongs on an element the email cannot address. On `body`
+        it is at the mercy of the `body {{ margin: 0 }}` reset nearly every email
+        carries, which leaves the header and avatar against the paper edge. */
+        .{EMAIL_PAGE_CLASS} {{ padding: 20px !important; }}
 
-        @page { margin: 0; }
+        .{EMAIL_BODY_CLASS} {{ width: 100%; max-width: 100%; overflow: hidden; }}
+        .{EMAIL_BODY_CLASS} img {{ max-width: 100%; height: auto; }}
+        .{EMAIL_BODY_CLASS} img:not([src]) {{ display: inline-block; background-color: #e0e0e0; }}
+        .{EMAIL_BODY_CLASS} table {{ max-width: 100%; table-layout: fixed; }}
+        .{EMAIL_BODY_CLASS} pre {{ white-space: pre-wrap; overflow-wrap: break-word; }}
+        .{EMAIL_BODY_CLASS} * {{ max-width: 100%; }}
+
+        @page {{ margin: 0; }}
 
 
         /* Avatar Container Styling */
-        .avatar-circle {
+        .loom-avatar-circle {{
             width: 42px;
             height: 42px;
             background-color: #e0e0e0; /* Neutral light grey background */
@@ -134,13 +147,13 @@ EMAIL_HTML_HEAD = """
             display: flex;
             align-items: center;
             justify-content: center;
-        }
+        }}
         /* Person Icon Styling */
-        .avatar-icon {
+        .loom-avatar-icon {{
             width: 24px;
             height: 24px;
             fill: #4a4a4a; /* Neutral dark grey silhouette */
-        }
+        }}
     </style>
 </head>
 """
@@ -248,6 +261,7 @@ def generate_email(data: EmailTemplateData) -> str:
     <html lang="en">
     {EMAIL_HTML_HEAD}
     <body>
+    <div class="{EMAIL_PAGE_CLASS}">
         <h4 style="padding: 3px 0; font-weight: bold;"> {nh3.escape(data['Subject'])}</h4>
 
         <!-- Main Layout Table -->
@@ -255,9 +269,9 @@ def generate_email(data: EmailTemplateData) -> str:
             <tr>
                 <!-- Left Column: Avatar Container -->
                 <td style="width: 55px; vertical-align: top; padding-top: 3px;">
-                    <div class="avatar-circle">
+                    <div class="loom-avatar-circle">
                         <!-- Inline HTML Person SVG Icon -->
-                        <svg class="avatar-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="loom-avatar-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
                     </div>
@@ -267,8 +281,8 @@ def generate_email(data: EmailTemplateData) -> str:
         </table>
     {email_attachments}
 
-        <div class="email-body">{sanitized_body}</div>
-
+        <div class="{EMAIL_BODY_CLASS}">{sanitized_body}</div>
+    </div>
     </body>
 
     </html>

@@ -9,6 +9,7 @@ import pytest
 from common.services.lazybytes_service import InMemoryTempLazyBytesService
 
 from worker.index_file.parse_and_render_email_task import (
+    EMAIL_PAGE_CLASS,
     RenderedEmail,
     _parse_email_body,
     generate_email,
@@ -297,6 +298,21 @@ def test_sanitization_preserves_style_tag() -> None:
     )
     assert "<style>.x { color: red; }</style>" in result
     assert 'class="x"' in result
+
+
+def test_page_gutter_survives_an_email_margin_reset() -> None:
+    """The gutter must hold against the `body { margin: 0 }` reset most emails carry.
+
+    An email's `<style>` block applies to the whole document no matter where it sits, so
+    a gutter declared on `body` is the email's to override. It belongs on an element the
+    email does not address.
+    """
+    result = _render_body("<style>body { margin: 0; padding: 0; }</style><p>Hi</p>")
+
+    assert f'<div class="{EMAIL_PAGE_CLASS}">' in result
+    assert f".{EMAIL_PAGE_CLASS} {{ padding: 20px !important; }}" in result
+    # The gutter must not be declared on `body`, where the reset above would win.
+    assert "body { margin: 20px" not in result
 
 
 def test_sanitization_preserves_table_layout_attrs() -> None:
