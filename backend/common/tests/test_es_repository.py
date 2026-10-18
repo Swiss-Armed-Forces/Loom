@@ -68,6 +68,7 @@ from common.models.es_repository import (
     PaginationParameters,
     PointInTimeExpiredError,
     QueryScoreStats,
+    SortingParameters,
     _EsMeta,
     _EsRepositoryDocument,
 )
@@ -1380,6 +1381,91 @@ def test_es_repository_get_page_by_query_clamps_a_page_size_below_one(page_size:
     assert result.next_sort_id == [1.0, "a"]
 
 
+def _stub_sort_field_mapping(
+    es_repository: _TestEsRepository, field: str, field_type: str
+) -> None:
+    """Answer the mapping lookup of _get_sort_by_field with a field of that type."""
+    index_mock = es_repository.document_type._index  # pylint: disable=protected-access
+    index_mock.get_field_mapping.return_value = {
+        es_repository.index_name: {
+            "mappings": {
+                field: {
+                    "full_name": field,
+                    "mapping": {field.split(".")[-1]: {"type": field_type}},
+                }
+            }
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    "sort_direction, expected_missing",
+    [
+        # 0001-01-01T00:00:00Z
+        ("desc", -62135596800000),
+        # 9999-12-31T23:59:59.999Z
+        ("asc", 253402300799999),
+    ],
+)
+def test_es_repository_bounds_a_date_sort_so_its_cursor_can_be_sent_back(
+    sort_direction: str, expected_missing: int
+):
+    """A document with no value for a date sort field is sorted with Long.MIN_VALUE
+    descending, which is the cursor the page then hands to the client — and which ES
+    refuses to parse back as a date, so paging stops at the first such document.
+
+    An explicit bound keeps those documents last and survives search_after.
+    """
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    _stub_sort_field_mapping(es_repository, "created", "date")
+    sort_mock = _setup_page_search(es_repository)
+    _setup_page_hits(sort_mock.extra().index().extra().execute, sorts=[], total=0)
+
+    es_repository.get_page_by_query(
+        query=QueryParameters(query_id="0123456789", search_string="a query"),
+        pagination_params=PaginationParameters(page_size=2),
+        sort_params=SortingParameters(
+            sort_by_field="created",
+            sort_direction=sort_direction,  # type: ignore[arg-type]
+        ),
+    )
+
+    search_mock = es_repository.document_type.search.return_value
+    search_mock.highlight_options().highlight().query().sort.assert_called_with(
+        {"created": {"order": sort_direction, "missing": expected_missing}},
+        "sort_unique",
+    )
+
+
+def test_es_repository_leaves_a_keyword_sort_without_a_missing_bound():
+    """Only dates need one: ES reports a missing keyword as null and takes null back in
+    search_after, so bounding it would invent a value the index does not hold."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    _stub_sort_field_mapping(es_repository, "source", "keyword")
+    sort_mock = _setup_page_search(es_repository)
+    _setup_page_hits(sort_mock.extra().index().extra().execute, sorts=[], total=0)
+
+    es_repository.get_page_by_query(
+        query=QueryParameters(query_id="0123456789", search_string="a query"),
+        pagination_params=PaginationParameters(page_size=2),
+        sort_params=SortingParameters(sort_by_field="source", sort_direction="desc"),
+    )
+
+    search_mock = es_repository.document_type.search.return_value
+    search_mock.highlight_options().highlight().query().sort.assert_called_with(
+        {"source": {"order": "desc"}},
+        "sort_unique",
+    )
+
+
 def test_es_repository_get_page_by_query_requests_a_fallback_snippet():
     """Highlighting a field with no_match_size returns its leading characters when the
     query matched nothing in it, which saves fetching the whole field via _source."""
@@ -1654,6 +1740,61 @@ def test_es_repository_get_id_generator_by_query_uses_large_scan_page_size():
 
     # The first .extra() call in _paginate_search must set size=_ID_SCAN_PAGE_SIZE
     sort_mock.extra.assert_called_once_with(size=_ID_SCAN_PAGE_SIZE)
+
+
+@pytest.mark.parametrize(
+    "document_dict, expected_sort_value",
+    [
+        pytest.param(
+            {"tika_meta": {"dcterms_created": "2016-06-01T16:35:07+00:00"}},
+            "2016-06-01T16:35:07+00:00",
+            id="field-present",
+        ),
+        pytest.param({"tika_meta": {}}, "", id="leaf-missing"),
+        pytest.param({}, "", id="whole-branch-missing"),
+        pytest.param({"tika_meta": "not-an-object"}, "", id="path-not-traversable"),
+    ],
+)
+def test_es_repository_reports_no_sort_value_for_a_document_without_one(
+    document_dict: dict, expected_sort_value: str
+):
+    """The descent stops as soon as the path runs out, and what it reached by then is
+    not the value: handing it on puts the half-walked document in the field the client
+    displays as the sort value."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+    execute_mock = (
+        search_mock.highlight_options()
+        .highlight()
+        .query()
+        .source()
+        .sort()
+        .extra()
+        .index()
+        .extra()
+        .execute
+    )
+    hit = MagicMock()
+    hit.to_es_dict.return_value = dict(document_dict)
+    hit.meta.sort = [1.0, "a"]
+    execute_mock.return_value.hits = [hit]
+
+    result = list(
+        es_repository.get_id_generator_by_query(
+            query=QueryParameters(query_id="0123456789", search_string="a query"),
+            pagination_params=PaginationParameters(page_size=1),
+            sort_params=SortingParameters(
+                sort_by_field="tika_meta.dcterms_created", sort_direction="desc"
+            ),
+        )
+    )
+
+    assert [entry.sort_value for entry in result] == [expected_sort_value]
 
 
 def test_es_repository_count_by_query():

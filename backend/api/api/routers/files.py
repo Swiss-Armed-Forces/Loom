@@ -42,6 +42,7 @@ from common.services.task_scheduling_service import (
 )
 from common.task_object.task_object import TaskRecord
 from common.utils.pydantic_field_paths import traverse_attr_path
+from elasticsearch import BadRequestError
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -153,6 +154,14 @@ def get_files(
         )
     except InvalidSortFieldExceptions as e:
         raise HTTPException(status_code=400, detail=str(e.args)) from e
+    except BadRequestError as e:
+        # The sort field, the cursor and the search string all come from the
+        # client, and Elasticsearch is the one that decides they do not go
+        # together — a cursor is only meaningful for the sort it was issued for.
+        # Reporting that as a server fault leaves the caller with a 500 for a
+        # request only the caller can correct.
+        logger.info("Elasticsearch rejected the query %s: %s", query, e)
+        raise HTTPException(status_code=400, detail=e.message) from e
     current_query_file_resp = GetFilesResponse(
         files=list(
             map(
