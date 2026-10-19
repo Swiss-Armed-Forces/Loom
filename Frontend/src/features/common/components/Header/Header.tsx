@@ -1,7 +1,7 @@
 import { Inventory, Search } from "@mui/icons-material";
 import { AppBar, Box, Tab, Tabs, Toolbar, Tooltip } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
-import { ComponentProps, ElementType, forwardRef, useRef } from "react";
+import { ComponentProps, ElementType, forwardRef, useRef, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -37,7 +37,10 @@ TooltipTab.displayName = "TooltipTab";
 
 const DOUBLE_CLICK_DELAY_MS = 250;
 
-export const Header = () => {
+// Propless and rendered from a parent that re-renders on unrelated store
+// changes, so memo is what keeps one highlight change from sweeping the
+// whole subtree. Its own selector subscriptions still re-render it.
+export const Header = memo(() => {
     const location = useLocation();
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -178,4 +181,6 @@ export const Header = () => {
             )}
         </AppBar>
     );
-};
+});
+
+Header.displayName = "Header";

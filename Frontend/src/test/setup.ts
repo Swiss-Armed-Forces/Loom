@@ -7,6 +7,30 @@ afterEach(() => {
     cleanup();
 });
 
+// jsdom implements neither observer, and anything rendering the result list
+// reaches for both: the virtualizer measures rows with a ResizeObserver, and
+// result cards track visibility with an IntersectionObserver. Both stubs are
+// inert — a test that needs elements to report a size has to say so itself,
+// since jsdom has no layout engine and measures everything as zero.
+class InertObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+        return [];
+    }
+}
+
+vi.stubGlobal("ResizeObserver", InertObserver);
+vi.stubGlobal(
+    "IntersectionObserver",
+    class extends InertObserver {
+        readonly root = null;
+        readonly rootMargin = "";
+        readonly thresholds: number[] = [];
+    },
+);
+
 Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({

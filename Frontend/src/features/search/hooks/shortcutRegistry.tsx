@@ -57,6 +57,36 @@ export const shortcutRegistry: ShortcutAction[] = [
         context: "results",
     },
     {
+        id: "pageDown",
+        defaultKeys: ["PageDown"],
+        labelKey: "emptySearch.hotkeys.pageDown",
+        context: "results",
+    },
+    {
+        id: "pageUp",
+        defaultKeys: ["PageUp"],
+        labelKey: "emptySearch.hotkeys.pageUp",
+        context: "results",
+    },
+    {
+        id: "firstResult",
+        defaultKeys: ["Home"],
+        labelKey: "emptySearch.hotkeys.firstResult",
+        context: "results",
+    },
+    {
+        id: "lastResult",
+        defaultKeys: ["End"],
+        labelKey: "emptySearch.hotkeys.lastResult",
+        context: "results",
+    },
+    {
+        id: "loadMore",
+        defaultKeys: ["m"],
+        labelKey: "emptySearch.hotkeys.loadMore",
+        context: "results",
+    },
+    {
         id: "prevTab",
         defaultKeys: ["ArrowLeft", "h"],
         labelKey: "emptySearch.hotkeys.prevTab",

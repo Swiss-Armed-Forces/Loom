@@ -94,13 +94,25 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     // Stale cards count as loaded results elsewhere, but the tour drives a real
     // card: a stale entry has no usable preview, so it is skipped here on
     // purpose rather than by drift from `isLoadedResult`.
-    const existingResultFileId = useMemo(
-        () =>
-            Object.entries(files).find(
-                ([, file]) => isLoadedResult(file) && !file.stale,
-            )?.[0] ?? null,
-        [files],
-    );
+    //
+    // A card carrying all three optional elements is preferred, because the
+    // thumbnail, tags and sub-item steps each point inside the one card the
+    // tour has settled on and have nothing to point at otherwise. They used to
+    // find whichever card in the whole list happened to have the element,
+    // which could be three different cards and is not possible at all now that
+    // only a window of the list is rendered.
+    const existingResultFileId = useMemo(() => {
+        const usable = Object.entries(files).filter(
+            ([, file]) => isLoadedResult(file) && !file.stale,
+        );
+        const complete = usable.find(
+            ([, file]) =>
+                file.preview?.thumbnailFileId &&
+                file.preview.tags?.length &&
+                file.preview.attachments?.length,
+        );
+        return (complete ?? usable[0])?.[0] ?? null;
+    }, [files]);
 
     const loadStepHashes = useCallback(async () => {
         if (englishCopyReady === false) return null;
@@ -438,14 +450,28 @@ export const TourProvider = ({ children }: TourProviderProps) => {
         });
     }, [location.pathname, startConfiguredTour, stepHashes]);
 
-    const contextValue: TourContextValue = {
-        isTourActive: isActive,
-        showQueryOverview,
-        activeTourStepId,
-        tourDetailFileId,
-        dismissActiveTour,
-        startTour,
-    };
+    // Memoised because a new context value re-renders every useTour() consumer —
+    // ActivityBar, both sidebars, CenterTabs, BurgerMenu — and context updates pass
+    // straight through React.memo. The provider itself subscribes to `files`, so an
+    // unmemoised value turns every preview arrival into a page-wide re-render.
+    const contextValue = useMemo<TourContextValue>(
+        () => ({
+            isTourActive: isActive,
+            showQueryOverview,
+            activeTourStepId,
+            tourDetailFileId,
+            dismissActiveTour,
+            startTour,
+        }),
+        [
+            isActive,
+            showQueryOverview,
+            activeTourStepId,
+            tourDetailFileId,
+            dismissActiveTour,
+            startTour,
+        ],
+    );
 
     return (
         <TourContext.Provider value={contextValue}>

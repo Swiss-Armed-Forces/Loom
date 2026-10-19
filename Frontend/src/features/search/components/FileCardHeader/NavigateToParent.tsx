@@ -1,15 +1,17 @@
 import { SubdirectoryArrowLeft } from "@mui/icons-material";
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { memo } from "react";
 import React from "react";
 
 import { useAppDispatch } from "@app/hooks";
 import { openFileTabThunk } from "@app/slices/searchSlice";
+import { LazyTooltip } from "@features/common/components";
 
 interface NavigateToParentProps {
     parentId: string;
 }
 
-export const NavigateToParent = ({ parentId }: NavigateToParentProps) => {
+export const NavigateToParent = memo(({ parentId }: NavigateToParentProps) => {
     const dispatch = useAppDispatch();
 
     const handleClick = (e: React.MouseEvent) => {
@@ -17,7 +19,7 @@ export const NavigateToParent = ({ parentId }: NavigateToParentProps) => {
     };
 
     return (
-        <Tooltip title="Navigate to parent">
+        <LazyTooltip title="Navigate to parent">
             <IconButton
                 size="small"
                 onClick={handleClick}
@@ -28,6 +30,8 @@ export const NavigateToParent = ({ parentId }: NavigateToParentProps) => {
                     sx={{ transform: "rotate(90deg)" }}
                 />
             </IconButton>
-        </Tooltip>
+        </LazyTooltip>
     );
-};
+});
+
+NavigateToParent.displayName = "NavigateToParent";

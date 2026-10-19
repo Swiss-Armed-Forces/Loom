@@ -29,7 +29,7 @@ export const isSortDirection = (x: string): x is SortDirection => {
 export interface SearchQuery {
     id: string | null;
     query: string;
-    keepAlive: "10s" | "30m" | null;
+    keepAlive: "10s" | "5m" | "30m" | null;
     sortField: string | null;
     sortDirection: SortDirection | null;
     sortId: any[] | null;

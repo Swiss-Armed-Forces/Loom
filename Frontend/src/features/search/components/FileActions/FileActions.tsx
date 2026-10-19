@@ -1,11 +1,12 @@
 import { MoreVert } from "@mui/icons-material";
-import { IconButton, Menu, MenuItem, Tooltip } from "@mui/material";
+import { IconButton, Menu, MenuItem } from "@mui/material";
 import { useState, useEffect, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse, RenderedFile } from "@app/api";
 import { useAppSelector } from "@app/hooks";
 import { selectQuery } from "@app/slices/searchSlice";
+import { LazyTooltip } from "@features/common/components";
 import {
     AddTagsButton,
     DownloadButton,
@@ -221,7 +222,7 @@ export const FileActions = ({
 
     const renderMenuItems = (actions: ActionDef[]) =>
         actions.map(({ key, tooltip, render }) => (
-            <Tooltip key={key} title={tooltip} placement="left">
+            <LazyTooltip key={key} title={tooltip} placement="left">
                 <MenuItem
                     onClick={(e) => {
                         if (!(e.target as HTMLElement).closest("button")) {
@@ -234,7 +235,7 @@ export const FileActions = ({
                 >
                     {render(true)}
                 </MenuItem>
-            </Tooltip>
+            </LazyTooltip>
         ));
 
     if (isCompact) {

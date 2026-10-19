@@ -1,5 +1,5 @@
 import { MoreHoriz, UnfoldLess } from "@mui/icons-material";
-import { Box, Breadcrumbs, ButtonBase, Link, Tooltip } from "@mui/material";
+import { Box, Breadcrumbs, ButtonBase, Link } from "@mui/material";
 import { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,6 +10,7 @@ import {
     setExpandFilePaths,
     updateQuery,
 } from "@app/slices/searchSlice";
+import { LazyTooltip } from "@features/common/components";
 import { SearchQueryField } from "@features/common/utils/enums";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
 
@@ -20,6 +21,37 @@ interface ClickableFilePathProps {
     fullPath: string;
     style?: CSSProperties;
 }
+
+// Hoisted out of the render body: three of these sit inside the per-segment
+// map, so a four-segment path re-hashed a dozen objects on every card render.
+const ROOT_SX = { display: "flex", alignItems: "center" } as const;
+const BREADCRUMBS_SX = {
+    "& .MuiBreadcrumbs-separator": { mx: 0.25 },
+} as const;
+const TOGGLE_SX = {
+    borderRadius: 1,
+    backgroundColor: "action.selected",
+    color: "inherit",
+    padding: "2px 4px",
+    "&:hover, &:focus": { backgroundColor: "action.focus" },
+} as const;
+const FOLD_ICON_SX = {
+    width: 24,
+    height: 16,
+    transform: "rotate(90deg)",
+} as const;
+const ELLIPSIS_ICON_SX = { width: 24, height: 16 } as const;
+const INLINE_SX = { display: "inline" } as const;
+const SEGMENT_SX = {
+    cursor: "pointer",
+    textDecoration: "none",
+    "&:hover": { textDecoration: "underline", color: "secondary.main" },
+} as const;
+const EXTENSION_SX = {
+    cursor: "pointer",
+    textDecoration: "underline dotted",
+    "&:hover": { textDecoration: "underline", color: "secondary.main" },
+} as const;
 
 export const ClickableFilePath = ({
     fullPath,
@@ -114,20 +146,14 @@ export const ClickableFilePath = ({
     };
 
     return (
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Breadcrumbs
-                separator="/"
-                sx={{
-                    "& .MuiBreadcrumbs-separator": { mx: 0.25 },
-                }}
-                style={style}
-            >
+        <Box sx={ROOT_SX}>
+            <Breadcrumbs separator="/" sx={BREADCRUMBS_SX} style={style}>
                 {/* One control in one place for both directions: it heads the
                     trail where the hidden ancestors would be, so the collapsed
                     state shows that the path continues to the left, and
                     toggling it never moves the control or reflows the row. */}
                 {isTruncatable && (
-                    <Tooltip title={toggleLabel} placement="top" arrow>
+                    <LazyTooltip title={toggleLabel} placement="top" arrow>
                         <ButtonBase
                             focusRipple
                             aria-label={toggleLabel}
@@ -141,31 +167,19 @@ export const ClickableFilePath = ({
                             // would re-render it between mousedown and mouseup
                             // and swallow the click entirely.
                             onFocus={(e) => e.stopPropagation()}
-                            sx={{
-                                borderRadius: 1,
-                                backgroundColor: "action.selected",
-                                color: "inherit",
-                                padding: "2px 4px",
-                                "&:hover, &:focus": {
-                                    backgroundColor: "action.focus",
-                                },
-                            }}
+                            sx={TOGGLE_SX}
                         >
                             {expandFilePaths ? (
                                 <UnfoldLess
                                     // The path folds horizontally, not
                                     // vertically like the icon assumes.
-                                    sx={{
-                                        width: 24,
-                                        height: 16,
-                                        transform: "rotate(90deg)",
-                                    }}
+                                    sx={FOLD_ICON_SX}
                                 />
                             ) : (
-                                <MoreHoriz sx={{ width: 24, height: 16 }} />
+                                <MoreHoriz sx={ELLIPSIS_ICON_SX} />
                             )}
                         </ButtonBase>
-                    </Tooltip>
+                    </LazyTooltip>
                 )}
                 {visiblePathParts.map((part) => {
                     const isLast = part.isLast;
@@ -176,9 +190,9 @@ export const ClickableFilePath = ({
                         <Box
                             key={part.pathToPart}
                             component="span"
-                            sx={{ display: "inline" }}
+                            sx={INLINE_SX}
                         >
-                            <Tooltip
+                            <LazyTooltip
                                 title={
                                     isLast
                                         ? t("resultCard.filterByFilename")
@@ -204,20 +218,13 @@ export const ClickableFilePath = ({
                                             );
                                         }
                                     }}
-                                    sx={{
-                                        cursor: "pointer",
-                                        textDecoration: "none",
-                                        "&:hover": {
-                                            textDecoration: "underline",
-                                            color: "secondary.main",
-                                        },
-                                    }}
+                                    sx={SEGMENT_SX}
                                 >
                                     {displayName}
                                 </Link>
-                            </Tooltip>
+                            </LazyTooltip>
                             {isLast && fileExtension && (
-                                <Tooltip
+                                <LazyTooltip
                                     title={t("resultCard.filterByExtension")}
                                     placement="top"
                                     arrow
@@ -232,18 +239,11 @@ export const ClickableFilePath = ({
                                                 e.ctrlKey,
                                             );
                                         }}
-                                        sx={{
-                                            cursor: "pointer",
-                                            textDecoration: "underline dotted",
-                                            "&:hover": {
-                                                textDecoration: "underline",
-                                                color: "secondary.main",
-                                            },
-                                        }}
+                                        sx={EXTENSION_SX}
                                     >
                                         {fileExtension}
                                     </Box>
-                                </Tooltip>
+                                </LazyTooltip>
                             )}
                         </Box>
                     );

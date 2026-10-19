@@ -15,6 +15,9 @@ interface FileAttachmentsProps {
     maxWidthRatio?: number; // Percentage of container width (0-1), default 0.8 = 80%
 }
 
+const ROOT_SX = { width: "100%", position: "relative" } as const;
+const CHIP_ROW_SX = { display: "flex", gap: 0.5, flexWrap: "wrap" } as const;
+
 export const FileAttachments = ({
     attachments,
     totalCount,
@@ -74,11 +77,7 @@ export const FileAttachments = ({
     const hasMultiple = attachments.length > 1;
 
     return (
-        <Box
-            ref={parentRef}
-            data-tour="result-card-subitems"
-            sx={{ width: "100%", position: "relative" }}
-        >
+        <Box ref={parentRef} data-tour="result-card-subitems" sx={ROOT_SX}>
             {/* Hidden measurement box to calculate total width of all chips */}
             {hasMultiple && (
                 <Box
@@ -123,7 +122,7 @@ export const FileAttachments = ({
                     className={styles.attachmentChip}
                 />
             ) : (
-                <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                <Box sx={CHIP_ROW_SX}>
                     {attachments.map((attachment) => (
                         <Chip
                             key={attachment.id}

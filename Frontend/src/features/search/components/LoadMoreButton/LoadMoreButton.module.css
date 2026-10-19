@@ -12,6 +12,11 @@
     }
 }
 
+.loadMoreError {
+    text-align: center;
+    max-width: 40rem;
+}
+
 .loadMoreSpinner {
     display: flex;
     flex-direction: row;
