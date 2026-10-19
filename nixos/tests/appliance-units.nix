@@ -117,6 +117,23 @@ let
       (check "${label}: nginx is ordered after ${addresses}" (lib.elem addresses nginx.after))
       (check "${label}: nginx wants ${addresses}" (lib.elem addresses nginx.wants))
 
+      # What publishes the box, and the edge that decides whether it survives a
+      # dockerd that does not start first time. `Requires=docker.service` means
+      # docker's first failure fails this unit's *job*, and a failed job is not
+      # re-queued when the restart succeeds -- so without docker wanting it, a
+      # box whose dockerd needed two attempts serves nothing on the appliance
+      # address for the rest of that boot, with no failed unit to show for it.
+      (check "${label}: docker wants loom-expose, so a late dockerd still publishes" (
+        lib.elem "docker.service" cfg.systemd.services.loom-expose.wantedBy
+      ))
+      (check "${label}: loom-expose is ordered after docker" (
+        lib.elem "docker.service" cfg.systemd.services.loom-expose.after
+      ))
+      # The boot's own job, which is what publishes the box when dockerd behaves.
+      (check "${label}: loom-expose is wanted by the boot" (
+        lib.elem "multi-user.target" cfg.systemd.services.loom-expose.wantedBy
+      ))
+
       # The binding mode, which is the other half of the fix: bind-interfaces
       # resolves `interface=` once at startup and exits if the name is not there
       # yet, so an interface renamed, re-created or re-bridged after dnsmasq

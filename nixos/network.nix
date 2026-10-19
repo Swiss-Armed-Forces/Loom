@@ -560,7 +560,28 @@ in
       # and why they replaced `up.sh --expose`.
       systemd.services.loom-expose = {
         description = "Publish Loom on the appliance address";
-        wantedBy = [ "multi-user.target" ];
+        # Wanted by the boot *and* by docker, which is not redundant: the boot's
+        # job is the one that publishes the box, and docker's is the one that
+        # gets it published anyway when the first attempt could not.
+        #
+        # dockerd does not always come up first time -- a cold box probing
+        # overlayfs on a slow disk has it exit 1 and be restarted, three times
+        # in a row on an emulated console. `Requires=` makes the first of those
+        # failures take this unit's job down with it ("Job loom-expose.service/
+        # start failed with result 'dependency'"), and nothing re-queues a job
+        # that has already failed. The box then runs with no DNAT at all: every
+        # *.loom name resolves to an address where nothing answers, for the rest
+        # of that boot, and the only symptom is a refused connection.
+        #
+        # `Wants=` from docker.service is evaluated on every start of it, the
+        # automatic restart included, so the rules land as soon as there is a
+        # dockerd to hold DOCKER-USER. It is also what makes `partOf` below
+        # whole: that stops this unit when docker stops, and this is what starts
+        # it again afterwards.
+        wantedBy = [
+          "multi-user.target"
+          "docker.service"
+        ];
         # DOCKER-USER is created by dockerd, and half the rules go in it.
         after = [ "docker.service" ];
         requires = [ "docker.service" ];
