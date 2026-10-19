@@ -21,6 +21,15 @@ logs:
     enabled: true
     addInternals: true
 
+# Every entrypoint below binds a hostPort on a single-node cluster, so the
+# chart's default RollingUpdate (maxSurge 1, maxUnavailable 0) cannot complete:
+# the surge pod stays Pending on ports the outgoing pod still holds, and
+# maxUnavailable 0 means the outgoing pod is never terminated. Recreate costs a
+# few seconds of ingress during an upgrade; the alternative is deleting the
+# release on every bring-up.
+updateStrategy:
+  type: Recreate
+
 ports:
   web:
     hostPort: 80

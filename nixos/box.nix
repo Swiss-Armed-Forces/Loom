@@ -1,0 +1,819 @@
+# The Loom appliance system.
+#
+# Everything up.sh mutates on the host imperatively is declared here instead, so
+# that a `nixos-rebuild` cannot silently revert it. The appliance therefore runs
+# up.sh with those two steps skipped -- see the `loom-up` wrapper below.
+{
+  config,
+  lib,
+  pkgs,
+  loomHostsJson,
+  minikubeIp,
+  loomUser,
+  loomRepoDir,
+  recoveryPassphraseFile,
+  tag,
+  ...
+}:
+let
+  # How long the box survives the key being pulled, in the same two numbers
+  # key-guard.nix multiplies. Restating "10 seconds" in the banner would drift
+  # the moment either is tuned.
+  keyGuardGrace = config.loom.keyGuard.intervalSec * config.loom.keyGuard.graceTicks;
+
+  # How long after boot loom-banner-repaint keeps watching the console, and how
+  # often it looks. The console stops being resized within a few seconds of the
+  # last font change; the window is generous against a slow DRM driver, and the
+  # unit exits the moment somebody logs in.
+  bannerRepaintWindow = 60;
+  bannerRepaintInterval = 2;
+
+  # Where the operator account actually lives, taken from the account rather than
+  # written out, so the two cannot drift.
+  operatorHome = config.users.users.${loomUser}.home;
+
+  # Skaffold's global config, seeded onto the box by the tmpfiles rules at the
+  # bottom of this file.
+  #
+  # `collect-metrics` is the reason it exists. Left unset, skaffold announces on
+  # its first run that it collects anonymized usage data, records `true` for
+  # itself, and reports to firebaselogging-pa.googleapis.com. An appliance is
+  # given away as a box that talks to nobody, and setup mode is the one boot it
+  # spends on somebody's office LAN -- which is also the boot where skaffold does
+  # hours of work. There is no environment variable for this: the one telemetry
+  # variable skaffold has is SKAFFOLD_UPDATE_CHECK, which nixpkgs' wrapper
+  # already sets to false, so the config file is the only lever.
+  #
+  # The survey prompt rides along because it is the same machinery, and because
+  # what it asks for -- open a Google form -- needs a browser and a network this
+  # box does not have.
+  #
+  # minikube needs no equivalent: nixpkgs' wrapper exports
+  # MINIKUBE_WANTUPDATENOTIFICATION=false before exec'ing the binary.
+  skaffoldGlobalConfig = (pkgs.formats.yaml { }).generate "skaffold-global-config" {
+    global = {
+      collect-metrics = false;
+      survey.disable-prompt = true;
+    };
+    kubeContexts = [ ];
+  };
+
+  # The `--debug` warning, as its own numbered fragment at the END of the screen.
+  # See nixos/debug.nix for what the flag does and what it costs.
+  #
+  # The position is not a style choice. The issue is written straight to the VT
+  # with no paging, so a banner taller than the console loses its FIRST rows: the
+  # tail is the only place that cannot scroll away, and a warning that can scroll
+  # away is not one. A fragment rather than a section of the banner, because
+  # /run/issue.d is read in filename order and `90` is the only way to sort below
+  # network.nix's and wifi.nix's problem blocks as well.
+  #
+  # `loom-info` prints the same block when it is run by hand, where there are no
+  # fragments and an operator is owed the warning just the same.
+  debugFragment = lib.optionalString config.loom.debug.enable ''
+    ${lib.getExe' config.loom.banner.fragment "loom-issue-fragment"} 90-loom-debug \
+      ${
+        lib.concatMapStringsSep " \\\n      " (
+          line: "--bar ${lib.escapeShellArg line}"
+        ) config.loom.debug.warningLines
+      } >/dev/null
+  '';
+
+  # Ship a wrapper rather than only documenting the flags. Running bare `up.sh`
+  # here is actively harmful: `setup_system` writes /etc/sysctl.d/99-loom.conf
+  # that NixOS ignores, and `install_host_entries` replaces the /etc/hosts store
+  # symlink with a mutable copy (up.sh:963-977) -- undoing the declarative work
+  # this module exists to do. writeShellApplication also shellchecks at build
+  # time, matching the rest of the repo.
+  loom-up = pkgs.writeShellApplication {
+    name = "loom-up";
+    runtimeInputs = with pkgs; [
+      minikube
+      coreutils
+    ];
+    text = ''
+      cd ${lib.escapeShellArg loomRepoDir}
+
+      # networking.hosts pins *.loom at a fixed address; if minikube ever lands
+      # somewhere else, fail loudly instead of serving a silently broken stack.
+      #
+      # The two answers `minikube ip` can give are told apart rather than folded
+      # into one condition. A failure means there is no cluster yet -- the first
+      # boot, and the only moment the address is chosen at all -- which is up.sh's
+      # job: it starts minikube with --static-ip on this same address and stops if
+      # the node lands elsewhere. A probe that cannot answer is not agreement.
+      if ip="$(minikube ip 2>/dev/null)"; then
+        if [ "$ip" != ${lib.escapeShellArg minikubeIp} ]; then
+          echo >&2 "[!] minikube is at $ip but *.loom is pinned to ${minikubeIp} in /etc/hosts."
+          echo >&2 "[!] Run 'minikube delete' and retry, or flash a stick built from a tag"
+          echo >&2 "[!] whose charts/values.yaml names this address."
+          exit 1
+        fi
+      else
+        echo "[*] No minikube cluster yet; up.sh pins the one it creates to ${minikubeIp}."
+      fi
+
+      exec ./up.sh --skip-setup_system --skip-install_host_entries "$@"
+    '';
+  };
+
+  loom-down = pkgs.writeShellApplication {
+    name = "loom-down";
+    text = ''
+      cd ${lib.escapeShellArg loomRepoDir}
+      exec ./up.sh --down "$@"
+    '';
+  };
+
+  # The login screen, written into the issue directory. Three things run this:
+  # loom-issue.service at boot, and loom-banner-repaint.service and
+  # loom-banner-refresh below, once for the console settling under it and once for
+  # every time what it says stops being true.
+  #
+  # Everything it writes is what `loom-info` prints, so the screen and the command
+  # an operator types in a pane cannot drift. nixos/banner/ owns the rule that
+  # matters either way: no backslash, which agetty would eat as an escape of its
+  # own.
+  writeIssue = pkgs.writeShellScript "loom-write-issue" ''
+    set -euo pipefail
+    ${pkgs.coreutils}/bin/mkdir -p /run/issue.d
+
+    # Rendered through a temporary file so agetty can never read a
+    # half-written banner from a getty that respawns mid-write.
+    #
+    # The name is unique per run, the way loom-issue-fragment's is. Three units
+    # render this file and ready.nix's publisher runs one of them every time the
+    # bring-up reaches a new stage, so two renders overlap -- and a shared name
+    # means the first to finish renames the other's file out from under it,
+    # which fails the loser's unit over a banner that was written correctly.
+    #
+    # LOOM_INFO_COLOR=vt because the redirection hides the console from
+    # loom-info: without it the one screen the colour exists for -- the
+    # login prompt nobody has touched yet -- would be the one that renders
+    # the eyes plain.
+    #
+    # Deliberately no measurement of the console here. There is no point in the
+    # boot at which a row count stays true -- the console is resized several times
+    # -- so the banner is always written whole and a screen with too few rows
+    # loses its top ones.
+    #
+    # --for-issue leaves the danger block to its own fragment below, which is what
+    # puts it beneath every other unit's.
+    tmp="$(${pkgs.coreutils}/bin/mktemp /run/issue.d/.50-loom.issue.XXXXXX)"
+    trap '${pkgs.coreutils}/bin/rm --force "$tmp"' EXIT
+
+    LOOM_INFO_COLOR=vt ${lib.getExe config.loom.banner.info} --for-issue \
+      >"$tmp"
+    # Readable by agetty, which is root, and by anybody who wants to see what
+    # the screen says -- it is on a monitor in the room either way. mktemp
+    # creates it readable by nobody else.
+    ${pkgs.coreutils}/bin/chmod 0644 "$tmp"
+    ${pkgs.coreutils}/bin/mv "$tmp" /run/issue.d/50-loom.issue
+    ${debugFragment}
+  '';
+
+  # Redraw the login screen, because what it says has stopped being true.
+  #
+  # Rewriting the issue is only half of it: agetty paints the file once, when it starts,
+  # and then blocks on a keypress -- so a fresh file changes nothing on a screen somebody
+  # is standing in front of. The getty has to be restarted for that, and restarting it is
+  # only safe while it is still *at* the prompt.
+  #
+  # That check is the reason this is a command rather than two lines in the one caller it
+  # used to have. loom-banner-repaint.service below wants it for a console that is still
+  # resizing; ready.nix's publisher wants it every time the bring-up reaches a new stage,
+  # which is the whole point of putting Loom's progress on a screen nobody has logged into.
+  # Two copies of "is anybody looking at this" would be two chances to get it wrong, and
+  # the way to get it wrong is to blank the screen under an operator mid-sentence.
+  #
+  # Exit status says whether the screen was redrawn, so a caller that is tracking whether
+  # the banner is stale can tell "done" from "not now".
+  loom-banner-refresh = pkgs.writeShellApplication {
+    name = "loom-banner-refresh";
+    runtimeInputs = [
+      pkgs.coreutils
+      config.systemd.package
+    ];
+    text = ''
+      ${writeIssue}
+
+      # The banner is only ours to redraw while it is still the thing on screen.
+      # `--login-pause` holds agetty at the issue until a keypress, and `--autologin`
+      # then has it exec login and the operator's shell in the same process -- so a main
+      # PID that is still agetty is the signal that nobody has pressed a key yet.
+      #
+      # Anything else is left alone, and "anything else" is deliberately not interpreted.
+      # A logged-in operator, a getty between lives after somebody restarted it, and a
+      # getty that has not exec'd agetty yet are indistinguishable from here and do not
+      # need to be told apart: none of them is a screen to redraw this round.
+      #
+      # tty1's getty is autovt@tty1.service on NixOS (an alias of the getty@ template,
+      # see console.nix); both names are tried, and a miss on the first moves on to the
+      # second rather than deciding the question.
+      for unit in autovt@tty1.service getty@tty1.service; do
+        pid="$(systemctl show --property=MainPID --value "$unit" 2>/dev/null || true)"
+        if [ -z "$pid" ] || [ "$pid" = 0 ]; then
+          continue
+        fi
+        if [ "$(cat "/proc/$pid/comm" 2>/dev/null || true)" != agetty ]; then
+          continue
+        fi
+        # getty@ clears the VT on start (TTYVTDisallocate), so the new banner lands on a
+        # clean screen rather than under the old copy. --no-block: a caller may itself be
+        # in the job queue this would wait on.
+        systemctl restart --no-block "$unit"
+        exit 0
+      done
+
+      # Nothing at a prompt. The file is written either way, so the next getty to paint
+      # shows the new banner; there is simply nothing to redraw now.
+      exit 1
+    '';
+  };
+
+  # Sits beside `loom-info` and does an unrelated job: that one draws the banner
+  # the login screen shows, this one reports the hardware underneath it.
+  #
+  # The script is scripts/platform_info.sh, shared verbatim with the devenv
+  # command of the same name, because the box it most needs to run on is one
+  # that is not running Loom yet -- see the header there. What the appliance adds is the
+  # declared half: the platform's own claims, so the report can say where the
+  # hardware disagrees with the image rather than leaving somebody to compare two
+  # screens by eye. Passed as environment variables through the same `--set`
+  # route installer.nix already uses for the stick's scripts.
+  #
+  # writeShellApplication runs shellcheck at build time, so a mistake in that
+  # file fails `nix-build -A box` rather than appearing on a console in the field.
+  loom-platform-info = pkgs.writeShellApplication {
+    name = "loom-platform-info";
+    runtimeInputs =
+      with pkgs;
+      [
+        coreutils
+        gnused
+        gnugrep
+        pciutils # lspci
+        usbutils
+        iw # the AP-mode probe, which is the whole point on a --wifi box
+        nvme-cli
+        util-linux # lsblk
+        systemd # udevadm, for ID_PATH; bootctl, the Secure Boot fallback
+        jq # --json only; the text report needs none of this
+      ]
+      ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi
+      # Keyed on the driver being configured rather than on `gpuVendor` -- the
+      # one place in this file where those two deliberately differ. `--no-gpu`
+      # builds a stick with gpuVendor forced to null but `hardware.nvidia` still
+      # present, because on the Spark the driver also runs the console. A box
+      # built that way is exactly the box somebody runs this tool on, to find
+      # out why the GPU did not enumerate, and without nvidia-smi on its PATH
+      # the report cannot answer that.
+      ++ lib.optional config.hardware.nvidia.enabled config.hardware.nvidia.package.bin;
+    text = ''
+      export LOOM_PLATFORM_ID=${lib.escapeShellArg config.loom.platform.id}
+      export LOOM_PLATFORM_DESCRIPTION=${lib.escapeShellArg config.loom.platform.description}
+      export LOOM_PLATFORM_NET_MATCH=${
+        lib.escapeShellArg (
+          lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k}=${v}") config.loom.platform.netMatch)
+        )
+      }
+      export LOOM_PLATFORM_WIFI_MATCH=${
+        lib.escapeShellArg (
+          lib.optionalString (config.loom.platform.wifiMatch != null) (
+            lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k}=${v}") config.loom.platform.wifiMatch)
+          )
+        )
+      }
+      export LOOM_PLATFORM_GPU_VENDOR=${
+        lib.escapeShellArg (
+          lib.optionalString (config.loom.platform.gpuVendor != null) config.loom.platform.gpuVendor
+        )
+      }
+
+      ${builtins.readFile ./scripts/platform_info.sh}
+    '';
+  };
+in
+{
+  # Declared in ready.nix and set here, the way `loom.progressUnit` is declared in
+  # console.nix and set in modes.nix: the value belongs beside the thing it names, and
+  # the one other module that runs it should not carry a second copy of the path.
+  loom.bannerRefresh = loom-banner-refresh;
+
+  # Same arrangement, declared in debug.nix: `loom-debug-bundle` collects what
+  # this box thinks its own hardware is, and reaching it by store path rather
+  # than by name is what makes the bundle the same on a box where somebody has
+  # been editing their PATH.
+  loom.platformInfo = loom-platform-info;
+
+  # ---------------------------------------------------------------------------
+  # Host tuning -- mirrors up.sh `setup_system` (up.sh:616-684).
+  #
+  # up.sh additionally persists these to /etc/sysctl.d/99-loom.conf; NixOS writes
+  # its own /etc/sysctl.d/60-nixos.conf from the values below, so that file is
+  # redundant here and `--skip-setup_system` keeps up.sh from creating it.
+  # ---------------------------------------------------------------------------
+  boot.kernel.sysctl = {
+    "vm.max_map_count" = 1677720; # NixOS default 1048576 -> raised
+    "vm.overcommit_memory" = 1;
+    "fs.inotify.max_user_watches" = 655360; # NixOS default 524288 -> raised
+    # Deliberately LOWER than the NixOS default of 524288. up.sh forces this
+    # value with an equality test rather than a floor, so 1280 is what every
+    # Loom deployment is actually tested against. Keep the two in sync.
+    "fs.inotify.max_user_instances" = 1280;
+    "fs.file-max" = 2097152;
+    "vm.swappiness" = 1;
+    "vm.dirty_background_ratio" = 10;
+    "vm.dirty_ratio" = 40;
+  };
+
+  # ---------------------------------------------------------------------------
+  # Name resolution -- mirrors up.sh `install_host_entries` (up.sh:936-996).
+  #
+  # The host list is generated from vars.sh by the build script, so vars.sh stays
+  # the single source of truth and the 22 names are never duplicated in Nix.
+  #
+  # Declaring them here also avoids up.sh's `sudo cp --remove-destination` hack
+  # (up.sh:963-977), which breaks /etc/hosts out of the Nix store on immutable
+  # distributions -- it names NixOS in its own comment.
+  # ---------------------------------------------------------------------------
+  # Every name but the portal page's. That one is in `hostnames.extra` so the
+  # chart's pre-install Job puts it in the certificate's subjectAltName, and the
+  # certificate is the only thing about it the cluster has anything to do with:
+  # the page runs on this box, on the portal address, and portal.nix is what
+  # points the name at it. Pinned here as well it would resolve to a Traefik that
+  # answers 404 for a host it does not route.
+  networking.hosts."${minikubeIp}" = lib.subtractLists [ config.loom.portal.host ] (
+    builtins.fromJSON loomHostsJson
+  );
+
+  networking.hostName = "loom";
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [
+      80
+      443
+    ];
+  };
+
+  # ---------------------------------------------------------------------------
+  # Toolchain -- every binary up.sh needs, in one list.
+  #
+  # `validate_environment` checks most of them (up.sh:402-428), but not all: it
+  # pipes through `awk` at up.sh:380, *above* its own checks, and `cicd/skaffold`
+  # reaches for `tar` and `mktemp`. So this list is wider than the check list.
+  #
+  # It is deliberately a shared option rather than a literal here, because the
+  # units in modes.nix need exactly the same set on their PATH and a unit's PATH
+  # has nothing to do with systemPackages -- `/run/current-system/sw/bin` is
+  # never on it. The two used to be maintained separately and drifted, which
+  # shipped a box whose loom.service died on `awk: command not found`.
+  #
+  # devenv is deliberately not used on the appliance: once we are building a
+  # NixOS closure anyway, this carries the toolchain for free, with no nix store
+  # pre-seeding and no direnv trust step.
+  # ---------------------------------------------------------------------------
+  loom.toolchain =
+    with pkgs;
+    [
+      bash # `sh` (up.sh:415, and `sudo sh -c` at up.sh:927)
+      # `cp` `mkdir` `nproc` `df` `tee` `realpath` `mktemp`
+      coreutils
+      diffutils # `diff`
+      gnugrep # `grep`
+      procps # `sysctl` `pidwait` `pkill` -- pidwait needs procps-ng >= 4
+      gawk # `awk`
+      curl # also `is_offline` (up.sh:216-221), which runs every invocation
+      util-linux
+      kubectl
+      kubernetes-helm # `helm`
+      minikube
+      skaffold
+      # Must be the kislyuk wrapper, NOT yq-go: up.sh:359 calls
+      # `yq -y -s 'reduce .[] as $item ({}; . * $item)'`, which is jq syntax.
+      yq
+
+      # Not in up.sh's check list, but bring-up fails without them:
+      git
+      git-lfs # the embedded checkout configures filter.lfs.*
+      gnutar # cicd/skaffold untars the vendored traefik chart
+      gzip
+      jq # the kislyuk `yq` shells out to it
+    ]
+    # The vendor's SMI tool, on a box that offloads Ollama to a GPU. up.sh wants
+    # it twice: `validate_environment` refuses to run without it whenever --gpus
+    # is set, and `check_host_resources` counts the GPUs by parsing its output.
+    # Both run inside loom.service, so PATH here is what matters rather than the
+    # operator's shell -- though it lands in both, as the whole toolchain does.
+    #
+    # Nothing else comes with either: the ROCm userspace Ollama needs is inside
+    # ollama/ollama:rocm and the CUDA userspace is inside ollama/ollama, not out
+    # here.
+    #
+    # The two are spelled differently because the vendors package them
+    # differently. rocm-smi is a standalone package; nvidia-smi is not, it is an
+    # output of the driver -- so the nvidia branch names the driver the platform
+    # configured rather than something fetched alongside it, and a platform that
+    # sets this vendor without `hardware.nvidia` gets an evaluation error rather
+    # than a stick whose loom.service dies on `nvidia-smi: command not found`.
+    ++ lib.optional (config.loom.platform.gpuVendor == "amd") pkgs.rocmPackages.rocm-smi
+    ++ lib.optional (config.loom.platform.gpuVendor == "nvidia") config.hardware.nvidia.package.bin;
+
+  environment.systemPackages =
+    config.loom.toolchain
+    ++ (with pkgs; [
+      # `EDITOR` above. Also supplies `vi`, `view` and `xxd`, which is why this
+      # is the plain `vim` and not `neovim`: neovim costs ~200 MiB of closure
+      # that nothing else here shares -- perl, glib, libx11, libxcb, luajit,
+      # tree-sitter -- on a box with no X at all, against ~43 MiB for vim, whose
+      # only other dependencies (gawk, bash-interactive, readline) are already
+      # in this closure.
+      vim
+      # Kept alongside vim deliberately, for 2.6 MiB. These boxes are given
+      # away, the console is the whole user interface, and there is no remote
+      # access to rescue anyone -- so an operator who does not know vim needs a
+      # modeless editor to fall back to.
+      nano
+
+      # Field diagnosis on a box with no remote access. Interactive only -- a
+      # unit has no use for any of these, so they stay out of `loom.toolchain`.
+      cryptsetup
+      gptfdisk
+      nvme-cli
+      pciutils
+      usbutils
+      htop
+      less
+      # Not for the daemon -- console-mouse.nix names its own store path for
+      # that -- but for the three client tools in the same package, which are
+      # the only way to debug a console mouse on a box with no remote access:
+      # `mev` prints the events gpm is delivering, `mouse-test` identifies the
+      # protocol a device speaks, and `hltest` exercises the console highlight
+      # the pointer is drawn with.
+      gpm
+
+      # The operator's console session (console.nix).
+      tmux
+      # The monitoring pane's btop, listed here as well so that an operator on a
+      # plain Alt-F2 console gets the same binary the pane runs rather than a
+      # second one built differently. Which it is follows `gpuVendor` -- the same
+      # rule that picks the SMI tool for `loom.toolchain` above, and the two have
+      # to stay in step for the GPU row and up.sh's preflight to be reading the
+      # same device.
+      # `loom.btopPackage` in console.nix has the detail; the short version is
+      # that the GPU flags are a runpath, not a compute stack, so this costs
+      # nothing the toolchain was not already carrying.
+      config.loom.btopPackage
+      # What the top-left pane becomes once Loom is up. Listed here as well so
+      # that an operator on a plain Alt-F2 console, or one who closed the pane,
+      # still has it.
+      k9s
+    ])
+    # The assistant pane, same reasoning as k9s above. console.nix's loom-chat is
+    # what wires it to the cluster's Ollama and pins the model; bare `opencode`
+    # here is for the operator who wants it pointed somewhere else.
+    #
+    # nixpkgs builds only the CLI -- one Bun-compiled binary, not the desktop app
+    # in the same repo -- and bakes models.dev's catalogue into the closure,
+    # which is what makes it usable on a box with no route off the network.
+    #
+    # Omitted entirely on a platform that does not deploy Ollama: there would be
+    # nothing for it to talk to, and it is not a small closure to carry for that.
+    ++ lib.optional config.loom.platform.runsAiServices pkgs.opencode
+    # Both interactive, and neither belongs in `loom.toolchain`: no unit runs
+    # either. loom-platform-info is field diagnosis in the same sense as the
+    # pciutils/nvme-cli block above -- it is what somebody runs when the box
+    # does not behave, or when the values in platforms/<id>.nix need checking
+    # against the hardware for the first time.
+    ++ [
+      config.loom.banner.info
+      loom-platform-info
+      # Beside loom-info rather than hidden in the unit that used to be its only
+      # caller: that one prints the banner, this one puts it back on the screen.
+      # An operator who has just changed something the banner reports -- disarmed
+      # the key guard, brought the network up -- has no other way to make the
+      # login screen agree, and on a box with no remote access "log out and look"
+      # is not always available.
+      loom-banner-refresh
+    ]
+    ++ config.loom.entrypoints;
+
+  # Also handed to the units in modes.nix, which need them on their PATH rather
+  # than merely in the operator's shell.
+  loom.entrypoints = [
+    loom-up
+    loom-down
+  ];
+
+  # The same offline guarantee installer.nix states for the stick, for the same
+  # reason: this box has no route off its own segment, so a substituter is a
+  # name that cannot resolve.
+  #
+  # Not cosmetic. A substituter query failure is fatal rather than a fallback,
+  # so nix on this box does not merely waste five retries per path -- it
+  # *fails*, and the first thing it queries is the output it is about to build.
+  # That turns any nix command here into an error that reads like a network
+  # problem, which is the least useful thing to hand someone at a console with
+  # no way out. With the list empty nix builds, which is the only thing it
+  # could ever have done here.
+  nix.settings.substituters = lib.mkForce [ ];
+  nix.settings.trusted-substituters = lib.mkForce [ ];
+
+  virtualisation.docker = {
+    enable = true;
+    daemon.settings = {
+      log-driver = "json-file";
+      log-opts = {
+        max-size = "100m";
+        max-file = "3";
+      };
+      storage-driver = "overlay2";
+    };
+  };
+
+  # ---------------------------------------------------------------------------
+  # Operator account
+  # ---------------------------------------------------------------------------
+  users.mutableUsers = true;
+  users.users.${loomUser} = {
+    isNormalUser = true;
+    description = "Loom operator";
+    createHome = true;
+    extraGroups = [
+      "wheel"
+      "docker"
+      # Reading `journalctl --unit` as a non-root user only reaches that user's
+      # own journal. The messages console.nix's first pane exists to surface --
+      # PID 1's "Condition check resulted in loom-fetch.service being skipped",
+      # above all -- are _UID=0 and would be invisible without this. It grants
+      # nothing new: `wheel` plus `wheelNeedsPassword = false` below already
+      # hands this account root.
+      "systemd-journal"
+    ];
+  };
+  # No direct root login; the appliance is reached through the operator account.
+  users.users.root.hashedPassword = "!";
+
+  # The operator account has no password, so the console can log into it without
+  # asking for one. A password would buy nothing: `wheelNeedsPassword = false`
+  # below already hands out root without one, there is no sshd, and the disk is
+  # LUKS-encrypted with the key on the USB stick -- physical possession is the
+  # whole trust boundary. A user with no declared password gets a locked shadow
+  # entry, and `users.mutableUsers` is true, which switches off the assertion
+  # that would otherwise catch it.
+  #
+  # console.nix is what turns that into a usable login: it keeps agetty's
+  # `--autologin`, which is what bypasses the locked entry, but pairs it with
+  # `--login-pause` so nothing opens a session until somebody presses a key.
+
+  security.sudo = {
+    enable = true; # up.sh:407 requires `sudo` to exist
+    # Setup mode's loom-fetch runs `sudo loom-promote-boot-entry` and
+    # `sudo systemctl poweroff` (modes.nix), unattended, from a unit that has no
+    # logind session for polkit to key on -- so this cannot prompt. Acceptable
+    # only because the box has no sshd and is reachable from the console alone.
+    #
+    # This used to cite `sudo minikube tunnel`, which the appliance no longer
+    # runs: network.nix exposes Loom with a DNAT rule instead of `up.sh
+    # --expose`.
+    wheelNeedsPassword = false;
+  };
+
+  # Appliance policy: no remote access at all.
+  #
+  # `mkDefault` rather than a plain `false`, and the difference is one flag:
+  # nixos/debug.nix turns this on for an image built with
+  # `build-appliance-image --debug`, and that is the only thing in the tree
+  # allowed to. Everything else -- the threat model, the banner, the test in
+  # loom_tests/appliance/banner.py -- is written against this line being false.
+  services.openssh.enable = lib.mkDefault false;
+
+  # ---------------------------------------------------------------------------
+  # Loom entry point
+  # ---------------------------------------------------------------------------
+  environment.sessionVariables = {
+    # Mirrors devenv.nix:273,276 -- the layout every Loom code path is tested
+    # against. Both directories are already in .gitignore, so the working tree
+    # of the embedded checkout stays clean.
+    #
+    # The two are not the same kind of variable, which matters to anyone seeding
+    # a config file for either. MINIKUBE_HOME is minikube's own: it reads it and
+    # keeps everything under it. SKAFFOLD_HOME is ours -- the string does not
+    # appear in the skaffold binary at all. up.sh:17 reads it and turns it into
+    # `--cache-file` and `--remote-cache-dir` (up.sh:148-149,299-302), which
+    # moves skaffold's *caches* and nothing else. Skaffold's own paths are
+    # hardcoded under $HOME/.skaffold, so its global config is read from
+    # /home/loom/.skaffold/config -- see the tmpfiles rules at the bottom of
+    # this file, which is where that file comes from.
+    MINIKUBE_HOME = "${loomRepoDir}/.minikube";
+    SKAFFOLD_HOME = "${loomRepoDir}/.skaffold";
+
+    # Nothing on this box sets an editor otherwise, and the fallbacks that step
+    # in are worse than a choice: git's is `vi`, which the appliance did not
+    # carry at all, so `git commit` on the console died with "not found". Set
+    # here rather than only in up.sh, because the operator's shell never sources
+    # that script -- up.sh's own `export` only reaches what up.sh starts.
+    EDITOR = "vim";
+  };
+
+  # ---------------------------------------------------------------------------
+  # Console banner.
+  #
+  # These boxes are given away, and have no remote access, so the console is the
+  # only place this information can reach anyone. It is therefore shown before
+  # anyone logs in, as the agetty issue -- console.nix's `--login-pause` then
+  # holds the screen there until somebody presses a key.
+  #
+  # Shown there and nowhere else. The login shell used to reprint it, which on
+  # tty2-tty6 put the same screen up twice with nothing between the two copies
+  # but the keypress: agetty renders the issue on every VT, not just tty1. The
+  # only console where the banner really is covered is tty1, where the tmux
+  # session draws over it -- and an operator who wants it back there types
+  # `loom-info`, which is on the PATH for exactly that.
+  #
+  # The recovery passphrase is part of it, which is safe here for the same
+  # reason the file itself is: reading it requires the box to have booted, which
+  # requires the stick -- and the console hands out a root-capable shell without
+  # a password anyway, so the issue exposes nothing the VT did not already.
+  # ---------------------------------------------------------------------------
+
+  # /run rather than /etc: the issue is regenerated on every boot, and 26.05 may
+  # mount /etc read-only through the etc overlay. NixOS points agetty at
+  # `/etc/issue:/etc/issue.d:/run/issue:/run/issue.d` (getty.nix:13-18), and
+  # util-linux 2.42 reads every one of them.
+  #
+  # getty-pre.target is the ordering hook for exactly this, but it is a passive
+  # target: systemd.special(7) requires its users to pull it into the boot
+  # transaction themselves. Hence `wants` as well as `before` -- and
+  # `wantedBy = multi-user.target`, because being wanted *by* a target that
+  # nothing starts would leave this unit unreachable and the banner missing.
+  # getty@ is After=getty-pre.target upstream, so this lands before any getty
+  # renders the issue.
+  systemd.services.loom-issue = {
+    description = "Loom console banner for the login screen";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "getty-pre.target" ];
+    before = [ "getty-pre.target" ];
+    # After the font, not merely before the getty.
+    #
+    # Both units are only `before getty-pre.target`, which orders each against
+    # the getty and neither against the other -- and this one used to win by
+    # about two seconds. That mattered once the banner started measuring the
+    # console to decide what fits: the font is what sets the row count, so
+    # measuring first meant measuring the kernel's 16x32 grid and then shedding
+    # the mark and the QR code to fit a screen that was about to become three
+    # times taller. Ordering here is the whole fix; the measurement was never
+    # wrong about the console it was handed.
+    after = [ "loom-console-font.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = writeIssue;
+    };
+  };
+
+  # ---------------------------------------------------------------------------
+  # Redraw the banner once the console has stopped resizing under it.
+  #
+  # tty1 is painted *during* the boot's console churn, and the other VTs are
+  # not: logind spawns autovt@tty2 and up only when somebody switches to one, by
+  # which time the geometry is final. That is the whole of why tty1 shows a
+  # cropped banner while tty2 shows a correct one.
+  #
+  # What churns is the font, and with it the row count. fbcon starts on the
+  # kernel's built-in 16x32, branding.nix's loom-console-font puts Cozette on
+  # (many more rows), the DRM driver takes the console and resets it back to the
+  # built-in (far fewer), and loom-console-font-reapply puts Cozette on again.
+  # Every one of those is a VT resize, and when a VT shrinks the kernel keeps
+  # the bottom of the screen and discards the top -- so a banner drawn before
+  # the shrink loses exactly its first rows, which is where the mark is.
+  #
+  # Shrinking the banner to fit the smallest grid would be guesswork about a
+  # panel nobody has seen. Drawing it again after the last resize is not: the
+  # issue is re-measured against the geometry that is now final, and agetty
+  # repaints it from a clean VT.
+  # ---------------------------------------------------------------------------
+  systemd.services.loom-banner-repaint = {
+    description = "Redraw the login banner while the console is still settling";
+    # Pulled in by the boot rather than by the font units. Those fire from udev
+    # coldplug, which is before any getty exists -- so the repaint they asked for
+    # found nothing on screen to redraw and never ran again, which is exactly how
+    # tty1 kept its cropped banner while tty2 looked right.
+    wantedBy = [ "multi-user.target" ];
+    after = [ "getty.target" ];
+    serviceConfig = {
+      Type = "simple";
+      # One pass through the window below, then done. A failure here costs the
+      # banner its redraw and nothing else, so never take the boot down with it.
+      Restart = "no";
+    };
+    path = [
+      pkgs.coreutils
+      config.systemd.package
+      loom-banner-refresh
+    ];
+    script = ''
+      # Watch the console instead of guessing when it stops moving.
+      #
+      # The row count changes several times during boot -- the kernel's built-in
+      # font, Cozette, the DRM driver's reset, Cozette again -- and agetty paints
+      # tty1 somewhere in the middle of that. A VT that shrinks keeps the bottom
+      # of the screen and discards the top, which is why the mark goes first and
+      # why the surviving banner starts partway down. tty2 and up never show it:
+      # logind spawns them on demand, long after the last resize.
+      #
+      # So: poll, and redraw whenever the geometry is not the one the banner on
+      # screen was drawn for. Bounded, because this is a boot-time phenomenon and
+      # a poller that outlives it would be a poller nobody ever accounts for.
+      deadline=$(( SECONDS + ${toString bannerRepaintWindow} ))
+
+      # `seen` is the last geometry observed, `dirty` whether the screen has been
+      # disturbed since it was last drawn.
+      #
+      # Tracking the change rather than the current value is the whole point. A
+      # resize discards screen content, and it does that whether or not the size
+      # ends up back where it started -- the DRM takeover drops the console to
+      # the kernel's font and loom-console-font-reapply puts Cozette back, so the
+      # row count an operator finally sees is often exactly the one the banner
+      # was drawn at, with the top of that banner thrown away in between.
+      # Comparing "is it different now" would see nothing wrong and leave the
+      # screen broken, which is precisely what it did.
+      #
+      # `dirty` starts set, so the banner is drawn once for the geometry that is
+      # current when the getty first appears, whatever happened before that.
+      seen=""
+      dirty=yes
+
+      measure() {
+        stty size </dev/tty1 2>/dev/null | cut --delimiter=' ' --fields=1 || true
+      }
+
+      while [ "$SECONDS" -lt "$deadline" ]; do
+        rows="$(measure)"
+
+        if [ "$rows" != "$seen" ]; then
+          # Something moved. Note it and wait for it to stop, so a redraw lands
+          # once per resize rather than once per intermediate state.
+          seen="$rows"
+          dirty=yes
+          sleep ${toString bannerRepaintInterval}
+          continue
+        fi
+
+        # loom-banner-refresh rewrites the issue and restarts tty1's getty only while
+        # that getty is still at the prompt -- an earlier version of this loop carried
+        # that check itself, and it moved out when a second caller (ready.nix, on every
+        # stage change) needed exactly the same guard. Its exit status is what says
+        # whether the screen was actually redrawn, so a round that found somebody logged
+        # in leaves `dirty` set rather than deciding the banner is done.
+        if [ "$dirty" = yes ] && [ -n "$rows" ] && loom-banner-refresh; then
+          dirty=no
+        fi
+        sleep ${toString bannerRepaintInterval}
+      done
+    '';
+  };
+
+  # The installer writes the recovery passphrase here. wheel-readable so the
+  # operator can see it without sudo; the disk it sits on is encrypted anyway.
+  #
+  # Then skaffold's global config -- `collect-metrics: false`, see
+  # skaffoldGlobalConfig above for why. `C` rather than `f`: it copies only when
+  # the destination is absent, so what lands is a writable regular file that
+  # skaffold goes on rewriting (kube-context entries, prompt timestamps) and an
+  # operator may edit, while the mode and ownership columns are re-applied on
+  # every boot.
+  #
+  # The path is deliberately outside the seeded checkout, and not only because
+  # that is where skaffold looks. A rule under ${loomRepoDir} would be a bug:
+  # tmpfiles runs at sysinit and creates leading directories, so it would
+  # materialise the repository directory hours before loom-seed-repo
+  # (repo.nix:74-119) reaches its `mv ${loomRepoDir}.tmp ${loomRepoDir}` -- which
+  # would then move the staging tree *inside* the directory instead of becoming
+  # it.
+  systemd.tmpfiles.rules = [
+    # The one declaration of this directory on the box, and it has to serve two
+    # consumers. It used to be declared here *and* in mtls.nix, with different
+    # modes -- and `systemd.tmpfiles.rules` from every module is concatenated into
+    # one file, where systemd-tmpfiles refuses incompatible duplicates for a path,
+    # logs `Duplicate line for path "/var/lib/loom", ignoring.` and keeps the
+    # first. Which module came first was an artefact of module evaluation order,
+    # so a reorder of `applianceModules` would have silently swapped the modes:
+    # one way the hardening on the directory holding
+    # /var/lib/loom/recovery-passphrase was discarded, the other way nginx could
+    # no longer traverse to /var/lib/loom/mtls and the captive portal never
+    # started.
+    #
+    # 0751, not 0750: others need `x` to reach ${stateDir}-style subdirectories
+    # they are named into -- nginx's key lives in one -- and they still cannot
+    # *list* this directory. The recovery passphrase inside it is 0440 root:wheel
+    # in its own right.
+    "d /var/lib/loom 0751 root wheel -"
+    "d ${operatorHome}/.skaffold 0755 ${loomUser} users -"
+    "C ${operatorHome}/.skaffold/config 0644 ${loomUser} users - ${skaffoldGlobalConfig}"
+  ];
+
+  system.stateVersion = "26.05";
+
+  documentation.nixos.enable = false;
+}

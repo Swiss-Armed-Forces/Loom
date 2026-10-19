@@ -51,15 +51,35 @@ spec:
   policyTypes:
     - Egress
   egress:
+    # One rule, and no `ports`.
+    #
+    # One rule, because `to` and `ports` only constrain each other inside the
+    # same rule. As two rules they are two independent permissions, and an egress
+    # rule carrying `ports` and no `to` means *every* destination -- so the
+    # second one let every pod not labelled `net: fenced` (everything except tika
+    # and gotenberg) reach any address on the internet over 443, which is the
+    # port model pulls, package fetches and exfiltration all use. On an
+    # air-gapped appliance that silently contradicts the default-deny posture the
+    # rest of this file is built on.
+    #
+    # No `ports`, because the port a pod's packet carries here is not 443. This
+    # policy is matched after kube-proxy has rewritten 10.96.0.1:443 to the API
+    # server's endpoint, which is the node's own address and the port the server
+    # listens on -- 8443 on minikube, 6443 elsewhere, and nothing in this chart
+    # knows which. Pinning 443 cost kube-state-metrics its connection to the
+    # apiserver on a perfectly normal cluster. The destination is the single node
+    # this cluster runs on, which the pods above may already reach on every port
+    # the namespace serves, so leaving the port open is not what this rule is
+    # holding back.
     - to:
       # Allow access to kubernetes-api
       - ipBlock:
-          # Hard coded cluster ip - might break if changed
+          # The node's own address, not the API server's ClusterIP: this policy
+          # is matched after kube-proxy has rewritten 10.96.0.1:443 to the node,
+          # so the ClusterIP never reaches it. up.sh pins the node to this value
+          # and asserts it after `minikube start`.
           # see better version below..
           cidr: {{ .Values.kubernetes.api }}/32
-    - ports:
-      - protocol: TCP
-        port: 443
 #---
 # Lookup cluster api ip using helm lookup:
 # -> Does not work with scaffold v2

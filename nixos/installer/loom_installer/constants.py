@@ -1,0 +1,100 @@
+"""Names and numbers the stick and the box it installs must agree on.
+
+The three storage names are deliberately NOT here: they come from nixos/storage.nix by
+way of installer.nix's wrapper, so the names the installer creates and the names the
+box's stage 1 waits for cannot drift apart. See settings.py.
+"""
+
+from typing import Final
+
+# Partition labels. The stick uses `loom-live-*` and `loom-key`; the internal disks
+# use `loom-esp` and `loom-pv<N>`. The prefixes must stay disjoint --
+# /dev/disk/by-partlabel is not unique, and with both media attached a shared name
+# would resolve to whichever udev linked last.
+#
+# The PV label carries an index for the same reason: every internal disk gets one,
+# and two partitions sharing a name would make `by-partlabel` a coin toss between
+# the members of the very pool being built.
+LIVE_ESP_LABEL: Final = "loom-live-esp"
+LIVE_STORE_LABEL: Final = "loom-live-store"
+KEY_LABEL: Final = "loom-key"
+ESP_LABEL: Final = "loom-esp"
+PV_LABEL_PREFIX: Final = "loom-pv"
+
+# Kept identical to `fileSystems."/boot".options` in box-hardware.nix. vfat carries no
+# permissions on disk, so the ESP is only as private as whatever mounted it -- and the
+# installer mounts the target ESP itself, long before the installed configuration has
+# any say. See mount_target().
+ESP_MOUNT_OPTIONS: Final = "umask=0077"
+
+BY_PARTLABEL: Final = "/dev/disk/by-partlabel"
+KEY_DEVICE: Final = f"{BY_PARTLABEL}/{KEY_LABEL}"
+
+KEY_BYTES: Final = 4096
+
+# Written into the LUKS2 header by `install.stamp_pool_installed` as the last act of
+# the destructive block, and required by `storage.pool_claimed_by_key`. The
+# passphrase test on its own only proves `encrypt` ran, which is true from twenty
+# minutes before the install is finished.
+INSTALLED_LABEL: Final = "loom-installed"
+
+# The whole pool, not each disk: a box with two small NVMes has as much room as one
+# with a single large one, and refusing it would be arithmetic nobody can argue with
+# from the console.
+#
+# 200 GiB exactly, because that is the number Documentation/installation.md publishes
+# as the requirement and `install.check_pool_size` cites. It used to be 250 GB, which
+# is 232.8 GiB: somebody specifying hardware from the installation guide could buy a
+# 240 GB NVMe -- an extremely common size that meets the published requirement -- and
+# have the installer refuse it, with `decide()` answering TOO_SMALL and the box never
+# installing itself.
+MIN_POOL_BYTES: Final = 200 * 1024 * 1024 * 1024
+
+# Set by the menu before it hands over to an unattended install, so that a menu
+# restarted by systemd cannot count down a second time onto a disk the first attempt
+# already began partitioning. In tmpfs: it must not survive a reboot, because a
+# reboot is how an operator retries.
+AUTO_MARKER: Final = "/run/loom-auto-install-attempted"
+
+# Set by the menu when somebody stops the countdown instead. Separate from the marker
+# above because the two mean different things: that one says the disks may be half
+# written, this one says a person was standing here and declined. What they have in
+# common is that neither may be counted down a second time -- not after systemd
+# restarts the menu, and not after a trip through the rescue shell. A reboot clears
+# it, which is how an operator changes their mind.
+AUTO_DECLINED: Final = "/run/loom-auto-install-declined"
+
+# `loom-install` exits with this when the install itself succeeded but the box may
+# not boot into it unattended -- see `fix_boot_order`. The menu holds the console
+# open on it rather than counting down, because the firmware fix it asks for is
+# printed nowhere else: the installed box's login banner repeats the recovery
+# passphrase, but not this.
+#
+# Shared with argparse, which exits 2 on a bad argument. Harmless: the menu is the
+# only caller and it composes the arguments itself.
+EXIT_BOOT_ORDER_DEGRADED: Final = 2
+
+# The operator said no -- Ctrl-C, or the action word not typed. 130 is the shell's
+# spelling of "killed by SIGINT", and the point of having it at all is that the menu
+# can say "cancelled" where it would otherwise say "failed".
+EXIT_CANCELLED: Final = 130
+
+# Where an unhandled exception's traceback goes, instead of over the disk list and
+# the recovery passphrase on an 80-column console. In /run because the stick is a
+# read-only squashfs, and because this unit has no journal to fall back on
+# (installer.nix gives it `StandardError = "tty"`).
+CRASH_LOG: Final = "/run/loom-installer-traceback.log"
+
+# Where the target filesystem is assembled.
+MOUNT: Final = "/mnt"
+CRYPT_MAPPING: Final = "cryptroot"
+
+# Written by installer.nix from the evaluated configuration, so this never has to
+# spell `first-time-setup` and a rename in modes.nix cannot drift away from it.
+TARGET_SYSTEM_FILE: Final = "/etc/loom/target-system"
+SETUP_SPECIALISATION_FILE: Final = "/etc/loom/setup-specialisation"
+
+# Relative to the freshly installed root.
+RECOVERY_FILE_REL: Final = "var/lib/loom/recovery-passphrase"
+
+GIGABYTE: Final = 1000 * 1000 * 1000

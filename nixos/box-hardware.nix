@@ -1,0 +1,196 @@
+# Disks, boot and initrd for the appliance.
+#
+# Every device is addressed by GPT partition label, which is what lets a single
+# system closure serve every box: only the LUKS key bytes differ between sticks,
+# and those live on the stick rather than in the closure.
+#
+# Label prefixes are deliberately disjoint from the installer stick's
+# (`loom-live-*`), because /dev/disk/by-partlabel is not unique -- with both
+# media attached, a shared name would resolve nondeterministically.
+#
+# The root is LUKS2, unlocked from 4096 raw bytes on the USB stick's `loom-key`
+# partition. The stick therefore has to stay plugged in. If it is missing,
+# systemd stage 1 falls back to prompting for the recovery passphrase that the
+# installer enrolled in keyslot 1.
+#
+# With `--lock-key` those 4096 bytes are not on the partition directly: the
+# partition is a LUKS2 container of its own, key-store.nix adds an initrd unit
+# that asks for its passphrase and leaves the bytes on a ramfs, and `keyFile`
+# below names that file instead. Everything else here is identical either way --
+# it is the same 4096 bytes at the same offset, reached by a different path.
+#
+# Stage 1 is the only place that *needs* the key, but it is no longer the only
+# place that looks at it: key-guard.nix keeps watching the same device for as
+# long as the box runs, and powers it off when the key goes away. The three
+# values below come from there so the initrd and the guard cannot name
+# different devices.
+{ config, lib, ... }:
+let
+  guard = config.loom.keyGuard;
+  keyStore = config.loom.keyStore;
+in
+{
+  # ---------------------------------------------------------------------------
+  # Root encryption
+  #
+  # systemd initrd rather than the scripted one, deliberately: it makes
+  # systemd-cryptsetup-generator emit `Requires=` + `After=` on the key device's
+  # .device unit, so boot blocks until slow USB enumeration finishes and fails
+  # closed if the stick is absent. The scripted initrd instead polls for a
+  # hard-coded 10 seconds, which is a coin flip on USB.
+  # ---------------------------------------------------------------------------
+  boot.initrd.luks.devices."cryptroot" = {
+    device = guard.rootDevice;
+    # The stick's partition, or -- when it is a passphrase-locked container --
+    # the ramfs file key-store.nix's unit unlocks it into, ordered before this
+    # unit runs. Both hold the same 4096 bytes at offset 0, which is why the two
+    # lines below are the same either way.
+    keyFile = if keyStore.enable then keyStore.plainKeyFile else guard.keyDevice;
+    keyFileSize = guard.keyBytes;
+    keyFileOffset = 0;
+    allowDiscards = true;
+
+    # Two options are deliberately NOT set here:
+    #   keyFileTimeout     - would downgrade the above Requires= to Wants=,
+    #                        turning a missing stick into a silent boot.
+    #   fallbackToPassword - implied by systemd stage 1, and asserted to be
+    #                        false there. The recovery prompt happens anyway.
+  };
+
+  # USB enumeration is slow; this is the budget before boot gives up and asks
+  # for the recovery passphrase instead.
+  boot.initrd.systemd.settings.Manager.DefaultDeviceTimeoutSec = "60s";
+
+  # Which of the two ways in was taken, recorded where stage 2 can read it.
+  #
+  # key-guard.nix powers a box off that cannot arm within its deadline, and
+  # that must not catch a box unlocked by the recovery passphrase: such a box
+  # has no stick, never arms by design, and the console is the only way into
+  # it. A stick that opened the root is still enumerated once it has, so
+  # looking for the node after the unlock tells the two apart.
+  #
+  # Ordering only, never `requires`: waiting on the key's .device unit would
+  # cost a recovery boot the whole device timeout above.
+  boot.initrd.systemd.services.loom-key-witness = {
+    description = "Record that the key stick unlocked this boot";
+    wantedBy = [ "initrd.target" ];
+    after = [ "systemd-cryptsetup@cryptroot.service" ];
+    # A DefaultDependencies=no unit has to name both shutdown targets in
+    # `before` and `conflicts` or it is left running into the switch-root.
+    before = [
+      "initrd-switch-root.target"
+      "shutdown.target"
+    ];
+    conflicts = [
+      "initrd-switch-root.target"
+      "shutdown.target"
+    ];
+    unitConfig.DefaultDependencies = "no";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    # PATH is /bin:/sbin in the initrd, which carries coreutils. /run is kept
+    # across the switch-root, which is what makes this readable in stage 2.
+    script = ''
+      # Looked for repeatedly rather than once. The node is probed *after* the
+      # unlock, so a stick that is pulled -- or that merely re-enumerates -- in
+      # the seconds between systemd-cryptsetup finishing and this running left no
+      # witness at all, and `deadline_applies` then answered false for the whole
+      # boot: the box ran indefinitely on an unlocked dm-crypt mapping with
+      # nothing watching the key, which is the gap key-guard.nix exists to close,
+      # while the banner said "idle -- no USB key present" exactly as it does for
+      # a legitimate recovery-passphrase boot.
+      #
+      # Still a probe rather than a flag set by the unlock itself: "the key node
+      # is there" is what tells a stick boot from a recovery boot, and a marker
+      # written before the unlock would also be written on a box whose stick
+      # carries the *wrong* key -- where the operator types the passphrase and
+      # the guard must not then apply its deadline.
+      for _ in $(seq 20); do
+          node="$(readlink --canonicalize ${lib.escapeShellArg guard.keyDevice} 2>/dev/null || true)"
+          if [ -b "$node" ]; then
+              mkdir --parents ${lib.escapeShellArg (builtins.dirOf guard.witnessFile)}
+              : >${lib.escapeShellArg guard.witnessFile}
+              exit 0
+          fi
+          sleep 0.5
+      done
+    '';
+  };
+
+  fileSystems."/" = {
+    device = "/dev/mapper/cryptroot";
+    fsType = "ext4";
+    options = [ "noatime" ];
+  };
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-partlabel/loom-esp";
+    fsType = "vfat";
+    options = [ "umask=0077" ];
+  };
+
+  # vm.swappiness is pinned to 1 for Elasticsearch's benefit anyway.
+  swapDevices = [ ];
+
+  boot.initrd.systemd.enable = true;
+
+  # `usb_storage` and `uas` are NOT part of boot.initrd.includeDefaultModules.
+  # They are already needed here so that the later LUKS-key-on-USB milestone
+  # does not fail in a way that looks identical to a missing key.
+  boot.initrd.availableKernelModules = [
+    "usb_storage"
+    "uas"
+    "xhci_pci"
+    "nvme"
+  ]
+  ++ config.loom.platform.extraInitrdModules;
+
+  boot.loader.systemd-boot = {
+    enable = true;
+    # The ESP is modest and the initrds are not.
+    configurationLimit = 3;
+    # How wide the console ends up being is decided here, before Linux starts.
+    #
+    # branding.nix picks a 6-pixel font to get more columns out of the panel,
+    # but that only divides whatever framebuffer the firmware hands over: a box
+    # left in a 1024x768 GOP mode caps at 170 columns no matter what font is
+    # loaded. `max` asks the firmware for its largest mode, and Linux inherits
+    # whatever was last set. NixOS defaults this to "keep", which takes the
+    # firmware's own default -- frequently the smallest one it has.
+    #
+    # There is deliberately no `video=` to go with it. On a box with a real KMS
+    # driver the default is already the panel's preferred mode, so naming a
+    # resolution could only pin a 4K panel lower; and where the display is
+    # simpledrm on a firmware framebuffer, `video=` cannot change the mode at
+    # all. It is a way down from native, not a way up.
+    consoleMode = "max";
+  };
+  # Appliance firmware: the loader is placed on the ESP directly and the boot
+  # entry is managed by the installer, so there is no need to write EFI vars on
+  # every rebuild.
+  #
+  # It does more work than that now. `loom-promote-boot-entry` (modes.nix) runs
+  # the bootloader builder again at the end of first-time setup, and this option
+  # is what puts `--no-variables` on the `bootctl` calls it makes -- so that run
+  # cannot disturb the `Loom appliance` NVRAM entry, or the boot order, that
+  # `fix_boot_order` (installer/loom_installer/install.py) set at install time.
+  boot.loader.efi.canTouchEfiVariables = false;
+  # Generous on purpose, though no longer for the reason it started as.
+  #
+  # Nobody has to interrupt this menu any more: the installer selects the
+  # first-time-setup entry, and setup promotes run mode back when it finishes, so
+  # the default is always the entry that should boot. What survives is the other
+  # half of the original argument -- on a box whose display only wakes up part
+  # way through firmware init, five seconds can elapse before the menu is even
+  # visible -- and it now matters more rather than less. Once setup has removed
+  # its own entry this menu is the only route to `Reboot Into Firmware
+  # Interface`, which is how the radios get disabled in firmware and how the boot
+  # order is repaired. Shortening it would quietly make that unreachable on
+  # exactly the boxes that are slowest to show a picture.
+  #
+  # The appliance reboots rarely and an operator is normally standing there, so
+  # the wait costs little.
+  boot.loader.timeout = 30;
+}

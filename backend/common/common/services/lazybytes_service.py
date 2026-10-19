@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from io import SEEK_END, BytesIO
+from io import SEEK_END, BufferedReader, BytesIO
 from mmap import PROT_READ, mmap
 from tempfile import (
     NamedTemporaryFile,
@@ -19,6 +19,7 @@ from minio import Minio
 from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from common.services.s3_range_reader import S3RangeReader
 from common.settings import settings
 from common.utils.flush_s3_bucket import flush_s3_bucket
 from common.utils.generator import FileLikeStream, bytecount_lte
@@ -207,6 +208,18 @@ class LazyBytesService(ABC, Generic[_Tag]):
     def get_total_size_bytes(self) -> int:
         """Get total size of all stored lazybytes in bytes."""
 
+    def size(self, lazy_bytes: "LazyBytes[_Tag]") -> int:
+        """How many bytes the object holds, without transferring it.
+
+        `load_seekable` is a range reader, so seeking to the end is a `stat_object`
+        rather than a download -- which is the difference between asking how large an
+        archive is and paying for it.
+        """
+        if lazy_bytes.embedded_data is not None:
+            return len(lazy_bytes.embedded_data)
+        with self.load_seekable(lazy_bytes) as source:
+            return source.seek(0, 2)
+
     def exists(self, lazy_bytes: "LazyBytes[_Tag]") -> bool:
         """Returns True if the data is available (embedded or present in the
         service)."""
@@ -225,6 +238,33 @@ class LazyBytesService(ABC, Generic[_Tag]):
     @abstractmethod
     def _load_to_generator(self, service_id: Any) -> Generator[bytes, None, None]:
         """Loads the data to the generator."""
+
+    @abstractmethod
+    def _load_seekable(self, service_id: Any) -> IO[bytes]:
+        """Returns a seekable, read-only view of the data without materialising it."""
+
+    @contextmanager
+    def load_seekable(
+        self, lazy_bytes: "LazyBytes[_Tag]"
+    ) -> Generator[IO[bytes], None, None]:
+        """Yield a seekable, read-only view of the data.
+
+        The counterpart to `load_file`, and the difference is the whole point:
+        **`load_file` materialises, `load_seekable` does not.** `load_file` transfers
+        every byte and writes a second full copy into `tempfile_dir`; this serves reads
+        from range requests as they are asked for.
+
+        Use this for anything that inspects *structure* -- a zip central directory, a
+        container header, a magic number -- where the answer lives in a few kilobytes of
+        a possibly enormous object. Use `load_file` only when a real file on disk is
+        required, typically to hand to an external tool.
+        """
+        if lazy_bytes.embedded_data is not None:
+            with BytesIO(lazy_bytes.embedded_data) as source:
+                yield source
+        else:
+            with self._load_seekable(lazy_bytes.service_id) as source:
+                yield source
 
     @contextmanager
     def _load_mmap(self, service_id: Any) -> Generator[mmap, None, None]:
@@ -413,6 +453,17 @@ class S3LazyBytesService(LazyBytesService[_Tag]):
             response.close()
             response.release_conn()
 
+    def _load_seekable(self, service_id: Any) -> IO[bytes]:
+        # One HEAD to learn the size. LazyBytes carries no size of its own and
+        # adding one would change a model that is serialised into task arguments.
+        size = self._client.stat_object(self._bucket, str(service_id)).size or 0
+        # BufferedReader for two reasons: it coalesces the many tiny reads a
+        # caller like zipfile issues on top of the reader's block cache, and it
+        # is what makes this a plain binary file object to mypy.
+        return BufferedReader(
+            S3RangeReader(self._client, self._bucket, str(service_id), size)
+        )
+
     def flush(self, min_age: timedelta | None = None):
         flush_s3_bucket(self._client, self._bucket, min_age=min_age)
 
@@ -482,7 +533,12 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
         self._counter = 0
 
     def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
-        service_id = len(self._storage)
+        # `_get_service_id` rather than `len(self._storage)`, which is not monotonic:
+        # after a delete, the next store reuses the freed id and silently aliases a
+        # live LazyBytes onto someone else's bytes. That matters now that the archive
+        # router deletes mid-flow, and because `stored_objects` (a `len` over this
+        # dict) is what the router's tests use as their leak assertion.
+        service_id = self._get_service_id()
         self._storage[service_id] = b"".join(data)
         return service_id
 
@@ -502,6 +558,9 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
 
     def _load_to_generator(self, service_id: Any) -> Generator[bytes, None, None]:
         yield self._storage[service_id]
+
+    def _load_seekable(self, service_id: Any) -> IO[bytes]:
+        return BytesIO(self._storage[service_id])
 
     def flush(self, min_age: timedelta | None = None):
         # InMemoryLazyBytesService doesn't track timestamps, so min_age is ignored

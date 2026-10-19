@@ -7,13 +7,10 @@ from common.archive.archive_repository import (
     ArchiveNotFoundException,
     ArchiveRepository,
 )
-from common.services.lazybytes_service import (
-    FileStorageLazyBytes,
-    FileStorageTag,
-    LazyBytesService,
-)
+from common.services.lazybytes_service import FileStorageTag, LazyBytesService
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import (
+    ArchiveImportRequest,
     TaskSchedulingService,
     UpdateArchiveRequest,
 )
@@ -43,9 +40,9 @@ class ArchiveSchedulingService:
 
         return archive
 
-    def index_archive(self, file_content: FileStorageLazyBytes) -> None:
+    def index_archive(self, request: ArchiveImportRequest) -> None:
         """Dispatch an archive import task directly from file storage."""
-        self._task_scheduling_service.index_archive(file_content)
+        self._task_scheduling_service.index_archive(request)
 
     def update_archive(self, archive_id: UUID, request: UpdateArchiveRequest) -> None:
         """Dispatch an update for an existing archive."""

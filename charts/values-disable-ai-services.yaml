@@ -3,9 +3,17 @@
 # Use this when you are not working on AI-related functionality
 # (summarization, translation, embeddings) and want to skip deploying
 # those services to speed up startup and reduce resource usage.
-# Note that any tasks depending on these services will fail.
 #
 # Pass --disable-ai to up.sh to apply this file automatically.
 #
 ollama:
   enabled: false
+
+# Embedding defaults to on, so without this every indexed file would retry
+# against an Ollama that is not there until it lands in the graveyard queue.
+# Auto-tagging is chained inside the embedding task, but is named explicitly so
+# the coupling is not relied on. Translate, summarize and image description
+# already default to skipped.
+pipeline:
+  skip_embedding_while_indexing: true
+  skip_auto_tag_file_while_indexing: true

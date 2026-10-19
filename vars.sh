@@ -42,15 +42,53 @@ if [[ ! -r "${LOOM_VALUES_FILE}" ]]; then
 fi
 
 LOOM_DOMAIN="$(yq --raw-output '.domain' "${LOOM_VALUES_FILE}")"
+
+# The chat model the appliance console pins itself to (nixos/console.nix's
+# loom-chat, via cicd/build_appliance_image.sh). Read out of the chart for the
+# same reason the hostnames above are: it is not a free choice, and a second
+# literal is a second thing to keep in step with nothing checking it.
+#
+# It has to be the model the workers use. An air-gapped box only ever has the
+# models baked into the ollama image, and the production target of
+# ollama/Dockerfile.models pulls exactly `_llmDefaults.model` plus the embedding
+# model -- so pointing the console anywhere else gives a pane that cannot
+# answer, and naming a second model that *is* present would be worse: ollama
+# would load it and evict the workers' one mid-index.
+#
+# That Dockerfile states its model list as a literal `ARG LLM_MODELS`, so the
+# agreement is not structural. cicd/check_ollama_models.sh asserts it, as a git
+# hook on either file -- the same arrangement cicd/check_chart_hostnames.sh has.
+LOOM_CHAT_MODEL="$(yq --raw-output '._llmDefaults.model' "${LOOM_VALUES_FILE}")"
+
+# The address the minikube node has to come up on. up.sh pins the node to it
+# with `minikube start --static-ip` and asserts it afterwards; the appliance
+# build bakes the same value into /etc/hosts and into the DNAT chain that fronts
+# the box.
+#
+# Read out of the chart because `kubernetes.api` is what
+# charts/templates/common/networkpolicy.yaml renders into the `-allow-k8s-api`
+# ipBlock, and that policy is matched after kube-proxy has rewritten
+# 10.96.0.1:443 to the node. The node address is therefore already stated in the
+# policy literally, and a second statement of it here would be a way for a
+# cluster and its own egress rules to disagree -- which costs every pod in the
+# namespace its API server, silently, because Calico drops rather than rejects.
+LOOM_MINIKUBE_IP="$(yq --raw-output '.kubernetes.api' "${LOOM_VALUES_FILE}")"
+
 # Both halves of `hostnames`: they differ in how they are served -- `extra` has
 # no route naming it and is told apart by entrypoint -- but not in how they are
 # named, so both need a hosts entry. Read, then sorted, in two steps rather than
 # a pipeline, so `set -e` still sees yq fail.
 #
+# `portal` is the exception, and the one entry nothing serves at all: it is in
+# `hostnames.extra` only so the pre-install Job puts it in the certificate's
+# subjectAltName, for the appliance's own nginx. So every non-appliance `up`
+# writes a hosts entry for a name Traefik has no router for, which is harmless
+# and is the one case the paragraph above does not describe.
+#
 # Sorted, so the list is a set rather than an order somebody has to maintain.
-# The one place the order is visible is cicd/chrome_wrapped.sh, which opens a
-# tab per entry: the focused first tab is now api.loom, where the hand-written
-# array this replaced began with rabbit.loom.
+# Nothing depends on the order any more: cicd/chrome_wrapped.sh used to open a
+# tab per entry, which made the first one the focused tab, and now opens the
+# frontend alone.
 LOOM_HOSTS_RAW="$(yq --raw-output '.hostnames.ingress[], .hostnames.extra[]' "${LOOM_VALUES_FILE}")"
 LOOM_HOSTS_RAW="$(sort --unique <<< "${LOOM_HOSTS_RAW}")"
 
@@ -58,6 +96,24 @@ LOOM_HOSTS_RAW="$(sort --unique <<< "${LOOM_HOSTS_RAW}")"
 # resolves is worth failing on here rather than at the first curl.
 if [[ -z "${LOOM_DOMAIN}" || "${LOOM_DOMAIN}" == "null" || -z "${LOOM_HOSTS_RAW}" ]]; then
     echo >&2 "[!] Error: could not read 'domain' and 'hostnames' from"
+    echo >&2 "    ${LOOM_VALUES_FILE}"
+    exit 1
+fi
+
+# Same check, separately, because this one is only read by the appliance build
+# and the failure it produces there is a console pane that cannot answer rather
+# than anything that looks like a missing chart value.
+if [[ -z "${LOOM_CHAT_MODEL}" || "${LOOM_CHAT_MODEL}" == "null" ]]; then
+    echo >&2 "[!] Error: could not read '_llmDefaults.model' from"
+    echo >&2 "    ${LOOM_VALUES_FILE}"
+    exit 1
+fi
+
+# Again separately, because an empty value does not look like a missing chart
+# value where it lands: it starts minikube with an empty --static-ip and renders
+# an ipBlock of `/32`.
+if [[ -z "${LOOM_MINIKUBE_IP}" || "${LOOM_MINIKUBE_IP}" == "null" ]]; then
+    echo >&2 "[!] Error: could not read 'kubernetes.api' from"
     echo >&2 "    ${LOOM_VALUES_FILE}"
     exit 1
 fi

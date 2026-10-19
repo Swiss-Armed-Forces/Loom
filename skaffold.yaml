@@ -177,24 +177,7 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
-    # NOTE: index 14 — Ollama runtime (ROCm/AMD)
-    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
-      context: ollama
-      # ROCm base images (ollama/ollama:<ver>-rocm) are published for linux/amd64
-      # only, so this artifact is always built for amd64 regardless of the host
-      # architecture or the requested --platform.
-      platforms: ["linux/amd64"]
-      docker:
-        dockerfile: Dockerfile.runtime
-        buildArgs:
-          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
-          GPU_VARIANT: "rocm"
-        cacheFrom:
-          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm"
-      hooks:
-        after:
-          - command: ["./cicd/tag_latest.sh"]
-    # NOTE: index 15 — must stay here; patched by the dev profile (target)
+    # NOTE: index 14 — must stay here; patched by the dev profile (target)
     # Ollama models (single image, dev/prod via target)
     - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models
       context: ollama
@@ -294,6 +277,27 @@ build:
       hooks:
         after:
           - command: ["./cicd/tag_latest.sh"]
+    # NOTE: index 23 — Ollama runtime (ROCm/AMD). MUST STAY LAST: the arm64
+    # profile removes it by index, and a JSON-patch removal renumbers every
+    # artifact after it. Last is the only position where that is a no-op, which
+    # is why this one sits apart from the other Ollama images rather than beside
+    # them.
+    - image: registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm
+      context: ollama
+      # ROCm base images (ollama/ollama:<ver>-rocm) are published for linux/amd64
+      # only, so this artifact is always built for amd64 regardless of the host
+      # architecture or the requested --platform.
+      platforms: ["linux/amd64"]
+      docker:
+        dockerfile: Dockerfile.runtime
+        buildArgs:
+          DOCKER_REGISTRY: "{{or .CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX \"docker.io\"}}"
+          GPU_VARIANT: "rocm"
+        cacheFrom:
+          - "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm"
+      hooks:
+        after:
+          - command: ["./cicd/tag_latest.sh"]
 
 # Production manifests configuration as default
 manifests:
@@ -304,7 +308,9 @@ manifests:
         chartPath: charts
         valuesFiles:
           - charts/values.yaml
+          - charts/values-user.yaml        # lowest override layer; loses to every up.sh flag
           - charts/values-up-flags.yaml   # runtime, written by up.sh; {} when no flags active
+          - charts/values-appliance.yaml  # facts about an appliance box; empty elsewhere
           - charts/values-overwrites.yaml  # always highest priority
         setValueTemplates:
           # Skaffold's post-renderer does not process Helm hook resources, so image tags used
@@ -375,12 +381,15 @@ profiles:
               dest: /code
       # Patch ollama models artifact for dev target
       - op: replace
-        path: /build/artifacts/15/docker/target
+        path: /build/artifacts/14/docker/target
         value: dev
       # Patch manifests for development
       - op: replace
         path: /manifests/helm/releases/0/name
         value: development
+      # Index 1 — must stay here: it puts the dev profile directly above the
+      # defaults and below charts/values-user.yaml, so a value set by hand or by
+      # `build-appliance-image --values` still wins over the profile.
       - op: add
         path: /manifests/helm/releases/0/valuesFiles/1
         value: charts/values-development.yaml
@@ -454,6 +463,32 @@ profiles:
           # and the stack to become ready.
           statusCheckDeadlineSeconds: 21600  # = 6h
           tolerateFailuresUntilDeadline: true
+
+  # There is no arm64 ROCm image to build, and skaffold treats that as fatal for
+  # every command rather than for the build alone.
+  #
+  # `up.sh` exports SKAFFOLD_PLATFORM=linux/<host arch> (set_docker_platform),
+  # and skaffold checks each artifact's `platforms` against it while *creating
+  # the runner* -- before `--build-image=[]`, which offline mode passes to build
+  # nothing at all, gets a say. So on any arm64 host every skaffold invocation
+  # dies with "build target platforms \"linux/arm64\" do not match platform
+  # constraints [\"linux/amd64\"] defined for artifact .../ollama-runtime-rocm",
+  # including the DGX Spark appliance, whose GPU is NVIDIA and which would never
+  # have wanted this image.
+  #
+  # Activated on TARGETARCH, which `up.sh` exports beside SKAFFOLD_PLATFORM
+  # (set_docker_platform) and `cicd/build.sh` exports as its first step, so this
+  # needs no flag anywhere and follows the host it runs on. Both, because
+  # neither covers the other: `build` never goes near up.sh, and a skaffold
+  # invoked by hand with neither exported falls back to amd64 and emulates.
+  - name: arm64
+    activation:
+      - env: TARGETARCH=arm64
+    patches:
+      # The last artifact, which is why it is the last artifact. Removing any
+      # other index would renumber the ones the dev profile patches by index.
+      - op: remove
+        path: /build/artifacts/23
 
   - name: prod
     activation:

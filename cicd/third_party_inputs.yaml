@@ -123,10 +123,14 @@ images:
     not_keyed:
       # The entrypoint, which is first-party source.
       - ollama_wrapper.py
+      # The NVML binding it reads the GPU through, likewise first-party source:
+      # it calls libnvidia-ml through ctypes and installs nothing.
+      - nvml.py
 
   registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm:
     not_keyed:
       - ollama_wrapper.py
+      - nvml.py
 
   registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models:
     not_keyed:

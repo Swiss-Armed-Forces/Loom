@@ -336,7 +336,7 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Return the archive encryption master key, or null if not configured.
+     * Return the archive encryption master key, or null when there is not a real one.  Null means \"this deployment was never given a key\", which is not the same as \"the field is unset\": `Settings.parse_archive_enc_master_key` substitutes the published all-zero `FIXED_AES_KEY` for an absent value, so the field is never None and handing its hex back would present 64 zeros as if it were a secret. Anyone who exported an archive on that key and took this response as proof of encryption would be holding plaintext.
      * Get Encryption Key
      */
     async getEncryptionKeyV1ArchiveEncryptionKeyGetRaw(
@@ -352,7 +352,7 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Return the archive encryption master key, or null if not configured.
+     * Return the archive encryption master key, or null when there is not a real one.  Null means \"this deployment was never given a key\", which is not the same as \"the field is unset\": `Settings.parse_archive_enc_master_key` substitutes the published all-zero `FIXED_AES_KEY` for an absent value, so the field is never None and handing its hex back would present 64 zeros as if it were a secret. Anyone who exported an archive on that key and took this response as proof of encryption would be holding plaintext.
      * Get Encryption Key
      */
     async getEncryptionKeyV1ArchiveEncryptionKeyGet(
@@ -414,7 +414,7 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Import files from a loom archive (.zip or .loom).
+     * Import files from a loom archive (.zip or .loom).  A blob that turns out not to be an importable archive is indexed as an ordinary file rather than discarded, which is why a name and a source travel with it -- see worker.create_archive.index_archive.
      * Import Archive
      */
     async importArchiveV1ArchiveImportPostRaw(
@@ -435,7 +435,7 @@ export class ArchivesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Import files from a loom archive (.zip or .loom).
+     * Import files from a loom archive (.zip or .loom).  A blob that turns out not to be an importable archive is indexed as an ordinary file rather than discarded, which is why a name and a source travel with it -- see worker.create_archive.index_archive.
      * Import Archive
      */
     async importArchiveV1ArchiveImportPost(

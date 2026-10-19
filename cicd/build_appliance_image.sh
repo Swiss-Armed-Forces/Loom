@@ -1,0 +1,2289 @@
+#!/usr/bin/env bash
+# Builds, and optionally flashes, a Loom appliance USB installer image.
+set -euo pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+CONTEXT_DIR=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
+
+# The helpers the appliance scripts share: `check_command`, `platform_system`
+# and `resolve_loom_values`. Sourced rather than restated, the same way
+# .gitlab-ci.yml sources cicd/ci_helpers.sh -- `platform_system` above all, so
+# that adding a platform is one edit rather than four with nothing to catch a
+# missed one.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=appliance_common.sh
+source "${SCRIPT_DIR}/appliance_common.sh"
+
+# nixpkgs comes from devenv's `inputs.nixpkgs-stable`, passed as --nixpkgs by
+# the build-appliance-image devenv script. That keeps devenv.lock the single
+# nixpkgs pin in this repository. No default: there is nothing sensible to fall
+# back to, and validate_environment says so rather than letting nix fail later.
+NIXPKGS=""
+
+# nixos-hardware, by the same route and for the same reason. It carries the
+# upstream profile for the x86 platforms -- see nixos/platforms/<id>.nix -- and
+# is deliberately not optional: a stick built without it would differ silently
+# from every other stick, which is the failure this directory is built to avoid.
+NIXOS_HARDWARE=""
+
+OUTPUT_DIR="${CONTEXT_DIR}/.appliance-build"
+
+# Which box this stick is for. The nix system follows from it unless --system
+# says otherwise; see nixos/platforms/ for what else each one carries.
+PLATFORM="spark"
+# The platform list and its validation live in cicd/appliance_common.sh --
+# see KNOWN_PLATFORMS and require_platform there.
+NIX_SYSTEM=""
+# The chosen platform's GPU vendor, resolved once in Main below rather than at
+# each use: calling platform_gpu inside a condition would disable `set -e` in
+# it, the same trap --platform avoids by matching against KNOWN_PLATFORMS.
+PLATFORM_GPU=""
+# The address the minikube node comes up on, and so what every `*.loom` name
+# resolves to on the box and what the DNAT chain sends a visitor at. Filled in by
+# generate_loom_hosts from `kubernetes.api` in the *embedded tag's*
+# charts/values.yaml -- the same file whose `-allow-k8s-api` NetworkPolicy allows
+# pods to reach the API server on that address. Not a flag: the three have to
+# agree, and only the chart can make them.
+MINIKUBE_IP=""
+
+# Empty means "let the platform's netMatch pick the interface, and rename it to
+# loom0". Only set by --interface, to override that match with a literal name.
+LOOM_INTERFACE=""
+
+# The optional access point (nixos/wifi.nix). Off by default: an appliance is
+# an island reached over a cable, and --wifi is an explicit decision to extend
+# it to everyone in radio range. SSID and passphrase are generated below unless
+# given, and are printed by `report` -- they are baked into the closure, so they
+# are also world-readable in /nix/store and present on the stick.
+ENABLE_WIFI=false
+WIFI_SSID=""
+WIFI_PSK=""
+# Empty keeps the radio on 2.4GHz under regulatory domain 00. Setting a country
+# code moves it to 5GHz, which domain 00 forbids an AP from beaconing on at all.
+WIFI_COUNTRY=""
+# As LOOM_INTERFACE, but for the radio.
+WIFI_INTERFACE=""
+
+# 4096 bytes of /dev/urandom, matching boot.initrd.luks.devices.keyFileSize.
+KEY_BYTES=4096
+KEY_PARTLABEL="loom-key"
+# How long flash_image waits for that partition to become visible before giving
+# up. Generous, because the cost of being impatient is a stick with no key on
+# it and the cost of waiting is a few seconds on the one run where it is slow.
+KEY_PARTITION_TIMEOUT=30
+
+# Put those 4096 bytes inside a LUKS2 container on the stick rather than writing
+# them raw, with a generated word passphrase over it (nixos/key-store.nix). Off
+# by default, because it costs unattended boot: the box stops at a prompt in
+# stage 1 and does not come back on its own after a power cut.
+#
+# What it buys is that the stick stops being a bearer token. Unlocked, holding it
+# is enough; locked, it is one factor of two. See Documentation/appliance.md.
+LOCK_KEY=false
+# Deploy Loom with mutual TLS, and run the loopback proxy that gets the box's own
+# clients through it (nixos/mtls.nix). Off by default: with it every ingress
+# refuses a client that presents no certificate, which is a decision about who
+# may reach the box rather than a default worth making for anybody.
+REQUIRE_CLIENT_CERT=false
+
+# Helm values the operator wants this box deployed with: --values FILE and
+# --set path=value, merged in that order into charts/values-user.yaml of the
+# embedded checkout (nixos/repo.nix).
+#
+# That file is the *lowest* of the override layers -- skaffold applies it before
+# charts/values-up-flags.yaml -- so nothing given here can break a decision the
+# platform or an up.sh flag made. It is for everything the chart exposes and the
+# appliance has no opinion about: OCR languages, the pipeline's limits, sizing.
+USER_VALUES_FILES=()
+USER_VALUES_SETS=()
+# Accept a path the tag's charts/values.yaml does not already carry. Off by
+# default because there is no values.schema.json: helm takes an unknown key
+# without a word, so a typo becomes a stick that quietly does nothing it was
+# asked for. Needed for the chart's free-form maps -- labels, annotations,
+# nodeSelector -- where a new key is the point.
+USER_VALUES_ALLOW_NEW_KEYS=false
+# Skip the `helm template` dry-run over the merged values. The check is offline
+# and client-side; this exists for a tag whose chart cannot be rendered by the
+# helm on this host.
+USER_VALUES_SKIP_CHECK=false
+# Filled in by resolve_user_values from the two arrays above.
+USER_VALUES_JSON="{}"
+USER_VALUES_SOURCES=""
+# Values that decide what the box *is*, refused with no way round it. Each one
+# has something outside the chart that has to agree with it:
+#
+#   kubernetes.api   the node address, which up.sh pins with --static-ip, which
+#                    /etc/hosts and the DNAT chain are built from, and which the
+#                    -allow-k8s-api NetworkPolicy allows pods to reach
+#   hostnames        what the pre-install Job puts in the certificate's
+#                    subjectAltName, and what the box resolves to itself
+#   image.registry   where the images come from, on a box that has none left to
+#                    fetch
+#   intakeStorage.s3Storage.bucketName
+#                    where USB ingest writes. `nixos/usb-ingest.nix` says it in
+#                    as many words -- "Must match `intake_storage.bucket_name`
+#                    in backend/common/common/settings.py" -- and the appliance
+#                    hardcodes `loom-intake` in two further places. `init_s3.py`
+#                    creates buckets from the *setting*, so a one-character typo
+#                    here means the bucket never exists, `wait_for_cluster` gates
+#                    on `mc ls loom/loom-intake` and never succeeds, and after an
+#                    hour every stick is refused on the console
+#   intakeStorage.s3Storage.host
+#                    the same shape, against `endpoint = "https://s3.loom"`
+RESERVED_VALUE_PATHS=(
+    kubernetes.api
+    hostnames
+    image.registry
+    intakeStorage.s3Storage.bucketName
+    intakeStorage.s3Storage.host
+)
+
+# Seven EFF words is ~90 bits, which is more than argon2id needs to be out of
+# reach and still short enough to read off a printout and type at a console.
+#
+# The default is a constant of its own because `resolve_lock_key` compares
+# against it to tell "not given" from "given", the way the wifi flags use "" --
+# a count has no empty value to use instead.
+LOCK_KEY_WORDS_DEFAULT=7
+LOCK_KEY_WORDS="${LOCK_KEY_WORDS_DEFAULT}"
+# Below this the passphrase stops being the strong half of the pair, and the
+# whole flag becomes theatre.
+LOCK_KEY_MIN_WORDS=6
+LOCK_KEY_OUT=""
+# What the container is opened as while it is being written, here on the build
+# host. Deliberately NOT nixos/key-store.nix's `mapping`, which is the name the
+# appliance opens it under: the two never coexist, and a distinct name means
+# flashing a stick on a machine that is itself running a Loom appliance -- or
+# flashing two sticks at once -- cannot collide with an open mapping.
+KEYSTORE_MAPPING="loom-keystore-flash"
+# Generated by generate_luks_key when LOCK_KEY is true, printed by `report`, and
+# never written anywhere but --lock-key-out. Unlike the WiFi PSK next door it
+# never reaches Nix and never reaches the stick.
+KEY_PASSPHRASE=""
+# `.` rather than the `-` that reads more naturally, because this string is typed
+# blind at a stage 1 prompt on a keyboard nobody here chose. `.` is the same
+# unshifted key on QWERTY and QWERTZ and is at least labelled on AZERTY; `-` is
+# none of those -- under a US map a Swiss `-` arrives as `/`, and a French one as
+# `6`. Six separators in a seven-word passphrase, so this one character decides
+# whether a Swiss operator can type it at all.
+LOCK_KEY_DELIMITER="."
+# Letters that move between Latin layouts, as an ERE for `grep -v`.
+#
+# y and z swap on QWERTZ, and 71% of unfiltered seven-word passphrases contain
+# one. Dropping them costs 12.92 -> 12.67 bits per word, so seven words are still
+# 88.7 bits -- nothing, against a passphrase that cannot be typed.
+#
+# Deliberately NOT extended to a/q/w/m, which is what AZERTY additionally moves:
+# that filter keeps only a third of the list, and with rejection sampling below
+# it would need about 1700 draws rather than about 4. An AZERTY deployment should
+# use --keymap, which fixes the recovery passphrase and the console with it.
+LOCK_KEY_FORBIDDEN="[yz]"
+# How many draws before giving up. ~29% of draws survive the filter, so four is
+# typical and a hundred is unreachable unless something is broken.
+LOCK_KEY_MAX_DRAWS=100
+
+# The console keymap for the box, the installer and stage 1 (nixos/keymap.nix).
+# Empty is the kernel's built-in US QWERTY, which is what every image was before
+# this existed.
+KEYMAP=""
+
+TAG=""
+# Let the default pick in resolve_tag consider `X.Y.Z-rcN` as well. Set by
+# --include-rc, and off by default because a release candidate is the normal top
+# of this repository's tag list between releases -- so "newest tag" would mean
+# "an rc" most of the time, and a stick built from one is indistinguishable from
+# the right one until somebody boots it and reads the version off the console.
+# Only the default pick is affected: --tag takes any tag that exists, rc or not.
+INCLUDE_RC=false
+SUBNET=""
+FLASH_DEVICE=""
+KEY_BACKUP=""
+# Whether `report` ran. See `atexit`.
+REPORTED=false
+# Build the CPU-only image for a platform that offloads to a GPU. Set by
+# --no-gpu; see the flag's own comment for when that is the right answer.
+DISABLE_GPU=false
+# Add a getty on ttyS0 to both the installer and the box it installs. Set by
+# --vm-serial, which exists for cicd/run_appliance_vm.sh and is refused
+# alongside --flash: an image built with this is for a VM, not for a stick.
+VM_SERIAL=false
+
+# Run an SSH server on the installed box, keyed to a keypair generated below.
+# Off by default and loudly announced when on: this is the one flag that takes
+# back "there is no remote access", which Documentation/appliance.md states as a
+# threat-model guarantee. See nixos/debug.nix.
+DEBUG_ACCESS=false
+# Where resolve_debug_key leaves the private half. Deliberately NOT cleaned up
+# by atexit -- see the comment there -- because it is the whole output of the
+# flag as far as the operator is concerned.
+DEBUG_KEY_DIR=""
+
+# The appliance's operator account. Must agree with `loomUser` in
+# nixos/default.nix, which is what decides the account that actually exists;
+# this is only what the generated ssh_config tells a client to ask for.
+LOOM_USER="loom"
+
+# Which out-link build_image writes and image_file then reads. A debug build
+# gets its own name so two images in one output directory cannot be confused,
+# and so `--out-link` never overwrites the other kind's symlink. Resolved in
+# Main, once --debug has been parsed.
+IMAGE_LINK=""
+
+ASSUME_YES=false
+ALLOW_CROSS=false
+VERBOSE=false
+SKIP=()
+
+WORK_DIR=""
+KEY_DIR=""
+
+# variables defined in vars.sh, here for shellcheck:
+LOOM_HOSTS_FQDN=()
+NAMESPACE=""
+LOOM_CHAT_MODEL=""
+LOOM_MINIKUBE_IP=""
+
+STEPS=(
+    validate_environment
+    fetch_tags
+    resolve_tag
+    resolve_subnet
+    resolve_wifi
+    resolve_lock_key
+    resolve_debug_key
+    prepare_workdir
+    prepare_repo
+    verify_repo
+    normalize_git_config
+    generate_loom_hosts
+    resolve_user_values
+    build_image
+    report
+)
+
+# Appended in Main when --flash is given.
+FLASH_STEPS=(
+    confirm_flash
+    generate_luks_key
+    flash_image
+    write_key_partition
+    verify_flash
+    backup_luks_key
+    backup_key_passphrase
+)
+
+#
+# Helpers
+#
+
+# Refuse a --skip-STEP naming something that is not a step.
+require_step(){
+    local candidate="${1}" step
+    for step in "${STEPS[@]}" "${FLASH_STEPS[@]}"; do
+        if [[ "${step}" == "${candidate}" ]]; then
+            return 0
+        fi
+    done
+    echo >&2 "[!] Error: --skip-${candidate} names no step."
+    echo >&2 "    Steps: ${STEPS[*]} ${FLASH_STEPS[*]}"
+    exit 1
+}
+
+# Whether this step was skipped, by exact name. Prints `yes` or nothing rather
+# than answering with an exit status: a function called in a condition has
+# `set -e` disabled for its whole body, which is the trap --platform's own
+# validation avoids the same way.
+step_skipped(){
+    local step
+    for step in ${SKIP[@]+"${SKIP[@]}"}; do
+        if [[ "${step}" == "${1}" ]]; then
+            printf 'yes'
+            return 0
+        fi
+    done
+}
+
+# The GPU vendor each platform offloads Ollama to, empty for the CPU-only ones.
+# Mirrors `gpuVendor` in the matching nixos/platforms/<id>.nix, which is the
+# authority -- this copy exists so that --no-gpu can reject a platform with
+# nothing to disable, and so the report below can say what the stick will do
+# without evaluating the closure to find out.
+platform_gpu(){
+    case "${1}" in
+        spark)  printf 'nvidia' ;;
+        evo-x2) printf 'amd'    ;;
+        nuc12)  printf ''       ;;
+        *)      return 1        ;;
+    esac
+}
+
+# What the `gpu` line of the report says. Three outcomes rather than a boolean,
+# because "this box has none" and "this box has one and you turned it off" are
+# different things to read back off a stick you are about to hand to someone.
+gpu_report(){
+    if [[ -z "${PLATFORM_GPU}" ]]; then
+        printf 'none (CPU-only platform)'
+    elif [[ "${DISABLE_GPU}" = true ]]; then
+        printf 'disabled by --no-gpu (%s available)' "${PLATFORM_GPU}"
+    else
+        printf '%s' "${PLATFORM_GPU}"
+    fi
+}
+
+#
+# Steps
+#
+
+validate_environment(){
+    local command host_arch free_gb
+
+    # `partx` and `blockdev` rather than `partprobe`: see flash_image for why
+    # parted is the wrong tool for re-reading an image-sized GPT on a larger
+    # stick. Both are util-linux, which `lsblk` already requires.
+    # `sgdisk` is deliberately absent: nothing in this script partitions
+    # anything -- `flash_image` dd's a whole image -- so requiring gptfdisk
+    # refused a build on a host that had no need of it. `findmnt` and `yq` are
+    # here instead: both are used on every run, and a host missing yq used to
+    # fetch the tags, prompt, clone and repack before failing, which is exactly
+    # what a preflight exists to prevent.
+    for command in git git-lfs nix-build jq yq lsblk findmnt dd sync udevadm \
+        partx blockdev sudo head cmp install file; do
+        check_command "${command}"
+    done
+
+    # Only under --lock-key, so an ordinary build does not acquire two
+    # dependencies for a flag it is not using.
+    if [[ "${LOCK_KEY}" = true ]]; then
+        check_command cryptsetup
+        check_command diceware
+    fi
+
+    # Where every secret this run may write is checked, for the reason stated on
+    # `assert_secret_path`: a path typo must cost nothing, and both of these are
+    # otherwise only touched after the stick has been written.
+    if [[ -n "${KEY_BACKUP}" ]]; then
+        assert_secret_path "${KEY_BACKUP}" "--key-backup"
+    fi
+    if [[ -n "${LOCK_KEY_OUT}" ]]; then
+        assert_secret_path "${LOCK_KEY_OUT}" "--lock-key-out"
+    fi
+
+    # Likewise, and the files are read here rather than in resolve_user_values so
+    # that a path typo costs nothing: that step runs after the tag has been
+    # fetched and the checkout prepared.
+    if [[ ${#USER_VALUES_FILES[@]} -gt 0 || ${#USER_VALUES_SETS[@]} -gt 0 ]]; then
+        check_command comm
+        if [[ "${USER_VALUES_SKIP_CHECK}" != true ]]; then
+            check_command helm
+        fi
+        local values_file
+        for values_file in "${USER_VALUES_FILES[@]}"; do
+            if [[ ! -r "${values_file}" ]]; then
+                echo >&2 "[!] Error: --values file not readable: ${values_file}"
+                exit 1
+            fi
+        done
+    fi
+
+    if [[ -z "${NIXPKGS}" ]]; then
+        echo >&2 "[!] Error: no nixpkgs given."
+        echo >&2 "    Run this through devenv: 'build-appliance-image' passes --nixpkgs for you."
+        echo >&2 "    To drive the script directly, pass --nixpkgs PATH yourself."
+        exit 1
+    fi
+    if [[ ! -e "${NIXPKGS}/nixos/lib/eval-config.nix" ]]; then
+        echo >&2 "[!] Error: '${NIXPKGS}' does not look like a nixpkgs checkout."
+        exit 1
+    fi
+
+    if [[ -z "${NIXOS_HARDWARE}" ]]; then
+        echo >&2 "[!] Error: no nixos-hardware given."
+        echo >&2 "    Run this through devenv: 'build-appliance-image' passes --nixos-hardware for you."
+        echo >&2 "    To drive the script directly, pass --nixos-hardware PATH yourself."
+        exit 1
+    fi
+    if [[ ! -e "${NIXOS_HARDWARE}/common/pc/ssd/default.nix" ]]; then
+        echo >&2 "[!] Error: '${NIXOS_HARDWARE}' does not look like a nixos-hardware checkout."
+        exit 1
+    fi
+
+    # Cross-building a NixOS closure through emulation is slow, and needs a
+    # binfmt handler that most hosts do not have, so refuse by default rather
+    # than appear to hang or die halfway with a confusing message.
+    host_arch="$(uname -m)"
+    if [[ "${ALLOW_CROSS}" != true && "${NIX_SYSTEM}" == "${host_arch}-linux" ]]; then
+        : # building natively
+    elif [[ "${ALLOW_CROSS}" != true ]]; then
+        echo >&2 "[!] Error: platform '${PLATFORM}' is ${NIX_SYSTEM}, but this host is ${host_arch}."
+        echo >&2 "    Build it on a ${NIX_SYSTEM} host, or pass --allow-cross."
+        echo >&2 "    Cross-building also needs an emulator for ${NIX_SYSTEM} on this host"
+        echo >&2 "    (on NixOS: boot.binfmt.emulatedSystems = [ \"${NIX_SYSTEM}\" ];)."
+        exit 1
+    fi
+
+    # git-lfs payloads must already be local: the appliance build has no network
+    # budget for fetching them, and up.sh:412 fails without them on the box.
+    local lfs_dir
+    lfs_dir="$(git -C "${CONTEXT_DIR}" rev-parse --path-format=absolute --git-common-dir)/lfs/objects"
+    if [[ ! -d "${lfs_dir}" ]]; then
+        echo >&2 "[!] Error: no git-lfs objects in this checkout."
+        echo >&2 "    Run: git lfs fetch --all"
+        exit 1
+    fi
+
+    install --directory "${OUTPUT_DIR}"
+
+    # Check the Nix store, not the output directory: the build happens in the
+    # store, and the two are routinely on different filesystems -- a big /home
+    # is no help when /nix is on a small root volume.
+    local store_dir="${NIX_STORE_DIR:-/nix/store}"
+    if [[ ! -d "${store_dir}" ]]; then
+        echo >&2 "[!] Error: no Nix store at ${store_dir}."
+        exit 1
+    fi
+    free_gb="$(df --output=avail --block-size=1G "${store_dir}" | tail --lines=1 | tr --delete ' ')"
+    if [[ "${free_gb}" -lt 20 ]]; then
+        echo >&2 "[!] Error: only ${free_gb} GB free on the filesystem holding ${store_dir};"
+        echo >&2 "    the image build needs about 20 GB there."
+        exit 1
+    fi
+
+    free_gb="$(df --output=avail --block-size=1G "${OUTPUT_DIR}" | tail --lines=1 | tr --delete ' ')"
+    if [[ "${free_gb}" -lt 5 ]]; then
+        echo >&2 "[!] Error: only ${free_gb} GB free at ${OUTPUT_DIR}; the image needs about 5 GB."
+        exit 1
+    fi
+}
+
+# Refresh the tag list the step below picks from. Without this the default is
+# only as fresh as whenever this checkout was last fetched, and a stale pick is
+# an expensive mistake to make quietly: an hour of build, and a stick that is
+# indistinguishable from the right one until somebody boots it and reads the
+# version off the console.
+#
+# Best-effort by design. A build host with no route to origin is a case this
+# script supports -- the tags it already has are real, and the image is built
+# from a local clone either way -- so an unreachable remote warns and carries
+# on. Pass --skip-fetch_tags to keep it from trying at all.
+fetch_tags(){
+    if [[ -n "${TAG}" ]]; then
+        # --tag already says which release this stick is. Fetching could not
+        # change that answer, only slow it down.
+        return
+    fi
+
+    if ! git -C "${CONTEXT_DIR}" remote get-url origin > /dev/null 2>&1; then
+        echo "[*] No 'origin' remote; using the tags in this checkout."
+        return
+    fi
+
+    echo "[*] Fetching tags from origin"
+    # No --prune-tags and no --force: a tag that moved or vanished upstream is
+    # not something to act on silently while preparing a release artefact.
+    if ! git -C "${CONTEXT_DIR}" fetch --tags --quiet origin; then
+        echo "[!] Could not reach origin. Falling back to the tags already in this"
+        echo "[!] checkout, which may be older than the newest release."
+    fi
+}
+
+resolve_tag(){
+    local answer tags newest
+
+    if [[ -n "${TAG}" ]]; then
+        if ! git -C "${CONTEXT_DIR}" rev-parse --verify --quiet "refs/tags/${TAG}" > /dev/null; then
+            echo >&2 "[!] Error: no such tag: ${TAG}"
+            echo >&2 "    prepare_repo clones this checkout, so the tag has to exist here and"
+            echo >&2 "    not only on the remote. Run: git -C '${CONTEXT_DIR}' fetch --tags"
+            exit 1
+        fi
+        return
+    fi
+
+    # Two things about this listing:
+    #
+    #   * It is NOT `git describe`, which returns the nearest *ancestor* tag and
+    #     so happily picks an ancient release when main has moved on.
+    #   * versionsort.suffix puts 1.3.0 above 1.3.0-rc9. Git's version sort
+    #     otherwise places a longer string above the prefix it extends, so every
+    #     release would be shadowed by its own last release candidate. That only
+    #     matters on the --include-rc path below, where both shapes are in play;
+    #     it is set here because this is the one listing either path reads.
+    tags="$(git -C "${CONTEXT_DIR}" -c versionsort.suffix=-rc tag --list --sort=-v:refname)"
+    if [[ -z "${tags}" ]]; then
+        echo >&2 "[!] Error: this repository has no tags."
+        echo >&2 "    The appliance runs Loom in offline mode, which requires a tagged checkout (up.sh:236)."
+        exit 1
+    fi
+    newest="$(head --lines=1 <<< "${tags}")"
+
+    if [[ "${INCLUDE_RC}" = true ]]; then
+        TAG="${newest}"
+        echo "[*] Newest tag: ${TAG}"
+    else
+        # The filter, not the sort, is what keeps release candidates out of the
+        # default. Sorting only decides which rc wins among rcs; the default is
+        # supposed to pick no rc at all. The repository's tags are exactly
+        # `X.Y.Z` and `X.Y.Z-rcN`, so matching the release shape is enough, and
+        # anything unforeseen is excluded rather than silently shipped.
+        #
+        # `|| true` because grep exits 1 on no match, which set -e would take
+        # as a failure -- but "no release tag" is a case handled just below.
+        TAG="$(grep --extended-regexp '^[0-9]+\.[0-9]+\.[0-9]+$' <<< "${tags}" | head --lines=1 || true)"
+        if [[ -z "${TAG}" ]]; then
+            echo >&2 "[!] Error: no release tag in this checkout; the newest tag is a"
+            echo >&2 "    release candidate (${newest})."
+            echo >&2 "    Release candidates are not built by default. Pass --include-rc"
+            echo >&2 "    to take ${newest}, or --tag to name a release outright."
+            exit 1
+        fi
+        echo "[*] Newest release: ${TAG}"
+        if [[ "${TAG}" != "${newest}" ]]; then
+            echo "[*] Skipping ${newest}: a release candidate. --include-rc takes it."
+        fi
+    fi
+
+    if [[ "${ASSUME_YES}" != true ]]; then
+        read -r -p "[?] Build the appliance from ${TAG}? [y/N] " answer
+        if [[ "${answer}" != "y" && "${answer}" != "Y" ]]; then
+            echo >&2 "[!] Aborted. Pass --tag to choose a different one."
+            exit 1
+        fi
+    fi
+}
+
+# The three octets every appliance address is built from, as `a.b.c`.
+#
+# Checked, because the obvious mistake builds a stick that serves nothing:
+# `--subnet 10.1.2.0` is natural -- `report` prints the value back as
+# `10.1.2.0/24` and the usage string says only "appliance subnet prefix" -- and
+# it yields `boxAddress = "10.1.2.0.1"`, a dnsmasq pool of `10.1.2.0.100-200`,
+# matching /etc/hosts entries and an nftables DNAT rule, none of which fail at
+# Nix eval because the address option is a plain string. Every other free-form
+# flag with a shape is checked: --platform, --wifi-ssid, --wifi-psk,
+# --lock-key-words.
+SUBNET_PATTERN='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
+
+validate_subnet(){
+    local octet
+
+    if [[ ! "${1}" =~ ${SUBNET_PATTERN} ]]; then
+        echo >&2 "[!] Error: --subnet takes the first THREE octets, e.g. 10.42.7"
+        echo >&2 "    Got: ${1}"
+        exit 1
+    fi
+    for octet in ${1//./ }; do
+        if (( octet > 255 )); then
+            echo >&2 "[!] Error: --subnet octet out of range: ${octet} in ${1}"
+            exit 1
+        fi
+    done
+}
+
+resolve_subnet(){
+    local a b
+
+    if [[ -n "${SUBNET}" ]]; then
+        validate_subnet "${SUBNET}"
+        return
+    fi
+
+    # Randomised so two boxes on one wire cannot collide, and so a visitor's own
+    # 10.0.0.0/24 or 192.168.1.0/24 does not either. 0 and 255 are avoided in
+    # both octets to keep the range unremarkable.
+    a="$(( (RANDOM % 254) + 1 ))"
+    b="$(( (RANDOM % 254) + 1 ))"
+    SUBNET="10.${a}.${b}"
+}
+
+# The access point's identity, fixed at build time and baked into the closure.
+#
+# Generated here rather than on the box so that `report` can tell the operator
+# the SSID and passphrase before the stick has ever been booted. The cost is
+# stated in the header: two boxes installed from one stick share a network.
+resolve_wifi(){
+    if [[ "${ENABLE_WIFI}" != true ]]; then
+        # Guard against a flag that silently does nothing, which on a feature
+        # this security-relevant is worse than an error.
+        if [[ -n "${WIFI_SSID}${WIFI_PSK}${WIFI_COUNTRY}${WIFI_INTERFACE}" ]]; then
+            echo >&2 "[!] Error: --wifi-* given without --wifi. Nothing would enable the access point."
+            exit 1
+        fi
+        return
+    fi
+
+    if [[ -z "${WIFI_SSID}" ]]; then
+        # A random suffix, not a bare "loom": two appliances within range of each
+        # other must not advertise the same name, and an operator reading a QR
+        # code off a monitor should be able to tell which box answered.
+        WIFI_SSID="loom-$(random_token 4)"
+    fi
+
+    if [[ -z "${WIFI_PSK}" ]]; then
+        # Four groups of five, like the LUKS recovery passphrase -- 23 characters
+        # over a 32-symbol alphabet, comfortably past WPA's 8-character floor and
+        # still transcribable by someone who cannot scan the QR code.
+        WIFI_PSK="$(random_token 20 | sed --regexp-extended 's/(.{5})/\1-/g; s/-$//')"
+    fi
+
+    # nixos/wifi.nix asserts the same alphabet, and for the reason given there:
+    # anything outside it needs a backslash escape inside the `WIFI:` URI on the
+    # login screen, and agetty eats backslashes out of an issue file. Checked
+    # here too so a hand-passed value fails in the second it takes to read the
+    # flag rather than partway into a Nix evaluation.
+    local value
+    for value in "${WIFI_SSID}" "${WIFI_PSK}"; do
+        if [[ ! "${value}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo >&2 "[!] Error: '${value}' contains characters that cannot go on the console QR code."
+            echo >&2 "[!] --wifi-ssid and --wifi-psk accept letters, digits, '-' and '_' only."
+            exit 1
+        fi
+    done
+
+    if (( ${#WIFI_PSK} < 8 )); then
+        echo >&2 "[!] Error: --wifi-psk must be at least 8 characters (WPA minimum)."
+        exit 1
+    fi
+}
+
+# Everything about --lock-key that can be wrong before anything is built.
+#
+# The passphrase itself is not generated here but in `generate_luks_key`, which
+# is a flash step: an image built without --flash has no key to put behind a
+# passphrase, so generating one would only print a secret for a stick that does
+# not exist.
+resolve_lock_key(){
+    if [[ "${LOCK_KEY}" != true ]]; then
+        # As resolve_wifi: a sub-flag that silently does nothing is worse than an
+        # error on a feature whose whole purpose is a security property.
+        if [[ -n "${LOCK_KEY_OUT}" ]] \
+            || [[ "${LOCK_KEY_WORDS}" != "${LOCK_KEY_WORDS_DEFAULT}" ]]; then
+            echo >&2 "[!] Error: --lock-key-* given without --lock-key. The key would be written raw."
+            exit 1
+        fi
+        return
+    fi
+
+    if [[ ! "${LOCK_KEY_WORDS}" =~ ^[0-9]+$ ]] || (( LOCK_KEY_WORDS < LOCK_KEY_MIN_WORDS )); then
+        echo >&2 "[!] Error: --lock-key-words must be a number and at least ${LOCK_KEY_MIN_WORDS}."
+        echo >&2 "[!] Fewer words than that stops being the strong half of the pair."
+        exit 1
+    fi
+
+    if [[ -n "${LOCK_KEY_OUT}" ]]; then
+        assert_secret_path "${LOCK_KEY_OUT}" "--lock-key-out"
+
+        # The two factors must not end up in one file. Somebody who finds that
+        # file has the stick's key *and* the passphrase over it, which is
+        # precisely the position --lock-key exists to deny them.
+        if [[ -n "${KEY_BACKUP}" ]]; then
+            local phrase_path backup_path
+            phrase_path="$(readlink --canonicalize "${LOCK_KEY_OUT}")"
+            backup_path="$(readlink --canonicalize "${KEY_BACKUP}")"
+            if [[ "${phrase_path}" = "${backup_path}" ]]; then
+                echo >&2 "[!] Error: --lock-key-out and --key-backup must not be the same file."
+                echo >&2 "[!] That file would hold both factors, which is no better than neither."
+                exit 1
+            fi
+        fi
+    fi
+
+    # A warning rather than an error, because it is the same shape as the
+    # existing behaviour: an image built without --flash has no key either way.
+    # What is different is that this one cannot be keyed afterwards by hand.
+    if [[ -z "${FLASH_DEVICE}" ]]; then
+        echo "[!] --lock-key without --flash. The image will expect a locked key"
+        echo "[!] partition, and only 'build-appliance-image --flash --lock-key'"
+        echo "[!] writes one -- 'appliance-vm installer' cannot."
+    fi
+}
+
+# Refuse a path that a secret must not be written to.
+#
+# Only the repository, and only because `git add -A` is one keystroke: there is
+# no attempt here to judge where an operator keeps their secrets, which is not
+# this script's business.
+assert_secret_path(){
+    local path="${1}" flag="${2}" resolved directory
+
+    # The parent has to exist, and this is checked where a path typo still costs
+    # nothing. `readlink --canonicalize` exits 1 with empty output when a parent
+    # directory is missing, and the bare assignment below then kills the script
+    # under `set -e` with nothing but "[*] Exiting..". For --key-backup that used
+    # to happen in `backup_luks_key`, *after* `write_locked_key_partition` had
+    # already luksFormatted the stick with KEY_PASSPHRASE -- so the steps that
+    # print the passphrase never ran, the value existed only in that dead shell,
+    # and the result was an hour of build plus a stick nobody can open.
+    directory="$(dirname "${path}")"
+    if [[ ! -d "${directory}" ]]; then
+        echo >&2 "[!] Error: ${flag} names a directory that does not exist: ${directory}"
+        exit 1
+    fi
+    if [[ ! -w "${directory}" ]]; then
+        echo >&2 "[!] Error: ${flag} names a directory that is not writable: ${directory}"
+        exit 1
+    fi
+
+    resolved="$(readlink --canonicalize "${path}")"
+    if [[ "${resolved}" == "${CONTEXT_DIR}"/* ]]; then
+        echo >&2 "[!] Error: refusing to write ${flag} inside the repository."
+        exit 1
+    fi
+}
+
+# N characters from the same alphabet install.sh uses for the recovery
+# passphrase: unambiguous on a monitor (no l/1/0/O) and free of every character
+# the `WIFI:` URI reserves.
+random_token(){
+    local want="${1}" raw=''
+    # `head` bounds the read rather than cutting a `tr` that reads /dev/urandom
+    # endlessly -- see install.sh `generate_passphrase` for why that matters.
+    while (( ${#raw} < want )); do
+        raw+="$(head --bytes=256 /dev/urandom |
+            tr --delete --complement 'abcdefghijkmnpqrstuvwxyz23456789')"
+    done
+    printf '%s' "${raw:0:want}"
+}
+
+# The one key the debug image accepts, generated fresh for this image.
+#
+# Fresh rather than the build host's own ~/.ssh: an appliance key is a
+# throwaway, it should die with the image, and reusing a personal key would put
+# it in an authorized_keys file on a box that gets wiped and re-flashed by
+# people who never chose to trust it.
+#
+# Only the public half reaches Nix. The private half stays here, outside the
+# store and outside the repository, and the directory is deliberately left
+# behind when this script exits -- it is the output of the flag.
+#
+# The ssh_config files matter more than they look: resolve_subnet randomises the
+# /24 per image, so nothing downstream can hardcode the box's address. With
+# them, reaching the box is `ssh -F <dir>/ssh_config loom-appliance` and needs
+# no other knowledge -- which is the point, because the thing at the other end
+# of that command is as often an agent as a person.
+resolve_debug_key(){
+    if [[ "${DEBUG_ACCESS}" != true ]]; then
+        return
+    fi
+
+    check_command ssh-keygen
+
+    # Named for the image it belongs to, so a bench with three of these lying
+    # around says which stick each one opens. $TMPDIR rather than /run/user:
+    # unlike the LUKS key this is meant to outlive the run, and a tmpfs under
+    # /run/user is cleared when the session ends.
+    DEBUG_KEY_DIR="$(mktemp --directory "${TMPDIR:-/tmp}/loom-appliance-debug-${TAG}-${PLATFORM}.XXXXXX")"
+    chmod 0700 "${DEBUG_KEY_DIR}"
+
+    # ed25519: small enough to read off a screen if it ever comes to that, and
+    # the one algorithm every OpenSSH still in service accepts by default.
+    # -N '' because an agent cannot type a passphrase, which is the whole use
+    # case -- the key's protection is the 0700 directory and its short life.
+    ssh-keygen -t ed25519 -N '' -q \
+        -C "loom-appliance-debug ${TAG} ${PLATFORM}" \
+        -f "${DEBUG_KEY_DIR}/id_ed25519"
+
+    # Created empty rather than left to ssh, so the file exists with the right
+    # mode before the first connection writes the box's host key into it.
+    : > "${DEBUG_KEY_DIR}/known_hosts"
+    chmod 0600 "${DEBUG_KEY_DIR}/known_hosts"
+
+    # Two configs, because the same image is as likely to be booted in a VM as
+    # written to a stick. See write_debug_ssh_config for what is in them.
+    local generated_by="cicd/build_appliance_image.sh for the ${TAG} ${PLATFORM} debug image."
+    local cleanup="Delete this whole directory when you are done with the box."
+    write_debug_ssh_config "${DEBUG_KEY_DIR}/ssh_config" "${SUBNET}.1" 22 \
+        "${generated_by}" \
+        "The box on its own network -- plug a laptop into the appliance port and take a DHCP lease." \
+        "${cleanup}"
+    write_debug_ssh_config "${DEBUG_KEY_DIR}/ssh_config.vm" localhost 2222 \
+        "${generated_by}" \
+        "The same image under 'appliance-vm box --debug', which forwards 2222 to the guest's 22." \
+        "${cleanup}"
+
+    write_debug_builder_note "${DEBUG_KEY_DIR}/nix-builder"
+}
+
+# How to point nix at the box, written down because working it out from first
+# principles is half an hour and the pieces are not guessable.
+#
+# `NIX_SSHOPTS` is the part nobody gets right unprompted: nix runs ssh
+# non-interactively, so without the generated config it has no key, no user and
+# no answer for an unknown host key, and fails in a way that looks like the
+# builder is refusing it.
+#
+# `debug.nix` puts the operator account in `nix.settings.trusted-users`, which
+# is what makes this work at all -- a remote builder is `nix-store --serve
+# --write`, and the daemon refuses that to an untrusted user. Only debug images
+# carry it.
+write_debug_builder_note(){
+    # NIX_SYSTEM is resolved in the argument section, long before any step runs.
+    local file="${1}" system="${NIX_SYSTEM}"
+
+    cat > "${file}" <<EOF
+# Generated by cicd/build_appliance_image.sh for the ${TAG} ${PLATFORM} debug image.
+#
+# This box can build for you. On ${system} hardware that is native where
+# '--allow-cross' would be qemu, which is hours against minutes for a kernel.
+#
+#   export NIX_SSHOPTS="-F ${DEBUG_KEY_DIR}/ssh_config"
+#   nix-build ... --builders 'ssh://loom-appliance ${system} ${DEBUG_KEY_DIR}/id_ed25519 - 1 big-parallel'
+#
+# The fields after the system are: key, max-jobs (- is the remote's own
+# setting), speed factor, required features. Check it end to end with:
+#
+#   NIX_SSHOPTS="-F ${DEBUG_KEY_DIR}/ssh_config" \\
+#     nix store ping --store 'ssh://loom-appliance'
+#
+# The box's store is not garbage-collected by anyone else. Debug images run
+# 'nix.gc' daily with a 7-day window; 'loom-debug-bundle' reports disk use.
+EOF
+    chmod 0600 "${file}"
+}
+
+prepare_workdir(){
+    local uid
+    uid="$(id -u)"
+    WORK_DIR="$(mktemp --directory)"
+    # The LUKS key must never touch a disk. /run/user is a tmpfs.
+    KEY_DIR="$(mktemp --directory --tmpdir="/run/user/${uid}")"
+    chmod 0700 "${KEY_DIR}"
+}
+
+# Prepared with real git rather than a Nix fetcher, because up.sh's offline mode
+# runs `git describe --exact-match --tags HEAD` (up.sh:236) inside the embedded
+# checkout, and every Nix fetcher either drops `.git` or leaves git-lfs payloads
+# as pointer files.
+prepare_repo(){
+    local repo="${WORK_DIR}/loom" lfs_dir stale_refs ref
+
+    # --no-local forces a real pack transfer. A plain local clone writes
+    # .git/objects/info/alternates pointing at this machine, which does not
+    # exist on the appliance -- producing a silently corrupt repository.
+    git clone --no-hardlinks --no-local --quiet "${CONTEXT_DIR}" "${repo}"
+    git -C "${repo}" checkout --force --quiet "tags/${TAG}"
+
+    # Must happen BEFORE `lfs checkout`: without filter.lfs.* configured, the
+    # working tree gets real content while the index still holds pointer blobs,
+    # so all 138 LFS files show as modified forever.
+    git -C "${repo}" lfs install --local
+
+    # Copy this checkout's object cache rather than `git lfs pull`, which needs
+    # a reachable remote. Offline, deterministic, and only about 30 MB.
+    lfs_dir="$(git -C "${CONTEXT_DIR}" rev-parse --path-format=absolute --git-common-dir)/lfs"
+    cp --archive "${lfs_dir}" "${repo}/.git/"
+    git -C "${repo}" lfs checkout
+
+    # Nothing in the embedded checkout should depend on which branch the build
+    # machine happened to have checked out. A clone brings every ref of the
+    # source repository along, so the objects that survive `gc --prune=now`
+    # below -- and with them the pack, and with the pack the `loomSrc` store
+    # hash -- would otherwise move with a developer's branch tips, giving the
+    # same tag a different image on every machine that builds it.
+    #
+    # One ref is left, which is the one up.sh reads: `git describe
+    # --exact-match --tags HEAD` (up.sh:240), against the tag HEAD is already
+    # detached at from the checkout above.
+    stale_refs="$(git -C "${repo}" for-each-ref --format='%(refname)' refs/heads refs/tags refs/remotes |
+        grep --invert-match --line-regexp --fixed-strings "refs/tags/${TAG}" || true)"
+    while read -r ref; do
+        [[ -n "${ref}" ]] || continue
+        git -C "${repo}" update-ref -d "${ref}"
+    done <<<"${stale_refs}"
+
+    # for-each-ref does not list this one: it is symbolic, and the branch it
+    # names was deleted by the loop above. It is still a file naming the branch
+    # the source checkout was on.
+    git -C "${repo}" symbolic-ref --delete refs/remotes/origin/HEAD 2>/dev/null || true
+
+    # The object cache copied in above is everything this machine ever fetched,
+    # for every branch it ever had. With one ref left, what git-lfs retains is
+    # the checkout's own payloads -- the same set on any build host.
+    #
+    # Runs while origin still exists, because that is how prune decides an
+    # object is safe to drop, and takes nothing the box needs: the working tree
+    # is already materialised, and verify_repo's pointer-stub check has to pass
+    # after this.
+    git -C "${repo}" lfs prune --no-verify-remote
+
+    # Nothing on the appliance should point back at a build machine.
+    git -C "${repo}" remote remove origin
+    git -C "${repo}" reflog expire --expire=now --all
+    git -C "${repo}" gc --prune=now --quiet
+
+    # Repack deterministically, so two runs of the same tag produce a
+    # byte-identical pack -- and with it the same `loomSrc` store hash, instead
+    # of a fresh appliance closure, squashfs and ~1.5 GB image every run. See
+    # normalize_git_config for the rest of that story.
+    #
+    # Both flags are needed:
+    #
+    #   * `-f` recomputes every delta. Without it repack reuses the deltas it
+    #     finds, and those came from the `git clone` above, whose pack-objects
+    #     ran multi-threaded on the source repository -- so the nondeterminism
+    #     is inherited no matter what this repack is told to do.
+    #   * `pack.threads=1` keeps the delta search itself single-threaded. With
+    #     several threads the winning candidate depends on how they interleave.
+    #
+    # Same objects and refs either way; only the encoding is pinned. Verified by
+    # running the whole step twice and comparing `nix hash path`.
+    git -C "${repo}" -c pack.threads=1 repack -adfq
+}
+
+verify_repo(){
+    local repo="${WORK_DIR}/loom" described status pointers dirty_count
+
+    described="$(git -C "${repo}" describe --exact-match --tags HEAD)"
+    if [[ "${described}" != "${TAG}" ]]; then
+        echo >&2 "[!] Error: embedded checkout describes as '${described}', expected '${TAG}'."
+        exit 1
+    fi
+
+    if [[ ! -d "${repo}/.git/lfs/objects" ]]; then
+        echo >&2 "[!] Error: embedded checkout has no git-lfs objects; up.sh:412 would fail on the box."
+        exit 1
+    fi
+
+    if [[ -e "${repo}/.git/objects/info/alternates" ]]; then
+        echo >&2 "[!] Error: embedded checkout has an alternates file pointing outside itself."
+        exit 1
+    fi
+
+    # The invariant that matters is that no payload is still a pointer stub --
+    # that is what breaks bring-up, e.g. a 130-byte text file where the traefik
+    # chart should be.
+    #
+    # Deliberately NOT asserting a clean `git status`: some release tags predate
+    # commit 34ba1c77 ("add Git LFS tracking for test assets"), which declared
+    # backend/worker/tests/assets/** as LFS while the blobs at those tags are
+    # still raw content. Checking such a tag out with the LFS filter active
+    # reports those files as modified forever. It is cosmetic -- they are test
+    # assets, unused at runtime -- so it is reported, not treated as fatal.
+    pointers="$(grep --recursive --files-with-matches --binary-files=without-match \
+        --exclude-dir=.git '^version https://git-lfs.github.com/spec/v1' "${repo}" || true)"
+    if [[ -n "${pointers}" ]]; then
+        echo >&2 "[!] Error: these git-lfs payloads are still pointer stubs:"
+        echo >&2 "${pointers}"
+        echo >&2 "    Run 'git lfs fetch --all' in your checkout and rebuild."
+        exit 1
+    fi
+
+    status="$(git -C "${repo}" status --porcelain)"
+    if [[ -n "${status}" ]]; then
+        dirty_count="$(printf '%s\n' "${status}" | wc --lines)"
+        echo "[*] Note: ${dirty_count} file(s) report as modified in the"
+        echo "    embedded checkout. This tag predates the LFS conversion of the worker test"
+        echo "    assets; they are unused at runtime and bring-up is unaffected."
+    fi
+
+    # Canary: this chart is LFS-tracked and cicd/skaffold untars it at deploy
+    # time, so a pointer file here means bring-up fails on the box.
+    if ! file "${repo}/traefik/traefik-39.0.9.tgz" | grep --quiet gzip; then
+        echo >&2 "[!] Error: traefik chart is not a real gzip; git-lfs materialisation is broken."
+        exit 1
+    fi
+}
+
+# Pin the one part of .git whose *content* differs between two runs of the same
+# tag.
+#
+# nixos/default.nix takes `loomSrc` as a filtered `builtins.path` of this
+# directory, so a single changed byte gives it a new store hash -- and with it a
+# new appliance closure, a new squashfs and a new ~1.5 GB image, every run, for
+# a working tree that is bit-for-bit identical. A handful of builds is enough to
+# put ten gigabytes of near-duplicates in the store.
+#
+# The volatile *files* are not handled here. They are excluded by that filter,
+# which drops them however often git puts them back -- .git/index, which stores
+# mtime, ctime and inode for all ~4000 files; .git/logs; and git-lfs's
+# timestamped .git/lfs/logs and randomly-named .git/lfs/tmp scratch
+# directories. None of them is read on the box: up.sh only runs `git describe
+# --exact-match --tags HEAD` (up.sh:240), which reads refs and objects, and git
+# rebuilds an index on demand for anything that does want one.
+#
+# What a path filter cannot express is a file that has to be there with settled
+# contents, which is this one: `git lfs install --local` in prepare_repo writes
+# the [filter "lfs"] keys in a nondeterministic order, so the clean/smudge pair
+# lands above or below process/required depending on the run.
+normalize_git_config(){
+    local repo="${WORK_DIR}/loom"
+
+    # Rewritten rather than sorted in place: `git config` owns the file's
+    # layout, and re-adding a removed section always appends it in the order
+    # given. The values match what `git lfs install` would have written.
+    git -C "${repo}" config --local --remove-section filter.lfs
+    git -C "${repo}" config --local filter.lfs.clean "git-lfs clean -- %f"
+    git -C "${repo}" config --local filter.lfs.smudge "git-lfs smudge -- %f"
+    git -C "${repo}" config --local filter.lfs.process "git-lfs filter-process"
+    git -C "${repo}" config --local filter.lfs.required true
+}
+
+# Sourced from the embedded checkout rather than this one, so the host list
+# always matches the tag being shipped. vars.sh stays the single source of truth.
+# This is also where ${NAMESPACE}, ${LOOM_CHAT_MODEL} and ${MINIKUBE_IP} come
+# from -- `source` at function scope still assigns globally, and build_image runs
+# after this step.
+#
+# Each value is checked before it is used, because every one of them is
+# pre-initialised empty at the top of this script for shellcheck -- which is
+# exactly what makes a gap silent. `loomChatModel ""` builds an image whose
+# assistant pane announces "Loom assistant on ." and pins opencode to the model
+# named `ollama/`.
+generate_loom_hosts(){
+    # shellcheck disable=SC1091
+    # shellcheck source=../vars.sh
+    source "${WORK_DIR}/loom/vars.sh"
+    printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq --raw-input . | jq --slurp --compact-output . \
+        > "${WORK_DIR}/loom-hosts.json"
+
+    if [[ -z "${LOOM_CHAT_MODEL}" ]]; then
+        echo >&2 "[!] Error: ${TAG}'s vars.sh defines no LOOM_CHAT_MODEL, and the"
+        echo >&2 "    console's assistant pane cannot be pinned to a model without it."
+        exit 1
+    fi
+
+    # An empty `--argstr loomNamespace ""` *overrides* nixos/default.nix's
+    # `? "loom"` -- a default cannot rescue a value that is explicitly passed
+    # empty -- and reaches ready.nix, portal.nix, console.nix and debug.nix as
+    # `--namespace ''`, so the readiness pane, the portal and
+    # `loom-debug-bundle` would all watch a namespace that does not exist, on a
+    # box with no remote access.
+    if [[ -z "${NAMESPACE}" ]]; then
+        echo >&2 "[!] Error: ${TAG}'s vars.sh defines no NAMESPACE, and every unit on"
+        echo >&2 "    the box that asks Kubernetes anything needs one."
+        exit 1
+    fi
+
+    # The node address comes straight out of the tag's chart rather than through
+    # its vars.sh, unlike everything else here. `kubernetes.api` is what that
+    # tag's `-allow-k8s-api` NetworkPolicy renders into an ipBlock, so the chart
+    # is both the authority and the thing that has to agree with what gets baked
+    # into /etc/hosts and the DNAT chain below. Every tag carries the key.
+    MINIKUBE_IP="$(yq --raw-output '.kubernetes.api' "${WORK_DIR}/loom/charts/values.yaml")"
+    if [[ -z "${MINIKUBE_IP}" || "${MINIKUBE_IP}" == "null" ]]; then
+        echo >&2 "[!] Error: ${TAG} defines no 'kubernetes.api' in charts/values.yaml."
+        echo >&2 "    /etc/hosts and the DNAT chain on the box cannot be pinned without"
+        echo >&2 "    it, and the box would serve nothing."
+        exit 1
+    fi
+
+    # Whether the tag can hold itself to that address is a separate question from
+    # what the address is, so it is asked separately. A tag whose vars.sh has no
+    # LOOM_MINIKUBE_IP has an up.sh that starts minikube without --static-ip, so
+    # the node can still land somewhere else and nothing on the box will say so.
+    if [[ -z "${LOOM_MINIKUBE_IP}" ]]; then
+        echo "[!] ${TAG}'s vars.sh defines no LOOM_MINIKUBE_IP -- its up.sh does not pin"
+        echo "    the minikube node. This image bakes ${MINIKUBE_IP} into /etc/hosts and"
+        echo "    into the DNAT chain from that tag's charts/values.yaml, but the node"
+        echo "    can still come up elsewhere, and then the box serves nothing and every"
+        echo "    pod is denied the API server. Watch the first boot."
+    fi
+}
+
+# Every leaf of a JSON object as a dot-joined path, arrays counted as leaves.
+#
+# An array is replaced whole rather than merged -- by helm, by the `*` below and
+# by lib.recursiveUpdate on the Nix side -- so descending into one would ask
+# whether `pipeline.tika_ocr_languages.0` is a key the chart declares, which is
+# not a question the chart can answer.
+VALUE_LEAF_PATHS_PROGRAM="$(cat <<'JQ'
+def leaves($prefix):
+    to_entries[]
+    | ($prefix + [.key]) as $path
+    | if (.value | type) == "object" then (.value | leaves($path)) else $path end;
+leaves([]) | join(".")
+JQ
+)"
+
+# Every path the chart declares, the objects on the way down included, so that a
+# value given for a subtree (`llm.agent`) is recognised as readily as one given
+# for a leaf (`llm.agent.model`). YAML anchors are resolved on parse, so the
+# clients that share `&llm-defaults` each carry the full set of concrete paths.
+VALUE_ALL_PATHS_PROGRAM="$(cat <<'JQ'
+def walk($prefix):
+    to_entries[]
+    | ($prefix + [.key]) as $path
+    | $path, (if (.value | type) == "object" then (.value | walk($path)) else empty end);
+walk([]) | join(".")
+JQ
+)"
+
+# Merge --values and --set into one JSON object, and refuse everything about it
+# that can be refused here rather than on a box with no remote access.
+#
+# Checked against the *embedded tag's* chart, never this checkout's: the stick's
+# Nix code comes from here while the tree it deploys comes from the tag, and it
+# is the tag that has to carry the keys.
+resolve_user_values(){
+    if [[ ${#USER_VALUES_FILES[@]} -eq 0 && ${#USER_VALUES_SETS[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    local chart="${WORK_DIR}/loom/charts/values.yaml"
+
+    local merged='{}'
+    if [[ ${#USER_VALUES_FILES[@]} -gt 0 ]]; then
+        # The same deep merge up.sh:457 folds its flag-driven values files with.
+        # jq's `*` merges objects and replaces arrays, which is what helm does
+        # for `-f` and what lib.recursiveUpdate does for the appliance layer.
+        #
+        # Single quotes are intentional: this is a jq expression, not shell.
+        # shellcheck disable=SC2016
+        merged="$(yq --slurp --compact-output \
+            'reduce .[] as $item ({}; . * $item)' "${USER_VALUES_FILES[@]}")"
+    fi
+
+    local assignment path value
+    for assignment in "${USER_VALUES_SETS[@]}"; do
+        if [[ "${assignment}" != *=* ]]; then
+            echo >&2 "[!] Error: --set '${assignment}' is not path=value."
+            exit 1
+        fi
+        path="${assignment%%=*}"
+        value="${assignment#*=}"
+        if [[ -z "${path}" ]]; then
+            echo >&2 "[!] Error: --set '${assignment}' names no path."
+            exit 1
+        fi
+        # Typed as JSON where it parses as JSON, as a string where it does not:
+        # `5` is a number, `true` a boolean, `["deu","eng"]` a list, `deu` a
+        # string. A string that happens to look like a number arrives as one --
+        # quote it as JSON (`'"123"'`) when that matters.
+        #
+        # shellcheck disable=SC2016
+        merged="$(printf '%s' "${merged}" | jq --compact-output \
+            --arg path "${path}" --arg raw "${value}" \
+            'setpath($path | split("."); ($raw | fromjson? // $raw))')"
+    done
+
+    local leaves
+    leaves="$(printf '%s' "${merged}" | jq --raw-output "${VALUE_LEAF_PATHS_PROGRAM}")"
+    if [[ -z "${leaves}" ]]; then
+        echo "[*] --values and --set set nothing; no user values layer will be written."
+        return 0
+    fi
+
+    check_reserved_value_paths "${leaves}"
+    check_known_value_paths "${leaves}" "${chart}"
+    warn_secret_value_paths "${leaves}"
+    render_user_values "${merged}"
+
+    USER_VALUES_JSON="${merged}"
+    USER_VALUES_SOURCES="$(user_values_sources)"
+
+    echo "[*] User values (${USER_VALUES_SOURCES}):"
+    printf '%s\n' "${leaves}" | sed 's/^/      /'
+}
+
+# What the generated file on the box says it came from.
+user_values_sources(){
+    local parts=()
+    if [[ ${#USER_VALUES_FILES[@]} -gt 0 ]]; then
+        parts+=("${USER_VALUES_FILES[@]}")
+    fi
+    if [[ ${#USER_VALUES_SETS[@]} -gt 0 ]]; then
+        parts+=("${#USER_VALUES_SETS[@]} --set argument(s)")
+    fi
+    local IFS=', '
+    printf '%s' "${parts[*]}"
+}
+
+check_reserved_value_paths(){
+    local leaves="${1}" leaf reserved hit=false
+    while IFS= read -r leaf; do
+        for reserved in "${RESERVED_VALUE_PATHS[@]}"; do
+            # The leaf itself, or anything under it: `hostnames` given whole
+            # takes the ingress list with it.
+            if [[ "${leaf}" == "${reserved}" || "${leaf}" == "${reserved}."* \
+                || "${reserved}" == "${leaf}."* ]]; then
+                echo >&2 "[!] Error: '${leaf}' is set by the image, not by --values."
+                hit=true
+            fi
+        done
+    done <<< "${leaves}"
+    if [[ "${hit}" = true ]]; then
+        echo >&2 "    These decide what the box is rather than how it indexes:"
+        echo >&2 "      ${RESERVED_VALUE_PATHS[*]}"
+        echo >&2 "    Each has something outside the chart -- /etc/hosts, the DNAT chain,"
+        echo >&2 "    the NetworkPolicy, the certificate's subjectAltName -- that is built"
+        echo >&2 "    from the same value and cannot be moved from a values file."
+        exit 1
+    fi
+}
+
+check_known_value_paths(){
+    local leaves="${1}" chart="${2}" chart_paths given declared unknown
+    chart_paths="$(yq --raw-output "${VALUE_ALL_PATHS_PROGRAM}" "${chart}")"
+    # Sorted into files rather than piped inside the process substitutions below,
+    # so that neither sort's exit status is masked by comm's.
+    given="${WORK_DIR}/user-value-paths"
+    declared="${WORK_DIR}/chart-value-paths"
+    sort --unique <<< "${leaves}" > "${given}"
+    sort --unique <<< "${chart_paths}" > "${declared}"
+    unknown="$(comm -23 "${given}" "${declared}")"
+    if [[ -z "${unknown}" ]]; then
+        return 0
+    fi
+    if [[ "${USER_VALUES_ALLOW_NEW_KEYS}" = true ]]; then
+        echo "[!] These paths are not in ${TAG}'s charts/values.yaml, and --values-allow-new-keys"
+        echo "    was given, so they are passed through as they are:"
+        printf '%s\n' "${unknown}" | sed 's/^/      /'
+        return 0
+    fi
+    echo >&2 "[!] Error: these paths are not in ${TAG}'s charts/values.yaml:"
+    printf '%s\n' "${unknown}" | sed 's/^/      /' >&2
+    echo >&2 "    The chart has no values schema, so helm would take them in silence and"
+    echo >&2 "    the box would do nothing it was asked for. Check the spelling against"
+    echo >&2 "    ${chart}."
+    echo >&2 "    For the chart's free-form maps -- labels, annotations, nodeSelector --"
+    echo >&2 "    pass --values-allow-new-keys."
+    exit 1
+}
+
+warn_secret_value_paths(){
+    local leaves="${1}" secrets
+    secrets="$(printf '%s\n' "${leaves}" | grep --extended-regexp \
+        '(^|\.)[^.]*(api_key|apikey|password|passphrase|secret|token)[^.]*$' || true)"
+    if [[ -z "${secrets}" ]]; then
+        return 0
+    fi
+    echo "[!] These look like credentials:"
+    printf '%s\n' "${secrets}" | sed 's/^/      /'
+    echo "[!] They are baked into the image and are readable in /nix/store by anyone"
+    echo "    holding the stick. Without --lock-key, holding the stick is the whole"
+    echo "    of the access control. See Documentation/appliance.md."
+}
+
+# Render the tag's chart with the values on top of it, client-side and offline,
+# the way cicd/check_chart_hostnames.sh does.
+#
+# The path check above catches a key that does not exist; this catches a value
+# the chart does not accept -- a string where a template indexes a list, a
+# number where it expects a map. Both failures otherwise surface during
+# first-time setup, on a box with no way in.
+render_user_values(){
+    local merged="${1}" overlay="${WORK_DIR}/user-values.yaml" output
+    if [[ "${USER_VALUES_SKIP_CHECK}" = true ]]; then
+        echo "[!] Skipping the helm dry-run over the user values (--skip-values-check)."
+        return 0
+    fi
+    printf '%s' "${merged}" | yq --yaml-output . > "${overlay}"
+    if output="$(helm template loom-values-check "${WORK_DIR}/loom/charts" \
+        --values "${WORK_DIR}/loom/charts/values.yaml" \
+        --values "${overlay}" 2>&1 >/dev/null)"; then
+        return 0
+    fi
+    echo >&2 "[!] Error: ${TAG}'s chart does not render with these values:"
+    printf '%s\n' "${output}" | sed 's/^/      /' >&2
+    echo >&2 "    Fix the values, or pass --skip-values-check to build anyway."
+    exit 1
+}
+
+build_image(){
+    local hosts_json debug_key=''
+    hosts_json="$(cat "${WORK_DIR}/loom-hosts.json")"
+
+    # Only the public half, and only when --debug was given. Empty otherwise,
+    # which nixos/debug.nix reads as "no debug access" -- its assertion is what
+    # catches the case where the flag is on and this is empty anyway.
+    if [[ "${DEBUG_ACCESS}" = true ]]; then
+        debug_key="$(cat "${DEBUG_KEY_DIR}/id_ed25519.pub")"
+    fi
+
+    echo "[*] Building the ${PLATFORM} (${NIX_SYSTEM}) appliance image for ${TAG} on ${SUBNET}.0/24"
+    nix-build "${CONTEXT_DIR}/nixos" \
+        --attr installerImage \
+        --arg nixpkgs "${NIXPKGS}" \
+        --arg nixosHardware "${NIXOS_HARDWARE}" \
+        --argstr system "${NIX_SYSTEM}" \
+        --argstr platform "${PLATFORM}" \
+        --arg repoSrc "${WORK_DIR}/loom" \
+        --argstr tag "${TAG}" \
+        --argstr loomHostsJson "${hosts_json}" \
+        --argstr loomNamespace "${NAMESPACE}" \
+        --argstr userValuesJson "${USER_VALUES_JSON}" \
+        --argstr userValuesSources "${USER_VALUES_SOURCES}" \
+        --argstr loomChatModel "${LOOM_CHAT_MODEL}" \
+        --argstr minikubeIp "${MINIKUBE_IP}" \
+        --argstr loomSubnet "${SUBNET}" \
+        --argstr loomInterface "${LOOM_INTERFACE}" \
+        --arg disableGpu "${DISABLE_GPU}" \
+        --arg vmSerialGetty "${VM_SERIAL}" \
+        --arg enableWifi "${ENABLE_WIFI}" \
+        --argstr wifiSsid "${WIFI_SSID}" \
+        --argstr wifiPsk "${WIFI_PSK}" \
+        --argstr wifiCountry "${WIFI_COUNTRY}" \
+        --argstr wifiInterface "${WIFI_INTERFACE}" \
+        --arg debugAccess "${DEBUG_ACCESS}" \
+        --argstr debugSshAuthorizedKey "${debug_key}" \
+        --arg lockKey "${LOCK_KEY}" \
+        --arg requireClientCert "${REQUIRE_CLIENT_CERT}" \
+        --argstr keymap "${KEYMAP}" \
+        --out-link "${IMAGE_LINK}"
+}
+
+confirm_flash(){
+    local image size answer mounted root_source root_disk
+
+    if [[ ! -b "${FLASH_DEVICE}" ]]; then
+        echo >&2 "[!] Error: not a block device: ${FLASH_DEVICE}"
+        exit 1
+    fi
+
+    # Resolved down to the disk under it before it is compared. `findmnt
+    # --target /` prints `/dev/mapper/vg-root` on the common LVM, LUKS or mdraid
+    # workstation, which can never prefix-match a physical device node -- so this
+    # branch was unreachable there, the device was caught two checks below by
+    # `MOUNTPOINTS` instead, and the operator was told "has mounted partitions.
+    # Unmount them first": following that instruction is how you get past the
+    # only check that caught it.
+    root_source="$(findmnt --noheadings --output SOURCE --target / | head --lines=1)"
+    root_disk="$(
+        lsblk --noheadings --output PKNAME --paths "${root_source}" 2>/dev/null \
+            | grep --max-count=1 . || true
+    )"
+    if [[ -z "${root_disk}" ]]; then
+        root_disk="${root_source}"
+    fi
+    if [[ "${root_source}" == "${FLASH_DEVICE}"* || "${root_disk}" == "${FLASH_DEVICE}"* ]]; then
+        echo >&2 "[!] Error: ${FLASH_DEVICE} backs this machine's root filesystem."
+        exit 1
+    fi
+
+    mounted="$(lsblk --noheadings --raw --output MOUNTPOINTS "${FLASH_DEVICE}" | tr --delete ' \n')"
+    if [[ -n "${mounted}" ]]; then
+        echo >&2 "[!] Error: ${FLASH_DEVICE} has mounted partitions. Unmount them first."
+        exit 1
+    fi
+
+    image="$(image_file "${IMAGE_LINK}")"
+    size="$(stat --format=%s "${image}")"
+
+    echo
+    echo "[!] This will DESTROY ALL DATA on ${FLASH_DEVICE}:"
+    lsblk --nodeps --output NAME,SIZE,MODEL,SERIAL,TRAN "${FLASH_DEVICE}"
+    echo "[!] Writing $(( size / 1024 / 1024 )) MiB from $(basename "${image}")"
+    echo
+
+    if [[ "${ASSUME_YES}" != true ]]; then
+        # The device name rather than 'yes', so this cannot be confirmed by
+        # muscle memory on the wrong device.
+        read -r -p "[?] Type '$(basename "${FLASH_DEVICE}")' to confirm: " answer
+        if [[ "${answer}" != "$(basename "${FLASH_DEVICE}")" ]]; then
+            echo >&2 "[!] Aborted."
+            exit 1
+        fi
+    fi
+}
+
+generate_luks_key(){
+    ( umask 077; head --bytes="${KEY_BYTES}" /dev/urandom > "${KEY_DIR}/luks.key" )
+
+    if [[ "${LOCK_KEY}" != true ]]; then
+        return
+    fi
+
+    # Words rather than the `random_token` alphabet the recovery passphrase and
+    # the WiFi PSK use, and not for taste: this one is typed at a stage 1 prompt
+    # on a box that has no keyboard layout yet, possibly by somebody who is not
+    # the person who flashed the stick. Words survive that; five random
+    # characters transcribed off a photograph do not.
+    #
+    # `diceware` reads its own EFF list and draws from `SystemRandom`, so this is
+    # neither a wordlist in this repository nor a hand-rolled index into one.
+    #
+    # Rejection sampling for the layout filter, rather than filtering the list and
+    # drawing from it: diceware only accepts wordlists by *name* from its own
+    # search directories, so drawing from a filtered copy would mean keeping one
+    # somewhere -- and the whole point of taking the list from a package is not to.
+    #
+    # Redrawing the entire passphrase keeps the result uniform over the passphrases
+    # that survive the filter, which is what makes the entropy exactly
+    # 7 * log2(6503) and not an argument.
+    local draw
+    for (( draw = 1; draw <= LOCK_KEY_MAX_DRAWS; draw++ )); do
+        KEY_PASSPHRASE="$(diceware --no-caps \
+            --delimiter "${LOCK_KEY_DELIMITER}" \
+            --num "${LOCK_KEY_WORDS}")"
+        if ! grep --quiet --extended-regexp "${LOCK_KEY_FORBIDDEN}" <<< "${KEY_PASSPHRASE}"; then
+            return
+        fi
+    done
+
+    echo >&2 "[!] Error: no passphrase without ${LOCK_KEY_FORBIDDEN} in ${LOCK_KEY_MAX_DRAWS} draws."
+    echo >&2 "[!] That should take about four, so diceware or its wordlist has changed."
+    exit 1
+}
+
+flash_image(){
+    local image
+    image="$(image_file "${IMAGE_LINK}")"
+
+    echo "[*] Writing ${image} to ${FLASH_DEVICE}"
+    sudo dd if="${image}" of="${FLASH_DEVICE}" bs=4M status=progress conv=fsync oflag=direct
+    sync
+
+    # Make the kernel adopt the table that was just written.
+    #
+    # Deliberately NOT `partprobe`, which is what this used to be. The image's
+    # GPT describes a disk exactly as large as the image, so on any stick
+    # bigger than that parted finds the backup header short of the end of the
+    # device and asks what to do about it:
+    #
+    #   Warning: Not all of the space available to /dev/sdX appears to be used,
+    #   you can fix the GPT to use all of the space (an extra N blocks) or
+    #   continue with the current setting?
+    #
+    # That is an interactive prompt in the middle of a step that has to be
+    # unattended, and taking its default leaves the kernel on whatever
+    # partition table the stick held BEFORE this write. The symptom is the next
+    # step reporting no `loom-key` partition on a stick that plainly has one
+    # the moment anybody looks at it by hand -- and it is not cosmetic: a stick
+    # that is flashed but never given its key installs a box that then never
+    # boots again.
+    #
+    # The backup header really is short of the end, and that is correct: the
+    # image is as large as its contents and the installer never uses the tail
+    # of the stick. There is nothing to fix, so the right tool is one with no
+    # opinion about it.
+    #
+    # BLKRRPART first: it is the kernel's own re-read of the whole table, it
+    # has no opinion about the backup header, and it cannot prompt. It is
+    # refused outright while anything still holds a partition, which is the one
+    # case `partx` covers -- it updates the kernel's view entry by entry
+    # instead. `confirm_flash` already refuses a device with anything mounted,
+    # so the fallback is for the holder nobody declared.
+    #
+    # Neither is trusted on its own. `wait_for_key_partition` below is what
+    # actually decides whether the write landed, because the only thing worth
+    # checking is that the partition this script is about to write the disk key
+    # to is the one that came off this image.
+    sudo blockdev --rereadpt "${FLASH_DEVICE}" 2> /dev/null \
+        || sudo partx --update "${FLASH_DEVICE}" > /dev/null
+    sudo udevadm settle
+
+    wait_for_key_partition
+}
+
+# Block until the partition written above is there, or say why it is not.
+#
+# `key_partition` reads the table off the disk, so in practice this returns on
+# the first pass -- the kernel populates sysfs synchronously when it re-reads.
+# The loop is insurance against a USB bridge that is still settling, and it
+# costs nothing on the run where it is not needed.
+wait_for_key_partition(){
+    local waited=0 found
+
+    # Assigned rather than tested inline, for the reason resolve_tag gives at
+    # the same place: a function called inside a condition runs with `set -e`
+    # switched off, and shellcheck's `-o all` says so.
+    while (( waited < KEY_PARTITION_TIMEOUT )); do
+        found="$(key_partition)"
+        if [[ -n "${found}" ]]; then
+            return 0
+        fi
+        sleep 1
+        waited=$(( waited + 1 ))
+    done
+
+    echo >&2 "[!] Error: no '${KEY_PARTLABEL}' partition on ${FLASH_DEVICE}"
+    echo >&2 "    ${KEY_PARTITION_TIMEOUT}s after writing the image."
+    echo >&2 "    The partition table on the device reads:"
+    sudo partx --show --output NR,SIZE,NAME "${FLASH_DEVICE}" >&2 || true
+    echo >&2 "    Three partitions named loom-live-esp, loom-live-store and ${KEY_PARTLABEL} were"
+    echo >&2 "    just written. If the table above is the one this stick had before, the write"
+    echo >&2 "    did not land: unplug the stick, plug it back in, and run the same command"
+    echo >&2 "    again -- the image is already built, so it will not be rebuilt."
+    exit 1
+}
+
+# Resolved on the flashed device rather than through /dev/disk/by-partlabel, so
+# a second Loom stick in another port cannot be written to by mistake.
+#
+# Read off the partition table itself, NOT out of `lsblk`'s PARTLABEL column,
+# which is where this used to look. That column comes from udev's database, and
+# udev populates it asynchronously long after the kernel has the table: on a
+# freshly flashed stick the partitions are all correct and visible -- right
+# count, right sizes -- while every PARTLABEL is still empty, and they stay
+# empty for longer than any timeout worth having. Re-plugging the stick fixes
+# it, which is a fine diagnosis and a terrible build step.
+#
+# `partx --show` parses the GPT on the device, so it answers from the same bytes
+# `dd` just wrote and needs nothing to have settled.
+key_partition(){
+    local number
+
+    # No `--raw`: util-linux refuses it alongside `--show` ("options --show and
+    # --raw cannot be combined"), as it does `--pairs`. The default column
+    # output is padded, which costs nothing here because `awk` splits on
+    # whitespace either way.
+    number="$(sudo partx --show --noheadings --output NR,NAME "${FLASH_DEVICE}" \
+        | awk --assign label="${KEY_PARTLABEL}" '$2 == label { print $1 }' \
+        | head --lines=1)"
+    if [[ -z "${number}" ]]; then
+        return 0
+    fi
+
+    partition_path "${number}"
+}
+
+# A partition number on FLASH_DEVICE, as a device node.
+#
+# Asked of the kernel rather than assembled, because the rule differs by
+# transport: /dev/sdb + 3 is /dev/sdb3, but /dev/nvme0n1 + 3 is /dev/nvme0n1p3
+# and /dev/mmcblk0 + 3 is /dev/mmcblk0p3. Every partition's own sysfs directory
+# already carries its number, so there is nothing here to encode and get wrong.
+#
+# Under the disk's own directory rather than /sys/class/block, where a glob on
+# the disk name would also match an unrelated disk (`sdb*` catches `sdba`) whose
+# partition numbers would collide.
+partition_path(){
+    local number="${1}" disk entry found
+    disk="$(basename "${FLASH_DEVICE}")"
+
+    for entry in "/sys/block/${disk}/${disk}"*/partition; do
+        if [[ ! -r "${entry}" ]]; then
+            continue
+        fi
+        read -r found < "${entry}"
+        if [[ "${found}" == "${number}" ]]; then
+            printf '/dev/%s' "$(basename "$(dirname "${entry}")")"
+            return 0
+        fi
+    done
+}
+
+write_key_partition(){
+    local key_part
+    key_part="$(key_partition)"
+
+    if [[ -z "${key_part}" ]]; then
+        echo >&2 "[!] Error: no '${KEY_PARTLABEL}' partition on ${FLASH_DEVICE} after flashing."
+        exit 1
+    fi
+
+    if [[ "${LOCK_KEY}" = true ]]; then
+        write_locked_key_partition "${key_part}"
+        return
+    fi
+
+    echo "[*] Writing the LUKS key to ${key_part}"
+    sudo dd if="${KEY_DIR}/luks.key" of="${key_part}" bs="${KEY_BYTES}" count=1 conv=fsync status=none
+    sync
+}
+
+# --lock-key: the partition becomes a container and the key goes inside it.
+#
+# argon2id, deliberately unlike the root container the installer formats with
+# pbkdf2 at 1000 iterations. The two are formatted for opposite inputs: that one
+# is opened with 4096 bytes of /dev/urandom, where stretching buys nothing, and
+# this one is opened with something a human typed, where stretching is the entire
+# defence.
+#
+# The cost is pinned rather than benchmarked, which is what cryptsetup does left
+# to itself. Benchmarking is wrong twice here: it measures the *build host*, and
+# the container is opened on the box and in its initrd -- so a roomy build host
+# would pick a memory cost a smaller box cannot afford, and stage 1 would fail to
+# unlock a stick that verified perfectly. Pinning also makes two sticks flashed
+# on two machines the same strength.
+#
+# 1 GiB and four passes is what cryptsetup picks on an ordinary machine anyway,
+# and every platform in nixos/platforms/ has many times that much RAM free in
+# stage 1. `--pbkdf-force-iterations` is what skips the benchmark entirely.
+write_locked_key_partition(){
+    local key_part="${1}"
+
+    echo "[*] Creating the LUKS key container on ${key_part}"
+    printf '%s' "${KEY_PASSPHRASE}" | sudo cryptsetup luksFormat \
+        --type luks2 \
+        --batch-mode \
+        --pbkdf argon2id \
+        --pbkdf-force-iterations 4 \
+        --pbkdf-memory 1048576 \
+        --pbkdf-parallel 4 \
+        --key-file - \
+        "${key_part}"
+
+    printf '%s' "${KEY_PASSPHRASE}" | sudo cryptsetup open \
+        --type luks2 \
+        --key-file - \
+        "${key_part}" "${KEYSTORE_MAPPING}"
+
+    echo "[*] Writing the LUKS key into the container"
+    sudo dd if="${KEY_DIR}/luks.key" of="/dev/mapper/${KEYSTORE_MAPPING}" \
+        bs="${KEY_BYTES}" count=1 conv=fsync status=none
+    sync
+    sudo cryptsetup close "${KEYSTORE_MAPPING}"
+
+    # Printed the instant it is committed to the stick, not six steps later in
+    # `report`. From here the stick only opens with this value, so anything that
+    # stops the run in between -- a failing backup path, a Ctrl-C, a sync error
+    # -- used to take the only copy with it: the passphrase lived in that shell
+    # and nowhere else, and what was left was an hour of build plus a brick.
+    # `report` prints it again at the end, where it is also the last thing on
+    # the screen.
+    print_key_passphrase
+}
+
+verify_flash(){
+    local key_part label names
+
+    # From the partition table, for the reason `key_partition` gives: `lsblk`'s
+    # PARTLABEL column is udev's answer, and udev has not necessarily caught up
+    # with a stick written seconds ago.
+    # As `key_partition`: no `--raw` with `--show`, and `awk` rather than a
+    # NAME-only column, so a padded field cannot defeat the `--line-regexp`.
+    names="$(sudo partx --show --noheadings --output NR,NAME "${FLASH_DEVICE}" | awk '{ print $2 }')"
+
+    for label in loom-live-esp loom-live-store "${KEY_PARTLABEL}"; do
+        if ! grep --quiet --line-regexp --fixed-strings "${label}" <<< "${names}"; then
+            echo >&2 "[!] Error: partition '${label}' is missing from ${FLASH_DEVICE}."
+            echo >&2 "    The partition table on the device reads:"
+            sudo partx --show --output NR,SIZE,NAME "${FLASH_DEVICE}" >&2 || true
+            exit 1
+        fi
+    done
+
+    # Read the key back. A stick whose key partition did not take would install
+    # fine and then never boot again, which is a miserable thing to discover in
+    # the field.
+    key_part="$(key_partition)"
+    if [[ "${LOCK_KEY}" = true ]]; then
+        # Through the container, which checks the passphrase and the key together:
+        # this is the same sequence stage 1 will run, so a stick that passes here
+        # is one that boots.
+        printf '%s' "${KEY_PASSPHRASE}" | sudo cryptsetup open \
+            --type luks2 \
+            --key-file - \
+            "${key_part}" "${KEYSTORE_MAPPING}"
+        sudo dd if="/dev/mapper/${KEYSTORE_MAPPING}" of="${KEY_DIR}/readback.key" \
+            bs="${KEY_BYTES}" count=1 status=none
+        sudo cryptsetup close "${KEYSTORE_MAPPING}"
+    else
+        sudo dd if="${key_part}" of="${KEY_DIR}/readback.key" bs="${KEY_BYTES}" count=1 status=none
+    fi
+
+    if ! cmp --silent "${KEY_DIR}/luks.key" "${KEY_DIR}/readback.key"; then
+        echo >&2 "[!] Error: the key read back from ${key_part} does not match what was written."
+        exit 1
+    fi
+    echo "[*] Key verified on ${key_part}"
+}
+
+backup_luks_key(){
+    if [[ -z "${KEY_BACKUP}" ]]; then
+        echo
+        echo "[!] The LUKS key exists on exactly one physical object: this USB stick."
+        echo "[!] If it is lost or damaged, the box's data is unrecoverable unless"
+        echo "[!] someone wrote down the recovery passphrase shown after installation."
+        echo "[!] Pass --key-backup FILE to keep a copy."
+        return
+    fi
+
+    # Never inside the repository, where `git add -A` could pick it up.
+    assert_secret_path "${KEY_BACKUP}" "the LUKS key"
+
+    install --mode=0400 "${KEY_DIR}/luks.key" "${KEY_BACKUP}"
+    echo "[*] LUKS key backed up to ${KEY_BACKUP} (mode 0400). Store it away from the box."
+
+    if [[ "${LOCK_KEY}" = true ]]; then
+        # Worth saying plainly: this file is the key itself, not the container
+        # around it, so it opens the box's disk with no passphrase involved. It
+        # is the one copy of the key that --lock-key does not cover.
+        echo "[!] That file is the raw key. It unlocks the box without the stick and"
+        echo "[!] without the passphrase -- keep it somewhere that reflects it."
+    fi
+}
+
+backup_key_passphrase(){
+    if [[ "${LOCK_KEY}" != true ]]; then
+        return
+    fi
+
+    if [[ -z "${LOCK_KEY_OUT}" ]]; then
+        echo
+        echo "[!] The key passphrase is stored nowhere. It is printed at the very end"
+        echo "[!] of this run, in a block of its own: without it the stick is inert,"
+        echo "[!] and the only way left into the box is the recovery passphrase the"
+        echo "[!] installer prints after it runs."
+        echo "[!] Pass --lock-key-out FILE to keep a copy."
+        return
+    fi
+
+    # Checked again at the point of writing, not only in resolve_lock_key: a
+    # secret is worth refusing twice, and these two run minutes apart.
+    assert_secret_path "${LOCK_KEY_OUT}" "--lock-key-out"
+
+    ( umask 077; printf '%s\n' "${KEY_PASSPHRASE}" > "${LOCK_KEY_OUT}" )
+    chmod 0400 "${LOCK_KEY_OUT}"
+    echo "[*] Key passphrase written to ${LOCK_KEY_OUT} (mode 0400)."
+    echo "[*] Keep it apart from the stick -- together they are one factor, not two."
+}
+
+# The one line of this whole run that exists nowhere else.
+#
+# Its own block, at the very end of the output, framed so it survives being
+# scrolled past in a terminal that has just printed two screens of warnings.
+print_key_passphrase(){
+    echo
+    echo "    +------------------------------------------------------------------+"
+    echo "    |  KEY STICK PASSPHRASE                                             |"
+    echo "    +------------------------------------------------------------------+"
+    echo
+    echo "        ${KEY_PASSPHRASE}"
+    echo
+    # Beside the passphrase rather than only in the table above, because this is
+    # the line somebody copies onto a card that travels with the box -- and the
+    # keyboard the box expects is part of knowing how to type it. The box says
+    # the same thing at its own prompt (nixos/key-store.nix).
+    if [[ -n "${KEYMAP}" ]]; then
+        echo "    Typed on a '${KEYMAP}' keyboard: that is the layout this box loads."
+    else
+        echo "    Typed on a US keyboard -- no --keymap was given, so that is what the"
+        echo "    box loads. On a Swiss, German or French keyboard, rebuild with"
+        echo "    --keymap (see Documentation/appliance.md) or expect to hunt for keys."
+    fi
+    echo
+    if [[ -n "${LOCK_KEY_OUT}" ]]; then
+        echo "    Also written to ${LOCK_KEY_OUT}."
+        echo "    Keep that file away from the stick."
+    else
+        echo "    This is the only copy. Write it down now -- re-running this script"
+        echo "    generates a different passphrase and re-flashes the stick, so there"
+        echo "    is no way back to this one."
+    fi
+}
+
+report(){
+    local image checksum gpu
+
+    # Read by `atexit`: a run that never reported has not told anybody where the
+    # --debug key directory is, so that directory is scratch rather than output.
+    REPORTED=true
+
+    image="$(image_file "${IMAGE_LINK}")"
+    gpu="$(gpu_report)"
+    checksum="$(sha256sum "${KEY_DIR}/luks.key" 2>/dev/null | cut --delimiter=' ' --fields=1 || echo 'not generated')"
+
+    echo
+    echo "[*] Appliance image ready"
+    echo "      image     : ${image}"
+    echo "      loom tag  : ${TAG}"
+    echo "      platform  : ${PLATFORM}"
+    echo "      system    : ${NIX_SYSTEM}"
+    echo "      subnet    : ${SUBNET}.0/24 (box at ${SUBNET}.1, DHCP ${SUBNET}.100-200)"
+    echo "      interface : loom0${LOOM_INTERFACE:+ (renamed from ${LOOM_INTERFACE})}"
+    echo "      gpu       : ${gpu}"
+    echo "      debug     : ${DEBUG_ACCESS}"
+    echo "      key lock  : ${LOCK_KEY}"
+    echo "      mtls      : ${REQUIRE_CLIENT_CERT}"
+    echo "      values    : ${USER_VALUES_SOURCES:-none (chart defaults)}"
+    echo "      keymap    : ${KEYMAP:-us (built-in default)}"
+    echo "      wifi      : ${ENABLE_WIFI}"
+    if [[ "${ENABLE_WIFI}" = true ]]; then
+        echo "      ssid      : ${WIFI_SSID}"
+        echo "      wifi psk  : ${WIFI_PSK}"
+        if [[ -n "${WIFI_COUNTRY}" ]]; then
+            echo "      wifi band : 5GHz ch36, country ${WIFI_COUNTRY}"
+        else
+            echo "      wifi band : 2.4GHz ch6, no country code"
+        fi
+        echo
+        echo "[!] This box will serve Loom over the air to anyone within range who has"
+        echo "[!] that passphrase. Loom has no user management and its frontend is not"
+        echo "[!] an authentication boundary, so the passphrase is the only thing between"
+        echo "[!] the indexed data and a stranger in the car park. It is also printed on"
+        echo "[!] the box's login screen, as a QR code, for anyone standing at the monitor."
+        echo "[!] Do not cable a wifi-enabled box into a network you do not own: the radio"
+        echo "[!] and the wired port are bridged, so it becomes an open door onto that LAN."
+    fi
+    if [[ "${DEBUG_ACCESS}" = true ]]; then
+        echo
+        echo "[*] Debug access. The key that opens this image:"
+        echo "      key dir   : ${DEBUG_KEY_DIR}"
+        echo "      on the box: ssh -F ${DEBUG_KEY_DIR}/ssh_config loom-appliance"
+        echo "      in a VM   : ssh -F ${DEBUG_KEY_DIR}/ssh_config.vm loom-appliance"
+        echo "      bundle    : ssh -F ... loom-appliance loom-debug-bundle"
+        echo "      builder   : ${DEBUG_KEY_DIR}/nix-builder -- this box can build ${NIX_SYSTEM}"
+        echo "                  for you, natively, where --allow-cross means qemu."
+        echo
+        echo "[*] The sshd runs in first-time setup too, but the addresses above do not"
+        echo "[*] apply there: that mode is a DHCP client, so the box answers on whatever"
+        echo "[*] its lease gave it. Use 'ssh -i ${DEBUG_KEY_DIR}/id_ed25519 ${LOOM_USER}@<lease>'."
+        echo
+        echo "[!] This image is NOT an appliance anybody may be handed. It runs an SSH"
+        echo "[!] server, and the key above is root on the box -- the operator account is"
+        echo "[!] in 'wheel' with passwordless sudo. Loom has no user management behind"
+        echo "[!] that, so whoever holds the key holds the indexed corpus."
+        echo "[!] The box says so itself, in red, on its login screen, in the motd and on"
+        echo "[!] the second line of its boot menu entry -- and this image file carries"
+        echo "[!] '-debug' in its name so two .raw files in a drawer cannot be mixed up."
+        echo "[!] It also boots without the splash and its USB key guard only warns"
+        echo "[!] instead of powering off, so it does not behave like a real stick."
+        echo "[!] Delete ${DEBUG_KEY_DIR} when you are done, and wipe the box."
+    fi
+    if [[ -n "${FLASH_DEVICE}" ]] && [[ "${LOCK_KEY}" = true ]]; then
+        echo "      flashed to: ${FLASH_DEVICE}"
+        echo "      key sha256: ${checksum}"
+        echo
+        echo "[*] Boot the box from this stick. It will NOT install by itself: the key"
+        echo "[*] is passphrase-locked, so the installer waits at its menu for somebody"
+        echo "[*] to choose Install and type the passphrase below."
+        echo "[*] The stick must stay plugged in afterwards -- it holds the disk key --"
+        echo "[*] and every boot from then on stops and asks for that passphrase. This"
+        echo "[*] box cannot come back on its own after a power cut."
+        echo "[*] Keep the passphrase somewhere other than with the stick. Together they"
+        echo "[*] are one factor; apart they are two, which is the point of --lock-key."
+        # Last, and on its own. Everything above is metadata that can be worked
+        # out again from the image; this line cannot. It used to sit in the block
+        # with `key sha256`, where --debug's warning pushed it a screen and a half
+        # below the "printed below" that announced it -- which is the exact thing
+        # that message exists to prevent.
+        print_key_passphrase
+    elif [[ -n "${FLASH_DEVICE}" ]]; then
+        echo "      flashed to: ${FLASH_DEVICE}"
+        echo "      key sha256: ${checksum}"
+        echo
+        echo "[*] Boot the box from this stick and leave it alone. It counts down for"
+        echo "[*] 60 seconds and then installs by itself, pooling every internal NVMe"
+        echo "[*] into one encrypted volume. Press any key during the countdown for a menu."
+        echo "[*] The stick must stay plugged in afterwards: it holds the disk key."
+    elif [[ "${VM_SERIAL}" = true ]]; then
+        echo
+        echo "[!] Built with --vm-serial: the installer and the box it installs both carry"
+        echo "[!] a getty on ttyS0. That is one unit more than a real stick has, so do not"
+        echo "[!] flash this image -- --flash refuses it, and this line is here for the copy"
+        echo "[!] somebody keeps. Boot it with: appliance-vm installer --serial"
+    else
+        echo
+        echo "[*] Flash it with: build-appliance-image --flash /dev/sdX"
+    fi
+}
+
+#
+# Usage
+#
+
+usage(){
+    echo "usage: $0 [<options>]"
+    echo "  -h|--help                     show this help"
+    echo "  -v|--verbose                  show verbose output"
+    echo "  -t|--tag TAG                  Loom tag to embed (default: the newest release)"
+    echo "  --include-rc                  let that default consider release candidates too,"
+    echo "                                so 'X.Y.Z-rcN' can win. --tag takes any tag either way."
+    echo "  -o|--output OUTPUT_DIR        where to place the image (default: .appliance-build)"
+    echo "  -f|--flash DEVICE             flash to DEVICE, destroying all data on it"
+    echo "  -k|--key-backup FILE          also write the generated LUKS key to FILE"
+    echo "  --lock-key                    put the LUKS key inside a passphrase-locked container"
+    echo "                                on the stick instead of writing it raw, and generate"
+    echo "                                the word passphrase. The stick stops being a bearer"
+    echo "                                token -- holding it is no longer enough. Costs"
+    echo "                                unattended boot: every boot stops at a prompt, and"
+    echo "                                the installer will not run unattended either."
+    echo "  --lock-key-words N            how many words in that passphrase (default:"
+    echo "                                ${LOCK_KEY_WORDS_DEFAULT}, minimum ${LOCK_KEY_MIN_WORDS})"
+    echo "  --lock-key-out FILE           also write the key passphrase to FILE. Must not be"
+    echo "                                the same file as --key-backup: one file holding both"
+    echo "                                factors is no better than neither."
+    echo "  --require-client-cert         deploy Loom with mutual TLS: every ingress refuses a"
+    echo "                                client that presents no certificate. The box issues"
+    echo "                                itself one and reaches its own services through a"
+    echo "                                loopback proxy that attaches it; a browser needs one"
+    echo "                                from 'generate-client-certificate'."
+    echo "  --values FILE                 deploy the box with these Helm values on top of the"
+    echo "                                chart's. Repeatable, merged in order, last wins. The"
+    echo "                                lowest override layer: every values file an up.sh flag"
+    echo "                                turns on, and the appliance's own values, still win."
+    echo "                                Every path is checked against the tag's values.yaml."
+    echo "  --set PATH=VALUE              the same, one value at a time: --set"
+    echo "                                pipeline.tika_ocr_languages='[\"deu\",\"fra\"]'. Applied"
+    echo "                                after --values. The value is JSON where it parses as"
+    echo "                                JSON and a string where it does not."
+    echo "  --values-allow-new-keys       accept a path the tag's values.yaml does not carry."
+    echo "                                For the chart's free-form maps (labels, annotations,"
+    echo "                                nodeSelector); otherwise it is how a typo is caught."
+    echo "  --skip-values-check           skip the helm dry-run over the merged values."
+    echo "  --keymap NAME                 console keymap for the box, the installer and stage 1,"
+    echo "                                as loadkeys names it ('de_CH-latin1', 'fr', 'uk')."
+    echo "                                Default is the kernel's US QWERTY. Set this when the"
+    echo "                                box has a keyboard that is not US: it is what makes the"
+    echo "                                --lock-key and recovery passphrase prompts typeable."
+    echo "  --vm-serial                   add a getty on ttyS0 to the installer and to the box"
+    echo "                                it installs, so a VM can be driven from a terminal that"
+    echo "                                copies and pastes. For 'appliance-vm installer --serial';"
+    echo "                                refused with --flash, because this is not a stick image."
+    echo "  --debug                       run an SSH server on the box, keyed to a keypair"
+    echo "                                generated here and left in a temp directory this"
+    echo "                                prints. Takes back the appliance's 'no remote access'"
+    echo "                                guarantee, so the box says DEBUG in red on its login"
+    echo "                                screen, in its boot menu and in the motd, and the"
+    echo "                                image file is named '-debug'. Never hand one to"
+    echo "                                anybody. Refused when \$CI is set."
+    echo "  --no-gpu                      build CPU-only for a platform that offloads to a GPU."
+    echo "                                There is no --gpu: the GPU is a property of the box and"
+    echo "                                is declared per platform. Use this when the box turns out"
+    echo "                                not to see its own GPU, which otherwise stops Loom dead."
+    echo "  -p|--platform PLATFORM        box to build for: ${KNOWN_PLATFORMS[*]} (default: ${PLATFORM})"
+    echo "  -s|--system SYSTEM            nix system to build (default: the platform's)"
+    echo "  -i|--interface INTERFACE      pin the appliance NIC by the name the box reports"
+    echo "                                (enp2s0, not eth0) instead of letting the platform"
+    echo "                                match it. Renamed to loom0 either way. Rarely needed:"
+    echo "                                an unmatched box claims a wired port on its own."
+    echo "  --subnet A.B.C                appliance subnet prefix (default: random 10.x.y)"
+    echo "  --wifi                        also run an access point, bridged onto the wired"
+    echo "                                port. Radios are disabled without this."
+    echo "  --wifi-ssid SSID              network name (default: generated 'loom-xxxx')"
+    echo "  --wifi-psk PSK                WPA passphrase (default: generated)"
+    echo "  --wifi-country CC             ISO country code; moves the AP to 5GHz. Without it"
+    echo "                                the AP stays on 2.4GHz, the only band an AP may"
+    echo "                                beacon on with no country code set."
+    echo "  --wifi-interface INTERFACE    pin the radio by name instead of letting the"
+    echo "                                platform match it (renamed to loomwl0 either way)"
+    echo "  --nixpkgs NIXPKGS             nixpkgs source (required; 'build-appliance-image' passes it)"
+    echo "  --nixos-hardware PATH         nixos-hardware source (required; passed the same way)"
+    echo "  -y|--yes                      do not ask for confirmation"
+    echo "  --allow-cross                 allow building for a system other than the host"
+    echo "  --skip-STEP                   skip step STEP, e.g. --skip-validate_environment to build"
+    echo "                                past the preflight checks. Later steps assume the earlier"
+    echo "                                ones ran, so this is a debugging escape hatch, not a"
+    echo "                                supported way to build a stick. The steps, in order:"
+    printf '                                  %s\n' "${STEPS[@]}"
+    echo "                                and with --flash, between build_image and report:"
+    printf '                                  %s\n' "${FLASH_STEPS[@]}"
+}
+
+#
+# Atexit handler
+#
+
+atexit(){
+    # Before KEY_DIR, and the thing that most has to go: under --lock-key two
+    # steps open ${KEYSTORE_MAPPING} and write the raw key through it, and a
+    # failing dd, a failing sync or a Ctrl-C in between left the decrypted
+    # mapping in place -- so the handler carefully deleted the *file* copy of
+    # the key while a device node holding the same bytes stayed open. It also
+    # made the next `--flash --lock-key` run fail at `cryptsetup open` with
+    # "device already exists", on a step nobody would connect to the last run.
+    if [[ -e "/dev/mapper/${KEYSTORE_MAPPING}" ]]; then
+        sudo cryptsetup close "${KEYSTORE_MAPPING}" || true
+    fi
+    if [[ -n "${KEY_DIR}" && -d "${KEY_DIR}" ]]; then
+        rm --recursive --force "${KEY_DIR}"
+    fi
+    if [[ -n "${WORK_DIR}" && -d "${WORK_DIR}" ]]; then
+        rm --recursive --force "${WORK_DIR}"
+    fi
+    # DEBUG_KEY_DIR is deliberately not deleted on a run that *reported*: it
+    # holds the only copy of the private key that opens the image this run just
+    # built, and removing it would make --debug a flag that produces an
+    # unreachable box. `report` prints where it is, and disposing of it is the
+    # operator's call.
+    #
+    # A run that never got that far is the other case, and it used to leak: any
+    # failure before `report` -- `prepare_repo`, `verify_repo`, the hour-long
+    # `build_image` -- left a 0700 directory in $TMPDIR holding an ed25519
+    # private key with nobody told it existed, accumulating one per failed
+    # build. No image was produced, so the key opens nothing; it is still key
+    # material on disk, which is the thing the rest of this script is careful
+    # about.
+    if [[ -n "${DEBUG_KEY_DIR}" && -d "${DEBUG_KEY_DIR}" && "${REPORTED}" != true ]]; then
+        echo "[*] Removing the unreported debug key directory: ${DEBUG_KEY_DIR}"
+        rm --recursive --force "${DEBUG_KEY_DIR}"
+    fi
+    echo "[*] Exiting.."
+}
+trap atexit EXIT
+
+#
+# Argument parsing
+#
+# `${1:?...}` throughout, not `${1?...}`: the second fires only when the
+# argument is *unset*, so `--flash ''` from a wrapper with an empty variable
+# silently built an image and flashed nothing, ending with "Flash it with:
+# build-appliance-image --flash /dev/sdX" after an hour. The same applied to
+# `--key-backup ''` (no backup) and `--lock-key-out ''` (no file, and the
+# "given without --lock-key" guard cannot see it).
+#
+
+while [[ $# -gt 0 ]]; do
+    case "${1}" in
+        -h|--help)
+            usage
+            trap - EXIT
+            exit 0
+        ;;
+        -v|--verbose)
+            VERBOSE=true
+            shift
+        ;;
+        -t|--tag)
+            shift
+            TAG="${1:?Missing TAG}"
+            shift
+        ;;
+        --include-rc)
+            INCLUDE_RC=true
+            shift
+        ;;
+        -o|--output)
+            shift
+            OUTPUT_DIR="${1:?Missing OUTPUT_DIR}"
+            shift
+        ;;
+        -f|--flash)
+            shift
+            FLASH_DEVICE="${1:?Missing DEVICE}"
+            shift
+        ;;
+        -k|--key-backup)
+            shift
+            KEY_BACKUP="${1:?Missing FILE}"
+            shift
+        ;;
+        --lock-key)
+            LOCK_KEY=true
+            shift
+        ;;
+        --require-client-cert)
+            REQUIRE_CLIENT_CERT=true
+            shift
+        ;;
+        --values)
+            shift
+            USER_VALUES_FILES+=("${1:?Missing FILE}")
+            shift
+        ;;
+        --set)
+            shift
+            USER_VALUES_SETS+=("${1:?Missing PATH=VALUE}")
+            shift
+        ;;
+        --values-allow-new-keys)
+            USER_VALUES_ALLOW_NEW_KEYS=true
+            shift
+        ;;
+        --skip-values-check)
+            USER_VALUES_SKIP_CHECK=true
+            shift
+        ;;
+        --lock-key-words)
+            shift
+            LOCK_KEY_WORDS="${1:?Missing N}"
+            shift
+        ;;
+        --lock-key-out)
+            shift
+            LOCK_KEY_OUT="${1:?Missing FILE}"
+            shift
+        ;;
+        --keymap)
+            shift
+            KEYMAP="${1:?Missing NAME}"
+            shift
+        ;;
+        --vm-serial)
+            VM_SERIAL=true
+            shift
+        ;;
+        --debug)
+            DEBUG_ACCESS=true
+            shift
+        ;;
+        --no-gpu)
+            # There is no --gpu to go with this. Whether a box has a usable GPU
+            # is a property of the hardware and is declared once, in
+            # nixos/platforms/<id>.nix; asking for one the box does not have
+            # would only produce a stick that fails on first boot.
+            #
+            # The opt-out is here because the declaration can be wrong in the
+            # other direction, and that failure is the expensive one: up.sh
+            # counts GPUs through the vendor's SMI tool and hard-exits when it
+            # finds none, so a box where ROCm does not enumerate serves nothing
+            # at all, with no remote access to repair it. Rebuild with this and
+            # the same stick comes back CPU-only.
+            DISABLE_GPU=true
+            shift
+        ;;
+        -p|--platform)
+            shift
+            PLATFORM="${1:?Missing PLATFORM}"
+            # Matched against the list rather than by calling platform_system,
+            # which in a condition would silently disable `set -e` inside it.
+            require_platform "${PLATFORM}"
+            shift
+        ;;
+        -s|--system)
+            shift
+            NIX_SYSTEM="${1:?Missing SYSTEM}"
+            shift
+        ;;
+        -i|--interface)
+            shift
+            LOOM_INTERFACE="${1:?Missing INTERFACE}"
+            shift
+        ;;
+        --subnet)
+            shift
+            SUBNET="${1:?Missing SUBNET}"
+            shift
+        ;;
+        --wifi)
+            ENABLE_WIFI=true
+            shift
+        ;;
+        --wifi-ssid)
+            shift
+            WIFI_SSID="${1:?Missing SSID}"
+            shift
+        ;;
+        --wifi-psk)
+            shift
+            WIFI_PSK="${1:?Missing PSK}"
+            shift
+        ;;
+        --wifi-country)
+            shift
+            WIFI_COUNTRY="${1:?Missing COUNTRY}"
+            shift
+        ;;
+        --wifi-interface)
+            shift
+            WIFI_INTERFACE="${1:?Missing INTERFACE}"
+            shift
+        ;;
+        --nixpkgs)
+            shift
+            NIXPKGS="${1:?Missing NIXPKGS}"
+            shift
+        ;;
+        --nixos-hardware)
+            shift
+            NIXOS_HARDWARE="${1:?Missing NIXOS_HARDWARE}"
+            shift
+        ;;
+        -y|--yes)
+            ASSUME_YES=true
+            shift
+        ;;
+        --allow-cross)
+            ALLOW_CROSS=true
+            shift
+        ;;
+        --skip-*)
+            # Validated at parse time, and matched exactly later. A substring
+            # test against a space-joined array accepted any misspelling in
+            # silence -- the step then ran anyway, which contradicts the
+            # operator -- and, worse, skipped more than was asked:
+            # `--skip-report-only` contains `report`, and on a `--lock-key
+            # --flash` run that means the passphrase block is never printed and
+            # the stick is a brick.
+            require_step "${1#--skip-}"
+            SKIP+=("${1#--skip-}")
+            shift
+        ;;
+        -*)
+            # Refused rather than collected. This script's flags decide the
+            # security properties of the artefact -- `--require-client-certs`
+            # (plural) builds an image with no mutual TLS, `--wifi-pks hunter2`
+            # leaves a randomly generated PSK -- and the three sibling scripts
+            # added alongside it all refuse an unknown option. The `ARGS` idiom
+            # this inherited from up.sh collected them into an array no step
+            # ever read.
+            echo >&2 "[!] Error: unknown option: ${1}"
+            usage >&2
+            exit 1
+        ;;
+        *)
+            echo >&2 "[!] Error: unexpected argument: ${1}"
+            usage >&2
+            exit 1
+        ;;
+    esac
+done
+
+#
+# Main
+#
+
+if [[ "${VERBOSE}" = true ]]; then
+    set -x
+fi
+
+# --system is the raw override; otherwise the platform decides. Resolved here
+# rather than at declaration time so that --platform and --system may be given
+# in either order.
+if [[ -z "${NIX_SYSTEM}" ]]; then
+    NIX_SYSTEM="$(platform_system "${PLATFORM}")"
+fi
+
+PLATFORM_GPU="$(platform_gpu "${PLATFORM}")"
+
+# Same reason --platform is checked against a list: catch the flag that cannot
+# do anything here, rather than building for an hour and handing over a stick
+# that is identical to the one the operator would have got anyway.
+if [[ "${DISABLE_GPU}" = true && -z "${PLATFORM_GPU}" ]]; then
+    echo >&2 "[!] Error: platform '${PLATFORM}' is already CPU-only; --no-gpu has nothing to disable."
+    exit 1
+fi
+
+# A stick with a getty on its serial port is not the stick this script exists to
+# produce, and the difference is invisible once it has been written: nothing on
+# the label, nothing on the console, nothing in `report` after the fact. Refuse
+# the combination rather than rely on whoever typed it to remember.
+if [[ "${VM_SERIAL}" = true && -n "${FLASH_DEVICE}" ]]; then
+    echo >&2 "[!] Error: --vm-serial builds an image for a VM, not for a stick."
+    echo >&2 "    It adds a getty on ttyS0 to the installer and to the box it installs."
+    echo >&2 "    Drop --flash to keep the image, or drop --vm-serial to flash one."
+    exit 1
+fi
+
+# A pipeline has no business building an image with a way in, and no way to be
+# told about one: `report` prints the key directory to a log nobody reads, and
+# the runner deletes it minutes later -- so the artifact would be a stick that
+# is remotely accessible and that nobody holds the key to. Refused outright
+# rather than warned about, because there is no case where it is what was meant.
+if [[ "${DEBUG_ACCESS}" = true && -n "${CI:-}" ]]; then
+    echo >&2 "[!] Error: refusing to build a --debug image in CI (\$CI is set)."
+    echo >&2 "    A debug image runs an SSH server, and the key that opens it would be"
+    echo >&2 "    thrown away with the runner. Build one on the machine you will debug from."
+    exit 1
+fi
+
+# Unlike --vm-serial this IS allowed to be flashed -- debugging real hardware is
+# most of the point -- but not silently. Flashing is the step that turns a file
+# somebody can delete into a stick that walks out of the building.
+if [[ "${DEBUG_ACCESS}" = true && -n "${FLASH_DEVICE}" && "${ASSUME_YES}" != true ]]; then
+    echo "[!] --debug and --flash together: this writes a stick that runs an SSH server."
+    echo "[!] The key is generated here and is root on any box installed from it."
+    echo "[!] Do not let it leave the bench, and wipe the box afterwards."
+    read -r -p "[?] Flash a debug stick? [y/N] " answer
+    if [[ "${answer}" != "y" && "${answer}" != "Y" ]]; then
+        echo >&2 "[!] Aborted."
+        exit 1
+    fi
+fi
+
+# Resolved here rather than at declaration time, for the same reason NIX_SYSTEM
+# is: --debug and --output may be given in either order.
+IMAGE_LINK="${OUTPUT_DIR}/appliance-image"
+if [[ "${DEBUG_ACCESS}" = true ]]; then
+    IMAGE_LINK+="-debug"
+fi
+
+if [[ -n "${FLASH_DEVICE}" ]]; then
+    # report last, so it can describe what was flashed.
+    STEPS=( "${STEPS[@]:0:${#STEPS[@]}-1}" "${FLASH_STEPS[@]}" report )
+fi
+
+# execute steps
+skipped=""
+for step in "${STEPS[@]}"; do
+    # An exact element match, not a substring of the joined array -- see the
+    # `--skip-*` arm.
+    skipped="$(step_skipped "${step}")"
+    if [[ -n "${skipped}" ]]; then
+        echo "[*] Skipping: ${step}"
+        continue
+    fi
+    echo "[*] Running: ${step}"
+    "${step}"
+done

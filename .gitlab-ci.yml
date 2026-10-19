@@ -115,7 +115,7 @@ default:
     # enable CI/CD mode for the devenv
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
     # building shell
-    - devenv shell -- echo "[*] devenv shell ready"
+    - devenv_shell_ready
     # verify that the source tree is clean
     - devenv shell -- git-file-changed --no-update
     #
@@ -146,6 +146,8 @@ default:
       - changed-files/
       # for: integrationtest
       - logs/
+      # for: appliance_test
+      - appliance-test.log
     expire_in: 1 week
     when: always
   # Dependency caching
@@ -405,6 +407,106 @@ backend_test:
       coverage_report:
         coverage_format: cobertura
         path: ./backend/coverage.xml
+
+appliance_check:
+  stage: test
+  script:
+    # The appliance's own pytest suites, then an evaluation of the image for
+    # every platform. Boots nothing, so it needs neither KVM nor a runner of the
+    # platform's architecture -- which makes it the only coverage the Spark image
+    # gets here, and cheap enough to run on every pipeline.
+    - devenv shell -- appliance-check
+    # What nixos-hardware gives each platform, and the unit edges the appliance
+    # network depends on, for all three of them. Both read the evaluated
+    # configuration and exit.
+    #
+    # They have to be named here rather than left to `appliance-check` above:
+    # that runs appliance-eval, which only instantiates. An eval-only test
+    # computes its verdict at evaluation time but reports it from the builder
+    # script, so a failing check still produces a valid .drv and nothing notices
+    # until something builds it.
+    - devenv shell -- appliance-test hardware units --platform all
+    # `skills` is the third eval-only test and is here for the identical reason
+    # -- devenv.nix designates nixos/tests/appliance-skills.nix as the half that
+    # has to fail an image build, and nothing else in this file builds it.
+    #
+    # Without `--platform all`, which the other two can take and this one cannot:
+    # the report is built from `hostPkgs`, but the skills directory and the
+    # instructions file it inspects are store paths of the *platform's* nixpkgs,
+    # so asking an x86_64 runner about the Spark is a platform mismatch rather
+    # than a verdict. The default is the platform matching the runner, which is
+    # real coverage of the discovery rules and the frontmatter either way.
+    - devenv shell -- appliance-test skills
+
+appliance_test:
+  stage: test
+  # The NixOS VM tests boot real machines: minutes each with KVM, five to ten
+  # times that without, and whether a job container has a usable /dev/kvm
+  # depends on nested virtualisation on the runner host. So this is the one job
+  # here gated on what a merge request touched -- everything under nixos/, plus
+  # the files tests/appliance.nix asserts the appliance restates (vars.sh,
+  # up.sh) and the pins the image is built from. appliance_check runs
+  # everywhere and is what catches a path missing from that list.
+  #
+  # No job in this file sets a timeout, and the project default is shorter than
+  # a run without KVM. A complete run here takes about two and a half hours; the
+  # extra hour is for the one target `run_appliance_tests.sh` runs a second time
+  # when the host stalls it, which costs the driver's whole global timeout
+  # before the retry even starts.
+  timeout: 4h
+  rules:
+    # `changes` only means what it says in a merge request pipeline, where it is
+    # the diff against the target branch. On main, a tag or a new branch every
+    # file counts as changed, which would start a multi-hour job on each. Manual
+    # there instead.
+    # `allow_failure` is required on a manual job, not a judgement about it:
+    # without it the pipeline blocks waiting to be started by hand.
+    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: manual
+      allow_failure: true
+    - changes:
+        - nixos/**/*
+        - cicd/run_appliance_tests.sh
+        # Sourced by run_appliance_tests.sh, and by the image build that
+        # `appliance-vm installer` drives: platform_system, resolve_loom_values
+        # and the shared nix argument list are all in there, so an edit changes
+        # exactly what this job builds without touching anything else.
+        - cicd/appliance_common.sh
+        - cicd/build_appliance_image.sh
+        - vars.sh
+        - up.sh
+        # vars.sh reads the domain, the host list and the console's chat model
+        # out of the chart, so a chart-side edit changes what the image is built
+        # with without touching anything else in this list.
+        - charts/values.yaml
+        - devenv.nix
+        - devenv.lock
+      # Blocking, deliberately. This is the only job that boots the appliance --
+      # `appliance_check` is eval-and-pytest and boots nothing -- so with
+      # `allow_failure` the whole of nixos/tests/ could not turn a pipeline red,
+      # and the MR's headline deliverable shipped with its only end-to-end
+      # verification unable to fail. If a runner turns out not to manage it, the
+      # answer is a narrower `changes:` list or a smaller selection, not a job
+      # whose result nobody has to read.
+      when: on_success
+    - when: never
+  script:
+    # --platform is named rather than detected: the runners are x86_64, and
+    # evo-x2 is the x86_64 platform that declares a GPU, so it exercises more of
+    # box.nix than nuc12 does. Whether to ask for the `kvm` feature is the
+    # script's decision -- it probes /dev/kvm and prints which way it went. The
+    # store here is the container's writable layer, which nothing else is
+    # sharing and nothing survives, so it is collected to a smaller margin than
+    # a workstation's.
+    #
+    # Kept as an artifact as well as printed. The driver logs every machine's
+    # console, which passes GitLab's 4 MB trace ceiling partway through the
+    # boot-and-test targets -- and what is dropped is the end, where the
+    # per-target verdicts and the summary are. `pipefail` so the pipeline's
+    # status is the test run's rather than tee's.
+    - |
+      set -o pipefail
+      devenv shell -- appliance-test --platform evo-x2 --min-free 10 --max-free 20 2>&1 | tee appliance-test.log
 
 aitools_test:
   stage: test

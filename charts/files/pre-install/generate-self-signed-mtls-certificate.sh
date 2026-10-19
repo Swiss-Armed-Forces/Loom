@@ -59,7 +59,12 @@ keep_existing_mtls_cert() {
         echo >&2 "[!] Error: could not read secret '${MTLS_CERT_SECRET_NAME}'"
         exit 1
     fi
-    pem="$(base64 -d <<< "${encoded}")"
+    # Decoded in its own `if`: this function runs inside one, so `set -e` is off,
+    # and a corrupt ca.crt and an absent one call for different repairs.
+    if ! pem="$(base64 -d <<< "${encoded}")"; then
+        echo >&2 "[!] Error: ca.crt in '${MTLS_CERT_SECRET_NAME}' is not valid base64"
+        exit 1
+    fi
     if [[ -z "${pem}" ]]; then
         echo >&2 "[!] Error: secret '${MTLS_CERT_SECRET_NAME}' carries no ca.crt"
         exit 1
@@ -94,11 +99,28 @@ create_self_signed_mtls_cert() {
     local common_name
     common_name="*.${LOOM_DOMAIN}"
 
-    # Generate self-signed cert and key
+    # The extensions are stated rather than inherited. `openssl req -x509` with no
+    # `-extensions` picks up the stock config's `x509_extensions = v3_ca`, which does
+    # emit `basicConstraints: critical, CA:TRUE` -- so this worked, but it worked by
+    # way of the base image's openssl.cnf.
+    #
+    # `keyUsage` is the half that was genuinely missing. This really is an issuing CA:
+    # cicd/generate_client_certificate.sh signs every client certificate with it and
+    # templates/common/tls-option.yaml verifies against it, and RFC 5280 4.2.1.3 says
+    # such a certificate SHOULD assert keyCertSign. Go and OpenSSL enforce the bit
+    # only when the extension is present, which is why its absence cost nothing yet.
+    #
+    # This is the opposite case to the sibling script: there the certificate is a leaf
+    # that clients also install as their own anchor, and it deliberately asserts no
+    # keyUsage at all so that BoringSSL will accept it. Nothing installs *this* one as
+    # a trust root -- it verifies clients, it is never served -- so it gets the
+    # keyUsage a CA is supposed to carry.
     openssl req -x509 -nodes -days 365 \
         -newkey rsa:4096 \
         -keyout "${KEY_FILE}" \
         -out "${CRT_FILE}" \
+        -addext "basicConstraints=critical,CA:TRUE" \
+        -addext "keyUsage=critical,keyCertSign,cRLSign" \
         -subj "/CN=${common_name}/O=${MTLS_CERT_ORG}"
 
     # Written in one step rather than delete-then-create, so a failure between

@@ -57,6 +57,11 @@ spec:
               value: "0.0.0.0:{{ $values.service.port }}"
             - name: OLLAMA_MODELS
               value: /ollama-models
+            {{- with $values.gpuVendor }}
+            - name: LOOM_GPU_VENDOR
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           startupProbe:
             httpGet:
               path: /api/ps
@@ -87,8 +92,28 @@ spec:
             - name: ollama-models
               mountPath: /ollama-models
             {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
-          {{- if $values.resources }}
-          resources: {{- toYaml $values.resources | nindent 12 }}
+          {{- /*
+            The GPU request is rendered from `gpuVendor` rather than taken from
+            `resources` alone, because the two come from the same values file and
+            used to sit under two independent guards: `values-no-resources.yaml`
+            sets `ollama.resources.requests: null`, Helm drops the null keys, and
+            the whole `resources` block then disappears -- taking `amd.com/gpu`
+            with it while `LOOM_GPU_VENDOR` stayed. Without the request the device
+            plugin injects no /dev/kfd, so `ollama_wrapper.py` sees a vendor it was
+            told to expect and no device, and exits 1: a permanent CrashLoopBackOff
+            where before the pod simply ran on CPU. It also made the outcome depend
+            on the order the values files were merged in.
+
+            `merge` lets the values files keep the last word on the amount, so a
+            deployment asking for two GPUs still gets two.
+          */}}
+          {{- $resources := default dict $values.resources }}
+          {{- if $values.gpuVendor }}
+          {{- $gpu := dict (printf "%s.com/gpu" $values.gpuVendor) 1 }}
+          {{- $resources = merge (deepCopy $resources) (dict "requests" $gpu "limits" $gpu) }}
+          {{- end }}
+          {{- if $resources }}
+          resources: {{- toYaml $resources | nindent 12 }}
           {{- end }}
       initContainers:
         - name: copy-ollama-models
@@ -97,20 +122,33 @@ spec:
           {{- else }}
           image: {{ .Values.image.registry }}/{{ $values.image.repository }}:{{ $values.image.tag | default .Chart.AppVersion }}
           {{- end }}
+          {{- /*
+            `sh` rather than `bash`: the models image is Alpine carrying the
+            blobs and a shell, and nothing else.
+          */}}
           command:
             - /bin/sh
-            - -c
-            - |
-              echo "Copying preloaded models to model storage..."
-              cp --recursive --update /root/.ollama/models/* /ollama-models/ || true
+            - /opt/loom/scripts/copy-models.sh
+          args:
+            - --source
+            - /root/.ollama/models
+            - --destination
+            - /ollama-models
           volumeMounts:
             - name: ollama-models
               mountPath: /ollama-models
+            - name: scripts
+              mountPath: /opt/loom/scripts
+              readOnly: true
           {{- if $values.initContainer.resources }}
           resources: {{- toYaml $values.initContainer.resources | nindent 12 }}
           {{- end }}
         {{- with include "app.trustedCerts.initContainer" . }}{{ . | nindent 8 }}{{- end }}
       volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "app.fullname" . }}-{{ $component }}-scripts
+            defaultMode: 0555
         - name: ollama-models
           {{- if $values.pvc.enabled }}
           persistentVolumeClaim:

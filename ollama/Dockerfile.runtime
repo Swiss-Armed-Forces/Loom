@@ -31,7 +31,10 @@ RUN set -exu \
   && apt-get -y install --no-install-recommends python3=${PYTHON_VERSION} \
   && rm -rf /var/lib/apt/lists/*
 
+# Both, and side by side: a script run by path puts its own directory first on
+# sys.path, so `import nvml` from the entrypoint resolves to the file beside it.
 COPY ollama_wrapper.py /bin/ollama_wrapper.py
+COPY nvml.py /bin/nvml.py
 
 # Runtime configuration
 ENV OLLAMA_HOST="0.0.0.0"

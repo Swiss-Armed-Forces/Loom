@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -15,9 +16,11 @@ from common.dependencies import (
     get_task_scheduling_service,
 )
 from common.models.es_repository import SortingParameters
+from common.services.encryption_service import FIXED_AES_KEY
 from common.services.lazybytes_service import FileStorageLazyBytesService
 from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import (
+    ArchiveImportRequest,
     TaskSchedulingService,
     UpdateArchiveRequest,
 )
@@ -27,7 +30,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from api.models.archives_model import ArchivesModel
+from api.routers.files import SOURCE_ID as FILE_UPLOAD_SOURCE_ID
 from api.utils import get_content_disposition_header
+
+# `files.py`'s own source id, deliberately reused rather than a second one of our own:
+# a blob imported here that turns out not to be an archive is indexed as an ordinary
+# file, and the Files view and its source facet are where the person who uploaded it
+# will go looking. A distinct `api-archive-import` put it somewhere nothing filters on.
+ARCHIVE_IMPORT_SOURCE_ID = FILE_UPLOAD_SOURCE_ID
 
 router = APIRouter()
 
@@ -58,9 +68,17 @@ class EncryptionKeyResponse(BaseModel):
 
 @router.get("/encryption-key")
 def get_encryption_key() -> EncryptionKeyResponse:
-    """Return the archive encryption master key, or null if not configured."""
+    """Return the archive encryption master key, or null when there is not a real one.
+
+    Null means "this deployment was never given a key", which is not the same as "the
+    field is unset": `Settings.parse_archive_enc_master_key` substitutes the published
+    all-zero `FIXED_AES_KEY` for an absent value, so the field is never None and handing
+    its hex back would present 64 zeros as if it were a secret. Anyone who exported an
+    archive on that key and took this response as proof of encryption would be holding
+    plaintext.
+    """
     master_key = settings.archive_enc_master_key
-    if master_key is None:
+    if master_key is None or master_key.key.get_secret_value() == FIXED_AES_KEY:
         return EncryptionKeyResponse(encryption_key=None)
     return EncryptionKeyResponse(encryption_key=master_key.key.get_secret_value().hex())
 
@@ -142,9 +160,25 @@ def import_archive(
     file_storage_service: FileStorageLazyBytesService = default_file_storage_service,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    """Import files from a loom archive (.zip or .loom)."""
+    """Import files from a loom archive (.zip or .loom).
+
+    A blob that turns out not to be an importable archive is indexed as an ordinary file
+    rather than discarded, which is why a name and a source travel with it -- see
+    worker.create_archive.index_archive.
+    """
     file_content = file_storage_service.from_file(file.file)
-    task_scheduling_service.dispatch_index_archive(file_content)
+    task_scheduling_service.dispatch_index_archive(
+        ArchiveImportRequest(
+            file_content=file_content,
+            full_name=file.filename if file.filename is not None else "",
+            source_id=ARCHIVE_IMPORT_SOURCE_ID,
+            # Aware, not naive: this is indexed as an Elasticsearch Date and ordered
+            # on, and every other writer of the field -- `files.py`, the crawler, the
+            # `File` default -- writes aware UTC, as does the reader that turns
+            # `uploaded:TODAY` into a range (`query_builder.TimeTransformer`).
+            uploaded_datetime=datetime.now(timezone.utc),
+        )
+    )
 
 
 @router.put("/{archive_id}", status_code=202)

@@ -5,6 +5,8 @@ import pytest
 
 from common.services.encryption_service import (
     AES_KEY_LEN_BYTES,
+    AES_MAC_LEN,
+    DEFAULT_ENCRYPTED_MAGIC_BYTES,
     FIXED_AES_KEY,
     AESMasterKey,
     FileEncryptionService,
@@ -165,3 +167,155 @@ def test_file_encryption_service_encrypt_decrypt_mac_works(
                 iter([bytes(modified_encrypted_file_buffer)])
             )
             list(decrypted_stream)  # consume generator to trigger MAC verification
+
+
+def _encrypted(service: FileEncryptionService, plaintext: bytes) -> bytes:
+    return b"".join(service.get_encrypted_stream(iter([plaintext])))
+
+
+def test_decrypt_prefix_matches_what_the_full_decoder_produces():
+    """Tie the probe to the real decoder rather than to itself.
+
+    The probe rebuilds the GCM keystream from the header alone. If that ever drifts from
+    what `get_decrypted_stream` does, the routing it feeds would quietly start rejecting
+    archives this deployment can in fact open.
+    """
+    service = FileEncryptionService(AESMasterKey())
+    plaintext = b"PK\x03\x04" + bytes(range(256)) * 4
+
+    encrypted = _encrypted(service, plaintext)
+
+    assert service.decrypt_prefix(encrypted, 64) == plaintext[:64]
+    assert (
+        b"".join(service.get_decrypted_stream(iter([encrypted])))[:64] == plaintext[:64]
+    )
+
+
+def test_decrypt_prefix_needs_only_the_header_and_the_bytes_it_returns():
+    """The point of the probe: it never sees the tail, where the MAC lives."""
+    service = FileEncryptionService(AESMasterKey())
+    plaintext = b"PK\x03\x04" + b"x" * 100_000
+
+    encrypted = _encrypted(service, plaintext)
+    head = encrypted[: service.header_size + 4]
+
+    assert service.decrypt_prefix(head, 4) == b"PK\x03\x04"
+
+
+def test_decrypt_prefix_with_the_wrong_key_does_not_return_the_plaintext():
+    plaintext = b"PK\x03\x04" + b"payload"
+
+    encrypted = _encrypted(FileEncryptionService(AESMasterKey()), plaintext)
+
+    other = FileEncryptionService(AESMasterKey())
+    assert other.decrypt_prefix(encrypted, 4) != b"PK\x03\x04"
+
+
+def test_decrypt_prefix_returns_none_for_a_head_shorter_than_the_header():
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload")
+
+    assert service.decrypt_prefix(encrypted[: service.header_size - 1], 4) is None
+
+
+def test_decrypt_prefix_returns_none_when_the_magic_does_not_match():
+    service = FileEncryptionService(AESMasterKey())
+
+    assert service.decrypt_prefix(b"%PDF-1.7" + b"\x00" * 200, 4) is None
+
+
+def test_decrypt_prefix_returns_what_it_has_when_the_head_runs_out():
+    """A truncated object yields a short prefix rather than raising."""
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"PK\x03\x04payload")
+
+    assert service.decrypt_prefix(encrypted[: service.header_size + 2], 4) == b"PK"
+
+
+def test_header_size_agrees_with_what_the_encoder_writes():
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"")
+
+    # magic + salt + nonce, then nothing but the MAC for empty plaintext.
+    assert len(encrypted) == service.header_size + AES_MAC_LEN
+
+
+def test_a_container_relabelled_as_another_type_is_rejected():
+    """The magic is a type discriminator, so it has to be bound to the key.
+
+    `archive_detection` reasons explicitly that "an encrypted archive never carries
+    the generic one", and `decrypt_prefix` reads the magic as a type tag -- but GCM's
+    tag covers the ciphertext only, so without binding the magic into the key
+    derivation the header is an unauthenticated label: strip `LOOMENC`, prepend the
+    archive magic, and the archive service decrypts it with the MAC passing.
+    """
+    master_key = AESMasterKey()
+    plain = FileEncryptionService(master_key)
+    archive = FileEncryptionService(master_key, magic_bytes=b"LOOMARCHIVEV2")
+
+    relabelled = (
+        b"LOOMARCHIVEV2"
+        + _encrypted(plain, b"PK\x03\x04payload")[len(DEFAULT_ENCRYPTED_MAGIC_BYTES) :]
+    )
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(archive.get_decrypted_stream(iter([relabelled])))
+    assert archive.decrypt_prefix(relabelled, 4) != b"PK\x03\x04"
+
+
+def test_the_two_container_types_do_not_share_a_derived_key():
+    """The same master key under two magics must not produce interchangeable keys."""
+    master_key = AESMasterKey()
+    plain = FileEncryptionService(master_key)
+    archive = FileEncryptionService(master_key, magic_bytes=b"LOOMARCHIVEV2")
+
+    encrypted = _encrypted(plain, b"payload")
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(
+            archive.get_decrypted_stream(
+                iter(
+                    [b"LOOMARCHIVEV2" + encrypted[len(DEFAULT_ENCRYPTED_MAGIC_BYTES) :]]
+                )
+            )
+        )
+
+
+def test_a_truncated_container_is_rejected():
+    """Length is not covered by the mutation loop above: every case there is in place.
+
+    `index_archive.py` justifies a whole routing branch with "the body failed its MAC:
+    truncation or corruption", so the truncation half is a property something depends
+    on.
+    """
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload" * 100)
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(service.get_decrypted_stream(iter([encrypted[:-1]])))
+
+
+def test_an_extended_container_is_rejected():
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload" * 100)
+
+    with pytest.raises((FileEncryptionServiceException, ValueError)):
+        list(service.get_decrypted_stream(iter([encrypted + b"\x00"])))
+
+
+def test_a_container_too_short_to_hold_a_mac_is_named_as_such():
+    service = FileEncryptionService(AESMasterKey())
+
+    encrypted = _encrypted(service, b"payload")
+
+    with pytest.raises(FileEncryptionServiceException, match="Input too short"):
+        list(
+            service.get_decrypted_stream(
+                iter([encrypted[: service.header_size + AES_MAC_LEN - 1]])
+            )
+        )

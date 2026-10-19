@@ -1,0 +1,198 @@
+"""What to mount a volume with, and whether to mount it at all.
+
+Three tiers, in order:
+
+- Refused outright. Container formats that need a key or an assembly step we
+  have no business performing on someone else's media.
+- The table. A known filesystem, an explicit driver and explicit options.
+- Best effort. Anything else the running kernel says it supports is attempted
+  with `mount -t auto` and the baseline options only, so coverage is not capped
+  by what this table happens to list.
+
+Why not simply `mount -t auto` throughout? It probes with libblkid and mounts
+the type it identified, so it detects no worse -- but it then discards the type,
+and the type is exactly what the options below are keyed on. It would also pick
+the NTFS driver by whichever mount helper happens to be installed rather than by
+our choice of FUSE, cannot reach a FUSE driver that ships no `mount.<type>`
+helper at all, and cannot refuse anything or say why.
+"""
+
+from dataclasses import dataclass
+from enum import StrEnum
+
+# Applied to every mount, in every tier.
+#
+# `ro` is the headline, but it is not sufficient on its own -- see JOURNAL_SAFE
+# below. `nodev`/`nosuid` stop a crafted image from carrying a device node or a
+# setuid binary into the box's namespace; `noexec` stops anything on the volume
+# being run at all.
+#
+# What none of them bounds is what a recursive *read* walks, and the copy runs as
+# root over a tree whose contents are chosen by whoever plugged the stick in. The
+# answer is mc's, and it is the one this package relies on: **`mc mirror` does not
+# follow symlinks** -- it copies neither a link pointing out of the tree, nor one
+# pointing inside it, nor a broken one. Verified against the vendored mc and pinned
+# by `tests/test_transfer.py::test_mc_mirror_does_not_follow_symlinks`, because the
+# alternative -- a `link -> /` on a stranger's stick publishing the box's own
+# filesystem to `http://s3.loom` -- is the one boundary where the threat model and
+# the code have to agree explicitly.
+BASE_OPTIONS: tuple[str, ...] = ("ro", "nodev", "nosuid", "noexec")
+
+# The options that make "read-only" actually mean it.
+#
+# A dirty ext4/xfs/btrfs volume mounted with plain `-o ro` still REPLAYS ITS
+# JOURNAL, which writes to the volume. On a box whose job is indexing other
+# people's media that is both an integrity problem -- the evidence is modified by
+# being read -- and a practical one, because the same write fails outright on a
+# device the block layer has been told is read-only, and the mount then fails
+# with an error that looks like a broken filesystem.
+JOURNAL_SAFE: dict[str, tuple[str, ...]] = {
+    "ext2": (),
+    "ext3": ("noload",),
+    "ext4": ("noload",),
+    "xfs": ("norecovery",),
+    "btrfs": ("nologreplay",),
+    "f2fs": ("norecovery",),
+}
+
+
+class VolumePolicy(StrEnum):
+    KNOWN = "known"
+    GENERIC = "generic"
+    REFUSED = "refused"
+
+
+@dataclass(frozen=True)
+class MountPlan:
+    """How a single volume should be mounted, or why it will not be."""
+
+    policy: VolumePolicy
+    fstype: str | None
+    options: tuple[str, ...]
+    helper: str | None
+    reason: str
+
+    @property
+    def mountable(self) -> bool:
+        return self.policy is not VolumePolicy.REFUSED
+
+    @property
+    def option_string(self) -> str:
+        return ",".join(self.options)
+
+
+# Needs a key, a passphrase or an assembly step. Mounting a member device of one
+# of these is either impossible or actively destructive, and guessing is not a
+# decision to make on someone else's media.
+REFUSED: dict[str, str] = {
+    "crypto_LUKS": "LUKS container; no key",
+    "BitLocker": "BitLocker volume; no recovery key",
+    "zfs_member": "ZFS pool member; importing a foreign pool is not safe",
+    "LVM2_member": "LVM physical volume; activating a foreign VG is not safe",
+    "swap": "swap area; no files to index",
+    "linux_raid_member": "MD RAID member; assembling a foreign array is not safe",
+}
+
+# Driver overrides. Absent from this table means "the in-kernel driver of the
+# same name".
+#
+# NTFS goes through ntfs-3g rather than the in-kernel ntfs3 deliberately: this
+# box parses filesystems it was handed by strangers, and FUSE keeps that parsing
+# in a process that can crash without taking the kernel with it. It is slower,
+# and that is the trade being made.
+HELPERS: dict[str, str] = {
+    "ntfs": "ntfs-3g",
+    "ntfs3": "ntfs-3g",
+    "apfs": "apfs-fuse",
+}
+
+# Filesystems with no concept of ownership, which therefore need to be told who
+# owns the files they present.
+NEEDS_OWNER: frozenset[str] = frozenset(
+    {"vfat", "exfat", "ntfs", "ntfs3", "hfs", "hfsplus", "iso9660", "udf"}
+)
+
+# What "only the owner may read it" is spelled as, per filesystem.
+#
+# Everything in NEEDS_OWNER but iso9660 takes `umask`. isofs does not: its token
+# table (fs/isofs/inode.c) knows uid=, gid=, mode= and dmode= and nothing else,
+# and parse_options() turning an unrecognised token into -EINVAL means the mount
+# FAILS rather than ignoring it. A hybrid ISO or a CD image is an ordinary thing
+# to hand an ingest box, so getting this wrong rejects the whole volume and
+# reports it as broken media.
+OWNER_MODE_OPTIONS: dict[str, tuple[str, ...]] = {
+    "iso9660": ("mode=0400", "dmode=0500"),
+}
+DEFAULT_OWNER_MODE_OPTIONS: tuple[str, ...] = ("umask=0077",)
+
+# Filesystems that store names in a legacy code page unless told otherwise.
+NEEDS_CHARSET: frozenset[str] = frozenset({"vfat", "exfat"})
+
+KNOWN: frozenset[str] = frozenset(
+    {
+        "vfat",
+        "exfat",
+        "ntfs",
+        "ntfs3",
+        "ext2",
+        "ext3",
+        "ext4",
+        "xfs",
+        "btrfs",
+        "f2fs",
+        "hfs",
+        "hfsplus",
+        "iso9660",
+        "udf",
+        "apfs",
+    }
+)
+
+
+def plan_mount(fstype: str | None, uid: int, gid: int) -> MountPlan:
+    """Decide how -- or whether -- to mount a volume of this type.
+
+    There is no `kernel_filesystems` argument any more, and its removal is the fix
+    rather than a simplification. It was /proc/filesystems, which lists the
+    filesystems *currently registered* -- built-in plus already-loaded modules -- and
+    `nixos/usb-ingest.nix` sets `boot.supportedFilesystems` to exactly the KNOWN set.
+    So on a freshly booted appliance jfs, ufs, minix, reiserfs, erofs and squashfs are
+    never in it, and tier 3 refused every one of them with "the kernel has no driver
+    for 'jfs'" -- which is untrue: the module ships with the kernel and `mount -t jfs`
+    autoloads it. The whole third tier, the thing that stops coverage being capped by
+    the table, could not fire at all.
+
+    The same autoload rule the docstring already stated for tier 1 therefore applies
+    here: attempt the generic mount and let mount(8)'s own error be the reason.
+    """
+    if not fstype:
+        return MountPlan(
+            VolumePolicy.REFUSED, None, (), None, "no recognisable filesystem"
+        )
+
+    if fstype in REFUSED:
+        return MountPlan(VolumePolicy.REFUSED, fstype, (), None, REFUSED[fstype])
+
+    if fstype not in KNOWN:
+        # Baseline options only. Anything type-specific would be a guess, and a
+        # wrong mount option fails the mount outright rather than being ignored.
+        return MountPlan(
+            VolumePolicy.GENERIC,
+            None,
+            BASE_OPTIONS,
+            None,
+            f"'{fstype}' is not in the table; attempting a generic read-only mount",
+        )
+
+    options = list(BASE_OPTIONS)
+    options.extend(JOURNAL_SAFE.get(fstype, ()))
+
+    if fstype in NEEDS_OWNER:
+        options.extend([f"uid={uid}", f"gid={gid}"])
+        options.extend(OWNER_MODE_OPTIONS.get(fstype, DEFAULT_OWNER_MODE_OPTIONS))
+    if fstype in NEEDS_CHARSET:
+        options.append("iocharset=utf8")
+
+    return MountPlan(
+        VolumePolicy.KNOWN, fstype, tuple(options), HELPERS.get(fstype), ""
+    )

@@ -1,0 +1,21 @@
+[project]
+name = "loom-banner"
+version = "0.1.0"
+description = "Draw the appliance's pre-login screen, and the fragments that land under it"
+requires-python = ">=3.11"
+# As every first-party package declares it: without this the generated
+# attribution records the package as UNKNOWN.
+license = "MIT"
+# The console, the style spans and the colour system (loom_banner/render.py).
+dependencies = ["rich>=13"]
+
+[project.scripts]
+loom-info = "loom_banner.__main__:main"
+loom-issue-fragment = "loom_banner.fragment:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "loom_banner" }]

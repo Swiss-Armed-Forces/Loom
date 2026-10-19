@@ -1,0 +1,1304 @@
+# `nixos/` — the Loom appliance
+
+The declarative definition of a standalone Loom box, and of the USB stick that installs it.
+User-facing documentation lives in [../Documentation/appliance.md](../Documentation/appliance.md);
+this file is about the code.
+
+## Files
+
+| File | What it is |
+| --- | --- |
+| `default.nix` | Entry point. Takes `nixpkgs` and `nixosHardware` as arguments and returns the build targets. |
+| `platform.nix` | Declares `loom.platform.*`: the per-box dimension, separate from `system`. |
+| `platforms/spark.nix` | DGX Spark: aarch64, 10GbE RJ45 (`r8169`) beside a ConnectX-7 that is neither matched nor claimable by the fallback. No upstream hardware profile exists. |
+| `platforms/evo-x2.nix` | GMKtec EVO-X2: x86_64, Realtek 2.5GbE. Imports the nixos-hardware Strix Halo leaves, and sets the iGPU's GTT ceiling. |
+| `platforms/nuc12.nix` | Intel NUC 12 Pro (Wall Street Canyon): x86_64, Intel 2.5GbE (`igc`). Imports `intel/nuc/12wshi7`. |
+| `branding.nix` | Shared by box and stick: the name in the boot menu, the logo, the plymouth theme, `loom-eyes`, and the VT font — its size (`loom.consoleFont`), its glyph check, and the unit that re-applies it once the display has settled. |
+| `banner.nix` | The pre-login screen as a package and two commands: `loom-info`, told which box it is drawing, and `loom-issue-fragment`, which the units writing the screen's lower blocks go through. |
+| `banner/` | What those commands are — the section order, the aligned value column, the colour roles and the rule that no backslash reaches an issue file — with its own pytest suite, run at build time. See the section below. |
+| `box.nix` | The appliance: host tuning, toolchain, operator account, the units that render the screen, `loom-up`. |
+| `console.nix` | What the operator meets: the press-a-key login, the three-pane session (the log-to-`k9s` handover, and `loom-chat` on the cluster's Ollama), `/dev/console`. No pane is a shell; `Alt-F2` is. Also `loom-pane`, which restarts a pane's program when it exits, the kiosk key policy and the clickable status-line controls. |
+| `console-mouse.nix` | The mouse on a console that has none: `gpm`, the ordering that keeps its one-shot console measurement honest, and the `loom-console-mouse` package. See the section below. |
+| `console-mouse/` | The pty shim `loom-console` runs the tmux client under — the gpm client protocol, SGR translation and the pointer sequencing — with its own pytest suite, run at build time. |
+| `box-hardware.nix` | LUKS root, filesystems, initrd, bootloader — including why the menu timeout stays at 30s. |
+| `key-guard.nix` | Watches the USB key while the box runs and powers it off when the key leaves, or when a box that booted from a stick has not armed within its deadline. |
+| `keymap.nix` | `--keymap`: the console keymap for the box, the installer and stage 1, and the build-time check that the name resolves. Inert when unset, which means US QWERTY. |
+| `key-store.nix` | The `--lock-key` build: the stick's key inside a LUKS2 container, and the initrd unit that asks for its passphrase and unlocks it before the root is opened. Inert in every other image; see `--lock-key` below. |
+| `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
+| `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
+| `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
+| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
+| `portal.nix` | The captive portal: the probe responder, the page behind it, the certificate it publishes and the client identities it issues. Four units, two nginx listeners and a spool — see the section below. |
+| `mtls.nix` | `--require-client-cert`: the chart values that switch mutual TLS on, the two nginx loopback proxies that give the box's own `opencode` and `mc` clients a way through it, and the units that issue and renew the box's own identity. |
+| `portal/` | The program the page server runs — routing, rendering, the password gate and the visitor's side of the issuance spool — with its own pytest suite, run at build time. |
+| `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
+| `radios.nix` | Radios off, in both boot modes **and on the installer stick** — `evalConfig` hands it to both. A modprobe `install` directive refuses `cfg80211` and `bluetooth`, which every WiFi and Bluetooth driver depends on, so the driver cannot load however it is matched; `options rfkill default_state=0` makes every switch register blocked; `loom-rfkill-block` blocks whatever is left. `wifi.nix` sets `loom.radios.allowWifi` to take the 802.11 half back off. |
+| `usb-ingest.nix` | Mounts USB media read-only and ingests it: the udev rule, the templated unit, and the filesystem set. |
+| `usb-ingest/` | The program that unit runs — device selection, mount policy, naming, `mc mirror`, and the console pane the copy is drawn in — with its own pytest suite, run at build time. |
+| `vm.nix` | VM-only overrides for the `boxVm` target: what to take off the appliance so it can be booted on a workstation. Never in the flashed closure. |
+| `vm-serial.nix` | A getty on `ttyS0`, so a VM's console session can be reached from a terminal that copies and pastes. Never on a real stick; see `--serial` below. |
+| `debug.nix` | The `--debug` build: an sshd keyed to one generated key, `loom-debug-bundle`, and the five places the box says what it is. Inert in every other image; see `--debug` below. |
+| `repo.nix` | Seeds the embedded checkout into the operator's home, writable. |
+| `skills/` | What the assistant pane knows: two opencode skills (`loom-appliance`, `loom-usage`) as plain markdown, plus the pytest suite that checks their frontmatter and the documentation headings they cite. `console.nix` assembles them, adds a generated `facts.md` and ships the result as a store path. |
+| `storage.nix` | `loom.storage.*`: the volume group, the logical volume and the device path stage 1 waits for — named once, for both the box and the stick. |
+| `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
+| `installer/` | The three programs the stick runs — `loom-menu`, `loom-install`, `loom-wipe` — as one Python package: the device interlock, the auto-install decision, the console drawing (rich), and a pytest suite run at build time. |
+| `scripts/platform_info.sh` | `loom-platform-info`: what the box actually is, next to what the platform file claims. Plain bash with no Nix dependency, because the box it most needs to run on is one that is not running Loom yet. |
+| `tests/appliance-mouse.nix` | VM test for point-and-click: a `uinput` mouse in the guest, through mousedev, gpm and the pty shim, to the pane tmux focuses. |
+| `tests/appliance-portal.nix` | VM test for the captive portal on a booted `--require-client-cert` box with no cluster behind it — the state every box is in for its first hours. |
+| `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
+| `tests/appliance-skills.nix` | Not a VM test: asserts that the assistant pane got skills on a platform that deploys Ollama and none on one that does not, that their frontmatter is what opencode will register, and that every `loom-*` command they name is one this image carries. |
+| `tests/appliance.nix` | VM test asserting the values `box.nix` restates from `up.sh`, and the console session. |
+| `tests/appliance-units.nix` | Not a VM test: asserts the unit edges that put the appliance address on the interface before dnsmasq and nginx bind it, in the default build and the `--wifi` one. Builds the second configuration itself with `extendModules`. |
+| `tests/appliance-dhcp.nix` | VM test for the default build's DHCP server: dnsmasq on a `loom0` renamed during boot, the lease a client gets, the captive-portal probe names, and that a missing interface no longer kills the daemon. |
+| `tests/dhcp-probe.nix` | The DHCP client the lease subtests run inside the guest, shared by the `wifi` and `dhcp` tests. Guest code, which is why it is not under `tests/scripts/`. |
+| `tests/appliance-wifi.nix` | VM test for the `--wifi` build: hostapd on a `mac80211_hwsim` radio, the bridge, and the credentials on the login screen. |
+| `tests/appliance-interface-fallback.nix` | VM test for the box no platform matches: one NIC, two NICs, the fallback switched off, and a platform that excludes the only port's driver. |
+| `tests/appliance-usb-ingest.nix` | VM test for USB ingest: real filesystems on scratch disks, and above all that the key stick is never touched. |
+| `tests/appliance-install.nix` | VM test for the disk layout: the pool over scratch disks, the container where stage 1 expects it, the reinstall guard, and that the wipe still reaches the key material. |
+| `tests/appliance-key-store.nix` | VM test for the `--lock-key` build's key guard: it arms on a container rather than on a key it can test against the root, and still tells one stick from another. |
+| `tests/appliance-debug.nix` | VM test for the `--debug` build: two nodes, and whether the generated key gets the second one in. The counterpart to `tests/appliance.nix`, which asserts no sshd for every other image. |
+| `tests/scripts.nix` | The tests as a Python package, built for the test driver's own interpreter and installed through its `extraPythonPackages`. |
+| `tests/scripts/` | The tests themselves (`loom_tests`), as Python the repository's own hooks lint and type-check. A module per test node, `vt.py` and `tmux.py` shared between them, `driver.py` the typing shim for what the driver hands them, and a pytest suite for the two helpers that parse something. |
+| `../cicd/appliance_common.sh` | Sourced by all four appliance scripts (`build_appliance_image.sh`, `appliance_eval.sh`, `run_appliance_tests.sh`, `run_appliance_vm.sh`): `check_command`, the platform-to-architecture table `platform_system`, and `resolve_loom_values`, which reads the host list, the namespace and the chat model out of `vars.sh`. The table is the reason it exists — a fourth platform is one edit here, not four with nothing to catch a missed one. |
+
+## Why `default.nix` and not a flake
+
+Two reasons, either one sufficient:
+
+- **Flake inputs strip `.git`.** `up.sh`'s offline mode runs `git describe --exact-match --tags HEAD`
+  (`set_offline_mode`) inside the embedded checkout. `builtins.path` copies a directory verbatim; flake `path:`
+  inputs do not.
+- **One nixpkgs pin.** `devenv.lock` plus the `# renovate:` comments in `devenv.yaml` already govern
+  nixpkgs, and `cicd/sync_devenv_renovate.sh` only knows about `devenv.lock`. A second lockfile here
+  would drift.
+
+The `build-appliance-image` devenv script passes devenv's `inputs.nixpkgs-stable` to
+`cicd/build_appliance_image.sh` as `--nixpkgs`, which forwards it as `--arg nixpkgs`.
+`inputs.nixos-hardware` takes the identical route as `--nixos-hardware` / `--arg nixosHardware`, and so
+does `appliance-test` via `cicd/run_appliance_tests.sh`. Both arguments are **required** — there is no
+`null` fallback, because a closure built without one would evaluate perfectly and quietly produce a
+different box from every other stick.
+
+## The `poetry.lock` beside each Python package
+
+`console-mouse/`, `installer/`, `portal/`, `ready/`, `usb-ingest/` and `tests/scripts/` are Poetry projects
+like every other Python package in the repository — `poetry-core` build backend, a `poetry.lock` beside the
+`pyproject.toml`, and `poetry-lock` regenerating them along with the rest.
+
+Those lockfiles do **not** govern the appliance. `buildPythonApplication` resolves `rich` from the
+pinned nixpkgs, so what a stick ships is whatever that pin carries, and the version in `poetry.lock`
+is free to differ. Read them as a statement about the development environment, not the image.
+
+What they are for is making the `pyproject.toml` beside them load-bearing. That manifest used to be
+free to drift from the `dependencies` list in the `.nix` file — `ready/` and `usb-ingest/` both
+imported `rich` while declaring no dependencies at all — because Nix supplied the import either way
+and nothing else read the manifest. The root `pyproject.toml` installs them all as path
+dependencies, so an undeclared import is now visible in the devenv rather than only at a box.
+
+## Why nixos-hardware, and what is forced back off
+
+Two of the three platforms are covered upstream, and the coverage is uneven enough to be worth stating:
+
+| Platform | Upstream | Effect |
+| --- | --- | --- |
+| `nuc12` | `intel/nuc/12wshi7` — literally this box, down to the chassis letter | `thermald`, and `i915` in the initrd |
+| `evo-x2` | no EVO-X2; the `common/*` Strix Halo leaves that `framework/desktop/amd-ai-max-300-series` is built from | `amd_pstate=active`, and `amdgpu` in the initrd |
+| `spark` | **nothing.** No GB10, Grace or Tegra content upstream, and `common/gpu/nvidia/*` is desktop-dGPU and PRIME-laptop oriented | its GPU is configured by hand from plain nixpkgs — see below |
+
+`evo-x2` imports the leaves rather than the Framework profile on purpose: that profile also pulls
+`framework/framework-tool.nix`, which installs `pkgs.framework-tool` on a GMKtec box.
+
+The early-KMS half is the part worth having beyond the obvious: it gets the console onto the panel's own
+mode from stage 1 instead of a firmware framebuffer, which is what `box-hardware.nix`'s
+`consoleMode = "max"` and `branding.nix`'s banner-repaint unit are both working around.
+
+Everything else upstream sets assumes a desktop session, so each x86 platform forces it back off —
+`hardware.graphics.extraPackages`, `extraPackages32` and `enable32Bit`. There is no X, no Wayland and no
+32-bit anything here, and the ROCm userspace Ollama needs lives inside `ollama/ollama:rocm`. The override
+lands in the **installer's** closure as well as the box's, because `evalConfig` gives the platform module
+to both — which is also why no restructuring of `default.nix` was needed to keep the stick lean.
+
+`nixos-hardware` has **no release branches** and tracks nixos-unstable while this builds against
+`nixos-26.05`, and nothing in CI builds this image. `tests/appliance-hardware.nix` is the tripwire: it
+reads the evaluated configuration, costs seconds, needs no KVM, and runs for any platform on any host.
+Run it after every renovate bump of the pin.
+
+### And why no DGX Spark input
+
+The Spark is the one box with an obvious upstream to pin —
+[`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), MIT, actively maintained,
+exposing its module as a plain path import. `platforms/spark.nix` deliberately does not, and the full
+reasoning is in that file's header; the short version is that the GPU half is already in nixpkgs (595.71.05
+with the open modules, the same driver package upstream takes), and what the fork actually buys is the
+ConnectX-7 — at NV-Kernels 6.17.13 against our pin's 6.18.49, built from source on aarch64 with no cache
+hits, and with a kernel config that turns on IOMMU passthrough. The appliance does not serve its network
+from the ConnectX-7 at all: `netMatch` pins the 10GbE RJ45, which the pin's own `r8169` claims and which
+has been measured carrying traffic on a Spark.
+
+There is one thing the stock kernel does not already give the box: `CONFIG_ARM_SMMU_V3_SVA`. GB10 has no
+framebuffer, so everything CUDA touches is the box's own memory, reached over NVLink-C2C through the SMMU
+using PCIe ATS and PASID; the UVM driver gates that whole path on `CONFIG_IOMMU_SVA`, which on arm64 only
+`ARM_SMMU_V3_SVA` selects. Without it `nvidia-smi` is perfectly healthy, `cuInit()` returns 3 and Ollama
+runs on the CPU. `platforms/spark.nix` sets it through `boot.kernelPatches`, which does mean this one
+platform builds its kernel from source. nixpkgs enables it for every aarch64 kernel on unstable but not on
+`nixos-26.05`, so the block goes away when the pin catches up.
+
+The two asymmetries worth remembering if this is revisited:
+
+- The Spark's `gpuVendor` is asserted the same way the x86 platforms' overrides are, in
+  `tests/appliance-hardware.nix`. Its `kernel is still the nixpkgs default` check is what proves the fork
+  has not quietly arrived: it compares the kernel *version*, so the SVA config override above leaves it
+  holding, while an image that gained NV-Kernels 6.17 would fail it.
+- `hardware.graphics.extraPackages32` must be forced empty on that platform, not merely left at its
+  default. nixpkgs populates it from `pkgs.pkgsi686Linux`, which **throws** on aarch64, so anything that
+  reads the option — the test above does — fails to evaluate unless the platform file forces it.
+
+## The two axes: `system` and `platform`
+
+`system` is the architecture; `platform` is the box. They are deliberately separate — two platforms could
+share an architecture, and most of what actually differs between the Spark and the EVO-X2 (which NIC to
+claim, which initrd modules to add) is a property of the machine.
+
+`platform` defaults to `spark`, so every pre-existing invocation behaves as before. Each platform declares
+the `nixSystem` it belongs to, and `default.nix` asserts it against `system`, so a mismatch fails during
+evaluation with a readable message rather than producing a box that will not boot. An unknown platform name
+lists the valid ones.
+
+Adding another box means one file under `platforms/`, one entry in the `platformModules` table in
+`default.nix`, and one case each in `platform_system()` and `platform_gpu()` in
+`cicd/build_appliance_image.sh`. If nixos-hardware carries a profile for it, that file also imports it
+from the `nixosHardware` argument and adds a branch to `tests/appliance-hardware.nix`; if it does not —
+as with the Spark — it imports nothing, and that is the ordinary case rather than an omission.
+
+### `gpuVendor`, and what follows from it
+
+A platform declares `gpuVendor = "amd"` or `"nvidia"` when somebody has confirmed the box both binds the
+kernel driver *and* enumerates the device through the vendor's compute stack. The driver alone proves
+nothing — every platform here loads one, since that is what puts the installer menu on the monitor.
+`loom-platform-info` is what confirms it: `/dev/kfd` or `/dev/nvidiactl`, the SMI tool's output, and
+whether a CDI spec exists for the container runtime to pass the device through with.
+
+Three things follow, and only the first is obvious:
+
+- `modes.nix` passes `--gpus <vendor>` to `up.sh`, in both boot modes.
+- `box.nix` adds the vendor's SMI tool to `loom.toolchain`, because `up.sh` refuses to run without it once
+  `--gpus` is set. `tests/appliance.nix` asserts this, so declaring a vendor and forgetting the tool fails in
+  CI rather than on the box.
+- `runsAiServices` defaults to `gpuVendor != null`, so a CPU-only platform also drops Ollama.
+  That is deliberate: the embedding step runs over every indexed file, and on a CPU the queue never drains.
+
+A fourth thing follows from `--gpus` that is not about the driver at all. `minikube start --wait all` waits
+for the core components and nothing else, so the vendor's device plugin — an ordinary DaemonSet — registers
+`<vendor>.com/gpu` a minute or more later; measured at ~86s on a Spark with the image already on the node.
+A pod that asks for the resource inside that window is rejected at admission, terminally, with reason
+`UnexpectedAdmissionError`, and the owning ReplicaSet keeps the dead pod rather than replacing it. So `up.sh`
+waits for the node to advertise the resource before it deploys, as an assertion inside `create_cluster`
+alongside `assert_minikube_ip` rather than a skippable step. It fails the bring-up on timeout, which is the
+same call `check_host_resources` already makes for `--gpus` on a box whose SMI tool finds nothing.
+
+The same race is why `modes.nix` passes `--resume-if-deployed` in **run mode only**. `loom.service` runs
+`up.sh` at every boot and `skaffold run` restamps every pod template with a fresh `skaffold.dev/run-id`, so
+without it every Deployment — Ollama included — is recreated on every boot, straight into that window.
+`loom-fetch.service` deliberately does not get the flag: it exists to populate the image store, ends in
+`--delete`, and the one thing it must never do is decide the box is already deployed and skip the fetch.
+
+The second point is spelled differently per vendor, because the vendors package the tool differently:
+`rocm-smi` is a standalone package, while `nvidia-smi` is an output of the driver. So the nvidia branch in
+`box.nix` names `config.hardware.nvidia.package.bin` — a platform that declares the vendor without
+configuring `hardware.nvidia` gets an evaluation error rather than a `loom.service` that dies on
+`nvidia-smi: command not found`.
+
+An `nvidia` platform owes docker one more thing, and it is not discoverable from the option that looks like it
+covers it. `hardware.nvidia-container-toolkit.enable` generates the CDI spec and switches on docker's
+`features.cdi`, but moby decides *which* GPU driver to register by looking for `nvidia-cdi-hook` or
+`nvidia-container-runtime-hook` on the daemon's own `PATH` (`daemon/devices_linux.go`); NixOS builds that
+`PATH` as `[ kmod ] ++ virtualisation.docker.extraPackages`, and the toolkit module fills that list in for the
+rootless daemon only. With neither binary on it docker registers an *AMD* driver instead — it registers one
+whenever a CDI cache exists at all — which then matches `--gpus all`, the form minikube forwards `--gpus
+nvidia` in, and fails with `AMD CDI spec not found`. So `platforms/spark.nix` adds the toolkit's `tools`
+output to `virtualisation.docker.extraPackages`, and `tests/appliance-hardware.nix` asserts it is still
+reaching `systemd.services.docker.path`.
+
+And once the spec does reach the node, one of its mounts has to come back out. `platforms/spark.nix` restates
+`hardware.nvidia-container-toolkit.mounts` to drop upstream's `/run/opengl-driver` entry, because that path is
+shadowed inside any systemd container — the node's own `tmpfs` over `/run` covers it — while the mount stays
+in `mountinfo` as the first one on the root device. cadvisor keeps only the first mount per device, `statfs`es
+a path that is no longer there, and hands kubelet an `ephemeral-storage` capacity of 0, which is below
+`up.sh`'s reservations and stops the cluster from starting at all. Two assertions guard it: no `containerPath`
+under `/run`, and the driver and glibc mounts still present, since the list is a `mkForce` and could as easily
+be emptied by accident as repopulated by a bump.
+
+`build-appliance-image --no-gpu` forces the vendor back to `null` through an `mkForce` in `default.nix`, which
+is why nothing else has to know the flag exists. Note that it takes the AI services with it, by the same rule.
+
+It does **not** take the driver with it. On the Spark `hardware.nvidia` is what puts the console on the
+monitor, so it is configured by the platform file rather than gated on `gpuVendor`, and `--no-gpu` there
+means "no offload" rather than "no NVIDIA". `loom-platform-info`'s `runtimeInputs` is keyed on
+`hardware.nvidia.enabled` for exactly that reason: a `--no-gpu` box is the box somebody is diagnosing, and
+the report needs `nvidia-smi` to say why the GPU did not enumerate.
+
+### `runsAutoscaling`, and `loom.applianceValues`
+
+`runsAutoscaling` defaults to `meetsResourceMinimum` and adds `--scaling` to the `up.sh` arguments
+`modes.nix` builds. The default is load-bearing rather than tidy: `up.sh` refuses `--scaling` alongside the
+`--no-resources` an undersized box needs, and on an appliance that refusal is not a message on a terminal but
+a box that never comes up. `modes.nix` asserts the two agree, so the mistake fails `appliance-eval` instead of
+a stick.
+
+The flag reaches **both** boot modes, like `--gpus` does, and for a reason specific to this one: `--scaling`
+is the only thing that installs KEDA, so a first-time setup that ran without it leaves no KEDA images in
+minikube's store, and run mode is air-gapped. `tests/scripts/loom_tests/appliance/modes.py` asserts both
+scripts agree.
+
+`loom.applianceValues` is the other half. Some facts are true of the box rather than of Loom — today, that
+scaling Ollama is pointless where there is one GPU to schedule it on — and they fit neither a values file
+under `charts/` (shared with every cluster install) nor an `up.sh` flag (an argument to have on machines
+nobody here is building). `modes.nix` puts them in that option, `repo.nix` writes them into
+`charts/values-appliance.yaml` while it seeds the checkout, and Skaffold applies that file after everything
+`up.sh` assembles. The written file carries a header saying where it came from; it is written once, so an
+operator can edit it afterwards.
+
+`mtls.nix` is the second author of that option, and the only one outside `modes.nix`. It sets
+`certificate.requireClientCert` there, so one flag moves the cluster and the box together — the two halves
+are useless apart. It states the value in **both** directions and in **both** modes, unlike every other
+entry: the seed runs once, on whichever mode boots first, so a value only run mode declares is a value that
+depends on which boot-menu entry somebody picked first; and pinning it `false` on an ordinary box is what
+makes the key inert in an operator's own values file, which cannot bring the loopback proxy with it.
+
+### `loom.userValues`, and the four layers
+
+`build-appliance-image --values FILE` and `--set path=value` are the generic way to deploy a box with
+different chart values — OCR languages, the indexing pipeline's limits, resource sizing. They are merged in
+the build script, checked there against the **embedded tag's** `charts/values.yaml`, and passed to Nix as
+`userValuesJson`; `repo.nix` writes them into `charts/values-user.yaml` of the seeded checkout.
+
+What decides whether a value takes effect is which file it lands in. Skaffold applies these in order, later
+winning:
+
+| file | written by |
+| --- | --- |
+| `charts/values.yaml` | the chart |
+| `charts/values-development.yaml` | skaffold's dev profile, inserted here under `up -d`; never on a box |
+| `charts/values-user.yaml` | `loom.userValues` — `--values`, `--set` |
+| `charts/values-up-flags.yaml` | `up.sh`, from its own flags |
+| `charts/values-appliance.yaml` | `loom.applianceValues` — `modes.nix`, `mtls.nix` |
+| `charts/values-overwrites.yaml` | the operator, by hand, on the box |
+
+The user layer is deliberately the **lowest**, so nothing passed to `--values` can break a decision the
+platform or an `up.sh` flag made: a box asked to scale Ollama on its single GPU gets the platform's answer,
+not the operator's. `repo.nix` warns at build time listing every path the appliance layer takes back, because
+a value that silently does nothing is worth one line while somebody is still looking at a terminal.
+
+`charts/values-overwrites.yaml` is **never written from here**. It is the operator's own last word, it is
+`--skip-worktree` in a developer's clone so that real content lives in it, and these modules are evaluated
+against a developer's checkout every time the VM tests run with `repoSrc ./.`.
+`tests/appliance-units.nix` asserts both the order (read off the tagged `skaffold.yaml`, the way the `up.sh`
+flag checks are) and that no seed script mentions that file.
+
+A tag whose `skaffold.yaml` does not list `charts/values-user.yaml` cannot apply the layer at all, so
+`build_appliance_image.sh` refuses `--values` against it rather than shipping a stick whose values are inert
+— the same class of gap as a flag the embedded `up.sh` has never heard of.
+
+## `loom.mtls`, and why the box proxies to itself
+
+`build-appliance-image --require-client-cert` turns on mutual TLS, and mutual TLS locks out every client that
+cannot hold a certificate. Two of those run on the box: `opencode` under Bun (`console.nix`) takes a CA
+through `NODE_EXTRA_CA_CERTS` and has nowhere to put an identity, and `mc`'s certificate handling is the
+directory of CAs `install_cluster_ca` maintains (`usb-ingest/loom_usb_ingest/transfer.py`). Neither program
+offers a client-certificate option at all, so there is nothing to configure — hence a proxy that holds the
+certificate on their behalf, and two endpoints moved onto it. Both of those are already options
+(`loom.assistant.ollamaBaseUrl`, `loom.usbIngest.endpoint`), which is what keeps the wiring in one module.
+
+The ordering is the part worth not breaking, and `tests/appliance-units.nix` asserts it. nginx serves the
+captive portal as well as this proxy, and `proxy_ssl_certificate` naming a file that is not there fails its
+configuration test — so a placeholder unit runs `before` nginx and is pulled in `wantedBy` it, while the unit
+that waits for the cluster is ordered nowhere near it. Reverse those and nginx waits out a bring-up, which
+costs every visitor the captive portal for the length of one.
+
+The issuer is `cicd/generate_client_certificate.sh`, installed into the closure with `runCommandLocal` rather
+than run out of the seeded checkout: `loom-seed-repo` may not have finished, and one implementation serving
+both an operator's browser and the box is the point. That script sources `../vars.sh` when it finds one,
+which is how it picks up the namespace in a checkout; there is none beside `$out/bin`, so the unit passes
+`--namespace` instead.
+
+## `loom.portal`, and the four units behind one page
+
+`portal.nix` grew from a three-line redirect into the only thing on the box a visitor talks to, so it is
+worth saying what each piece is for and which of them is load-bearing.
+
+**Two server blocks on `<subnet>.2:80`, and only one of them is `default_server`.** That is the whole
+captive-portal mechanism. A probe arrives with `Host: connectivitycheck.gstatic.com`, matches no
+`server_name`, falls to the default server and is redirected; the page answers only for `portal.loom` and for
+the address itself. Make the page the default, or give it a name a probe sends, and every probe path starts
+answering 200 — at which point Android stops offering "Sign in to network", keeps using mobile data, and
+resolves `frontend.loom` against a network that has never heard of `.loom`. Nothing about that is visible
+from a browser or from `curl`; it happens on a phone, at a site. `tests/appliance-units.nix` asserts the
+decision, `tests/appliance-portal.nix` sends the request, and `loom_portal/routes.py` keeps the server's own
+path table to the five entries that may answer anything but a 404.
+
+**The page server runs as `loom-portal` and can reach nothing.** Issuing a client identity needs the mutual
+TLS CA's *private key*, so the obvious implementation — this service shelling out to
+`loom-client-certificate` — would put a network-facing process in possession of the operator's kubeconfig.
+Instead it writes `/run/loom-portal/requests/<token>.req` into a spool it cannot enumerate (`0730
+root:loom-portal`: create, stat and unlink by name, never `readdir`), a `systemd.path` starts
+`loom-portal-issue` as root, and that drains the directory and leaves `bundles/<token>/` or
+`<token>.error` behind.
+
+The spool is at `/run/loom-portal` and not under `/run/loom` with everything else, which is a permission
+rather than a preference: `console.nix` declares `/run/loom` as `0700 loom:users` for the tmux socket, and
+systemd-tmpfiles keeps the first rule it has for a path and ignores every later one. A second declaration
+would silently win or silently lose — and the losing case is a console with no session at all, because
+`loom-console` could no longer create its socket. This is the first thing on the box running as neither
+root nor `loom`. The unprivileged half has no
+`kubectl` on `PATH`, no kubeconfig, `IPAddressDeny=any` but loopback, and write access to exactly two
+directories.
+
+`PathExistsGlob` is level-triggered and re-checks when the service exits, so the issuer drains in a loop
+rather than handling one request — and it must not be `RemainAfterExit`, for the reason `loom-mtls-identity`
+gives next door. It always exits 0 for a per-request failure and writes a reason file instead, so a visitor's
+typo does not leave a unit `failed` or burn the path unit's start limit.
+
+**The certificate sync is hourly, and expiry is not why.** `self-signed-cert` is good for 365 days and the
+chart replaces it at 30 days left, so daily would be ample for that. What forces hourly is replacement on
+*redeploy*: the pre-install Job regenerates the certificate the moment a declared host is missing from its
+subjectAltName, which is exactly what happens the first time a box meets a chart that names `portal`. A daily
+sync would spend up to a day handing out a stale anchor that a visitor installs and that does not stop the
+warning — the one failure the page exists to remove. It compares before it writes, because
+`reload-or-restart` becomes a *restart* when nginx is down and a restart drops the assistant pane's token
+stream.
+
+**The TLS listener needs a certificate that names the page.** The chart's pre-install Job builds the
+subjectAltName from `hostnames`, one entry per host, so `portal` has to be in `hostnames.extra` —
+`tests/appliance-units.nix` checks that it is, because without it the page meant to remove a certificate
+warning would present one. The listener exists only on `--require-client-cert` images, because what needs encrypting is the PKCS#12 and the anchor is public:
+standing it up everywhere would mean copying the key Traefik serves `*.loom` with onto every box to protect
+a file anyone may have.
+
+**The daily password reuses the `--lock-key` rule** (`diceware`, EFF list, rejection sampling against
+`[yz]`, `.` as the separator), even though the person typing it is on their own keyboard rather than on one
+somebody else chose. One box with two different rules for generating a passphrase is worse than one filter
+that is merely unnecessary here. It rotates the outgoing password to `password.previous` first, so somebody
+who read the screen at 23:59 and types it at 00:01 is not refused.
+
+## `loom0`, and the two things that can produce it
+
+A platform's `netMatch` is a **driver** match, applied by a `.link` file. That is the fast path and the one
+every supported box takes.
+
+It is not the only path, because a driver match is exactly as narrow as it sounds: an image installed on
+hardware nobody wrote a platform for renames nothing, and a box with no `loom0` has no address, no DHCP and
+no `*.loom`. There is no sshd and no `nixos-rebuild` to fix that with, so the only recovery was building
+another stick. `loom-interface-fallback` closes that: when the match selected nothing, it picks a wired NIC
+itself and renames it before `network-pre.target`, which puts it ahead of every address, bridge and dnsmasq
+unit without naming any of them.
+
+Three things about it are worth knowing before changing it.
+
+**It picks rather than refuses when there are several.** That looks reckless and is the opposite:
+`platforms/evo-x2.nix` already makes the argument, because both its Realtek ports match `r8169` and udev
+decides between them. A box that came up on the wrong port is fixed by moving the cable. A box with no
+`loom0` at all is not fixable at the console. Picking is strictly the better failure, and the pick is by PCI
+path so it is at least the same port on every boot.
+
+**A platform can take ports out of that pick, and the Spark does.** By PCI path alone the Spark's
+ConnectX-7 cages — domains 0000 and 0002 — rank ahead of its RJ45 at 0007, and they carry nothing without a
+transceiver. `netMatch` declining to name them is not enough, because the fallback only runs when `netMatch`
+matched nothing: the realistic trigger is the RJ45 being claimed by a driver other than `r8169`, which leaves
+the port enumerated and the cages ranked above it. `loom.platform.netExcludeDrivers` is what the fallback
+reads, by the name in `/sys/class/net/<iface>/device/driver`, and `loom-wired-nics` names what it skipped on
+stderr so the journal keeps it. Excluding every candidate is allowed and leaves no `loom0`, which
+`loom-network-check` reports — a loud box beats one quietly serving a dark port.
+
+**`--interface` is applied by the same unit, not by the `.link` file**, even though the `.link` file still
+carries an `OriginalName` match for it. `OriginalName=` matches the udev `INTERFACE` property *while* the
+link policy is being decided — which is the kernel's `eth0`. The predictable name an operator actually reads
+off the box, `enp2s0`, is the *output* of that decision, produced by `NamePolicy` in `99-default.link`, which
+sorts after ours. So `--interface enp2s0` matched nothing and produced a box with no `loom0` — the exact
+failure the flag exists to prevent. Applying it at runtime, after udev has settled, is what makes the name an
+operator can discover the name that works.
+
+`loom.autoSelectInterface` turns the automatic half off; the explicit `--interface` half runs regardless,
+because naming a port is an instruction rather than a guess. `tests/appliance.nix` sets it false, since it
+asserts a VM comes up *without* `loom0`; `tests/appliance-interface-fallback.nix` is where the behaviour is
+actually tested.
+
+## The mouse, and the three things that are not obvious about it
+
+A Linux virtual console has no mouse driver. `console_codes(4)` says mouse reports reach the console
+input stream "only when the virtual terminal driver receives a mouse update ioctl", generated by "a
+mouse-aware user-mode application such as the `gpm(8)` daemon" — so an intermediate program is the
+mechanism, not a design choice. Three findings shape `console-mouse.nix` and the shim beside it, and
+each cost a while to establish:
+
+**gpm does not do what that sentence implies.** Its whole on-screen behaviour is
+`src/daemon/do_selection.c`, which only ever calls `selection_copy()` with `sel_mode` 3 (highlight
+the pointer) or `event->clicks`. Nothing in the tree references `TIOCL_SELMOUSEREPORT`. So gpm plus
+`set -g mouse on` gives a visible pointer and *zero* tmux events, silently. What gpm is good for is
+everything below that — decoding the device, tracking an absolute position, the wheel, drawing the
+pointer — and `loom-console-mouse` supplies the rest as a gpm client.
+
+**The pointer is not repaint-safe, so the shim has to own the output stream.** The kernel draws it
+in `complement_pos()` (`drivers/tty/vt/vt.c`), which caches the character *and* attribute under the
+pointer and writes that cache back when the pointer next moves. A pane repainting underneath a
+stationary pointer — btop and k9s do so continuously — therefore gets a stale character painted over
+it on the next mouse movement, and tmux never reads the screen back, so nothing repairs it. The shim
+is a pty between tty1 and the tmux client for exactly this reason: it can clear the pointer, write,
+and put it back. Anything sitting *beside* the session cannot.
+
+**gpm's SIGWINCH path segfaults, so the console resize is handled by restarting it.** gpm measures
+the console once at startup and re-reads it only on `SIGWINCH` (`src/daemon/old_main.c`) — which is
+delivered to a tty's foreground process group, and a daemon is never in one. Nothing sends gpm that
+signal in ordinary use, the resize path is effectively dead code upstream, and dead code rots:
+sending it makes gpm log `gpm pid N is resizing :-)` and die in `old_main`. `loom-console-font-reapply`
+therefore `try-restart`s the unit instead, which re-reads the size on a path exercised at every boot.
+`loom-console-mouse` reconnects on its own, so a restart costs nothing once a session is open.
+
+The ordering matters for the same reason: `gpm.service` is `After=loom-console-font.service`, because
+`branding.nix` resizes this console four times during boot and a gpm started before the last of those
+clamps its pointer to a grid that no longer exists — on the 2560x1600 panel the appliance was tested
+on, the difference between 160x50 and 426x123.
+
+Since navigation is by mouse, `console.nix` also sets `prefix None`. It deliberately does **not** use
+`unbind-key -a`: every mouse behaviour tmux has lives in the root key table as an ordinary binding —
+`MouseDown1Pane { select-pane -t=; send -M }` *is* click-to-focus and forward-into-pane — so
+unbinding everything would silently remove the feature. The `MouseDown3` bindings are unbound
+by name, because they open `display-menu` with Kill, Respawn, Split, New Session and a command
+prompt. None of this is a security boundary: every getty autologins the operator and `Alt-F2` reaches
+a root-capable shell. Detach and respawn are clickable regions in the status line
+(`#[range=user|...]`, which fires the `Status` mouse key, not `StatusRight`).
+
+## Building by hand
+
+Normally you would use `build-appliance-image`. To drive it directly:
+
+```bash
+NIXPKGS=...                        # a nixpkgs checkout
+NIXHW=...                          # a nixos-hardware checkout
+HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
+
+# Evaluate only -- catches most mistakes in seconds, for any platform,
+# without the corresponding hardware.
+nix-instantiate ./nixos -A box \
+  --arg nixpkgs "$NIXPKGS" --arg nixosHardware "$NIXHW" \
+  --argstr system x86_64-linux --argstr platform evo-x2 \
+  --arg repoSrc ./. --argstr tag dev --argstr loomHostsJson "$HOSTS"
+
+# A bootable VM of the appliance, to poke at by hand. `appliance-vm box` wraps
+# this with a state directory, port forwards and a serial socket -- see below.
+nix-build ./nixos -A boxVm --argstr system x86_64-linux --argstr platform evo-x2 ...
+./result/bin/run-*-vm
+
+# The stick image.
+nix-build ./nixos -A installerImage ...
+```
+
+Both store paths are in `devenv.lock`; the devenv scripts pass them for you, and
+`nix flake metadata --json github:NixOS/nixos-hardware/<rev>` resolves one by hand.
+
+Targets: `box`, `boxVm`, `installerImage`, `tests.appliance`, plus `boxSystem` and `installerSystem`
+for poking at evaluated configuration.
+
+Run all of these **inside the devenv shell**. That is the only place `NIX_CONFIG` names
+`loom.cachix.org` — `devenv.nix` builds it from `cachix.pull`, because devenv applies that option
+to the nix invocations it drives itself and to nothing else: it writes no `nix.conf` and exports
+nothing. Outside the shell nix sees `cache.nixos.org` alone and rebuilds the appliance closure from
+source, which under `--allow-cross` means a qemu-emulated aarch64 kernel — hours, against a 32 MB
+download. If nix prints
+
+```text
+ignoring untrusted substituter 'https://loom.cachix.org', you are not a trusted user
+```
+
+the cache is unreachable whatever the shell exports. There are two cures and you need either one:
+name the caches in the daemon's own `/etc/nix/nix.conf`, which is what `./cicd/setup_devenv.py`
+writes and what `Documentation/devenv-setup.md` documents, or put yourself in `trusted-users`. The
+first is preferred — it grants no privilege to anybody and covers every account on the machine.
+
+## Booting one by hand
+
+The tests answer questions you can write down in advance. `appliance-vm` is for the other kind —
+what the console session actually looks like, whether the installer menu reads the way it should,
+what happens when you pull the key stick — on a workstation with no appliance hardware near it.
+
+```bash
+appliance-vm box                    # fast: the appliance closure, no tag, no image
+appliance-vm installer              # the real stick image, flashed onto a file, booted under UEFI
+appliance-vm installer --serial     # ...and reachable from a terminal that copies and pastes
+appliance-vm attach                 # connect to a running VM's serial port
+appliance-vm reset                  # throw this platform's disks and stick away
+```
+
+Both VMs refuse to cross-build, for the reason the tests do: a VM boots a real kernel.
+
+| | `box` | `installer` |
+| --- | --- | --- |
+| Boots | the closure, through nixpkgs' qemu-vm runner | the stick image, through UEFI |
+| Needs a tag | no | yes — `up.sh`'s offline mode wants one |
+| Console session, branding, units | yes | yes |
+| Bootloader, boot menu, specialisation | no | yes |
+| LUKS root, the key stick, the key guard | no | yes |
+| The installer itself | no | yes |
+| Survives a reboot | yes | yes |
+| Time to first screen | a minute | an image build, then a minute |
+
+`box` is the loop to iterate in. What it cannot show you is everything below the disk: nixpkgs'
+`qemu-vm.nix` replaces `fileSystems` wholesale and clears `boot.initrd.luks.devices` (both
+`mkVMOverride`), so the LUKS root, the partlabel mounts and systemd-boot are all out of frame.
+`nixos/vm.nix` takes three more things off — the interface fallback, the static address and dnsmasq
+— because otherwise the box claims the VM's only NIC as `loom0` and there is no route back to the
+host. Each of the three has a test of its own; none of them is going unexercised.
+
+### Why the installer rig can exist at all
+
+`tests/appliance-install.nix` says the image "is deliberately not booted. It wants an NVMe the test
+framework cannot supply". qemu can supply one. `target_disks` (`installer/loom_installer/devices.py`) wants
+`/dev/nvmeXn1`, non-removable, and not the disk it booted from — `-device nvme` with the stick on
+`usb-storage` satisfies all three, so the real `install.sh` runs against a real pool.
+
+Flashing onto a file needs no root either: it is the same two steps `build_appliance_image.sh`
+performs on a stick — write the image, then write 4096 bytes of key into the `loom-key` partition —
+and `sfdisk --json` reads a partition table out of an ordinary file. That is also the limit of it:
+an image built with `--lock-key` cannot be booted this way, because formatting a container inside
+the virtual stick needs `losetup` and `cryptsetup`, which need root. The locked path is covered by
+`tests/appliance-install.nix` and `tests/appliance-key-store.nix` instead, where root is free. The firmware keeps its own
+variables in the state directory, so the `Loom appliance` entry `fix_boot_order` writes at install
+time is still there on the next boot.
+
+State lives in `.appliance-vm/<platform>/` and is gitignored: two sparse qcow2 disks, the flashed
+stick, the UEFI variables and the two qemu sockets. Sparse is what makes the 250 GB `check_pool_size`
+demands free — a full install writes a few gigabytes.
+
+Pull the key stick from the qemu monitor to watch the key guard fire; `appliance-vm` prints the two
+commands on every run.
+
+### `--serial`, and what it costs
+
+`console.nix` gates the console session on `$(tty)` being `/dev/tty1`, so a serial login lands in a
+plain shell. The way in is the socket: `loom.consoleSocket` is a fixed path precisely so the tmux
+server survives a logout, and `nixos/vm-serial.nix` has the serial login run `loom-console -d` —
+attaching to the very session tty1 is showing, as the only client. `-d` because tmux sizes a window
+to its smallest client, and `loom-btop` has already picked its box set from the pane it started in.
+The ping-pong is deliberate: pressing ENTER on tty1 takes the session back.
+
+Two things in that module are load-bearing and neither is obvious:
+
+- **The unit is instantiated with the template's `ExecStart` copied into it.** systemd collects
+  drop-ins by *basename*, and every drop-in NixOS generates is `overrides.conf`, so an instance-level
+  one replaces the template-level one rather than merging with it. The file it replaces is nixpkgs'
+  own `serial-getty@` override — the one carrying the real `agetty` path and the appliance's
+  `--autologin` / `--login-pause` arguments. Masked, the unit falls back to upstream's
+  `ExecStart=-/sbin/agetty`, which on NixOS is nothing at all: agetty exits with `Unable to locate
+  executable '/usr/bin/agetty'`, systemd restarts it about eight times, the start limit stops it for
+  good, and anyone attaching later finds a dead port and no explanation outside the guest's journal.
+- **The login negotiates its own window size.** A serial line carries no size and delivers no
+  SIGWINCH, so agetty assumes 80×24; tmux splits that into panes of about 39×23, and `loom-btop`
+  needs 60×8 for even its smallest box set, so the monitoring pane comes up saying "Terminal size too
+  small" instead of drawing. The login therefore does what xterm's `resize` does — park the cursor
+  past the bottom right, ask where it stopped, `stty` the answer — with the terminal briefly out of
+  canonical mode, because the reply carries no newline and a line-buffering discipline would never
+  hand it over.
+
+What this deliberately does not do is set `console=`. `console.nix` rejects that outright — a serial
+port named there becomes the *primary* console, so a panic on a box with nothing plugged into it goes
+nowhere at all — and `tests/appliance.nix` asserts `fgconsole` is 1 so it cannot come back. A getty
+is not a console: tty1 stays foreground and the installer menu keeps the `TTYPath = /dev/tty1` that
+`installer.nix` gives it.
+
+`box` always has the getty, because nixpkgs' runner already puts `console=ttyS0 console=tty0` on the
+command line there — tty0 last, so still primary — and copies the boot log to both. The installer rig
+boots the image's own command line, so there `--serial` is an opt-in that adds one unit the shipped
+image does not have. `build-appliance-image --vm-serial` is how it gets there, and it refuses
+`--flash`: that image is for a VM, not for a stick.
+
+Serial shows no firmware, no boot menu and no splash. To copy text off the graphical console anyway,
+read it as text the way `tests/appliance-wifi.nix` does:
+
+```bash
+cat /dev/vcsa1        # tty1's screen contents, from a serial shell
+```
+
+### `--debug`, and what it costs
+
+`debug.nix` is the other module whose whole point is that it is not in a shipped image, and it is a
+larger deviation than `--serial`: it runs an sshd. The operator guide has the threat-model half
+([Documentation/appliance.md](../Documentation/appliance.md#debug-images)); what matters here is how
+the module hangs together.
+
+- **`box.nix` says `services.openssh.enable = lib.mkDefault false`**, and `debug.nix` is the one
+  thing allowed to define it as `true`. The `mkDefault` is deliberate over a `mkForce` on the other
+  side: the policy statement should stay readable as a policy, and the exception as an exception.
+- **The markers and the sshd both key on `loom.debug.enable`, in both modes.** A debug stick booted
+  into first-time-setup still says what it is for the hours that fetch takes, and is still reachable
+  during them — which is the mode most worth reaching, since the fetch needs the internet and takes
+  hours. What that costs is that setup mode is a DHCP client on somebody else's network, so there
+  the port is open on a network this project does not own; the operator guide states it as a bullet
+  of its own. Only the key-guard downgrade and the missing splash are `enable && mode == "run"`, and
+  only because setup mode already does both for its own reasons — restating them would mean a
+  duplicated kernel parameter and a `mkForce` over a value nobody disagreed about.
+- **It also makes the box a nix remote builder**, by putting the operator account in
+  `nix.settings.trusted-users` — a builder is `nix-store --serve --write`, which the daemon refuses
+  to anyone else. This is the one part of `--debug` that exists for the developer rather than for
+  the misbehaving box: on a DGX Spark it is the difference between a 47-minute native kernel build
+  and hours of qemu under `--allow-cross`. It grants no authority the account lacked (it is in
+  `wheel` with `wheelNeedsPassword = false`, so `sudo nix-store` always worked), which is the whole
+  argument for it being acceptable here and nowhere else. `resolve_debug_key` writes the invocation
+  to `nix-builder` in the key directory, because the `NIX_SSHOPTS` half is not guessable. The same
+  block turns on `nix.gc`: an appliance disk is sized for Loom, and a store nobody collects fills it.
+- **Substituters are empty on every appliance**, not just debug ones — `box.nix` forces the list the
+  way `installer.nix` already did for the stick. The box is air-gapped, so a substituter is a name
+  that cannot resolve, and nix treats that query failure as fatal rather than falling back to
+  building. Before this, any nix command on a box answered with a DNS error about `cache.nixos.org`.
+- **`console.nix`'s status marker has to follow that gate.** It reads `DEBUG — SSH OPEN` in both
+  modes now; it used to say `DEBUG IMAGE` in setup mode, precisely because the port was not open
+  there. `loom_tests/debug.py` pins the gate by reading the specialisation's closure
+  (`/run/current-system/specialisation/first-time-setup/etc`), since the VM framework boots the
+  kernel directly and can never boot the other entry.
+- **`modes.nix` is where `quiet` is decided, not `debug.nix`.** A module can add a kernel parameter
+  and never subtract one, so a debug build has to *not acquire* `quiet` and `udev.log_level=3` in
+  the first place. `debug.nix` adds `plymouth.enable=0` on top, the same pair setup mode uses.
+- **The firewall hole is global, not `interfaces.loom0`.** In run mode the appliance segment is the
+  only network the box has, so the two are the same packets — but `--wifi` moves the address onto
+  the bridge, and `vm.nix` clears `networking.interfaces` entirely, so an interface-scoped rule
+  would silently exclude both the air and the VM.
+- **Only the public key crosses into Nix.** `cicd/build_appliance_image.sh` generates the pair into
+  a directory it prints and never cleans up, and passes `--argstr debugSshAuthorizedKey`. Unlike the
+  WiFi passphrase there is no secret in `/nix/store` and none on the stick.
+
+The banner block is written as its own fragment, `/run/issue.d/90-loom-debug.issue`, and the
+number is load bearing: agetty reads that directory in filename order and writes the result straight
+to the VT with no paging, so a screen taller than the console loses its *first* rows. `90` is what
+puts the warning below every other unit's block, which is the only place it cannot scroll away from.
+`loom-info` prints the same block at the end of its own output, for an operator who runs it by hand
+where there are no fragments.
+
+`appliance-vm box --debug` builds the same module and forwards `localhost:2222`, keeping its keypair
+in the VM's state directory so it survives a rebuild. `appliance-test debug` is the VM test.
+
+## Running the tests
+
+```bash
+appliance-check                     # everything that boots nothing, about a minute
+appliance-test                      # all of them, cheapest first
+appliance-test wifi usb-ingest      # or by name
+```
+
+`appliance-check` is the cheap half, and the half that runs in CI on every pipeline. It boots
+nothing, so it needs neither KVM nor a host of the platform's architecture. It is two commands,
+each runnable on its own, and it runs both even when the first one fails:
+
+| Command | What it does |
+| --- | --- |
+| `appliance-pytest` | The suites under `nixos/`: `installer/tests` (the device interlock and the auto-install truth table), `usb-ingest/tests` (the name sanitiser, the filesystem table, the exclusion rules and the progress records), `console-mouse/tests` (the gpm wire format and the SGR translation), `ready/tests` (what counts as a workload, and the stage machine), `portal/tests` (the probe contract, the page, the password gate and the spool), `tests/scripts/tests` (the VM tests' own screen and pane parsers) and `skills/tests` (the assistant pane's skills against the headings they cite in `Documentation/`). Seven, and `skills/tests` is the one with no derivation behind it: no `src` holds both the skills and the documentation they cite, so this is the only place it runs — everything else here is double-covered by a `checkPhase`. Extra arguments go to pytest. |
+| `appliance-eval` | Instantiates `installerImage` for every platform — which covers the appliance too, since `installer.nix` puts its toplevel in the stick's store image — plus `tests` for this one. Catches a module that no longer evaluates, a renamed option, a failed assertion, and a typo in a test file that would otherwise surface twenty minutes into a VM boot. |
+
+Every suite also runs inside the derivation that owns it — each package's `checkPhase` — so a
+mistake fails an image build as well. Running them here costs a second instead of a closure. They
+are in `devenv.nix` rather than in a shell runner for the same reason every other test in this
+repository is; `cicd/appliance_eval.sh` stays a script because it is `nix-instantiate` plumbing
+rather than a test.
+
+### How a VM test is loaded
+
+Each `tests/*.nix` installs `tests/scripts.nix` through the driver's `extraPythonPackages` and its
+`testScript` is two lines — an import and the call:
+
+```nix
+  extraPythonPackages = p: [ (import ./scripts.nix { pythonPackages = p; }) ];
+
+  testScript = ''
+    from loom_tests.wifi import Params, run
+
+    run(appliance, start_all=start_all, subtest=subtest, params=Params(...))
+  '';
+```
+
+The package is built from the callback's own argument rather than from this repository's `pkgs`,
+which is the part worth keeping: that argument is the *driver's* Python package set, so the package
+is built for the interpreter that will import it by construction rather than by assuming the two
+match.
+
+What this replaced was `builtins.readFile`, which pasted each script into the one namespace the
+driver `exec`s. That arrangement cost more than it looked: two files could not both `import json`
+without the driver's ruff rejecting the pair as a redefinition, a reference from one file to another
+was a pylint `used-before-assignment` that had to be worked around by passing functions as
+arguments, and nothing could be shared *between* tests at all — which is how two of them ended up
+with their own copy of the `/dev/vcsa1` decoder and three with their own copy of the tmux socket
+path. `vt.py` and `tmux.py` are those, now written once. Being ordinary modules, the parsing in
+them is also unit-tested in `tests/scripts/tests/` against a fake `Machine`, so an off-by-one in a
+screen offset fails in milliseconds rather than ten minutes into a boot.
+
+`driver.py` stays a Protocol rather than the driver's real `test_driver.machine.Machine`: that
+package exists only inside the driver's closure, and importing it would mean the devenv could not
+type-check any of this. Which is also why every test sets `skipTypeCheck = true` — exactly one of
+the two type checks can run, and the one that runs on every commit is worth more.
+
+`appliance-test` is the other half: the short names and what each is for:
+
+| Name | Attribute | What it asserts |
+| --- | --- | --- |
+| `hardware` | `tests.applianceHardware` | What nixos-hardware gives this platform, and that the Loom overrides still take the desktop userspace back off. **Not a VM test** — see below. |
+| `units` | `tests.applianceUnits` | The unit edges that put the appliance address on the interface before dnsmasq and nginx bind it, in the default build and the `--wifi` one. `network.target` does not imply a static address under this nixpkgs pin, and a daemon ordered only after it races the address. **Not a VM test** — and it builds the `--wifi` configuration itself, so it is the only coverage that build's ordering gets on a machine that cannot boot one. |
+| `appliance` | `tests.appliance` | The values `box.nix` restates from `up.sh` and `vars.sh`, the console session, and the key guard. Two nodes: the second exists for the guard's arm deadline, which ends in a poweroff of its own. |
+| `install` | `tests.applianceInstall` | The disk layout: the pool, the container where stage 1 expects it, and the wipe. |
+| `dhcp` | `tests.applianceDhcp` | The build that actually gets flashed, serving DHCP on `loom0` — a renamed physical port rather than a bridge the configuration creates, which is the combination that shipped broken. The fallback renames the NIC during boot, so the ordering race is reproduced rather than simulated. Also the lease a client gets, the captive-portal probe names asked of the live resolver, and that a missing interface no longer kills the daemon. |
+| `portal` | `tests.appliancePortal` | The captive portal page on a booted `--require-client-cert` box with no cluster behind it, which is the state every box is in for its first hours — and the one image nothing else here boots. The only test that *sends* a probe rather than reading the decision about one off a configuration: which server block answers is nginx's choice, taken from two `server_name` values and a `default_server` flag together. |
+| `wifi` | `tests.applianceWifi` | The `--wifi` build, which `tests.appliance` deliberately does not cover: it forces off dnsmasq and the static addresses that this one exercises. The lease it reads is the one served over the bridge; `dhcp` reads the one served over the wire. A lease that names a default gateway would take a visitor's laptop off the internet. |
+| `mouse` | `tests.applianceMouse` | Point-and-click, end to end: a `uinput` mouse in the guest, through mousedev and gpm and the pty shim, to the pane tmux focuses — plus the detach control and the unreachable prefix. |
+| `usb-ingest` | `tests.applianceUsbIngest` | Scratch disks carrying real filesystems, and the exclusion rules — above all that the LUKS key stick is never touched. |
+| `interface-fallback` | `tests.applianceInterfaceFallback` | The box no platform matches: one NIC, two NICs, the fallback switched off, and a platform that excludes the driver behind the only wired port. |
+| `key-store` | `tests.applianceKeyStore` | The `--lock-key` build's key guard, which arms on a weaker check than every other image's: a locked stick carries no plaintext key to test against the root. Getting that branch wrong leaves the guard idle for the life of the box, silently. |
+| `skills` | `tests.applianceSkills` | What the assistant pane was given to read: that a GPU platform got skills at all, that their frontmatter is what opencode will actually register, and that every `loom-*` command they name is one this image carries. **Not a VM test** — but bound to the host architecture, because it realises a store path built from the platform's own nixpkgs. |
+| `debug` | `tests.applianceDebug` | The `--debug` build's sshd: that the generated key opens it, that passwords and every other account are refused *in the server's own configuration*, and that the box says so on the login screen, in the motd and in the status line. |
+
+The script picks the platform matching the host architecture, passes the `*.loom` host list, the
+namespace and the chat model from `vars.sh` — `tests/appliance.nix` asserts the appliance restates
+those correctly, so defaults would fail the test for the wrong reason — and asks nix to collect
+garbage rather than run the disk out (see **Disk budget** below). `--platform`, `--min-free`, `--max-free`, `--gc`, `--kvm`, `--no-kvm`, `--nixpkgs` and
+`--nixos-hardware` are the flags; `appliance-test --help` lists them. `--no-kvm` is the one to know
+about: it builds without the `kvm` system feature, so qemu falls back to software emulation —
+correct, and five to ten times slower — which is what lets these run on a CI runner with no nested
+virtualisation.
+
+`hardware`, `units` and `skills` are the exceptions to everything in this section: they boot
+nothing, reading the evaluated configuration and exiting, so none of them needs KVM or builds the
+appliance closure. They run first.
+
+Two of the three are also free of the host's architecture, and `skills` is not -- it has to
+*realise* a store path, which on a foreign architecture is a platform mismatch rather than a
+verdict. So a selection made up only of `hardware` and `units` lifts the cross-architecture
+refusal, and one that includes `skills` does not:
+
+```bash
+appliance-test hardware --platform spark      # works on an x86_64 workstation
+appliance-test hardware --platform all        # or all three at once
+appliance-test units --platform all           # the unit graph, every platform, both builds
+appliance-test skills                         # this machine's platform only
+```
+
+`hardware` is the one to run after a renovate bump of the `nixos-hardware` pin, `units` after a
+bump of `nixpkgs-stable`, and `skills` after an `opencode` bump: all three platforms checked from
+one machine, in seconds. `--platform all` is refused for any selection that includes a VM test or
+`skills`.
+
+Underneath it is one `nix-build` per target, which is still the way to run one by hand:
+
+```bash
+NIXPKGS=...                        # a nixpkgs checkout
+NIXHW=...                          # a nixos-hardware checkout
+HOSTS=$(source ./vars.sh && printf '%s\n' "${LOOM_HOSTS_FQDN[@]}" | jq -R . | jq -sc .)
+
+nix-build ./nixos -A tests.appliance \
+  --arg nixpkgs "$NIXPKGS" --arg nixosHardware "$NIXHW" \
+  --argstr system x86_64-linux --argstr platform evo-x2 \
+  --arg repoSrc ./. --argstr loomHostsJson "$HOSTS" \
+  --no-out-link
+```
+
+The pure logic behind `usb-ingest.nix` -- the name sanitiser, the filesystem table and the exclusion
+rules -- is not tested in that VM. It is a pytest suite under `usb-ingest/tests/`, run in the package's
+`checkPhase`, so a mistake there fails the build in seconds rather than at boot. `nix-build ./nixos -A box`
+is enough to run it, and `appliance-pytest` runs it with nothing built at all.
+
+The installer has the same arrangement, for the same reason: `decide` in
+`installer/loom_installer/decision.py` decides whether a disk is destroyed with nobody watching, so its
+truth table is a pytest suite under `installer/tests/`, run in the package's own `checkPhase`.
+`nix-build ./nixos -A installerImage` runs it — as does `appliance-pytest`.
+
+There is one evaluation per invocation and no `forAllSystems`, so covering both platforms means running it
+twice — and each run needs a host of the matching architecture, since the test boots a real VM. In practice
+that is `evo-x2` on any x86_64 workstation and `spark` on a Spark. `hardware` is exempt, as above: it boots
+nothing, so all three platforms are reachable from whichever machine you have.
+
+Wants a host with KVM, and says so: `appliance-test` probes `/dev/kvm` and prints `kvm=true` or
+`kvm=false` with each target it starts. `--kvm` makes a machine without it an error instead; `--no-kvm`
+forces the slow path on a machine that has it, which is the only way to rehearse what a runner does.
+
+What "without KVM" actually drops is one line of scheduling. nixpkgs starts qemu with
+`-machine accel=kvm:tcg`, so it falls back to software emulation by itself, and the test driver never
+opens the device — the thing that refuses is nix, which will not run a derivation asking for a system
+feature the builder does not advertise. So the fallback is to stop asking, which is what
+`requireKvm = false` does in `default.nix`, and nothing else about the build changes: only
+`requiredSystemFeatures` differs, every input is identical, and the closure is shared with a KVM run.
+Five to ten times slower, and it runs.
+
+```bash
+nix-build ./nixos -A tests.appliance --arg requireKvm false ...   # what --no-kvm passes
+```
+
+## In CI
+
+Two jobs in `.gitlab-ci.yml`, split along the same line as the two scripts:
+
+- `appliance_check` runs `appliance-check` and `appliance-test hardware units --platform all` on every
+  pipeline. `units` has to be named there rather than left to `appliance-check`: that runs
+  `appliance-eval`, which only instantiates, and an eval-only test reports its verdict from the builder
+  script — so a failing check still produces a valid `.drv` and nothing notices until something builds
+  it. Neither needs KVM nor a matching architecture, so it runs on any runner, and it is the
+  only coverage the Spark image gets there — the runners are all x86_64.
+- `appliance_test` runs the VM tests on `evo-x2`, and is the one job in that file gated with
+  `rules: changes:` — `nixos/**/*`, `cicd/run_appliance_tests.sh`, `vars.sh`, `up.sh`,
+  `charts/values.yaml` (which is where `vars.sh` reads the domain, the host list and the console's
+  chat model from), `devenv.nix` and `devenv.lock`. It holds a shared runner for minutes with KVM and potentially hours without, and
+  those are the files that can change what it asserts. A path missing from that list is what
+  `appliance_check` is there to catch; outside a merge request the job is `when: manual`, because
+  GitLab counts every file as changed on a tag or a new branch.
+
+`appliance_check` prints one line naming the runner's architecture, whether `/dev/kvm` is usable and
+the free space on the store. That line is how the KVM question gets answered for a runner nobody can
+log into.
+
+Both jobs reach their scripts through `devenv shell --` (`cicd/ci_helpers.sh`), so a runner gets the
+binary cache for the same reason a workstation does: `nix-dind/Dockerfile` names the caches, and
+their signing keys, in the image's own `/etc/nix/nix.conf`. The job's user is deliberately **not** in
+`trusted-users` — the daemon naming a cache is enough for a client to use it, so the grant the nix
+manual calls the equivalent of root access buys nothing here. The same file carries `min-free` and
+`max-free` for the reason the *Disk budget* section below gives: those cannot be passed by an
+untrusted caller at all.
+
+The one `trusted-users` in this repository that stays is `nixos/debug.nix`'s, and it is unrelated to
+caches — a remote builder is `nix-store --serve --write`, which no allow-list covers. See the
+`--debug` bullet above.
+
+## Disk budget
+
+A run costs disk in two ways, and both land on the filesystem holding `/nix`:
+
+- **The closure.** Each target builds a whole appliance system — around 3.5 GB, because `box.nix`
+  carries up.sh's entire toolchain (docker, minikube, skaffold, helm) alongside a kernel and an
+  initrd. Most of that is shared between runs and between targets, but an edit to anything under
+  `nixos/` rebuilds a few hundred megabytes and re-copies the checkout that `loomSrc` embeds
+  (~120 MB from a working tree, filtered — `nixos/` is inside the tree being copied), every time,
+  and nothing reclaims the previous one.
+- **The VM disks.** The test framework writes each node's qcow2 into the Nix *build* directory —
+  `/nix/var/nix/builds` on Nix 2.2x and later, `$TMPDIR` before that. Not `/tmp`, on either.
+  `virtualisation.diskSize` is a cap on a sparse file, so the cost is what the guest writes, not the
+  number in the test, and that turns out to be small:
+
+| Test | Nodes | Written by the guest |
+| --- | --- | --- |
+| `appliance` | 2 | 165 MB — the heaviest, and mostly the key guard's loop images; the deadline node writes nothing |
+| `install` | 1 | the two 2 GB scratch disks it partitions, sparsely |
+| `wifi` | 1 | 19 MB |
+| `dhcp` | 1 | 20 MB |
+| `usb-ingest` | 1 | 28 MB, plus four 256 MB scratch disks it puts filesystems on |
+| `interface-fallback` | 4 | 20 MB each |
+| `key-store` | 1 | 96 MB — three 32 MB loop images, the same shape as `appliance`'s |
+
+A whole five-target run moved this host's free space by **2.8 GB**, nearly all of it closure and
+none of it VM disks. The guest's own `/nix/.rw-store` is a tmpfs, so what a node writes to the store
+costs RAM, not disk.
+
+Nix frees none of it on its own unless it is told to. On NixOS:
+
+```nix
+nix.gc = {
+  automatic = true;
+  dates = "weekly";
+  options = "--delete-older-than 14d";
+};
+nix.settings.min-free = 25 * 1024 * 1024 * 1024;
+nix.settings.max-free = 100 * 1024 * 1024 * 1024;
+nix.optimise.automatic = true;
+```
+
+Anywhere else — Debian, Fedora, macOS, a CI runner — the same two settings belong in
+`/etc/nix/nix.conf`, and a timer or cron job covers the scheduled half:
+
+```ini
+min-free = 26843545600
+max-free = 107374182400
+```
+
+`min-free` is the one that keeps a run from dying at a full disk: the daemon collects garbage
+*during* the build once free space drops below it. **The permanent form above is the one that
+counts.** `appliance-test` and `appliance-vm` also pass both on the command line, but these are
+restricted settings: nix honours them only for a user in `trusted-users`, and unlike a substituter
+there is no allow-list that lets one through. For everybody else the flags are accepted, printed in
+`--help`, and do nothing.
+
+Rather than fail silently, both scripts say so — but only when it matters. `warn_if_disk_budget_inert`
+in `cicd/appliance_common.sh` warns when the caller is untrusted **and** nothing configures
+`min-free` either, which is the case where no garbage is collected at all. A machine that sets it in
+`/etc/nix/nix.conf` is already protected and stays quiet.
+
+The `nix-dind` image is configured the same way, in its own `/etc/nix/nix.conf` rather than through
+the flags: `/nix` there is the container's own writable layer — no volume, no quota, shared with
+nothing and surviving nothing — so it takes a far smaller margin than a workstation wants,
+`min-free = 10737418240` against `max-free = 21474836480`. Collecting to 100 GB free in a container
+would delete the devenv closure the next step needs.
+
+To reclaim by hand:
+
+```bash
+nix-collect-garbage          # unreachable store paths
+nix-collect-garbage -d       # ...and old profile generations
+nix store optimise           # hardlink identical files
+```
+
+An interrupted run leaves its build sandbox behind as `/nix/store/<drv>.chroot`, still holding that
+run's disk images. A garbage collection clears those too.
+
+## Keeping in sync with `up.sh`
+
+`box.nix` restates things that live in `up.sh` and `vars.sh`:
+
+- the eight sysctls from `up.sh`'s `setup_system`
+- the `*.loom` host list, generated from `vars.sh` at build time rather than copied
+- every binary `up.sh` needs — the `check_command` list in `validate_environment`, plus the `awk` it pipes
+  through in `set_skaffold_args` above those checks, plus the `tar` and `mktemp` that `cicd/skaffold`
+  reaches for
+- `NAMESPACE`, passed through the same way the host list is and consumed by `console.nix`'s `k9s` view
+- `LOOM_CHAT_MODEL`, the same route again, consumed by `console.nix`'s `loom-chat` pane. It has a harder
+  constraint than the rest: it must name a model `ollama/Dockerfile.models` bakes into the production image, because
+  an air-gapped box cannot pull one, and it should match `_llmDefaults.model` in `charts/values.yaml` so the
+  pane does not make Ollama evict the model the workers are indexing with.
+- the minikube node address, consumed by `box.nix`'s `networking.hosts` and by the DNAT chain in
+  `network.nix`. `build_appliance_image.sh` reads it from `kubernetes.api` in the **embedded tag's**
+  `charts/values.yaml` rather than through that tag's `vars.sh`, because it has to equal the `ipBlock` in
+  that tag's `-allow-k8s-api` NetworkPolicy — a node the policy does not name leaves every pod denied the
+  API server. `vars.sh` states it as `LOOM_MINIKUBE_IP` for `up.sh`, which pins the node to it with
+  `minikube start --static-ip` and stops if the node lands elsewhere; a tag whose `vars.sh` lacks the
+  variable cannot pin, and the build says so.
+
+Named by function rather than by line throughout: these move, and a line number that has drifted is
+worse than none — it reads as precise and points at unrelated code.
+
+`tests/appliance.nix` asserts all six, so a change on either side is caught rather than shipped. If you
+add a `check_command` to `up.sh`, add the package to `loom.toolchain` in `box.nix` and the name to the test.
+
+`loom.toolchain` is one list on purpose. It feeds both `environment.systemPackages` and the `path` of the
+units in `modes.nix`, because a unit's PATH is built solely from its own `path` plus a minimal default
+(coreutils, findutils, gnugrep, gnused, systemd) — `/run/current-system/sw/bin` is never on it. When the
+two were maintained separately they drifted, and the box shipped with a `loom.service` that died on
+`awk: command not found` while the same command worked fine in the operator's shell. For the same reason
+the test resolves each binary against `loom.service`'s own PATH rather than the login shell's.
+
+## Which boot entry a box comes up on
+
+A fresh box has to boot `Loom (first-time-setup)`; a box that has finished setup must never boot it again. Both
+ends are automatic, and they use **different mechanisms** — which looks inconsistent until you read the
+bootloader builder.
+
+`systemd-boot-builder.py` decides the default entry like this:
+
+```python
+is_default = Path(bootspec.init).parent == Path(args.default_config)
+...
+if is_default:
+    write_loader_conf(*gen)          # no specialisation argument
+```
+
+`is_default` is only ever compared against the **main** toplevel, and `write_loader_conf` is called with the
+generation alone. So `default` can only name `nixos-generation-<N>.conf`. Passing a specialisation's toplevel
+as `DEFAULT-CONFIG` does not select it — it matches nothing, and loader.conf is never written at all. (A newer
+builder in nixpkgs does support this. The appliance does not use that one; it builds against devenv's
+`inputs.nixpkgs-stable`.)
+
+Hence:
+
+- **Into setup**, `install.sh`'s `select_setup_entry` writes the `default` line itself. The filename it writes
+  is derived, not guessed: the builder's own `generation_conf_filename` composes
+  `nixos-generation-<N>-specialisation-<name>.conf`, so the name is the run entry's with a suffix. The
+  specialisation's name comes from `/etc/loom/setup-specialisation`, which `installer.nix` reads off the
+  evaluated configuration — a rename in `modes.nix` follows through instead of drifting, and an extra
+  specialisation fails the build rather than being picked arbitrarily.
+- **Back to run mode**, `loom-promote-boot-entry` (`modes.nix`) can just use the builder, because the run
+  closure *is* the main toplevel. It then deletes the specialisation entry and checks what it leaves behind:
+  one entry, and `default` naming it.
+
+Both rest on the same property: **nothing re-runs the bootloader builder on an installed box.** There is no
+`nixos-rebuild`, no channel and no evaluation there, so a hand-written `default` and a deleted entry both stay
+put. A reinstall runs the builder again and correctly restores both.
+
+`Reboot Into Firmware Interface` is synthesised by systemd-boot rather than stored in `loader/entries`, so the
+deletion cannot reach it. The glob is scoped to `nixos-generation-*-specialisation-*.conf` anyway, which makes
+that true by construction rather than by luck.
+
+## One pool, one container
+
+Every eligible internal NVMe is concatenated into a single volume group, and the LUKS container sits on the
+logical volume that fills it. That is the inverse of the usual NixOS recipe, and the reason is the invariant
+this whole directory is built around: **one system closure serves every box.**
+
+`boot.initrd.luks.devices` is static configuration, but how many M.2 slots a box has populated is not known
+when that closure is built. LVM-inside-LUKS would need one `luks.devices` entry per disk, and a one-disk box
+booting a two-entry closure blocks in stage 1 forever on a `.device` unit that never appears. Pooling first
+leaves exactly one container, one keyslot, one recovery passphrase and one device path — for one disk or for
+three. It also removes the only question the installer used to have to ask, which is what lets it run
+unattended.
+
+Nothing has to be enabled for it to boot. nixpkgs' `luksroot.nix` sets `services.lvm.enable` and
+`boot.initrd.services.lvm.enable` unconditionally whenever any LUKS device is declared, so lvm2's udev rules
+and binaries are already in the appliance's initrd and event-based autoactivation brings the volume up before
+`systemd-cryptsetup` asks for it.
+
+The names live in `storage.nix` and nowhere else. `key-guard.nix` takes `rootDevice` from there (and
+`box-hardware.nix` from `key-guard.nix`, as it already did), and `installer.nix` passes the same three values
+to the stick's scripts through `wrapProgram` — the same trick it uses for the setup specialisation. So the
+installer cannot create a volume the box will not look for. Keep both names free of dashes: LVM escapes `-`
+as `--` in `/dev/mapper`, and `rootDevice` does not.
+
+## The USB key, in two places
+
+Stage 1 needs the key to unlock the root; `key-guard.nix` needs the same key, on the same device, for as
+long as the box runs. So `loom.keyGuard.keyDevice`, `.rootDevice` and `.keyBytes` are options declared in
+`key-guard.nix` and consumed by `box-hardware.nix`, rather than two copies of `loom-key`, `loom-root-luks`
+and `4096`. A box whose initrd and whose guard disagreed about which device is the key would boot perfectly
+and then power itself off ten seconds later, which is not a failure anybody would enjoy diagnosing in the
+field. The same three options are what let `tests/appliance.nix` point the guard at loop devices.
+
+`loom.keyGuard.witnessFile` runs the other way: `box-hardware.nix` adds an initrd unit that writes it when
+the key partition was present as the root was unlocked, and the guard reads it to decide whether this box is
+one that should have armed. Without it there is no way to tell a stick that failed from a recovery boot that
+never had one, and only the first of those may be powered off.
+
+`loom.keyGuard.action` is declared here and forced to `warn` by `debug.nix`, which is the only thing that
+selects it; every mode otherwise powers off. `loom.consoleSocket` is the same idea in the other direction:
+`console.nix` owns the operator's tmux session, and the guard writes its countdown into it.
+
+The stick side of the same numbers lives in `installer/loom_installer/constants.py` (`KEY_BYTES`, the partition
+labels) and in `cicd/build_appliance_image.sh` (`KEY_BYTES`, `KEY_PARTLABEL`). Those cannot share the Nix
+options — they run from the stick, before any of this exists — so they are the one pair that still has to
+be kept in step by hand.
+
+### And a third place, under `--lock-key`
+
+`key-store.nix` adds a step in front of all of it: the partition holds a LUKS2 container, and an initrd unit
+unlocks it onto a ramfs before `systemd-cryptsetup@cryptroot` runs. What keeps that from multiplying the
+places that know about the key is a single invariant — **every consumer wants a path holding the 4096
+plaintext bytes at offset 0**, and only the path changes:
+
+| | Path |
+| --- | --- |
+| initrd | `loom.keyStore.plainKeyFile`, written by `key-store.nix`'s unit |
+| installer | `/dev/mapper/<loom.keyStore.mapping>`, opened by `installer/loom_installer/keystore.py` |
+| key guard | the partition itself, unchanged |
+
+So `install.encrypt`, `install.enroll_recovery_passphrase` and `storage.pool_claimed_by_key` are untouched
+by the flag: all three already took the key device as a parameter. `installer.nix` passes
+`loom.keyStore.enable` and `.mapping` through `wrapProgram` beside the storage names, for the same reason.
+
+The unit is shaped like nixpkgs' clevis unit (`luksroot.nix`, `cryptsetup-clevis-*`) rather than like a
+second `boot.initrd.luks.devices` entry, and that is not a style choice. nixpkgs renders every entry into one
+flat `/etc/crypttab` with no ordering between the lines, and systemd's generator derives dependencies from
+the *device* column, not the key file column — so a nested mapping would race the root that depends on it.
+
+The guard is the one consumer that does not follow the invariant, deliberately: it keeps reading the
+partition, because what it is watching is a stick being pulled. On a locked box it cannot run its
+`--test-passphrase` oracle — there is no plaintext key and it keeps none — so `loom.keyGuard.requireKeyOracle`
+goes false and it arms on `cryptsetup isLuks` plus the fingerprint. The first 4096 bytes of a LUKS2 header
+are unique per container and never zero, so identity and the "unprovisioned" sentinel both survive.
+`tests/appliance-key-store.nix` is that branch.
+
+The unlock script itself is the one part of this appliance that no test can reach -- nixpkgs'
+qemu-vm module replaces the bootloader and the root device, so nothing under `tests/` ever runs an
+initrd of ours. Two things stand in for that. It is a named binding rather than an inline `script`
+string so that the same text can be handed to `shellcheck --enable=all` in a build check, with the
+`set -e` preamble `makeJobScript` wraps it in -- an inline unit script is linted by nothing, the
+same gap CLAUDE.md records for shell inlined into Helm templates. And `loom.keymap` is checked the
+same way, by resolving the name with `loadkeys` at build time: `systemd-vconsole-setup` falls back
+to US silently at boot, which is the precise failure the option exists to remove.
+
+### Why USB ingest asks the guard rather than udev
+
+`usb-ingest.nix` has to know which disk is the key, and the obvious answer —
+`/dev/disk/by-partlabel/loom-key` — is the wrong one, for the reason stated above: that path is not unique,
+and with two Loom sticks attached it resolves to whichever udev linked last. Ingesting the key stick because
+a *second* stick shadowed the symlink would power the box off ten seconds later.
+
+So the exclusion reads `/run/loom/key-guard/device` instead. That file holds the node the guard armed on,
+and it got there by opening the LUKS header with `--test-passphrase` — proof that this stick unlocks *this*
+disk, which no symlink can give. `loom.keyGuard.stateDir` is already an option for the same reason the
+banner reads it: one path, not three copies.
+
+The fallback matters too. A box booted on the recovery passphrase never arms, so there is no proven key
+device, and the ingest service drops back to refusing any disk carrying a Loom partition label. That is
+weaker — it is the very thing the guard exists to improve on — so the console says so when it happens.
+
+## The USB ingest test stick
+
+`usb-ingest/loom_usb_ingest/filesystems.py` decides, per volume, whether the appliance mounts media
+someone handed it and with which driver and options: six container formats in `REFUSED`, fifteen
+filesystem types in `KNOWN`, and a generic `mount -t auto` for anything else the running kernel
+admits to supporting. `devices.py` then takes every partition on every USB disk.
+
+Almost none of that was ever exercised against real media. `tests/scripts/loom_tests/usb_ingest.py`
+makes four filesystems — vfat, ext4, ntfs and a LUKS container — on *virtio* disks, so even the
+`ID_BUS=="usb"` udev rule is bypassed.
+
+`build-ingest-test-stick` closes that gap. It turns any USB stick of 4 GiB or more into 26
+partitions, one filesystem each, so that plugging the result into an appliance takes every branch of
+`plan_mount` at once:
+
+It writes partition tables, so it runs under `sudo`. `sudo` resets `PATH`, and the devenv script is
+on the devenv profile's `PATH` rather than the system's — hence `command -v` to resolve it first:
+
+```bash
+# Prints the plan and the stick's serial; writes nothing.
+sudo "$(command -v build-ingest-test-stick)" \
+  --device /dev/disk/by-id/usb-<vendor>_<model>_<serial>-0:0
+
+# Builds it. The serial the plan printed has to be typed back.
+sudo "$(command -v build-ingest-test-stick)" \
+  --device /dev/disk/by-id/usb-<vendor>_<model>_<serial>-0:0 \
+  --i-know-this-erases <serial>
+```
+
+Without `--i-know-this-erases` nothing is written. Typing the serial back is what keeps a
+device-agnostic script safe: it cannot be satisfied without having looked at which disk is about to
+be erased. Before that point the script also refuses anything that is not a `/dev/disk/by-id/usb-*`
+whole disk, anything under 4 GiB, anything carrying `/`, `/boot` or `/nix/store`, and anything
+mounted. It does not look at what is already on the stick: a retired key or installer stick is a
+perfectly good fixture, and the serial is the authorisation. On a stick still in service that is
+destructive in more than the obvious way — `key-guard.nix` powers the appliance off ten seconds
+after its key stops reading.
+
+Nothing about the device is baked in: the table is a fixed 2976 MiB whatever the capacity, the
+remainder is left unallocated, and re-running it on another stick produces the identical layout.
+`--only N` reformats one partition without re-cutting the table, which is how you retry a single row.
+
+Partitions 1–16 are the `KNOWN` types (`vfat` twice, as FAT16 and FAT32), 17–19 are tier-3
+candidates, and 20–26 are the six refusal signatures plus one deliberately blank partition. Each
+mountable one carries a copy of `integrationtest/assets`.
+
+Four things about it are worth knowing before reading the script:
+
+- **The filesystem label is what reaches the operator.** `__main__.py` feeds
+  `naming.volume_component` the *filesystem* label, not the partition label, so it becomes the S3
+  path component `p<N>-<LABEL>`. The labels are `LOOM<NN><FS>`: eleven characters is the FAT and
+  exFAT ceiling, and `[A-Z0-9]` passes `naming.sanitize_component` unchanged, so no hash suffix is
+  appended.
+- **The partition labels must never start with `loom-`.** A single `loom-esp` would make
+  `classify_disk` refuse the whole disk and the stick would test nothing. They are `fstestNN-<fs>`.
+- **Every partition gets GPT type `0700`.** `devices.py` never reads the type GUID, so a truthful
+  one buys nothing, while `8200`, `8E00`, `FD00` and `8309` would invite
+  `systemd-gpt-auto-generator`, lvm2 and mdadm udev rules to act on the stick on the build host.
+- **Two signatures cannot be made by a real tool.** BitLocker has no Linux creator: libblkid reads
+  eleven bytes at offset 0 and, for the Vista form, consults no FVE metadata, so
+  `\xeb\x52\x90-FVE-FS-` on a zeroed partition is the whole recipe. ZFS needs a pool, which needs the
+  kernel module, which a NixOS host routinely lacks — so `ingest_test_stick_zfs_label.bin` is 256 KiB
+  captured once from a real vdev label built by `ztest`, which runs libzpool entirely in userland
+  (`ztest -f DIR -p LOOM21ZFS -s 128m -v 1`). libblkid reads label L0 at a fixed offset 16384, which
+  is inside those 256 KiB, so the copy stands alone. Everything else uses the real tool — `mkswap`,
+  `pvcreate`, `mdadm --create --metadata=1.2`, `cryptsetup luksFormat`.
+  That file is a **deliberate in-tree exception to the repository's "binaries live in LFS"
+  convention** (`.gitattributes` routes `*.svg *.png *.ico *.iso *.zst *.xz *.gz *.gif`, and not
+  `*.bin`): at 256 KiB and immutable it costs the object database nothing, and keeping it out of LFS
+  means a fixture this test depends on cannot be missing from a checkout that skipped `git lfs pull`.
+  A larger or regenerated binary fixture should go to LFS rather than follow it.
+- **MD RAID is built on a loop device and copied across.** `mdadm` opens its member `O_EXCL`, which
+  the `mkfs` tools do not, and on a stick that has just had 26 partitions written to it something
+  reliably holds that partition open — udev, udisks, whatever the desktop runs — so `mdadm --create`
+  aborts with "Device or resource busy" no matter how long it waits. The loop file is created at the
+  partition's exact size, and a 1.2 superblock sits at a fixed offset 4096 with `super_offset`
+  recorded as 8 sectors, so the copy is exact rather than an approximation.
+
+Each row asserts its own `blkid` type immediately after creation, and a row that fails is blanked
+rather than left half-written: a partial signature would report as neither the intended filesystem
+nor blank, which would corrupt the reading of partition 26 and of the "no recognisable filesystem"
+branch generally.
+
+### What the stick found
+
+Three things, before it was even built:
+
+- **`iso9660` cannot mount at all.** `filesystems.py` puts it in `NEEDS_OWNER`, so `plan_mount`
+  appends `umask=0077` — and isofs has no `umask` option. Its parameter table is `block check conv
+  cruft dmode hide interleave iocharset mode nocompress nojoliet norock overriderockperm sbsector
+  session showassoc unhide`; `udf.ko` next door does have `umask`. An unrecognised key makes
+  `mount(8)` return `-EINVAL`, so every ISO on every stick is skipped with "wrong fs type, bad
+  option". Partition 14 makes that reproducible. The fix is `mode=0400,dmode=0500` for iso9660 only.
+- **Tier 3 is effectively unreachable.** `mounts.kernel_filesystems()` reads `/proc/filesystems`,
+  which lists only *loaded* filesystems, and `run()` snapshots it once before the volume loop.
+  squashfs, erofs and minix are all modules, so an unknown type always takes the "the kernel has no
+  driver" branch. Partitions 17 and 18 exist to show it: stock they are refused, and after
+  `modprobe squashfs erofs` on the box they mount. The difference is the finding.
+- **`ntfs3` in `KNOWN` is unreachable from media.** libblkid's NTFS prober only ever emits `ntfs`.
+
+## The pre-login screen, and the four fragments it is made of
+
+`banner.nix` and `banner/` own the one screen a person standing in front of the box sees without
+logging in. agetty paints `/run/issue.d` **in filename order**, once, and then blocks on a keypress,
+so the number in a fragment's name is its position and the whole directory is one screen:
+
+| Fragment | Written by | When |
+| --- | --- | --- |
+| `50-loom.issue` | `loom-issue.service` (`box.nix`), via `loom-info --for-issue` | every boot, and every `loom-banner-refresh` |
+| `60-loom-network.issue` | `loom-network-check.service` (`network.nix`) | only when the wired port is missing or was claimed automatically |
+| `61-loom-wifi.issue` | `loom-wifi-check.service` (`wifi.nix`) | only when the radio or hostapd did not come up |
+| `90-loom-debug.issue` | `loom-issue.service`, on a `--debug` image only | every boot |
+
+Four rules come from that one consumer, and they live in `banner/loom_banner/render.py` rather than
+in a `printf` per unit:
+
+- **No backslash, anywhere.** agetty reads one as the start of an escape of its own and eats it. The
+  renderer raises instead, because a passphrase one character short cannot be recovered from the
+  screen it was supposed to be read on.
+- **Nothing wider than 78 columns.** The console cannot be measured — it is resized several times
+  during boot, so any reading describes a screen that no longer exists by the time agetty paints —
+  and the narrowest in play is the 80-column getty a `--vm-serial` box carries.
+- **Sixteen named colours.** console_codes(4) shoehorns even a 24-bit SGR into the basic sixteen, so
+  rich's default truecolor lands somewhere unpredictable.
+- **No intensity.** `branding.nix` loads a 512-glyph font and setfont(8) spends the console's
+  intensity bit on glyph selection past 256, so `bold` cannot be relied on to show. Emphasis is
+  reverse video (values to type) and hue (red for a problem, white-on-red for a danger).
+
+Two things about the layout are load bearing rather than decorative:
+
+- **Order is "most-needed last".** The screen is written straight to the VT with no paging, so one
+  too tall loses its *first* rows. The mark is at the top because it is the thing that can be
+  spared; the secrets, the state and the danger block are at the bottom because they cannot.
+- **The QR sits above the secrets.** On a console too short for both, a half-scrolled QR was already
+  unscannable, while a half-scrolled passphrase costs the reader the box.
+
+`screen.py` is a pure function from facts to sections precisely so the order can be asserted without
+booting anything; `render.py` is asserted against rendered bytes, escapes included. Two classes of
+fact meet there: what the image was built with arrives as flags from `banner.nix`, and what is true
+now — the key guard's state, the readiness summary, the recovery passphrase, the portal's daily
+password — is read at print time, every time, because the screen is rendered once per boot and all
+four change underneath it.
+
+Also why there is a `Screen painted:` row. `loom-banner-refresh` deliberately refuses to repaint a
+console somebody has logged into, so a screen can outlive what it says; without a timestamp a stale
+one and a live one are identical.
+
+## Readiness, in one place and three screens
+
+`ready.nix` and `ready/` answer "is Loom up yet?" — a question the console could not answer before it, because
+the bring-up log says what is happening rather than how much is left, and `k9s` appears when `up.sh` returns,
+which is well before the pods are Ready.
+
+One unit computes it and writes two files into `/run/loom/ready`; three readers draw them and none of them
+asks the cluster anything:
+
+| File | Who reads it | Why |
+| --- | --- | --- |
+| `state.json` | the bring-up pane, the tmux status segment | everything: counts, workloads, blockers, stage |
+| `summary` | `loom-info`, for the pre-login banner | one line of plain ASCII, so the banner needs no `jq` |
+
+The split is the same one `usb-ingest/` uses, and for the same reason: the writer needs the cluster and runs
+as root, while two of the readers are spawned by the operator's tmux server. A file is the whole of what they
+share. The status segment is the sharp case — it runs from the tmux server on `status-interval`, so a
+`kubectl` there could hang the session on a cluster that has stopped answering.
+
+Three decisions in `ready/loom_ready/cluster.py` are worth knowing before changing anything:
+
+- **Workloads, not pods.** A pod list cannot express "desired": a Deployment rolling out has no pods yet for
+  the replicas it has not created, so a pod count makes the denominator chase the numerator.
+- **A workload that wants zero replicas is not counted.** That is a KEDA-idle Deployment in its healthy steady
+  state (`charts/templates/{worker,tika,gotenberg,ollama}/*scaledobjects.yaml`), and counting it would park the
+  bar short of the end for the life of the box.
+- **Jobs count as done when they have succeeded.** The init and pre-install Jobs gate everything behind them
+  and never become Ready, so a check written in terms of Ready pods never sees them at all.
+
+`Readiness.settled` — the `rolling-out`/`ready`/`degraded` stages — is the appliance's one definition of "up.sh
+has returned and the namespace exists". `console.nix`'s pane used to evaluate that for itself; it now reads
+this, which is what keeps the pane, the status line and the banner from disagreeing.
+
+The banner is the one reader with a hard budget. agetty writes it straight to the VT with no paging, so
+`summary` is deliberately **empty** while the cluster has not answered — the line earns its row once it has a
+number on it, and `box.nix` tests `-s` rather than `-r`. The publisher redraws the banner through
+`loom-banner-refresh` on a stage change and never on a count change, and never for the first stage a box
+reaches: at boot `loom-banner-repaint` is already watching the console for a minute, and a second getty
+restart inside that window would eat the keypress that opens the operator's session.

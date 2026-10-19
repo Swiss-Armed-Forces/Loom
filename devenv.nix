@@ -32,28 +32,70 @@ let
         ];
       });
 
-  # Python subdirectories
+  # Every directory of first-party Python, and whether it is a Poetry project.
+  # The hooks are generated per directory -- there is no repository-wide Python
+  # hook -- so a directory missing from this list has no formatter, no linter
+  # and no type checker at all.
   #
   # A root may contain another one: "cicd" holds the scripts the pipeline runs,
   # and "cicd/aitools" is a poetry package of its own inside it. Each file is
-  # linted by the innermost root that contains it - see nestedSubdirExcludes -
+  # linted by the innermost root that contains it -- see nestedSubdirExcludes --
   # because the tools run from the root's directory and resolve imports and
   # configuration relative to it.
+  #
+  # The appliance's own packages are here too: Nix builds them through
+  # poetry-core and resolves their dependencies from nixpkgs, so the lockfile
+  # beside each one is what keeps `poetry lock` honest about the versions the
+  # devenv's virtualenv gets.
   pythonSubdirs = [
-    "backend/api"
-    "backend/common"
-    "backend/crawler"
-    "backend/worker"
-    "integrationtest"
-    "cicd"
-    "cicd/aitools"
+    { subdir = "backend/api"; }
+    { subdir = "backend/common"; }
+    { subdir = "backend/crawler"; }
+    { subdir = "backend/worker"; }
+    { subdir = "integrationtest"; }
+    { subdir = "cicd"; }
+    { subdir = "cicd/aitools"; }
+    { subdir = "ollama"; }
+    { subdir = "nixos/banner"; }
+    { subdir = "nixos/console-mouse"; }
+    { subdir = "nixos/installer"; }
+    { subdir = "nixos/portal"; }
+    { subdir = "nixos/ready"; }
+    { subdir = "nixos/tests/scripts"; }
+    { subdir = "nixos/usb-ingest"; }
+    # Tests and a parser, with no package around them: the skill tree is data in
+    # Markdown, and what is checked here is the Python that reads it.
+    {
+      subdir = "nixos/skills";
+      poetry = false;
+    }
+  ];
+
+  # Where the appliance's own pytest suites live, for `appliance-check`.
+  #
+  # nixos/skills/tests is the one that is not also a package's `checkPhase`, and
+  # cannot be: it checks the skill sources against `Documentation/`, and no
+  # derivation's `src` holds both. So it runs here alone. The half that does have
+  # to fail an image build -- that a shipped skill names a command this platform
+  # actually has -- is nixos/tests/appliance-skills.nix instead.
+  appliancePytestPaths = [
+    "nixos/banner/tests"
+    "nixos/console-mouse/tests"
+    "nixos/installer/tests"
+    "nixos/portal/tests"
+    "nixos/ready/tests"
+    "nixos/skills/tests"
+    "nixos/tests/scripts/tests"
+    "nixos/usb-ingest/tests"
   ];
 
   # Files of a nested root, as regexes excluding them from the outer root.
   nestedSubdirExcludes =
     subdir:
     map (nested: "^${nested}/.*") (
-      builtins.filter (other: other != subdir && lib.hasPrefix "${subdir}/" other) pythonSubdirs
+      builtins.filter (other: other != subdir && lib.hasPrefix "${subdir}/" other) (
+        map (entry: entry.subdir) pythonSubdirs
+      )
     );
 
   # JavaScript/TypeScript subdirectories
@@ -144,7 +186,17 @@ let
 
   # Generate hooks for each subdirectory
   createPythonHooksForSubdir =
-    subdir:
+    # `poetry`: whether this directory is a Poetry project. False for a
+    # directory of Python that is not packaged at all -- nixos/skills is tests
+    # and nothing else -- where the two lockfile hooks have nothing to check and
+    # `poetry check` would fail on the missing manifest. Everything else, which
+    # is every formatter and linter, applies either way: that directory was the
+    # only Python in the tree with no gate at all, which also left the typing
+    # rules the rest of the repository is held to unenforced there.
+    {
+      subdir,
+      poetry ? true,
+    }:
     let
       subdirName = builtins.replaceStrings [ "/" ] [ "-" ] subdir;
       # %ROOT% is substituted by the wrapper script, not by Nix -- see
@@ -237,6 +289,8 @@ let
         require_serial = true;
       };
 
+    }
+    // lib.optionalAttrs poetry {
       "poetry-check_${subdirName}" = {
         enable = true;
         entry = createToolWrapper "poetry" subdir [ "check" ];
@@ -346,12 +400,105 @@ let
 
   # Merge all hooks
   pythonHooks = builtins.foldl' (
-    acc: subdir: acc // (createPythonHooksForSubdir subdir)
+    acc: entry: acc // (createPythonHooksForSubdir entry)
   ) { } pythonSubdirs;
+  # The root project cannot go through createPythonHooksForSubdir: `subdir = "."`
+  # renders `files = "^./.*\.py$"`, where the dot is a regex wildcard, so the
+  # pattern would claim every Python file in the repository. Its lockfile check is
+  # spelled out here instead.
+  #
+  # integrationtest is checked alongside it, because it takes the root project as
+  # a path dependency (`loom-overarching-dev = {path = "../"}`). A change to the
+  # root manifest therefore stales two lockfiles, and its own hooks do not fire on
+  # a file outside its directory -- which is how both went stale at once when
+  # nixos/ready was added to the root pyproject.toml and neither was regenerated.
+  #
+  # `poetry check` reports a lockfile that no longer matches its manifest, so this
+  # fails the commit and points at `poetry-lock`; it deliberately does not
+  # regenerate anything itself, because the fix spans both projects.
+  #
+  # One hook per project rather than a loop in a generated script: the entry has
+  # to leave the repository root to cicd/run_hook_tool.sh (see
+  # cicd/check_devenv_hook_roots.sh), and that script runs one command in one
+  # directory. Both fire on the *root* manifest, which is what distinguishes
+  # poetry-check_root-integrationtest from the poetry-check_integrationtest
+  # generated above -- that one only sees integrationtest's own files.
+  rootPoetryHooks = {
+    poetry-check_root = {
+      enable = true;
+      entry = createToolWrapper "poetry" "." [ "check" ];
+      files = "^(pyproject\\.toml|poetry\\.lock)$";
+      pass_filenames = false;
+    };
+
+    poetry-check_root-integrationtest = {
+      enable = true;
+      entry = createToolWrapper "poetry" "integrationtest" [ "check" ];
+      files = "^(pyproject\\.toml|poetry\\.lock)$";
+      pass_filenames = false;
+    };
+  };
+
   jsHooks = builtins.foldl' (acc: subdir: acc // (createJsHooksForSubdir subdir)) { } jsSubdirs;
   helmHooks = builtins.foldl' (acc: subdir: acc // (createHelmHooksForSubdir subdir)) { } helmSubdirs;
 
   cicd-config = builtins.path { path = ./nix-dind/devenv.local.nix; };
+
+  # The public key each Cachix cache in `cachix.pull` signs with. devenv's
+  # cachix module carries no keys -- its Rust core fetches them from the API at
+  # shell build time -- so they are stated here, and `cachix use <name>` prints
+  # one. A cache never rotates its key: rotating means re-signing every path.
+  cachixPublicKeys = {
+    # devenv's own module appends this to `cachix.pull` whatever this file says.
+    devenv = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    loom = "loom.cachix.org-1:qK4ugmN5g4Pvhv45OLcXTwG53ZnSauwrHLVA0A7Y0rs=";
+    nixpkgs-python = "nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU=";
+  };
+
+  cachixPublicKey =
+    name:
+    cachixPublicKeys.${name}
+      or (throw "devenv.nix: no public key for the '${name}' Cachix cache -- add it to cachixPublicKeys (`cachix use ${name}` prints it)");
+
+  # `unique`, because the list is assembled from several modules that each
+  # append what they need: devenv adds its own cache and the nixpkgs-python
+  # input adds the one this file also names, so a cache would otherwise be
+  # queried twice per path.
+  cachixPullCaches = lib.unique config.cachix.pull;
+
+  # One nix.conf fragment, which is what NIX_CONFIG is parsed as: one setting
+  # per line, values space separated.
+  #
+  # devenv applies `cachix.pull` to the nix invocations it drives itself and to
+  # nothing else -- it writes no nix.conf and exports nothing -- so a nix-build
+  # run inside this shell would otherwise see cache.nixos.org alone and rebuild
+  # paths sitting in loom.cachix.org: for `spark`, a qemu-emulated aarch64
+  # kernel, hours against a 32 MB download.
+  #
+  # `extra-` rather than plain, so this adds to /etc/nix/nix.conf and
+  # ~/.config/nix/nix.conf rather than replacing what they say.
+  #
+  # This is the second of the two ways a cache reaches nix, and the one that
+  # needs no privilege on the machine: a client may name a substituter when
+  # either it is in `trusted-users` or the daemon's own nix.conf already names
+  # the cache. `cicd/setup_devenv.py` writes the latter, which is what a
+  # developer should have; these lines are what makes the caches work for
+  # somebody who is trusted instead, and what keeps the list versioned with the
+  # code rather than only in each machine's /etc.
+  #
+  # The two lines are not treated alike when neither holds. A substituter is
+  # filtered per URL (`ignoring untrusted substituter '<url>'`), while
+  # `extra-trusted-public-keys` is refused outright as a restricted setting --
+  # so the keys only ever take effect for a trusted caller, and have to be in
+  # the daemon's nix.conf for everyone else. Either way the warning is the
+  # point: without it a misconfigured machine rebuilds the closure in silence.
+  # See Documentation/devenv-setup.md.
+  cachixNixConfig = ''
+    extra-substituters = ${
+      lib.concatMapStringsSep " " (name: "https://${name}.cachix.org") cachixPullCaches
+    }
+    extra-trusted-public-keys = ${lib.concatMapStringsSep " " cachixPublicKey cachixPullCaches}
+  '';
 in
 {
   env = {
@@ -371,6 +518,10 @@ in
     # this, corepack fetches the newest pnpm (12.x) whose Rust-native
     # binary fails on Alpine/musl CI runners.
     COREPACK_DEFAULT_TO_LATEST = 0;
+
+    # Every nix command run inside this shell -- the appliance scripts above
+    # all -- sees the caches `cachix.pull` names. See cachixNixConfig.
+    NIX_CONFIG = cachixNixConfig;
 
     # fix locale
     LOCALE_ARCHIVE = "${custom-locales}/lib/locale/locale-archive";
@@ -458,6 +609,28 @@ in
       # testing
       bats
 
+      # appliance image building / flashing
+      gptfdisk
+      # `partprobe`, which build_appliance_image.sh's validate_environment
+      # requires and which util-linux does not carry.
+      parted
+      # `--lock-key`: the container that goes on the stick's key partition, and
+      # the word passphrase over it. diceware carries its own EFF wordlist, which
+      # is why there is none in this repository.
+      cryptsetup
+      diceware
+
+      # appliance VMs (`appliance-vm`)
+      qemu
+      # The serial side-channel: `appliance-vm attach` speaks to a unix socket,
+      # and socat is what puts a terminal on the other end of one in raw mode.
+      socat
+      # `mkfs.vfat` and `mcopy`, for building the extra USB stick `--usb` hands
+      # to a VM. mtools writes into the image without mounting it, which is the
+      # only way to do this without root.
+      dosfstools
+      mtools
+
       # k8s
       minikube
       kubectl
@@ -511,6 +684,11 @@ in
       # connect to CiCd runners
       tailscale
       dig
+
+      # GitLab from the shell (issues, MRs, pipelines). A developer convenience
+      # only - nothing in cicd/ may call it, so it stays out of the pipeline's
+      # package set.
+      glab
 
       # monitoring
       btop-with-gpu-patch
@@ -644,6 +822,13 @@ in
     before = [ "devenv:git-hooks:install" ];
   };
 
+  # Give git a driver for the files CI generates, which .gitattributes names --
+  # see cicd/set_generated_file_merge_driver.sh.
+  tasks."loom:git:generated-file-merge-driver" = {
+    exec = "${config.devenv.root}/cicd/set_generated_file_merge_driver.sh";
+    before = [ "devenv:enterShell" ];
+  };
+
   tasks."devenv:git-hooks:run" = {
     # Print the output of the git hooks that "devenv test" runs, otherwise a
     # failing hook only reports that it failed.
@@ -670,11 +855,27 @@ in
       ];
     };
 
-    trim-trailing-whitespace.enable = true;
+    # `*.patch` and `*.diff` are excluded from both, and that is not cosmetic: a
+    # unified diff's context line for a blank source line is a single space, and
+    # these hooks strip it. They had already rewritten every patch in the tree
+    # -- nixos/patches/btop-aarch64-gpu.patch has two such lines, the two
+    # Frontend patches five between them -- so a regenerated patch shows
+    # spurious noise and anyone comparing against upstream sees a mismatch that
+    # has nothing to do with the change. (`patch` and `git apply` both accept a
+    # wholly empty line as blank context, which is why the hunks still applied.)
+    trim-trailing-whitespace = {
+      enable = true;
+      excludes = [
+        "\\.patch$"
+        "\\.diff$"
+      ];
+    };
     end-of-file-fixer = {
       enable = true;
       excludes = [
         ".*/assets/.*"
+        "\\.patch$"
+        "\\.diff$"
       ];
     };
 
@@ -749,6 +950,68 @@ in
       pass_filenames = false;
     };
 
+    # charts/values-http.yaml has to name every component carrying an ingress,
+    # and nothing about adding one to values.yaml points at it. A component
+    # missed there stays on `websecure` alone, so `--enable-http` never reaches
+    # it and the service 404s over http for no visible reason -- and the
+    # appliance's captive portal is built on that flag.
+    #
+    # Renders the chart and reads the annotation each Ingress ends up with,
+    # rather than comparing key sets: rabbit's path is a level deeper than the
+    # rest and dovecot shares the same values anchor while rendering a TCP
+    # route, so a textual comparison has to special-case both.
+    #
+    # `pass_filenames = false`: the script checks the chart as a whole and
+    # rejects arguments it does not know.
+    "check-http-values" = {
+      enable = true;
+      entry = "./cicd/check_http_values.sh";
+      files = "^(charts/|cicd/check_http_values\\.sh$)";
+      pass_filenames = false;
+    };
+
+    # ollama/Dockerfile.models hardcodes the models the production image bakes,
+    # and charts/values.yaml names the ones Loom asks for. They agreed, and
+    # nothing made them: a drift is invisible until an air-gapped box is in
+    # front of somebody with a console pane that cannot answer. vars.sh's
+    # LOOM_CHAT_MODEL reads the chart precisely so there is no second literal;
+    # this is what keeps the Dockerfile from being one.
+    "check-ollama-models" = {
+      enable = true;
+      entry = "./cicd/check_ollama_models.sh";
+      # `ollama_wrapper.py` too: the script also holds its HOST_RESERVE_BYTES to
+      # vars.sh's LOOM_MIN_MEMORY, which is the other value spelled twice.
+      files = "^(charts/values\\.yaml$|ollama/Dockerfile\\.models$|ollama/ollama_wrapper\\.py$|cicd/check_ollama_models\\.sh$|vars\\.sh$)";
+      pass_filenames = false;
+    };
+
+    # The Ollama image's entrypoint wrapper decides OLLAMA_NUM_PARALLEL from the
+    # GPU it finds, which is arithmetic no type can check. The suite is stdlib
+    # only and runs in well under a second, so it rides the hook set -- and so
+    # `devenv test` -- rather than earning a CI job of its own.
+    #
+    # `pass_filenames = false`: pytest gets the directory, because a change to
+    # ollama_wrapper.py has to run every test rather than none of them.
+    #
+    # Spelled out rather than calling the `ollama-test` script: devenv's scripts
+    # are not on PATH for a `git commit` run outside `devenv shell`, while the
+    # virtualenv's `python` is -- which is the same assumption every hook above
+    # makes about `isort`, `black` and the rest.
+    #
+    # Run from the repository root (`--subdir .`) so that pytest.ini applies;
+    # the wrapper is what resolves that root in the tree the hook ran in.
+    "ollama-test" = {
+      enable = true;
+      entry = createToolWrapper "python" "." [
+        "-m"
+        "pytest"
+        "ollama/tests"
+      ];
+      files = "^ollama/.*\\.py$";
+      types = [ "python" ];
+      pass_filenames = false;
+    };
+
     markdownlint = {
       enable = true;
       settings.configuration = {
@@ -785,7 +1048,12 @@ in
     "check-values-local-overrides" = {
       enable = true;
       entry = "./cicd/check_values_local_overrides.sh";
-      files = "charts/values-(overwrites|up-flags)\\.yaml$";
+      # `appliance` too: it is tracked, committed empty, part of skaffold's default
+      # valuesFiles and written with real content by nixos/repo.nix -- and unlike
+      # the other three it is deliberately *not* skip-worktree'd, so without this
+      # it was the one override layer that was neither ignored nor checked, and
+      # box-specific values staged from a seeded checkout committed silently.
+      files = "charts/values-(overwrites|user|up-flags|appliance)\\.yaml$";
       types = [ "file" ];
     };
 
@@ -814,6 +1082,7 @@ in
     };
   }
   // pythonHooks
+  // rootPoetryHooks
   // jsHooks
   // helmHooks;
 
@@ -834,10 +1103,16 @@ in
         git lfs install --skip-repo
         git lfs pull
 
-        # Local-override values files: values-overwrites.yaml is edited by hand,
-        # values-up-flags.yaml is generated by up.sh. Neither may ever be committed.
+        # Local-override values files: values-overwrites.yaml and values-user.yaml
+        # are edited by hand, values-up-flags.yaml is generated by up.sh. None of
+        # them may ever be committed.
+        #
+        # charts/values-appliance.yaml is deliberately not here: nothing on a
+        # developer machine writes it, and on a box it is written into the seeded
+        # checkout rather than into this one.
         local_override_values=(
           charts/values-overwrites.yaml
+          charts/values-user.yaml
           charts/values-up-flags.yaml
         )
         if [ "${builtins.toJSON config.env.cicd}" = true ]; then
@@ -1062,6 +1337,25 @@ in
     '';
   };
 
+  scripts.ollama-test = {
+    description = "Test the Ollama container image's entrypoint wrapper";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Its own script rather than a line in backend-test (which cds into
+        # backend/ and so can never reach this) or in appliance-pytest (which is
+        # the appliance's suites, and shares one pytest session with them).
+        #
+        # No PYTHONPATH: the top-level pyproject.toml path-depends on ollama/, so
+        # devenv's virtualenv already imports ollama_wrapper by name. Run from the
+        # repository root so that pytest.ini applies.
+        python -m pytest ollama/tests "''${@}"
+      )
+    '';
+  };
+
   scripts.aitools-test = {
     description = "Test the aitools CLI and the cicd scripts beside it";
     exec = ''
@@ -1281,6 +1575,201 @@ in
     '';
   };
 
+  scripts.build-appliance-image = {
+    description = "Build and optionally flash a Loom appliance USB installer image";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Hand the pinned sources to the build so nixos/ needs no flake and
+        # devenv.lock stays the only pin in this repository. Passed ahead of
+        # "$@" so an explicit --nixpkgs or --nixos-hardware still wins.
+        ./cicd/build_appliance_image.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-test = {
+    description = "Run the NixOS appliance VM tests";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # As build-appliance-image: the pinned sources go in ahead of "$@", so
+        # an explicit --nixpkgs or --nixos-hardware still wins.
+        ./cicd/run_appliance_tests.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-vm = {
+    description = "Boot a Loom appliance in a VM, for testing by hand";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # As appliance-test, plus the UEFI firmware the installer rig boots.
+        # `OVMF.fd` is the split CODE/VARS pair -- the script copies the vars
+        # half into its state directory so the firmware can keep the boot entry
+        # the installer writes. On aarch64 the same attribute produces AAVMF,
+        # which is why the script probes for both names rather than being told.
+        ./cicd/run_appliance_vm.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          --firmware '${pkgs.OVMF.fd}/FV' \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-pytest = {
+    description = "Run the appliance's own pytest suites (nixos/*/tests)";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # No PYTHONPATH: the top-level pyproject.toml path-depends on every
+        # appliance package, so devenv's virtualenv already imports them by name.
+        # Run from the repository root so that pytest.ini applies -- above all
+        # `--basetemp=.pytest_tmp`, which is what keeps the scratch out of RAM.
+        # One invocation, so the suites in `appliancePytestPaths` share a
+        # session. Their module basenames are unique across all of them for that
+        # reason -- however many there come to be: pytest imports them into one
+        # namespace, so a second `test_devices.py` anywhere in that list collides
+        # with the first.
+        python -m pytest ${lib.concatStringsSep " " appliancePytestPaths} "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-eval = {
+    description = "Instantiate the appliance image for every platform, building nothing";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # As appliance-test, and for the same reason.
+        ./cicd/appliance_eval.sh \
+          --nixpkgs '${inputs.nixpkgs-stable}' \
+          --nixos-hardware '${inputs.nixos-hardware}' \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.appliance-check = {
+    description = "Run the appliance checks that boot nothing: pytest, then evaluation";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Both, whatever the first one does: a failing test suite and a module that
+        # no longer evaluates are different mistakes, and a run that stopped at the
+        # first would hide the second until the next pipeline.
+        failed=()
+
+        appliance-pytest || failed+=(pytest)
+        appliance-eval "''${@}" || failed+=(eval)
+
+        if [ "''${#failed[@]}" -gt 0 ]; then
+          echo >&2 "[!] appliance checks failed: ''${failed[*]}"
+          exit 1
+        fi
+        echo "[*] appliance checks passed: pytest, eval"
+      )
+    '';
+  };
+
+  scripts.loom-platform-info = {
+    description = "Report this box's hardware, and how it compares with its Loom platform";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # No pinned inputs to hand over: this one is plain bash on purpose, so
+        # that it also runs on a box that is not running Loom yet -- a Spark on
+        # DGX OS, an EVO-X2 on whatever it shipped with. It lives beside the
+        # appliance rather than in cicd/ because that box is where it belongs;
+        # nixos/box.nix wraps the very same file, where it also knows what was
+        # declared.
+        ./nixos/scripts/platform_info.sh \
+          "''${@}"
+      )
+    '';
+  };
+
+  scripts.build-ingest-test-stick = {
+    description = "Prepare a USB stick as a USB-ingest test fixture, one filesystem per partition";
+    exec = ''
+      (
+        set -euo pipefail
+        cd '${config.devenv.root}'
+
+        # Every mkfs the table needs, handed over as one environment rather than
+        # taken from the host's PATH -- the whole point of the stick is that two
+        # people building one get the same 26 filesystems. Passed ahead of "$@"
+        # so an explicit --tools still wins.
+        #
+        # udevadm is deliberately NOT in here: it talks to the running system's
+        # udevd, so it has to be that system's binary rather than a pinned one.
+        ./nixos/scripts/make_ingest_test_stick.sh \
+          --tools '${
+            pkgs.buildEnv {
+              name = "ingest-stick-tools";
+              paths = with pkgs; [
+                # Partitioning, probing and the payload copy.
+                gptfdisk
+                util-linux
+                coreutils
+                findutils
+                gnused
+                gnugrep
+                rsync
+                # The KNOWN filesystems, in filesystems.py's order.
+                dosfstools
+                exfatprogs
+                ntfs3g
+                e2fsprogs
+                xfsprogs
+                btrfs-progs
+                f2fs-tools
+                hfsutils
+                hfsprogs
+                xorriso
+                udftools
+                apfsprogs
+                # Tier 3, and the refusal signatures that have a real tool.
+                squashfsTools
+                erofs-utils
+                lvm2
+                mdadm
+                cryptsetup
+              ];
+              pathsToLink = [
+                "/bin"
+                "/sbin"
+              ];
+              ignoreCollisions = true;
+            }
+          }' \
+          "''${@}"
+      )
+    '';
+  };
+
   scripts.nix-dind = {
     description = "Build nix-dind image";
     exec = ''
@@ -1452,7 +1941,7 @@ in
         set -euo pipefail
         cd '${config.devenv.root}'
 
-        ./cicd/install_runner.sh
+        ./cicd/install_runner.sh \
           "''${@}"
       )
     '';
