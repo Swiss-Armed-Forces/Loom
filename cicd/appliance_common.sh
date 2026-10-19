@@ -157,6 +157,51 @@ common_nix_args(){
     )
 }
 
+# Say so when --min-free cannot do anything.
+#
+# `min-free` and `max-free` are restricted settings: nix discards them from a
+# caller outside `trusted-users`, and unlike a substituter there is no
+# allow-list that lets one through. So `--min-free 50` on a machine whose
+# developer is not a trusted user is accepted, printed in the help, and has no
+# effect whatsoever.
+#
+# The warning is deliberately tied to the *outcome* rather than to the dropped
+# flag. A machine that sets min-free in /etc/nix/nix.conf -- which is where it
+# belongs, and what cicd/setup_devenv.py offers -- is already protected, and
+# warning there would be noise nobody can act on. What matters is the case
+# where nothing collects garbage at all: nix defaults min-free to 0, and a
+# build that fills the disk takes the whole run with it.
+warn_if_disk_budget_inert(){
+    local requested_gb="${1}" info configured
+    (( requested_gb > 0 )) || return 0
+
+    # `"trusted":false` -- a JSON boolean, not the 0/1 the human-readable form
+    # prints. Matched with bash's own regex rather than piped through sed, both
+    # to keep shellcheck's SC2312 happy and because the field is optional:
+    # anything other than an explicit false means nix could not tell, which is
+    # not the same as "untrusted" and must not warn.
+    info="$(nix store info --json 2>/dev/null || true)"
+    [[ "${info}" =~ \"trusted\"[[:space:]]*:[[:space:]]*false ]] || return 0
+
+    # What the configuration files say, rather than what this invocation asked
+    # for. Both the daemon and this client read /etc/nix/nix.conf, so a value
+    # there is one the daemon will honour. NIX_CONFIG is emptied because inside
+    # the devenv shell it carries settings that an untrusted caller has
+    # discarded anyway. A min-free in the *user's* ~/.config/nix/nix.conf is
+    # read here and ignored by the daemon, so this can stay quiet when it
+    # should not -- erring towards silence, which is the harmless direction.
+    configured="$(NIX_CONFIG='' nix config show min-free 2>/dev/null || true)"
+    [[ "${configured}" = "0" || -z "${configured}" ]] || return 0
+
+    echo "[!] --min-free ${requested_gb} will be ignored: it is a restricted" >&2
+    echo "[!] setting and this account is not in nix's trusted-users. Nothing" >&2
+    echo "[!] will collect garbage during this build, so a long run can fill" >&2
+    echo "[!] the disk and take itself down with it." >&2
+    echo "[!] Put it in /etc/nix/nix.conf instead, where the daemon reads it:" >&2
+    echo "[!]     min-free = $(( requested_gb * 1024 * 1024 * 1024 ))" >&2
+    echo "[!] See the disk budget section in nixos/README.md." >&2
+}
+
 # The image inside a `nix-build` out-link.
 #
 # -L is required: the out-link is a symlink into the Nix store, and find does

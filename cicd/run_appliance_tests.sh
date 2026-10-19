@@ -511,6 +511,9 @@ NIX_SYSTEM="$(platform_system "${PLATFORMS[0]}")"
 validate_environment
 resolve_loom_values
 
+# Once for the run, not once per test: the answer cannot change between them.
+warn_if_disk_budget_inert "${MIN_FREE_GB}"
+
 FAILED=()
 RAN=0
 for platform in "${PLATFORMS[@]}"; do

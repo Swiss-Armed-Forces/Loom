@@ -1041,6 +1041,8 @@ prepare_state_dir
 case "${MODE}" in
     box)
         validate_environment
+        # Only the two modes that build: attach and reset run no nix at all.
+        warn_if_disk_budget_inert "${MIN_FREE_GB}"
         resolve_loom_values
         resolve_debug_key
         build_box_vm
@@ -1048,6 +1050,7 @@ case "${MODE}" in
     ;;
     installer)
         validate_environment
+        warn_if_disk_budget_inert "${MIN_FREE_GB}"
         prepare_firmware
         build_installer_image
         virtual_flash

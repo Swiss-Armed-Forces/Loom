@@ -85,10 +85,17 @@ Loom uses **devenv** (Nix-based) for reproducible development environments. When
 direnv automatically loads the environment.
 
 **Run every nix command through the devenv shell** (`devenv shell -- …`, or `direnv exec <tree> …`).
-`devenv.nix` sets `NIX_CONFIG` from `cachix.pull` there, and that is the only thing pointing nix at
-`loom.cachix.org` — devenv applies `cachix.pull` to the invocations it drives itself and to nothing
-else. A bare `nix-build ./nixos` outside the shell rebuilds the whole appliance closure from source
-rather than fetching it, which under `--allow-cross` means emulating an aarch64 kernel under qemu.
+`devenv.nix` sets `NIX_CONFIG` from `cachix.pull` there, and that is the only thing *in this
+repository* pointing nix at `loom.cachix.org` — devenv applies `cachix.pull` to the invocations it
+drives itself and to nothing else. A bare `nix-build ./nixos` outside the shell rebuilds the whole
+appliance closure from source rather than fetching it, which under `--allow-cross` means emulating
+an aarch64 kernel under qemu.
+
+That `NIX_CONFIG` only takes effect for a caller in nix's `trusted-users`. The supported setup
+instead names the caches in the machine's own `/etc/nix/nix.conf`, where the daemon reads them and
+no account needs privilege — `./cicd/setup_devenv.py` writes it, and
+`Documentation/devenv-setup.md` has the block. On a machine with neither, nix prints
+`ignoring untrusted substituter 'https://loom.cachix.org'` and builds from source.
 
 ### Common Commands
 
@@ -381,6 +388,19 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Utilities:**
 
+- `./cicd/setup_devenv.py` - Interactive first-time setup of a development machine: Nix, the binary
+  caches, devenv, direnv, docker, and `direnv allow` on the checkout. Run directly, not through
+  devenv — it is what installs devenv, so it is stdlib-only Python with no Nix dependency. Each
+  step prints what it is for and the literal command before asking, and a bare Enter declines;
+  anything already in place is reported as done rather than asked about again, so re-running it
+  doubles as a way to check a machine. `--dry-run`, `--yes`, `--only STEP`, `--skip STEP`.
+  The `caches` step is the one that matters: it writes `extra-substituters` and
+  `extra-trusted-public-keys` into `/etc/nix/nix.conf` between managed markers, which is what
+  makes the Loom cache reachable **without anyone being in `trusted-users`** — a client may name a
+  substituter when either it is trusted or the daemon already names the cache, and only the second
+  avoids handing out what the nix manual calls the equivalent of root. On NixOS that file is
+  generated, so the step turns into a `configuration.nix` snippet to paste instead of a write.
+  `--only verify` on its own answers "does this machine actually have the caches?"
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`).
   Discovers projects by walking every tracked `pyproject.toml`, so a newly added package is locked
   without editing a list — `backend/common` first, the root project last, the rest in between.

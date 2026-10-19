@@ -507,12 +507,13 @@ source, which under `--allow-cross` means a qemu-emulated aarch64 kernel — hou
 download. If nix prints
 
 ```text
-ignoring the client-specified setting 'extra-substituters', because it is a restricted setting
-and you are not a trusted user
+ignoring untrusted substituter 'https://loom.cachix.org', you are not a trusted user
 ```
 
-you are not in `trusted-users` and the cache is unreachable whatever the shell exports; see
-`Documentation/devenv-setup.md`.
+the cache is unreachable whatever the shell exports. There are two cures and you need either one:
+name the caches in the daemon's own `/etc/nix/nix.conf`, which is what `./cicd/setup_devenv.py`
+writes and what `Documentation/devenv-setup.md` documents, or put yourself in `trusted-users`. The
+first is preferred — it grants no privilege to anybody and covers every account on the machine.
 
 ## Booting one by hand
 
@@ -848,9 +849,16 @@ the free space on the store. That line is how the KVM question gets answered for
 log into.
 
 Both jobs reach their scripts through `devenv shell --` (`cicd/ci_helpers.sh`), so a runner gets the
-binary cache for the same reason a workstation does, and `nix-dind/Dockerfile` puts the job's user in
-`trusted-users`, without which nix would discard it — the same precondition the `--option` paragraph
-under *Disk budget* states for `min-free`.
+binary cache for the same reason a workstation does: `nix-dind/Dockerfile` names the caches, and
+their signing keys, in the image's own `/etc/nix/nix.conf`. The job's user is deliberately **not** in
+`trusted-users` — the daemon naming a cache is enough for a client to use it, so the grant the nix
+manual calls the equivalent of root access buys nothing here. The same file carries `min-free` and
+`max-free` for the reason the *Disk budget* section below gives: those cannot be passed by an
+untrusted caller at all.
+
+The one `trusted-users` in this repository that stays is `nixos/debug.nix`'s, and it is unrelated to
+caches — a remote builder is `nix-store --serve --write`, which no allow-list covers. See the
+`--debug` bullet above.
 
 ## Disk budget
 
@@ -903,15 +911,22 @@ max-free = 107374182400
 ```
 
 `min-free` is the one that keeps a run from dying at a full disk: the daemon collects garbage
-*during* the build once free space drops below it. `appliance-test` also passes both on the command
-line, which nix honours only for a user in `trusted-users`; everyone else gets a warning and the
-daemon's own settings, which is why the permanent form is worth setting anyway.
+*during* the build once free space drops below it. **The permanent form above is the one that
+counts.** `appliance-test` and `appliance-vm` also pass both on the command line, but these are
+restricted settings: nix honours them only for a user in `trusted-users`, and unlike a substituter
+there is no allow-list that lets one through. For everybody else the flags are accepted, printed in
+`--help`, and do nothing.
 
-A CI job is the case where the command line is enough. The `nix-dind` image puts its `nix` user in
-`trusted-users`, `/nix` there is the container's own writable layer — no volume, no quota, shared with
-nothing and surviving nothing — and the job therefore passes a far smaller margin than a workstation
-wants: `--min-free 10 --max-free 20`. Collecting to 100 GB free in a container would delete the devenv
-closure the next step needs.
+Rather than fail silently, both scripts say so — but only when it matters. `warn_if_disk_budget_inert`
+in `cicd/appliance_common.sh` warns when the caller is untrusted **and** nothing configures
+`min-free` either, which is the case where no garbage is collected at all. A machine that sets it in
+`/etc/nix/nix.conf` is already protected and stays quiet.
+
+The `nix-dind` image is configured the same way, in its own `/etc/nix/nix.conf` rather than through
+the flags: `/nix` there is the container's own writable layer — no volume, no quota, shared with
+nothing and surviving nothing — so it takes a far smaller margin than a workstation wants,
+`min-free = 10737418240` against `max-free = 21474836480`. Collecting to 100 GB free in a container
+would delete the devenv closure the next step needs.
 
 To reclaim by hand:
 

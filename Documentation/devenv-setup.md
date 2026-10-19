@@ -16,6 +16,27 @@ covering prerequisites, initial configuration, and optional tooling for developm
 
 ## Setting up Loom
 
+The quickest path is the setup script. It walks the rest of this section, checks what is already
+there, and asks before each step — showing the exact command first, so nothing happens that you
+have not read. A bare Enter declines.
+
+```sh
+git clone --recursive $repository
+cd loom/
+./cicd/setup_devenv.py
+```
+
+It is safe to re-run: anything already in place is reported as done rather than asked about again,
+which also makes it a way to check a machine. `--dry-run` shows every step and runs nothing.
+
+Two things it leaves to you, because guessing would be worse than asking:
+
+- **Installing docker**, which differs per distribution. It points you at the official instructions.
+- **On NixOS**, editing `/etc/nix/nix.conf` — that file is generated, so the script prints the
+  `configuration.nix` snippet to paste instead.
+
+The rest of this section is the same setup done by hand.
+
 1. Set up git:
     - Set username (must match your displayed name on gitlab):
       `git config --global user.name "USERNAME"`
@@ -55,31 +76,45 @@ covering prerequisites, initial configuration, and optional tooling for developm
 6. Install direnv
     - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
     - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
-    - Open file `/etc/nix/nix.conf` and add the following lines
+    - Open file `/etc/nix/nix.conf` and add the following lines, exactly as they are —
+      there is nothing in them to fill in
 
     ```bash
-    trusted-users = root <your-username>
-    extra-substituters = https://devenv.cachix.org
-    extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+    extra-substituters = https://devenv.cachix.org https://loom.cachix.org https://nixpkgs-python.cachix.org
+    extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw= loom.cachix.org-1:qK4ugmN5g4Pvhv45OLcXTwG53ZnSauwrHLVA0A7Y0rs= nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU=
     ```
 
-    > `trusted-users` is not optional. Nix discards a substituter that a client
-    > supplies — on the command line or through `NIX_CONFIG` — unless the caller is
-    > in that list, and says so on every invocation:
-    > `ignoring the client-specified setting 'extra-substituters', because it is a`
-    > `restricted setting and you are not a trusted user`. Without it the Loom cache
-    > below is unreachable and an appliance build compiles its whole closure from
-    > source.
+    > **On NixOS**, `/etc/nix/nix.conf` is generated and editing it is undone by the next
+    > `nixos-rebuild`. Put the same two settings in `configuration.nix` as
+    > `nix.settings.extra-substituters` and `nix.settings.extra-trusted-public-keys`, each a
+    > list of strings, and rebuild. `./cicd/setup_devenv.py` prints the snippet ready to paste.
     >
-    > `devenv.cachix.org` has to be named here because the first `devenv shell`
-    > fetches devenv itself, before anything in this repository can apply. The Loom
-    > cache does not: `devenv.nix` sets `NIX_CONFIG` from `cachix.pull`, so every nix
-    > command run inside the development shell sees `loom.cachix.org`. Keep personal
-    > nix settings in `~/.config/nix/nix.conf` rather than in a `NIX_CONFIG` of your
-    > own — the shell sets that variable.
+    > **Why this, and not `trusted-users`.** Nix uses a substituter when **either** the caller
+    > is in `trusted-users` **or** the daemon's own configuration names it. The lines above are
+    > the daemon's own configuration, so the caches work for every account on the machine and
+    > nobody has to be trusted — which matters, because the nix manual describes adding a user
+    > to `trusted-users` as "essentially equivalent to giving that user root access to the
+    > system". If you already have yourself in `trusted-users`, nothing here breaks; it is
+    > simply no longer needed.
+    >
+    > **Name every cache.** `devenv.cachix.org` has to be there because the first
+    > `devenv shell` fetches devenv itself, before anything in this repository can apply. The
+    > other two are what `devenv.nix` pulls from, and a cache left out of this list is one the
+    > daemon does not know — producing `ignoring untrusted substituter '<url>'` on every nix
+    > command. Without `loom.cachix.org` in particular, an appliance build compiles its whole
+    > closure from source: for `spark`, a qemu-emulated aarch64 kernel, hours against a 32 MB
+    > download.
+    >
+    > **`extra-` matters.** The plain spelling _replaces_ the list, so a block that forgot
+    > `cache.nixos.org` would quietly remove it.
+    >
+    > Keep personal nix settings in `~/.config/nix/nix.conf` rather than in a `NIX_CONFIG` of
+    > your own — the shell sets that variable.
 
     - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
     - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
+    - Check it worked: `./cicd/setup_devenv.py --only verify` reports any cache the daemon
+      is still missing
 
 7. Start the development environment:
     - Loom: `cd loom/ && up --development`

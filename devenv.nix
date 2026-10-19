@@ -476,9 +476,23 @@ let
   # kernel, hours against a 32 MB download.
   #
   # `extra-` rather than plain, so this adds to /etc/nix/nix.conf and
-  # ~/.config/nix/nix.conf rather than replacing what they say. Nix discards
-  # both lines for a caller outside `trusted-users`, naming the setting and the
-  # reason on every invocation -- see Documentation/devenv-setup.md.
+  # ~/.config/nix/nix.conf rather than replacing what they say.
+  #
+  # This is the second of the two ways a cache reaches nix, and the one that
+  # needs no privilege on the machine: a client may name a substituter when
+  # either it is in `trusted-users` or the daemon's own nix.conf already names
+  # the cache. `cicd/setup_devenv.py` writes the latter, which is what a
+  # developer should have; these lines are what makes the caches work for
+  # somebody who is trusted instead, and what keeps the list versioned with the
+  # code rather than only in each machine's /etc.
+  #
+  # The two lines are not treated alike when neither holds. A substituter is
+  # filtered per URL (`ignoring untrusted substituter '<url>'`), while
+  # `extra-trusted-public-keys` is refused outright as a restricted setting --
+  # so the keys only ever take effect for a trusted caller, and have to be in
+  # the daemon's nix.conf for everyone else. Either way the warning is the
+  # point: without it a misconfigured machine rebuilds the closure in silence.
+  # See Documentation/devenv-setup.md.
   cachixNixConfig = ''
     extra-substituters = ${
       lib.concatMapStringsSep " " (name: "https://${name}.cachix.org") cachixPullCaches
