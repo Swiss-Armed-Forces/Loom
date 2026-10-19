@@ -10,7 +10,7 @@ import {
     loadVisionSystemPrompt,
     MessageError,
 } from "@app/api";
-import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@app/hooks";
 import {
     startLoadingIndicator,
     stopLoadingIndicator,
@@ -19,7 +19,6 @@ import {
     fetchPreview,
     openFileTabThunk,
     selectActiveTabFileId,
-    selectFiles,
     selectWebSocketPubSubMessage,
     setActiveTabFileId,
     updateQuery,
@@ -52,7 +51,6 @@ export const Search = () => {
     const searchQuery = useAppSelector(selectQuery);
     const isMobile = useMediaQuery("(max-width:600px)");
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
-    const files = useAppSelector(selectFiles);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
     // Prevent feedback loops between hash→Redux and Redux→hash effects.
     // Initialized to "" (not location.hash) so the URL→Redux effect processes
@@ -60,6 +58,10 @@ export const Search = () => {
     // activeTabFileId is seeded from the URL hash in Redux initialState, so
     // the Redux→URL effect returns early on mount without clearing the hash.
     const syncedHashRef = useRef<string>("");
+    // The file cache is only read inside the WS handler below. Subscribing to it
+    // would re-render the whole search page on every preview that arrives, which
+    // is why this reads the store rather than keeping a ref fed by a selector.
+    const store = useAppStore();
     // The search string the Redux→URL effect last wrote. The URL→Redux effect
     // skips exactly that one value, which is what breaks the feedback loop
     // between the two without also swallowing a URL the user arrived with.
@@ -72,10 +74,6 @@ export const Search = () => {
     // write it does make replaces the entry the page was opened with.
     const isFirstUrlWriteRenderRef = useRef(true);
     const hasWrittenUrlRef = useRef(false);
-    const filesRef = useRef(files);
-    useEffect(() => {
-        filesRef.current = files;
-    }, [files]);
     // Read inside the URL→Redux effect, which must not re-run when the query
     // changes - running it again on a Redux change is the loop it guards.
     const searchQueryRef = useRef(searchQuery);
@@ -288,7 +286,7 @@ export const Search = () => {
                 // result set. fileUpdate messages may also arrive for files
                 // subscribed by the folder tree view.
                 const { fileId } = message as MessageFileUpdate;
-                if (fileId in filesRef.current) {
+                if (fileId in store.getState().search.files) {
                     dispatch(fetchPreview({ fileId }));
                 }
                 break;

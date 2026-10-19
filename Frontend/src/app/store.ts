@@ -18,11 +18,23 @@ export const store = configureStore({
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
+            // Both checks are development-only and walk the state tree on every
+            // dispatched action. `search.files` holds a full preview per result
+            // — tags, attachments, highlight fragments and the extracted text
+            // of every selected field — so walking it is what made them
+            // expensive. Everything else stays covered.
             serializableCheck: {
-                ignoredPaths: [
-                    "search.webSocketPubSubMessage.message.channels",
-                ],
-                ignoredActions: ["search/setWebSocketPubSubMessage"],
+                // Channel subscriptions carry a Set. The message rides on the
+                // action's own `message` key rather than under `payload`, so it
+                // is the action that has to be exempted, by its real type:
+                // SocketMiddleware dispatches "webSocket/send_message", and it
+                // already converts inbound Sets to arrays before they reach a
+                // reducer.
+                ignoredActions: ["webSocket/send_message"],
+                ignoredPaths: ["search.files"],
+            },
+            immutableCheck: {
+                ignoredPaths: ["search.files"],
             },
         })
             .prepend(localStorageSearchStateMiddleware.middleware)
@@ -30,6 +42,7 @@ export const store = configureStore({
             .concat(socketMiddleware(new SocketApi())),
 });
 
+export type AppStore = typeof store;
 export type AppDispatch = typeof store.dispatch;
 export type RootState = ReturnType<typeof store.getState>;
 export type AppThunk<ReturnType = void> = ThunkAction<

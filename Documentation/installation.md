@@ -682,6 +682,8 @@ This section covers known issues and their solutions. If you encounter a problem
 check the pod logs with `kubectl logs -n loom <pod-name>` or open an issue on the
 [issue tracker](https://gitlab.com/swiss-armed-forces/cyber-command/cea/loom/-/issues).
 
+For a deployment that works but feels slow, see [Performance](performance.md).
+
 ### KEDA DNS resolution
 
 The KEDA autoscaler metrics-server requires DNS resolution to the keda-operator in the cluster.local domain.

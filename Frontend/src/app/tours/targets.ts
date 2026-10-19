@@ -80,6 +80,11 @@ export const resolveAvailableTourStep = async ({
         if (step.skipIfMissing === false) {
             return { kind: "required-missing", step };
         }
+        // Skipping is deliberate, but silent skipping is how a whole run of
+        // steps can stop appearing without a single test failing.
+        console.warn(
+            `Tour step "${step.id}" skipped: no element matched ${step.target.selector}`,
+        );
     }
 
     return { kind: "exhausted" };

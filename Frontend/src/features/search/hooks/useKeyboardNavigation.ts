@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 
-import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { selectIsLoading, selectTopDialog } from "@app/slices/commonSlice";
+import { useAppDispatch, useAppSelector, useAppStore } from "@app/hooks";
+import { selectTopDialog } from "@app/slices/commonSlice";
 import {
+    fetchNextPage,
+    prefetchNextPage,
+    queueResultAdvance,
+    selectHasMoreResults,
     selectHighlightedFileId,
     selectOrderedFileIds,
-    selectTotalFiles,
-    selectLoadedFiles,
-    selectLastFileSortId,
-    selectQuery,
-    selectFiles,
     bumpHighlightScroll,
     setHighlightedFileId,
-    updateQuery,
     selectActiveTabFileId,
     selectOpenFileTabs,
     setFileTabDetailTab,
@@ -27,6 +25,29 @@ import { FileDetailTab } from "@features/common/utils/enums";
 
 const SCROLL_STEP_PX = 300;
 
+// Start the next page once the highlight comes this close to the end of what is
+// loaded, so that arriving at the boundary normally costs nothing.
+const PREFETCH_WITHIN_RESULTS = 3;
+
+// Used when the viewport cannot be measured — no cards rendered yet, or no
+// scroll container found.
+const FALLBACK_RESULT_PAGE_STEP = 5;
+
+// Keys the pane under the focus drives itself. The handler is bound to the
+// document, so without this an arrow press inside the folder tree moved the
+// tree selection *and* the result highlight. Letter shortcuts still reach the
+// result list from anywhere, which is how they are expected to work.
+const PANE_NAVIGATION_KEYS = new Set([
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+]);
+
 export const useKeyboardNavigation = () => {
     const dispatch = useAppDispatch();
     const topDialog = useAppSelector(selectTopDialog);
@@ -34,70 +55,46 @@ export const useKeyboardNavigation = () => {
     const openFileTabs = useAppSelector(selectOpenFileTabs);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
     const orderedFileIds = useAppSelector(selectOrderedFileIds);
-    const totalFiles = useAppSelector(selectTotalFiles);
-    const loadedFiles = useAppSelector(selectLoadedFiles);
-    const lastFileSortId = useAppSelector(selectLastFileSortId);
-    const query = useAppSelector(selectQuery);
-    const isLoading = useAppSelector(selectIsLoading);
-    const files = useAppSelector(selectFiles);
+    const hasMoreResults = useAppSelector(selectHasMoreResults);
     const reverseBindings = useAppSelector(selectReverseBindings);
+    // The file cache is only read inside hotkey callbacks. Subscribing to it
+    // re-rendered the whole search page on every preview that arrived.
+    const store = useAppStore();
 
     // Keep refs so hotkey callbacks don't need these in their dependency arrays.
-    const filesRef = useRef(files);
-    useEffect(() => {
-        filesRef.current = files;
-    }, [files]);
     const orderedFileIdsRef = useRef(orderedFileIds);
     useEffect(() => {
         orderedFileIdsRef.current = orderedFileIds;
     }, [orderedFileIds]);
+    const highlightedFileIdRef = useRef(highlightedFileId);
+    useEffect(() => {
+        highlightedFileIdRef.current = highlightedFileId;
+    }, [highlightedFileId]);
+    const hasMoreResultsRef = useRef(hasMoreResults);
+    useEffect(() => {
+        hasMoreResultsRef.current = hasMoreResults;
+    }, [hasMoreResults]);
+
     // Derive index from file ID for arithmetic operations.
     const highlightedIndex =
         highlightedFileId !== null
             ? orderedFileIds.indexOf(highlightedFileId)
             : null;
 
-    // Retry pagination once loading clears (handles the case where the user
-    // pressed down while a previous request was still in-flight).
+    // Fetch the next page before the user reaches it. The thunk's own condition
+    // drops the call when the page is already staged or already in flight, so
+    // this can fire on every move without issuing anything.
     useEffect(() => {
-        if (!wantPaginationRef.current || isLoading) return;
-        if (totalFiles <= loadedFiles) {
-            wantPaginationRef.current = false;
+        if (!hasMoreResults) return;
+        if (highlightedIndex === null || highlightedIndex < 0) return;
+        if (
+            orderedFileIds.length - highlightedIndex >
+            PREFETCH_WITHIN_RESULTS
+        ) {
             return;
         }
-        wantPaginationRef.current = false;
-        pendingAdvanceFromRef.current = loadedFiles;
-        dispatch(updateQuery({ id: query?.id, sortId: lastFileSortId }));
-    }, [
-        isLoading,
-        loadedFiles,
-        totalFiles,
-        query?.id,
-        lastFileSortId,
-        dispatch,
-    ]);
-
-    // Advance the highlight to the first new card once pagination delivers results.
-    useEffect(() => {
-        if (pendingAdvanceFromRef.current === null) return;
-        if (loadedFiles <= pendingAdvanceFromRef.current) return;
-        const firstNewIndex = pendingAdvanceFromRef.current;
-        pendingAdvanceFromRef.current = null;
-        dispatch(
-            setHighlightedFileId(
-                orderedFileIdsRef.current[firstNewIndex] ?? null,
-            ),
-        );
-        dispatch(bumpHighlightScroll("smart"));
-    }, [loadedFiles, dispatch]);
-
-    // Pagination tracking:
-    // - wantPaginationRef: user pressed down at the last item while isLoading
-    //   was true; retry pagination once loading clears.
-    // - pendingAdvanceFromRef: pagination was dispatched from this loadedFiles
-    //   count; advance the highlight to the first new item when it arrives.
-    const wantPaginationRef = useRef<boolean>(false);
-    const pendingAdvanceFromRef = useRef<number | null>(null);
+        dispatch(prefetchNextPage());
+    }, [highlightedIndex, orderedFileIds.length, hasMoreResults, dispatch]);
 
     // Cache the scrollable element per active panel to avoid a full DOM scan
     // on every scroll keypress.
@@ -112,11 +109,6 @@ export const useKeyboardNavigation = () => {
     const shouldIgnoreKeyEvent = useCallback(
         (event: KeyboardEvent): boolean => {
             if (topDialog) return true;
-
-            // Ignore if modifiers are pressed
-            if (event.ctrlKey || event.metaKey || event.altKey) {
-                return true;
-            }
 
             // Ignore if already prevented
             if (event.defaultPrevented) {
@@ -144,6 +136,14 @@ export const useKeyboardNavigation = () => {
                     return true;
                 }
 
+                // Leave the pane that owns the focus to its own navigation.
+                if (
+                    PANE_NAVIGATION_KEYS.has(event.key) &&
+                    activeElement.closest("[data-keynav-ignore]")
+                ) {
+                    return true;
+                }
+
                 // Ignore select events if focus is on an interactive element
                 const interactiveTags = ["button", "select", "a"];
                 const selectKeys = ["Enter"];
@@ -160,60 +160,99 @@ export const useKeyboardNavigation = () => {
         [topDialog],
     );
 
-    const handleResultNavigation = useCallback(
-        (direction: "up" | "down") => {
-            if (loadedFiles === 0) return;
-
-            let newIndex: number;
-
-            if (highlightedIndex === null) {
-                newIndex = direction === "down" ? 0 : loadedFiles - 1;
-            } else if (highlightedIndex >= loadedFiles) {
-                // On temp card (outside current results) — reset to top
-                newIndex = 0;
-            } else if (direction === "down") {
-                if (highlightedIndex >= loadedFiles - 1) {
-                    // At the last item, try to load more
-                    if (totalFiles > loadedFiles) {
-                        if (!isLoading) {
-                            pendingAdvanceFromRef.current = loadedFiles;
-                            wantPaginationRef.current = false;
-                            dispatch(
-                                updateQuery({
-                                    id: query?.id,
-                                    sortId: lastFileSortId,
-                                }),
-                            );
-                        } else {
-                            // Loading is in progress; retry once it clears.
-                            wantPaginationRef.current = true;
-                        }
-                    }
-                    return;
-                }
-                newIndex = highlightedIndex + 1;
-            } else {
-                newIndex = Math.max(0, highlightedIndex - 1);
-            }
-
-            dispatch(
-                setHighlightedFileId(
-                    orderedFileIdsRef.current[newIndex] ?? null,
-                ),
-            );
+    const highlightResultAt = useCallback(
+        (index: number) => {
+            const order = orderedFileIdsRef.current;
+            if (order.length === 0) return;
+            const clamped = Math.min(Math.max(index, 0), order.length - 1);
+            const fileId = order[clamped];
+            if (!fileId || fileId === highlightedFileIdRef.current) return;
+            dispatch(setHighlightedFileId(fileId));
             dispatch(bumpHighlightScroll("smart"));
             document.dispatchEvent(new CustomEvent("loom:close-menus"));
         },
-        [
-            highlightedIndex,
-            totalFiles,
-            loadedFiles,
-            isLoading,
-            query?.id,
-            lastFileSortId,
-            dispatch,
-        ],
+        [dispatch],
     );
+
+    /**
+     * Move the highlight by `delta` results.
+     *
+     * Moves that run past the last loaded card are handed to the pagination
+     * queue rather than dropped: the overflow is exactly how many cards the user
+     * asked for beyond what is loaded, and `fetchNextPage.fulfilled` spends it
+     * on the page it brings back. Pressing five times at the boundary therefore
+     * advances five cards, and the request is issued once.
+     */
+    const applyResultMove = useCallback(
+        (delta: number) => {
+            const order = orderedFileIdsRef.current;
+            const count = order.length;
+            if (count === 0 || delta === 0) return;
+
+            const current = highlightedFileIdRef.current;
+            const index = current ? order.indexOf(current) : -1;
+            if (index === -1) {
+                highlightResultAt(delta > 0 ? 0 : count - 1);
+                return;
+            }
+
+            const target = index + delta;
+            if (target > count - 1 && hasMoreResultsRef.current) {
+                highlightResultAt(count - 1);
+                dispatch(queueResultAdvance(target - (count - 1)));
+                dispatch(fetchNextPage());
+                return;
+            }
+            highlightResultAt(target);
+        },
+        [dispatch, highlightResultAt],
+    );
+
+    // Key repeat arrives far faster than the list can usefully re-render, so
+    // moves are accumulated and applied once per frame. Holding the key still
+    // walks the list; it just stops doing a full render per repeat.
+    const pendingMoveRef = useRef(0);
+    const moveFrameRef = useRef<number | null>(null);
+    const queueResultMove = useCallback(
+        (delta: number) => {
+            pendingMoveRef.current += delta;
+            if (moveFrameRef.current !== null) return;
+            moveFrameRef.current = requestAnimationFrame(() => {
+                moveFrameRef.current = null;
+                const total = pendingMoveRef.current;
+                pendingMoveRef.current = 0;
+                applyResultMove(total);
+            });
+        },
+        [applyResultMove],
+    );
+    useEffect(
+        () => () => {
+            if (moveFrameRef.current !== null) {
+                cancelAnimationFrame(moveFrameRef.current);
+            }
+        },
+        [],
+    );
+
+    // A "page" is what the user can currently see, so PageDown lands on the
+    // card that was just below the fold rather than on a fixed count.
+    const resultPageStep = useCallback((): number => {
+        const container = document.querySelector("[data-search-panel]");
+        const cards = document.querySelectorAll(".resultCardParent");
+        if (!container || cards.length === 0) {
+            return FALLBACK_RESULT_PAGE_STEP;
+        }
+        const viewport = container.getBoundingClientRect();
+        let visible = 0;
+        cards.forEach((card) => {
+            const rect = card.getBoundingClientRect();
+            if (rect.bottom > viewport.top && rect.top < viewport.bottom) {
+                visible += 1;
+            }
+        });
+        return Math.max(1, visible);
+    }, []);
 
     const getEnabledTabs = useCallback((): FileDetailTab[] => {
         if (!activeTabFileId) return [];
@@ -466,12 +505,14 @@ export const useKeyboardNavigation = () => {
                 return;
             }
 
-            // Build pressed keys array for reverse lookup
+            // Build pressed keys array for reverse lookup. The modifier order
+            // has to match the one KeyRecorder stores a binding in, or a combo
+            // it recorded never resolves back to its action.
             const pressedKeys = [
                 ...(event.ctrlKey ? ["ctrl"] : []),
                 ...(event.shiftKey ? ["shift"] : []),
-                ...(event.metaKey ? ["meta"] : []),
                 ...(event.altKey ? ["alt"] : []),
+                ...(event.metaKey ? ["meta"] : []),
                 event.key,
             ];
 
@@ -486,17 +527,36 @@ export const useKeyboardNavigation = () => {
                 event.preventDefault();
                 switch (actionId) {
                     case "moveDown":
-                        handleResultNavigation("down");
+                        queueResultMove(1);
                         break;
                     case "moveUp":
-                        handleResultNavigation("up");
+                        queueResultMove(-1);
                         break;
+                    // With a file panel open these scroll it; otherwise they
+                    // page the result list, which had no keyboard equivalent.
                     case "pageDown":
-                        handleDialogScroll("down");
+                        if (activeTabFileId !== null) {
+                            handleDialogScroll("down");
+                        } else {
+                            queueResultMove(resultPageStep());
+                        }
                         return;
                     case "pageUp":
-                        handleDialogScroll("up");
+                        if (activeTabFileId !== null) {
+                            handleDialogScroll("up");
+                        } else {
+                            queueResultMove(-resultPageStep());
+                        }
                         return;
+                    case "firstResult":
+                        highlightResultAt(0);
+                        break;
+                    case "lastResult":
+                        highlightResultAt(orderedFileIdsRef.current.length - 1);
+                        break;
+                    case "loadMore":
+                        dispatch(fetchNextPage());
+                        break;
                     case "prevTab":
                         handleTabNavigationDirection("left");
                         break;
@@ -586,7 +646,8 @@ export const useKeyboardNavigation = () => {
                             activeTabFileId ?? highlightedFileId;
                         if (!currentFileId) break;
                         const parentId =
-                            filesRef.current[currentFileId]?.preview?.parentId;
+                            store.getState().search.files[currentFileId]
+                                ?.preview?.parentId;
                         if (!parentId) break;
                         dispatch(openFileTabThunk({ fileId: parentId }));
                         break;
@@ -596,7 +657,8 @@ export const useKeyboardNavigation = () => {
                             activeTabFileId ?? highlightedFileId;
                         if (!currentFileId) break;
                         const currentPreview =
-                            filesRef.current[currentFileId]?.preview;
+                            store.getState().search.files[currentFileId]
+                                ?.preview;
                         const attachments = currentPreview?.attachments;
                         if (!attachments?.length) break;
                         if (attachments.length === 1) {
@@ -669,7 +731,9 @@ export const useKeyboardNavigation = () => {
         [
             shouldIgnoreKeyEvent,
             reverseBindings,
-            handleResultNavigation,
+            queueResultMove,
+            highlightResultAt,
+            resultPageStep,
             handleTabNavigationDirection,
             handleCenterTabNavigation,
             handleSummaryTabNavigation,
@@ -678,13 +742,21 @@ export const useKeyboardNavigation = () => {
             highlightedFileId,
             dispatch,
             clickActionButton,
+            store,
         ],
     );
 
+    // The handler changes identity on every highlight move. Call it through a
+    // ref so the document listener is attached once for the lifetime of the
+    // hook instead of being detached and re-added on each change.
+    const handleKeyDownRef = useRef(handleKeyDown);
+    handleKeyDownRef.current = handleKeyDown;
     useEffect(() => {
-        document.addEventListener("keydown", handleKeyDown);
+        const listener = (event: KeyboardEvent) =>
+            handleKeyDownRef.current(event);
+        document.addEventListener("keydown", listener);
         return () => {
-            document.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener("keydown", listener);
         };
-    }, [handleKeyDown]);
+    }, []);
 };

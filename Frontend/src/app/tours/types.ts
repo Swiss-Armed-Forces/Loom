@@ -4,8 +4,22 @@ export type TourViewport = "all" | "desktop" | "mobile";
 
 export type TourPreparation = "search-results";
 
+/**
+ * A selector the tour may point at.
+ *
+ * Constrained to the tour's own attributes so a step cannot come to depend on
+ * a class name or an element's position. `[data-tour-anchor="true"]` is the
+ * single result card the tour has settled on; scoping a step under it is what
+ * keeps the card steps all describing the same result, and is required now
+ * that only a window of the result list is rendered at a time.
+ */
+export type TourSelector =
+    | `[data-tour="${string}"]`
+    | '[data-tour-anchor="true"]'
+    | `[data-tour-anchor="true"] [data-tour="${string}"]`;
+
 export interface TourTarget {
-    selector: `[data-tour="${string}"]`;
+    selector: TourSelector;
     viewport?: TourViewport;
 }
 

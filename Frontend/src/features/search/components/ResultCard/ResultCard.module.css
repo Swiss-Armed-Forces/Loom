@@ -42,6 +42,22 @@
     align-self: flex-start;
 }
 
+/*
+ * Holds the thumbnail's room before it arrives.
+ *
+ * Only for the card that shows a thumbnail because it is highlighted: that
+ * image is requested at the moment of highlighting, and without somewhere to
+ * go it grew the card by ~190px a fifth of a second later — moving the card
+ * the user had just arrived at, and making the list re-measure it. The height
+ * is the most the image is allowed anyway, so nothing is ever clipped; a
+ * smaller image sits at the top of the space rather than resizing the card.
+ */
+.thumbnailReserve {
+    min-height: min(20vw, 280px);
+    display: flex;
+    align-items: flex-start;
+}
+
 /* Line layout: the fields and the thumbnail share one row whose thumbnail
 side is the width the list reserved, so the field grid is as wide on a card
 with an image as on one without, and as wide as the column header. */

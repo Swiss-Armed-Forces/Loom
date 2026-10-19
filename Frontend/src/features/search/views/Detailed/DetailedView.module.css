@@ -1,15 +1,48 @@
 .cardContainer {
     padding: 1rem;
     display: flex;
-    gap: 1rem;
     flex-direction: column;
     overflow: visible;
+}
+
+/*
+ * Holds the full height of the result list while only a window of it is
+ * rendered. `flex-shrink: 0` is load-bearing: the parent is a flex column and
+ * would otherwise compress this to its rendered content, which is a fraction
+ * of the scroll height the virtualizer is working in.
+ */
+.virtualList {
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/*
+ * One row. Absolutely positioned, so the gap between cards cannot come from
+ * the container's `gap` any more — and it has to be padding rather than
+ * margin, because the virtualizer measures the border box and a margin would
+ * fall outside it, stacking the cards flush against each other.
+ */
+.resultRow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding-bottom: 1rem;
+}
+
+.skeletonLoadingContainer {
+    width: calc(100% - 2rem);
+    padding: 1rem;
 }
 
 @media (max-width: 600px) {
     .cardContainer {
         padding: 0.5rem;
-        gap: 0.5rem;
+    }
+
+    .resultRow {
+        padding-bottom: 0.5rem;
     }
 }
 
@@ -18,7 +51,10 @@ alternating backgrounds rather than a gap, the way a mail client separates
 messages. Declared last so it also overrides the narrow-screen rule above. */
 .cardContainer[data-row-chrome="flat"] {
     padding: 0;
-    gap: 0;
+}
+
+.cardContainer[data-row-chrome="flat"] .resultRow {
+    padding-bottom: 0;
 }
 
 .cardContainer[data-row-chrome="flat"] :global(.MuiCard-root) {
@@ -26,9 +62,28 @@ messages. Declared last so it also overrides the narrow-screen rule above. */
     border-bottom: 1px solid var(--mui-palette-divider);
 }
 
-/* The cursor paints the whole card, so it keeps the stripe off its own row. */
+/* The stripe is keyed on an attribute carrying the row's index in the result
+list, not on `nth-child`: only a window of rows is in the DOM, so a row's
+position among its siblings is where the window happens to start rather than
+where the result is, and the stripes would invert as the list scrolls.
+The cursor paints the whole card, so it keeps the stripe off its own row. */
 .cardContainer[data-row-chrome="flat"]
-    > :global(.resultCardParent):nth-child(even)
+    .resultRow[data-stripe="true"]
     :global(.MuiCard-root:not([data-cursor])) {
     background-color: var(--mui-palette-action-hover);
+}
+
+/* Stands in for the page being fetched: a move past the last card lands here.
+ * Sits outside the virtual list, so it carries its own top gap. */
+.pendingPageRow {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 4px;
+    opacity: 0.6;
+}
+
+.pendingPageRow[data-highlighted="true"] {
+    opacity: 1;
+    outline: 2px solid var(--mui-palette-primary-main, currentColor);
+    outline-offset: 2px;
 }

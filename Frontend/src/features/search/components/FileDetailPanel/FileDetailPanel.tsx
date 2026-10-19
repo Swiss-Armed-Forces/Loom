@@ -90,7 +90,7 @@ export const FileDetailPanel = ({
 
     const autoActionsPreferences = useAppSelector(selectAutoActionsPreferences);
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
-    const fileData = useAppSelector(selectFileById(fileId));
+    const fileData = useAppSelector((state) => selectFileById(state, fileId));
     const preview = fileData?.preview ?? null;
     const query = fileData?.query ?? null;
 

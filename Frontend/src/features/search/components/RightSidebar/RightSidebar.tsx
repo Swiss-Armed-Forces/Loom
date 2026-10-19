@@ -7,7 +7,7 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -18,7 +18,9 @@ import {
     selectQuery,
     selectRightSidebarOpen,
     selectRightSidebarTab,
+    selectRightSidebarWidth,
     selectTotalFiles,
+    setRightSidebarWidth,
     toggleRightSidebar,
 } from "@app/slices/searchSlice";
 import { getTourRightTab } from "@app/tours/tourScene";
@@ -35,30 +37,16 @@ import {
     UpdateSeenButton,
 } from "@features/search/components/FileActionButtons";
 import { FileDetailPanel } from "@features/search/components/FileDetailPanel/FileDetailPanel";
+import { clampSidebarWidth } from "@features/search/components/sidebarWidth";
 import { FolderView } from "@features/search/views/Folder/FolderView";
 import { StatisticsView } from "@features/search/views/Statistics/StatisticsView";
 
 import styles from "./RightSidebar.module.css";
 
-const MIN_WIDTH = 14 * 16;
-const DEFAULT_WIDTH = 28 * 16;
-const CENTER_MIN_WIDTH = 20 * 16;
-const WIDTH_STORAGE_KEY = "RIGHT_SIDEBAR_WIDTH";
-
-const loadWidth = (): number => {
-    const stored = localStorage.getItem(WIDTH_STORAGE_KEY);
-    if (stored) {
-        const n = parseInt(stored, 10);
-        const effectiveMax = Math.max(
-            MIN_WIDTH,
-            window.innerWidth - CENTER_MIN_WIDTH,
-        );
-        if (!isNaN(n) && n >= MIN_WIDTH) return Math.min(n, effectiveMax);
-    }
-    return DEFAULT_WIDTH;
-};
-
-export const RightSidebar = () => {
+// Propless and rendered from a parent that re-renders on unrelated store
+// changes, so memo is what keeps one highlight change from sweeping the
+// whole subtree. Its own selector subscriptions still re-render it.
+export const RightSidebar = memo(() => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const isOpen = useAppSelector(selectRightSidebarOpen);
@@ -73,7 +61,9 @@ export const RightSidebar = () => {
     const effectiveActiveTab = tourTab ?? activeTab;
     const isMobile = useMediaQuery("(max-width:600px)");
 
-    const [width, setWidth] = useState(loadWidth);
+    const storedWidth = useAppSelector(selectRightSidebarWidth);
+    const [width, setWidth] = useState(() => clampSidebarWidth(storedWidth));
+    const sidebarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [folderFilterText, setFolderFilterText] = useState("");
     const widthRef = useRef(width);
@@ -107,24 +97,25 @@ export const RightSidebar = () => {
         e.preventDefault();
         const startX = e.clientX;
         const startWidth = widthRef.current;
-        const effectiveMax = Math.max(
-            MIN_WIDTH,
-            window.innerWidth - CENTER_MIN_WIDTH,
-        );
         setIsDragging(true);
 
+        // The width is written straight to the element while dragging. Going
+        // through React state would re-render the whole sidebar — folder tree,
+        // chat panel, file detail — once per pointer move.
         const onMouseMove = (ev: MouseEvent) => {
-            const newWidth = Math.min(
-                effectiveMax,
-                Math.max(MIN_WIDTH, startWidth + startX - ev.clientX),
+            const newWidth = clampSidebarWidth(
+                startWidth + startX - ev.clientX,
             );
             widthRef.current = newWidth;
-            setWidth(newWidth);
+            if (sidebarRef.current) {
+                sidebarRef.current.style.width = `${newWidth}px`;
+            }
         };
 
         const onMouseUp = () => {
             setIsDragging(false);
-            localStorage.setItem(WIDTH_STORAGE_KEY, String(widthRef.current));
+            setWidth(widthRef.current);
+            dispatch(setRightSidebarWidth(widthRef.current));
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
             dragHandlersRef.current = null;
@@ -280,6 +271,7 @@ export const RightSidebar = () => {
 
     return (
         <div
+            ref={sidebarRef}
             className={`${styles.rightSidebar} ${isDragging ? styles.dragging : ""}`}
             style={{ width: sidebarWidth }}
         >
@@ -292,4 +284,6 @@ export const RightSidebar = () => {
             {effectiveIsOpen && sidebarContent}
         </div>
     );
-};
+});
+
+RightSidebar.displayName = "RightSidebar";

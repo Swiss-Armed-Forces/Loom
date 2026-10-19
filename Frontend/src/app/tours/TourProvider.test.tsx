@@ -199,10 +199,12 @@ const TourViewHarness = () => {
             </div>
             <div data-tour="processing-status">Processing status</div>
             <div data-tour="results-tabs">Results tabs</div>
-            <div data-tour="result-card-processing-status">
-                File processing status
+            <div data-tour-anchor="true">
+                Result card
+                <div data-tour="result-card-processing-status">
+                    File processing status
+                </div>
             </div>
-            <div data-tour="result-card">Result card</div>
             <div data-tour="archives-tab">Archives tab</div>
             <div data-tour="menu">Menu</div>
         </>
@@ -630,7 +632,7 @@ describe("TourProvider", () => {
         });
         expect(capturedConfig.steps).toHaveLength(3);
         expect(capturedConfig.steps?.[1].element).toBe(
-            '[data-tour="result-card"]',
+            '[data-tour-anchor="true"]',
         );
 
         await act(async () => {
@@ -792,10 +794,10 @@ describe("TourProvider", () => {
             '[data-tour="results-tabs"]',
         );
         expect(capturedConfig.steps?.[6].element).toBe(
-            '[data-tour="result-card"]',
+            '[data-tour-anchor="true"]',
         );
         expect(capturedConfig.steps?.[8].element).toBe(
-            '[data-tour="result-card-processing-status"]',
+            '[data-tour-anchor="true"] [data-tour="result-card-processing-status"]',
         );
         expect(view.getByTestId("tour-view")).toHaveTextContent("overview");
 

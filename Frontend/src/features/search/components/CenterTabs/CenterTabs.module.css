@@ -20,6 +20,24 @@
     flex: 1;
     overflow-y: auto;
     align-items: stretch;
+
+    /*
+     * The gap kept between the highlighted card and the edge it is aligned to.
+     * Honoured by `scrollIntoView`, which is how the pending page row is
+     * placed — it sits outside the virtual list, so the virtualizer cannot
+     * place it. Mirrors SCROLL_PADDING_PX in `views/Detailed/highlightScroll.ts`,
+     * which the virtualizer is given for every other row; change both.
+     */
+    scroll-padding: 48px 0;
+
+    /*
+     * The result rows are absolutely positioned and moved by the virtualizer,
+     * which corrects the scroll position itself whenever a row above the fold
+     * turns out to be a different height than estimated. The browser's own
+     * scroll anchoring would pick one of those rows and apply a second,
+     * invisible correction on top of that one.
+     */
+    overflow-anchor: none;
 }
 
 .filePanel {

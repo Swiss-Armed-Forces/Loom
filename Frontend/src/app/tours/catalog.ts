@@ -30,14 +30,19 @@ export const TOUR_TARGETS = {
     navigation: '[data-tour="navigation"]',
     processingStatus: '[data-tour="processing-status"]',
     queryOverview: '[data-tour="query-overview"]',
-    resultCard: '[data-tour="result-card"]',
-    resultCardActions: '[data-tour="result-card-actions"]',
-    resultCardContent: '[data-tour="result-card-content"]',
-    resultCardPath: '[data-tour="result-card-path"]',
-    resultCardProcessingStatus: '[data-tour="result-card-processing-status"]',
-    resultCardPreview: '[data-tour="result-card-preview"]',
-    resultCardSubitems: '[data-tour="result-card-subitems"]',
-    resultCardTags: '[data-tour="result-card-tags"]',
+    resultCard: '[data-tour-anchor="true"]',
+    resultCardActions:
+        '[data-tour-anchor="true"] [data-tour="result-card-actions"]',
+    resultCardContent:
+        '[data-tour-anchor="true"] [data-tour="result-card-content"]',
+    resultCardPath: '[data-tour-anchor="true"] [data-tour="result-card-path"]',
+    resultCardProcessingStatus:
+        '[data-tour-anchor="true"] [data-tour="result-card-processing-status"]',
+    resultCardPreview:
+        '[data-tour-anchor="true"] [data-tour="result-card-preview"]',
+    resultCardSubitems:
+        '[data-tour-anchor="true"] [data-tour="result-card-subitems"]',
+    resultCardTags: '[data-tour-anchor="true"] [data-tour="result-card-tags"]',
     resultsTabs: '[data-tour="results-tabs"]',
     savedQueries: '[data-tour="sidebar-saved-queries"]',
     searchAllQuery: '[data-tour="search-all-query"]',
@@ -149,6 +154,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "bottom",
         align: "start",
+        waitForElementMs: 1_500,
     },
     {
         id: "result-card-processing-status",
@@ -158,6 +164,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "bottom",
         align: "start",
+        waitForElementMs: 1_500,
     },
     {
         id: "result-card-subitems",
@@ -167,6 +174,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "bottom",
         align: "start",
+        waitForElementMs: 1_500,
     },
     {
         id: "result-card-content",
@@ -176,6 +184,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "right",
         align: "start",
+        waitForElementMs: 1_500,
     },
     {
         id: "result-card-tags",
@@ -185,6 +194,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "top",
         align: "end",
+        waitForElementMs: 1_500,
     },
     {
         id: "result-card-actions",
@@ -194,6 +204,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "left",
         align: "end",
+        waitForElementMs: 1_500,
     },
     {
         id: "result-card-preview",
@@ -203,6 +214,7 @@ export const GLOBAL_TOUR_STEPS: readonly TourStep[] = [
         preparation: "search-results",
         side: "left",
         align: "center",
+        waitForElementMs: 1_500,
     },
     {
         id: "document-detail",

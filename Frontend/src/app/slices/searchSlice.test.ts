@@ -7,18 +7,37 @@ import { RootState } from "../store";
 import {
     CustomQuery,
     addCustomQuery,
+    cursorKey,
     fetchFilesCountForCustomQuery,
+    fetchNextPage,
     fetchPreview,
+    fileInViewChanged,
     initCustomQuery,
     loadPersistedSearchState,
     markCustomQueryAsRead,
     normalizeCustomQueries,
     openFileTab,
+    prefetchNextPage,
+    queueResultAdvance,
     searchSlice,
+    selectCardElementVisibility,
+    selectFilesInView,
+    selectFilesInViewOrdered,
+    selectHasMoreResults,
+    selectCurrentResultRank,
+    selectIsPaginating,
+    selectLeftSidebarWidth,
+    selectRightSidebarWidth,
     selectLoadedFiles,
     selectOrderedFileIds,
+    selectPaginationError,
     selectTotalFiles,
+    setHighlightedFileId,
+    setLeftSidebarWidth,
+    setRightSidebarWidth,
+    setShowTags,
     setTemporaryFileId,
+    visibleRangeChanged,
     updateQuery,
 } from "./searchSlice";
 
@@ -240,13 +259,25 @@ const hits = (count: number, prefix: string, startSortId = 0) =>
         sortId: [startSortId + index],
     }));
 
+// The first page of a query. The total comes from the count, which is only
+// asked for here — later pages report hits alone — so it can exceed the page.
 const resultsReported = (
     id: string,
     query: string,
     files: ReturnType<typeof hits>,
+    totalFiles: number = files.length,
 ) => ({
     type: updateQuery.fulfilled.type,
-    payload: { query: queryWithId(id, query), files, totalFiles: files.length },
+    payload: { query: queryWithId(id, query), files, totalFiles },
+});
+
+// A later page. `updateQuery` only ever delivers the first page of a query;
+// everything after it arrives through `fetchNextPage`. The cursor is the sort
+// id of the last hit already loaded — a page reporting any other cursor belongs
+// to a query the list has moved past and is dropped.
+const nextPageReported = (files: ReturnType<typeof hits>, cursor: any[]) => ({
+    type: fetchNextPage.fulfilled.type,
+    payload: { files, cursorKey: cursorKey(cursor), fromStaged: false },
 });
 
 const previewReported = (fileId: string) => ({
@@ -260,12 +291,15 @@ const previewFailed = (fileId: string) => ({
 });
 
 // Oracle for the counter, cross-checked against the other selector instead of
-// re-applying selectLoadedFiles' own predicate: selectOrderedFileIds is the
-// result segment followed by the temporary tail, so dropping the tail leaves
-// the result cards DetailedView renders.
+// re-applying selectLoadedFiles' own predicate: selectOrderedFileIds leads with
+// the temporary card when there is one, so dropping that leaves the result
+// cards DetailedView renders.
 const resultCardCount = (search: SearchStateSlice) =>
     selectOrderedFileIds(searchState(search)).length -
-    Object.values(search.files).filter((f) => f.temporary).length;
+    (search.temporaryFileId !== null &&
+    !search.resultOrder.includes(search.temporaryFileId)
+        ? 1
+        : 0);
 
 // #338 read "13 of 12". The bound holds as long as every counted card is still
 // a hit of the reported total, which is the case in every scenario it is
@@ -368,19 +402,17 @@ describe("loaded result count", () => {
     // also counted 20. It guards against an over-correction that would count
     // just the last page.
     it("counts every page once pagination has loaded them", () => {
+        // The count runs with the first page only, so it reports the whole
+        // result set up front and later pages carry no total of their own.
         const firstPage = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(12, "b")),
+            resultsReported("q1", "foo", hits(12, "b"), 20),
         );
 
-        const secondPage = searchSlice.reducer(firstPage, {
-            type: updateQuery.fulfilled.type,
-            payload: {
-                query: queryWithId("q1", "foo"),
-                files: hits(8, "c", 12),
-                totalFiles: 20,
-            },
-        });
+        const secondPage = searchSlice.reducer(
+            firstPage,
+            nextPageReported(hits(8, "c", 12), [11]),
+        );
 
         expect(selectLoadedFiles(searchState(secondPage))).toBe(20);
         expect(selectTotalFiles(searchState(secondPage))).toBe(20);
@@ -389,11 +421,301 @@ describe("loaded result count", () => {
     });
 });
 
+describe("result order", () => {
+    const pagedTwice = () => {
+        const firstPage = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "b")),
+        );
+        return searchSlice.reducer(
+            firstPage,
+            nextPageReported(hits(2, "c", 3), [2]),
+        );
+    };
+
+    it("keeps pages in the order the backend ranked them", () => {
+        expect(selectOrderedFileIds(searchState(pagedTwice()))).toEqual([
+            "b-0",
+            "b-1",
+            "b-2",
+            "c-0",
+            "c-1",
+        ]);
+    });
+
+    it("puts a returning hit at its rank, not where the cache first saw it", () => {
+        const firstPage = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(2, "b")),
+        );
+        // A preview was fetched for a file outside the results, so the cache
+        // holds it long before it is ranked. Deriving the order from the cache
+        // put it at the top of the list.
+        const cached = searchSlice.reducer(firstPage, previewReported("late"));
+        const nextPage = searchSlice.reducer(
+            cached,
+            nextPageReported([{ fileId: "late", sortId: [2] }], [1]),
+        );
+
+        expect(selectOrderedFileIds(searchState(nextPage))).toEqual([
+            "b-0",
+            "b-1",
+            "late",
+        ]);
+    });
+
+    it("lists a hit that arrives on two pages once", () => {
+        const firstPage = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(2, "b")),
+        );
+        const again = searchSlice.reducer(
+            firstPage,
+            nextPageReported([{ fileId: "b-1", sortId: [5] }], [1]),
+        );
+
+        expect(selectOrderedFileIds(searchState(again))).toEqual([
+            "b-0",
+            "b-1",
+        ]);
+        expect(selectLoadedFiles(searchState(again))).toBe(2);
+    });
+
+    it("restarts the order on a new query rather than growing it", () => {
+        const paged = pagedTwice();
+        const newQuery = searchSlice.reducer(
+            paged,
+            resultsReported("q2", "bar", hits(2, "d")),
+        );
+
+        expect(selectOrderedFileIds(searchState(newQuery))).toEqual([
+            "d-0",
+            "d-1",
+        ]);
+    });
+
+    // DetailedView renders the temporary card above the results, and this is
+    // the index space the virtualized list maps onto. Listing it last instead
+    // made End and the last Down land one card away from where they look.
+    it("leads with the temporary card, matching the rendered order", () => {
+        const withTemporary = searchSlice.reducer(
+            pagedTwice(),
+            setTemporaryFileId("late"),
+        );
+
+        expect(selectOrderedFileIds(searchState(withTemporary))).toEqual([
+            "late",
+            "b-0",
+            "b-1",
+            "b-2",
+            "c-0",
+            "c-1",
+        ]);
+    });
+
+    it("does not list a temporary id that is also a hit", () => {
+        const withTemporary = searchSlice.reducer(
+            pagedTwice(),
+            setTemporaryFileId("b-1"),
+        );
+        const ordered = selectOrderedFileIds(searchState(withTemporary));
+
+        expect(ordered).toHaveLength(new Set(ordered).size);
+        expect(ordered).toEqual(["b-0", "b-1", "b-2", "c-0", "c-1"]);
+    });
+
+    // The virtualizer recomputes its range whenever this identity changes, and
+    // previews arrive one per card. Deriving the order from the file cache
+    // handed back a new array on every one of them.
+    it("keeps its identity while only the file cache changes", () => {
+        const paged = pagedTwice();
+        const before = selectOrderedFileIds(searchState(paged));
+
+        const withPreview = searchSlice.reducer(paged, previewReported("b-0"));
+
+        expect(selectOrderedFileIds(searchState(withPreview))).toBe(before);
+    });
+});
+
+describe("paging at the end of the list", () => {
+    const atTheBoundary = () => {
+        const firstPage = searchSlice.reducer(emptySearchState(), {
+            type: updateQuery.fulfilled.type,
+            payload: {
+                query: queryWithId("q1", "foo"),
+                files: hits(3, "b"),
+                totalFiles: 9,
+            },
+        });
+        return searchSlice.reducer(firstPage, setHighlightedFileId("b-2"));
+    };
+
+    it("reports a page request of its own, not the global loading state", () => {
+        const pending = searchSlice.reducer(atTheBoundary(), {
+            type: fetchNextPage.pending.type,
+        });
+
+        expect(selectIsPaginating(searchState(pending))).toBe(true);
+        expect(selectIsPaginating(searchState(atTheBoundary()))).toBe(false);
+    });
+
+    it("spends one queued move on the first card of the new page", () => {
+        const queued = searchSlice.reducer(
+            atTheBoundary(),
+            queueResultAdvance(1),
+        );
+        const landed = searchSlice.reducer(
+            queued,
+            nextPageReported(hits(3, "c", 3), [2]),
+        );
+
+        expect(landed.highlightedFileId).toBe("c-0");
+        expect(landed.pagination.queuedAdvance).toBe(0);
+    });
+
+    // The press that arrives while the page is in flight used to be dropped:
+    // intent was a boolean, so five presses still advanced one card.
+    it("spends every queued move, not just the first", () => {
+        let state = atTheBoundary();
+        for (let press = 0; press < 3; press += 1) {
+            state = searchSlice.reducer(state, queueResultAdvance(1));
+        }
+        const landed = searchSlice.reducer(
+            state,
+            nextPageReported(hits(3, "c", 3), [2]),
+        );
+
+        expect(landed.highlightedFileId).toBe("c-2");
+    });
+
+    it("clamps a queue longer than the page that arrives", () => {
+        const queued = searchSlice.reducer(
+            atTheBoundary(),
+            queueResultAdvance(10),
+        );
+        const landed = searchSlice.reducer(
+            queued,
+            nextPageReported(hits(2, "c", 3), [2]),
+        );
+
+        expect(landed.highlightedFileId).toBe("c-1");
+    });
+
+    it("moves the scroll request so the pending row can be reached", () => {
+        const before = atTheBoundary();
+        const queued = searchSlice.reducer(before, queueResultAdvance(1));
+
+        expect(queued.highlightScrollRequest).toBe(
+            before.highlightScrollRequest + 1,
+        );
+    });
+
+    // An exhausted cursor used to be nulled while the total still claimed more,
+    // which left the button offering a page that would restart from page one.
+    it("stops offering more once a page comes back empty", () => {
+        const exhausted = searchSlice.reducer(
+            atTheBoundary(),
+            nextPageReported([], [2]),
+        );
+
+        expect(exhausted.lastFileSortId).toBeNull();
+        expect(selectTotalFiles(searchState(exhausted))).toBe(3);
+        expect(selectHasMoreResults(searchState(exhausted))).toBe(false);
+    });
+
+    it("keeps offering more while the cursor and the total agree", () => {
+        expect(selectHasMoreResults(searchState(atTheBoundary()))).toBe(true);
+    });
+
+    it("drops a page that was still in flight when a new query landed", () => {
+        const newQuery = searchSlice.reducer(
+            atTheBoundary(),
+            resultsReported("q2", "bar", hits(2, "d"), 5),
+        );
+        const stalePage = searchSlice.reducer(
+            newQuery,
+            nextPageReported(hits(3, "c", 3), [2]),
+        );
+
+        expect(selectOrderedFileIds(searchState(stalePage))).toEqual([
+            "d-0",
+            "d-1",
+        ]);
+    });
+});
+
+describe("prefetched pages", () => {
+    const withFirstPage = () =>
+        searchSlice.reducer(emptySearchState(), {
+            type: updateQuery.fulfilled.type,
+            payload: {
+                query: queryWithId("q1", "foo"),
+                files: hits(3, "b"),
+                totalFiles: 9,
+            },
+        });
+
+    const prefetchReported = (
+        files: ReturnType<typeof hits>,
+        cursor: any[],
+    ) => ({
+        type: prefetchNextPage.fulfilled.type,
+        payload: { files, cursorKey: cursorKey(cursor), fromStaged: false },
+    });
+
+    it("stages a page without showing it", () => {
+        const staged = searchSlice.reducer(
+            withFirstPage(),
+            prefetchReported(hits(3, "c", 3), [2]),
+        );
+
+        expect(staged.pagination.staged?.files).toHaveLength(3);
+        expect(selectLoadedFiles(searchState(staged))).toBe(3);
+        expect(selectOrderedFileIds(searchState(staged))).not.toContain("c-0");
+    });
+
+    it("drops a page staged for a cursor the list has moved past", () => {
+        const staged = searchSlice.reducer(
+            withFirstPage(),
+            prefetchReported(hits(3, "c", 3), [99]),
+        );
+
+        expect(staged.pagination.staged).toBeNull();
+    });
+
+    it("clears the staged page once it has been shown", () => {
+        const staged = searchSlice.reducer(
+            withFirstPage(),
+            prefetchReported(hits(3, "c", 3), [2]),
+        );
+        const shown = searchSlice.reducer(
+            staged,
+            nextPageReported(hits(3, "c", 3), [2]),
+        );
+
+        expect(shown.pagination.staged).toBeNull();
+        expect(selectLoadedFiles(searchState(shown))).toBe(6);
+    });
+
+    it("discards a staged page when a new query arrives", () => {
+        const staged = searchSlice.reducer(
+            withFirstPage(),
+            prefetchReported(hits(3, "c", 3), [2]),
+        );
+        const newQuery = searchSlice.reducer(
+            staged,
+            resultsReported("q2", "bar", hits(2, "d")),
+        );
+
+        expect(newQuery.pagination.staged).toBeNull();
+    });
+});
+
 describe("temporary highlight that re-enters the results", () => {
     const temporaryThenPaged = () => {
         const results = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(2, "b")),
+            resultsReported("q1", "foo", hits(2, "b"), 3),
         );
         const withTemporary = searchSlice.reducer(
             results,
@@ -401,14 +723,10 @@ describe("temporary highlight that re-enters the results", () => {
         );
 
         // Next page of the same query now returns the highlighted file.
-        return searchSlice.reducer(withTemporary, {
-            type: updateQuery.fulfilled.type,
-            payload: {
-                query: queryWithId("q1", "foo"),
-                files: [{ fileId: "late", sortId: [2] }],
-                totalFiles: 3,
-            },
-        });
+        return searchSlice.reducer(
+            withTemporary,
+            nextPageReported([{ fileId: "late", sortId: [2] }], [1]),
+        );
     };
 
     // A keep-alive renewal: a new query id with the same query string preserves
@@ -417,7 +735,7 @@ describe("temporary highlight that re-enters the results", () => {
     const temporaryThenRenewed = () => {
         const results = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(2, "b")),
+            resultsReported("q1", "foo", hits(2, "b"), 3),
         );
         const withTemporary = searchSlice.reducer(
             results,
@@ -440,7 +758,7 @@ describe("temporary highlight that re-enters the results", () => {
     const cachedThenPaged = () => {
         const results = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(2, "b")),
+            resultsReported("q1", "foo", hits(2, "b"), 3),
         );
         const withPreview = searchSlice.reducer(
             results,
@@ -451,14 +769,10 @@ describe("temporary highlight that re-enters the results", () => {
             setTemporaryFileId("late"),
         );
 
-        return searchSlice.reducer(withTemporary, {
-            type: updateQuery.fulfilled.type,
-            payload: {
-                query: queryWithId("q1", "foo"),
-                files: [{ fileId: "late", sortId: [2] }],
-                totalFiles: 3,
-            },
-        });
+        return searchSlice.reducer(
+            withTemporary,
+            nextPageReported([{ fileId: "late", sortId: [2] }], [1]),
+        );
     };
 
     it.each([
@@ -474,22 +788,17 @@ describe("temporary highlight that re-enters the results", () => {
         expectWithinTotal(state);
     });
 
-    it("lists it once, so it is not rendered twice", () => {
+    it("lists it once, at its rank, so it is not rendered twice", () => {
         const ordered = selectOrderedFileIds(searchState(temporaryThenPaged()));
 
-        // Not an ordering assertion: selectOrderedFileIds follows `Object.keys`
-        // insertion order and setting `meta` on an existing entry does not
-        // re-insert it, so a cached file keeps the position it was created at
-        // rather than its sort position. What matters is that it is listed once.
         expect(ordered).toHaveLength(new Set(ordered).size);
-        expect(ordered.filter((id) => id === "late")).toHaveLength(1);
-        expect(ordered).toEqual(expect.arrayContaining(["b-0", "b-1"]));
+        expect(ordered).toEqual(["b-0", "b-1", "late"]);
     });
 
     it("drops a flag the highlight left on an open tab", () => {
         const results = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(2, "b")),
+            resultsReported("q1", "foo", hits(2, "b"), 3),
         );
         const withTemporary = searchSlice.reducer(
             results,
@@ -507,13 +816,359 @@ describe("temporary highlight that re-enters the results", () => {
             resultsReported("q2", "bar", hits(3, "c")),
         );
 
-        // A carried-over flag has nothing left to clear it, so it would sit in
-        // the temporary tail of selectOrderedFileIds with no card to land on.
+        // selectOrderedFileIds reads `temporaryFileId`, so a carried-over flag
+        // can no longer put a card-less id in the index space. The flag is
+        // still cleared: an entry that kept it would claim for the rest of its
+        // life to exist only for a highlight that ended with the last query.
         expect(newQuery.files["late"].temporary).toBe(false);
         expect(newQuery.temporaryFileId).toBeNull();
         expect(selectOrderedFileIds(searchState(newQuery))).not.toContain(
             "late",
         );
         expect(selectLoadedFiles(searchState(newQuery))).toBe(3);
+    });
+});
+
+describe("which result the user is on", () => {
+    const withResults = (count: number, totalFiles = count) =>
+        searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(count, "b"), totalFiles),
+        );
+
+    const showingRows = (
+        state: SearchStateSlice,
+        startIndex: number,
+        endIndex: number,
+    ) =>
+        searchSlice.reducer(
+            state,
+            visibleRangeChanged({ startIndex, endIndex }),
+        );
+
+    const rankIn = (state: SearchStateSlice) =>
+        selectCurrentResultRank(searchState(state));
+
+    it("reports nothing before the list has said where it is", () => {
+        expect(rankIn(withResults(10))).toBeNull();
+    });
+
+    it("follows the highlight while its card is on screen", () => {
+        const state = searchSlice.reducer(
+            showingRows(withResults(50, 200), 20, 25),
+            setHighlightedFileId("b-22"),
+        );
+
+        expect(rankIn(state)).toBe(23);
+    });
+
+    // Reading the top of the viewport instead could never reach the total: the
+    // last screenful does not scroll, so the top of it stays a screen short.
+    it("reaches the end of the list when the last result is highlighted", () => {
+        const state = searchSlice.reducer(
+            showingRows(withResults(106), 103, 105),
+            setHighlightedFileId("b-105"),
+        );
+
+        expect(rankIn(state)).toBe(106);
+    });
+
+    it("moves one result at a time near the end", () => {
+        const atTheBottom = showingRows(withResults(106), 103, 105);
+
+        expect(
+            rankIn(
+                searchSlice.reducer(atTheBottom, setHighlightedFileId("b-105")),
+            ),
+        ).toBe(106);
+        expect(
+            rankIn(
+                searchSlice.reducer(atTheBottom, setHighlightedFileId("b-104")),
+            ),
+        ).toBe(105);
+    });
+
+    // A highlight the user has scrolled away from is no longer where they are.
+    it("falls back to the lowest visible result once the highlight is off screen", () => {
+        const state = searchSlice.reducer(
+            showingRows(withResults(500), 300, 306),
+            setHighlightedFileId("b-2"),
+        );
+
+        expect(rankIn(state)).toBe(307);
+    });
+
+    it("reports the end of the list when scrolled to the bottom", () => {
+        expect(rankIn(showingRows(withResults(106), 103, 105))).toBe(106);
+    });
+
+    // The rank counts results, but rows lead with the temporary
+    // out-of-results card when there is one.
+    it("does not count the temporary card as a result", () => {
+        const withTemporary = searchSlice.reducer(
+            withResults(50, 200),
+            setTemporaryFileId("late"),
+        );
+
+        expect(rankIn(showingRows(withTemporary, 0, 10))).toBe(10);
+    });
+
+    it("ignores a highlight on the temporary card, which has no rank", () => {
+        const withTemporary = searchSlice.reducer(
+            withResults(50, 200),
+            setTemporaryFileId("late"),
+        );
+        const state = searchSlice.reducer(
+            showingRows(withTemporary, 0, 5),
+            setHighlightedFileId("late"),
+        );
+
+        expect(rankIn(state)).toBe(5);
+    });
+
+    it("forgets where it was when a new query replaces the list", () => {
+        const scrolled = showingRows(withResults(50, 200), 30, 36);
+        const newQuery = searchSlice.reducer(
+            scrolled,
+            resultsReported("q2", "bar", hits(2, "d")),
+        );
+
+        expect(rankIn(newQuery)).toBeNull();
+    });
+});
+
+describe("a page request that fails", () => {
+    const atTheBoundary = () =>
+        searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "b"), 9),
+        );
+
+    const failedWith = (payload: unknown, condition = false) => ({
+        type: fetchNextPage.rejected.type,
+        payload,
+        meta: { condition },
+    });
+
+    // Pages load on their own as the user scrolls, so a failure that left no
+    // trace would read as "that is all there is".
+    it("records why, so the list can stop and say something", () => {
+        const failed = searchSlice.reducer(
+            atTheBoundary(),
+            failedWith({ kind: "failed", detail: "boom" }),
+        );
+
+        expect(selectPaginationError(searchState(failed))).toEqual({
+            kind: "failed",
+            detail: "boom",
+        });
+        expect(selectIsPaginating(searchState(failed))).toBe(false);
+    });
+
+    // An expired point-in-time cannot be resumed mid-list — the cursor holds
+    // sort values that only mean something inside the old snapshot — so it is
+    // kept apart from an ordinary failure, which can simply be retried.
+    it("keeps an expired snapshot apart from an ordinary failure", () => {
+        const expired = searchSlice.reducer(
+            atTheBoundary(),
+            failedWith({ kind: "expired", detail: "gone" }),
+        );
+
+        expect(selectPaginationError(searchState(expired))?.kind).toBe(
+            "expired",
+        );
+    });
+
+    // The condition guard rejects when a request for this page is already in
+    // flight. That is not a failure and must not stop the auto-loading.
+    it("ignores a rejection from the in-flight guard", () => {
+        const guarded = searchSlice.reducer(
+            atTheBoundary(),
+            failedWith(undefined, true),
+        );
+
+        expect(selectPaginationError(searchState(guarded))).toBeNull();
+    });
+
+    it("clears the error once a request is under way again", () => {
+        const failed = searchSlice.reducer(
+            atTheBoundary(),
+            failedWith({ kind: "failed", detail: "boom" }),
+        );
+        const retrying = searchSlice.reducer(failed, {
+            type: fetchNextPage.pending.type,
+        });
+
+        expect(selectPaginationError(searchState(retrying))).toBeNull();
+    });
+
+    it("clears the error on a new query", () => {
+        const failed = searchSlice.reducer(
+            atTheBoundary(),
+            failedWith({ kind: "expired", detail: "gone" }),
+        );
+        const newQuery = searchSlice.reducer(
+            failed,
+            resultsReported("q2", "bar", hits(2, "d")),
+        );
+
+        expect(selectPaginationError(searchState(newQuery))).toBeNull();
+    });
+});
+
+describe("cards entering and leaving the viewport", () => {
+    const withResults = () =>
+        searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "b")),
+        );
+
+    const inView = (fileId: string, visible: boolean) =>
+        fileInViewChanged({ fileId, inView: visible });
+
+    it("records a card that scrolls in", () => {
+        const state = searchSlice.reducer(withResults(), inView("b-1", true));
+
+        expect(selectFilesInView(searchState(state))).toEqual(["b-1"]);
+    });
+
+    it("records a card once however often it is reported", () => {
+        let state = searchSlice.reducer(withResults(), inView("b-1", true));
+        state = searchSlice.reducer(state, inView("b-1", true));
+
+        expect(selectFilesInView(searchState(state))).toEqual(["b-1"]);
+    });
+
+    // The list is windowed, so scrolling unmounts cards that are still in
+    // view. The card dispatches this from its effect cleanup; without it the
+    // id would sit in filesInView for the rest of the query and be reported to
+    // the chat agent as something the user is looking at.
+    it("drops a card unmounted while still in view", () => {
+        const scrolledIn = searchSlice.reducer(
+            withResults(),
+            inView("b-1", true),
+        );
+        const unmounted = searchSlice.reducer(scrolledIn, inView("b-1", false));
+
+        expect(selectFilesInView(searchState(unmounted))).toEqual([]);
+    });
+
+    // The add is guarded against an unknown id; the removal must not be, or an
+    // entry evicted from the cache while on screen can never leave the list.
+    it("drops a card whose cache entry is already gone", () => {
+        const scrolledIn = searchSlice.reducer(
+            withResults(),
+            inView("b-1", true),
+        );
+        const newQuery = searchSlice.reducer(
+            scrolledIn,
+            resultsReported("q2", "bar", hits(2, "d")),
+        );
+        const stillLeaving = searchSlice.reducer(
+            { ...newQuery, filesInView: ["b-1"] },
+            inView("b-1", false),
+        );
+
+        expect(selectFilesInView(searchState(stillLeaving))).toEqual([]);
+    });
+
+    it("ignores a card that is not in the cache", () => {
+        const state = searchSlice.reducer(withResults(), inView("ghost", true));
+
+        expect(selectFilesInView(searchState(state))).toEqual([]);
+    });
+
+    // filesInView is appended to in scroll order, so scrolling up builds it
+    // backwards. Anything reporting the visible cards wants them as rendered.
+    it("reports the visible cards in rank order", () => {
+        let state = withResults();
+        for (const id of ["b-2", "b-0", "b-1"]) {
+            state = searchSlice.reducer(state, inView(id, true));
+        }
+
+        expect(selectFilesInView(searchState(state))).toEqual([
+            "b-2",
+            "b-0",
+            "b-1",
+        ]);
+        expect(selectFilesInViewOrdered(searchState(state))).toEqual([
+            "b-0",
+            "b-1",
+            "b-2",
+        ]);
+    });
+});
+
+describe("re-render guards", () => {
+    it("returns the same state when the highlight is re-asserted", () => {
+        const highlighted = searchSlice.reducer(
+            emptySearchState(),
+            setHighlightedFileId("a-0"),
+        );
+
+        const again = searchSlice.reducer(
+            highlighted,
+            setHighlightedFileId("a-0"),
+        );
+
+        // Identity, not equality: a new state object notifies every subscriber
+        // and re-arms the auto-actions timer for a highlight that did not move.
+        expect(again).toBe(highlighted);
+    });
+
+    // Every mounted card subscribes to this selector, so an object rebuilt
+    // per action re-renders all of them. Taking the whole search slice as the
+    // input is exactly what does that, since its identity changes constantly.
+    it("keeps card visibility referentially stable across unrelated actions", () => {
+        const state = emptySearchState();
+        const before = selectCardElementVisibility(searchState(state));
+
+        const unrelated = searchSlice.reducer(
+            state,
+            setHighlightedFileId("a-0"),
+        );
+
+        expect(selectCardElementVisibility(searchState(unrelated))).toBe(
+            before,
+        );
+    });
+
+    it("gives a new card visibility object when a flag actually changes", () => {
+        const state = emptySearchState();
+        const before = selectCardElementVisibility(searchState(state));
+
+        const toggled = searchSlice.reducer(
+            state,
+            setShowTags(!before.showTags),
+        );
+
+        expect(selectCardElementVisibility(searchState(toggled))).not.toBe(
+            before,
+        );
+        expect(selectCardElementVisibility(searchState(toggled)).showTags).toBe(
+            !before.showTags,
+        );
+    });
+});
+
+describe("sidebar widths", () => {
+    it("clamps a width below the minimum", () => {
+        const narrowed = searchSlice.reducer(
+            emptySearchState(),
+            setLeftSidebarWidth(10),
+        );
+
+        expect(selectLeftSidebarWidth(searchState(narrowed))).toBe(14 * 16);
+    });
+
+    it("clamps a width that would squeeze the centre column", () => {
+        const widened = searchSlice.reducer(
+            emptySearchState(),
+            setRightSidebarWidth(window.innerWidth + 1000),
+        );
+
+        expect(selectRightSidebarWidth(searchState(widened))).toBe(
+            Math.max(14 * 16, window.innerWidth - 20 * 16),
+        );
     });
 });

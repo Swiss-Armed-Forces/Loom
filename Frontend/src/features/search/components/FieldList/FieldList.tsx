@@ -101,13 +101,8 @@ export const FieldList = ({
                     key={field}
                     field={field}
                     value={value}
-                    onQuery={
-                        showActions
-                            ? (negate, accumulate) =>
-                                  handleQuery(field, negate, accumulate)
-                            : undefined
-                    }
-                    onSort={showActions ? () => handleSort(field) : undefined}
+                    onQuery={showActions ? handleQuery : undefined}
+                    onSort={showActions ? handleSort : undefined}
                     fullDetails={fullDetails}
                 />
             ))}

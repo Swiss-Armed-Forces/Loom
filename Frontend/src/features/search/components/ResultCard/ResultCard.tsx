@@ -4,7 +4,10 @@ import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
 
-import { unsubscribeChannel } from "@app/channelSubscriptions";
+import {
+    subscribeChannel,
+    unsubscribeChannel,
+} from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectQuery,
@@ -13,7 +16,8 @@ import {
     selectFieldLayout,
     selectFlatRowChrome,
     selectResolvedCardDensity,
-    setFileInViewState,
+    ensureViewPreview,
+    fileInViewChanged,
     setHighlightedFileId,
     openFileTabThunk,
 } from "@app/slices/searchSlice";
@@ -35,6 +39,14 @@ interface ResultCardProps {
     isHighlighted?: boolean;
     stale?: boolean;
     isTemporary?: boolean;
+    /**
+     * This is the card the guided tour points at.
+     *
+     * Passed down rather than read from the tour context here: the context
+     * value changes on every step, and subscribing to it from the card would
+     * re-render every mounted card each time the tour advances.
+     */
+    isTourAnchor?: boolean;
 }
 
 export const ResultCard = React.memo(
@@ -43,11 +55,12 @@ export const ResultCard = React.memo(
         isHighlighted = false,
         stale = false,
         isTemporary = false,
+        isTourAnchor = false,
     }: ResultCardProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
         const searchQuery = useAppSelector(selectQuery);
-        const file = useAppSelector(selectFileById(fileId));
+        const file = useAppSelector((state) => selectFileById(state, fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
         const visFromStore = useAppSelector(selectCardElementVisibility);
@@ -102,26 +115,32 @@ export const ResultCard = React.memo(
             inViewRef(element);
         };
 
-        // Manage the WS channel subscription. setFileInViewState is the single
-        // owner of subscribe/unsubscribe when inView changes; the cleanup only
-        // handles unmount. unsubscribeChannel is a no-op when not subscribed,
-        // so the cleanup is always safe to call.
+        // This effect owns the WS channel subscription: it subscribes while the
+        // card is in view and the cleanup releases it, so the two stay paired
+        // across re-runs and unmount. ensureViewPreview only fills the preview
+        // cache, and it may legitimately be skipped. It takes no `query`
+        // argument and does not depend on `searchQuery`: the thunk reads the
+        // active query from the store itself. Depending on the query object
+        // here re-ran this effect for every mounted card whenever its identity
+        // changed.
+        //
+        // fileInViewChanged is dispatched in the body and again in the cleanup
+        // because a card can be unmounted while still in view — the list is
+        // windowed, so scrolling takes cards away mid-flight. Without the
+        // cleanup the id would stay in `filesInView` for the rest of the query.
         useEffect(() => {
-            dispatch(
-                setFileInViewState({
-                    fileId: fileId,
-                    inView: inView,
-                    query: searchQuery,
-                }),
-            );
+            dispatch(fileInViewChanged({ fileId: fileId, inView: inView }));
+            if (!inView) return;
+            subscribeChannel(fileId, dispatch);
+            dispatch(ensureViewPreview({ fileId: fileId }));
             return () => {
-                // Only unsubscribe when inView was true — setFileInViewState does
-                // not unsubscribe, so this cleanup is the single owner of that
-                // transition. Calling it unconditionally would double-decrement
-                // the ref count and cancel the tab subscription prematurely.
-                if (inView) unsubscribeChannel(fileId, dispatch);
+                dispatch(fileInViewChanged({ fileId: fileId, inView: false }));
+                // unsubscribeChannel is a no-op when not subscribed, but only
+                // call it when we subscribed, or the ref count double-decrements
+                // and the tab subscription is cancelled prematurely.
+                unsubscribeChannel(fileId, dispatch);
             };
-        }, [inView, fileId, searchQuery, dispatch]);
+        }, [inView, fileId, dispatch]);
 
         const handleCardClick = (
             e:
@@ -165,6 +184,11 @@ export const ResultCard = React.memo(
             }
         };
 
+        // This card shows a thumbnail only because it is highlighted, so the
+        // image is being requested right now rather than already in hand.
+        const thumbnailOnHighlightOnly =
+            isHighlighted && !visFromStore.showThumbnails;
+
         const thumbnail =
             filePreview && thumbnailFileId ? (
                 <Badge
@@ -206,12 +230,20 @@ export const ResultCard = React.memo(
                 </Badge>
             ) : null;
 
+        const thumbnailBlock =
+            thumbnail && thumbnailOnHighlightOnly && !hasThumbnailSlot ? (
+                <div className={styles.thumbnailReserve}>{thumbnail}</div>
+            ) : (
+                thumbnail
+            );
+
         return (
             <Box
                 className="resultCardParent"
                 tabIndex={0}
                 data-highlighted={isHighlighted ? "true" : undefined}
                 data-tour="result-card"
+                data-tour-anchor={isTourAnchor ? "true" : undefined}
                 ref={setRefs}
                 onClick={handleCardClick}
                 onDoubleClick={handleCardDoubleClick}
@@ -238,6 +270,7 @@ export const ResultCard = React.memo(
                             // Spacing owns how tall the header is, the same
                             // as it owns the rest of the card's chrome.
                             compact={resolvedDensity === "compact" || undefined}
+                            denseChrome={resolvedDensity === "compact"}
                             showExtensionIcon={vis.showExtensionIcon}
                             showFilePath={vis.showFilePath}
                             showParentNavigation={vis.showParentNavigation}
@@ -294,11 +327,11 @@ export const ResultCard = React.memo(
                                             {thumbnail}
                                         </Box>
                                     ) : (
-                                        !thumbnailBelowLine && thumbnail
+                                        !thumbnailBelowLine && thumbnailBlock
                                     )}
                                 </Box>
                                 {thumbnailBelowLine && thumbnail && (
-                                    <Box sx={{ mt: 1 }}>{thumbnail}</Box>
+                                    <Box sx={{ mt: 1 }}>{thumbnailBlock}</Box>
                                 )}
                                 {(isTemporary || vis.showSortIndicator) && (
                                     <Box

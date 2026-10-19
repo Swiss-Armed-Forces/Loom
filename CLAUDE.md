@@ -866,5 +866,11 @@ function, **stop and ask the user first** — there is almost certainly a better
 - `Documentation/devenv-setup.md` - Development environment setup
 - `Documentation/appliance.md` - NixOS appliance image and air-gapped deployment
 - `nixos/README.md` - The appliance Nix code and how to build/test it
+- `Documentation/performance.md` - Finding out what is slow
+- `Documentation/frontend-debugging.md` - Driving the running frontend with Playwright, which is
+  a devDependency of `Frontend/` for this purpose. Covers getting past the guided tour, the data
+  attributes to select on, and CDP profiling. **Debug scripts go in a scratch directory, never
+  in the repository** - they are not tests, nothing runs them, and they rot in place; port what
+  you learn to a vitest test instead
 - `CONTRIBUTING.md` - Full Git workflow and collaboration guidelines
 - `README.md` - Project overview and features

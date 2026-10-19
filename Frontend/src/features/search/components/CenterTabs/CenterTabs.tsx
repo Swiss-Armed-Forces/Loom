@@ -7,20 +7,21 @@ import {
     Tabs,
     useMediaQuery,
 } from "@mui/material";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState, memo } from "react";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     closeFileTabThunk,
     selectActiveTabFileId,
     selectFiles,
-    selectLoadedFiles,
+    selectCurrentResultRank,
     selectOpenFileTabs,
     selectTotalFiles,
     setActiveTabFileId,
 } from "@app/slices/searchSlice";
 import { useTour } from "@app/tours/useTour";
 import { FileDetailTab } from "@features/common/utils/enums";
+import { formatCompactNumber } from "@features/common/utils/helpers";
 import { ScrollToTop } from "@features/search/components";
 import { SearchResults } from "@features/search/views/SearchResults";
 
@@ -28,6 +29,7 @@ import { FileDetailPanel } from "../FileDetailPanel/FileDetailPanel";
 
 import styles from "./CenterTabs.module.css";
 import { shouldShowFilePanel, shouldShowSearchPanel } from "./panelVisibility";
+import { SearchPanelContext } from "./SearchPanelContext";
 
 const TOUR_DETAIL_STEP_IDS = new Set([
     "document-detail",
@@ -45,7 +47,10 @@ const TOUR_DETAIL_TAB: Partial<Record<string, FileDetailTab>> = {
 
 const SEARCH_TAB = "__search__";
 
-export const CenterTabs = () => {
+// Propless and rendered from a parent that re-renders on unrelated store
+// changes, so memo is what keeps one highlight change from sweeping the
+// whole subtree. Its own selector subscriptions still re-render it.
+export const CenterTabs = memo(() => {
     const dispatch = useAppDispatch();
     const openFileTabs = useAppSelector(selectOpenFileTabs);
     const activeTabFileId = useAppSelector(selectActiveTabFileId);
@@ -53,7 +58,7 @@ export const CenterTabs = () => {
     const { activeTourStepId, isTourActive, tourDetailFileId } = useTour();
 
     const totalFiles = useAppSelector(selectTotalFiles);
-    const loadedFiles = useAppSelector(selectLoadedFiles);
+    const currentRank = useAppSelector(selectCurrentResultRank);
 
     const isMobile = useMediaQuery("(max-width:600px)");
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -68,6 +73,13 @@ export const CenterTabs = () => {
     const showSearchPanel = showTourDocumentDetail
         ? false
         : shouldShowSearchPanel(activeTabFileId, isTourActive);
+
+    // Memoised so the virtualized result list is not torn down and rebuilt on
+    // every re-render of the tab bar above it.
+    const searchPanel = useMemo(
+        () => ({ scrollRef, isActive: showSearchPanel }),
+        [showSearchPanel],
+    );
 
     const handleFileTabChange = (_: React.SyntheticEvent, newValue: string) => {
         dispatch(setActiveTabFileId(newValue));
@@ -89,7 +101,13 @@ export const CenterTabs = () => {
                                 Results
                                 {totalFiles > 0 && (
                                     <span className={styles.resultsTabCount}>
-                                        {loadedFiles}/{totalFiles}
+                                        {currentRank === null
+                                            ? formatCompactNumber(totalFiles)
+                                            : `${formatCompactNumber(
+                                                  currentRank,
+                                              )}/${formatCompactNumber(
+                                                  totalFiles,
+                                              )}`}
                                     </span>
                                 )}
                             </span>
@@ -223,6 +241,7 @@ export const CenterTabs = () => {
             <div
                 className={styles.searchPanel}
                 data-tour="search-panel"
+                data-search-panel
                 style={{
                     display: showSearchPanel ? "flex" : "none",
                 }}
@@ -233,7 +252,9 @@ export const CenterTabs = () => {
                 }
                 ref={scrollRef}
             >
-                <SearchResults />
+                <SearchPanelContext.Provider value={searchPanel}>
+                    <SearchResults />
+                </SearchPanelContext.Provider>
                 <ScrollToTop
                     visible={hasScrollOffset}
                     onClick={() => scrollRef.current?.scrollTo(0, 0)}
@@ -278,4 +299,6 @@ export const CenterTabs = () => {
             ))}
         </div>
     );
-};
+});
+
+CenterTabs.displayName = "CenterTabs";

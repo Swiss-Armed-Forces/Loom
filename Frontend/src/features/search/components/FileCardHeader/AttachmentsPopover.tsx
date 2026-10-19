@@ -14,6 +14,8 @@ interface AttachmentsPopoverProps {
     onClose: () => void;
 }
 
+const ATTACHMENT_ITEM_SX = { gap: 1 } as const;
+
 export const AttachmentsPopover = ({
     attachments,
     totalCount,
@@ -56,7 +58,7 @@ export const AttachmentsPopover = ({
                             handleOpen(attachment.id, true);
                         }
                     }}
-                    sx={{ gap: 1 }}
+                    sx={ATTACHMENT_ITEM_SX}
                 >
                     <AttachFile fontSize="small" />
                     {attachment.name}
