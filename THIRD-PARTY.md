@@ -811,6 +811,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | @mui/x-charts                       | MIT          | 9.11.1            |
 | @mui/x-tree-view                    | MIT          | 9.11.0            |
 | @reduxjs/toolkit                    | MIT          | 2.12.0            |
+| @tanstack/react-virtual             | MIT          | 3.14.21           |
 | ace-builds                          | BSD-3-Clause | 1.44.0            |
 | core-js                             | MIT          | 3.50.0            |
 | date-fns                            | MIT          | 4.4.0             |
@@ -857,6 +858,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | jsdom                               | MIT          | 29.1.1            |
 | license-report                      | MIT          | 6.8.2             |
 | msw                                 | MIT          | 2.15.0            |
+| playwright                          | Apache-2.0   | 1.64.1            |
 | prettier                            | MIT          | 3.9.6             |
 | typescript                          | Apache-2.0   | 6.0.3             |
 | typescript-eslint                   | MIT          | 8.67.0            |
