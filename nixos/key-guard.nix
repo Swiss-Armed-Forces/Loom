@@ -381,6 +381,16 @@ let
           # hand the box a fresh window. It is also what `status` reads.
           if [[ ! -e "''${DEADLINE_FILE}" ]]; then
               put "''${DEADLINE_FILE}" 0644 "$((now + ARM_DEADLINE))"
+              # The login screen carries "powers off ...s after boot" for
+              # exactly as long as this file exists, and its appearance is not
+              # a state change -- the guard goes on reporting `idle` either
+              # side of it -- so `set_state`'s refresh never covers this. The
+              # file is created once per boot, so is this.
+              #
+              # Retiring it needs no counterpart: both callers of
+              # `retire_deadline` change the state in the same breath, and that
+              # redraw takes the line back off the screen.
+              "''${BANNER_REFRESH}" >/dev/null 2>&1 || true
           fi
           expires="$(cat "''${DEADLINE_FILE}")"
           left=$((expires - now))

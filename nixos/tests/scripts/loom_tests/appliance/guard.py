@@ -84,9 +84,12 @@ def deadline(box: "Machine", subtest: "Subtest") -> None:
             "journalctl --unit loom-key-guard.service | grep 'powers off in' >/dev/null"
         )
         # The banner says so too, on the screen an operator who never logs in
-        # is looking at.
-        box.succeed(
-            "grep -q 'powers off 60 seconds after boot' /run/issue.d/50-loom.issue"
+        # is looking at. Spelled as the banner spells it -- `60s`, the way
+        # every other duration on that screen is written -- and waited for
+        # rather than read once: the deadline file appearing is what puts the
+        # line there, and the redraw that follows it is a getty restart.
+        box.wait_until_succeeds(
+            "grep -q 'powers off 60s after boot' /run/issue.d/50-loom.issue"
         )
 
         box.wait_for_shutdown()

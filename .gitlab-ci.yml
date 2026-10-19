@@ -449,8 +449,11 @@ appliance_test:
   # everywhere and is what catches a path missing from that list.
   #
   # No job in this file sets a timeout, and the project default is shorter than
-  # a run without KVM.
-  timeout: 3h
+  # a run without KVM. A complete run here takes about two and a half hours; the
+  # extra hour is for the one target `run_appliance_tests.sh` runs a second time
+  # when the host stalls it, which costs the driver's whole global timeout
+  # before the retry even starts.
+  timeout: 4h
   rules:
     # `changes` only means what it says in a merge request pipeline, where it is
     # the diff against the target branch. On main, a tag or a new branch every

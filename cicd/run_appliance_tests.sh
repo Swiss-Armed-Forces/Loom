@@ -254,6 +254,18 @@ validate_environment(){
     fi
 }
 
+# What a VM test looks like when the host could not run it, as opposed to when
+# the box is wrong: the guest boots, its console output stops partway, and the
+# driver spends its whole global timeout telling us the root shell has not said
+# anything. Both lines together, because the first appears in the healthiest run
+# there is -- the driver prints it while waiting for a shell that does arrive.
+#
+# Seen twice on the shared runners in one day, on two different targets, with
+# nothing in the appliance's own log to explain it. A target that fails this way
+# is run once more; one that fails any other way is reported as it always was.
+readonly STALL_WAITING="Guest root shell did not produce any data yet"
+readonly STALL_TIMEOUT="timeout reached; test terminating"
+
 # Records its own failure rather than being called in a condition, which would
 # switch `set -e` off for everything it runs.
 run_test(){
@@ -292,9 +304,27 @@ run_test(){
     else
         echo "[*] Running: ${name} (${attribute}, ${platform})"
     fi
-    if nix-build "${args[@]}"; then
-        return 0
-    fi
+    # Through `tee` so the run is still printed as it happens -- this is what an
+    # operator watches and what CI keeps -- while leaving a copy to tell a
+    # stalled host from a failed assertion. `pipefail` is on, so the status is
+    # still nix-build's.
+    local log attempt
+    log="$(mktemp --tmpdir "loom-appliance-${name}-XXXXXX.log")"
+    for attempt in 1 2; do
+        if nix-build "${args[@]}" 2>&1 | tee "${log}"; then
+            rm --force "${log}"
+            return 0
+        fi
+        if (( attempt == 1 )) &&
+            grep --quiet --fixed-strings "${STALL_WAITING}" "${log}" &&
+            grep --quiet --fixed-strings "${STALL_TIMEOUT}" "${log}"; then
+            echo "[!] ${label}: the guest never produced a root shell and the driver"
+            echo "[!] timed out waiting. That is the host, not the box -- running it once more."
+            continue
+        fi
+        break
+    done
+    rm --force "${log}"
     FAILED+=("${label}")
     echo "[!] Failed: ${label}"
 }
