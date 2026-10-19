@@ -1118,8 +1118,9 @@ ollama:
   pvc:
     enabled: true
     # Holds every model in the models image (qwen3.8:27b ~18GB + nomic-embed ~0.5GB).
-    # The initContainer copies with `cp --update` and never prunes, so a rollout onto an
-    # existing PVC carries the superseded blobs alongside the new ones until it is wiped.
+    # The initContainer copies what the destination does not already carry at the source's
+    # size, and never prunes, so a rollout onto an existing PVC carries the superseded
+    # blobs alongside the new ones until it is wiped.
     storage: 50Gi
     storageClass: null
   ingress: *default-ingress-config
@@ -1137,14 +1138,21 @@ ollama:
     limits:
       cpu: "10"
       memory: "12Gi"
+  # Sized for the copy, not for the copying process: `cp` holds well under a megabyte,
+  # and what fills this cgroup is the dirty page cache of a ~16GB blob written faster
+  # than writeback drains it. The filesystem allocations in that path are GFP_NOFAIL,
+  # so a cgroup too small to absorb them OOM-kills the copy rather than throttling it.
+  # Raising it is free: a pod's effective resources are the larger of the sum over its
+  # containers and the largest of its initContainers, and the ollama container above
+  # already asks for more than this.
   initContainer:
     resources:
       requests:
-        cpu: "0.05"
-        memory: "50Mi"
+        cpu: "0.5"
+        memory: "1Gi"
       limits:
-        cpu: "0.1"
-        memory: "100Mi"
+        cpu: "2"
+        memory: "1Gi"
   # Custom labels specific to ollama resources
   customLabels: {}
   customAnnotations: {}

@@ -1,0 +1,31 @@
+{{/*
+The script the `copy-ollama-models` initContainer runs, mounted rather than
+inlined into its `command`. A script embedded in a template is a string as far
+as every tool is concerned: shellcheck, which the repo runs with `-o all`, never
+sees it, and `helm lint` only checks that the YAML around it parses. As a file
+under charts/files/ollama/ it is linted like any other script in the repo, and
+the templating stays where the chart can be read -- the initContainer passes its
+values as `args`, and the script asserts each one is set.
+
+Carries no `helm.sh/hook` annotations: this serves a Deployment, not a hook Job,
+so it is an ordinary chart resource.
+*/}}
+{{- define "app.ollama.configMap" -}}
+{{- $component := .component -}}
+{{- $values := index .Values $component -}}
+{{- if $values.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-{{ $component }}-scripts
+  labels:
+    {{- include "app.labels.custom" (dict "context" . "component" $component) | nindent 4 }}
+    app.kubernetes.io/component: "{{ $component }}"
+  {{- with include "app.annotations.custom" (dict "context" . "component" $component) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  {{- (.Files.Glob "files/ollama/*.sh").AsConfig | nindent 2 }}
+{{- end }}
+{{- end -}}

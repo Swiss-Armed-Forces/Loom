@@ -139,7 +139,9 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 **aitools testing:**
 
 - `aitools-test` - Run all `aitools` tests and the `cicd/tests/` tests covering the scripts
-  beside it, with pytest (always runs from `cicd/` directory)
+  beside it, with pytest (always runs from `cicd/` directory). `cicd/tests/` is also where the
+  shell scripts under `charts/files/` are tested from, there being no other pytest root that can
+  reach them
 - `aitools-test aitools/tests/test_git_helpers.py` - Run specific test file (paths relative to `cicd/`)
 
 **Frontend:**

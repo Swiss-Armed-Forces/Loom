@@ -673,8 +673,9 @@ restart repeats it.
 
 The production model is ~18 GB of weights, so that image is correspondingly large and
 `ollama.pvc.storage` (default `50Gi`) is sized to hold it beside the blobs of a model it
-supersedes — the copy runs `cp --update` and never prunes. Inference wants a GPU with at least
-20 GB of VRAM; with less, Ollama offloads layers to the CPU and generation slows down sharply.
+supersedes — the copy takes whatever the volume does not already carry at the source's size, and
+never prunes. Inference wants a GPU with at least 20 GB of VRAM; with less, Ollama offloads layers
+to the CPU and generation slows down sharply.
 
 ## Troubleshooting
 
@@ -701,3 +702,48 @@ followed by restarting CoreDNS
 ```bash
 kubectl rollout restart deployment coredns -n kube-system
 ```
+
+### Ollama answers 500 and never loads the model
+
+Every completion fails, and the pod logs a GGUF parse error naming a tensor rather than anything
+about the request:
+
+```text
+level=INFO source=sched.go:578 msg="failed to load model metadata" model=/ollama-models/blobs/sha256-...
+  error="read GGUF metadata \"/ollama-models/blobs/sha256-...\": unsupported tensor \"blk.8.attn_qkv.weight\"
+  offset+size exceeds file size"
+```
+
+The model is not corrupt in the image — the blob on the volume is **short**, and the tensor table
+points past the end of the file. Nothing upstream of this notices: all three probes are `/api/ps`,
+which answers 200 on an empty model store, and `ollama list` reads manifests, so the model is
+reported as present right up to the moment it is loaded.
+
+Confirm it by comparing the file against the size its manifest declares. The manifest is JSON under
+`/ollama-models/manifests/registry.ollama.ai/library/<model>/<tag>`; the layer with mediaType
+`application/vnd.ollama.image.model` carries the digest and the expected `size`:
+
+```bash
+kubectl exec -n loom deploy/<release>-loom-ollama -c ollama -- \
+  sh -c 'cat /ollama-models/manifests/registry.ollama.ai/library/qwen3.8/27b'
+kubectl exec -n loom deploy/<release>-loom-ollama -c ollama -- \
+  stat -c %s /ollama-models/blobs/sha256-<digest>
+```
+
+The blob's filename is its own SHA-256, so `sha256sum` on it is the definitive check once the sizes
+agree.
+
+Deleting the short blob and restarting the pod makes the init container fetch it again:
+
+```bash
+kubectl exec -n loom deploy/<release>-loom-ollama -c ollama -- \
+  rm /ollama-models/blobs/sha256-<digest>
+kubectl rollout restart -n loom deploy/<release>-loom-ollama
+```
+
+If it comes back short, the copy is being killed rather than failing. Check the init container for
+an OOM kill — `kubectl get pod -n loom <pod> -o jsonpath='{.status.initContainerStatuses}'`, and
+`dmesg` on the node for `Killed process ... (cp)` — and raise
+`ollama.initContainer.resources.limits.memory`. That budget holds the dirty page cache of a
+multi-gigabyte write, not the copying process, so it has to scale with the model rather than with
+the number of files.
