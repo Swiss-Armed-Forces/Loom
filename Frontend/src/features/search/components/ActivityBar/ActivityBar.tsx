@@ -11,13 +11,8 @@ import {
     Policy,
     Tune,
 } from "@mui/icons-material";
-import {
-    Badge,
-    Divider,
-    IconButton,
-    Tooltip,
-    useMediaQuery,
-} from "@mui/material";
+import { Badge, Divider, IconButton, useMediaQuery } from "@mui/material";
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -37,6 +32,7 @@ import {
 } from "@app/slices/searchSlice";
 import { getTourLeftPanel, getTourRightTab } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
+import { LazyTooltip } from "@features/common/components";
 import { ActivityBarLayout } from "@features/common/components/ActivityBar/ActivityBarLayout";
 import activityBarStyles from "@features/common/components/ActivityBar/ActivityBarLayout.module.css";
 import { formatCompactNumber } from "@features/common/utils/helpers";
@@ -46,7 +42,10 @@ import { availableCustomQueryIcons } from "../CustomQueries/AddCustomQueryDialog
 
 import styles from "./ActivityBar.module.css";
 
-export const ActivityBar = () => {
+// Propless and rendered from a parent that re-renders on unrelated store
+// changes, so memo is what keeps one highlight change from sweeping the
+// whole subtree. Its own selector subscriptions still re-render it.
+export const ActivityBar = memo(() => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const activePanel = useAppSelector(selectLeftSidebarPanel);
@@ -170,16 +169,20 @@ export const ActivityBar = () => {
                         className={styles.mobileLeftGroup}
                         data-tour="activity-bar-left"
                     >
-                        <Tooltip
+                        <LazyTooltip
                             title={t("uploadFileDialog.uploadButton")}
                             placement="top"
                         >
                             <span data-tour="upload">
                                 <UploadFileButton iconOnly />
                             </span>
-                        </Tooltip>
+                        </LazyTooltip>
                         {leftPanelButtons.map(({ panel, icon, label }) => (
-                            <Tooltip key={panel} title={label} placement="top">
+                            <LazyTooltip
+                                key={panel}
+                                title={label}
+                                placement="top"
+                            >
                                 <IconButton
                                     className={`${styles.iconButtonBottom} ${effectiveLeftPanel === panel ? styles.active : ""}`}
                                     onClick={() => handleLeftClick(panel)}
@@ -204,7 +207,7 @@ export const ActivityBar = () => {
                                         icon
                                     )}
                                 </IconButton>
-                            </Tooltip>
+                            </LazyTooltip>
                         ))}
                     </div>
                     <div
@@ -213,7 +216,7 @@ export const ActivityBar = () => {
                     >
                         {rightPanelButtons.map(
                             ({ tab, icon, label, dataTour }) => (
-                                <Tooltip
+                                <LazyTooltip
                                     key={tab}
                                     title={label}
                                     placement="top"
@@ -234,7 +237,7 @@ export const ActivityBar = () => {
                                     >
                                         {icon}
                                     </IconButton>
-                                </Tooltip>
+                                </LazyTooltip>
                             ),
                         )}
                     </div>
@@ -245,16 +248,16 @@ export const ActivityBar = () => {
 
     const topContent = (
         <>
-            <Tooltip
+            <LazyTooltip
                 title={t("uploadFileDialog.uploadButton")}
                 placement="right"
             >
                 <span data-tour="upload">
                     <UploadFileButton iconOnly />
                 </span>
-            </Tooltip>
+            </LazyTooltip>
             {leftPanelButtons.map(({ panel, icon, label, dataTour }) => (
-                <Tooltip key={panel} title={label} placement="right">
+                <LazyTooltip key={panel} title={label} placement="right">
                     <IconButton
                         className={`${activityBarStyles.iconButton} ${effectiveLeftPanel === panel ? activityBarStyles.active : ""}`}
                         onClick={() => handleLeftClick(panel)}
@@ -266,7 +269,7 @@ export const ActivityBar = () => {
                     >
                         {icon}
                     </IconButton>
-                </Tooltip>
+                </LazyTooltip>
             ))}
         </>
     );
@@ -278,7 +281,7 @@ export const ActivityBar = () => {
                     (ac) => ac.key === q.icon,
                 )?.icon ?? <Policy />;
                 return (
-                    <Tooltip key={q.name} title={q.name} placement="right">
+                    <LazyTooltip key={q.name} title={q.name} placement="right">
                         <IconButton
                             className={activityBarStyles.iconButton}
                             size="medium"
@@ -302,11 +305,11 @@ export const ActivityBar = () => {
                                 {icon}
                             </Badge>
                         </IconButton>
-                    </Tooltip>
+                    </LazyTooltip>
                 );
             })}
             {hiddenNewMatchCount > 0 && (
-                <Tooltip
+                <LazyTooltip
                     title={`${hiddenNewMatchCount} more new matches`}
                     placement="right"
                 >
@@ -317,7 +320,7 @@ export const ActivityBar = () => {
                     >
                         <MoreHoriz />
                     </IconButton>
-                </Tooltip>
+                </LazyTooltip>
             )}
             {newMatchQueries.length > 0 && (
                 <Divider
@@ -326,7 +329,7 @@ export const ActivityBar = () => {
                 />
             )}
             {rightPanelButtons.map(({ tab, icon, label, dataTour }) => (
-                <Tooltip key={tab} title={label} placement="right">
+                <LazyTooltip key={tab} title={label} placement="right">
                     <IconButton
                         className={`${activityBarStyles.iconButton} ${effectiveRightOpen && effectiveRightTab === tab ? activityBarStyles.active : ""}`}
                         onClick={() => handleRightClick(tab)}
@@ -340,7 +343,7 @@ export const ActivityBar = () => {
                     >
                         {icon}
                     </IconButton>
-                </Tooltip>
+                </LazyTooltip>
             ))}
         </>
     );
@@ -354,4 +357,6 @@ export const ActivityBar = () => {
             dataTourBottom="activity-bar-right"
         />
     );
-};
+});
+
+ActivityBar.displayName = "ActivityBar";

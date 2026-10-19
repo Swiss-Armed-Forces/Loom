@@ -33,6 +33,7 @@ from api.routers import (
     websocket,
     wipe_data,
 )
+from api.server_timing import init_server_timing
 from api.settings import settings
 
 STATIC_ASSETS_PATH = Path(__file__).parent.parent / "static"
@@ -50,12 +51,17 @@ def init_api(collect_metrics=True) -> FastAPI:
     if collect_metrics:
         init_metrics(api)
 
+    init_server_timing(api)
+
     api.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        # Server-Timing is not a CORS-safelisted response header, so a browser
+        # on another origin cannot read it unless it is exposed.
+        expose_headers=["Server-Timing"],
     )
 
     # global exception handlers

@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
     getFilePreview,
     GetFilePreviewResponse,
+    GetFilesFileEntry,
     searchFiles,
     GroupedHistogramStatisticsModel,
     TermsStatisticsModel,
@@ -31,13 +32,18 @@ import {
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
-import { isLoadedResult, SearchFileEntry } from "@app/slices/searchFileEntry";
+import { isPreviewFresh, SearchFileEntry } from "@app/slices/searchFileEntry";
 import { FileDetailTab } from "@features/common/utils/enums";
 import {
     CombinedStats,
     PitBoundSearchQuery,
     SearchQuery,
 } from "@features/common/utils/model";
+import {
+    clampSidebarWidth,
+    DEFAULT_LEFT_SIDEBAR_WIDTH,
+    DEFAULT_RIGHT_SIDEBAR_WIDTH,
+} from "@features/search/components/sidebarWidth";
 import { shortcutRegistry } from "@features/search/hooks/shortcutRegistry";
 import {
     DEFAULT_HISTOGRAM_STAT,
@@ -240,11 +246,59 @@ export interface AutoActionsPreferences {
     describeImage: boolean;
 }
 
+/**
+ * A page fetched ahead of the user and held back from the result list.
+ *
+ * Keyed by the cursor it was fetched with, so a page staged for a cursor the
+ * list has since moved past is discarded rather than appended out of order.
+ */
+export interface StagedPage {
+    cursorKey: string;
+    files: GetFilesFileEntry[];
+}
+
+/**
+ * Why the last page request failed.
+ *
+ * `expired` is the point-in-time lapsing, which is recoverable only by opening
+ * a new snapshot and starting from the first page; `failed` is anything else
+ * and the same request may well work on a retry. The two need different
+ * buttons, which is why the kind is kept rather than just a message.
+ */
+export interface PaginationError {
+    kind: "expired" | "failed";
+    detail: string;
+}
+
+/** Rows of the rendered order on screen, as inclusive indices. */
+export interface VisibleRange {
+    startIndex: number;
+    endIndex: number;
+}
+
+export interface PaginationState {
+    // Cursor of the page request currently in flight, or null when idle. Scoped
+    // to pagination on purpose: the global loading counter is bumped by uploads,
+    // tag loads and folder fetches, so gating the result list on it made the
+    // same keypress behave differently depending on an unrelated panel.
+    pendingCursorKey: string | null;
+    // How many moves past the last loaded card are waiting for that page. Every
+    // press counts, so five presses at the boundary advance five cards.
+    queuedAdvance: number;
+    staged: StagedPage | null;
+    // Set when a page request fails. Pages otherwise load on their own as the
+    // user scrolls, so this is what stops the list silently going quiet: it
+    // both halts the auto-loading and puts a button back for the user to act on.
+    error: PaginationError | null;
+}
+
 export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
     leftSidebarPanel: LeftSidebarPanel | null;
     rightSidebarTab: RightSidebarTab | null;
+    leftSidebarWidth: number;
+    rightSidebarWidth: number;
     stats: CombinedStats;
     bindings: Record<string, string[]>;
     files: {
@@ -253,7 +307,12 @@ export interface SearchState {
     temporaryFileId: string | null;
     totalFiles: number;
     lastFileSortId: any[] | null;
+    resultOrder: string[];
+    pagination: PaginationState;
     filesInView: string[];
+    // Rows of the rendered order currently on screen, or null before the list
+    // has reported a range.
+    visibleRange: VisibleRange | null;
     tags: string[];
     customQueries: CustomQuery[];
     highlightedQueryId: string | null;
@@ -307,13 +366,24 @@ export const SEARCH_STATE_DOCS = {
     leftSidebarPanel:
         "LeftSidebarPanel | null — active left sidebar panel (folder/tags/queries/card_customization/chat)",
     rightSidebarTab: "RightSidebarTab | null — active right sidebar tab",
+    leftSidebarWidth:
+        "number — left sidebar width in px, clamped to the viewport on read",
+    rightSidebarWidth:
+        "number — right sidebar width in px, clamped to the viewport on read",
     stats: "CombinedStats — search statistics (termsData, histogramData)",
     files: "Record<fileId, {meta, preview, query, stale?, temporary?}> — file entry cache: search hits (meta set) plus entries kept for open tabs, fetched previews and the temporary highlight (meta null), so the key count is not the number of results shown",
     temporaryFileId:
         "string | null — ID of a transiently opened file not in search results",
     totalFiles: "number — total result count for the current query",
     lastFileSortId: "any[] | null — sort cursor for pagination",
-    filesInView: "string[] — ordered file IDs visible in the result list",
+    resultOrder:
+        "string[] — hit IDs of the current query in backend ranking order, one entry per loaded result; the result list renders this, not the key order of `files`",
+    pagination:
+        "PaginationState — {pendingCursorKey, queuedAdvance, staged, error}: the in-flight page request, moves waiting on it, a page fetched ahead of the user, and why the last page request failed ({kind: 'expired'|'failed', detail}) if it did",
+    filesInView:
+        "string[] — file IDs of the result cards currently on screen. Membership, not order: entries are appended as cards scroll in, so the order follows the scroll direction. The result list in rank order is `resultOrder`",
+    visibleRange:
+        "{startIndex, endIndex} | null — rows of the rendered order on screen; where the user is, not how much has loaded",
     tags: "string[] — available tags",
     customQueries:
         "CustomQuery[] — saved queries ({id, query, fileCount, lastSeenCount, hasNewFiles, name, icon})",
@@ -390,6 +460,17 @@ export const SEARCH_STATE_DOCS = {
         "Record<string, string[]> — custom keyboard shortcut bindings (actionId → keys)",
 } satisfies Record<keyof SearchState, string>;
 
+/**
+ * How many results one page request asks for.
+ *
+ * Not a user setting: the list loads on its own as it is scrolled, so this is
+ * only the size of a fetch and not something anyone sees. It was exposed while
+ * paging was a button, when it also decided how many cards a click mounted;
+ * windowing took that cost away and left nothing to tune. The API's own
+ * default is 10, which put a network boundary every ten cards.
+ */
+export const RESULT_PAGE_SIZE = 25;
+
 export const QUERY_FAILED_FILES = "state:failed";
 export const QUERY_CONTENT_TRUNCATED_FILES = "content_truncated:true";
 export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
@@ -449,11 +530,21 @@ const initialHashFileId = window.location.hash.substring(1) || null;
 const initialState: SearchState = {
     leftSidebarPanel: null,
     rightSidebarTab: null,
+    leftSidebarWidth: DEFAULT_LEFT_SIDEBAR_WIDTH,
+    rightSidebarWidth: DEFAULT_RIGHT_SIDEBAR_WIDTH,
     stats: { termsData: null, histogramData: null },
     files: {},
     lastFileSortId: null,
     totalFiles: 0,
+    resultOrder: [],
+    pagination: {
+        pendingCursorKey: null,
+        queuedAdvance: 0,
+        staged: null,
+        error: null,
+    },
     filesInView: [],
+    visibleRange: null,
     tags: [],
     customQueries: [],
     highlightedQueryId: null,
@@ -509,15 +600,173 @@ const initialState: SearchState = {
     activeTabFileId: initialHashFileId,
 } as SearchState;
 
+/**
+ * Identity of a pagination cursor, for comparing one against another.
+ *
+ * `sortId` is a fresh array on every response, so the cursor cannot be compared
+ * by reference and is not usable as an effect dependency. The serialised form is.
+ */
+export const cursorKey = (cursor: any[] | null): string =>
+    JSON.stringify(cursor ?? []);
+
+export interface NextPageResult {
+    files: GetFilesFileEntry[];
+    cursorKey: string;
+    /** The page was already in hand; nothing was fetched for it. */
+    fromStaged: boolean;
+}
+
+/**
+ * Page requests in flight, keyed by cursor.
+ *
+ * One cursor is one page, so a click that lands while the prefetch for the same
+ * cursor is still running attaches to that request instead of issuing a second
+ * identical one. This is also what stops a double-click fetching a page twice.
+ */
+const inFlightPages = new Map<string, Promise<NextPageResult>>();
+
+const loadPageAfter = (
+    query: PitBoundSearchQuery,
+    cursor: any[],
+    pageSize: number,
+): Promise<NextPageResult> => {
+    const key = cursorKey(cursor);
+    const pending = inFlightPages.get(key);
+    if (pending) return pending;
+
+    const request = searchFiles({ ...query, sortId: cursor, pageSize })
+        .then((response) => ({
+            files: response.files,
+            cursorKey: key,
+            fromStaged: false,
+        }))
+        .finally(() => inFlightPages.delete(key));
+
+    inFlightPages.set(key, request);
+    return request;
+};
+
+/**
+ * Load the next page into the result list.
+ *
+ * Takes a staged page when one is in hand, which commits in the same tick as the
+ * click — no request, no spinner. Rejected while a request for the same cursor is
+ * already in flight, so repeated presses queue moves (`queuedAdvance`) rather than
+ * requests.
+ */
+export const fetchNextPage = createAsyncThunk<
+    NextPageResult | null,
+    void,
+    AsyncThunkConfig
+>(
+    "fetchNextPageThunk",
+    async (_, thunkAPI) => {
+        const { search } = thunkAPI.getState() as RootState;
+        const cursor = search.lastFileSortId;
+        // The cursor only means anything inside the snapshot that produced it, so
+        // there is no page to fetch until a point-in-time has been opened.
+        const query = search.query?.id
+            ? (search.query as PitBoundSearchQuery)
+            : null;
+        if (!query || cursor === null) return null;
+
+        const staged = search.pagination.staged;
+        if (staged && staged.cursorKey === cursorKey(cursor)) {
+            return { ...staged, fromStaged: true };
+        }
+        try {
+            return await loadPageAfter(query, cursor, RESULT_PAGE_SIZE);
+        } catch (error: any) {
+            // Classified rather than reported as one failure, because the two
+            // need different recoveries. Note this deliberately does not do
+            // what updateQuery does with a 409 and silently reopen from page
+            // one: that resets the list under a user who has scrolled into it.
+            if (
+                error instanceof ResponseError &&
+                error.response.status === 409
+            ) {
+                return thunkAPI.rejectWithValue({
+                    kind: "expired",
+                    detail: t("generalSearchView.queryExpiredPaging"),
+                } satisfies PaginationError);
+            }
+            let detail = error?.toString() ?? "";
+            if (error instanceof ResponseError) {
+                const body = await error.response.json().catch(() => null);
+                detail = body?.detail ?? detail;
+            }
+            return thunkAPI.rejectWithValue({
+                kind: "failed",
+                detail,
+            } satisfies PaginationError);
+        }
+    },
+    {
+        condition: (_, thunkAPI) => {
+            const { search } = thunkAPI.getState() as RootState;
+            if (search.pagination.pendingCursorKey === null) return true;
+            // Already fetching this exact page.
+            return (
+                search.pagination.pendingCursorKey !==
+                cursorKey(search.lastFileSortId)
+            );
+        },
+    },
+);
+
+/**
+ * Fetch the next page without showing it.
+ *
+ * Fired once the Load More button has been sitting in view for a moment, or once
+ * the highlight comes within a few cards of the end, so that the page is already
+ * in hand by the time it is asked for.
+ */
+export const prefetchNextPage = createAsyncThunk<
+    NextPageResult | null,
+    void,
+    AsyncThunkConfig
+>(
+    "prefetchNextPageThunk",
+    async (_, thunkAPI) => {
+        const { search } = thunkAPI.getState() as RootState;
+        const cursor = search.lastFileSortId;
+        const query = search.query?.id
+            ? (search.query as PitBoundSearchQuery)
+            : null;
+        if (!query || cursor === null) return null;
+        return loadPageAfter(query, cursor, RESULT_PAGE_SIZE);
+    },
+    {
+        condition: (_, thunkAPI) => {
+            const { search } = thunkAPI.getState() as RootState;
+            const cursor = search.lastFileSortId;
+            if (cursor === null) return false;
+            if (search.totalFiles <= search.resultOrder.length) return false;
+            const key = cursorKey(cursor);
+            // Already staged, or already being fetched for real.
+            if (search.pagination.staged?.cursorKey === key) return false;
+            if (search.pagination.pendingCursorKey === key) return false;
+            return !inFlightPages.has(key);
+        },
+    },
+);
+
 export const updateQuery = createAsyncThunk(
     "updateQueryThunk",
     async (query: Partial<SearchQuery>, thunkAPI) => {
         const dispatch = thunkAPI.dispatch;
         const { search } = thunkAPI.getState() as RootState;
         const lastQuery = search.query;
+        const lastTotalFiles = search.totalFiles;
 
-        const queryId = query.id ?? (await getLongRunningQuery()).queryId;
-        if (thunkAPI.signal.aborted) return;
+        // Keep the keep-alive the point in time was opened with and send it
+        // back on every request against that query. Each request extends the
+        // snapshot by the keep-alive it carries, so leaving it out would let a
+        // long-running query fall back to the much shorter API default and
+        // expire while it is still being paged through.
+        const openedQuery = query.id ? null : await getLongRunningQuery();
+        const queryId = query.id ?? openedQuery?.queryId;
+        if (thunkAPI.signal.aborted || !queryId) return;
         const queryQuery = query.query ?? lastQuery?.query ?? "";
 
         if (!queryQuery.trim()) {
@@ -527,7 +776,11 @@ export const updateQuery = createAsyncThunk(
         const newQuery: PitBoundSearchQuery = {
             id: queryId,
             query: queryQuery,
-            keepAlive: query.keepAlive ?? lastQuery?.keepAlive ?? null,
+            keepAlive:
+                query.keepAlive ??
+                openedQuery?.keepAlive ??
+                lastQuery?.keepAlive ??
+                null,
             sortField:
                 query.sortField !== undefined
                     ? query.sortField?.trim() || null
@@ -540,7 +793,7 @@ export const updateQuery = createAsyncThunk(
                     ? query.sortDirection
                     : (lastQuery?.sortDirection ?? null),
             sortId: query.sortId ?? null,
-            pageSize: query.pageSize ?? null,
+            pageSize: query.pageSize ?? RESULT_PAGE_SIZE,
         };
         const queryIdChanged = lastQuery?.id !== queryId;
         let querySubscriptionActive = queryIdChanged;
@@ -575,9 +828,16 @@ export const updateQuery = createAsyncThunk(
         }
         thunkAPI.signal.addEventListener("abort", handleAbort, { once: true });
         try {
+            // The count is only asked for on the first page of a query. It runs
+            // with track_total_hits, which is the most expensive thing the API
+            // does, and the point in time freezes the answer for the life of the
+            // query — so re-counting on every page paid for a known total.
+            const isFirstPage = newQuery.sortId === null;
             const [searchRes, countRes] = await Promise.all([
                 searchFiles(newQuery),
-                getFilesCount(newQuery),
+                isFirstPage
+                    ? getFilesCount(newQuery)
+                    : Promise.resolve({ totalFiles: lastTotalFiles }),
             ]);
             if (thunkAPI.signal.aborted) return;
 
@@ -671,6 +931,9 @@ export const fetchPreview = createAsyncThunk(
             return {
                 query: searchQuery,
                 preview: await getFilePreview(fileId, searchQuery, fields),
+                // Carried back so the entry records which field set it holds;
+                // isPreviewFresh compares against it.
+                fields: fields,
             };
         } catch (err: any) {
             return thunkAPI.rejectWithValue({
@@ -750,43 +1013,105 @@ export const fetchFailedFiles = createAsyncThunk(
     },
 );
 
-export const setFileInViewState = createAsyncThunk(
-    "setFileInViewStateThunk",
+/**
+ * Make sure a card entering the viewport has a usable preview cached.
+ *
+ * Dispatched on the false→true edge only. It no longer records the in-view
+ * state — `fileInViewChanged` does that synchronously — so this is free to be
+ * skipped, which is the whole point of the condition below.
+ */
+export const ensureViewPreview = createAsyncThunk(
+    "ensureViewPreviewThunk",
     async (
         {
             fileId,
-            inView,
             query,
         }: {
             fileId: string;
-            inView: boolean;
             query?: SearchQuery | null;
         },
         thunkAPI,
     ) => {
-        const dispatch = thunkAPI.dispatch;
-        if (inView) {
-            subscribeChannel(fileId, dispatch);
-            const { search } = thunkAPI.getState() as RootState;
-            const fileEntry = search.files[fileId];
-            const activeQueryStr = search.query?.query ?? null;
-            const cachedQueryStr = fileEntry?.query?.query ?? null;
-            const hasValidCache =
-                fileEntry?.preview != null &&
-                !fileEntry?.stale &&
-                cachedQueryStr === activeQueryStr;
-            if (!hasValidCache) {
-                await dispatch(
-                    fetchPreview({ fileId: fileId, query: query ?? undefined }),
-                );
-            }
-        }
-        return {
-            fileId: fileId,
-            inView: inView,
-        };
+        const { search } = thunkAPI.getState() as RootState;
+        // The active query is passed explicitly so fetchPreview never falls
+        // back to "hidden:*" for a file with a null meta (a temporary card, a
+        // stale entry). Reading it here rather than taking it from the caller
+        // keeps result cards from depending on the query object's identity.
+        await thunkAPI.dispatch(
+            fetchPreview({
+                fileId: fileId,
+                query: query ?? search.query ?? undefined,
+            }),
+        );
+    },
+    {
+        // Every dispatch of an async thunk costs a pending and a fulfilled
+        // action even when it does nothing, and each one re-runs every
+        // subscriber. Skip the round trip when the cache already holds a
+        // preview this card can render.
+        condition: ({ fileId }, { getState }) => {
+            const { search } = getState() as RootState;
+            return !isPreviewFresh(search.files[fileId], {
+                query: search.query,
+                previewFields: search.previewFields,
+            });
+        },
     },
 );
+
+/**
+ * Fold one page of hits into the file cache and the result order.
+ *
+ * Appending to `resultOrder` is what keeps the list in the backend's ranking
+ * order: a file the cache already holds — an open tab, a fetched preview, a card
+ * that went stale — keeps the slot it was first inserted at in `files`, so
+ * deriving the order from that map put returning hits in the wrong place.
+ */
+const appendPage = (state: SearchState, files: GetFilesFileEntry[]) => {
+    const known = new Set(state.resultOrder);
+    files.forEach((file) => {
+        if (!state.files[file.fileId]) {
+            state.files[file.fileId] = {
+                meta: file,
+                preview: null,
+                query: null,
+            };
+        } else {
+            // Same query, new page: preserve the preview; the file is back in
+            // results so clear any stale flag.
+            state.files[file.fileId].meta = file;
+            state.files[file.fileId].stale = false;
+            // A hit is a result, never an out-of-results highlight. Both
+            // carriers of that state have to go, or the id is listed twice.
+            state.files[file.fileId].temporary = false;
+            if (state.temporaryFileId === file.fileId) {
+                state.temporaryFileId = null;
+            }
+        }
+        if (!known.has(file.fileId)) {
+            known.add(file.fileId);
+            state.resultOrder.push(file.fileId);
+        }
+    });
+
+    if (files.length === 0) {
+        // The cursor ran out. Dropping it stops the next request restarting
+        // from page one, and the total is corrected to what actually arrived so
+        // the Load More button does not sit there offering a page that is not
+        // coming.
+        state.lastFileSortId = null;
+        state.totalFiles = state.resultOrder.length;
+        return;
+    }
+    state.lastFileSortId = files.at(-1)?.sortId ?? state.lastFileSortId;
+};
+
+const resetPagination = (state: SearchState) => {
+    state.pagination.pendingCursorKey = null;
+    state.pagination.queuedAdvance = 0;
+    state.pagination.staged = null;
+    state.pagination.error = null;
+};
 
 export const searchSlice = createSlice({
     name: "search",
@@ -953,8 +1278,34 @@ export const searchSlice = createSlice({
         setSuppressDownloadWarning: (state, action: PayloadAction<boolean>) => {
             state.suppressDownloadWarning = action.payload;
         },
+        setLeftSidebarWidth: (state, action: PayloadAction<number>) => {
+            state.leftSidebarWidth = clampSidebarWidth(action.payload);
+        },
+        setRightSidebarWidth: (state, action: PayloadAction<number>) => {
+            state.rightSidebarWidth = clampSidebarWidth(action.payload);
+        },
         setHighlightedFileId: (state, action: PayloadAction<string | null>) => {
+            // Re-highlighting the same card is a no-op for the state but not for
+            // the store: the action still notifies every subscriber and re-arms
+            // the auto-actions timer. Several callers re-assert the current
+            // highlight, so the guard belongs here rather than in each of them.
+            if (state.highlightedFileId === action.payload) return;
             state.highlightedFileId = action.payload;
+        },
+        /**
+         * Record moves that land past the last loaded card.
+         *
+         * The highlight stays where it is and the pending row takes over as the
+         * thing on screen that moved; `fetchNextPage.fulfilled` spends the count
+         * on the page it brings back.
+         */
+        queueResultAdvance: (state, action: PayloadAction<number>) => {
+            state.pagination.queuedAdvance += Math.max(1, action.payload);
+            state.highlightScrollRequest += 1;
+            state.highlightScrollMode = "smart";
+        },
+        clearQueuedAdvance: (state) => {
+            state.pagination.queuedAdvance = 0;
         },
         bumpHighlightScroll: {
             reducer: (state, action: PayloadAction<"smart" | "top">) => {
@@ -964,6 +1315,48 @@ export const searchSlice = createSlice({
             prepare: (mode: "smart" | "top" = "smart") => ({
                 payload: mode,
             }),
+        },
+        /**
+         * Record a card entering or leaving the viewport.
+         *
+         * A plain reducer rather than part of the thunk below, so the write
+         * lands in the same tick as the card's effect. Fetching a preview is
+         * slow and skippable; this bookkeeping is neither, and a card that is
+         * unmounted while still in view has to be able to take itself out of
+         * the list on the way down.
+         *
+         * The removal is unconditional while the add is guarded: an entry
+         * evicted from the cache must still be able to leave, or it sits in
+         * `filesInView` for the rest of the query.
+         */
+        fileInViewChanged: (
+            state,
+            action: PayloadAction<{ fileId: string; inView: boolean }>,
+        ) => {
+            const { fileId, inView } = action.payload;
+            if (!inView) {
+                state.filesInView = state.filesInView.filter(
+                    (id) => id !== fileId,
+                );
+                return;
+            }
+            if (!(fileId in state.files)) return;
+            if (!state.filesInView.includes(fileId)) {
+                state.filesInView = [...state.filesInView, fileId];
+            }
+        },
+        /**
+         * Which rows are currently on screen.
+         *
+         * Dispatched by the list only when the range actually changes — once
+         * per row scrolled past rather than once per frame — so this stays far
+         * cheaper than it looks.
+         */
+        visibleRangeChanged: (
+            state,
+            action: PayloadAction<VisibleRange | null>,
+        ) => {
+            state.visibleRange = action.payload;
         },
         setTemporaryFileId: (state, action: PayloadAction<string | null>) => {
             if (
@@ -1177,6 +1570,8 @@ export const searchSlice = createSlice({
                 if (!action.payload) {
                     if (state.query) state.query.query = "";
                     state.totalFiles = 0;
+                    state.resultOrder = [];
+                    resetPagination(state);
                     Object.keys(state.files).forEach((fileId) => {
                         state.files[fileId].meta = null;
                     });
@@ -1206,10 +1601,10 @@ export const searchSlice = createSlice({
                                 meta: null,
                                 // The highlight does not survive a new query,
                                 // so a flag carried over here would never be
-                                // cleared and would append the id to the
-                                // temporary tail of selectOrderedFileIds with
-                                // no card for it. The keep-alive branch below
-                                // restores the flag where it still applies.
+                                // cleared: the entry would keep claiming to
+                                // exist only for a highlight that is gone. The
+                                // keep-alive branch below restores the flag
+                                // where it still applies.
                                 temporary: false,
                             };
                         }
@@ -1227,6 +1622,9 @@ export const searchSlice = createSlice({
                     }
                     state.files = preserved;
                     state.filesInView = [];
+                    // The list is rebuilt from the top, so whatever was on
+                    // screen is gone along with it.
+                    state.visibleRange = null;
                     // For pure ID changes (keep-alive renewal, React strict-mode
                     // double-mount) preserve the current index and temporary file unchanged.
                     // For a genuine new search query capture the highlighted file ID
@@ -1240,34 +1638,25 @@ export const searchSlice = createSlice({
                 }
 
                 state.query = action.payload.query;
-                action.payload.files.forEach((file) => {
-                    if (!state.files[file.fileId]) {
-                        state.files[file.fileId] = {
-                            meta: file,
-                            preview: null,
-                            query: null,
-                        };
-                    } else {
-                        // same query, new page: preserve preview; file is back in
-                        // results so clear any stale flag
-                        state.files[file.fileId].meta = file;
-                        state.files[file.fileId].stale = false;
-                        // A hit is a result, never an out-of-results highlight.
-                        // The two carriers of that state are independent and
-                        // both have to go: the per-entry flag would list the id
-                        // twice in selectOrderedFileIds, once as a result and
-                        // once in the temporary tail, and `temporaryFileId`
-                        // would render a second card for it in DetailedView.
-                        state.files[file.fileId].temporary = false;
-                        if (state.temporaryFileId === file.fileId) {
-                            state.temporaryFileId = null;
-                        }
-                    }
-                });
+                // `updateQuery` only ever delivers the first page of a query —
+                // later pages go through `fetchNextPage` — so the order starts
+                // fresh here rather than growing.
+                state.resultOrder = [];
+                state.lastFileSortId = null;
+                resetPagination(state);
+                appendPage(state, action.payload.files);
                 state.totalFiles = action.payload.totalFiles;
-                state.lastFileSortId =
-                    action.payload.files?.at(-1)?.sortId ?? null;
                 state.queryError = undefined;
+                // A rebuild after the point in time was recycled drops every
+                // card except open tabs. Leaving the highlight on one of them
+                // left it naming a card that is not rendered, which the next
+                // move silently resolved to the top of the list.
+                if (
+                    state.highlightedFileId &&
+                    !state.files[state.highlightedFileId]
+                ) {
+                    state.highlightedFileId = null;
+                }
             })
             .addCase(updateQuery.rejected, (state, action: any) => {
                 if (action.meta.aborted) return;
@@ -1278,18 +1667,93 @@ export const searchSlice = createSlice({
                     }),
                 );
             })
+            .addCase(fetchNextPage.pending, (state) => {
+                state.pagination.pendingCursorKey = cursorKey(
+                    state.lastFileSortId,
+                );
+                state.pagination.error = null;
+            })
+            .addCase(fetchNextPage.fulfilled, (state, action) => {
+                state.pagination.pendingCursorKey = null;
+                state.pagination.error = null;
+                if (!action.payload) {
+                    state.pagination.queuedAdvance = 0;
+                    return;
+                }
+                // Drop a page the list has moved past — a request still in
+                // flight when a new query lands would otherwise append the old
+                // query's hits to the new query's results.
+                if (
+                    action.payload.cursorKey !== cursorKey(state.lastFileSortId)
+                ) {
+                    state.pagination.queuedAdvance = 0;
+                    return;
+                }
+                if (
+                    state.pagination.staged?.cursorKey ===
+                    action.payload.cursorKey
+                ) {
+                    state.pagination.staged = null;
+                }
+                const firstNewIndex = state.resultOrder.length;
+                appendPage(state, action.payload.files);
+
+                // Spend the queued moves on the page they were waiting for. One
+                // press at the boundary lands on the first new card, three land
+                // on the third — clamped to what actually arrived.
+                const queued = state.pagination.queuedAdvance;
+                state.pagination.queuedAdvance = 0;
+                if (queued <= 0) return;
+                const target = Math.min(
+                    firstNewIndex + queued - 1,
+                    state.resultOrder.length - 1,
+                );
+                if (target < 0) return;
+                state.highlightedFileId = state.resultOrder[target];
+                state.highlightScrollRequest += 1;
+                state.highlightScrollMode = "smart";
+            })
+            .addCase(fetchNextPage.rejected, (state, action) => {
+                // A rejection from the `condition` guard means a request for
+                // this page is already running; it will spend the queue.
+                if (action.meta.condition) return;
+                state.pagination.pendingCursorKey = null;
+                state.pagination.queuedAdvance = 0;
+                // Pages load on their own as the user scrolls, so without this
+                // a failure would read as "that is all there is". It also
+                // stops the sentinel re-firing the same failing request.
+                state.pagination.error =
+                    (action.payload as PaginationError | undefined) ?? null;
+            })
+            .addCase(prefetchNextPage.fulfilled, (state, action) => {
+                if (!action.payload) return;
+                // Only stage a page the list is still waiting for: by the time
+                // this lands the user may have paged past it by other means.
+                if (
+                    action.payload.cursorKey !== cursorKey(state.lastFileSortId)
+                )
+                    return;
+                state.pagination.staged = {
+                    cursorKey: action.payload.cursorKey,
+                    files: action.payload.files,
+                };
+            })
             .addCase(fetchPreview.fulfilled, (state, action) => {
                 if (!action.payload) return;
-                const { query, preview } = action.payload;
+                const { query, preview, fields } = action.payload;
                 const file = state.files[preview.fileId];
                 if (file) {
                     file.preview = preview;
                     file.query = query;
+                    file.previewFields = fields;
+                    file.previewFetchedAt = Date.now();
                 } else {
                     state.files[preview.fileId] = {
                         meta: null,
                         preview: preview,
                         query: query,
+                        previewFields: fields,
+                        previewFetchedAt: Date.now(),
                     };
                 }
             })
@@ -1305,19 +1769,6 @@ export const searchSlice = createSlice({
                 if (fileId && state.files[fileId]) {
                     state.files[fileId].stale = true;
                     state.files[fileId].query = null;
-                }
-            })
-            .addCase(setFileInViewState.fulfilled, (state, action) => {
-                const { fileId, inView } = action.payload;
-                if (!(fileId in state.files)) return;
-                if (inView) {
-                    if (!state.filesInView.includes(fileId)) {
-                        state.filesInView = [...state.filesInView, fileId];
-                    }
-                } else {
-                    state.filesInView = state.filesInView.filter(
-                        (i) => i !== fileId,
-                    );
                 }
             });
     },
@@ -1350,8 +1801,14 @@ export const {
     setVisionSystemPrompt,
     setFilePreview,
     setHighlightedFileId,
+    setLeftSidebarWidth,
+    setRightSidebarWidth,
     bumpHighlightScroll,
+    queueResultAdvance,
+    clearQueuedAdvance,
     setTemporaryFileId,
+    fileInViewChanged,
+    visibleRangeChanged,
     setAutoActionPreference,
     setExpandFilePaths,
     setSuppressDownloadWarning,
@@ -1442,6 +1899,16 @@ export const selectRightSidebarOpen = createSelector(
     (search) => search.rightSidebarTab !== null,
 );
 
+export const selectLeftSidebarWidth = createSelector(
+    selectSearch,
+    (search) => search.leftSidebarWidth,
+);
+
+export const selectRightSidebarWidth = createSelector(
+    selectSearch,
+    (search) => search.rightSidebarWidth,
+);
+
 export const selectRightSidebarTab = createSelector(
     selectSearch,
     (search) => search.rightSidebarTab,
@@ -1478,8 +1945,13 @@ export const selectLastFileSortId = createSelector(
     (search) => search.lastFileSortId,
 );
 
-export const selectFileById = (fileId: string) =>
-    createSelector([selectFiles], (files) => files[fileId]);
+// A plain lookup rather than a memoised-selector factory: callers used to build
+// a fresh createSelector on every render, so its cache was never warm and every
+// card re-created its subscription on each pass.
+export const selectFileById = (
+    state: RootState,
+    fileId: string,
+): SearchFileEntry | undefined => state.search.files[fileId];
 
 export const selectStatsData = createSelector(
     selectSearch,
@@ -1505,23 +1977,38 @@ export const selectTotalFiles = createSelector(
     selectSearch,
     (search) => search.totalFiles,
 );
-// How many hits of the current query have been loaded, counted by `meta` so it
-// stays in step with the result segment of `selectOrderedFileIds` and with the
-// cards DetailedView renders. Cache entries that are not hits (open tabs,
-// fetched previews, the temporary highlight) carry `meta: null` and are
-// excluded; stale cards keep their `meta` and are counted, because they stay on
-// screen as results. That makes this the number of hits the backend has
-// reported for this query so far — not a value `totalFiles` is guaranteed to
-// bound, since `totalFiles` is refetched on every page and a card can outlive
-// the hit it came from.
+export const selectResultOrder = createSelector(
+    selectSearch,
+    (search) => search.resultOrder,
+);
+
+// How many hits of the current query have been loaded. `resultOrder` holds one
+// entry per hit the backend has reported for this query, in its ranking order,
+// so this is a length rather than a scan of the file cache — which also holds
+// open tabs, fetched previews and the temporary highlight. A stale card keeps
+// its slot, because it stays on screen as a result.
 export const selectLoadedFiles = createSelector(
-    selectFiles,
-    (files) => Object.values(files).filter(isLoadedResult).length,
+    selectResultOrder,
+    (resultOrder) => resultOrder.length,
 );
 
 export const selectFilesInView = createSelector(
     selectSearch,
     (search) => search.filesInView,
+);
+
+// The on-screen cards in the order they are rendered. `filesInView` itself is
+// appended to as cards scroll in, so scrolling up builds it backwards; anything
+// reporting the visible files to a user or a model wants this instead. An id
+// with no rank — the temporary card — sorts to the front, where it renders.
+export const selectFilesInViewOrdered = createSelector(
+    [selectFilesInView, selectResultOrder],
+    (filesInView, resultOrder) => {
+        const rank = new Map(resultOrder.map((id, index) => [id, index]));
+        return [...filesInView].sort(
+            (a, b) => (rank.get(a) ?? -1) - (rank.get(b) ?? -1),
+        );
+    },
 );
 
 export const selectDisplayStat = createSelector(
@@ -1574,17 +2061,122 @@ export const selectExpandFilePaths = createSelector(
     (search) => search.expandFilePaths,
 );
 
-// Memoised list of ordered file IDs matching the order used in DetailedView.
-// Extracted as a standalone selector so it is not recomputed on every keypress
-// when only the highlighted index changes.
-export const selectOrderedFileIds = createSelector(selectFiles, (files) => [
-    ...Object.keys(files).filter((id) => isLoadedResult(files[id])),
-    ...Object.keys(files).filter((id) => files[id].temporary),
-]);
+// Ordered file IDs matching the order DetailedView renders: the temporary
+// out-of-results highlight first, then the results in backend ranking order.
+// This is the index space the virtualized list is built on, so it has to agree
+// with the rendered order element for element.
+//
+// Built from `temporaryFileId` rather than by scanning `files` for the per-entry
+// `temporary` flag: the flag is still maintained by setTemporaryFileId, but the
+// pointer is the single source of truth for what is rendered, and depending on
+// the whole `files` map returned a fresh array on every preview that arrived.
+// With no temporary card this returns `resultOrder` itself, so the identity is
+// stable until a page lands.
+export const selectOrderedFileIds = createSelector(
+    [selectResultOrder, selectTemporaryFileId],
+    (resultOrder, temporaryFileId) => {
+        if (temporaryFileId === null || resultOrder.includes(temporaryFileId)) {
+            return resultOrder;
+        }
+        return [temporaryFileId, ...resultOrder];
+    },
+);
+
+/**
+ * Why the last page request failed, or null.
+ *
+ * Non-null stops the list auto-loading and puts a button back: `expired` needs
+ * a new snapshot from the first page, `failed` can simply be retried.
+ */
+export const selectPaginationError = createSelector(
+    selectSearch,
+    (search) => search.pagination.error,
+);
+
+/** A page request is in flight — not "anything in the app is loading". */
+export const selectIsPaginating = createSelector(
+    selectSearch,
+    (search) => search.pagination.pendingCursorKey !== null,
+);
+
+export const selectQueuedAdvance = createSelector(
+    selectSearch,
+    (search) => search.pagination.queuedAdvance,
+);
+
+// Serialised cursor, so effects can depend on "which page is next" without
+// depending on the array identity `sortId` gets on every response.
+export const selectPaginationCursorKey = createSelector(
+    selectLastFileSortId,
+    (sortId) => cursorKey(sortId),
+);
+
+export const selectHasMoreResults = createSelector(
+    selectSearch,
+    (search) =>
+        search.lastFileSortId !== null &&
+        search.totalFiles > search.resultOrder.length,
+);
 
 export const selectHighlightedFileId = createSelector(
     selectSearch,
     (search) => search.highlightedFileId,
+);
+
+export const selectVisibleRange = createSelector(
+    selectSearch,
+    (search) => search.visibleRange,
+);
+
+/**
+ * 1-based rank of the result the user is currently on, or null before the
+ * list has reported where it is.
+ *
+ * Reported instead of "how many cards are loaded", which with auto-loading is
+ * a property of how far the list has fetched rather than of anything the user
+ * did, and which ticks upward on its own while they read.
+ *
+ * The highlighted card wins while it is on screen, so walking the list with
+ * the arrow keys moves this one result at a time and lands on the last one.
+ * Once it is scrolled out of sight it stops being where the user is, and the
+ * lowest visible result takes over — which is also what makes scrolling to the
+ * bottom of the list report the end of it. Reading the topmost visible result
+ * instead could never reach the total at all: the last screenful does not
+ * scroll, so the top of it stays a screen short forever.
+ */
+export const selectCurrentResultRank = createSelector(
+    [
+        selectVisibleRange,
+        selectHighlightedFileId,
+        selectResultOrder,
+        selectOrderedFileIds,
+    ],
+    (
+        visibleRange,
+        highlightedFileId,
+        resultOrder,
+        orderedFileIds,
+    ): number | null => {
+        if (visibleRange === null || resultOrder.length === 0) return null;
+        // Rows lead with the temporary out-of-results card when there is one,
+        // and it has no rank in the result set.
+        const temporaryRows = orderedFileIds.length - resultOrder.length;
+        const rankOf = (index: number) => index + 1 - temporaryRows;
+
+        const highlighted = highlightedFileId
+            ? orderedFileIds.indexOf(highlightedFileId)
+            : -1;
+        const onScreen =
+            highlighted >= visibleRange.startIndex &&
+            highlighted <= visibleRange.endIndex;
+        // Falls through to the viewport when the highlight is the temporary
+        // card, which has no rank to report.
+        if (onScreen && rankOf(highlighted) >= 1) return rankOf(highlighted);
+
+        const fromViewport = rankOf(visibleRange.endIndex);
+        if (fromViewport < 1) return null;
+        return Math.min(fromViewport, resultOrder.length);
+    },
 );
 
 export const selectHighlightScrollRequest = createSelector(
@@ -1682,21 +2274,58 @@ export const selectShowHighlights = createSelector(
     (search) => search.showHighlights,
 );
 
+// Memoised on the twelve flags and the two density fields rather than on the
+// whole slice: with `selectSearch` as its only input, the custom branch built a
+// fresh object on every search action, and every result card subscribes to it.
+/**
+ * The twelve switches as one object.
+ *
+ * Each flag is its own input rather than the slice as a whole: every mounted
+ * card subscribes to this, and taking `search` would rebuild the object on
+ * every action — a highlight move, a preview arriving — and re-render all of
+ * them for nothing.
+ */
 export const selectCardElementVisibility = createSelector(
-    selectSearch,
-    (search): CardVisibilitySettings => ({
-        showThumbnails: search.showThumbnails,
-        showHighlights: search.showHighlights,
-        showFieldSections: search.showFieldSections,
-        showExtensionIcon: search.showExtensionIcon,
-        showFilePath: search.showFilePath,
-        showParentNavigation: search.showParentNavigation,
-        showStatusIndicators: search.showStatusIndicators,
-        showAttachments: search.showAttachments,
-        showTags: search.showTags,
-        showActions: search.showActions,
-        showSortIndicator: search.showSortIndicator,
-        showFieldActions: search.showFieldActions,
+    [
+        (state: RootState) => state.search.showThumbnails,
+        (state: RootState) => state.search.showHighlights,
+        (state: RootState) => state.search.showFieldSections,
+        (state: RootState) => state.search.showExtensionIcon,
+        (state: RootState) => state.search.showFilePath,
+        (state: RootState) => state.search.showParentNavigation,
+        (state: RootState) => state.search.showStatusIndicators,
+        (state: RootState) => state.search.showAttachments,
+        (state: RootState) => state.search.showTags,
+        (state: RootState) => state.search.showActions,
+        (state: RootState) => state.search.showSortIndicator,
+        (state: RootState) => state.search.showFieldActions,
+    ],
+    (
+        showThumbnails,
+        showHighlights,
+        showFieldSections,
+        showExtensionIcon,
+        showFilePath,
+        showParentNavigation,
+        showStatusIndicators,
+        showAttachments,
+        showTags,
+        showActions,
+        showSortIndicator,
+        showFieldActions,
+    ): CardVisibilitySettings => ({
+        showThumbnails,
+        showHighlights,
+        showFieldSections,
+        showExtensionIcon,
+        showFilePath,
+        showParentNavigation,
+        showStatusIndicators,
+        showAttachments,
+        showTags,
+        showActions,
+        showSortIndicator,
+        showFieldActions,
     }),
 );
 

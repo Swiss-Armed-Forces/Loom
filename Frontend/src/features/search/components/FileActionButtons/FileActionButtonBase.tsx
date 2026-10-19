@@ -1,6 +1,8 @@
-import { Button, IconButton, Tooltip } from "@mui/material";
+import { Button, IconButton } from "@mui/material";
 import { type SxProps, type Theme } from "@mui/material/styles";
 import { type ReactNode } from "react";
+
+import { LazyTooltip } from "@features/common/components";
 
 interface FileActionButtonBaseProps {
     icon: ReactNode;
@@ -46,9 +48,9 @@ export const FileActionButtonBase = ({
                 {disableTooltip ? (
                     iconButton
                 ) : (
-                    <Tooltip title={label} placement="top">
+                    <LazyTooltip title={label} placement="top">
                         {iconButton}
-                    </Tooltip>
+                    </LazyTooltip>
                 )}
                 {children}
             </>

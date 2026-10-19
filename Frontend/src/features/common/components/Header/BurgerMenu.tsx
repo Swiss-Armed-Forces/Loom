@@ -17,7 +17,7 @@ import {
     QueueOutlined,
 } from "@mui/icons-material";
 import { IconButton, Menu, MenuItem } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@app/hooks";
@@ -49,7 +49,10 @@ export interface Page {
     icon: React.ReactNode;
 }
 
-export const BurgerMenu = () => {
+// Propless and rendered from a parent that re-renders on unrelated store
+// changes, so memo is what keeps one highlight change from sweeping the
+// whole subtree. Its own selector subscriptions still re-render it.
+export const BurgerMenu = memo(() => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const { t } = useTranslation();
     const dispatch = useAppDispatch();
@@ -217,4 +220,6 @@ export const BurgerMenu = () => {
             </Menu>
         </div>
     );
-};
+});
+
+BurgerMenu.displayName = "BurgerMenu";

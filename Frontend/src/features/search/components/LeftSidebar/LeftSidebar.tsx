@@ -8,7 +8,7 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
@@ -18,14 +18,17 @@ import {
     LeftSidebarPanel,
     selectHighlightedQueryId,
     selectLeftSidebarPanel,
+    selectLeftSidebarWidth,
     selectQuery,
     selectTags,
     setLeftSidebarPanel,
+    setLeftSidebarWidth,
     setTags,
 } from "@app/slices/searchSlice";
 import { getTourLeftPanel } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
 import type { SearchQuery } from "@features/common/utils/model";
+import { clampSidebarWidth } from "@features/search/components/sidebarWidth";
 import { TagsList } from "@features/search/components/TagsList/TagsList";
 import { FolderView } from "@features/search/views/Folder/FolderView";
 
@@ -48,29 +51,11 @@ const GLOBAL_FOLDER_QUERY: SearchQuery = {
 
 const TAGS_REFRESH_MS = 5_000;
 
-const MIN_WIDTH = 14 * 16;
-const DEFAULT_WIDTH = 20 * 16;
-const CENTER_MIN_WIDTH = 20 * 16;
-const WIDTH_STORAGE_KEY = "LEFT_SIDEBAR_WIDTH";
-
 const FILTERABLE_PANELS = new Set<LeftSidebarPanel>([
     LeftSidebarPanel.FOLDER,
     LeftSidebarPanel.TAGS,
     LeftSidebarPanel.QUERIES,
 ]);
-
-const loadWidth = (): number => {
-    const stored = localStorage.getItem(WIDTH_STORAGE_KEY);
-    if (stored) {
-        const n = parseInt(stored, 10);
-        const effectiveMax = Math.max(
-            MIN_WIDTH,
-            window.innerWidth - CENTER_MIN_WIDTH,
-        );
-        if (!isNaN(n) && n >= MIN_WIDTH) return Math.min(n, effectiveMax);
-    }
-    return DEFAULT_WIDTH;
-};
 
 const PANEL_TITLES: Record<LeftSidebarPanel, string> = {
     [LeftSidebarPanel.FOLDER]: "toolbar.views.folder",
@@ -80,7 +65,10 @@ const PANEL_TITLES: Record<LeftSidebarPanel, string> = {
     [LeftSidebarPanel.CHAT]: "AI Assistant",
 };
 
-export const LeftSidebar = () => {
+// Propless and rendered from a parent that re-renders on unrelated store
+// changes, so memo is what keeps one highlight change from sweeping the
+// whole subtree. Its own selector subscriptions still re-render it.
+export const LeftSidebar = memo(() => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const activePanel = useAppSelector(selectLeftSidebarPanel);
@@ -96,7 +84,9 @@ export const LeftSidebar = () => {
     const chatbot = useChatbot(isChatPanel);
 
     const isMobile = useMediaQuery("(max-width:600px)");
-    const [width, setWidth] = useState(loadWidth);
+    const storedWidth = useAppSelector(selectLeftSidebarWidth);
+    const [width, setWidth] = useState(() => clampSidebarWidth(storedWidth));
+    const sidebarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [filterText, setFilterText] = useState("");
     const widthRef = useRef(width);
@@ -146,24 +136,25 @@ export const LeftSidebar = () => {
         e.preventDefault();
         const startX = e.clientX;
         const startWidth = widthRef.current;
-        const effectiveMax = Math.max(
-            MIN_WIDTH,
-            window.innerWidth - CENTER_MIN_WIDTH,
-        );
         setIsDragging(true);
 
+        // The width is written straight to the element while dragging. Going
+        // through React state would re-render the whole sidebar — folder tree,
+        // chat panel, file detail — once per pointer move.
         const onMouseMove = (ev: MouseEvent) => {
-            const newWidth = Math.min(
-                effectiveMax,
-                Math.max(MIN_WIDTH, startWidth + ev.clientX - startX),
+            const newWidth = clampSidebarWidth(
+                startWidth + ev.clientX - startX,
             );
             widthRef.current = newWidth;
-            setWidth(newWidth);
+            if (sidebarRef.current) {
+                sidebarRef.current.style.width = `${newWidth}px`;
+            }
         };
 
         const onMouseUp = () => {
             setIsDragging(false);
-            localStorage.setItem(WIDTH_STORAGE_KEY, String(widthRef.current));
+            setWidth(widthRef.current);
+            dispatch(setLeftSidebarWidth(widthRef.current));
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
             dragHandlersRef.current = null;
@@ -324,8 +315,13 @@ export const LeftSidebar = () => {
                         />
                     </div>
                 )}
+                {/* The folder tree and the lists in here handle their own arrow
+                    keys. Marking the pane keeps the document-level result
+                    shortcuts from moving the result highlight at the same
+                    time; letter shortcuts still reach the results. */}
                 <div
                     className={styles.content}
+                    data-keynav-ignore
                     style={
                         isChatPanel
                             ? { overflow: "hidden", padding: 0 }
@@ -369,6 +365,7 @@ export const LeftSidebar = () => {
 
     return (
         <div
+            ref={sidebarRef}
             className={`${styles.leftSidebar} ${isDragging ? styles.dragging : ""}`}
             style={{ width: sidebarWidth }}
         >
@@ -381,4 +378,6 @@ export const LeftSidebar = () => {
             )}
         </div>
     );
-};
+});
+
+LeftSidebar.displayName = "LeftSidebar";
