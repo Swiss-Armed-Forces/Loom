@@ -514,12 +514,32 @@ in
           "${pkgs.coreutils}/bin/sleep 2"
           "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup"
         ];
+      }
+      # Only where there is a banner to redraw. This file dresses the installer
+      # stick as well as the box, and the stick paints a menu of its own onto
+      # tty1 with no getty and no issue behind it -- `loom.bannerRefresh` is
+      # declared by ready.nix, which only the box imports.
+      // lib.optionalAttrs (config.loom ? bannerRefresh) {
         # Each pass above resizes every VT, and tty1 is the one a getty may
-        # already have painted the banner onto. Redrawing it is box.nix's
-        # loom-banner-repaint, which deliberately does NOT hang off this unit:
-        # udev runs this during coldplug, before any getty exists, so a repaint
-        # triggered from here found nothing on screen and never ran again. It
-        # watches the console for itself instead.
+        # already have painted the banner onto, so the screen is asked for again
+        # here -- as well as by box.nix's loom-banner-repaint, which watches the
+        # console for itself.
+        #
+        # Both, because neither covers the other's case. A repaint triggered
+        # only from here is the arrangement that shipped a cropped banner: udev
+        # runs this during coldplug on most boxes, before any getty exists, so
+        # the redraw found nothing on screen and was never asked for again. A
+        # watcher alone is the arrangement that shipped a *blank* one: its
+        # window runs for a minute from getty.target, and a DRM driver that
+        # takes the console after that -- 140 seconds after it on an emulated
+        # console, and however long firmware takes on a real GPU -- wipes the
+        # painted banner with nothing left watching.
+        #
+        # `-` and loom-banner-refresh's own guard are what make this safe to ask
+        # for unconditionally: it redraws only a tty1 still sitting at the
+        # prompt, and exits non-zero when there is nothing to redraw, which is
+        # not a failure of this unit.
+        ExecStartPost = "-${lib.getExe config.loom.bannerRefresh}";
       };
     };
 

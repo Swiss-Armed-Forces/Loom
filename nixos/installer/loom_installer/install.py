@@ -248,6 +248,13 @@ def make_filesystems(runner: CommandRunner, ui: Ui | None = None) -> None:
     runner.check(
         ["mkfs.ext4", "-q", "-L", "loomroot", f"/dev/mapper/{constants.CRYPT_MAPPING}"]
     )
+    # As `partition` and `create_pool` do, and for the same reason: everything
+    # that reads a device by what is *on* it rather than by its path -- the
+    # by-label symlinks, `lsblk`, a human running it to check -- answers out of
+    # the udev database, which is written by the change event mkfs triggers
+    # rather than by mkfs itself. A loaded box can return an empty filesystem
+    # type from a volume that has just been formatted.
+    runner.check(["udevadm", "settle"])
 
 
 def mount_target(runner: CommandRunner) -> None:

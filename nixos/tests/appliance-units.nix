@@ -134,6 +134,17 @@ let
         lib.elem "multi-user.target" cfg.systemd.services.loom-expose.wantedBy
       ))
 
+      # The login screen's second redraw, for the resize that lands after
+      # loom-banner-repaint has stopped watching. A DRM driver takes the console
+      # when it is ready and not before -- 140 seconds past the watcher's window
+      # on an emulated console -- and the VT it takes keeps nothing. Without
+      # this the box spends the rest of that boot showing an empty screen.
+      (check "${label}: a DRM takeover redraws the banner it wiped" (
+        lib.hasInfix "loom-banner-refresh" (
+          toString (cfg.systemd.services.loom-console-font-reapply.serviceConfig.ExecStartPost or "")
+        )
+      ))
+
       # The binding mode, which is the other half of the fix: bind-interfaces
       # resolves `interface=` once at startup and exits if the name is not there
       # yet, so an interface renamed, re-created or re-bridged after dnsmasq
