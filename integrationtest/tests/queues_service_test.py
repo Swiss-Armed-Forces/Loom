@@ -2,6 +2,14 @@ import pytest
 from common.dependencies import get_queues_service
 from common.settings import settings
 
+# Every depth assertion below reads the broker a moment after `wipe_data` emptied
+# it, and beat fires `compute-complete-estimate` and `beat-healthcheck` every
+# minute -- so a test that happens to run on the minute sees one message and
+# cannot tell it from a queue that never drained. Paused for the whole module
+# rather than asserted around, which is what CLAUDE.md prescribes for a test that
+# inspects queue depths.
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
+
 
 @pytest.fixture(autouse=True)
 def resume_all_queues_after_test():
@@ -12,13 +20,17 @@ def resume_all_queues_after_test():
 
 
 def test_get_message_count_total_is_zero_when_idle():
-    assert get_queues_service().get_message_count() == 0
+    service = get_queues_service()
+    # The per-queue breakdown as the message: a bare `1 == 0` says a queue is not
+    # empty and not which, and the delayed queues are in the total but not in the
+    # map, so their absence here is the answer too.
+    assert service.get_message_count() == 0, service.get_all_queue_message_counts()
 
 
 def test_get_message_count_per_queue_is_zero_when_idle():
     service = get_queues_service()
     for queue_name in service.get_all_queue_message_counts():
-        assert service.get_message_count(queue_name=queue_name) == 0
+        assert service.get_message_count(queue_name=queue_name) == 0, queue_name
 
 
 def test_get_all_queue_message_counts_returns_dict():

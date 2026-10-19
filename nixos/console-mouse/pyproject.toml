@@ -1,0 +1,18 @@
+[project]
+name = "loom-console-mouse"
+version = "0.1.0"
+description = "Point-and-click support for the Loom appliance's console session"
+requires-python = ">=3.11"
+# As every first-party package declares it: without this the generated
+# attribution records the package as UNKNOWN.
+license = "MIT"
+
+[project.scripts]
+loom-console-mouse = "loom_console_mouse.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "loom_console_mouse" }]

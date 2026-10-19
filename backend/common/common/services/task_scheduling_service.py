@@ -26,6 +26,28 @@ class UpdateArchiveRequest(BaseModel):
     note: str | None = None
 
 
+class ArchiveImportRequest(BaseModel):
+    """A blob believed to be a loom archive, plus enough provenance to index it.
+
+    The provenance is not decoration. `index_archive_task` falls back to ordinary file
+    indexing when the blob turns out not to be an importable archive after all, and that
+    fallback needs a name and a source -- without them the only remaining option is to
+    drop the file, which is exactly the behaviour this type exists to end.
+    """
+
+    file_content: FileStorageLazyBytes
+    full_name: str
+    source_id: str
+    uploaded_datetime: datetime | None = None
+    # True when nobody asked for this import: the crawler found the blob in the intake
+    # bucket, which on an appliance means it came off a stick somebody carried in.
+    # `route_archive_blob` reads it to decide whether unpacking is affordable -- the
+    # unpack wants several simultaneous copies of the archive in `tempfile_dir`, and on
+    # a single-disk box with no operator in front of it, declining to plain-file
+    # indexing is the recoverable answer.
+    unattended: bool = False
+
+
 class TaskSchedulingService(TaskService):
     # pylint: disable=too-many-public-methods
     """Schedules tasks to be executed by the worker."""
@@ -110,21 +132,28 @@ class TaskSchedulingService(TaskService):
             root_id=str(root_task_id),
         ).forget()
 
-    def dispatch_index_archive(self, file_content: FileStorageLazyBytes) -> None:
-        """Dispatch a loom archive for import."""
+    def dispatch_index_archive(self, request: ArchiveImportRequest) -> None:
+        """Dispatch a loom archive for import.
+
+        Nothing on this path validates the message: the serializer is pickle
+        (`_initialization.py` sets `task_serializer = "pickle"`) and Celery coerces
+        arguments to models only for a task declared `pydantic=True`, which this one is
+        not. Both this method and `index_archive` are pure forwarders, so whatever is
+        enqueued is what the task is handed.
+        """
         root_task_id = uuid4()
         self._send_task(
             "worker.create_archive.dispatch_tasks.dispatch_index_archive",
-            args=[file_content],
+            args=[request],
             root_id=str(root_task_id),
         ).forget()
 
-    def index_archive(self, file_content: FileStorageLazyBytes) -> None:
+    def index_archive(self, request: ArchiveImportRequest) -> None:
         """Schedule the import of a loom archive."""
         root_task_id = uuid4()
         self._send_task(
             "worker.create_archive.index_archive.index_archive_task",
-            args=[file_content],
+            args=[request],
             root_id=str(root_task_id),
         ).forget()
 

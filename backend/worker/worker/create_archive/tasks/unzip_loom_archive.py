@@ -3,6 +3,7 @@ from uuid import UUID
 from zipfile import ZipFile
 
 from celery import chain, group
+from common.archive.archive_detection import find_manifest_entry, read_manifest
 from common.archive.archive_repository import ARCHIVE_STATE_IMPORTED, Archive
 from common.dependencies import (
     get_archive_repository,
@@ -18,7 +19,6 @@ from worker.create_archive.tasks.archive_cli import (
     FILES_DIR,
     FILES_INDEX_DIR,
     JSON_SUFFIX,
-    MANIFEST_FILENAME,
 )
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 
@@ -51,14 +51,23 @@ def restore_archive_metadata_task(
 ) -> Archive | None:
     if archive_zip is None:
         return None
+    # The same two helpers the router used to decide this *is* an archive, rather than
+    # a third spelling of the lookup: `find_manifest_entry` keeps the two from ever
+    # disagreeing about what a loom archive is, and `read_manifest` keeps the read
+    # bounded. `zf.read(entry)` is `read(-1)`, which loops with a 2 GiB per-call output
+    # bound -- so a member declaring a few bytes in the central directory and inflating
+    # to gigabytes passes the router's bounded probe and lands here, on a path the
+    # crawler now reaches unattended.
     with get_file_storage_service().load_file(archive_zip) as fd:
         with ZipFile(fd) as zf:
-            manifest_entry = next(
-                (n for n in zf.namelist() if n.endswith(f"/{MANIFEST_FILENAME}")), None
-            )
+            manifest_entry = find_manifest_entry(zf.namelist())
             if manifest_entry is None:
                 return None
-            archive = Archive.model_validate_json(zf.read(manifest_entry))
+            manifest = read_manifest(zf, manifest_entry)
+            if not manifest:
+                logger.warning("Archive manifest could not be read: %s", manifest_entry)
+                return None
+            archive = Archive.model_validate_json(manifest)
     archive.state = ARCHIVE_STATE_IMPORTED
     archive.plain_file.storage_data = archive_zip
     archive.encrypted_file.storage_data = encrypted_archive_zip

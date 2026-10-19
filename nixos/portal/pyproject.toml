@@ -1,0 +1,22 @@
+[project]
+name = "loom-portal"
+version = "0.1.0"
+description = "The page the appliance's captive portal answers with, and the certificates it hands out"
+requires-python = ">=3.11"
+# As every first-party package declares it: without this the generated
+# attribution records the package as UNKNOWN.
+license = "MIT"
+# Deliberately none. This is the one service on the box a visitor can reach, so
+# it shells out to nothing and imports nothing that is not in the standard
+# library -- see the module header of loom_portal/portal.py.
+dependencies = []
+
+[project.scripts]
+loom-portal = "loom_portal.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "loom_portal" }]

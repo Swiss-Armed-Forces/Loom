@@ -1,7 +1,7 @@
 """Service to schedule new files for processing."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from common.file.file_repository import (
@@ -96,7 +96,10 @@ class FileSchedulingService:
             parent_id=parent_id,
             sha256=data_hash.hexdigest(),
             size=data_hash.bytes_count,
-            uploaded_datetime=uploaded_datetime or datetime.now(),
+            # Aware, like every other writer of this field: it is an Elasticsearch
+            # Date that gets ordered on, and a naive local timestamp from a box in
+            # a non-UTC zone sorts wrongly against one that carries its offset.
+            uploaded_datetime=uploaded_datetime or datetime.now(timezone.utc),
             recursion_depth=recursion_depth,
         )
 
@@ -139,6 +142,13 @@ class FileSchedulingService:
             parent_id=old_file.parent_id,
             sha256=old_file.sha256,
             size=old_file.size,
+            # Carried forward rather than defaulted: a reindex is not a re-upload.
+            # `File.uploaded_datetime` defaults to now, and this document is saved over
+            # the original id -- so without this the file's "uploaded" time becomes the
+            # moment of reindexing. `reindex_lost_files.py` drives that unattended and
+            # sorts on the very field it would rewrite, so a reindexed file jumps to
+            # the front of every date-ordered view and date-histogram bucket.
+            uploaded_datetime=old_file.uploaded_datetime,
             state="reindexing",
             reindex_count=old_file.reindex_count + 1,
             tags=old_file.tags,

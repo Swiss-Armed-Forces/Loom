@@ -1,0 +1,11 @@
+# All three ollama images (ollama-runtime-nvidia, ollama-runtime-rocm, ollama-models)
+# use this directory as their build context, so anything not excluded here
+# invalidates all three whenever it changes -- including a test-only edit.
+tests/
+pyproject.toml
+poetry.lock
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.pytest_tmp/
+__pycache__/

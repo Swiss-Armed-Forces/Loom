@@ -11,6 +11,11 @@
 # The AMD counterpart (values-amd-gpu.yaml) does have to override it.
 #
 ollama:
+  # Tells the container to read its GPU memory from NVML (`libnvidia-ml.so.1`,
+  # through ctypes) and to refuse to start if /dev/nvidiactl never arrived. Not
+  # nvidia-smi: the container toolkit injects a NixOS host's driver executables
+  # without the ELF interpreter they need, so they cannot exec in a pod at all.
+  gpuVendor: nvidia
   resources:
     requests:
       nvidia.com/gpu: 1

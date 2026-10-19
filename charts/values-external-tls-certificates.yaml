@@ -6,6 +6,14 @@
 clusterIssuer:
   enabled: false
 
+# This is the one shipped configuration that turns `certificate.enabled` on, and
+# naming an issuer here is also what tells the template not to ask for a signing
+# certificate: `templates/common/certificate.yaml` emits `isCA` and `cert sign`
+# only for the chart's own `-selfsigned-issuer`, where the serving certificate has
+# to be its own trust anchor. Asking somebody else's PKI to mint a CA for `*.loom`
+# is refused by an ACME issuer, fails against a Vault role that does not permit CA
+# issuance, and -- where it is permitted -- hands this deployment a certificate
+# that can sign any name under the organisation's own anchor.
 certificate:
   enabled: true
   issuerRef:

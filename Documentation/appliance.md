@@ -1,0 +1,2158 @@
+# Appliance Deployment
+
+[[_TOC_]]
+
+An **appliance** is a standalone Loom box provisioned from a single USB stick. It is built for sites with no
+internet: it serves its own network, resolves every `*.loom` name to itself, and encrypts its disk with a key
+that lives on the stick rather than on the box.
+
+This is a third deployment schema alongside [Single Node](installation.md#single-node-deployment) and
+[Multi Node](installation.md#multi-node-deployment). Use it when the box has to be handed to someone else,
+or run somewhere you cannot reach.
+
+## Threat model
+
+Read this before building anything; the design only makes sense if these hold.
+
+- **The USB stick is the key.** The internal disk is LUKS2, and the key is 4096 random bytes on the stick. Pull
+  the stick and the box will not boot. Every stick gets its own key.
+- **The stick has to stay plugged in.** A running box is watched: remove the key and it powers itself off
+  ten seconds later, and a box that booted from a stick it can no longer read powers off after three
+  minutes. See [The USB key guard](#the-usb-key-guard).
+- **Box and stick together are not protected.** If both are seized at once, the encryption buys you nothing.
+  The design assumes the stick is removed, or travels separately, whenever the box is unattended.
+  **`--lock-key` changes this** — it puts a passphrase over the stick's key, so holding the stick stops being
+  enough. It costs unattended boot. See [Locking the stick's key](#locking-the-sticks-key).
+- **Lose the stick and the data is gone**, unless somebody wrote down the recovery passphrase that the
+  installer prints and that the console shows on its login screen at every boot. Use `--key-backup` if you
+  want a second copy.
+- **There is no remote access.** No sshd, no accounts but the local operator. The console is the only way in —
+  and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
+  root-capable session with no password. Neither box is driven over a serial cable, and neither image
+  configures one, so the monitor and keyboard are the whole attack surface.
+  **The one exception is an image built with `--debug`**, which runs an SSH server keyed to a keypair the
+  build generates — see [Debug images](#debug-images). Such an image announces itself in red on its own login
+  screen and is not something to hand to anybody.
+- **The console runs an AI agent that can act on the box, and it does not ask first.** The bottom pane is
+  `opencode` wired to the cluster's own Ollama — it reads and writes files and runs commands as `loom`, which
+  is in `wheel` and `docker`. Its permission ruleset is `allow`, so it edits and executes without stopping
+  for confirmation. It talks to nothing outside the box, so this adds no network exposure; what it adds is a
+  way for anyone already at the keyboard to act through natural language instead of a shell. Given the bullet
+  above, that is not a new boundary being crossed — the console it sits in is already a passwordless root
+  session, and a confirmation prompt answered by the same unauthenticated person who typed the request is
+  not a control. But it is one more reason the box must not be left unattended
+  with the stick in it. The agent also ships knowing how to operate this box — see
+  [Skills](#skills) — which makes it more useful to the operator and equally more useful to anyone
+  else who reaches the keyboard. **Only on a box with a GPU** (`spark`, `evo-x2`): the pane needs
+  Ollama, and Ollama needs a GPU, so `nuc12` ships neither it nor `opencode` — see
+  [AI services follow the GPU](#ai-services-follow-the-gpu).
+- **Any USB medium plugged in is mounted and indexed.** Every image does this — see
+  [Ingesting data from USB](#ingesting-data-from-usb). A USB port is therefore an unauthenticated
+  data-injection path: anyone who can reach the box can put arbitrary content into the index, and kernel
+  and FUSE filesystem drivers parse structures that whoever plugged it in controls. Media is mounted
+  read-only and never executed, and the LUKS key stick is positively excluded — but the parsing itself is
+  the exposure. Given that the console is already a passwordless root session, this crosses no boundary
+  that physical access did not already cross; it does make an unattended box a worse proposition than
+  before.
+- **Booting the stick installs the box.** The installer no longer waits to be told to; it counts down for
+  60 seconds and then provisions the internal disks by itself, because provisioning is the only reason
+  the stick exists. Pressing any key during that countdown puts you in the menu instead. Two things keep
+  this from eating a working box: it refuses when the disks already hold a Loom pool that _this_ stick's
+  key unlocks, and it refuses a second attempt in the same boot. Neither covers a stick pointed at
+  somebody else's hardware — treat a Loom stick as a device that erases whatever it is booted on.
+- **The appliance serves everything in cleartext as well as over TLS.** Every image passes `up.sh`'s
+  `--enable-http`, so `http://frontend.loom` answers directly and so do `grafana.loom`,
+  `elasticvue.loom`, `s3.loom`, `prometheus.loom` and the Traefik dashboard. Anyone who can see the
+  appliance segment can read what crosses it without having to intercept anything. This buys the captive
+  portal — see [Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is) —
+  and it is a smaller change than it sounds, because the certificate on the https side is self-signed and
+  no visitor's browser can verify it anyway. It is still a real loss, and it matters most with `--wifi`,
+  where "can see the segment" means everyone in radio range holding the passphrase.
+  **`--require-client-cert` changes this** — it drops the plaintext entrypoint and admits only clients
+  holding an issued certificate, which also means no visitor reaches Loom without being handed one. See
+  [Requiring a client certificate](#requiring-a-client-certificate).
+- **Anyone who can reach the appliance segment can use Loom.** There is no login: reaching the frontend is
+  the whole of the authorisation, by design — the deployment is meant to be task-specific and short-lived,
+  and every user of it is trusted. On a cabled box that means whoever is on the wire; with `--wifi` it
+  means whoever holds the passphrase. `--require-client-cert` is the one build where this is not true.
+- **The captive portal page is served by the box, not by the cluster**, so it answers on `http://portal.loom`
+  from the moment the machine is up — before Loom exists and whatever else is or is not running. It hands out
+  the certificate the box serves `*.loom` with, which is public: it is what Traefik presents to anyone who
+  opens a TLS connection, and the page is only saving a visitor the trouble of extracting it. See
+  [What the portal page offers](#what-the-portal-page-offers).
+  **`--require-client-cert` adds a second thing to that page**, and it is not public: anyone who can read the
+  password off the box's login screen can mint themselves a client certificate, and so can anyone they read
+  it out to. That is the trade — the alternative is an operator handing files to every visitor by hand — but
+  it makes the console screen as sensitive as the keyboard in front of it, and it means a box left unattended
+  with its screen visible is a box anybody can get into. The private key behind it never leaves the cluster:
+  the process a visitor talks to is unprivileged, has no kubeconfig and asks a root unit through a spool
+  directory. That image also copies the cluster's serving certificate **and its private key** onto the box,
+  so it can offer the download over TLS rather than in the clear; it is on the same encrypted disk the
+  cluster already keeps it on. See
+  [Visitors get their own certificate from the portal](#visitors-get-their-own-certificate-from-the-portal).
+- **Bluetooth is disabled** in every image, on the installer stick as well as on the box it installs.
+  **WiFi is disabled the same way unless the image was built with `--wifi`**, which turns the box into an
+  access point — read [The WiFi access point](#the-wifi-access-point) before using it, because it changes
+  most of the bullets above. The mechanism is three things in `nixos/radios.nix`: the driver cannot load,
+  because `cfg80211` and `bluetooth` are refused by a modprobe `install` directive and every WiFi and
+  Bluetooth driver depends on one of them; every rfkill switch registers soft-blocked, from kernel
+  initialisation rather than from the end of boot, so there is no window and a radio plugged in later is
+  covered too; and `rfkill block` runs as well, for a switch that belongs to neither stack. This is still a
+  software guarantee — `insmod` names a module by path and never consults modprobe, so a root shell on the
+  box can undo it — so disable the radios in the box's own firmware as well if the site requires it.
+
+## Supported platforms
+
+Three boxes are supported. Pick one with `--platform`; it decides the architecture and everything else that
+differs between them.
+
+| | `spark` (default) | `evo-x2` | `nuc12` |
+| --- | --- | --- | --- |
+| Box | NVIDIA DGX Spark | GMKtec EVO-X2 (AMD Ryzen AI Max+ 395) | Intel NUC 12 Pro (Wall Street Canyon) |
+| Architecture | `aarch64-linux` | `x86_64-linux` | `x86_64-linux` |
+| Build host | aarch64 — a Spark can build sticks for its siblings | any ordinary x86_64 machine | any ordinary x86_64 machine |
+| Console | monitor and USB keyboard | monitor and USB keyboard | monitor and USB keyboard |
+| Network | the 10GbE RJ45 (Realtek RTL8127, `r8169`); the ConnectX-7's four `mlx5` ports are left unmatched — see below | 2.5GbE, two ports | 2.5GbE, one port (`igc`) |
+| WiFi (`--wifi`) | untested | untested | untested — AX211, AP mode unverified |
+| GPU | **GB10 Blackwell via CUDA** — not yet confirmed on hardware, see below | **Radeon 8060S via ROCm** | not supported (see below) |
+| AI services | yes | yes | **no** — no GPU, and not the memory either |
+| Autoscaling | yes | yes | **no** — see below |
+| Before installing | update firmware from DGX OS, Secure Boot off — see [What you need](#what-you-need) | UMA split, radios off — see [What you need](#what-you-need) | — |
+
+`nuc12` covers both Wall Street Canyon chassis, the slim NUC12WSK and the tall NUC12WSH — same board, same
+NIC. A WSH fitted with the second-LAN expansion has two `igc` ports, and then the match cannot single one
+out: whichever udev processes first becomes `loom0`, exactly as on the EVO-X2's pair. If the box comes up
+unreachable, try the other port.
+
+### AI services follow the GPU
+
+Only a platform with a working GPU ships Ollama. This is a rule, not a coincidence per box:
+the models in the image are sized for offload, and the embedding step runs over _every_ indexed file. On a
+CPU that does not slow the pipeline down, it stops it — an indexing run that should take an afternoon takes
+days and the queue never drains. A box that shipped it anyway would look like it was working.
+
+So `gpuVendor` in `nixos/platforms/<id>.nix` decides: the Spark and the EVO-X2 declare one, and only the
+NUC 12 does not. That one passes `--disable-ai` to `up.sh`, which stops the service being deployed **and**
+stops the indexing pipeline calling it. Gone: summaries, translation, image descriptions, auto-tagging,
+embeddings, and with them semantic search and RAG. Kept: full-text search, OCR, metadata extraction and
+archive import. The console session also drops its assistant pane, because that pane is an `opencode`
+pointed at the cluster's own Ollama and would have nothing to talk to.
+
+It is stated on the login banner, so a box without AI is never a silent surprise. A platform can override the
+rule — a CPU-only box somebody has measured and is happy with sets `runsAiServices = true` — but nobody has.
+
+### Two of the three boxes autoscale
+
+The Spark and the EVO-X2 pass `--scaling` to `up.sh`, which installs KEDA and applies
+[`charts/values-scaling.yaml`](../charts/values-scaling.yaml): the worker and the reaper follow the depth of
+their RabbitMQ queues (up to ten replicas each), Tika and Gotenberg follow CPU. Without it every service sits
+at the one replica the chart declares, and an indexing run on a twenty-core box uses a fraction of it.
+
+Nothing is fetched for this. KEDA's chart is vendored in `keda/` and its two images are pulled during
+first-time setup like every other image — which is _why_ the flag is set in both boot modes rather than only
+in the one that runs Loom. A stick whose setup ran without `--scaling` has no KEDA images on it, and run mode
+is air-gapped by then.
+
+One node is still one node. The quota in that values file is written for a small cluster and never binds
+here; what binds is the scheduler. At full stretch the worker and reaper replicas ask for about 10 more cores
+and 27 GiB more memory than the single-replica stack does, which both boxes have — but a pod that does not
+fit stays `Pending` until the load drops, and the readiness bar on the console counts it while it waits. A
+bar that dips during a heavy indexing run and recovers afterwards is that, not a fault.
+
+Two things are deliberately not scaled:
+
+- **Ollama.** `values-scaling.yaml` gives it an HPA, written for a cluster with more than one GPU node. On
+  the EVO-X2 the pod requests `amd.com/gpu: 1` and the box advertises exactly one, so a second replica could
+  never be scheduled — it would sit `Pending` for as long as the HPA wanted it, and the readiness bar on the
+  console counts it as a workload that has not come up. The appliance therefore writes
+  `ollama.hpa.enabled: false` into `charts/values-overwrites.yaml` when it seeds the checkout. That file is
+  Skaffold's last word on values, so it wins over the flag; a header in it says who wrote it, and an
+  operator's later edits stay.
+- **The NUC 12**, which cannot have the flag at all — below.
+
+### The NUC 12 runs a reduced Loom
+
+These kits ship with one SO-DIMM, and the iGPU takes its share before Linux sees the rest — around 15 GiB
+usable, against a documented minimum of 25 GiB. The platform therefore declares two facts about itself, in
+`nixos/platforms/nuc12.nix`, and the image is built around them:
+
+- **`runsAiServices = false`** → the appliance passes `--disable-ai`, as described above. Written out rather
+  than left to the GPU rule, because memory is an independent reason for it: fit the second SO-DIMM and an
+  Iris Xe still cannot run the models.
+- **`meetsResourceMinimum = false`** → the appliance passes `--no-resources`. This is not merely about
+  getting past `check_host_resources`: even without the AI services the chart asks for about 19.4 GiB of
+  memory **requests**, so a box with ~12 GiB allocatable would clear the check and then leave most of its
+  pods `Pending` forever. `--no-resources` strips requests and limits, and skips the host check on the way
+  past. It also rules out `--scaling`: `up.sh` rejects the two together, because the scaling values file
+  turns on a resource quota that requires requests on every pod and this flag is what removes them. So
+  `runsAutoscaling` follows `meetsResourceMinimum`, and this box stays at one replica per service.
+
+Both are stated on the login banner, so a box running below spec is never a silent surprise.
+
+**What to expect.** Usable rather than comfortable. With no limits, nothing stops one container starving the
+others, and a heavy indexing run on this much memory ends in OOM kills rather than orderly eviction. Fitting
+the second SO-DIMM — the board takes 64 GB — clears the resource half and `meetsResourceMinimum` can go. The
+AI half stays: there is no GPU here for it either way.
+
+Everything else — the LUKS-key-on-stick scheme, the two boot modes, the installer and the wipe — is identical.
+
+A box that is **not** one of these will still come up: see
+[The appliance network interface](#the-appliance-network-interface) for what happens when no platform
+matches its NIC.
+
+## What you need
+
+- One of the boxes above.
+- A **build host of the same architecture**. The image carries a whole NixOS closure for the appliance, and
+  cross-building needs an emulator the host probably does not have, so the build refuses unless you pass
+  `--allow-cross`. See [Cross-building](#cross-building).
+- A **USB stick of 16 GB or more**. The stick stays with the box permanently.
+- Internal disks totalling **at least 250 GB** — the container images alone are around 60 GB. Every
+  eligible internal NVMe is pooled into one volume, so a box with two M.2 slots may reach that with two
+  smaller drives. See [How the disks are used](#how-the-disks-are-used).
+- Secure Boot **disabled** in the box's firmware, otherwise it will not boot the stick.
+- **Free disk on the build host.** One image is a whole appliance closure plus a ~1.5 GB squashfs, so
+  budget around 20 GB for a build and more if you build several tags. Nix frees none of it by
+  itself — `nixos/README.md` has the settings that make it, which matter more if you also run the VM
+  tests.
+
+On the EVO-X2 specifically, check two more firmware settings before installing:
+
+- **The UMA / VRAM split — set it to the _lowest_ value the firmware offers.** This is counterintuitive
+  enough to be worth the paragraph. The Ryzen AI Max+ 395 carves a fixed slice of its LPDDR5X off for the
+  iGPU in firmware, and Linux never sees that slice: it is subtracted from the host whether the GPU uses it
+  or not. It is also _not_ where the iGPU's working memory comes from. That comes from GTT — ordinary
+  system memory the GPU pins on demand — and the image sets its ceiling at 64 GiB
+  (`nixos/platforms/evo-x2.nix`). So a large carve-out starves both ends at once: it takes memory away from
+  minikube _and_ caps nothing useful for Ollama. Pick the minimum on offer; on EVO-X2 BIOS 1.12 that is
+  2 GB, and the ~1.5 GB of GTT headroom it costs is not worth hunting for.
+
+  This follows published measurement on this board rather than on our own unit. Confirm it after
+  installing with `loom-platform-info`, which prints the firmware carve-out and the GTT ceiling side by
+  side.
+
+  Ollama's own container makes the same distinction, which is the other half of this argument. Its
+  entrypoint (`ollama/ollama_wrapper.py`) reads `mem_info_vram_total` and `mem_info_gtt_total` from
+  amdgpu's sysfs and sizes `OLLAMA_NUM_PARALLEL` against the GTT pool, not the carve-out — while
+  leaving the host the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` guarantees the rest of the stack, since
+  GTT is host memory the GPU pins rather than memory of its own. So the carve-out is not merely
+  useless to Ollama; it is subtracted from the pool Ollama actually plans against.
+- **Disable the radios** in the AMI BIOS, for the same reason the threat model gives above.
+
+On the DGX Spark specifically, there is one step that has to happen **before** the box is disconnected
+from the internet, and it cannot be undone later:
+
+- **Update the firmware from DGX OS, while the box still has a network.** A factory-fresh Spark ships with
+  firmware only DGX OS can boot from — NixOS will not come up on it at all, and the appliance stick will
+  look dead rather than unsupported. NVIDIA publishes Spark firmware to the Linux Vendor Firmware Service,
+  so from the DGX OS the box arrived with:
+
+  ```bash
+  fwupdmgr refresh
+  fwupdmgr get-updates
+  fwupdmgr update
+  ```
+
+  This is the one prerequisite that needs the box online. An air-gapped Spark that was never updated has to
+  be put back on a network to get past it.
+- **Secure Boot off**, as for every platform, but worth checking twice here: it is on by default on this
+  box.
+
+`loom-platform-info` reports both — the firmware version with any pending update, and the Secure Boot and
+Setup Mode flags read straight out of the EFI variables. It is plain bash with no Nix dependency precisely
+so it can be run on the Spark **while it is still running DGX OS**, before a stick is ever built:
+
+```bash
+./nixos/scripts/platform_info.sh
+```
+
+## Building a stick
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.4.0 --flash /dev/sdX --key-backup ~/loom-key-boxA.bin
+```
+
+Without `--flash` it only produces the image, under `.appliance-build/`. The options:
+
+| Option | Meaning |
+| --- | --- |
+| `--platform PLATFORM` | Which box: `spark`, `evo-x2` or `nuc12`. Defaults to `spark`. |
+| `--tag TAG` | Loom release to embed. Must exist in this checkout — the image is built from a clone of it, not from the remote. Defaults to the newest release, with a confirmation prompt; see [Which tag gets picked](#which-tag-gets-picked). |
+| `--include-rc` | Let that default consider release candidates too, so an `X.Y.Z-rcN` can win it. Without this the default skips them and fails outright if there is no release to fall back to. `--tag` takes any tag either way. |
+| `--flash DEVICE` | Write the image to `DEVICE` and provision its key partition. Destroys everything on it. |
+| `--key-backup FILE` | Also write the LUKS key to `FILE`, mode 0400. Store it away from the box. |
+| `--lock-key` | Put the key inside a passphrase-locked container on the stick instead of writing it raw, and generate the word passphrase. The stick stops being a bearer token; the box stops booting unattended. Read [Locking the stick's key](#locking-the-sticks-key) first. |
+| `--lock-key-words N` | How many words in that passphrase. Defaults to 7 (~90 bits); minimum 6. |
+| `--lock-key-out FILE` | Also write the key passphrase to `FILE`, mode 0400. Must not be the same file as `--key-backup`. |
+| `--subnet A.B.C` | Pin the appliance subnet. Defaults to a random `10.x.y`. |
+| `--no-gpu` | Build CPU-only for a platform that offloads to a GPU — `spark` or `evo-x2`. There is no `--gpu`: the GPU is a property of the box. On the Spark this drops the offload but keeps the NVIDIA driver, which also runs that box's console. See [GPU support](#gpu-support) for when you need this. |
+| `--values FILE` | Deploy the box with these Helm values on top of the chart's. Repeatable, merged in order, last wins. The lowest override layer: every values file an `up.sh` flag turns on still wins over it. See [Custom Helm values](#custom-helm-values). |
+| `--set PATH=VALUE` | The same, one value at a time: `--set pipeline.tika_ocr_languages='["deu","fra"]'`. Applied after `--values`. The value is JSON where it parses as JSON, a string where it does not. |
+| `--values-allow-new-keys` | Accept a path the tag's `charts/values.yaml` does not carry. For the chart's free-form maps (labels, annotations, `nodeSelector`); otherwise an unknown path is how a typo gets caught. |
+| `--skip-values-check` | Skip the `helm template` dry-run over the merged values. |
+| `--keymap NAME` | Console keymap for the box, the installer and stage 1, as `loadkeys` names it (`de_CH-latin1`, `fr`, `uk`). Defaults to the kernel's US QWERTY. Set this whenever the box has a non-US keyboard — see [Keyboard layout](#keyboard-layout). |
+| `--interface NAME` | Pin the appliance NIC by the name the box reports (`enp2s0`), instead of letting the platform match it. Renamed to `loom0` either way. Rarely needed — an unmatched box claims a wired port on its own; see [The appliance network interface](#the-appliance-network-interface). |
+| `--wifi` | Also run an access point, bridged onto the wired port. Radios are disabled without it. Read [The WiFi access point](#the-wifi-access-point) first. |
+| `--wifi-ssid SSID` | Network name. Defaults to a generated `loom-xxxx`. |
+| `--wifi-psk PSK` | WPA passphrase. Defaults to a generated one. Letters, digits, `-` and `_` only. |
+| `--wifi-country CC` | ISO country code. Moves the AP to 5GHz; without it the AP stays on 2.4GHz. |
+| `--wifi-interface NAME` | Pin the radio by its **kernel** name (`wlan0`), not the predictable one — unlike `--interface`, this is still a `.link` match and carries the limitation described under [Pinning a port](#pinning-a-port). Rarely needed: the default claims any radio. Renamed to `loomwl0` either way. |
+| `--debug` | Run an SSH server on the box, keyed to a keypair generated for this image. Takes back the "no remote access" guarantee. Read [Debug images](#debug-images) before using it. |
+| `--vm-serial` | Add a getty on ttyS0 to the installer and to the box it installs, so a VM can be driven from a terminal that copies and pastes. For `appliance-vm installer --serial`; refused alongside `--flash`, because the result is one unit different from a real stick. |
+| `--system SYSTEM` | Override the nix system. Normally the platform decides; a mismatch is refused. |
+| `--allow-cross` | Build for an architecture other than the host's. |
+| `--nixpkgs PATH` | nixpkgs source. Required — `build-appliance-image` passes devenv's pinned nixpkgs for you, so you only need this when driving the script directly. |
+| `--nixos-hardware PATH` | [nixos-hardware](https://github.com/NixOS/nixos-hardware) source, which the x86 platforms take their hardware profile from. Required, and passed for you the same way. |
+| `--output DIR` | Where to put the image. Defaults to `.appliance-build/`. |
+| `--skip-STEP` | Skip a build step, by name — `--help` lists them in the order they run. A debugging escape hatch: later steps assume the earlier ones ran, so a stick built with one of these is not a stick anybody should ship. `--skip-validate_environment` is the one with a legitimate use, when the preflight's 20 GB store estimate is wrong for your host, and `--skip-fetch_tags` is the other, on a host with no network. |
+| `--yes` | Skip confirmation prompts. |
+| `--verbose` | Trace every command. |
+
+The tag matters: the appliance runs Loom in offline mode, which refuses to start unless the checkout sits on an
+exact tag. The build embeds a clean clone at that tag, with git-lfs payloads materialised, and verifies all of
+that before producing an image.
+
+That clone carries **exactly one ref**, the shipped tag. Branches, other tags, the remote and the git-lfs
+objects no longer reachable from it are all stripped, so `git log --all` on the box shows the release and
+nothing about the machine that built it. It is also what makes two builds of one tag produce the same image:
+with the build host's branch tips left in, the embedded pack differed per machine and per day, and every build
+added another ~1.5 GB image to the builder's Nix store for a release that had not changed.
+
+Each stick gets a **random `10.<a>.<b>.0/24` subnet**. That keeps two boxes on one wire from colliding, and
+keeps the box from clashing with a visitor's own network. The chosen subnet is printed at the end of the build
+and shown on the console's login screen.
+
+### Which tag gets picked
+
+Without `--tag`, the build takes the newest **release** in your checkout and asks you to confirm it. Two things
+make that answer trustworthy:
+
+- **It fetches first.** The local tag list is otherwise only as fresh as your last `git fetch`, and a stale
+  pick costs an hour of build and yields a stick indistinguishable from the right one until somebody boots it.
+  The fetch is best-effort: no `origin`, or no route to it, warns and carries on with the tags you have, since
+  building on a disconnected host is supported. `--skip-fetch_tags` turns it off.
+- **Release candidates are skipped.** This repository has two tag shapes, `X.Y.Z` and `X.Y.Z-rcN`, and between
+  releases an rc is the newest thing tagged — so "newest tag" would mean "an rc" most of the time. The default
+  matches the release shape and takes the newest of those, printing the rc it stepped over. Nothing falls back:
+  if there is no release at all, the build stops and names the rc it declined rather than shipping it. That
+  matters because the confirmation prompt is not a guard everywhere — `--yes` skips it, and
+  `appliance-vm installer` and CI always pass `--yes`.
+
+`--include-rc` opts back into "newest tag of any shape", which is what this used to do unconditionally. That
+is the path where `versionsort.suffix=-rc` earns its keep: git's version sort would otherwise put `1.3.0-rc10`
+above `1.3.0`, because a longer string sorts above the prefix it extends, so every release would be shadowed
+by its own last candidate. `appliance-vm installer` takes the same flag and forwards it.
+
+`--tag` bypasses all of it: it names the release outright — an rc included, with no flag needed — and the tag
+has to be in this checkout already, because the image is built from a clone of it rather than from the remote.
+If it is not, fetch and try again.
+
+The tag is expected to be one this checkout's `nixos/` was written against — in practice the release this
+branch becomes. Loom guarantees no compatibility in either direction and nothing here reaches back for an
+older one: the modules pass the flags they need, and a tag that has never heard of one fails at boot rather
+than quietly building a different box.
+
+### Trying a stick without a box
+
+You do not need appliance hardware — or a stick — to see what one does. `appliance-vm installer`
+flashes the image onto a file and boots it under UEFI against emulated NVMe, so the real installer
+runs against a real pool, reboots into what it installed, and unlocks it from the key partition the
+same way a box would. `appliance-vm box` is the quicker half: the appliance closure booted directly,
+which gives you the console session and the branding in about a minute, but nothing below the disk.
+
+Both keep their disks between runs, so an installed VM is still installed tomorrow. The mechanics —
+what each one can and cannot show, why the rig can boot an image the test suite cannot, and what
+`--serial` costs — are in [../nixos/README.md](../nixos/README.md).
+
+### Cross-building
+
+The build refuses to produce an image for an architecture other than the host's unless you pass
+`--allow-cross`, because without an emulator registered it would fail deep inside the build rather than at the
+start. On NixOS, register one with:
+
+```nix
+boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+```
+
+It is less painful than it sounds. Almost the whole closure comes prebuilt from `cache.nixos.org` for both
+architectures — an aarch64 build on an x86_64 host fetches roughly 774 MiB and compiles nothing, leaving only
+config generation to run under emulation. Native is still faster, and is what the default enforces.
+
+The final image assembly deliberately does _not_ run under emulation. `nixos/modules/image/repart-image.nix`
+invokes `unshare --map-root-user fakeroot systemd-repart`, and `unshare(CLONE_NEWUSER)` fails with `EINVAL`
+inside qemu-user: the kernel only unshares a user namespace for a single-threaded process, and qemu-user never
+is one. `nativeImageAssembly` in `nixos/default.nix` therefore swaps that derivation's `nativeBuildInputs` for
+host binaries whenever `system` differs from the build host. Nothing about the assembly is
+architecture-specific — repart copies opaque bytes, and the partition types this image uses (`esp`,
+`linux-generic`) carry no architecture — so the resulting stick is byte-for-byte an aarch64 image either way.
+
+### The appliance network interface
+
+The appliance never refers to a NIC by its kernel-assigned name. Predictable naming would call it
+`enp1s0f0np0` on one box and something else on the next, and a single image cannot know which — while a wrong
+guess produces a box with a static address on an interface that does not exist, no DHCP, no DNS, and no sshd
+to fix it from.
+
+Instead each platform declares a `[Match]` rule, udev renames whatever matches to **`loom0`**, and the address,
+the dnsmasq binding and the console banner all pin to that name.
+
+The EVO-X2 has two ethernet ports and both are Realtek, so the match cannot single one out: whichever udev
+processes first becomes `loom0`, and the other keeps its kernel name. If the box comes up unreachable, try the
+other port.
+
+#### When no platform matches
+
+An image installed on hardware none of the platforms covers would otherwise rename nothing, and a box with no
+`loom0` has no address, no DHCP and no `*.loom` — unrecoverable at the console, because there is no sshd and
+no `nixos-rebuild`. So when the match selects nothing, `loom-interface-fallback` claims a wired port itself,
+before any address or bridge unit runs:
+
+| Wired ports found | What happens |
+| --- | --- |
+| 0 | Nothing is renamed. The console names every interface it did find. |
+| 1 | It becomes `loom0`. No ambiguity, nothing to warn about beyond saying so. |
+| 2 or more | The one with the lowest PCI path becomes `loom0`; the console names the others. |
+
+"Wired" excludes anything the kernel gives a `DEVTYPE` — radios, WWAN modems, bridges, veth — as well as
+virtual interfaces with no backing device. A cellular modem is the awkward one: it looks like an ordinary
+ethernet card apart from that `DEVTYPE=wwan`, and serving DHCP down a mobile connection is not a mistake worth
+making.
+
+A platform can also exclude a driver outright, and the Spark does. `netMatch` not matching is not the same as
+the port being absent: if the RJ45 is ever claimed by a driver other than the one `platforms/spark.nix` names,
+the port is still there under a name nobody predicted, and the table above would hand `loom0` to whichever
+wired port has the lowest PCI path. On that box those are the ConnectX-7's four MACs, in PCI domains 0000 and
+0002 against the RJ45's 0007 — cages that carry nothing without a transceiver. So `mlx5_core` is listed in the
+platform's `netExcludeDrivers` and the fallback never considers them.
+
+Excluding every candidate leaves the box with no `loom0`, and that is the intended outcome rather than a gap:
+a box that says so on its login screen is recoverable with `--interface`, and a box quietly serving a dark
+port is not.
+
+Picking rather than refusing is deliberate. A box that came up on the wrong port of a multi-port machine is
+fixed by moving the cable; a box with no `loom0` at all needs a new stick.
+
+`loom-wired-nics` prints the candidate list, in order, on the box itself, and names any port it skipped —
+and why — on stderr.
+
+#### Pinning a port
+
+`--interface NAME` takes the name as the box reports it — `enp2s0`, not `eth0`. It is applied at runtime by
+the same service, for a reason worth knowing if you are reading the generated `.link` file and wondering: a
+`[Match] OriginalName=` clause matches the name udev sees _while_ it is deciding, which is the kernel's
+`eth0`. The predictable name is the _output_ of that decision, so matching on it there can never work.
+
+```bash
+udevadm info /sys/class/net/<iface> | grep -E 'ID_PATH=|ID_NET_DRIVER='
+```
+
+The driver is what a new platform should match on; the name is what `--interface` wants.
+
+#### A laptop plugged into the box gets no address at all
+
+If `loom0` exists and carries the appliance address but nothing is handed out, and `*.loom` resolves
+nothing either, the DHCP server failed at boot rather than the interface being wrong:
+
+```bash
+systemctl status dnsmasq                      # failed
+journalctl -b -u dnsmasq | grep -i 'unknown interface'
+ip addr show loom0                            # the address is there regardless
+```
+
+Sticks built **without `--wifi` between 2026-09-07 and the fix** all do this. A nixpkgs update
+removed the unit that used to hold every network daemon back until the static addresses had been
+configured, so `dnsmasq` started first, found no `loom0` yet, and exited. Nothing else on the box is
+affected — the console, the cluster and the installer are all unaffected — which is why the box looks
+healthy.
+
+`sudo systemctl restart dnsmasq` fixes it until the box is powered off. The repair is a new stick;
+there is no `nixos-rebuild` on an appliance to apply a configuration change with.
+
+### The WiFi access point
+
+Off by default. `--wifi` builds an image whose installed appliance also runs an access point on the box's own
+radio, **bridged onto the wired port**, so it does not matter how a visitor arrives: the same DHCP pool, the
+same resolver, the same `http://frontend.loom`, whether they joined over the air or plugged a cable in. The
+captive portal reaches them the same way — see
+[Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is), which is mostly
+written for the phone that joins over the air.
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.4.0 --wifi --flash /dev/sdX
+```
+
+The SSID and passphrase are generated at build time and printed at the end of the build. The box's login
+screen shows them too, along with a QR code — point a phone camera at the monitor and it offers to join,
+the same way Android and iOS "share this network" works.
+
+#### Read this before using it
+
+The rest of this document describes a box that is an island. `--wifi` is the one option that changes that, and
+it changes it a lot:
+
+- **The passphrase is the only thing protecting the data.** Loom has no user management and its frontend is
+  not an authentication boundary. Anyone who joins the network has everything the box has indexed. With a
+  cable that meant "anyone who can physically reach the box"; with a radio it means anyone in range, through
+  the wall, in the car park.
+- **The passphrase is on the screen.** Anyone at the monitor can read it or scan it. That is not a new leak —
+  the console already opens a root-capable session on the next keypress — but it does mean the monitor now
+  hands out network access, not just local access.
+- **The credentials are on the stick.** They are baked into the image, so they are in `/nix/store`
+  world-readable and readable from the stick itself. Two boxes installed from one stick share a network.
+  Build a stick per box if that matters.
+- **Never cable a `--wifi` box into a network you do not own.** The radio and the wired port are one bridge,
+  so doing that makes the box an unauthenticated door onto that LAN. The box already refuses to act as a DHCP
+  server anywhere but its own link; bridging is not something it can refuse for you.
+- **It is slower.** 2.4GHz gives roughly 50–100 Mbit/s against 2.5GbE or ConnectX-7 on the wire. Addressing
+  and DNS are identical either way; throughput is not. Bulk ingest belongs on the cable.
+
+#### Bands and the country code
+
+The AP runs on **2.4GHz channel 6** unless you pass `--wifi-country`. That is not a conservative default that
+5GHz could be talked out of. With no country code, Linux uses regulatory domain `00`, in which every 5GHz
+sub-band is flagged `NO-IR` — _No Initiating Radiation_ — which allows joining a network someone else started
+but forbids beaconing, so hostapd cannot bring an AP up at all. Confirm on any box with `iw reg get`.
+
+Passing `--wifi-country CH` sets the regulatory domain and moves the AP to **channel 36**, the bottom of
+UNII-1, which is non-DFS wherever it is allocated — so the AP never waits out a radar availability check. Set
+it to where the box actually is.
+
+Note that many MediaTek and Intel radios are _self-managed regdomain_: the allocation is enforced in firmware
+and `--wifi-country` will not widen it.
+
+#### If the access point does not come up
+
+AP mode is not something every radio supports, and the failure is quiet: hostapd is bound to the radio's
+device unit, so a missing card or an unsupported mode simply leaves it inactive. The box says so on the login
+screen rather than leaving you to guess — a warning appears above the credentials, and the wired port keeps
+working throughout. On the box:
+
+```bash
+iw list | grep -A15 'Supported interface modes'   # needs a line reading '* AP'
+journalctl -u hostapd
+journalctl -u loom-wifi-check
+```
+
+If the radio is there but the platform's match did not select it, rebuild with
+`--wifi-interface <kernel name>`. It is renamed to `loomwl0` either way, and the bridge is `loombr0`.
+
+## Debug images
+
+```bash
+build-appliance-image --platform evo-x2 --debug
+```
+
+A **debug image** is an ordinary appliance that also runs an SSH server. It exists for the box that misbehaves
+in a way the console cannot answer — where everything has to be read off a monitor and typed back in — and
+for pointing an AI agent at such a box. It is the only build where `services.openssh.enable` is true.
+
+### Read this before building one
+
+`--debug` takes back the first line of the [threat model](#threat-model). Specifically:
+
+- **The generated key is root on the box.** It logs in as the operator account, which is in `wheel` with
+  passwordless `sudo`, because up.sh needs that. There is nothing behind it: Loom has no user management and
+  its frontend is not an authentication boundary.
+- **Port 22 is open on the whole appliance segment** — and on the WiFi bridge too, if the image was also
+  built with `--wifi`. Anyone who can plug a cable in can reach the port; only the key stops them.
+- **In first-time setup it is open on somebody else's network.** Both boot modes run the sshd, because a
+  fetch that goes wrong is exactly the thing worth reading from somewhere other than the monitor in front of
+  the box — but that mode is a DHCP client on whatever network you plugged the box into to reach the
+  internet, so the port is open there rather than on a segment this appliance owns. Take that into account
+  when choosing which network to run the setup on. The address is the one that network's DHCP server handed
+  out; `ip addr` on the box, or an Alt-F2 console, is how you find it.
+- **The image is not what a real stick is.** It boots without the splash so failures are readable, and its
+  [USB key guard](#the-usb-key-guard) only warns instead of powering the box off — on a removed key and on
+  a key that never armed alike — so that a glitching port on a bench does not take the session down. Do not
+  use one to judge how a shipped stick behaves.
+- **The box will build for you, and that is a second thing the port opens.** A debug image puts the
+  operator account in `nix.settings.trusted-users`, which is what lets nix use the box as a remote builder
+  (`nix-store --serve --write` is refused to anyone else). It grants no authority that account did not
+  already have — it is root there, as the first bullet says — but it means whoever holds the key can build
+  and install arbitrary store paths, not merely read the box. See
+  [Building on the box](#building-on-the-box).
+- **Never hand one to anybody.** Wipe the box when you are done, and delete the key directory.
+
+The box makes this hard to forget. It says `DEBUG IMAGE — NEVER USE THIS IN PRODUCTION` in white on red at
+the bottom of its login screen, the message of the day repeats it, the console session's status line carries
+`DEBUG — SSH OPEN` in both boot modes, and the image file itself is named
+`loom-installer-debug_*.raw`. The boot menu carries it
+too, on the entry's second line — `debug-<version>` rather than the plain version — for the box that never
+gets as far as a login screen; the title itself still reads `Loom`, exactly as it does for the
+`first-time-setup` entry.
+
+`--debug` is refused outright when `$CI` is set: a pipeline would publish a remotely accessible artifact and
+throw the only key to it away with the runner.
+
+### Getting in
+
+The build generates a fresh ed25519 keypair per image, keeps the private half out of the Nix store entirely,
+and leaves it in a temp directory it prints at the end:
+
+```text
+[*] Debug access. The key that opens this image:
+      key dir   : /tmp/loom-appliance-debug-1.4.0-evo-x2.N35LEv
+      on the box: ssh -F /tmp/loom-appliance-debug-1.4.0-evo-x2.N35LEv/ssh_config loom-appliance
+```
+
+That directory holds `id_ed25519`, its `.pub`, a `known_hosts`, and two ready-made `ssh_config` files — one
+for the box on its own network, one for the same image under `appliance-vm box --debug`. Use them rather than
+assembling flags: each stick gets a [random subnet](#building-a-stick), so the box's address is not knowable
+in advance, and the config carries it along with `IdentitiesOnly` and an `accept-new` host-key policy that
+needs no interaction. That last part is what makes the directory usable by an agent as well as a person.
+
+The directory survives the build on purpose — it is the whole output of the flag — and nothing ever deletes
+it for you.
+
+### Collecting everything at once
+
+The debug image carries `loom-debug-bundle`, which tars up both boots' journals, the failed units,
+`loom-service` status, `loom-platform-info`, the login screen, the network configuration, and the cluster's
+pods, events and logs, then prints the path:
+
+```bash
+ssh -F <key dir>/ssh_config loom-appliance loom-debug-bundle
+scp -F <key dir>/ssh_config loom-appliance:/tmp/loom-debug-*.tar.gz .
+```
+
+Every collector in it is allowed to fail. The most likely thing to be debugging is a box whose cluster never
+came up, and a bundle that aborted on the first `kubectl` timeout would carry none of the journal that
+explains why — so a section that could not be read is an empty file rather than a missing bundle.
+
+### Without a box
+
+`appliance-vm box --debug` is the cheap way to use any of this: about a minute, no tag, no image build, and
+it forwards `localhost:2222` to the guest's sshd. Its keypair lives in the VM's state directory rather than
+in `/tmp`, so it is the same key across runs — and `appliance-vm reset` deletes it with the disks.
+
+It does not reach the installer. That half is driven with `appliance-vm installer --serial`; see
+[Trying a stick without a box](#trying-a-stick-without-a-box).
+
+### Building on the box
+
+A debug appliance is a nix remote builder, which matters most where it is the only native hardware of its
+architecture you have. `build-appliance-image --allow-cross` builds an aarch64 image on an x86_64 host
+through qemu; a kernel that takes **47 minutes natively on a DGX Spark** takes hours that way. Pointing nix
+at the box instead removes the emulation entirely.
+
+The build writes the recipe next to the ssh config, as `nix-builder` in the same key directory:
+
+```bash
+export NIX_SSHOPTS="-F /tmp/loom-appliance-debug-*/ssh_config"
+nix store ping --store 'ssh://loom-appliance'          # check the connection first
+nix-build ... --builders 'ssh://loom-appliance aarch64-linux <keydir>/id_ed25519 - 1 big-parallel'
+```
+
+`NIX_SSHOPTS` is the part that is not guessable: nix runs ssh non-interactively, so without the generated
+config it has no key, no username and no answer for an unknown host key — and the failure reads as though
+the builder rejected it. The fields after the system are the key, max-jobs (`-` keeps the box's own
+setting), a speed factor, and required features.
+
+Two things to know before leaning on it:
+
+- **The store grows and nobody else collects it.** An appliance's disk is sized for Loom, not for a build
+  farm, and a full disk on a box with no remote access is not recoverable from the console. Debug images
+  run `nix.gc` daily with a seven-day window, and `loom-debug-bundle` reports disk use and store path count
+  in `disk.txt`.
+- **The box has no substituters at all** — it is air-gapped by design, so `nix.settings.substituters` is
+  empty on every appliance. Everything a remote build needs is copied from the machine that asked for it,
+  which is the right behaviour here but means the first build of a large closure moves real bytes.
+
+## Installing
+
+**Plug the stick in, boot from it, and leave it alone.** Nothing has to be typed. What follows is what
+happens on its own, and where you can still interrupt it.
+
+1. Plug the stick into the box and boot from it. Have the box on **a network with internet** already — the
+    boot after this one fetches every container image.
+2. The installer appears on the console. Its header names the **Loom release and the platform the stick was
+    built for**, so check there that you booted the right stick; two sticks are otherwise indistinguishable.
+    Below that it shows which disk is the boot medium (never touched), whether the stick's LUKS key is
+    present, and every disk that will be pooled and erased.
+3. It counts down for **60 seconds** and then installs. **Press any key to stop it** and get the menu, where
+    Install still asks for the word `INSTALL` and nothing happens unattended. The countdown does not start
+    at all when something is wrong — the console says which, and waits:
+
+    | It says | Meaning |
+    | --- | --- |
+    | `this stick already installed this box` | The disks hold a Loom pool this stick's key opens. Refusing is the point: a firmware that re-scans removable media would otherwise reinstall over the indexed data. Choose Install from the menu to do it anyway. |
+    | `an install was already attempted this boot` | Reboot to try again. |
+    | `the automatic install was stopped this boot` | Somebody pressed a key during the countdown. It does not come back — not after the menu restarts, and not after a trip through the rescue shell. Reboot, or choose Install from the menu. |
+    | `the boot medium is ambiguous` | A second Loom stick is plugged in. Remove it. |
+    | `the stick carries no LUKS key` | Re-flash with `build-appliance-image --flash`. |
+    | `the stick's key needs a passphrase` | A `--lock-key` stick. Nobody can type a passphrase into an unattended install, so it waits for you. |
+    | `there is no eligible internal disk` | Nothing to install onto. |
+    | `the disks are too small` | Under 250 GB across all of them. |
+
+4. It partitions every eligible internal disk, pools them into one volume, creates the LUKS container from
+    the stick's key, installs the appliance closure entirely offline, enrols a recovery passphrase, makes the
+    internal disk the default boot entry, and selects **first-time setup** as the entry that disk boots.
+    Copying the closure is the long step — tens of gigabytes — and gets a progress bar with the copy's own
+    output scrolling above it, so a slow disk and a stuck install look different from across the room.
+5. **Write down the recovery passphrase it prints**, if you are there. It holds the screen for 30 seconds and
+    then reboots on its own, so an install nobody comes back to still finishes. Nothing is lost if you miss
+    it: the installed box shows the same passphrase on every console login.
+6. The box boots into the internal disk and straight into first-time setup — no entry to pick. Leave the
+    stick in.
+
+From here the only thing still asked of you is to **move the box** once setup powers it off, which the next
+section explains.
+
+The countdown is skipped in one case. If the installer could not make the internal disk the default boot
+entry — no NVRAM entry, or its own loader still on the UEFI removable-media path — it says so and waits for
+enter instead of rebooting itself, because that warning asks you to change the firmware boot order and it is
+the one thing on that screen the installed box does not repeat. A wipe (menu option 2) likewise always waits.
+
+The installer moves its own loader off the UEFI removable-media path afterwards. Without that, most firmware
+would boot the installer instead of the appliance on every restart, because the stick never leaves. The
+installer stays reachable from the firmware's own boot menu for reinstalls and wipes.
+
+### Changing your mind
+
+**Ctrl-C is an answer to every question the installer asks**, and what it costs depends entirely on when you
+press it:
+
+- **At a prompt** — the countdown, `Type INSTALL to proceed:`, a `--lock-key` stick's passphrase — nothing
+    has been written yet and nothing is. It is the same as typing the wrong word: the console says
+    `Cancelled.`, the menu says `Installation cancelled.`, and the disks are exactly as they were.
+- **Once the install has started** — anywhere from partitioning to the end of the copy — the disks have
+    already been rewritten and there is no undoing that. The installer unmounts what it mounted, closes the
+    LUKS container and releases the volume group so the menu can still reach the disks, and then says so:
+    _the internal disks have already been written to, this box will NOT boot_. Run **Install** again, or
+    **Erase**. The same applies to an install that fails on its own.
+- **During a wipe** the keys are destroyed first, so a wipe stopped part way has already made the data
+    unrecoverable — but the disks are not clean. Run **Erase** again.
+
+Ctrl-C at the menu itself just redraws it. Nothing in the installer prints a Python traceback: if something
+unexpected goes wrong it prints one line and puts the details in `/run/loom-installer-traceback.log`, which
+the rescue shell (menu option 5) can read.
+
+### How the disks are used
+
+**Every eligible internal NVMe becomes one volume.** There is no disk to choose, which is what lets the
+install run without asking anything:
+
+```text
+nvme0n1  1G ESP  +  the rest  ─┐
+nvme1n1  the whole disk       ─┴─>  one volume  ─>  LUKS2  ─>  ext4
+```
+
+Eligible means an internal NVMe namespace that is not the boot medium, not removable, not on the USB bus and
+not mounted. USB storage enumerates as `sd*` and can never qualify, so the stick you booted from is excluded
+by construction as well as by name.
+
+The disks are **concatenated, not mirrored or striped**. Concatenation uses every byte of drives that are not
+the same size, where striping would cap the pool at twice the smaller one. Two consequences worth knowing:
+
+- **There is no redundancy.** On a two-disk box, one failed drive loses the whole index — the same outcome as
+  losing the stick, and for the same reason: an appliance holds the only copy. If that is not acceptable at
+  your site, populate one slot.
+- **The encryption is unchanged.** One container, one key on the stick, one recovery passphrase, whether the
+  box has one disk or three. The volume is assembled first and encrypted on top, which is what lets a single
+  appliance image serve boxes with different numbers of drives.
+
+A wipe (menu option 2) destroys the pool's key material first and then sweeps each disk, so it reaches the
+encryption regardless of how many drives were pooled.
+
+## The two boot modes
+
+The appliance has two boot modes, `Loom` and `Loom (first-time-setup)`. **You never pick between them.** The
+installer leaves the menu on first-time setup, and the setup run hands it back to `Loom` and deletes its own
+entry when it finishes — so a box that has completed setup has exactly one entry, and every box before that
+has the only entry that would work anyway.
+
+That is not tidiness. The `Loom` entry serves DHCP and wildcard `*.loom` DNS on the appliance NIC, and the
+setup run happens on a network with internet — usually somebody's office LAN. Every wrong pick, and every
+accidental reboot part way through a fetch that runs for hours, used to put a DHCP server on that LAN. Now a
+reboot mid-fetch comes back into first-time setup and carries on.
+
+| | Run (default) | First-time setup |
+| --- | --- | --- |
+| Network | Static address, serves DHCP and `*.loom` | DHCP client |
+| Loom | Starts offline and exposed on the appliance network | Builds and pulls every container image |
+| When | Normal operation | Once, in the lab, with internet |
+| Screen | Loom splash, no boot log | Full boot log, no splash |
+| Console session | First pane follows `loom` | First pane follows `loom-fetch` |
+| Key removed | Powers the box off | Warns only |
+| When it finishes | Keeps running | Powers the box off |
+
+A fresh box has no container images, and pulling them needs registries. So the first boot after installation
+is into **first-time setup**, which happens by itself — just make sure the box is on a network with internet
+before that boot, and press a key at the console to watch: the first pane of the session is that log.
+
+This takes a long time. It populates minikube's image store on the encrypted root and marks itself complete, so
+a reboot will not repeat it.
+
+This is also the only boot on which the box has internet, so it is the only one where its build tooling could
+report anything about itself. Skaffold's usage metrics are switched off before it ever runs — `nixos/box.nix`
+seeds `~loom/.skaffold/config` with `collect-metrics: false` — and minikube's update check is off as well. What
+the fetch reaches for beyond that is the container registries it is there to pull from.
+
+**When it finishes, the box powers itself off** — a minute after the last log line, so an unattended run ends
+with a box that is simply off. Before it goes down it promotes `Loom` back to being the boot default and
+removes the first-time-setup entry, so what comes back up is a single-entry menu.
+
+**Move the box before powering it on again.** This is the one thing still left to you: run mode serves DHCP and
+wildcard `*.loom` DNS on the appliance NIC, and that must not land on the network the fetch ran over. Move it to
+where it will be used, power it on there, and it runs offline forever.
+
+If you want the box to stay up instead — to look at something before it goes down — `sudo systemctl stop
+loom-fetch` on an `Alt-F2` console during that minute cancels the poweroff. The run is marked complete and the
+menu is already promoted either way.
+
+The two modes look different on purpose. `Loom` boots to a splash with no kernel log, because it has nothing to
+report and the login screen carries everything an operator needs. `Loom (first-time-setup)` boots verbose — it
+runs for hours, and a still logo over all of it would be misleading. Either way the real progress report is the
+console session, not the boot screen.
+
+This is also why the stick does not need to carry 60 GB of container images.
+
+### Once setup is done, it is gone
+
+The first-time-setup entry is **deleted**, not merely deselected, and there is no way to bring it back. That is
+a deliberate trade, and it has one consequence worth knowing before you hit it: **anything that destroys the
+image store costs a reinstall, and a reinstall destroys the indexed data.** See the `minikube delete` entry
+under [Troubleshooting](#troubleshooting) — that command is the most likely way to get there.
+
+`Reboot Into Firmware Interface` is untouched by any of this. systemd-boot draws that entry itself rather than
+reading it off the disk, so it survives, and the 30-second menu timeout stays generous partly to keep it
+reachable on boxes whose display wakes up late.
+
+## Locking the stick's key
+
+By default the stick is a **bearer token**: its `loom-key` partition holds 4096 random bytes, and whoever
+holds the stick unlocks the box. That is why the threat model above has to assume the stick travels
+separately from the box.
+
+`--lock-key` removes that assumption. The same 4096 bytes go inside a LUKS2 container on the same partition,
+and opening it costs a generated word passphrase that exists nowhere on the stick:
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.4.0 --flash /dev/sdX \
+    --lock-key --lock-key-out ~/loom-phrase-boxA.txt
+```
+
+The passphrase is printed at the very end of the build, in a block of its own — seven words
+joined by dots:
+
+```text
+      key phrase: hardware.flavorful.porridge.heaving.dreamt.reclining.preheated
+```
+
+**Write it down before that terminal scrolls.** It is generated at flash time, not stored on the stick, and
+`--lock-key-out` is the only thing that keeps a copy.
+
+### What it buys
+
+The stick becomes one factor of two — something you have plus something you know. Three situations stop being
+game over:
+
+- a stick lost, or left in a drawer, or found by somebody
+- a box and its stick seized together
+- a leaked `--key-backup` file _only if you did not make one_ (see the warning below)
+
+### What it costs
+
+**The box can no longer boot unattended.** Every boot stops in stage 1 and asks for the passphrase, so a box
+does not come back on its own after a power cut, and the key guard's poweroff needs somebody at the keyboard
+to undo. On a box you cannot reach, that is worse than the risk it removes.
+
+**The installer will not run unattended either.** The 60-second countdown does not happen on a locked stick —
+the menu waits, and Install asks for the passphrase before it touches a disk. A mistyped passphrase costs
+nothing, because it is asked for before anything is written; three wrong answers abort the install.
+
+### If the passphrase is refused
+
+Stage 1 asks three times, and says so as it goes:
+
+```text
+Loom key stick passphrase [keyboard: us]:
+Wrong passphrase, 2 left [keyboard: us]:
+Wrong passphrase, last try -- blank for recovery [keyboard: us]:
+```
+
+Leaving the last one blank, or getting it wrong three times, takes the splash down and prints:
+
+```text
+[loom] The key stick passphrase was wrong 3 times.
+[loom] The next prompt is the LUKS RECOVERY passphrase: the long
+[loom] dash-separated one the installer printed and the login
+[loom] screen shows -- NOT the words that came with this stick.
+```
+
+and the boot falls through to the recovery prompt. That fall-through is deliberate — a box whose
+stick is dead has no other way in — but it asks for a **different secret**, which is why it is
+announced rather than simply happening.
+
+Failures that retyping cannot fix do not burn the three tries. A key partition that is not a
+container (a stick flashed without `--lock-key`), a container that is busy, or too little memory to
+run argon2id are each named on the spot and go straight to the recovery prompt.
+
+### Two things it does not cover
+
+**The recovery passphrase is still a single-factor way in.** The installer enrols it as a second keyslot on
+the _root_, prints it, and the console shows it at every login — exactly as on an unlocked box. Anyone who
+saw it can unlock the disk with no stick and no stick passphrase. That is deliberate: without it, a dead
+stick would mean unrecoverable data. If that trade is wrong for your deployment, the passphrase is at
+`/var/lib/loom/recovery-passphrase` on the unlocked root, and `cryptsetup luksKillSlot` removes the keyslot.
+
+**`--key-backup` is a plaintext copy of the key.** It opens the box with no stick and no passphrase, so a
+backup file that leaks defeats `--lock-key` entirely. The build says so when you use both. `--lock-key-out`
+and `--key-backup` are refused if they name the same file — one file holding both factors is no better than
+neither.
+
+### Details worth knowing
+
+- The container is formatted with **argon2id**, pinned at 4 passes over 1 GiB. Pinned rather than
+  benchmarked, because cryptsetup would otherwise measure the build host and the container is opened on the
+  box: a roomy build host would pick a cost a smaller box cannot afford, and stage 1 would fail to unlock a
+  stick that verified perfectly.
+- The key partition is 32 MiB on **every** stick, locked or not. A LUKS2 header puts the payload at 16 MiB,
+  and one layout means a stick can be re-flashed either way.
+- The key guard still works, and still tells your stick from somebody else's — see the note under
+  [The USB key guard](#the-usb-key-guard).
+- **The passphrase is typed on a US keyboard unless you said otherwise.** It is generated without
+  `y` or `z` and with `.` as its separator so that a Swiss or German keyboard can type it anyway,
+  and the prompt echoes what it receives — but on anything further from US, pass `--keymap`. See
+  [Keyboard layout](#keyboard-layout).
+- **`appliance-vm installer` cannot boot a `--lock-key` image.** It writes the key partition with a plain
+  `dd`, which needs no root; formatting a container inside the virtual stick does. Use an unlocked image for
+  VM work.
+
+## Requiring a client certificate
+
+```bash
+build-appliance-image --platform evo-x2 --require-client-cert --flash /dev/disk/by-id/usb-...
+```
+
+Every image but this one serves Loom to whoever can reach the appliance segment. This one requires a
+client certificate on every route, so reaching the box is no longer enough: only somebody who was
+handed an identity gets in. Everything about issuing those identities is in
+[installation.md](installation.md#mutual-tls-and-client-certificates) — this section is what changes
+about the box.
+
+### The box has to get through its own front door
+
+Two of Loom's clients run on the appliance itself: the console's assistant pane (`opencode` under Bun)
+and USB ingest (`mc`). Both can be handed a CA and neither can be handed an identity, so with the
+requirement switched on they would be refused by their own cluster — a chat pane that never answers,
+and a USB stick that is mounted and then never ingested.
+
+So the image runs a reverse proxy for them. nginx — already on the box for the captive portal — listens
+on two loopback ports, attaches the box's own client certificate, and forwards to the ingress:
+
+| Port | Upstream | Client |
+| --- | --- | --- |
+| `127.0.0.1:18080` | `ollama.loom` | the assistant pane |
+| `127.0.0.1:18081` | `s3.loom` | USB ingest |
+
+The identity behind it is issued **on the box**, because the CA that signs it lives in the cluster.
+`loom-mtls-identity.service` waits for the chart's `self-signed-mtls-cert` secret — a bring-up, so
+possibly hours — then runs the same script an operator runs for a browser and reloads nginx. A daily
+timer reissues it with 14 days left. `loom-mtls-placeholder.service` writes a throwaway certificate
+first so nginx starts immediately: it authenticates nothing and the proxy answers 502 until the real
+one lands, but the captive portal is not held up behind a cluster bring-up.
+
+The hop from client to proxy is plain http on loopback. It never reaches a wire, and what it stands in
+front of is on the same encrypted disk.
+
+### It takes the cleartext entrypoint with it
+
+This is the one image that does **not** pass `up.sh --enable-http`. A plaintext entrypoint beside a
+client-certificate requirement is either a way around it or a route that answers 404, and neither is worth
+shipping.
+
+### Visitors get their own certificate from the portal
+
+The captive portal page is the one thing on this image a visitor can reach without a certificate, because it
+is served by the box rather than by the cluster. On a `--require-client-cert` build it carries a third
+section: a password field that issues a fresh client certificate.
+
+```text
+http://portal.loom            the page, which a probe redirect also lands on
+https://portal.loom           the same page, where the form actually is
+```
+
+The password is **on the box's own login screen**, in the `Write these down` block with everything else that
+has to be transcribed, and it changes at midnight. So the authorisation for getting into Loom is "this person
+stood in front of the box" — the same authorisation every other thing on this appliance runs on. Four EFF
+words with dots between them, drawn to be typeable on any keyboard layout:
+
+```text
+  ── Write these down ────────────────────────────────────────────────────────
+  LUKS recovery passphrase:  8euwj-4qkws-yvwk7-9rs7k-typst-jxae4
+  Portal password (today):   harbor.ritual.cobalt.fenced
+  Without the stick, the recovery passphrase is the only way into this disk.
+  Visitors need the password at http://portal.loom to get a certificate.
+```
+
+The password is printed in reverse video, and the `This box` section below it carries a `Screen painted:`
+timestamp. That timestamp is worth reading before trusting what is above it: agetty paints the screen once
+and then waits for a keypress, and the box deliberately does not repaint a console somebody has already
+logged into — so a screen can outlive the password on it. `loom-info`, typed in the console session,
+always renders the current one.
+
+The form is offered over `https://portal.loom` and nowhere else. A PKCS#12 bundle carries an unencrypted
+private key, and the appliance segment is a wire — with `--wifi`, everyone in radio range. So the plaintext
+page links to the encrypted one instead of showing the form, and the box serves that listener with the
+cluster's own certificate: install the one from the page's second section first and there is no warning at
+all. Skipping that step costs one clickable interstitial, which is a real browser rather than the portal
+webview.
+
+Two buttons: **the certificate** (`.p12`, for a browser or a phone) and **all files** (`.zip`, which also
+carries the PEM pair for `curl --cert`, `mc` and nginx). Each press issues its own certificate. They are
+good for **seven days** — much shorter than the 60 `generate-client-certificate` defaults to, because that
+default is for an operator issuing by hand to somebody they chose. Nothing renews one; the page is always
+there to issue another.
+
+Four things bound what the page will do, in the order a visitor meets them: nginx rate-limits the route,
+the password is checked before anything else happens, the server refuses more than ten attempts a minute,
+and it makes at most two certificates at once. A wrong password creates nothing at all — the privileged half
+of the box is never woken.
+
+**The private key never leaves the cluster.** The page server runs as its own unprivileged user with no
+kubeconfig, no `kubectl` and no route off loopback; it writes a request into a spool it cannot even list, a
+root unit picks it up and runs the same `generate-client-certificate` an operator would, and the result
+comes back through the same spool. A compromise of the thing a visitor talks to buys a certificate request,
+which is what it is for.
+
+**What this changes about the threat model.** Anyone who can see the console screen can mint a client
+certificate for themselves, and anyone they read it out to can as well. That is a deliberate trade — the
+alternative is an operator issuing files by hand to every visitor — but it means the password is as
+sensitive as physical access to the box, and a box left unattended with its screen visible is a box anybody
+can get into. Build without `--require-client-cert` if that is not the arrangement you want; the page's
+certificate section is on every image either way.
+
+If the cluster has not come up yet the page says so rather than hanging. On a first boot that can take
+hours.
+
+### Checking it on a running box
+
+```bash
+systemctl status loom-mtls-identity    # issued, or still waiting for the cluster
+ls -l /var/lib/loom/mtls/              # client.crt, client.key, loom-server-ca.pem
+curl -sS http://127.0.0.1:18080/       # "Ollama is running", through the proxy
+```
+
+A `502` from that last call means the proxy is up and the identity is not — either the cluster has not
+issued one yet, or the placeholder is still in place. `journalctl -u loom-mtls-identity` says which.
+
+And the portal half:
+
+```bash
+sudo cat /run/loom-portal/password        # what a visitor has to type, also on tty1
+systemctl status loom-portal              # the page server
+systemctl status loom-portal-certificate  # published the anchor, or waiting for the cluster
+journalctl -u loom-portal-issue           # every certificate the page has handed out
+curl -ksS https://portal.loom/ | head     # the page, as a visitor sees it
+```
+
+## Custom Helm values
+
+A box is usually built for a particular pile of documents, and the chart already exposes most of what
+that changes: the OCR languages Tika is asked for, how deep the pipeline recurses into archives, which
+indexing steps are skipped, how much memory Elasticsearch gets. `--values` and `--set` deploy the box
+with those set, without a flag per knob.
+
+```bash
+# Swiss documents: German, French and Italian OCR instead of the default.
+build-appliance-image --platform evo-x2 --tag 1.5.0 \
+    --set pipeline.tika_ocr_languages='["deu","fra","ita"]'
+
+# The same thing, and more of it, from a file you keep.
+build-appliance-image --platform evo-x2 --tag 1.5.0 --values ./swiss-archive.yaml
+```
+
+```yaml
+# swiss-archive.yaml
+pipeline:
+  tika_ocr_languages: [deu, fra, ita]
+  max_recursion_depth: 12
+  skip_translate_while_indexing: true
+```
+
+`--values` is repeatable and the files are merged in order, last wins; `--set` is applied after all of
+them. A `--set` value is read as JSON when it parses as JSON — `5` is a number, `true` a boolean,
+`["deu","fra"]` a list — and as a string when it does not. Quote it as JSON (`'"123"'`) when you want
+a number-looking string.
+
+### What wins
+
+Values land in `charts/values-user.yaml` of the checkout the box deploys from, which is the **lowest**
+of the override layers. Skaffold applies these in order, later winning:
+
+| file | holds |
+| --- | --- |
+| `charts/values.yaml` | the chart's defaults |
+| `charts/values-development.yaml` | nothing here — skaffold's dev profile inserts it at this position under `up -d` / `up --integrationtest`, so on a developer's machine `values-user.yaml` wins over it |
+| `charts/values-user.yaml` | `--values` and `--set` |
+| `charts/values-up-flags.yaml` | whatever `up.sh`'s own flags turned on — `--gpus`, `--scaling`, `--enable-http`, `--no-resources` |
+| `charts/values-appliance.yaml` | facts about this box: the platform's deployment decisions, and whether the image requires a client certificate |
+| `charts/values-overwrites.yaml` | yours, edited on the box |
+
+That order is the point. Nothing you pass to `--values` can break a decision the platform or a flag
+made — a box asked to scale Ollama across its single GPU gets the platform's answer, and
+`certificate.requireClientCert` set in a values file does nothing at all, because mutual TLS needs the
+loopback proxy that only [`--require-client-cert`](#requiring-a-client-certificate) brings with it. The
+build prints every path it takes back from you.
+
+To override something the box itself decided, edit `charts/values-overwrites.yaml` on the box and run
+`up` by hand. It is the last word in the chart and nothing in the image ever writes it. Note that a
+reboot alone will not pick up such an edit: `loom.service` passes `--resume-if-deployed`, which
+compares chart versions and will not roll a Deployment for a changed values file.
+
+### What gets refused
+
+The image build checks the values before it starts, because a stick cannot be fixed afterwards:
+
+- **Every path must exist in that tag's `charts/values.yaml`.** The chart has no values schema, so
+  Helm takes an unknown key without a word and the box quietly does nothing it was asked for. A typo
+  fails the build naming the path. For the chart's free-form maps — labels, annotations,
+  `nodeSelector` — pass `--values-allow-new-keys`.
+- **The chart has to render with them.** A `helm template` dry-run runs offline, catching a value of
+  the wrong shape. `--skip-values-check` turns it off.
+- **`kubernetes.api`, `hostnames` and `image.registry` are refused outright**, with no way round it.
+  Each has something outside the chart built from the same value — `/etc/hosts`, the DNAT chain, the
+  NetworkPolicy that lets pods reach the API server, the certificate's `subjectAltName` — that a
+  values file cannot move.
+- **Credentials get a warning.** A path that looks like an API key or a password is baked into the
+  image and readable in `/nix/store` by anyone holding the stick. Without `--lock-key`, holding the
+  stick is the whole of the access control.
+
+## Keyboard layout
+
+Every prompt on this appliance is typed on a Linux console, and a Linux console with no keymap
+configured is **US QWERTY**. Three of those prompts matter:
+
+- the `--lock-key` passphrase, in stage 1, on every boot
+- the LUKS recovery passphrase, in stage 1, whenever the stick is absent
+- `INSTALL` and `WIPE`, the installer's typed interlocks
+
+On a Swiss or German keyboard under a US map, `-` comes out as `/` and `y` and `z` are swapped.
+On a French one, `-` comes out as `6` and `a`, `q`, `w` and `m` move. None of that is visible if
+the prompt is masked, so a correct passphrase looks exactly like a wrong one — on a box that will
+not boot.
+
+**`--keymap` is the fix.** It sets the map for the installer, the installed box's console _and_
+stage 1:
+
+```bash
+build-appliance-image --platform evo-x2 --tag 1.5.0 --flash /dev/sdX \
+    --lock-key --keymap de_CH-latin1
+```
+
+The name is whatever `loadkeys` accepts — `de_CH-latin1`, `de`, `fr`, `uk`, `es`. A name that
+does not resolve fails the image build with a list of valid ones, rather than silently falling
+back to US on the box.
+
+**Every prompt says which keyboard it is using.** Stage 1 asks
+`Loom key stick passphrase [keyboard: us]`, and the build prints the same name beside the
+passphrase you are writing down. That is deliberately shown even when it is the default `us` —
+that is the case most likely to be wrong, and the one nothing else on the screen would mention.
+
+Two more things work regardless, so a stick built without `--keymap` is awkward rather than
+unusable:
+
+- **The passphrase prompts echo what you type.** You can see `/` appear when you press `-` and
+  work out the offset. This gives up nothing the design was defending: the box prints the LUKS
+  recovery passphrase on its login screen at every boot, and the console is a root shell after one
+  keypress.
+- **Generated passphrases avoid `y` and `z`** and use `.` rather than `-` as the separator. `.` is
+  the same unshifted key on QWERTY and QWERTZ. That makes a default stick typeable on a Swiss or
+  German keyboard without any flag at all; AZERTY still needs `--keymap`.
+
+## The USB key guard
+
+The stick is read once at boot, to unlock the disk. Without anything further, a running box would keep going
+for weeks after the stick was pulled — unlocked, with no key present — and the removal would only take effect
+at the next boot. So the box keeps watching the key for as long as it runs.
+
+**Remove the key from a running box and it powers itself off ten seconds later.** The countdown is announced
+on the console and in the session's status line, and putting the stick back inside those ten seconds cancels
+it. It is a clean shutdown, not a yanked cord, so indexed data is not at risk — but it is not instant either,
+because tearing minikube and Docker down takes as long as it takes.
+
+What the guard checks is the key itself, not the presence of a stick: it reads the 4096 bytes and tests them
+against the disk's own LUKS header. A different stick carrying a partition named `loom-key` does not keep the
+box alive.
+
+On a [`--lock-key`](#locking-the-sticks-key) box it cannot run that test — the bytes are a container and the
+guard keeps no plaintext key, which is the point of the flag. It arms on the container being a container, and
+tells sticks apart by fingerprinting the first 4096 bytes of the header, which are unique per container. A
+different stick still does not keep the box alive. What is given up is the proof that this stick opens _this_
+disk, and stage 1 established that a few seconds earlier: the box is running, so the container on this stick
+yielded the key the root was formatted with.
+
+A few consequences worth knowing:
+
+- **It arms itself, once, after a key has been seen.** A box booted with the recovery passphrase has no stick
+  at all, so the guard never arms there and the box stays up for repairs. The login banner says which of the
+  two states the box is in.
+- **A box that booted from the stick and cannot arm powers off after three minutes.** Not arming means
+  running an unlocked disk with nothing watching the key, and that is not a state to leave a box in
+  indefinitely — a stick that is plugged in but unreadable is the case this catches. The countdown is
+  announced on the console and named on the login banner, and `loom-key-guard disarm` stops it for the rest
+  of the boot. This is the deadline the recovery boot above is exempt from: stage 1 records which of the two
+  ways in was taken, so a box with no stick is never held to a deadline it cannot meet.
+- **It does not care which mode the box is in.** First-time setup arms and powers off exactly as run mode
+  does. That mode pulls every container image over several hours, so a flaky port costs a long fetch — but
+  the stick is what the box is entitled to run from, and a long fetch is not a reason to suspend that.
+- **A `--debug` image is the one exception.** There, and only there, a removed key warns and leaves the box
+  up: that image has already traded the appliance's guarantees for hands-on access, and the box says so on
+  screen. The console message names the debug image as the reason, so it is never ambiguous which exception
+  is in play.
+- **To swap sticks deliberately**, run `loom-key-guard disarm` at the console first. It stays disarmed until
+  the next boot; `loom-key-guard arm` re-enables it, and `loom-key-guard status` prints the current state.
+
+## Using Loom on the appliance
+
+Plug a laptop into the box's ethernet port. It gets an address by DHCP, and `dnsmasq` answers for every name
+under `.loom`, so this just works:
+
+```text
+http://frontend.loom
+```
+
+No hosts file, no configuration on the visitor's side. The other services — `grafana.loom`, `elasticvue.loom`,
+`ollama.loom` and the rest — resolve the same way.
+
+`https://frontend.loom` works too and always has. Plain `http` is written above because the certificate is
+self-signed, so the https spelling costs the visitor a browser warning to click through and gains them
+nothing they can verify. Both are served — see the cleartext bullet in [Threat model](#threat-model) for
+what that costs.
+
+### Finding Loom without being told where it is
+
+A visitor who has not been told the name gets nowhere on their own, and a phone makes it worse: it joins,
+decides the network has no internet, and quietly keeps using mobile data — so even a typed `frontend.loom`
+is resolved by the mobile network, which has never heard of `.loom`.
+
+The box answers the question the phone actually asks. Every operating system probes a URL it knows the
+answer to — `connectivitycheck.gstatic.com/generate_204` on Android, `captive.apple.com` on iOS — to decide
+whether a network reaches the internet. `dnsmasq` points those four names at a second address the box holds,
+where a small nginx answers `302` to `http://portal.loom/`. The phone reads that as a captive portal, offers
+**"Sign in to network"**, and opens that page.
+
+Three things are worth knowing:
+
+- **The "no internet" warning does not go away.** It becomes "Sign in to network". There is no honest way to
+  claim internet connectivity; the box is an island with no upstream and advertises no default route.
+- **Only those four names are intercepted.** `connectivitycheck.gstatic.com`, `captive.apple.com`,
+  `www.msftconnecttest.com` and `detectportal.firefox.com`. Everything else outside `.loom` is still
+  refused, so a visitor's mail client fails cleanly instead of being handed this box.
+- **Android's Private DNS defeats it.** If the phone is set to a DNS-over-TLS provider — the default is
+  "Automatic", but a configured hostname is common — every lookup bypasses the appliance's resolver and
+  `.loom` can never resolve. Set Private DNS to Off while on the appliance network. Nothing on the box can
+  work around this.
+
+The standards-based alternative, RFC 8910's DHCP option 114, is deliberately not used: the API it points at
+is governed by RFC 8908, which requires an HTTPS endpoint with a certificate the client can validate and
+revocation-check. `.loom` is not a real TLD, so no public CA can ever issue for it, and a conforming client
+aborts at the handshake. The probe redirect needs no certificate, which is why it is the mechanism that
+works — and why the page has to be reachable over plain http, since a portal webview refuses an untrusted
+certificate outright with no way to click through.
+
+### What the portal page offers
+
+`http://portal.loom` is the page the probe redirect lands on, and typing it is the other way to reach it. It
+has up to three sections.
+
+**Open Loom.** The first thing on it, and the only one most visitors want. One tap and they are in.
+
+**The box's certificate.** `*.loom` is not a real top-level domain, so no public authority can ever issue for
+it and the box signed its own — which is why `https://frontend.loom` costs a warning. The page offers that
+certificate as a download with its SHA-256 fingerprint and per-platform install steps, including the two
+that are usually got wrong: on iOS, installing the profile is not enough and the switch under **Settings →
+General → About → Certificate Trust Settings** has to be turned on as well; on Android 7 and later a
+certificate installed this way is honoured by browsers and by nothing else, which is Android's decision and
+not something this box can change.
+
+Compare the fingerprint against the box's own console before trusting it. One checked only against the page
+that served it proves nothing.
+
+**A client certificate** — on a `--require-client-cert` image only, where a visitor cannot use Loom without
+one. See [Requiring a client certificate](#requiring-a-client-certificate).
+
+The page is served from the box itself rather than from the cluster, so it answers from the moment the
+machine is up. Before Loom has finished coming up it says so, in those words, instead of offering a download
+that is not there yet.
+
+The box is not a gateway and does not advertise itself as one: the lease carries an address, a netmask and a
+DNS server, and deliberately no default route. So a laptop that is also on wifi keeps reaching the internet
+over the wifi, and only `*.loom` comes from the box.
+
+The one thing the laptop does take from the box is DNS, and the appliance's resolver has no upstream — it
+answers under `.loom` and refuses everything else. Most systems query both links and are unaffected; one that
+adopts the box as its only resolver will resolve nothing but `*.loom` until it is unplugged. Nothing on the
+box can fix that, there being no internet behind it to forward to.
+
+### Ingesting data from USB
+
+Plug a USB stick, card reader or external drive into a running box and its contents are indexed. Nothing has
+to be typed: a udev rule starts `loom-usb-ingest@<device>.service`, which mounts every volume it finds,
+copies it into the `loom-intake` bucket and lets the ordinary crawler pick it up from there.
+`loom-usb-status` prints the last run.
+
+**Watch it on the console.** While a copy is running, the pod-list pane splits in half: `k9s` keeps the top,
+and the bottom shows a bar per device — the volume being copied, gigabytes moved, files uploaded. When a
+device is finished its row turns green and says `DONE — safe to remove`, with what the whole stick moved
+beside it, and **it stays there until that stick is unplugged** — that row is the signal to pull it. Only
+when the last device is out is the split undone and `k9s` given the space back. Plug a second stick in while
+the first is still going and it gets a line of its own rather than a second pane.
+
+A row that says `stopped before it finished` is a copy whose service died or was stopped with the stick
+still in: nothing was pulled early, but nothing is complete either. `journalctl --unit
+loom-usb-ingest@<device>` has the reason.
+
+**A stick plugged in before Loom is up waits for it.** A box that has just been switched on spends the best
+part of an hour bringing the cluster up, and media handed to it in that window is not refused: the row says
+`waiting for Loom`, with what the last attempt to reach the intake bucket reported, and the copy starts by
+itself once the bucket answers. An hour is also where it gives up, and then the row says how long it waited
+and what it heard.
+
+**A row that failed says why.** A red row carries the first thing that went wrong in its own words — the
+storage endpoint refusing a connection, a volume skipped because the box has no driver for it, a certificate
+it would not trust — rather than a count of failures on its own. A finished row can carry one too: a stick
+whose second partition was skipped still says `DONE`, with the skip in brackets after it. The journal keeps
+the untruncated version.
+
+Milestones are also announced in the tmux status bar — ingest started, each volume uploaded, the box short
+on disk, and every failure with its reason — and to `wall`, which reaches any console somebody has logged
+into. Those lines scroll away; the pane is what persists.
+
+Read the [threat model](#threat-model) bullet about this before deploying a box where strangers can reach a
+port.
+
+**The LUKS key stick is never touched.** It is identified by asking the key guard which device it armed on —
+the one it proved unlocks this disk — rather than by partition label, which is not unique when two Loom
+sticks are attached. The installer stick is excluded the same way, so its ~60 GB of container images never
+land in the index. If the box was booted on the recovery passphrase the guard never arms, and the exclusion
+falls back to partition labels; the console says so when that happens.
+
+**Media is never written to.** Volumes are mounted read-only, with `nodev,nosuid,noexec`, and
+`blockdev --setro` is applied underneath so the kernel refuses writes at the block layer. Journalled
+filesystems get `noload` / `norecovery` / `nologreplay` as appropriate — a dirty ext4 or XFS volume mounted
+with plain `-o ro` still replays its journal, which modifies the evidence.
+
+Filesystems are handled in three tiers:
+
+| | |
+| --- | --- |
+| **Refused** | LUKS, BitLocker, ZFS members, LVM physical volumes, MD RAID members, swap. Each needs a key or an assembly step, and the console says which. |
+| **Known** | FAT12/16/32, exFAT, NTFS, ext2/3/4, XFS, btrfs, F2FS, HFS, HFS+, ISO9660, UDF, APFS. Explicit driver, explicit options. |
+| **Best effort** | Anything else the running kernel supports is attempted with a plain read-only `mount -t auto`. |
+
+NTFS goes through `ntfs-3g` rather than the in-kernel `ntfs3` on purpose: this box parses filesystems it was
+handed by strangers, and FUSE keeps that parsing in a process that can crash without taking the kernel with
+it. It is slower, and that is the trade. APFS is read-only and best effort — there is no in-kernel driver.
+
+GPT, MBR and Apple partition maps all work, as does unpartitioned "superfloppy" media (most cameras and many
+SD cards).
+
+Everything lands under a prefix naming the stick, so it can be searched for as a unit:
+
+```text
+usb-crawled/{label-or-vendor}-{serial}/data/{path on the stick}      one volume
+usb-crawled/{label-or-vendor}-{serial}/p1/{path on the stick}        several
+usb-crawled/{label-or-vendor}-{serial}/_loom-usb.json
+```
+
+`_loom-usb.json` is a provenance record — udev properties, the filesystems found, the mount options actually
+used, file and byte counts, and the original spelling of any name that had to be sanitised. It is indexed
+alongside the data, so it is searchable next to it.
+
+A single-volume stick's files land under `data/`, and a stick carrying more than one volume gets a `p1`,
+`p2`, … level instead — one level either way, so nothing off the stick can ever collide with the
+`_loom-usb.json` provenance record written beside it. Re-plugging the same stick is cheap: files already
+uploaded at the same size are skipped.
+
+**Loom archives are imported, not indexed as zips.** The crawler recognises them from their content rather
+than their filename, and sends them to the archive importer. An encrypted `.loom` from a _different_ box will
+not decrypt — the chart's `preInstall.generateSecret` mints `archive_enc_master_key` per cluster — and is
+indexed as an opaque encrypted blob rather than being discarded. (Note what _unset_ means, if a deployment
+is ever built without that hook: `Settings` substitutes the published all-zero `FIXED_AES_KEY` rather than
+inventing a random one, so two such deployments read each other's archives.)
+
+**This costs disk twice.** Every ingested byte is stored once in the intake bucket and again in file storage
+after indexing, and nothing empties intake automatically. Ingest is never refused on space grounds; the
+console warns when the encrypted root is running short, and the copy continues. On a box that has filled up,
+purge the intake bucket by hand.
+
+### From the box's own console
+
+The console shows the box's banner before anyone logs in — release, platform, which port to plug a laptop
+into, the subnet it serves, how far the bring-up has got, whether the key guard is armed, and the LUKS
+recovery passphrase:
+
+<!--
+The eyes are pasted from a real console, and their rows are an odd number of
+columns in. editorconfig-checker wants every indent to be a multiple of two,
+which no uniform shift of this art can satisfy.
+-->
+<!-- editorconfig-checker-disable -->
+
+```text
+   ▄████▄    ▄████▄
+  ██▀  ▀██  ██▀  ▀██
+  ██ ▄▄ ██  ██ ▄▄ ██
+  ██▄  ▄██  ██▄  ▄██
+   ▀████▀    ▀████▀
+
+  Loom appliance 1.4.0 -- GMKtec EVO-X2 (AMD Ryzen AI Max+ 395)
+  Loom: starting -- 12/18 pods ready.
+
+  ── Connect ─────────────────────────────────────────────────────────────────
+  Plug a laptop into loom0 and browse http://frontend.loom
+  DHCP and *.loom are served on 10.13.37.0/24
+
+  ── Write these down ────────────────────────────────────────────────────────
+  LUKS recovery passphrase:  ka3mn-7pqrs-t4uvw-x9yzb-cd2ef-gh5jk
+  Without the stick, the recovery passphrase is the only way into this disk.
+
+  ── This box ────────────────────────────────────────────────────────────────
+  USB key guard:             armed -- removing the key powers off after 10s
+  Screen painted:            06:57 UTC
+
+[press ENTER to login]
+```
+
+<!-- editorconfig-checker-enable -->
+
+**`Loom: starting -- 12/18 pods ready.`** is the one line that changes while the box runs, and it answers the
+question somebody walking up to a monitor actually has. A bring-up takes tens of minutes to hours, and until
+it is done the appliance serves nothing; this says how far along it is without logging in. It reads
+`ready.` once every pod the cluster wants is running, `degraded` if the box was up and something has since
+stopped, and `failed to start` if `up.sh` returned non-zero.
+
+The line is **absent** for the first minute or so of every boot, while the cluster has not answered yet, and
+absent for the whole of first-time setup, which has no cluster at all. That is deliberate: it earns its row
+once it has a number on it. The banner is written straight to the VT with no paging — see
+[Why the banner sometimes drops the logo](#why-the-banner-sometimes-drops-the-logo) — so on a `--wifi` box,
+where a QR code is already competing for the same rows, a line saying only "waiting" would cost the logo for
+nothing.
+
+It is redrawn when it changes, not on a timer, and only while the screen is still showing the login prompt: a
+box where somebody has pressed a key is a box with a session on it, and restarting a getty under that session
+would blank it. `loom-banner-refresh` on a console reprints it by hand.
+
+The eyes are the same mark the boot splash and the installer stick show, drawn in half blocks and in the
+logo's amber — the screenshot above cannot show the colour, but the monitor does. One rendering, everywhere:
+the pre-login banner, `loom-info` re-run on an `Alt-F2` console, and the installer menu all print it from the same
+command, in the same colour the splash paints its progress bar.
+
+Reaching that exact amber on a console takes redefining a palette entry, because the Linux VT shoehorns even a
+24-bit colour request into its 16 basic ones. The appliance therefore rewrites the entry once, when it draws
+the login banner, and never restores it — the VT looks a palette up when it paints rather than when the
+character was written, so putting it back would recolour the eyes already on screen. Anything else on that
+console that asks for yellow gets the amber too, which is the intent. The sequence goes only to a real VT:
+it hangs an xterm until somebody presses return, so the panes of the console session get the colour without
+it, and come out amber anyway from the palette the banner already set underneath them.
+
+The amber sits in a palette that is Loom's the rest of the way as well. All sixteen entries are set from the
+frontend's own tokens — `error`, `success` and `info` in their light and dark shades, the frontend's greys for
+dim text and bright white — so the box and the web UI are recognisably one product. Entry 0 is the exception
+and stays pure black: it is what the VT paints the whole screen with, and the frontend's near-black background
+reads as grey at that size. This is `console.colors` in `nixos/branding.nix`, which nixpkgs turns into kernel
+command line parameters, so it is in force before the first getty rather than applied to a screen already
+drawn.
+
+Everything the console shows is then made to pick from those sixteen rather than to send colour of its own
+that something downstream has to approximate. `btop` runs with `--tty` and the assistant pane with opencode's
+`system` theme, both of which mean "use the terminal's palette". Without them each sends 24-bit colour into a
+tmux whose client is a `TERM=linux` with eight colours, and tmux's reduction lands most of it on the dim half:
+measured on a box by reading `/dev/vcsa`, the VT's attribute plane, 40% of the `btop` pane's inked cells came
+out with a black foreground — invisible — against 49% bright afterwards. Handing tmux the original colour
+instead is worse rather than better: the kernel's own reduction thresholds the channels, so a near-grey
+gradient goes to white and the screen brightens with the colour gone out of it.
+
+Both screens run in Cozette rather than a kernel built-in console font. What that displaces is coarser than it
+sounds: the kernel picks its font from the size of the framebuffer it is handed, and on a large panel it lands
+on Terminus 16x32. A 2560x1600 monitor therefore starts out with a 160x50 grid for a three-pane session with
+`btop` in one of them. Cozette also covers the box drawing tmux frames its panes with and the graded blocks
+`btop` draws its meters out of, which the built-in fonts do not carry in full.
+
+The size is a knob, `loom.consoleFont` in `nixos/branding.nix`. Cozette ships two sizes and nothing between
+them, and they are identical in everything but size:
+
+| `loom.consoleFont` | cell | grid on a 2560x1600 panel |
+| --- | --- | --- |
+| kernel default, for comparison | 16x32 | 160 x 50 |
+| `large` | 12x26 | 213 x 61 |
+| `small` (the default) | 6x13 | 426 x 123 |
+
+Six pixels is the floor, and the logo is what sets it. The eyes above are made of `█`, `▄` and `▀`, most
+console fonts are missing the half blocks, and a build that selects one that is fails rather than shipping a
+box whose banner is a screen of holes. The appliance also asks its firmware for the largest console mode it
+has, since the column count is only ever the framebuffer width divided by that cell.
+
+### Why the box names `console=tty0`
+
+The appliance puts `console=tty0` on its kernel command line, and the choice of _which_ console to name is the
+whole of it. Naming a numbered VT — `console=tty12` — does not merely send output there, it makes that VT the
+foreground one, which leaves the box showing a kernel log while the banner and the press-a-key prompt sit on a
+tty1 nobody can see or type into. Naming a serial port is the same trap pointed at a cable: a panic on a box
+with nothing plugged in then goes nowhere at all, instead of onto the monitor somebody is standing in front of.
+`tty0` is neither, because it means _whichever VT is currently foreground_ — so it cannot move the console off
+the screen the operator is using. The test suite forbids the first two and requires the third.
+
+Naming it at all is not cosmetic. Leaving the command line silent is not the same as taking the kernel's
+default: firmware that publishes an ACPI **SPCR** table names a serial console of its own, and on a box with no
+driver for that UART — a DGX Spark declares one at `uart,mmio32,0x16a00000` — nothing registers it, and with
+nothing on the command line to override it nothing else registers either. The box then boots with **no console
+at all**: `/proc/consoles` is empty and `/dev/console` cannot be opened.
+
+That is close to invisible, because almost everything on this appliance logs to the journal and renders to a VT
+directly. What it costs is the handful of things that have no other way to reach a person: the boot splash,
+which crashes outright rather than drawing; the hint printed when the stick's passphrase has been given up on,
+whose entire job is to say that the _next_ prompt wants the recovery passphrase instead; and systemd's own
+emergency and rescue shells. All three matter only on the boot that has already gone wrong.
+
+### Why the banner sometimes drops the logo
+
+agetty writes the login banner straight to the VT and never pages it, so a banner taller than the grid loses
+its top rows — and the grid is not something the image can know in advance. It is the panel's pixel height
+over the console cell, anywhere from 33 rows to 123 in the table above.
+
+**`loom-banner-repaint.service`** is what keeps that from cropping the screen. tty1 is painted _while_ the font
+is still changing under it: fbcon starts on the kernel's built-in font, `loom-console-font` puts Cozette on,
+the DRM driver takes the console and resets it, and `loom-console-font-reapply` puts Cozette back. Each of
+those resizes the VT, and **a shrinking VT keeps the bottom of the screen and discards the top** — so the logo
+goes first and the banner that survives starts partway down. tty2 and up never show it, because logind only
+spawns them when you switch to one, by which point nothing is moving any more.
+
+The repaint watches `/dev/tty1` for the first minute of uptime and redraws the banner whenever the geometry has
+been disturbed since it was last drawn — not whenever the row count currently differs, which is a different and
+insufficient question: the count an operator finally sees is usually the very one the banner was drawn at, with
+its top thrown away in between. It declines to do anything once somebody has logged in, rather than restart a
+getty out from under a live session.
+
+The banner itself is always printed whole. An earlier version measured the console and dropped the logo, then
+the QR code, to fit — there is no moment in the boot at which that measurement stays true, and it shipped a box
+whose login screen had neither on a console with room for both.
+
+If a banner still looks wrong, `loom-info` on the console reprints it against the terminal it is run in.
+
+Setting the font once is not enough to make it stick. `systemd-vconsole-setup` runs before most of the machine
+exists, and whatever re-initialises the console afterwards — a real display driver taking over from the
+firmware framebuffer, or plymouth letting go of the screen — throws the font away and the kernel's own comes
+back. A `loom-console-font` service therefore applies it a second time, after plymouth has released the console
+and before any getty paints a character. It has to be before: changing the font resizes the console, so doing
+it afterwards would leave the banner in wrapped fragments.
+
+That second pass is late only because plymouth holds it there, which first-time setup — booting without a
+splash — does not, so there it landed before the display driver took over and the mode kept the kernel's font
+for the whole run. The driver taking over emits no event the console layer keys on, but the card does, so a
+udev rule on it starts `loom-console-font-reapply` and the font survives in both modes.
+
+So somebody who only walks past the monitor still gets everything they need. Nothing logs in by itself — the
+screen stays here until a key is pressed, which is also why the banner can no longer be scrolled away. Pressing
+a key logs in as `loom` with no username and no password, for the same reason `sudo` needs none: there is no
+remote access, and physical possession of box and stick is the whole trust boundary.
+
+That keypress opens a three-pane session:
+
+```text
+┌─────────────────────┬─────────────┐        ┌─────────────────────┬─────────────┐
+│  the bring-up       │             │        │  k9s, on the pods   │             │
+│  log, live          │    btop     │  once  │  of the loom        │    btop     │
+│  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁  │             │  it is │  namespace          │             │
+│  Loom ━━━━  12/18   │             │   up   │                     │             │
+├─────────────────────┴─────────────┤        ├─────────────────────┴─────────────┤
+│                                   │        │                                   │
+│           the assistant           │        │           the assistant           │
+│                                   │        │                                   │
+└───────────────────────────────────┘        └───────────────────────────────────┘
+  LOOM  starting 12/18   Alt-F2 for a shell   × restart pane   × detach
+```
+
+The top-left pane follows whichever unit this boot mode runs — `loom` under the default entry, `loom-fetch`
+under first-time setup — and hands over to `k9s` once the box is up. `btop` sits beside it.
+
+**A readiness bar is pinned along the bottom of that pane** while the log scrolls past above it: how many of
+the pods the cluster wants are ready, and — when something is not going to resolve by waiting — which pod and
+why, as `waiting on: loom-ollama-0 (ImagePullBackOff)`. If the count stops moving for five minutes it says so,
+which is the failure a percentage hides best: nothing is crashing, nothing is pulling, the number simply sits
+there. The bar pulses rather than filling while there is no cluster to ask yet, because a ratio of nothing to
+nothing is not zero per cent and must never be drawn as a hundred.
+
+The bar belongs to run mode. First-time setup pulls container images for hours with no cluster to ask and none
+coming, so nothing publishes readiness there and that pane is the `loom-fetch` log alone — every line of it,
+which is the whole of what that mode has to show for itself.
+
+What it counts is **workloads**, not pods: a Deployment mid-rollout has no pods yet for the replicas it has
+not created, so counting pods alone makes the denominator chase the numerator and the bar sits near the end
+from the first second. Deployments, StatefulSets, DaemonSets and Jobs each carry both numbers. Two cases are
+worth knowing about, because both would otherwise make the bar lie:
+
+- **KEDA scales to zero.** `worker`, `tika`, `gotenberg` and `ollama` are allowed to sit at zero replicas
+  when there is nothing queued. A workload that wants none is not counted at all — counted, it would hold the
+  bar short of the end for the life of the box.
+- **Jobs never become Ready.** The init and pre-install Jobs gate everything behind them and finish as
+  `Succeeded`, so a check written in terms of Ready pods never sees them. They count as done when they have
+  completed.
+
+**The status line carries the same answer for the life of the session** — `starting 12/18`, then `ready` in
+green, or `degraded` in red. That matters because the bar goes when the pane becomes `k9s`, and a box that
+comes up fine on Monday and loses a pod on Tuesday would otherwise say nothing anywhere. It is read from a
+file rather than from the cluster: `loom-ready.service` does the asking every five seconds, so a cluster that
+stops answering can never hang the tmux server. Typing `loom-ready` on an `Alt-F2` console prints the same
+panel plus every workload still outstanding, and exits non-zero unless the box is up — which is what makes it
+usable from a script. The assistant gets
+the full width along the bottom, because it is the only pane anyone types prose into and a chat folded into
+half a console is unreadable; the two above it are glanced at rather than read.
+
+`btop` picks its boxes from the size of that pane — the full `cpu mem net proc` set only where there is room
+for it — and its **net** box is pinned to the interface carrying the appliance address: `loom0` normally,
+`loombr0` on a `--wifi` box, where the wired port and the radio are two ports of the same bridge and only the
+bridge sees both. Left to itself `btop` would graph `lo` and keep graphing it, because it picks whichever
+interface has moved the most bytes so far and minikube's own loopback traffic wins that outright. Pinning it
+also puts the box address in the pane's header. The pin is a starting point, not a lock: `b` and `n` still
+cycle interfaces in that box.
+
+On a box that declares a `gpuVendor` — the Spark and the EVO-X2 — the **cpu** box also carries the GPU, reading it
+through the same vendor library `up.sh` uses for its preflight. It rides inside the cpu box rather than
+taking a box of its own, which is why it survives every rung of that ladder down to the smallest: a pane
+this size has no room for a fifth box, and `btop` shows the GPU one way or the other but not both. It costs
+the image nothing either — the build carries no compute stack for it, only a link to the one already there.
+See [GPU support](#gpu-support).
+
+**None of these three panes is a shell.** The middle one used to be. `Alt-F2` is the way to a prompt — see
+below.
+
+That left pane does not stay a log. The moment the unit has **succeeded** — `up.sh` exited 0, and the `loom`
+namespace exists — it hands the screen over to **`k9s`** on the pods, because from then on the log is a
+finished transcript while the pods are the live thing, and _"is it actually up?"_ is a question the log answers
+only indirectly: `up.sh` returns long before the last container is ready, and a pod that crash-loops an hour
+later says nothing there at all. A bring-up that **failed** keeps its log on screen, which is the one case
+where the log is what matters; so does first-time setup, which deploys nothing and powers the box off when it
+is done. The log is never lost either way — `journalctl --unit loom --follow` on an `Alt-F2` console brings it
+back, and the pane says so as it switches.
+
+### The assistant pane
+
+Only on an image that deploys Ollama, which means the two platforms with a GPU — `spark` and
+`evo-x2` — see [AI services follow the GPU](#ai-services-follow-the-gpu). On `nuc12`, and on anything
+built with `--no-gpu`, the session is two panes and `opencode` is not in the closure at all.
+
+The bottom pane runs [opencode](https://github.com/anomalyco/opencode) against the Ollama already running in
+the cluster, at `https://ollama.loom/v1/`. The box has carried a model on the stick since the first build and
+nothing on the console could reach it; this is what reaches it. There is no account, no API key worth the name,
+and no traffic off the box.
+
+It goes in through Traefik because that is the only door from outside the cluster — the workers reach the same
+Ollama by its in-cluster Service instead. `https`, not `http`, and the reason is the pane's own choice rather
+than the absence of a plaintext route: every image but `--require-client-cert` is built with `--enable-http`,
+so `ollama.loom` does answer on port 80. The pane takes the authenticated path, which is the one that stays
+correct on both images — and on the mTLS box `loom.assistant.ollamaBaseUrl` points it at the loopback proxy
+that holds the client certificate instead.
+
+That certificate is the one the chart generates for itself at install time, and it is self-signed, which an
+HTTP client will not accept on trust the way a human clicks through a browser warning. So `loom-chat` builds a
+CA bundle from the certificate secrets the cluster holds and passes it in `NODE_EXTRA_CA_CERTS`. Certificate
+verification stays **on**: if the bundle cannot be built the pane says so and waits, rather than falling back
+to an unverified connection.
+
+Two things have to be true of that certificate, and the chart is what makes them true.
+
+**It has to name `ollama.loom` explicitly.** A certificate carrying only `DNS:*.loom` does not work: a
+wildcard needs at least two dots, so OpenSSL refuses to expand one under a single-label parent and Bun — like
+curl — rejects the connection with "no alternative certificate subject name matches target hostname". The
+pre-install Job therefore writes every `hostnames` entry into the subjectAltName one by one.
+
+**It has to be usable as its own anchor.** Nothing issued it, so trusting it means trusting it as a root, and
+a verifier handed a root asks whether it was allowed to sign anything. A certificate whose critical
+`keyUsage` omits `keyCertSign` was not, and Bun refuses it with "unable to verify the first certificate" —
+after the pane has started, because the wait ahead of it uses `curl`, and OpenSSL accepts such a certificate
+without complaint. The chart emits no `keyUsage` at all on the self-signed path, and names `cert sign` on the
+`certificate.enabled` one.
+
+See [Hostnames and the self-signed certificate](installation.md#hostnames-and-the-self-signed-certificate).
+On a box already running an affected release, replacing the `self-signed-cert` secret by hand is the only
+fix, and it sticks, because the Job never replaces a certificate that covers every host.
+
+#### What the pane is allowed to do, and what it is told
+
+The pane ships a pinned `opencode.json` and a `tui.json` beside it, copied out of the store onto tmpfs on
+every start — so restarting the pane is also the way back to a known configuration, and nothing an operator
+changed in a session survives it.
+
+**It does not ask for permission.** `permission` is `allow`, which is opencode's whole ruleset in one word.
+Left at the default the agent still stops at three things — a long tool loop, touching a path outside its
+working directory, and reading a `.env` — and each of those is a modal prompt in a tmux pane behind a
+splash, answered by the same person who asked the question. See the threat-model bullet above; this is a
+deliberate choice, not an oversight.
+
+**It cannot share a session.** `share` is `disabled` rather than left at its `manual` default, which would
+leave `/share` on the command list. That command uploads the transcript to opencode's servers; there is no
+route for it here, and the transcript is of an evidence set.
+
+**It asks Ollama how big the context is.** A model opencode has no catalogue entry for resolves with
+`limit.context = 0`, and that number is not cosmetic: opencode's automatic compaction begins
+`if (context === 0) return false`, so a session with it never gets summarised — it runs until Ollama
+truncates it at the far end, silently. The number cannot be written into the image either, because Ollama
+sizes the context from the VRAM it measures (256k above 47 GiB, 32k above 23 GiB, 4096 below — the ladder
+`ollama/ollama_wrapper.py` mirrors) and one image serves boxes with different GPUs. So `loom-chat` reads it
+at startup: `/api/ps` for the window the running model actually has, falling back to `/api/show` for the
+trained length. If neither answers, nothing is written and the pane behaves as it did before — a token count
+with no percentage is honest, a guessed percentage is not.
+
+**It does not show a price.** opencode's sidebar prints `$0.00 spent` unconditionally — the session bar
+guards the same figure behind `cost > 0`, the sidebar block does not, and no setting hides that one line. The
+models are local and the figure is always zero, so the block is turned off whole, through `plugin_enabled`
+in `tui.json`. The token count and the percentage it also carried are still in the session bar.
+
+The model is **pinned at build time** to `LOOM_CHAT_MODEL` in `vars.sh`, which must name a model
+`ollama/Dockerfile.models` actually bakes in — on an air-gapped box there is no way to fetch another, and pointing the
+pane at a tag the workers do not use would make Ollama load a second model and evict the one it is indexing
+with. **`loom-chat`** is the same screen as a command, for an `Alt-F2` console.
+
+The pane waits until Ollama answers at `https://ollama.loom/` over a connection that verifies, so on a cold box
+it stays blank-ish for as long as the bring-up takes. It names what it is waiting for while it waits, including
+whatever `curl` said — a certificate that does not verify, a route that 404s and a name that resolves to some
+other service are different problems, and the pane distinguishes them.
+
+Whether the pinned model is actually in Ollama's inventory is **not** part of that wait. The pane warns once if
+it is missing and starts anyway: a Ready `ollama` pod says nothing about its model store (the chart probes
+`/api/ps`, which answers on an empty one), so waiting for the model is waiting on something that may never
+arrive. The assistant then fails its first question with an error you can read, in a pane that keeps it on
+screen and offers `× restart pane` — see `ollama list` in the `ollama` pod for what the box really has.
+
+Sessions and caches go to `tmpfs` under `/run/loom`, not to the encrypted root: what an operator asked about an
+evidence set is not something to leave on the disk by accident.
+
+Two things worth knowing before leaning on it:
+
+- **It is an agent, not a chat box.** It can read and write files and run commands as `loom`, which is in
+  `wheel` and `docker`. On a box whose trust boundary is physical possession that changes little — but it is a
+  different proposition once `--wifi` is on, and worth re-reading [the threat model](#threat-model) in that
+  case.
+- **The model is the one the chart names.** A built stick pins it from the _embedded tag's_ chart, not from
+  a Nix default: `vars.sh` reads `._llmDefaults.model` out of `charts/values.yaml` -- `qwen3.8:27b` -- and
+  `cicd/build_appliance_image.sh` passes it through as `--argstr loomChatModel`, which is also the only model
+  `ollama/Dockerfile.models` bakes into the production image. It is capable at short, well-scoped questions
+  and gets less reliable as the number of tools in play grows: treat it as a knowledgeable colleague who has
+  seen this box but not your cluster, rather than as something to hand a long autonomous task.
+  (`appliance-vm` and the VM tests substitute a much smaller stand-in, because nothing bakes a 27B into a
+  test node.)
+
+#### Skills
+
+The pane ships knowing what Loom is and how this box is operated. Without that it is a general-purpose
+assistant guessing at `kubectl` invocations on a machine it has never been told about, which is worse than
+useless at the moment somebody needs it.
+
+Two skills, in a read-only store path the config names through `skills.paths`:
+
+- **`loom-appliance`** — operating and diagnosing the box: the `loom-*` commands, the systemd units, the
+  cluster and the Celery queue chain, addresses and `loom0` and `dnsmasq`, the LUKS key and USB ingest, the
+  GPU, the access point.
+- **`loom-usage`** — using Loom: getting documents in, every `*.loom` address and what it serves, the REST
+  API, searching and the AI features.
+
+Only each skill's name and one-line description sit in the model's context; the body is fetched when the
+model asks for it, and the reference files beside it only when it reads them. The skills do not restate this
+documentation — they name a file and a heading in the checkout at `/home/loom/loom` and send the agent to
+read it, which is also where an operator would look. A test asserts every heading they cite still exists, so
+editing this page cannot quietly leave the assistant pointing at a section that is gone.
+
+One file per box is generated at build time, `facts.md`: the platform, whether there is a GPU, the boot mode,
+the chat model, whether WiFi or `--debug` or `--lock-key` are on, and every name this box resolves. Anything
+that can change while the box runs is deliberately not in it — `loom-info` and `loom-platform-info` answer
+those, and a skill that names a command is right on every image where one that names a value is right on one.
+
+Alongside them, always in context rather than on demand, is a short briefing: that this is an air-gapped
+appliance with no route off itself, that the checkout is at `/home/loom/loom`, and that the agent should
+reach for a skill before answering from general knowledge about Linux.
+
+**What it deliberately does not read.** opencode looks for instructions by walking up from its working
+directory — `AGENTS.md`, then `CLAUDE.md` — and the pane's working directory is the seeded checkout, which
+has Loom's own `CLAUDE.md`: several hundred lines about git worktrees, merge requests and poetry lockfiles,
+addressed to someone developing Loom on a machine with a network. That is switched off, as is opencode's
+habit of discovering skills from `.claude/` and `.agents/` directories in the operator's home and in the
+checkout. An appliance's assistant should know exactly what the image gave it and nothing else.
+
+### Driving it with a mouse
+
+Plug a USB mouse in — at any time, including long after boot — and the console gets a pointer: one character
+cell in reverse video, following the mouse. There is no X and no Wayland involved; the pointer is drawn by the
+kernel and the events are decoded by `gpm`.
+
+**Click a pane to work in it.** The pane under the pointer takes the focus, and the mouse then reaches into
+whatever is running there: `btop`'s own menus and boxes respond to clicks, `k9s` selects the row you click,
+and the assistant's input box takes focus. The scroll wheel scrolls the pane under the pointer, and dragging a
+pane border resizes it.
+
+**The two controls at the bottom right are buttons.** `× detach` ends the session and returns the box to the
+banner and the press-a-key prompt — the closest thing this appliance has to a lock screen. `× restart pane`
+forces the focused pane's program to start over, for the times something is wedged rather than gone.
+
+A mouse is never required. Everything below still works without one, and a box with no mouse behaves exactly
+as it did before any of this existed.
+
+### Panes look after themselves
+
+Each pane runs one application and nothing else, so quitting one is a single keystroke — `q` in `btop`, `:q`
+in `k9s`. That no longer costs you the pane: every pane is supervised, and the program comes straight back
+with a one-line note saying so.
+
+A program that exits _immediately_, twice running, is treated as broken rather than quit: the gap before each
+retry doubles up to thirty seconds, so the error stays on screen long enough to read instead of scrolling past
+in a loop. Nothing on this box spins a pane at full tilt.
+
+Inside `k9s`, `d` describes a pod, `l` shows its logs, `0` switches namespace and `:q` restarts it.
+**`loom-k9s`** is the same screen as a command, for an `Alt-F2` console.
+
+`Ctrl-b` does nothing: the session is a kiosk, so tmux's prefix and its right-click menus are switched off and
+the status line carries the two controls anyone needs. `Alt-F2` through `Alt-F6` give a plain console with no
+session at all. Since no pane of the session is a shell, that is both the way back in if anything above
+misbehaves **and** the ordinary way to get a prompt — `loom-info`, `loom-k9s`, `loom-chat`, `loom-up` and
+`loom-down` are all on the `PATH` there, as is `tmux -S /run/loom/tmux.sock` if the session itself needs
+handling. `Alt-F1` returns to the session.
+
+None of that is a security boundary, and it is not meant to be one: every console autologins the operator
+account, which holds passwordless root. Physical possession of the box and its USB key is the boundary — see
+[Threat model](#threat-model).
+
+`loom-up` and `loom-down` wrap `up.sh` with the flags the appliance needs:
+
+```bash
+loom-up --offline
+loom-down
+```
+
+Use these rather than `./up.sh` directly. Bare `up.sh` would rewrite `/etc/hosts` and `/etc/sysctl.d`, both of
+which this appliance declares through NixOS — it would undo its own configuration. `loom-up` passes
+`--skip-setup_system --skip-install_host_entries` for exactly that reason, and forwards everything else through.
+
+`loom.service` adds `--resume-if-deployed` on top, in run mode only. The unit runs `up.sh` at every boot, and
+`skaffold run` stamps a fresh `skaffold.dev/run-id` into every pod template each time it is invoked — so
+without the flag every Deployment in the namespace rolls on every boot, even though the checkout, the images
+and the flags are all fixed by the image the box was built from. The flag compares the `helm.sh/chart` label
+on the live Deployments against the versions this checkout would deploy, and skips `install_third_party` and
+`run_skaffold` when they already match. The cluster itself is still started: after a host reboot minikube's
+container is stopped, and `minikube start` is never skipped.
+
+The rolling it avoids is not only wasted time. A pod that requests `nvidia.com/gpu` is rejected outright if it
+reaches kubelet before the GPU device plugin has registered the resource — terminal, with reason
+`UnexpectedAdmissionError` — and the ollama pod created by a needless redeploy at boot lands in exactly that
+window. `up.sh` now also waits for the node to advertise the vendor's resource before it deploys anything;
+a box whose plugin never comes up fails the bring-up with a message naming it, rather than coming up with its
+AI half permanently dead.
+
+To force a redeploy from the console — after editing the chart in place, say — run `loom-up --offline` without
+the flag, or bump `version` in `charts/Chart.yaml`. A change under `charts/templates/` with no version bump is
+the one edit the check cannot see.
+
+Note the absence of `up.sh`'s `--expose`. Making Loom reachable from the appliance network is a separate unit,
+**`loom-expose`**, and it is not something `loom-up` starts or stops:
+
+```bash
+systemctl status loom-expose      # is this box reachable from the network port?
+iptables --table nat --list-rules LOOM-EXPOSE
+```
+
+It installs two iptables chains that send anything arriving on the box's own address at port 80 or 443 to the
+minikube node, where Traefik binds those ports directly. `--expose` does the same job a different way — it runs
+`minikube tunnel`, which forwards each port over an `ssh` connection into the node — and the two cannot be
+combined, because the DNAT happens before the kernel would hand a packet to a tunnel's socket. If you do want
+the tunnel for some reason, stop `loom-expose` first.
+
+Only 80 and 443 are published, which is all the firewall opens. Nothing else Traefik carries (IMAP, AMQP,
+Redis, Prometheus) is reachable from the network port.
+
+## Wiping a box
+
+Boot the stick (via the firmware boot menu) and choose **ERASE ALL DATA**. The interlock still applies here and
+always will — a wipe never runs unattended. It prints every disk that will be destroyed, and the one that will
+not, and asks for the words `ERASE ALL DATA`.
+
+Booting the stick on a box it installed does not start an install, so you land in the menu and can pick this.
+
+The wipe is layered, cheapest first. Because the disk is encrypted, erasing the LUKS keyslots _is_ the wipe and
+takes under a second; everything after it is defence in depth:
+
+1. `cryptsetup luksErase` on the pooled container, and on any container sitting directly on a partition
+2. random data over the headers, then `wipefs`
+3. `sgdisk --zap-all`
+4. `blkdiscard`
+5. `nvme format --ses=1`, falling back to `--ses=2`
+
+Layers that a given drive does not support are skipped and reported. A full overwrite is deliberately not the
+default: on a wear-levelling NVMe it takes hours and still cannot reach retired or over-provisioned blocks, so it
+is both slower and weaker than a controller-level erase.
+
+## GPU support
+
+Whether a box offloads Ollama to a GPU is declared once, as `gpuVendor` in `nixos/platforms/<id>.nix`, and
+nothing at build time turns it on. There is no `--gpu` flag: asking for a GPU the box does not have would
+only produce a stick that fails on first boot. The Spark and the EVO-X2 declare one and the NUC 12 does
+not — and because [AI services follow the GPU](#ai-services-follow-the-gpu), that is also what decides which
+boxes ship Ollama at all.
+
+**On the EVO-X2** the appliance passes `--gpus amd` to `up.sh`, which selects `charts/values-amd-gpu.yaml`,
+enables minikube's `amd-gpu-device-plugin` addon and asks `minikube start` for the GPU. `amdgpu` is mainline
+and already loaded — it is what puts the installer menu on the monitor — and it is what exposes `/dev/kfd`
+for minikube's docker driver to pass into the node container. That values file also sets
+`ollama.gpuVendor: amd`, which is how the container knows to read its GPU memory from amdgpu's sysfs rather
+than shell out to an `nvidia-smi` that is not there — and how it knows to fail loudly, rather than quietly
+running on the CPU, if `/dev/kfd` never made it into the pod. The ROCm userspace lives inside the
+`ollama/ollama:rocm` image, so the box itself carries only `rocm-smi`, which `up.sh` needs for its preflight.
+That same `rocm-smi` is what puts the GPU readout in the console's `btop` pane: `btop` already knows how to
+read it and only needs pointing at the copy the box has, so the readout adds nothing beyond the link.
+
+That last point is also what insulates this box from an unsettled corner of the ecosystem: ROCm's support
+for this GPU (`gfx1151`) has been uneven enough that published benchmarks disagree about which release is
+fastest, and nixpkgs has open bugs against its own ROCm on this part. None of it reaches the appliance,
+which needs `amdgpu` and two kernel parameters and nothing else.
+
+Those two parameters are how the iGPU gets its memory: `amdgpu.gttsize` and `ttm.pages_limit`, set in
+`nixos/platforms/evo-x2.nix` to a 64 GiB ceiling — half the box, comfortably more than the baked-in models
+need, and leaving the rest of the stack more than twice the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` checks.
+They raise a ceiling rather than reserving anything: nothing leaves the host until the GPU actually pins
+it. Set the firmware's VRAM split to its _minimum_ to go with them, and see
+[What you need](#what-you-need) for why that is the right way round.
+
+**On the DGX Spark** the appliance passes `--gpus nvidia` to `up.sh`, which selects
+`charts/values-nvidia-gpu.yaml`, enables minikube's `nvidia-device-plugin` addon and asks
+`minikube start` for the GPU. The driver is stock nixpkgs: the pin carries NVIDIA 595.71.05 with the open
+kernel modules, which is what a GB10 Blackwell needs, and `nixos/platforms/spark.nix` adds
+`hardware.nvidia-container-toolkit` so the device reaches the minikube node container through a CDI spec.
+That file also puts the toolkit on the docker daemon's own `PATH`, which is a second thing and not a
+tidiness one: it is how docker decides that NVIDIA is what this box has, and without it `minikube start`
+fails outright — see [Troubleshooting](#troubleshooting) for the error, which names the wrong vendor.
+As on the EVO-X2, none of the compute stack lives on the host — the CUDA userspace is inside the `ollama`
+image, and the box carries only `nvidia-smi`, which comes out of the driver itself and which `up.sh` needs
+for its preflight. That same driver puts the GPU readout in the console's `btop` pane. The values file sets
+`ollama.gpuVendor: nvidia`, the mirror of the EVO-X2's declaration above.
+
+Two things about this box's memory are worth knowing before reading `OLLAMA_NUM_PARALLEL` in a log. The
+GB10's 128 GB is **unified**, so a total reported for it is host memory rather than a card's own VRAM: the
+wrapper treats any GPU total at or above 80% of `MemTotal` as exactly that, and holds back the same 25 GiB
+host reserve it does for the EVO-X2's GTT pool. A discrete card is spent in full instead; the ratio is what
+tells the two apart, without a list of board names to keep current.
+
+And a GB10 reports **no total at all** — measured on hardware, NVML answers `NVML_ERROR_NOT_SUPPORTED` and
+`nvidia-smi --query-gpu=memory.total` prints `[N/A]`, because the memory it would report is the host's. That
+is the driver's own answer rather than a missing reading, so the wrapper books host `MemTotal` as unified
+memory and plans against it under the same reserve, instead of falling back to the minimum parallelism.
+
+> **The driver is confirmed on hardware; the offload is not.** A Spark has now booted this image, and
+> `loom-platform-info` there reports the GB10 (`10de:2e12`) on the open kernel modules at 595.71.05, all six
+> `/dev/nvidia*` nodes, and `nvidia-smi` naming the board — so `gpuVendor = "nvidia"` is a measurement.
+> What that run did **not** establish is the half beyond the driver: whether the GPU is usable from inside
+> the Ollama pod. Run `loom-platform-info` on your own box before relying on it — its **GPU** and
+> **GPU in containers** sections exist for exactly this — and read
+> [When the GPU does not come up](#when-the-gpu-does-not-come-up) first.
+>
+> A second measured fact shapes what the box injects into containers: a NixOS host's `nvidia-smi` cannot
+> run inside one. The toolkit binds the binary in, but its ELF interpreter lives under `/nix/store` and the
+> node's toolkit does not carry that path into a pod, so `exec` fails. `nixos/platforms/spark.nix`
+> therefore stops injecting the driver's executables at all, and the Ollama wrapper reads NVML instead —
+> a library, which loads against the container's own glibc.
+
+**The network port is settled, and it is the RJ45.** `loom-platform-info` on a Spark reports the 10GbE
+management port as a Realtek RTL8127 (`10ec:8127`) claimed by `r8169` — the only interface that driver
+matches, which is why `netMatch` in `nixos/platforms/spark.nix` pins it. The ConnectX-7 does present four
+`mlx5` interfaces, two per QSFP cage across PCI domains `0000` and `0002`, and all four are left unmatched:
+they need transceivers, and a cable in the RJ45 is what an operator has. To serve the appliance network off
+a QSFP port instead, build with `--interface enp1s0f0np0` — using the name `loom-platform-info` reports,
+which carries the PCI domain on this box. See
+[The appliance network interface](#the-appliance-network-interface).
+
+What is still unsettled is **the kernel**. Every published route to NixOS on this box goes through NVIDIA's
+kernel fork via [`graham33/nixos-dgx-spark`](https://github.com/graham33/nixos-dgx-spark), and this image
+deliberately does not use it. Their own USB image offers both kernels and describes the difference as
+_Ethernet_, not GPU; and it would be built from source on aarch64 with no cache hits. That Ethernet concern
+is most likely their own doing rather than a mainline defect — their module blacklists `r8169`
+unconditionally in favour of NVIDIA's out-of-tree `r8127`, which no stock kernel has, so their
+standard-kernel option leaves the RJ45 with no driver at all. On this image the pin's own `r8169` claims
+the RTL8127 and the port carries traffic.
+
+Nor does the fork hold `cppc_cpufreq.auto_sel_mode=1` hostage, as this page used to claim. That is an
+out-of-tree module parameter wrapping a register mainline has exposed since 6.16 as the cpufreq attribute
+`/sys/devices/system/cpu/cpufreq/policy*/auto_select` — present and writable on all twenty policies of a
+Spark running this image, currently reading `0`. `loom-platform-info` reports its state under **CPPC
+autonomous mode**. Turning it on is a decision for this image rather than a reason to change kernels, and
+worth weighing on the right numbers: the widely-quoted ~3× is single-thread _sysbench_ memory bandwidth,
+while the same source measures llama.cpp at +5.5% prompt processing and flat token generation.
+
+**On the NUC 12** there is nothing to enable. Loom has no path to an Intel iGPU, and neither has `btop`.
+
+### When the GPU does not come up
+
+`up.sh` counts GPUs through the vendor's SMI tool — `rocm-smi` or `nvidia-smi` — and hard-exits below
+`LOOM_MIN_GPU`. So a box where the GPU does not enumerate does not quietly fall back to the CPU: it serves
+nothing, and there is no remote access to repair it with. Worth watching for on first boot on both GPU
+platforms — Strix Halo is recent enough on the EVO-X2, and on the Spark only the driver has been confirmed
+on hardware, not the offload reaching a pod.
+
+The way out is a new stick:
+
+```bash
+build-appliance-image --platform evo-x2 --no-gpu --tag 1.4.0 --flash /dev/sdX
+```
+
+That image is the CPU-only one this platform used to produce — which, by the rule above, also means no
+Ollama. Full-text search, OCR, metadata extraction and archive import all still work. The build
+prints what it decided:
+
+```text
+      gpu       : disabled by --no-gpu (amd available)
+```
+
+`--no-gpu` is refused on a platform that has no GPU to disable, so a stick that came out CPU-only did so for
+a reason you can read back off it.
+
+On the Spark the same flag does the same job — `build-appliance-image --platform spark --no-gpu ...` — with
+one difference worth knowing: it drops the offload and the AI services but **keeps the NVIDIA driver**,
+because on that box the driver is also what puts the console on the monitor. The result is therefore not
+"the Spark stick without NVIDIA"; it is the Spark stick without the GPU _offload_.
+
+Before reaching for a new stick, run `loom-platform-info`. On the EVO-X2 it says whether `/dev/kfd` exists
+at all, what `rocm-smi` reports, and — the case that looks like a working GPU but performs like none — how
+much GTT the kernel actually granted against the ceiling the image asked for. A GTT figure far below that
+ceiling means the kernel parameters did not take effect, which is a different problem from ROCm not
+enumerating and has a different fix.
+
+On the Spark it answers the equivalent questions in two places. The **GPU** section reports
+`/dev/nvidiactl`, the loaded `nvidia*` modules, the driver version out of `/proc/driver/nvidia/version` and
+what `nvidia-smi -L` names the board. The **GPU in containers** section covers the half that a working
+`nvidia-smi` does not prove: whether a CDI spec was generated, whether `nvidia-ctk` is present, and which
+runtimes docker knows about. A box where `nvidia-smi` works but no CDI spec exists will pass `up.sh`'s
+preflight and then schedule Ollama onto a node advertising no `nvidia.com/gpu` at all.
+
+## Troubleshooting
+
+**Start with `loom-platform-info`.** It prints what the box actually is beside what the image was told to
+expect, which is the fastest route through most of what follows:
+
+```bash
+loom-platform-info
+```
+
+It reports the wired ports with their drivers and PCI paths — and says outright how many of them matched
+the platform's `netMatch`, and whether `loom0` exists; the radios, including whether the driver advertises
+AP mode at all, which is what decides whether `--wifi` can work; the GPU, with the firmware VRAM carve-out
+and the GTT pool side by side, plus whether `/dev/kfd` is there for `up.sh` to find; and the firmware
+version and boot mode. `--json` gives the same thing machine-readably; `--output FILE` writes to a file.
+
+The same command is available in the development shell, where it reports whatever machine you run it on.
+That is deliberate: it is how a box gets checked **before** there is an appliance image for it, and it is
+what to run on a new box whose values in `nixos/platforms/<id>.nix` are still guesses.
+
+One limitation worth knowing: an installed appliance has no route off its own network, so the report leaves
+by photograph, by `--output` onto a mounted filesystem, or by being read aloud. There is no upload.
+
+**The box boots into the installer every time.** The firmware is preferring the stick's removable-media path.
+Re-run the install, or set the internal disk first in the firmware boot order.
+
+**The box will not boot and asks for a passphrase.** The stick is missing, in a different port, or its key
+partition is empty. Enter the recovery passphrase, then check the stick — the installer menu's status screen
+reports whether a key is present.
+
+**The login screen says `loom0 does not exist`.** The platform's interface match selected nothing, so the box
+has no address and serves no DHCP or DNS. The warning is printed under the banner, above the press-a-key
+prompt, and lists the interfaces that are present; rebuild the stick with `--interface <one of them>`. On the
+EVO-X2, first just try the other ethernet port. `loom-platform-info` names the ports and says which of them
+the match did and did not select — including the case where it matched more than one, where udev picks and
+moving the cable is the fix.
+
+**A laptop gets an address and resolves `*.loom`, but nothing loads.** DHCP and DNS come from `dnsmasq`;
+reaching the stack is `loom-expose`, a different unit, so one working says nothing about the other. Check it
+with `systemctl status loom-expose` and `iptables --table nat --list-rules LOOM-EXPOSE`. If the rules are
+there, the stack itself is probably still coming up — `curl --insecure https://frontend.loom` from an
+`Alt-F2` console goes straight to Traefik and bypasses the whole question, so it separates "not exposed" from
+"not up yet" in one command.
+
+**A laptop plugged into the box loses the internet on every other interface.** The box's lease is naming it as
+the laptop's default gateway, and a wired link outranks wifi nearly everywhere, so everything the laptop sends
+anywhere goes to a box with no upstream. Confirm it with `ip route` (`route print` on Windows): a `default via
+<box address>` is the symptom. Sticks built before this was fixed all do it — `dnsmasq` sends a router option
+of its own accord unless one is explicitly suppressed, so leaving it unconfigured was not the same as leaving
+it out. Build a new stick. To finish a session on the stick in hand, delete that route on the laptop
+(`sudo ip route del default via <box address>`); it comes back at the next lease renewal.
+
+**On the Spark, `minikube start` fails with `Error response from daemon: AMD CDI spec not found`.** On a box
+with no AMD anything in it. Sticks built before this was fixed all do it, and the fix is a new stick — with
+`--no-gpu` as the way to get a working CPU-only box out of the one in hand meanwhile. What happens is that
+docker 29 picks its GPU driver by looking for a binary on the daemon's own `PATH` — `nvidia-cdi-hook` or
+`nvidia-container-runtime-hook` — and, finding neither, registers an AMD driver instead. That driver claims
+the generic `gpu` capability, which is all `--gpus nvidia` amounts to by the time minikube has forwarded it to
+docker as `--gpus all`, and it then refuses the only CDI vendor the box has. `nixos/platforms/spark.nix` puts
+the container toolkit on that `PATH` with `virtualisation.docker.extraPackages`, which nixpkgs does for the
+rootless daemon and not for this one.
+
+The message is worth reading precisely, because it says more than it appears to: the AMD driver only gets as
+far as naming AMD once it has found _some_ vendor in the CDI cache and seen that it is not `amd.com`. So the
+error is itself proof that the driver loaded, the GPU enumerated and `nvidia-ctk` wrote a valid spec — all of
+what `loom-platform-info`'s **GPU** and **GPU in containers** sections exist to check. `no known GPU vendor
+found` in the same position is the other failure and a real one: nothing generated a spec at all.
+
+**On the Spark, the cluster never starts and the kubelet log says `invalid Node Allocatable configuration`.**
+In full: `Resource "ephemeral-storage" has a reservation of {{18253611008 0}} but capacity of {{0 0}}`. The
+reservation is ours — `up.sh`'s 10Gi `system-reserved` plus 5Gi `kube-reserved` plus the 2Gi `nodefs`
+eviction threshold, which kubelet folds in. The capacity is the node saying it has no disk at all, and it is
+read once at startup and never revisited, so the cluster cannot recover on its own.
+
+The cause is the GPU, by a long route. The CDI spec binds the driver, glibc and every `libnvidia-*.so` into
+the node container — some fifty mounts, all on the box's single ext4 root. cadvisor, inside kubelet, keys its
+partition table by device and keeps only the **first** mount it sees per device, assuming the rest are binds
+of it. Upstream's first entry binds `/run/opengl-driver`, which docker applies at container creation and the
+node's own systemd then covers with a `tmpfs` over `/run` — so the mount stays in `mountinfo` while the path
+disappears. cadvisor `statfs`es a path that no longer exists, returns a zero-valued filesystem rather than an
+error, and kubelet refuses to start without logging anything about why. `nixos/platforms/spark.nix` drops
+that one mount, which nothing inside a container could read anyway; cadvisor then lands on the driver's store
+path and reports the whole disk. Sticks built before this fix all do it, and the fix is a new stick.
+
+**On the Spark, setup stops with `build target platforms "linux/arm64" do not match platform constraints`.**
+The artifact named is `ollama-runtime-rocm`, which has no arm64 build: ROCm base images are published for
+amd64 only, and the Spark is an NVIDIA box that would never want it. skaffold checks that constraint while
+_creating its runner_, before the `--build-image=[]` that offline mode passes to build nothing at all can
+matter — so on an arm64 host it stops every skaffold invocation rather than just a build. `skaffold.yaml`'s
+`arm64` profile drops that one artifact, activated on the `TARGETARCH` that `up.sh` already exports. Unlike
+the two failures above, this one lives in the **tagged** tree rather than in the Nix code, so a stick only
+picks the fix up once it embeds a tag that contains it.
+
+**`loom-up` refuses to start, complaining about the minikube address.** The `*.loom` names, and the DNAT
+chain that fronts the box, are pinned to `kubernetes.api` from the embedded tag's `charts/values.yaml`
+(`192.168.49.2` by default) and minikube came up somewhere else. The same address is the `ipBlock` in the
+`-allow-k8s-api` NetworkPolicy, so a node anywhere else also denies every pod its own API server.
+
+`up.sh` makes the same check itself, immediately after `minikube start` and **before any image is pulled
+into the node** — at that point the cluster is empty and `minikube delete` costs nothing. The warning below
+applies to a box that has already fetched.
+
+Move the node rather than deleting it. The image store is a docker _volume_, which survives everything here;
+only `minikube delete` removes it:
+
+```bash
+minikube stop
+docker network rm minikube
+docker network create --driver bridge \
+    --subnet 192.168.49.0/24 --gateway 192.168.49.1 \
+    --label created_by.minikube.sigs.k8s.io=true \
+    minikube
+# The container still names the old network, and its stored IPAM address is the
+# old one; connecting it replaces both.
+docker network connect --ip 192.168.49.2 minikube minikube
+minikube start
+```
+
+`minikube start` then regenerates the API server certificate for the new address and rewrites the
+kubeconfig, `--advertise-address` and the kubelet's `--node-ip`. Confirm with `minikube ip` before running
+`loom-up` again. Note that `minikube start --static-ip` cannot do this on its own: on a cluster that already
+exists it prints a warning, discards the flag and carries on.
+
+> **`minikube delete` destroys the container images, and on an appliance that is not recoverable.** The images
+> live inside the minikube container's own storage, and nothing on the box keeps a second copy — so deleting
+> the cluster drops all ~60 GB of them. Refetching needs the first-time-setup entry, which no longer exists
+> once setup has run. The only way back is a reinstall from the stick, and that destroys the LUKS container
+> and every indexed document with it. **Copy anything you care about off the box first.**
+
+**Loom does not come up after a reboot in run mode.** The first pane of the console session already shows
+`loom`'s log. If the image store is empty, first-time setup either never ran or its images have since been
+dropped — see the `minikube delete` warning above, which is the usual cause and the usual bad news.
+
+**The console session will not start.** It prints why and hands over a plain shell on the same screen rather
+than looping; `Alt-F2` gives another one regardless. Reattach by hand with `loom-console`, or throw the session
+away with `tmux -S /run/loom/tmux.sock kill-server` and run `loom-console` again.

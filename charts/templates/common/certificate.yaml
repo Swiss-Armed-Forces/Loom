@@ -24,6 +24,72 @@ spec:
     {{- range concat (.Values.hostnames.ingress | default list) (.Values.hostnames.extra | default list) | sortAlpha | uniq }}
     - {{ printf "%s.%s" . $.Values.domain | quote }}
     {{- end }}
+  # What the certificate is allowed to be used for, spelled out because the
+  # default is wrong for the issuer this chart ships.
+  #
+  # cert-manager always emits a keyUsage extension and defaults it to digital
+  # signature + key encipherment -- there is no way to ask it for a certificate
+  # without one. With the default `-selfsigned-issuer` ClusterIssuer the result
+  # is a self-signed certificate that no client can use as its own anchor, and
+  # every client that trusts this chart's certificate does exactly that:
+  # `loom-chat` in nixos/console.nix passes it to Bun in NODE_EXTRA_CA_CERTS,
+  # install_cluster_ca in nixos/usb-ingest/loom_usb_ingest/transfer.py writes it
+  # into mc's CA directory.
+  #
+  # Measured against a fake TLS server, with the certificate the only variable:
+  # a self-signed certificate whose critical keyUsage omits `cert sign` is
+  # refused as an anchor by Bun's BoringSSL ("unable to verify the first
+  # certificate") and accepted by OpenSSL and Go. The same rule, and the same
+  # reasoning, as the comment in
+  # charts/files/pre-install/generate-self-signed-certificate.sh, which fixes it
+  # the other way -- by emitting no keyUsage at all, which cert-manager cannot
+  # do. That cert-manager maps these names onto exactly those keyUsage bits is
+  # read off its API reference, not measured here: this path needs cert-manager
+  # in the cluster and `certificate.enabled`, and it is off by default.
+  #
+  # The first three restate cert-manager's own defaults plus the serverAuth this
+  # chart's Ingresses need, so naming `cert sign` does not quietly narrow the
+  # certificate to that one usage.
+  #
+  # `isCA` is set because `cert sign` is. The openssl path above gets to say
+  # neither -- it emits no keyUsage at all, which is what actually fixes this
+  # and is what cert-manager cannot be asked for -- and its comment records why
+  # asserting one without the other is not an option: CA:FALSE beside a
+  # keyCertSign bit is a contradiction a verifier is entitled to reject later.
+  # So on this path the two agree, and the certificate really is what it claims
+  # to be: a self-signed certificate that is its own issuer and may sign itself.
+  #
+  # The cost is understood, and it is **not** bounded by `dnsNames`: those
+  # constrain this certificate as a leaf, not what a CA:TRUE certificate holding
+  # `cert sign` may issue. With no nameConstraints and no maxPathLen, a key that
+  # can sign `*.loom` can sign any name -- and `guides.py` and
+  # cicd/generate_client_certificate.sh both tell visitors to install the serving
+  # certificate as a system trust root. What does bound it is that the key never
+  # leaves the cluster, the certificate is generated per deployment, and it is
+  # trusted only by clients that were handed it. cert-manager >= 1.15 can express
+  # the real bound with `nameConstraints`, but only behind its NameConstraints
+  # feature gate, which this chart cannot assume of someone else's cluster.
+  #
+  # Both of these are therefore emitted **only for the chart's own
+  # `-selfsigned-issuer`**, which is the issuer the whole argument above is
+  # about: a self-signed leaf that has to be its own anchor. Pointed at an
+  # external issuer (charts/values-external-tls-certificates.yaml, the one
+  # shipped configuration that sets `certificate.enabled`), asking for `isCA` is
+  # either refused outright -- ACME issuers reject it, a Vault role that does not
+  # permit CA issuance fails the CertificateRequest -- or granted, which hands a
+  # `*.loom` deployment a signing certificate under the organisation's own trust
+  # anchor. Neither is the thing being reasoned about here.
+  {{- $selfSigned := not .Values.certificate.issuerRef.name }}
+  {{- if $selfSigned }}
+  isCA: true
+  {{- end }}
+  usages:
+    - server auth
+    - digital signature
+    - key encipherment
+    {{- if $selfSigned }}
+    - cert sign
+    {{- end }}
   # Mandatory issuerRef to get a PKI signed certificate
   issuerRef:
     name: {{ default (printf "%s-selfsigned-issuer" (include "app.fullname" .)) .Values.certificate.issuerRef.name }}

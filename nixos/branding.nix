@@ -1,0 +1,563 @@
+# Loom branding for everything on screen before Loom itself.
+#
+# Shared by the appliance and by the installer stick, because an operator meets
+# both and they should not look like two different products. What lives here is
+# what the two have in common: the name in the boot menu, the logo, the
+# plymouth theme, the console rendering of the logo (`loom-eyes`), and the VT
+# font that rendering is made of.
+#
+# What differs stays with the boot path that owns it:
+#
+#   box-hardware.nix  `quiet`, because the appliance boot has nothing to say
+#   modes.nix         `plymouth.enable=0` for first-time setup, which has plenty
+#   installer.nix     the UKI splash
+#
+# The appliance boots kernel+initrd through systemd-boot and so has no earlier
+# surface than plymouth. The stick boots a UKI, whose stub can draw a bitmap
+# before Linux exists at all -- hence `splashBmp` below, which only it uses.
+{
+  config,
+  lib,
+  pkgs,
+  loomSrc,
+  ...
+}:
+let
+  # The amber the logo is drawn in (Frontend/public/favicon.svg), as bare
+  # RRGGBB. Stored without a prefix because the two things that consume it want
+  # different ones: plymouth takes 0xRRGGBB, and the VT palette sequence
+  # box.nix writes takes the six digits on their own.
+  loomAmberRgb = "f7b718";
+
+  # Amber rings on a black disc, which is why the theme below can leave the
+  # upstream black background alone.
+  logoPng =
+    pkgs.runCommand "loom-logo.png"
+      {
+        src = "${loomSrc}/Frontend/public/web-app-manifest-512x512.png";
+      }
+      ''
+        # `*.png` is filter=lfs (.gitattributes). cicd/build_appliance_image.sh
+        # materialises the payloads, but a closure built by hand from a checkout
+        # without them would embed the pointer *text file* instead -- and the
+        # first sign of that is a box that boots to a blank screen, which is the
+        # worst possible place to discover it. Fail here instead.
+        magic="$(head --bytes=4 "$src" | od --address-radix=n --format=x1 | tr --delete ' \n')"
+        if [ "$magic" != "89504e47" ]; then
+          echo "$src is not a PNG (git-lfs payload not materialised?)" >&2
+          exit 1
+        fi
+        cp "$src" $out
+      '';
+
+  # systemd-stub renders the UKI's `.splash` section, and its splash.c reads
+  # uncompressed BMP only -- BMP3: is that classic 24-bit form. Alpha is
+  # flattened onto black rather than dropped, or the disc gains a white square.
+  #
+  # The stub centres the bitmap without scaling it, so the 512px source is
+  # already the right size on a 1080p or a 4K panel.
+  splashBmp =
+    pkgs.runCommand "loom-splash.bmp"
+      {
+        nativeBuildInputs = [ pkgs.imagemagick ];
+      }
+      ''
+        magick ${logoPng} -background black -alpha remove -alpha off BMP3:$out
+      '';
+
+  # The font every VT draws in, and the reason the eyes below still look like
+  # eyes.
+  #
+  # What this displaces is NOT an 8x16 cell. fbcon picks its built-in font from
+  # the framebuffer it is handed, and on a large panel it lands on Terminus
+  # 16x32 -- measured on the box: a 2560x1600 framebuffer gives a 160x50 grid,
+  # which is 16 by 32 exactly. So the console starts out twice as coarse in each
+  # direction as the 8x16 that every worked example on the subject assumes, and
+  # a three-pane session with btop in one of them has 160 columns to live in.
+  #
+  # Cozette is the replacement because its 512 glyphs cover the box drawing tmux
+  # frames its panes with and the eighth blocks btop's meters are made of,
+  # neither of which the built-in fonts carry in full, and because it ships two
+  # sizes that differ in nothing else -- see `loom.consoleFont`.
+  #
+  # Six pixels is the floor, and the mark is what sets it: `loomEyes` below is
+  # drawn from U+2588, U+2584 and U+2580 and nothing else, and most console
+  # fonts are missing the half blocks. Terminus `ter-v32n` -- the size everyone
+  # reaches for first -- has U+2588 but neither U+2580 nor U+2584, so it would
+  # have rendered the banner and the installer menu as rows of holes. That is a
+  # thing nobody sees until a box is in front of somebody at a site, so it is
+  # asserted here instead, the same way logoPng above refuses an unmaterialised
+  # git-lfs pointer.
+  #
+  # The assertion runs against whichever size is selected, so switching the knob
+  # cannot quietly pick a font that drops the mark.
+  consoleFontFile =
+    {
+      small = "cozette6x13";
+      large = "cozette12x26";
+    }
+    .${config.loom.consoleFont};
+
+  consoleFont =
+    pkgs.runCommand "loom-console-font"
+      {
+        nativeBuildInputs = [
+          pkgs.kbd # psfgettable
+          pkgs.gzip
+        ];
+        src = "${pkgs.cozette}/share/consolefonts/${consoleFontFile}.psfu";
+      }
+      ''
+        # `zcat --force` because psfgettable reads no compressed font and most
+        # of the alternatives ship as .psf.gz. Without it a gzipped font
+        # produces an empty table, every codepoint below "goes missing", and
+        # the error blames the font for something gzip did. Cozette itself is
+        # uncompressed, which --force passes through untouched.
+        #
+        # psfgettable prints one `0x0df<TAB>U+2580` line per mapping, in
+        # lowercase hex -- hence --ignore-case.
+        #
+        # 2588/2584/2580 are the three `loom-eyes` is drawn from. 00D7 is the
+        # multiplication sign on the two clickable controls in the console
+        # session's status line (console.nix). It is there rather than a nicer
+        # symbol precisely because this font is small: Cozette's console PSF
+        # carries about 515 glyphs and has no U+23FB power sign, no U+2716
+        # cross and no U+25CF disc. Checked here for the same reason the other
+        # three are -- a missing glyph is a hole on a screen nobody sees until
+        # the box is standing at a site.
+        #
+        # 2501/2578/257A are what rich's progress bar draws with: the heavy
+        # horizontal and its two half-width ends. Two panes of the console
+        # session put one on this screen -- the readiness bar under the
+        # bring-up log (nixos/ready/, loom_ready/render.py) and the USB copy
+        # (nixos/usb-ingest/, loom_usb_ingest/watch.py) -- and neither chose
+        # those glyphs, rich did, which is exactly the kind of dependency that
+        # changes in a package bump without anyone reading a release note.
+        # Cozette maps all three onto one glyph, so a filled bar and an empty
+        # one differ by colour rather than by shape; that is legible, and it is
+        # a decision rather than an accident because this is where it would
+        # fail loudly if the font ever dropped them.
+        # 2500..253C are the box-drawing set tmux frames its panes with, and
+        # they are the set this file's own prose gives as the reason Cozette was
+        # chosen -- `console.nix` sets no `pane-border-lines`, so tmux's default
+        # `single` draws every one of them on every screen the operator ever
+        # sees. 2581..2587 are the partial eighth blocks btop's meters are made
+        # of under `--force-utf`. Both were argued for here and neither was
+        # asserted, which left the three rich glyphs above -- a dependency's
+        # choice -- as the only ones the build actually checked.
+        for cp in 2588 2584 2580 00D7 2501 2578 257A \
+          2500 2502 250C 2510 2514 2518 251C 2524 252C 2534 253C \
+          2581 2582 2583 2585 2586 2587; do
+          if ! zcat --force "$src" | psfgettable - | grep --quiet --ignore-case "U+$cp\b"; then
+            echo "$src has no U+$cp, one of the glyphs this appliance draws" >&2
+            exit 1
+          fi
+        done
+        cp "$src" $out
+      '';
+
+  # The same mark for the consoles that cannot show a PNG: the two eyes it is
+  # actually made of, with the surrounding disc dropped because at console
+  # resolution nothing of it survives anyway.
+  #
+  # Half blocks, everywhere, unconditionally. Every screen that draws these is a
+  # Linux VT or a pts of one -- the installer menu (installer.nix), `loom-info`
+  # via loom-issue.service (box.nix) and the same command re-run in a tmux pane
+  # -- and `consoleFont` above is pinned, and checked at build time, precisely
+  # so that all three carry the glyphs. The VT is in UTF-8 mode by default, so
+  # the capture in /run/issue.d survives agetty untouched.
+  #
+  # There used to be a second, ASCII pair here, picked by probing the console
+  # device, because the issue file is read by whatever getty is running and a
+  # serial one would have shown a screen of question marks. The appliance has no
+  # serial console any more (platforms/, installer.nix), so the probe only ever
+  # chose between one real answer and a worse one.
+  #
+  # Colour is deliberately NOT applied here, though both consumers now do apply
+  # it. Reaching the exact amber on a VT means redefining a palette entry, and
+  # that sequence hangs an xterm (console_codes(4)) -- so the decision depends
+  # on which console is being written to, which is something only the caller
+  # knows. The installer menu makes it in common.sh, the appliance banner in
+  # box.nix. One generator, one colour, two places that decide whether the
+  # console in front of them can take it.
+  #
+  # No backslashes, in either the art or anything printed beside it: agetty
+  # reads the issue for escapes of its own and would eat them.
+  loomEyes = pkgs.writeShellApplication {
+    name = "loom-eyes";
+    runtimeInputs = [ ];
+    text = ''
+      eyes=(
+          ' ▄████▄    ▄████▄'
+          '██▀  ▀██  ██▀  ▀██'
+          '██ ▄▄ ██  ██ ▄▄ ██'
+          '██▄  ▄██  ██▄  ▄██'
+          ' ▀████▀    ▀████▀'
+      )
+
+      # Two spaces, matching the indent every other line of `loom-info` and of
+      # the installer menu uses.
+      printf '  %s\n' "''${eyes[@]}"
+    '';
+  };
+
+  # Derived from upstream `spinner` rather than written from scratch, for one
+  # specific reason: the NixOS module greps the theme's `ModuleName` to decide
+  # which plugin to copy into the initrd (plymouth.nix, `plymouth-initrd-plugins`).
+  # A hand-written theme naming a plugin that never reaches the initrd boots to
+  # a black screen, and only in the initrd -- the kind of bug that shows up on
+  # the box and nowhere else.
+  loomTheme = pkgs.runCommand "plymouth-theme-loom" { } ''
+    dir=$out/share/plymouth/themes/loom
+    mkdir --parents "$dir"
+    cp ${pkgs.plymouth}/share/plymouth/themes/spinner/*.png "$dir"/
+    cp ${logoPng} "$dir"/watermark.png
+
+    # Upstream parks the watermark at the bottom edge (.96), where it reads as a
+    # vendor sticker. Centred above the spinner it reads as the product.
+    substitute ${pkgs.plymouth}/share/plymouth/themes/spinner/spinner.plymouth \
+      "$dir"/loom.plymouth \
+      --replace-fail 'Name=Spinner' 'Name=Loom' \
+      --replace-fail 'Description=A theme designed by jimmac that features a simple spinner.' \
+        'Description=Loom appliance.' \
+      --replace-fail 'WatermarkVerticalAlignment=.96' 'WatermarkVerticalAlignment=.38' \
+      --replace-fail 'ProgressBarForegroundColor=0xffffff' 'ProgressBarForegroundColor=0x${loomAmberRgb}'
+
+    # Not a --replace-fail: the upstream value embeds plymouth's own store path,
+    # so matching it literally would break on every plymouth bump. The grep is
+    # the assertion instead -- a theme whose ImageDir still points into the
+    # plymouth package would silently show upstream's art, not ours.
+    sed --in-place "s|^ImageDir=.*|ImageDir=$dir|" "$dir"/loom.plymouth
+    grep --quiet "^ImageDir=$dir$" "$dir"/loom.plymouth
+
+    # The translated names all still say "Spinner", and plymouth picks by
+    # locale. Dropping them leaves exactly one name to be wrong.
+    sed --in-place '/^Name\[/d' "$dir"/loom.plymouth
+  '';
+in
+{
+  options.loom.consoleFont = lib.mkOption {
+    type = lib.types.enum [
+      "small"
+      "large"
+    ];
+    default = "small";
+    description = ''
+      How big the console cell is, for every VT on the box and on the stick.
+
+      `small` is cozette6x13, `large` is cozette12x26. Cozette ships these two
+      and nothing between them, and they are identical in every respect that is
+      not size -- both cover the box drawing, the eighth blocks and the three
+      glyphs `loom-eyes` needs -- so this really is only a size choice.
+
+      What it is measured against is the kernel's own pick, which on a large
+      panel is Terminus 16x32. On the 2560x1600 panel the appliance was tested
+      on:
+
+        kernel default   16x32   160 x  50
+        large            12x26   213 x  61
+        small             6x13   426 x 123
+
+      Not `console.font` directly, because the value has to survive the
+      build-time glyph check in branding.nix rather than be a free string.
+    '';
+  };
+
+  options.loom.branding = {
+    logoPng = lib.mkOption {
+      type = lib.types.package;
+      internal = true;
+      description = ''
+        The Loom logo, lifted out of the embedded checkout and checked to be a
+        real PNG rather than an unmaterialised git-lfs pointer.
+      '';
+    };
+
+    splashBmp = lib.mkOption {
+      type = lib.types.package;
+      internal = true;
+      description = ''
+        The same logo as an uncompressed BMP, for a UKI's `.splash` section.
+        Only `installer.nix` consumes it; the appliance has no stub to draw it.
+      '';
+    };
+
+    eyes = lib.mkOption {
+      type = lib.types.package;
+      internal = true;
+      description = ''
+        `loom-eyes`: the logo reduced to its two eyes, drawn in half blocks.
+        The appliance's login banner and the installer menu both print it, so
+        the two screens carry the same mark.
+      '';
+    };
+
+    amberRgb = lib.mkOption {
+      type = lib.types.str;
+      internal = true;
+      description = ''
+        The logo's amber as bare RRGGBB, measured off the favicon rather than
+        eyeballed.
+
+        An option because three screens paint with it and a second literal is a
+        second thing to get wrong: the plymouth theme above, the VT palette
+        box.nix redefines for the login banner, and the installer menu.
+      '';
+    };
+  };
+
+  config = {
+    loom.branding = {
+      inherit logoPng splashBmp;
+      eyes = loomEyes;
+      amberRgb = loomAmberRgb;
+    };
+
+    # Deliberately not `console.earlySetup`. That would carry the font into the
+    # initrd, which is earlier still and therefore even more exposed to the
+    # reset described below; and the only thing on screen that early is
+    # plymouth, which draws the logo as a PNG and never touches the VT font.
+    console.font = "${consoleFont}";
+    # Not needed for the line above -- a store path in FONT= is handed straight
+    # to setfont. This is what additionally puts the font under /etc/kbd, so
+    # that an operator on a plain Alt-F2 console can `setfont cozette12x26` and
+    # compare sizes by hand without a store path to type.
+    console.packages = [ pkgs.cozette ];
+
+    # -------------------------------------------------------------------------
+    # The sixteen colours everything on this box is drawn in.
+    #
+    # A Linux VT has exactly sixteen, and every screen the appliance has ends up
+    # inside them: the banner, the installer menu, and each pane of the console
+    # session -- tmux reduces whatever a pane sends against a `TERM=linux`
+    # client, and `loom-btop` and the assistant pane are both configured to pick
+    # from these rather than to send colour that has to be approximated (see the
+    # `--tty` and `theme = "system"` notes in console.nix). So repainting the
+    # sixteen repaints all of it at once, and it is the only place where that is
+    # true.
+    #
+    # They are Loom's, taken from the frontend so the box and the web UI are
+    # recognisably the same product. Entry by entry, with its source:
+    #
+    #    0 black          000000  NOT the frontend's #1a1a17 background. Entry 0
+    #                             is what the VT paints the whole screen with,
+    #                             and a near-black there reads as grey rather
+    #                             than as a dark theme.
+    #    1 red            cc0000  theme.ts error.dark
+    #    2 green          007e33  theme.ts success.dark
+    #    3 yellow         f7b718  the logo amber -- see below
+    #    4 blue           0099cc  theme.ts info.dark
+    #    5 magenta        8f6f9e  derived; the frontend has no magenta
+    #    6 cyan           2f9c8f  derived; the frontend has no cyan
+    #    7 white          ffffff  see below
+    #    8 bright black   5a5a57  App.css, the warm grey nearest the console's
+    #                             own 555555 -- this is dim text and box rules,
+    #                             and the frontend's darker greys vanish here
+    #    9 bright red     ff4444  theme.ts error.main
+    #   10 bright green   00c851  theme.ts success.main
+    #   11 bright yellow  f7b718  the logo amber -- see below
+    #   12 bright blue    33b5e5  theme.ts info.main
+    #   13 bright magenta c9a0d8  derived, as 5
+    #   14 bright cyan    5fd6c4  derived, as 6
+    #   15 bright white   f5f5f2  main.css --color-layer
+    #
+    # Three of them are not free choices. box.nix's banner and the installer
+    # menu already redefine indices 3, B and 7 with `ESC ] P nrrggbb`, to the
+    # amber and to pure white, and deliberately never restore them -- so on any
+    # VT that has shown either of those screens, which is all of them, those
+    # three are already what is written above. Naming the same values here is
+    # what keeps one palette rather than two fighting over the same VT; it is
+    # also why yellow and bright yellow are one colour, as they have been since
+    # the banner existed.
+    #
+    # `console.colors` rather than a `setvtrgb` unit: nixpkgs turns this into
+    # `vt.default_red=` and friends on the kernel command line, so it is in force
+    # before the first getty and there is no window where a screen is drawn in
+    # the default palette and repainted afterwards.
+    #
+    # theme.ts is Frontend/src/app/theme.ts, main.css and App.css are beside it
+    # in Frontend/src. Nothing here is checked against them at build time -- the
+    # frontend is not in this closure -- so a brand change is a change in two
+    # places.
+    # -------------------------------------------------------------------------
+    console.colors = [
+      "000000"
+      "cc0000"
+      "007e33"
+      loomAmberRgb
+      "0099cc"
+      "8f6f9e"
+      "2f9c8f"
+      "ffffff"
+      "5a5a57"
+      "ff4444"
+      "00c851"
+      loomAmberRgb
+      "33b5e5"
+      "c9a0d8"
+      "5fd6c4"
+      "f5f5f2"
+    ];
+
+    # -------------------------------------------------------------------------
+    # Setting the font once is not enough.
+    #
+    # `systemd-vconsole-setup.service` is DefaultDependencies=no and
+    # Before=sysinit.target, so it applies the font before most of the machine
+    # exists. Anything that re-initialises the console afterwards throws it away
+    # and the kernel's built-in font comes back -- which is exactly what the box
+    # showed: /etc/vconsole.conf named cozette6x13, `setfont cozette6x13` on
+    # tty2 worked by hand, and the login screen was still rendering at 16x32.
+    #
+    # Two things here can do that resetting, and this unit is deliberately
+    # agnostic between them:
+    #
+    #   * a DRM driver taking over from simpledrm. fbcon rebinds without
+    #     emitting the `ACTION=="add", SUBSYSTEM=="vtconsole"` event that
+    #     systemd's own 90-vconsole.rules keys on, so nothing re-applies it.
+    #   * plymouth releasing the console when it quits -- which run mode has and
+    #     first-time setup does not (modes.nix passes `plymouth.enable=0`).
+    #
+    # Re-applying once, late, covers both without having to know which -- but
+    # only run mode is actually late. See `loom-console-font-reapply` below.
+    # -------------------------------------------------------------------------
+    systemd.services.loom-console-font = {
+      description = "Re-apply the console font once the display has settled";
+      # Same triple as box.nix's loom-issue.service, and for the same reason:
+      # getty-pre.target is the hook for "before anything paints a VT", but it
+      # is passive, so a user of it has to pull it into the transaction itself.
+      #
+      # Ordering before the first painted character is not a nicety. Changing
+      # the font resizes the VT, so doing this after agetty has drawn the banner
+      # would leave a screen of wrapped fragments.
+      #
+      # getty-pre.target does not cover the stick. There the menu is what paints
+      # tty1 and getty@tty1 is switched off entirely (installer.nix), so the one
+      # hook that means "before anything paints a VT" on the box means nothing
+      # at all on the installer, and the menu's `Type = "idle"` only waits for
+      # the job queue -- close enough to win the race most of the time, which is
+      # the worst way for this to be wired. Naming the unit is the same no-op as
+      # the After= below on a system where it does not exist.
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "getty-pre.target" ];
+      before = [
+        "getty-pre.target"
+        "loom-menu.service"
+      ];
+      # What makes this unit late in run mode, and the reason it is not enough
+      # on its own. `plymouth --wait` blocks until the splash quits, which is
+      # long after the DRM driver has taken the console -- so the font is
+      # applied on the far side of the reset and stays.
+      #
+      # Setup mode passes `plymouth.enable=0` on the command line, not
+      # `boot.plymouth.enable = false`, so this unit is present there too and
+      # simply returns at once: no daemon, nothing to wait for. The ordering
+      # holds and anchors nothing.
+      after = [ "plymouth-quit-wait.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        # The binary rather than `systemctl restart systemd-vconsole-setup`:
+        # restarting another unit from inside a unit means blocking on the job
+        # queue this unit is itself in. Running it directly is synchronous, and
+        # it still walks every VT -- which a bare `setfont -C /dev/tty1` would
+        # not, leaving Alt-F2 through Alt-F6 at the kernel default.
+        #
+        # `-` because a console that will not take the font must still get a
+        # login prompt. On a box with no remote access a wrong-sized font is
+        # cosmetic and a missing getty is unrecoverable.
+        ExecStart = "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup";
+      };
+    };
+
+    # -------------------------------------------------------------------------
+    # The takeover itself, for the mode that has no splash to hide behind.
+    #
+    # First-time setup is the mode where the unit above lands on the wrong side
+    # of the reset, and it is also the mode nobody is watching for hours, so a
+    # console stuck at 16x32 there is the one an operator actually lives with.
+    #
+    # There is no ordering that fixes it. The DRM driver binds from udev
+    # coldplug, asynchronously, and the event that would say so is precisely the
+    # one fbcon does not emit -- `ACTION=="add", SUBSYSTEM=="vtconsole"`, which
+    # systemd's own 90-vconsole.rules keys on. What does emit is the card
+    # underneath it, so that is what this keys on instead.
+    #
+    # Twice, with a pause. The card's uevent is fired when the DRM device
+    # registers, which is a hair BEFORE fbcon binds to its framebuffer -- true
+    # of the `graphics` subsystem's event as well, since `register_framebuffer`
+    # creates the device before it calls into fbcon. Udev's own latency usually
+    # covers that gap, and the second pass covers it when it does not.
+    # -------------------------------------------------------------------------
+    services.udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card[0-9]*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="loom-console-font-reapply.service"
+    '';
+
+    systemd.services.loom-console-font-reapply = {
+      description = "Re-apply the console font after a DRM takeover";
+      # Deliberately no `wantedBy` and no `RemainAfterExit`: this exists to be
+      # started by the rule above, once per card that appears, and a box with a
+      # second card -- or a driver that rebinds later -- has to be able to start
+      # it again. The unit above is still what covers the ordinary boot.
+      #
+      # Not ordered against getty-pre.target either. That would be a lie: the
+      # takeover happens when the driver says so, and on a setup-mode boot that
+      # is seconds into coldplug, well before anything paints. If it ever landed
+      # after the banner, a resized VT leaves it wrapped until the operator
+      # presses a key -- which is strictly better than the banner being wrong
+      # for the life of the boot.
+      serviceConfig = {
+        Type = "oneshot";
+        # Same binary, same `-`, and for the same reasons as above.
+        ExecStart = [
+          "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup"
+          "${pkgs.coreutils}/bin/sleep 2"
+          "-${config.systemd.package}/lib/systemd/systemd-vconsole-setup"
+        ];
+      }
+      # Only where there is a banner to redraw. This file dresses the installer
+      # stick as well as the box, and the stick paints a menu of its own onto
+      # tty1 with no getty and no issue behind it -- `loom.bannerRefresh` is
+      # declared by ready.nix, which only the box imports.
+      // lib.optionalAttrs (config.loom ? bannerRefresh) {
+        # Each pass above resizes every VT, and tty1 is the one a getty may
+        # already have painted the banner onto, so the screen is asked for again
+        # here -- as well as by box.nix's loom-banner-repaint, which watches the
+        # console for itself.
+        #
+        # Both, because neither covers the other's case. A repaint triggered
+        # only from here is the arrangement that shipped a cropped banner: udev
+        # runs this during coldplug on most boxes, before any getty exists, so
+        # the redraw found nothing on screen and was never asked for again. A
+        # watcher alone is the arrangement that shipped a *blank* one: its
+        # window runs for a minute from getty.target, and a DRM driver that
+        # takes the console after that -- 140 seconds after it on an emulated
+        # console, and however long firmware takes on a real GPU -- wipes the
+        # painted banner with nothing left watching.
+        #
+        # `-` and loom-banner-refresh's own guard are what make this safe to ask
+        # for unconditionally: it redraws only a tty1 still sitting at the
+        # prompt, and exits non-zero when there is nothing to redraw, which is
+        # not a failure of this unit.
+        ExecStartPost = "-${lib.getExe config.loom.bannerRefresh}";
+      };
+    };
+
+    # Names the systemd-boot entries: NixOS builds each title from this string
+    # plus the specialisation name, so the appliance's two modes read `Loom` and
+    # `Loom (first-time-setup)`. It also names the stick, whose UKI carries this
+    # system's os-release, and sets NAME/PRETTY_NAME there. `system.nixos.distroId`
+    # is untouched, so anything matching `ID=nixos` still works.
+    system.nixos.distroName = "Loom";
+
+    boot.plymouth = {
+      enable = true;
+      theme = "loom";
+      themePackages = [ loomTheme ];
+      # Also lands as /etc/plymouth/logo.png, for themes compiled against
+      # PLYMOUTH_LOGO_FILE. Ours is not one, but leaving the NixOS snowflake
+      # behind on a Loom appliance would be its own small surprise.
+      logo = logoPng;
+    };
+  };
+}

@@ -40,7 +40,6 @@ from worker.create_archive.tasks.compress_files import (
     _file_storage_fields,
     stream_archive,
 )
-from worker.create_archive.tasks.detect_loom_archive import detect_loom_archive
 from worker.create_archive.tasks.unzip_loom_archive import (
     restore_archive_metadata_task,
     store_raw_files_task,
@@ -373,48 +372,6 @@ class TestRestoreArchiveMetadataTask:
         restore_archive_metadata_task(archive_lb)
 
         get_archive_repository().save.assert_not_called()  # type: ignore[union-attr]
-
-
-# ---------------------------------------------------------------------------
-# detect_loom_archive
-# ---------------------------------------------------------------------------
-
-
-class TestDetectLoomArchive:
-    def test_plain_loom_archive_is_detected(
-        self, file_storage_service_inmemory: InMemoryFileStorageLazyBytesService
-    ):
-        """A ZIP with a valid MANIFEST.json is recognised as a loom archive."""
-        file = _make_file(service_id=uuid4())
-        zip_bytes = build_archive_bytes(
-            [ArchiveEntry(file=file, content=b"data")],
-            file_storage_service_inmemory,
-            _ARCHIVE,
-        )
-        archive_lb = file_storage_service_inmemory.from_bytes(zip_bytes)
-
-        result = detect_loom_archive(archive_lb)
-
-        assert result is not None
-
-    def test_non_loom_zip_returns_none(
-        self, file_storage_service_inmemory: InMemoryFileStorageLazyBytesService
-    ):
-        """A plain ZIP without MANIFEST.json returns None."""
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, mode="w") as zf:
-            zf.writestr("some_file.txt", b"hello")
-        archive_lb = file_storage_service_inmemory.from_bytes(buf.getvalue())
-
-        assert detect_loom_archive(archive_lb) is None
-
-    def test_non_zip_returns_none(
-        self, file_storage_service_inmemory: InMemoryFileStorageLazyBytesService
-    ):
-        """Random bytes (not a ZIP) return None."""
-        archive_lb = file_storage_service_inmemory.from_bytes(b"not a zip file at all")
-
-        assert detect_loom_archive(archive_lb) is None
 
 
 # ---------------------------------------------------------------------------

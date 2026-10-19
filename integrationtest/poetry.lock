@@ -2414,6 +2414,68 @@ files = [
 ]
 
 [[package]]
+name = "loom-banner"
+version = "0.1.0"
+description = "Draw the appliance's pre-login screen, and the fragments that land under it"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "../nixos/banner"
+
+[[package]]
+name = "loom-console-mouse"
+version = "0.1.0"
+description = "Point-and-click support for the Loom appliance's console session"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../nixos/console-mouse"
+
+[[package]]
+name = "loom-installer"
+version = "0.1.0"
+description = "The Loom appliance installer: the USB stick's console menu, install and wipe"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "../nixos/installer"
+
+[[package]]
+name = "loom-ollama"
+version = "0.1.0"
+description = "Entrypoint wrapper for the Loom Ollama container image"
+optional = false
+python-versions = ">=3.12"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../ollama"
+
+[[package]]
 name = "loom-overarching-dev"
 version = "0.1.0"
 description = "Dev-only project to empower pylance to see all the subprojects"
@@ -2428,12 +2490,82 @@ api = {path = "backend/api", develop = true}
 common = {path = "backend/common", develop = true}
 crawler = {path = "backend/crawler", develop = true}
 integrationtest = {path = "integrationtest", develop = true}
+loom-banner = {path = "nixos/banner", develop = true}
+loom-console-mouse = {path = "nixos/console-mouse", develop = true}
+loom-installer = {path = "nixos/installer", develop = true}
+loom-ollama = {path = "ollama", develop = true}
+loom-portal = {path = "nixos/portal", develop = true}
+loom-ready = {path = "nixos/ready", develop = true}
+loom-tests = {path = "nixos/tests/scripts", develop = true}
+loom-usb-ingest = {path = "nixos/usb-ingest", develop = true}
 types-docker = "^7.1.0.20240601"
 worker = {path = "backend/worker", develop = true}
 
 [package.source]
 type = "directory"
 url = ".."
+
+[[package]]
+name = "loom-portal"
+version = "0.1.0"
+description = "The page the appliance's captive portal answers with, and the certificates it hands out"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../nixos/portal"
+
+[[package]]
+name = "loom-ready"
+version = "0.1.0"
+description = "Decide whether Loom is up on the appliance, and draw it where the operator is looking"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "../nixos/ready"
+
+[[package]]
+name = "loom-tests"
+version = "0.1.0"
+description = "The appliance's VM tests, as a package the NixOS test driver imports"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../nixos/tests/scripts"
+
+[[package]]
+name = "loom-usb-ingest"
+version = "0.1.0"
+description = "Mount USB media read-only on the Loom appliance and ingest it"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+rich = ">=13"
+
+[package.source]
+type = "directory"
+url = "../nixos/usb-ingest"
 
 [[package]]
 name = "luqum"

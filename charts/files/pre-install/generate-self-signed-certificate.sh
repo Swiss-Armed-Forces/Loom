@@ -80,7 +80,14 @@ keep_existing_cert() {
         echo >&2 "[!] Error: could not read secret '${CERT_SECRET_NAME}'"
         exit 1
     fi
-    pem="$(base64 -d <<< "${encoded}")"
+    # Decoded in its own `if`, because this function runs inside one and `set -e`
+    # is therefore off: a corrupt tls.crt and an absent one are two different
+    # repairs -- let the hook run, or delete the Secret somebody wrote by hand --
+    # and reporting the first as the second points at neither.
+    if ! pem="$(base64 -d <<< "${encoded}")"; then
+        echo >&2 "[!] Error: tls.crt in '${CERT_SECRET_NAME}' is not valid base64"
+        exit 1
+    fi
     if [[ -z "${pem}" ]]; then
         echo >&2 "[!] Error: secret '${CERT_SECRET_NAME}' carries no tls.crt"
         exit 1
@@ -105,7 +112,18 @@ keep_existing_cert() {
         return 1
     fi
 
-    san="$(openssl x509 -noout -ext subjectAltName <<< "${pem}" 2>/dev/null || true)"
+    # Checked like every other read in this function. `|| true` here used to read
+    # as though it were load-bearing -- as though an unreadable SAN silently made
+    # every hostname "not covered" -- which it never was: this line is reached only
+    # for a certificate this Job issued, and `create_self_signed_cert` always passes
+    # a non-empty `-addext subjectAltName=`. The emptiness test is explicit because
+    # openssl does *not* signal a missing SAN through its exit status: on a
+    # certificate with no extensions at all it exits 0 with empty stdout.
+    san="$(openssl x509 -noout -ext subjectAltName <<< "${pem}" 2>/dev/null)"
+    if [[ -z "${san}" ]]; then
+        echo "[-] '${CERT_SECRET_NAME}' carries no subjectAltName"
+        return 1
+    fi
     for name in "${LOOM_HOSTNAMES[@]}"; do
         if ! grep -F "DNS:${name}.${LOOM_DOMAIN}" <<< "${san}" > /dev/null; then
             echo "[-] '${CERT_SECRET_NAME}' does not cover ${name}.${LOOM_DOMAIN}"
@@ -161,12 +179,44 @@ create_self_signed_cert() {
     # Hence every host by name. The wildcard and the bare domain stay on the
     # list: they cost nothing and a browser dialog still shows them.
     #
-    # The three extensions below are what makes this a serving leaf rather than
-    # a CA: `openssl req -x509` with no -extensions picks up the stock `v3_ca`
-    # section, which sets `basicConstraints: critical, CA:TRUE` and no
+    # The two extensions after the SAN are what makes this a serving leaf rather
+    # than a CA: `openssl req -x509` with no -extensions picks up the stock
+    # `v3_ca` section, which sets `basicConstraints: critical, CA:TRUE` and no
     # extendedKeyUsage at all. A manually trusted leaf without `serverAuth` is
     # rejected outright by the macOS and iOS trust stores, so the names alone
     # would not finish the job there.
+    #
+    # There is deliberately no `keyUsage`, and that is not an oversight. Nothing
+    # issues this certificate, so every client that trusts it trusts it as its
+    # own anchor -- `loom-chat` in nixos/console.nix hands it to Bun in
+    # NODE_EXTRA_CA_CERTS, and install_cluster_ca in
+    # nixos/usb-ingest/loom_usb_ingest/transfer.py writes it into mc's CA
+    # directory. A verifier asked to use a certificate as an anchor checks
+    # whether it is allowed to have signed anything, and a critical `keyUsage`
+    # without `keyCertSign` says it is not.
+    #
+    # Measured, one fake TLS server per variant, the certificate the only thing
+    # that changed:
+    #
+    #   CA:FALSE, keyUsage w/o keyCertSign  Bun: unable to verify the first
+    #                                       certificate. curl, node and Go: ok
+    #   CA:TRUE, same keyUsage              Bun: same failure -- so this is the
+    #                                       keyUsage, not basicConstraints
+    #   CA:FALSE, no keyUsage               all four verify
+    #
+    # OpenSSL (so curl, and node) and Go accept a self-signed certificate found
+    # in their trust store whatever its keyUsage says; Bun's BoringSSL does not.
+    # That split is worth knowing when reading a bug report: on a box serving
+    # such a certificate the appliance's `curl` readiness probe passes and only
+    # opencode's own request fails.
+    #
+    # Adding `keyCertSign` beside CA:FALSE would also work, and would be a
+    # contradiction some verifier is entitled to reject later -- so it would
+    # have to come with CA:TRUE, which is a serving certificate that may sign
+    # others. Emitting no keyUsage avoids the question entirely, and is
+    # available here only because openssl will leave the extension out.
+    # cert-manager will not: charts/templates/common/certificate.yaml therefore
+    # takes the other branch -- `cert sign` *and* `isCA: true` -- and says so.
     openssl req -x509 -nodes -days 365 \
         -newkey rsa:4096 \
         -keyout "${KEY_FILE}" \
@@ -174,7 +224,6 @@ create_self_signed_cert() {
         -subj "/CN=${common_name}/O=${CERT_ORG}" \
         -addext "subjectAltName=${san}" \
         -addext "basicConstraints=critical,CA:FALSE" \
-        -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
         -addext "extendedKeyUsage=serverAuth"
 
     # Written in one step rather than delete-then-create: this secret is the

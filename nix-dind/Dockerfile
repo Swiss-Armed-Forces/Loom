@@ -89,8 +89,8 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.14.1-r3"
-ARG XZ_VERSION="5.8.1-r0"
+ARG CURL_VERSION="8.14.1-r4"
+ARG XZ_VERSION="5.8.4-r0"
 RUN set -exu \
     && apk add --no-cache \
     curl=${CURL_VERSION} \
@@ -111,8 +111,24 @@ ENV NIX_USER_HOMEDIR=${NIX_USER_HOMEDIR}
 
 # Add nix user, allowed to use sudo
 # we then also, configure nix to:
-# - add the user to the trusted-users
+# - name the binary caches, and the keys their paths are signed with
+# - set the disk budget
 # - disable the sandbox
+#
+# The job user is deliberately NOT in trusted-users. Nix accepts a substituter
+# a client asks for when either the caller is trusted or the daemon already
+# names it, and the second costs nothing: the caches below are the daemon's own
+# configuration, so `devenv shell` gets them without the job user holding what
+# the nix manual calls the equivalent of root. Keep this list in step with
+# `cachix.pull` in devenv.nix -- a cache missing here is one the daemon does not
+# know, and warns about on every invocation.
+#
+# min-free/max-free have to be stated here for the same reason they can no
+# longer be passed: they are restricted settings with no allow-list, so
+# `appliance-test --min-free` is ignored for an untrusted caller. Nix's default
+# min-free is 0, which means no collection during a build at all -- the values
+# match .gitlab-ci.yml's invocation, and /nix here is the container's own
+# writable layer, shared with nothing and surviving nothing.
 # hadolint ignore=DL3004
 RUN set -exu \
     && groupadd \
@@ -128,7 +144,10 @@ RUN set -exu \
     && adduser "${NIX_USER_NAME}" docker \
     && sudo -i -u "${NIX_USER_NAME}" \
     mkdir -p "${NIX_USER_HOMEDIR}/.docker" \
-    && echo "trusted-users = root ${NIX_USER_NAME}" >> /etc/nix/nix.conf \
+    && echo "extra-substituters = https://devenv.cachix.org https://loom.cachix.org https://nixpkgs-python.cachix.org" >> /etc/nix/nix.conf \
+    && echo "extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw= loom.cachix.org-1:qK4ugmN5g4Pvhv45OLcXTwG53ZnSauwrHLVA0A7Y0rs= nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU=" >> /etc/nix/nix.conf \
+    && echo "min-free = 10737418240" >> /etc/nix/nix.conf \
+    && echo "max-free = 21474836480" >> /etc/nix/nix.conf \
     && echo "sandbox = false" >> /etc/nix/nix.conf \
     && echo "${NIX_USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 

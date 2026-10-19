@@ -1,5 +1,7 @@
 import pickle
 import random
+import zipfile
+from io import SEEK_END, BytesIO
 from pathlib import Path
 
 import pytest
@@ -8,10 +10,12 @@ from pydantic import BaseModel
 from common.services.lazybytes_service import (
     InMemoryLazyBytesService,
     LazyBytes,
+    S3LazyBytesService,
     TempStorageTag,
     TypedLazyBytes,
 )
 from common.settings import settings
+from common.testing.s3_doubles import s3_serving
 
 # pylint: disable=redefined-outer-name
 
@@ -119,6 +123,64 @@ def test_load_generator_small(in_memory_lazy_bytes_service: InMemoryLazyBytesSer
     lazy_bytes = in_memory_lazy_bytes_service.from_bytes(b"generate meeee")
     lazy_generator = in_memory_lazy_bytes_service.load_generator(lazy_bytes)
     assert next(lazy_generator) == b"generate meeee"
+
+
+def test_load_seekable(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService, large_data
+):
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(large_data)
+    with in_memory_lazy_bytes_service.load_seekable(lazy_bytes) as fd:
+        assert fd.read() == large_data
+
+
+def test_load_seekable_small(in_memory_lazy_bytes_service: InMemoryLazyBytesService):
+    """The embedded branch must be seekable too, or callers need two code paths."""
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(b"seek meeee")
+    with in_memory_lazy_bytes_service.load_seekable(lazy_bytes) as fd:
+        fd.seek(5)
+        assert fd.read() == b"meeee"
+
+
+def test_load_seekable_seeks_from_the_end(
+    in_memory_lazy_bytes_service: InMemoryLazyBytesService, large_data
+):
+    """Zipfile finds the central directory by seeking back from the end."""
+    lazy_bytes = in_memory_lazy_bytes_service.from_bytes(large_data)
+    with in_memory_lazy_bytes_service.load_seekable(lazy_bytes) as fd:
+        fd.seek(-16, SEEK_END)
+        assert fd.read() == large_data[-16:]
+
+
+def test_s3_load_seekable_reads_a_fraction_of_the_object():
+    """The contract that separates load_seekable from load_file.
+
+    load_file transfers the whole object and writes a second copy to disk; this must
+    fetch only what is actually read. Asserted against a client serving real ranges,
+    because the in-memory service cannot show the difference.
+
+    The member is stored uncompressed and pseudo-random -- a compressible one would
+    deflate away and prove nothing about the read volume.
+    """
+    filler = (bytes(range(256)) * 16_000)[:4_000_000]
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zip_file:
+        zip_file.writestr("MANIFEST.json", b'{"version": 2}')
+        zip_file.writestr("big.bin", filler)
+    payload = buffer.getvalue()
+
+    double = s3_serving(payload, "bucket", "an-object")
+    service = S3LazyBytesService(double.client, "bucket", threshold_bytes=64)
+    lazy_bytes = LazyBytes(service_id="an-object")
+
+    with service.load_seekable(lazy_bytes) as fd:
+        with zipfile.ZipFile(fd) as zip_file:  # type: ignore[arg-type]
+            assert zip_file.read("MANIFEST.json") == b'{"version": 2}'
+
+    fetched = double.store.fetched_bytes
+    assert fetched < len(payload) // 4, f"read {fetched} of {len(payload)} bytes"
+    # Not incidental: a range read that leaks its urllib3 connection is invisible
+    # until the pool runs dry under load, and this path now runs per intake object.
+    assert double.store.every_response_was_released
 
 
 def test_from_generator(

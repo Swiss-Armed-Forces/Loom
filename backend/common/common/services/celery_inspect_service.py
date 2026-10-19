@@ -7,7 +7,11 @@ from celery import Celery
 from kombu.exceptions import DecodeError
 from redis import StrictRedis
 
-from common.celery_app import TaskGroupName, _task_groups, get_terminal_queues
+from common.celery_app import (
+    TaskGroupName,
+    _task_groups,
+    get_terminal_queues,
+)
 from common.services.queues_service import QueuesService
 from common.settings import CELERY_QUEUE_NAME_MAXLEN, settings
 

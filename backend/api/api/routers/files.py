@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Any, List, Literal, cast
 from uuid import UUID
 
@@ -78,7 +78,12 @@ def upload_file(
     Returns immediately after storing the file and dispatching the indexing task. The
     file will be indexed asynchronously.
     """
-    uploaded_at = datetime.now()
+    # Aware, not naive. This is indexed as an Elasticsearch Date and used for ordering,
+    # and the crawler and the archive router write the same field -- two writers
+    # disagreeing about what a bare timestamp means sort against each other wrongly.
+    # This is the browser-upload path; the crawler (`s3_crawler.py`) is the
+    # appliance's, and on a box with a stick in it that is the busier one.
+    uploaded_at = datetime.now(timezone.utc)
     file_content = file_storage_service.from_file(file.file)
 
     task_scheduling_service.dispatch_index_file(

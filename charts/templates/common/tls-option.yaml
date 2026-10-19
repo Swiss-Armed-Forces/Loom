@@ -1,3 +1,15 @@
+# The Secret named below holds the mutual-TLS CA as a keypair: the pre-install
+# Job writes `ca.crt` and `ca.key` into it, Traefik reads the certificate to
+# verify clients, and `generate-client-certificate` reads the key to issue them.
+#
+# So the issuing key lives in the cluster, readable by the ingress controller.
+# Splitting it into a second Secret buys nothing: the vendored Traefik chart
+# (`traefik/traefik-39.0.9.tgz`, `rbac.namespaced: false`) binds its
+# ServiceAccount to a ClusterRole with `secrets: get/list/watch` across the
+# cluster, so every Secret in the namespace is equally readable and scoping
+# that down means patching an upstream chart. Loom's threat model puts the
+# whole cluster inside the trust boundary -- see `Documentation/installation.md`
+# -- and this is a deliberate consequence of it, not an oversight.
 apiVersion: traefik.io/v1alpha1
 kind: TLSOption
 metadata:
