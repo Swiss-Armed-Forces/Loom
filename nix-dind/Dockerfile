@@ -89,12 +89,14 @@ RUN set -exu \
 #
 # Install nix (from upstream)
 #
-ARG CURL_VERSION="8.14.1-r4"
-ARG XZ_VERSION="5.8.4-r0"
+# Fuzzy pins, as in alpine/Dockerfile: Alpine publishes only the newest build of
+# a package, so an exact `-rN` resolves only until the next rebuild.
+ARG CURL_VERSION="8.14.1"
+ARG XZ_VERSION="5.8.4"
 RUN set -exu \
     && apk add --no-cache \
-    curl=${CURL_VERSION} \
-    xz=${XZ_VERSION}
+    curl~=${CURL_VERSION} \
+    xz~=${XZ_VERSION}
 RUN set -exu \
     && sh <(curl -L https://nixos.org/nix/install) --daemon
 
