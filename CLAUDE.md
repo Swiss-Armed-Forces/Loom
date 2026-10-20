@@ -512,6 +512,19 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   it add real value? Since we have types, tests that merely verify type constraints or trivially
   re-test what types already enforce are not valuable. Focus on behaviour, edge cases, and logic
   that types cannot capture.
+- **Keep the test proportional to the change it covers.** A six-line fix does not get a
+  hundred-line harness. When the test code dwarfs the code under test, the surplus is almost
+  always asserting the *language* rather than the behaviour — a shell test proving that `==`
+  compares strings, a Python test restating a type hint. Write the one or two cases that would
+  actually have caught the bug, and stop. Reviewers read every line of this, and a long test says
+  "this is intricate" about code that is not.
+- **Add the test to the harness that already covers the thing.** Each area has one: `backend/*/tests/`
+  for the backend packages, `Frontend/` for the frontend, `cicd/tests/` for the scripts in `cicd/`
+  and `charts/files/`, `nixos/<package>/tests/` for the appliance packages, `integrationtest/` and
+  `integrationtest/bats/` for workflows and for `up.sh` against a real cluster. Inventing a second
+  way to reach the same code — extracting a shell function out of a script to drive it from pytest,
+  say — is a new and fragile precedent rather than coverage, and it couples the test to the source's
+  formatting.
 - All new backend features require unit tests
 - Integration tests for user-facing workflows
 
