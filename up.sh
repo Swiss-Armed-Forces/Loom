@@ -1258,9 +1258,13 @@ detect_deployed_release(){
     # would silently keep one the operator has just replaced. It is two kubectl
     # calls, and a no-op without --certificate.
     echo "[*] The cluster already carries loom-${chart_version}; not redeploying."
+    # SKIP holds bare step names, not --skip-STEP arguments: the argument parser
+    # strips the prefix before appending, and is_skipped() compares what Main
+    # passes it -- a bare step name -- verbatim against each entry. A prefixed
+    # entry matches nothing and is silently ignored.
     SKIP+=(
-        "--skip-install_third_party"
-        "--skip-run_skaffold"
+        install_third_party
+        run_skaffold
     )
 }
 
@@ -1592,8 +1596,8 @@ usage(){
     echo "  --resume-if-deployed                  skip the deploy when the cluster already carries this"
     echo "                                        checkout's chart versions. For a host that runs this"
     echo "                                        script at every boot; the cluster itself is still started."
-    echo "  --down                                tear down the deployment and exit
-  --delete                              delete the deployment after startup"
+    echo "  --down                                tear down the deployment and exit"
+    echo "  --delete                              delete the deployment after startup"
     echo "  --skip-STEP                           skip step STEP"
 }
 
