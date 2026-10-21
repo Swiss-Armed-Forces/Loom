@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 import requests
 from api.routers.files import (
-    GetFilesTreeQuery,
     GetFilesTreeResponse,
     GetFilesTreeSpineQuery,
 )
@@ -16,6 +15,7 @@ from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
     build_search_string,
     fetch_files_from_api,
+    fetch_files_tree,
     fetch_query_id,
 )
 from utils.upload_asset import upload_asset, upload_bytes_asset
@@ -41,25 +41,6 @@ def _upload_test_assets(count: int, folder: Path | None = None):
             ASSET_FILE_NAME,
             str(Path("//api-upload") / folder / Path(f"{i}{ASSET_FILE_NAME}")),
         )
-
-
-def _files_tree(
-    search_string: str, directory: str, after: str | None = None
-) -> GetFilesTreeResponse:
-    response = requests.get(
-        f"{FILES_ENDPOINT}/tree",
-        params=GetFilesTreeQuery(
-            search_string=search_string,
-            node_path=directory,
-            query_id=fetch_query_id(),
-            after=after,
-        ).model_dump(),
-        timeout=REQUEST_TIMEOUT,
-    )
-    response.raise_for_status()
-
-    tree_models = GetFilesTreeResponse.model_validate(response.json())
-    return tree_models
 
 
 class TestFileTree:
@@ -91,7 +72,7 @@ class TestFileTree:
         )
 
     def test_unfiltered_level(self):
-        tree_models = _files_tree("*", "/")
+        tree_models = fetch_files_tree("*", "/")
 
         assert len(tree_models.nodes) == 1
         assert str(tree_models.nodes[0].full_path) == "//api-upload"
@@ -104,14 +85,14 @@ class TestFileTree:
 
     def test_filtered_level(self):
         search_string = build_search_string("*", "filename", f"0{ASSET_FILE_NAME}")
-        tree_models = _files_tree(search_string, "/")
+        tree_models = fetch_files_tree(search_string, "/")
 
         assert len(tree_models.nodes) == 1
         assert str(tree_models.nodes[0].full_path) == "//api-upload"
         assert tree_models.nodes[0].file_count == 4
 
     def test_below_frontend_limit_entries(self):
-        tree_models = _files_tree(
+        tree_models = fetch_files_tree(
             "*",
             f"//api-upload/{TREE_ASSET_FRONTEND_FOLDER_NAME}",
         )
@@ -124,7 +105,7 @@ class TestFileTree:
         assert tree_models.nodes[0].file_count == 0
 
     def test_below_backend_limit_entries(self):
-        tree_models = _files_tree(
+        tree_models = fetch_files_tree(
             "*",
             f"//api-upload/{TREE_ASSET_BACKEND_FOLDER_NAME}",
         )
@@ -139,7 +120,7 @@ class TestFileTree:
         assert tree_models.nodes[0].file_count == 0
 
     def test_above_backend_limit_entries(self):
-        tree_models = _files_tree(
+        tree_models = fetch_files_tree(
             "*",
             f"//api-upload/{TREE_ASSET_BACKEND_PASSED_FOLDER_NAME}",
         )
@@ -160,7 +141,7 @@ class TestFileTree:
         # and a cursor; the second page must return the remaining node(s) and no
         # further cursor, and the two pages together must cover all files without
         # duplicates.
-        first_page = _files_tree(
+        first_page = fetch_files_tree(
             "*",
             f"//api-upload/{TREE_ASSET_BACKEND_PASSED_FOLDER_NAME}",
         )
@@ -168,7 +149,7 @@ class TestFileTree:
         assert len(first_page.nodes) == TREE_PATH_MAX_ELEMENT_COUNT
         assert first_page.next_page_cursor is not None
 
-        second_page = _files_tree(
+        second_page = fetch_files_tree(
             "*",
             f"//api-upload/{TREE_ASSET_BACKEND_PASSED_FOLDER_NAME}",
             after=first_page.next_page_cursor,
@@ -185,7 +166,7 @@ class TestFileTree:
         assert len(all_paths) == FILE_COUNT_ABOVE_BACKEND_LIMIT
 
     def test_0_entries(self):
-        tree_models = _files_tree(
+        tree_models = fetch_files_tree(
             "*",
             f"//api-upload/{TREE_ASSET_FRONTEND_FOLDER_NAME}/0{ASSET_FILE_NAME}",
         )
@@ -193,13 +174,13 @@ class TestFileTree:
         assert len(tree_models.nodes) == 0
 
     def test_invalid_path(self):
-        tree_models = _files_tree("*", "//api-upload/invalid")
+        tree_models = fetch_files_tree("*", "//api-upload/invalid")
 
         assert len(tree_models.nodes) == 0
 
     def test_invalid_query(self):
         with pytest.raises(HTTPError):
-            _files_tree("full_path:/(", "//api-upload/")
+            fetch_files_tree("full_path:/(", "//api-upload/")
 
 
 def _files_tree_spine(search_string: str, full_path: str) -> GetFilesTreeResponse:

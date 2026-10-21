@@ -12,12 +12,14 @@ from uuid import UUID
 
 import requests
 from api.models.archives_model import ArchiveHit, ArchivesModel
+from api.models.tree_model import GetFilesTreeResponse
 from api.routers.files import (
     GetFilePreviewResponse,
     GetFileResponse,
     GetFilesCountResponse,
     GetFilesQuery,
     GetFilesResponse,
+    GetFilesTreeQuery,
     GetQuery,
     GetQueryResponse,
 )
@@ -53,6 +55,25 @@ def fetch_query_id(get_query: GetQuery | None = None) -> str:
     response.raise_for_status()
     get_query_response = GetQueryResponse.model_validate(response.json())
     return get_query_response.query_id
+
+
+def fetch_files_tree(
+    search_string: str, node_path: str, after: str | None = None
+) -> GetFilesTreeResponse:
+    """Return the direct children of node_path from the file tree."""
+    response = requests.get(
+        f"{FILES_ENDPOINT}/tree",
+        params=GetFilesTreeQuery(
+            search_string=search_string,
+            node_path=node_path,
+            query_id=fetch_query_id(),
+            after=after,
+        ).model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+
+    return GetFilesTreeResponse.model_validate(response.json())
 
 
 def build_search_string(

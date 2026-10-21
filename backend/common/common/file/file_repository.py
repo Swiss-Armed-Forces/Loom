@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import re
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
 from typing import (
@@ -77,6 +76,7 @@ from common.services.query_builder import (
 )
 from common.settings import TREE_PATH_MAX_ELEMENT_COUNT, settings
 from common.task_object.task_object import RepositoryTaskObject, _EsTaskDocument
+from common.utils.lucene import escape_lucene_regexp
 from common.utils.unique_list import unique_list
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,6 @@ PATH_ROOT = "//"
 # Elasticsearch appends its own tiebreaker behind it when a point-in-time is attached,
 # so the tuple is longer than the sort clause but never shorter.
 _FLAT_FILES_PATH_SORT_POSITION = 1
-ES_RESERVED_PATTERN = re.compile(r"([\".?+*|{}\][\\()])")
 KNN_CANDIDATES_FACTOR = 5  # how many more candidates to select for KNN per shared
 
 
@@ -1303,9 +1302,10 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         Args:
             page_size: Maximum number of children per page.
         """
-        # Build a Java-compatible regex matching direct children only.
-        # re.escape covers all Java regex metacharacters that appear in file paths.
-        include_regex = re.escape(tree_node_directory_path) + "/[^/]+"
+        # Match direct children only. An `include` is a Lucene RegExp, whose
+        # metacharacters are not Python's, so the path is escaped for that grammar
+        # and the `/[^/]+` suffix is the only part that stays syntax.
+        include_regex = escape_lucene_regexp(tree_node_directory_path) + "/[^/]+"
 
         # Clamped exactly as get_flat_files_by_query clamps it, so one browse page
         # size cannot mean two different things. The ceiling is what the aggregation

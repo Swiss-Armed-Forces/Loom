@@ -11,7 +11,7 @@
 # keeps the generated document stable across runners and pipelines. Rescan
 # everything with: generate-third-party --refresh
 # syft 1.51.0
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine lic-ad3a863fb94c55d2d359a3ebd0cdbb93d85082a03419dd854583305725f95169
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine lic-747f8ce491e2cad9dba72f981bfd8c2cc43947624607c87463f7ad6001120ad4
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/api lic-22ebd02b12d87a1b7b373759f38a0997d1670808a4f23b9c3df2ac59a8976c17
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/crawler lic-72f2b56663db93e2ca91c4826e32bcac09e24324c05f8ca67c3195a7d061d519
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/dovecot lic-dd14227c46713632f780d1414592db2639ebd37a66a3400f93c9cf00175934e6

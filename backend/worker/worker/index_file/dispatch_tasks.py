@@ -13,6 +13,7 @@ from common.models.es_repository import PointInTimeExpiredError
 from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import SCAN_PIT_KEEPALIVE, QueryParameters
 from common.services.task_scheduling_service import UpdateFileRequest
+from common.utils.lucene import escape_lucene_phrase
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,9 @@ def dispatch_remove_tag(
     query = QueryParameters(
         query_id=file_repository.open_point_in_time(keep_alive=SCAN_PIT_KEEPALIVE),
         keep_alive=SCAN_PIT_KEEPALIVE,
-        search_string=f'tags: "{tag}"',
+        # A tag is only length-constrained, so a quote or a backslash in one would
+        # otherwise end the phrase and leave the sweep unable to find its files.
+        search_string=f'tags: "{escape_lucene_phrase(tag)}"',
     )
     for file in file_repository.get_generator_by_query(query=query):
         dispatch_remove_tag_from_file.s(file_id=file.id_, tag=tag).delay().forget()

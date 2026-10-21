@@ -7770,7 +7770,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | bash | 5.3.3-r1 | GPL-3.0-or-later | apk-db-cataloger |
 | busybox | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
 | busybox-binsh | 1.37.0-r30 | GPL-2.0-only | apk-db-cataloger |
-| ca-certificates | 20260909-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
+| ca-certificates | 20261020-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
 | ca-certificates-bundle | 20260909-r0 | MPL-2.0 AND MIT | apk-db-cataloger |
 | github.com/MakeNowJust/heredoc | v1.0.0 |  | go-module-binary-cataloger |
 | github.com/beorn7/perks | v1.0.1 |  | go-module-binary-cataloger |
