@@ -243,6 +243,30 @@ def test_get_full_paths_by_query_single_es_request():
     assert search_obj.using.return_value.execute.call_count == 1
 
 
+def test_get_full_paths_by_query_escapes_the_node_path_for_lucene():
+    """Regression: an `include` is a Lucene RegExp, so a path holding a quote opened a
+    literal that never closed and Elasticsearch rejected the whole aggregation."""
+    mock_search = MagicMock()
+    node_path = '//s/q"dir'
+    search_obj = _make_terms_tree_response(
+        mock_search, [_make_terms_leaf_bucket(f"{node_path}/f.txt")]
+    )
+
+    repo = _TestFileRepository(MagicMock(), MagicMock(), search_factory=mock_search)
+    query = QueryParameters(query_id="q9", search_string="*")
+    repo.get_full_paths_by_query(query=query, tree_node_directory_path=node_path)
+
+    includes = {
+        name: aggregation.to_dict()["terms"]["include"]
+        for name, aggregation in (
+            call_args.args for call_args in search_obj.aggs.bucket.call_args_list
+        )
+    }
+    # Both sinks: the full_path.tree buckets and the parent_path counts.
+    assert includes["directory"] == '//s/q\\"dir/[^/]+'
+    assert includes["direct_children_by_parent"] == '//s/q\\"dir/[^/]+'
+
+
 def test_get_full_paths_by_query_cursor_bucket_excluded_on_next_page():
     """When after=cursor is supplied, the cursor bucket is excluded even if ES returns
     it again (its deeper-path tokens satisfy the range filter)."""

@@ -9,6 +9,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import File
 from common.services.query_builder import QueryParameters
+from common.utils.lucene import escape_lucene_phrase
 
 from worker.ai.file_fields import iter_described_fields
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
@@ -72,7 +73,7 @@ MUST: Do not give an explanation.
         file_repository = get_file_repository()
         pit_id = file_repository.open_point_in_time()
         search_string = (
-            f'full_path.tree:"{folder_path}" AND ({query_string})'
+            f'full_path.tree:"{escape_lucene_phrase(folder_path)}" AND ({query_string})'
             if folder_path
             else query_string
         )

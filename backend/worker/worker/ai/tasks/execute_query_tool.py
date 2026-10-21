@@ -19,6 +19,7 @@ from common.models.es_repository import (
     SortingParameters,
 )
 from common.services.query_builder import QueryBuilderException
+from common.utils.lucene import escape_lucene_phrase
 from elasticsearch import BadRequestError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
@@ -81,7 +82,7 @@ def execute_query_work_task(
 ) -> ExecuteQueryResult:
     file_repository = get_file_repository()
     search_string = (
-        f'full_path.tree:"{folder_path}" AND ({query_string})'
+        f'full_path.tree:"{escape_lucene_phrase(folder_path)}" AND ({query_string})'
         if folder_path
         else query_string
     )
