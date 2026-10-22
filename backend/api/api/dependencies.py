@@ -41,7 +41,9 @@ def init():
     )
 
     global _tool_service
-    _tool_service = ToolService(_task_call_service)
+    _tool_service = ToolService(
+        _task_call_service, common_dependencies.get_redis_cache_client()
+    )
 
     global _agent_service
     _agent_service = AgentService(_tool_service)
