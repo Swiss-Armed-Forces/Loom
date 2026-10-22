@@ -3,8 +3,7 @@ import { Box, Chip } from "@mui/material";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Attachment } from "@app/api";
-import { useAppDispatch } from "@app/hooks";
-import { openFileTabThunk } from "@app/slices/searchSlice";
+import { useFileNavigation } from "@features/search/context/FileNavigationContext";
 
 import { AttachmentsPopover } from "./AttachmentsPopover";
 import styles from "./FileAttachments.module.css";
@@ -23,7 +22,7 @@ export const FileAttachments = ({
     totalCount,
     maxWidthRatio = 0.8,
 }: FileAttachmentsProps) => {
-    const dispatch = useAppDispatch();
+    const { navigateToFile } = useFileNavigation();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [shouldCollapse, setShouldCollapse] = useState(false);
 
@@ -54,10 +53,10 @@ export const FileAttachments = ({
     }, [attachments, maxWidthRatio]);
 
     const handleOpenDirect = useCallback(
-        (fileId: string, background = false) => {
-            dispatch(openFileTabThunk({ fileId, background }));
+        (fileId: string, openInTab = false) => {
+            navigateToFile(fileId, { openInTab });
         },
-        [dispatch],
+        [navigateToFile],
     );
 
     const summaryLabel = useMemo(() => {
@@ -131,9 +130,6 @@ export const FileAttachments = ({
                             size="small"
                             variant="outlined"
                             onClick={(e) => {
-                                // The chip sits inside the result card's own
-                                // click target: letting this through opens a
-                                // tab for the card's file as well.
                                 e.stopPropagation();
                                 handleOpenDirect(attachment.id, e.ctrlKey);
                             }}

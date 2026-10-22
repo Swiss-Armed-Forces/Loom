@@ -2,8 +2,7 @@ import { AttachFile } from "@mui/icons-material";
 import { Menu, MenuItem, Typography } from "@mui/material";
 
 import { Attachment } from "@app/api";
-import { useAppDispatch } from "@app/hooks";
-import { openFileTabThunk } from "@app/slices/searchSlice";
+import { useFileNavigation } from "@features/search/context/FileNavigationContext";
 
 import { menuJKNavigation } from "../menuKeyboardNav";
 
@@ -22,10 +21,10 @@ export const AttachmentsPopover = ({
     anchorEl,
     onClose,
 }: AttachmentsPopoverProps) => {
-    const dispatch = useAppDispatch();
+    const { navigateToFile } = useFileNavigation();
 
-    const handleOpen = (fileId: string, background = false) => {
-        dispatch(openFileTabThunk({ fileId, background }));
+    const handleOpen = (fileId: string, openInTab = false) => {
+        navigateToFile(fileId, { openInTab });
         onClose();
     };
 

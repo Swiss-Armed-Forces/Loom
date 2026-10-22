@@ -165,8 +165,8 @@ default:
     #
     - section_start .default-docker-before_script
     # docker login
-    - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
-    - echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
+    - with_retry -- echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u "${CI_REGISTRY_USER}" --password-stdin
+    - with_retry -- echo "${CI_DEPENDENCY_PROXY_PASSWORD}" | docker login ${CI_DEPENDENCY_PROXY_SERVER} -u "${CI_DEPENDENCY_PROXY_USER}" --password-stdin
     # restore images
     - with_retry -- devenv shell -- docker-image-backup-restore restore docker-cache/images/
     #

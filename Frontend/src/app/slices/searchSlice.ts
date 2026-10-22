@@ -1867,6 +1867,36 @@ export const closeFileTabThunk = createAsyncThunk(
     },
 );
 
+export const revealFileThunk = createAsyncThunk(
+    "revealFileThunk",
+    (
+        {
+            fileId,
+            openInTab,
+            clearActiveTab,
+        }: { fileId: string; openInTab?: boolean; clearActiveTab?: boolean },
+        thunkAPI,
+    ) => {
+        if (openInTab) {
+            thunkAPI.dispatch(openFileTabThunk({ fileId, background: true }));
+            return;
+        }
+
+        const state = thunkAPI.getState() as RootState;
+        const files = state.search.files;
+
+        if (clearActiveTab) {
+            thunkAPI.dispatch(setActiveTabFileId(null));
+        }
+        if (!files[fileId]?.meta && fileId !== state.search.highlightedFileId) {
+            thunkAPI.dispatch(setTemporaryFileId(fileId));
+            thunkAPI.dispatch(fetchPreview({ fileId }));
+        }
+        thunkAPI.dispatch(setHighlightedFileId(fileId));
+        thunkAPI.dispatch(bumpHighlightScroll("top"));
+    },
+);
+
 export const selectSearch = (state: RootState) => state.search;
 
 export const selectCustomQueries = createSelector(

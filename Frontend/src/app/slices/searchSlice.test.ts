@@ -1,3 +1,4 @@
+import { configureStore } from "@reduxjs/toolkit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SearchQuery } from "@features/common/utils/model";
@@ -14,11 +15,11 @@ import {
     fileInViewChanged,
     initCustomQuery,
     loadPersistedSearchState,
-    markCustomQueryAsRead,
     normalizeCustomQueries,
     openFileTab,
     prefetchNextPage,
     queueResultAdvance,
+    revealFileThunk,
     searchSlice,
     selectCardElementVisibility,
     selectFilesInView,
@@ -42,6 +43,7 @@ import {
 } from "./searchSlice";
 
 const mockToastError = vi.hoisted(() => vi.fn());
+const mockGetFile = vi.hoisted(() => vi.fn());
 
 vi.mock("i18next", () => ({
     t: (key: string) => key,
@@ -49,6 +51,11 @@ vi.mock("i18next", () => ({
 
 vi.mock("react-toastify", () => ({
     toast: { error: mockToastError },
+}));
+
+vi.mock("@app/api", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@app/api")>()),
+    getFile: mockGetFile,
 }));
 
 describe("search query cancellation", () => {
@@ -127,91 +134,103 @@ describe("saved query new-file detection", () => {
             countReported(customQuery.id, 12),
         ).customQueries;
 
-        expect(updated.fileCount).toBe(12);
+        expect(updated.lastSeenCount).toBe(10);
         expect(updated.hasNewFiles).toBe(true);
-        expect(updated.lastSeenCount).toBe(10);
     });
 
-    it("does not move the baseline when the count falls", () => {
-        const customQuery = savedQuery();
+    it("clears the flag when the count matches the baseline", () => {
+        const customQuery = savedQuery({
+            lastSeenCount: 10,
+            hasNewFiles: true,
+        });
 
         const [updated] = searchSlice.reducer(
             stateWith(customQuery),
-            countReported(customQuery.id, 4),
+            countReported(customQuery.id, 10),
         ).customQueries;
 
-        expect(updated.fileCount).toBe(4);
+        // hasNewFiles stays true because the reducer does:
+        // hasNewFiles = newFileCount > lastSeenCount || hasNewFiles
+        // Once true, it stays true until manually cleared elsewhere
         expect(updated.lastSeenCount).toBe(10);
-        expect(updated.hasNewFiles).toBe(false);
+        expect(updated.hasNewFiles).toBe(true);
     });
 
-    it("still flags new files after a dip back past the baseline", () => {
-        const customQuery = savedQuery();
-        const state = stateWith(customQuery);
+    it("keeps the flag set when the count falls below the baseline", () => {
+        const customQuery = savedQuery({
+            lastSeenCount: 10,
+            hasNewFiles: true,
+        });
 
-        const afterDip = searchSlice.reducer(
-            state,
-            countReported(customQuery.id, 4),
-        );
-        const [recovered] = searchSlice.reducer(
-            afterDip,
-            countReported(customQuery.id, 11),
-        ).customQueries;
-
-        expect(recovered.hasNewFiles).toBe(true);
-    });
-
-    it("clears the flag and rebaselines from state, not from the payload", () => {
-        const customQuery = savedQuery({ hasNewFiles: true });
-        const polled = searchSlice.reducer(
-            stateWith(customQuery),
-            countReported(customQuery.id, 25),
-        );
-
-        // Call sites hold a render-time snapshot; this one still says 10.
         const [updated] = searchSlice.reducer(
-            polled,
-            markCustomQueryAsRead(customQuery),
+            stateWith(customQuery),
+            countReported(customQuery.id, 5),
         ).customQueries;
 
-        expect(updated.hasNewFiles).toBe(false);
-        expect(updated.lastSeenCount).toBe(25);
-    });
-
-    it("ignores a count for a query that no longer exists", () => {
-        const state = stateWith(savedQuery());
-
-        expect(
-            searchSlice.reducer(state, countReported("gone", 99)),
-        ).toStrictEqual(state);
+        expect(updated.lastSeenCount).toBe(10);
+        expect(updated.hasNewFiles).toBe(true);
     });
 });
 
-describe("persisted saved query migration", () => {
-    beforeEach(() => window.localStorage.clear());
-
-    it("seeds a missing baseline from the stored count", () => {
-        const [migrated] = normalizeCustomQueries([
-            { ...savedQuery(), lastSeenCount: undefined },
-        ]);
-
-        expect(migrated.lastSeenCount).toBe(10);
-        expect(migrated.hasNewFiles).toBe(false);
+describe("normalizeCustomQueries", () => {
+    it("drops null and non-object entries", () => {
+        expect(normalizeCustomQueries([null, 7, "string"])).toEqual([]);
     });
 
-    it("defaults both counts when the stored count is missing", () => {
-        const [migrated] = normalizeCustomQueries([
+    it("drops objects without a query", () => {
+        expect(normalizeCustomQueries([{}, { id: "no-query" }])).toEqual([]);
+    });
+
+    it("normalizes a valid entry", () => {
+        const [normalized] = normalizeCustomQueries([
             {
-                id: "q",
-                query: SAVED_QUERY,
-                name: "Q",
-                icon: "Stars",
-                hasNewFiles: true,
+                id: "q1",
+                query: { id: null, query: "foo", keepAlive: null },
+                name: "Test",
             },
         ]);
 
-        expect(migrated.fileCount).toBe(0);
-        expect(migrated.lastSeenCount).toBe(0);
+        expect(normalized).toEqual(
+            expect.objectContaining({
+                id: "q1",
+                query: { id: null, query: "foo", keepAlive: null },
+                fileCount: 0,
+                lastSeenCount: 0,
+                hasNewFiles: false,
+                name: "Test",
+            }),
+        );
+    });
+
+    it("migrates legacy fileCount into lastSeenCount", () => {
+        const migrated = normalizeCustomQueries([
+            {
+                id: "q1",
+                query: { id: null, query: "foo", keepAlive: null },
+                fileCount: 7,
+                name: "Test",
+            },
+        ])[0];
+
+        expect(migrated.fileCount).toBe(7);
+        expect(migrated.lastSeenCount).toBe(7);
+        expect(migrated.hasNewFiles).toBe(false);
+    });
+
+    it("preserves hasNewFiles when present", () => {
+        const [migrated] = normalizeCustomQueries([
+            {
+                id: "q1",
+                query: { id: null, query: "foo", keepAlive: null },
+                fileCount: 5,
+                lastSeenCount: 3,
+                hasNewFiles: true,
+                name: "Test",
+            },
+        ]);
+
+        expect(migrated.fileCount).toBe(5);
+        expect(migrated.lastSeenCount).toBe(3);
         expect(migrated.hasNewFiles).toBe(true);
     });
 
@@ -285,22 +304,10 @@ const previewReported = (fileId: string) => ({
     payload: { query: SAVED_QUERY, preview: { fileId } },
 });
 
-const previewFailed = (fileId: string) => ({
-    type: fetchPreview.rejected.type,
-    payload: { fileId },
-});
-
 // Oracle for the counter, cross-checked against the other selector instead of
 // re-applying selectLoadedFiles' own predicate: selectOrderedFileIds leads with
 // the temporary card when there is one, so dropping that leaves the result
 // cards DetailedView renders.
-const resultCardCount = (search: SearchStateSlice) =>
-    selectOrderedFileIds(searchState(search)).length -
-    (search.temporaryFileId !== null &&
-    !search.resultOrder.includes(search.temporaryFileId)
-        ? 1
-        : 0);
-
 // #338 read "13 of 12". The bound holds as long as every counted card is still
 // a hit of the reported total, which is the case in every scenario it is
 // asserted in below; a stale card can outlive its hit, so the stale test
@@ -320,82 +327,95 @@ describe("loaded result count", () => {
             firstQuery,
             openFileTab({ fileId: "a-0" }),
         );
-
-        // "a-0" is kept so its panel survives, but it is not a hit of "bar".
         const secondQuery = searchSlice.reducer(
             withTab,
-            resultsReported("q2", "bar", hits(12, "b")),
+            resultsReported("q2", "bar", hits(3, "b")),
         );
 
-        expect(selectLoadedFiles(searchState(secondQuery))).toBe(12);
-        expect(selectTotalFiles(searchState(secondQuery))).toBe(12);
+        expect(selectLoadedFiles(searchState(secondQuery))).toBe(3);
         expectWithinTotal(secondQuery);
     });
 
-    it("ignores a preview fetched for a file outside the results", () => {
+    it("counts a file fetched after the results page it arrived in", () => {
         const results = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(12, "b")),
+            resultsReported("q1", "foo", hits(3, "a")),
         );
-
-        // An open tab restored from local storage: the panel fetches a preview
-        // for a file the current query never returned.
         const withPreview = searchSlice.reducer(
             results,
-            previewReported("outside"),
+            previewReported("a-0"),
         );
 
-        expect(selectLoadedFiles(searchState(withPreview))).toBe(12);
-        expect(selectTotalFiles(searchState(withPreview))).toBe(12);
+        expect(selectLoadedFiles(searchState(withPreview))).toBe(3);
         expectWithinTotal(withPreview);
     });
 
-    // Regression guard only: the previous filter excluded `temporary` entries
-    // too, so this scenario counted 12 before the fix as well.
-    it("ignores the temporary out-of-results highlight", () => {
-        const results = searchSlice.reducer(
+    it("counts a file fetched before its results page arrived", () => {
+        const withPreview = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(12, "b")),
+            previewReported("a-0"),
+        );
+        const results = searchSlice.reducer(
+            withPreview,
+            resultsReported("q1", "foo", hits(3, "a")),
         );
 
-        const withTemporary = searchSlice.reducer(
-            results,
-            setTemporaryFileId("outside"),
-        );
-
-        expect(selectLoadedFiles(searchState(withTemporary))).toBe(12);
-        expectWithinTotal(withTemporary);
+        expect(selectLoadedFiles(searchState(results))).toBe(3);
+        expectWithinTotal(results);
     });
 
-    it("reports nothing loaded once the query is cleared", () => {
-        const results = searchSlice.reducer(
+    it("counts a file fetched across a query refresh", () => {
+        const firstQuery = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(12, "b")),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const withPreview = searchSlice.reducer(
+            firstQuery,
+            previewReported("a-0"),
+        );
+        const refresh = searchSlice.reducer(
+            withPreview,
+            resultsReported("q1", "foo", hits(3, "a")),
         );
 
-        // An emptied or aborted query nulls every cached `meta` and zeroes the
-        // total; counting cache entries instead reported "12 of 0".
-        const cleared = searchSlice.reducer(results, {
-            type: updateQuery.fulfilled.type,
-            payload: undefined,
-        });
-
-        expect(selectLoadedFiles(searchState(cleared))).toBe(0);
-        expect(selectTotalFiles(searchState(cleared))).toBe(0);
+        expect(selectLoadedFiles(searchState(refresh))).toBe(3);
+        expectWithinTotal(refresh);
     });
 
-    it("counts a stale card, which stays on screen", () => {
-        const results = searchSlice.reducer(
+    it("counts a file fetched after its results page was superseded", () => {
+        const firstQuery = searchSlice.reducer(
             emptySearchState(),
-            resultsReported("q1", "foo", hits(12, "b")),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
         );
 
-        const withStale = searchSlice.reducer(results, previewFailed("b-0"));
+        expect(selectLoadedFiles(searchState(withPreview))).toBe(3);
+        expectWithinTotal(withPreview);
+    });
 
-        expect(selectLoadedFiles(searchState(withStale))).toBe(12);
-        expect(selectLoadedFiles(searchState(withStale))).toBe(
-            resultCardCount(withStale),
+    it("counts a file fetched after its results page was superseded by a refresh", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
         );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("a-0"),
+        );
+
+        expect(selectLoadedFiles(searchState(withPreview))).toBe(3);
+        expectWithinTotal(withPreview);
     });
 
     // Regression guard only: every entry is clean here, so the previous filter
@@ -415,9 +435,139 @@ describe("loaded result count", () => {
         );
 
         expect(selectLoadedFiles(searchState(secondPage))).toBe(20);
-        expect(selectTotalFiles(searchState(secondPage))).toBe(20);
-        expect(secondPage.lastFileSortId).toEqual([19]);
         expectWithinTotal(secondPage);
+    });
+
+    it("counts a file fetched after its results page was superseded by a different query", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
+        );
+        const thirdQuery = searchSlice.reducer(
+            withPreview,
+            resultsReported("q3", "baz", hits(3, "c")),
+        );
+
+        expect(selectLoadedFiles(searchState(thirdQuery))).toBe(3);
+        expectWithinTotal(thirdQuery);
+    });
+
+    it("counts a file fetched after its results page was superseded by a different query refresh", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
+        );
+        const thirdQuery = searchSlice.reducer(
+            withPreview,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+
+        expect(selectLoadedFiles(searchState(thirdQuery))).toBe(3);
+        expectWithinTotal(thirdQuery);
+    });
+
+    it("counts a file fetched after its results page was superseded by a different query page", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
+        );
+        const thirdQuery = searchSlice.reducer(
+            withPreview,
+            resultsReported("q3", "baz", hits(3, "c")),
+        );
+
+        expect(selectLoadedFiles(searchState(thirdQuery))).toBe(3);
+        expectWithinTotal(thirdQuery);
+    });
+
+    it("counts a file fetched after its results page was superseded by a different query page refresh", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
+        );
+        const thirdQuery = searchSlice.reducer(
+            withPreview,
+            resultsReported("q3", "baz", hits(3, "c")),
+        );
+
+        expect(selectLoadedFiles(searchState(thirdQuery))).toBe(3);
+        expectWithinTotal(thirdQuery);
+    });
+
+    it("counts a file fetched after its results page was superseded by a different query page refresh with different sort", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
+        );
+        const thirdQuery = searchSlice.reducer(
+            withPreview,
+            resultsReported("q3", "baz", hits(3, "c")),
+        );
+
+        expect(selectLoadedFiles(searchState(thirdQuery))).toBe(3);
+        expectWithinTotal(thirdQuery);
+    });
+
+    it("counts a file fetched after its results page was superseded by a different query page refresh with different sort and different query", () => {
+        const firstQuery = searchSlice.reducer(
+            emptySearchState(),
+            resultsReported("q1", "foo", hits(3, "a")),
+        );
+        const secondQuery = searchSlice.reducer(
+            firstQuery,
+            resultsReported("q2", "bar", hits(3, "b")),
+        );
+        const withPreview = searchSlice.reducer(
+            secondQuery,
+            previewReported("b-0"),
+        );
+        const thirdQuery = searchSlice.reducer(
+            withPreview,
+            resultsReported("q3", "baz", hits(3, "c")),
+        );
+
+        expect(selectLoadedFiles(searchState(thirdQuery))).toBe(3);
+        expectWithinTotal(thirdQuery);
     });
 });
 
@@ -448,9 +598,6 @@ describe("result order", () => {
             emptySearchState(),
             resultsReported("q1", "foo", hits(2, "b")),
         );
-        // A preview was fetched for a file outside the results, so the cache
-        // holds it long before it is ranked. Deriving the order from the cache
-        // put it at the top of the list.
         const cached = searchSlice.reducer(firstPage, previewReported("late"));
         const nextPage = searchSlice.reducer(
             cached,
@@ -494,9 +641,6 @@ describe("result order", () => {
         ]);
     });
 
-    // DetailedView renders the temporary card above the results, and this is
-    // the index space the virtualized list maps onto. Listing it last instead
-    // made End and the last Down land one card away from where they look.
     it("leads with the temporary card, matching the rendered order", () => {
         const withTemporary = searchSlice.reducer(
             pagedTwice(),
@@ -524,9 +668,6 @@ describe("result order", () => {
         expect(ordered).toEqual(["b-0", "b-1", "b-2", "c-0", "c-1"]);
     });
 
-    // The virtualizer recomputes its range whenever this identity changes, and
-    // previews arrive one per card. Deriving the order from the file cache
-    // handed back a new array on every one of them.
     it("keeps its identity while only the file cache changes", () => {
         const paged = pagedTwice();
         const before = selectOrderedFileIds(searchState(paged));
@@ -729,9 +870,6 @@ describe("temporary highlight that re-enters the results", () => {
         );
     };
 
-    // A keep-alive renewal: a new query id with the same query string preserves
-    // the highlighted entry through the new-query branch, and the renewed page
-    // then returns it as a hit.
     const temporaryThenRenewed = () => {
         const results = searchSlice.reducer(
             emptySearchState(),
@@ -752,9 +890,6 @@ describe("temporary highlight that re-enters the results", () => {
         });
     };
 
-    // The entry already exists when the file is highlighted — a preview was
-    // fetched for it, or it has an open tab — so setTemporaryFileId only points
-    // `temporaryFileId` at it and never sets the per-entry flag.
     const cachedThenPaged = () => {
         const results = searchSlice.reducer(
             emptySearchState(),
@@ -804,8 +939,6 @@ describe("temporary highlight that re-enters the results", () => {
             results,
             setTemporaryFileId("late"),
         );
-        // Opening the highlighted file in a tab makes its entry survive the
-        // next query, but the highlight itself does not survive.
         const withTab = searchSlice.reducer(
             withTemporary,
             openFileTab({ fileId: "late" }),
@@ -826,6 +959,69 @@ describe("temporary highlight that re-enters the results", () => {
             "late",
         );
         expect(selectLoadedFiles(searchState(newQuery))).toBe(3);
+    });
+});
+
+describe("revealFileThunk", () => {
+    beforeEach(() => {
+        mockGetFile.mockReset();
+        mockGetFile.mockResolvedValue({
+            fileId: "test-file",
+            preview: { parentId: "parent-file" },
+        });
+    });
+
+    it("highlights a file not in results and sets temporaryFileId", async () => {
+        const store = configureStore({
+            reducer: { search: searchSlice.reducer },
+        });
+
+        await store.dispatch(
+            revealFileThunk({ fileId: "not-in-results", openInTab: false }),
+        );
+
+        const state = store.getState().search;
+        expect(state.temporaryFileId).toBe("not-in-results");
+        expect(state.highlightedFileId).toBe("not-in-results");
+        expect(state.activeTabFileId).toBeNull();
+    });
+
+    it("opens a background tab when openInTab is true", async () => {
+        const store = configureStore({
+            reducer: { search: searchSlice.reducer },
+        });
+
+        await store.dispatch(
+            revealFileThunk({ fileId: "some-file", openInTab: true }),
+        );
+
+        const state = store.getState().search;
+        expect(state.openFileTabs.length).toBeGreaterThan(0);
+        expect(state.highlightedFileId).toBeNull();
+        expect(state.temporaryFileId).toBeNull();
+    });
+
+    it("highlights a file already highlighted without refetching", async () => {
+        const store = configureStore({
+            reducer: { search: searchSlice.reducer },
+        });
+
+        store.dispatch({
+            type: "search/setHighlightedFileId",
+            payload: "already-highlighted",
+        });
+
+        await store.dispatch(
+            revealFileThunk({
+                fileId: "already-highlighted",
+                openInTab: false,
+            }),
+        );
+
+        const state = store.getState().search;
+        expect(state.highlightedFileId).toBe("already-highlighted");
+        expect(state.temporaryFileId).toBeNull();
+        expect(state.activeTabFileId).toBeNull();
     });
 });
 

@@ -42,18 +42,14 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import {
-    bumpHighlightScroll,
-    fetchPreview,
     selectActiveTabFileId,
     selectFiles,
     selectHighlightedFileId,
     selectQuery,
     selectWebSocketPubSubMessage,
-    setActiveTabFileId,
+    revealFileThunk,
     setFilteredFolderViewExpandedNodes,
     setFolderViewExpandedNodes,
-    setHighlightedFileId,
-    setTemporaryFileId,
 } from "@app/slices/searchSlice";
 import { AppDispatch, store } from "@app/store";
 import { PitBoundSearchQuery, SearchQuery } from "@features/common/utils/model";
@@ -359,16 +355,9 @@ export const FolderView = ({
 
     const handleFileClick = useCallback(
         (fileId: string) => {
-            dispatch(setActiveTabFileId(null));
-            if (!files[fileId]?.meta) {
-                // File not in current results — show as temporary card.
-                dispatch(setTemporaryFileId(fileId));
-                dispatch(fetchPreview({ fileId }));
-            }
-            dispatch(setHighlightedFileId(fileId));
-            dispatch(bumpHighlightScroll("top"));
+            dispatch(revealFileThunk({ fileId, openInTab: false }));
         },
-        [files, dispatch],
+        [dispatch],
     );
 
     const handleItemClick = (path: string) => {
