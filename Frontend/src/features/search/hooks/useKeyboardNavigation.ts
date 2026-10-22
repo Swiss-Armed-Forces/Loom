@@ -17,6 +17,7 @@ import {
     setFileTabDetailTab,
     setActiveTabFileId,
     openFileTabThunk,
+    revealFileThunk,
     setPendingFullscreenFileId,
     closeFileTabThunk,
 } from "@app/slices/searchSlice";
@@ -649,7 +650,19 @@ export const useKeyboardNavigation = () => {
                             store.getState().search.files[currentFileId]
                                 ?.preview?.parentId;
                         if (!parentId) break;
-                        dispatch(openFileTabThunk({ fileId: parentId }));
+                        if (
+                            activeTabFileId === null &&
+                            highlightedFileId !== null
+                        ) {
+                            dispatch(
+                                revealFileThunk({
+                                    fileId: parentId,
+                                    openInTab: false,
+                                }),
+                            );
+                        } else {
+                            dispatch(openFileTabThunk({ fileId: parentId }));
+                        }
                         break;
                     }
                     case "NavigateChildFile": {
@@ -662,11 +675,23 @@ export const useKeyboardNavigation = () => {
                         const attachments = currentPreview?.attachments;
                         if (!attachments?.length) break;
                         if (attachments.length === 1) {
-                            dispatch(
-                                openFileTabThunk({
-                                    fileId: attachments[0].id,
-                                }),
-                            );
+                            if (
+                                activeTabFileId === null &&
+                                highlightedFileId !== null
+                            ) {
+                                dispatch(
+                                    revealFileThunk({
+                                        fileId: attachments[0].id,
+                                        openInTab: false,
+                                    }),
+                                );
+                            } else {
+                                dispatch(
+                                    openFileTabThunk({
+                                        fileId: attachments[0].id,
+                                    }),
+                                );
+                            }
                         } else {
                             clickActionButton("show-attachments");
                         }

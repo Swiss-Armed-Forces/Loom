@@ -7,13 +7,14 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState, memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectLastFileDetailTab } from "@app/slices/commonSlice";
 import {
     RightSidebarTab,
+    revealFileThunk,
     selectHighlightedFileId,
     selectQuery,
     selectRightSidebarOpen,
@@ -25,6 +26,7 @@ import {
 } from "@app/slices/searchSlice";
 import { getTourRightTab } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
+import { FileDetailTab } from "@features/common/utils/enums";
 import {
     AddTagsButton,
     CreateArchiveButton,
@@ -38,10 +40,63 @@ import {
 } from "@features/search/components/FileActionButtons";
 import { FileDetailPanel } from "@features/search/components/FileDetailPanel/FileDetailPanel";
 import { clampSidebarWidth } from "@features/search/components/sidebarWidth";
+import {
+    FileNavigationContext,
+    FileNavigationValue,
+} from "@features/search/context/FileNavigationContext";
 import { FolderView } from "@features/search/views/Folder/FolderView";
 import { StatisticsView } from "@features/search/views/Statistics/StatisticsView";
 
 import styles from "./RightSidebar.module.css";
+
+interface SidebarFileNavigationProps {
+    highlightedFileId: string | null;
+    lastFileDetailTab: FileDetailTab;
+    effectiveIsOpen: boolean;
+}
+
+const SidebarFileNavigation = ({
+    highlightedFileId,
+    lastFileDetailTab,
+    effectiveIsOpen,
+}: SidebarFileNavigationProps) => {
+    const dispatch = useAppDispatch();
+    const { t } = useTranslation();
+
+    const navigateToFile = useCallback<FileNavigationValue["navigateToFile"]>(
+        (fileId, options) => {
+            dispatch(
+                revealFileThunk({
+                    fileId,
+                    openInTab: options?.openInTab,
+                }),
+            );
+        },
+        [dispatch],
+    );
+
+    const fileNavigation = useMemo<FileNavigationValue>(
+        () => ({ navigateToFile }),
+        [navigateToFile],
+    );
+
+    return (
+        <FileNavigationContext.Provider value={fileNavigation}>
+            {highlightedFileId ? (
+                <FileDetailPanel
+                    fileId={highlightedFileId}
+                    detailTab={lastFileDetailTab}
+                    isActive={effectiveIsOpen}
+                    compact
+                />
+            ) : (
+                <Typography sx={{ p: 2, color: "text.secondary" }}>
+                    {t("toolbar.views.fileDetailEmpty")}
+                </Typography>
+            )}
+        </FileNavigationContext.Provider>
+    );
+};
 
 // Propless and rendered from a parent that re-renders on unrelated store
 // changes, so memo is what keeps one highlight change from sweeping the
@@ -227,18 +282,11 @@ export const RightSidebar = memo(() => {
                         />
                     </div>
                 ) : effectiveActiveTab === RightSidebarTab.FILE_DETAIL ? (
-                    highlightedFileId ? (
-                        <FileDetailPanel
-                            fileId={highlightedFileId}
-                            detailTab={lastFileDetailTab}
-                            isActive={effectiveIsOpen}
-                            compact
-                        />
-                    ) : (
-                        <Typography sx={{ p: 2, color: "text.secondary" }}>
-                            {t("toolbar.views.fileDetailEmpty")}
-                        </Typography>
-                    )
+                    <SidebarFileNavigation
+                        highlightedFileId={highlightedFileId}
+                        lastFileDetailTab={lastFileDetailTab}
+                        effectiveIsOpen={effectiveIsOpen}
+                    />
                 ) : null}
             </div>
         </>

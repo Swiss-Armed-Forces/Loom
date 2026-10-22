@@ -74,7 +74,7 @@
             },
             "resultCardSubitems": {
                 "title": "Attachments and related items",
-                "description": "Attachments and documents extracted from this file appear below the path. Click to open them in their own tabs, or Ctrl-click to open them in the background. Sub-documents also show a link back to the file they came from."
+                "description": "Attachments and documents extracted from this file appear below the path. In the results list, click to open them in their own tabs, or Ctrl-click to open them in the background. In the File Detail panel, clicks highlight in place. Sub-documents also show a link back to the file they came from."
             },
             "resultCardContent": {
                 "title": "Preview content and matches",
@@ -234,7 +234,7 @@
             },
             "fileDetail": {
                 "title": "File Detail",
-                "description": "The File Detail panel shows metadata and content for whichever file is currently highlighted. Its content is also query-scoped: highlights, translations, and summaries reflect the active search query."
+                "description": "The File Detail panel shows metadata and content for whichever file is currently highlighted. Its content is also query-scoped: highlights, translations, and summaries reflect the active search query. Click parent or attachment links to re-target the panel, or Ctrl+click to open them in a new tab."
             },
             "encryptionKeyDisplay": {
                 "title": "Shared encryption key",
@@ -648,7 +648,8 @@
         "filterByParentPath": "Filter by parent path",
         "filterByFilename": "Filter by filename",
         "filterByExtension": "Filter by extension",
-        "collapseAllPaths": "Collapse all paths"
+        "collapseAllPaths": "Collapse all paths",
+        "navigateToParent": "Navigate to parent"
     },
     "emptySearch": {
         "title": {

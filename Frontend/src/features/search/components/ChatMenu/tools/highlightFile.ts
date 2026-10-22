@@ -1,8 +1,5 @@
 import { CapabilityId } from "@app/api/generated";
-import {
-    bumpHighlightScroll,
-    setHighlightedFileId,
-} from "@app/slices/searchSlice";
+import { revealFileThunk } from "@app/slices/searchSlice";
 import type { AppDispatch } from "@app/store";
 
 import { toolError, toolSuccess, type PassiveFrontendTool } from "./types";
@@ -32,8 +29,7 @@ export const createHighlightFileTool = (
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
         if (!fileId) return toolError("file_id required");
-        dispatch(setHighlightedFileId(fileId));
-        dispatch(bumpHighlightScroll());
+        dispatch(revealFileThunk({ fileId, openInTab: false }));
         return toolSuccess();
     },
 });
