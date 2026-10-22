@@ -40,6 +40,18 @@ AI_PIT_KEEPALIVE: KeepAlive = "5m"
 SCAN_PIT_KEEPALIVE: KeepAlive = "5m"
 
 
+def convert_keepalive_to_seconds(value: KeepAlive) -> int:
+    unit = value[-1]
+    if unit == "s":
+        return int(value[:-1])
+    if unit == "m":
+        return int(value[:-1]) * 60
+    if unit == "h":
+        return int(value[:-1]) * 60 * 60
+
+    raise ValueError("Unknown unit in KeepAlive value")
+
+
 class QueryBuilderException(Exception):
     """Base class for QueryBuilder exceptions."""
 

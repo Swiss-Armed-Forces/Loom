@@ -1,7 +1,6 @@
 """Tool functions that dispatch work to Celery tasks."""
 
 import secrets
-from collections import deque
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from typing import NamedTuple
@@ -28,6 +27,7 @@ from common.ai_context.tool_models import (
     TranslateFileResult,
 )
 from common.models.cursor_pagination import CursorSource, SearchAfterCursor
+from common.services.query_builder import AI_PIT_KEEPALIVE, convert_keepalive_to_seconds
 from common.settings import settings
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
@@ -35,21 +35,11 @@ from pydantic_ai.exceptions import ToolFailed
 from pydantic_ai.tools import Tool as PydanticTool
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets import ExternalToolset
+from redis import StrictRedis
 
 from api.services.task_call_service import TaskCallService
 
 _MAX_CITATION_CHARS = 300
-
-# Enough for the three paginated tools to page in parallel without an older page's
-# handles being evicted under them.
-_MAX_TRACKED_CURSORS = 32
-
-
-class StoredCursor(NamedTuple):
-    """A pagination cursor kept out of the agent's context, and the handle naming it."""
-
-    handle: CursorHandle
-    cursor: SearchAfterCursor
 
 
 @dataclass
@@ -59,12 +49,6 @@ class AgentDeps:
     context: AiContext
     source_collector: list[ToolSource] = dataclass_field(default_factory=list)
     active_mode: ModeId = ModeId.WORK
-    # Handles only have to outlive the paging run that minted them, and the agent pages
-    # forward, so the oldest is always the one to drop. A hard bound is all the
-    # housekeeping this needs: the deps themselves live for one agent run.
-    cursors: deque[StoredCursor] = dataclass_field(
-        default_factory=lambda: deque(maxlen=_MAX_TRACKED_CURSORS)
-    )
 
 
 class RoutedTools(NamedTuple):
@@ -78,8 +62,11 @@ class ToolService:
     def __init__(
         self,
         task_call_service: TaskCallService,
+        redis_cache_client: StrictRedis,
     ) -> None:
         self._task_call_service = task_call_service
+        self._redis_client = redis_cache_client
+
         t = settings.llm.agent.tool_timeout
 
         self._search_and_browse = Capability[AgentDeps](
@@ -170,9 +157,7 @@ class ToolService:
             tools=[PydanticTool(self.rag_search, timeout=t)],
         )
 
-    def _store_cursor(
-        self, deps: AgentDeps, cursor: SearchAfterCursor | None
-    ) -> CursorHandle | None:
+    def _store_cursor(self, cursor: SearchAfterCursor | None) -> CursorHandle | None:
         """Keep a cursor in the run's state and return the handle that names it.
 
         The cursor carries a point-in-time id that is both long and of no use to the
@@ -182,36 +167,46 @@ class ToolService:
         if cursor is None:
             return None
         handle = CursorHandle(secrets.token_urlsafe(16))
-        deps.cursors.append(StoredCursor(handle=handle, cursor=cursor))
+
+        self._redis_client.hset(
+            f"aipitmap:{handle}", "cursor", cursor.model_dump_json()
+        )
+        self._redis_client.expire(
+            f"aipitmap:{handle}", convert_keepalive_to_seconds(AI_PIT_KEEPALIVE)
+        )
+
         return handle
 
     def _resolve_cursor(
         self,
-        deps: AgentDeps,
         handle: CursorHandle | None,
         expected_src: CursorSource,
     ) -> SearchAfterCursor | None:
         if handle is None:
             return None
 
-        stored = next((c for c in deps.cursors if c.handle == handle), None)
-        if stored is None:
+        raw_cursor = self._redis_client.hget(f"aipitmap:{handle}", "cursor")
+
+        if raw_cursor is None:
             raise ModelRetry(
                 "Unknown after_cursor. Cursors are only valid within the "
                 "run that produced them, and only the most recent ones are kept. "
                 "Call this tool again without after_cursor to start from the "
                 "first page."
             )
+
+        cursor = SearchAfterCursor.model_validate_json(raw_cursor)
+
         # The worker rejects a cursor from another search as well, but it is the agent
         # confusing two tools that this catches, and there is no reason to spend a task
         # round-trip on finding that out.
-        if stored.cursor.src != expected_src:
+        if cursor.src != expected_src:
             raise ModelRetry(
                 "That after_cursor belongs to a different tool. Pass a cursor back "
                 "only to the tool that returned it, or omit it to start from the "
                 "first page."
             )
-        return stored.cursor
+        return cursor
 
     def capabilities_for_mode(self, mode: ModeId) -> list[Capability[AgentDeps]]:
         """Return the capabilities available for the given mode."""
@@ -349,7 +344,7 @@ class ToolService:
                 them; do not pass one from a different tool. Omit for the
                 first page.
         """
-        resolved_cursor = self._resolve_cursor(ctx.deps, after_cursor, "execute_query")
+        resolved_cursor = self._resolve_cursor(after_cursor, "execute_query")
         try:
             result = self._task_call_service.call_execute_query_tool(
                 ctx.deps.context.id_,
@@ -367,7 +362,7 @@ class ToolService:
             for f in result.files
         )
         return ExecuteQueryAgentResult.from_tool_result(
-            result, self._store_cursor(ctx.deps, result.next_cursor)
+            result, self._store_cursor(result.next_cursor)
         )
 
     def get_file(self, ctx: RunContext[AgentDeps], file_id: str) -> GetFileResult:
@@ -522,9 +517,7 @@ class ToolService:
                 them; do not pass one from a different tool. Omit for the
                 first page.
         """
-        resolved_cursor = self._resolve_cursor(
-            ctx.deps, after_cursor, "list_folder_contents"
-        )
+        resolved_cursor = self._resolve_cursor(after_cursor, "list_folder_contents")
         try:
             result = self._task_call_service.call_list_folder_contents_tool(
                 ctx.deps.context.id_,
@@ -537,7 +530,7 @@ class ToolService:
             raise ToolFailed(str(exc)) from exc
 
         return ListFolderContentsAgentResult.from_tool_result(
-            result, self._store_cursor(ctx.deps, result.next_cursor)
+            result, self._store_cursor(result.next_cursor)
         )
 
     def search_by_filename(
@@ -575,7 +568,7 @@ class ToolService:
                 them; do not pass one from a different tool. Omit for the
                 first page.
         """
-        resolved_cursor = self._resolve_cursor(ctx.deps, after_cursor, "flat_files")
+        resolved_cursor = self._resolve_cursor(after_cursor, "flat_files")
         try:
             result = self._task_call_service.call_search_by_filename_tool(
                 ctx.deps.context.id_,
@@ -595,7 +588,7 @@ class ToolService:
         )
 
         return SearchByFilenameAgentResult.from_tool_result(
-            result, self._store_cursor(ctx.deps, result.next_cursor)
+            result, self._store_cursor(result.next_cursor)
         )
 
     def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
