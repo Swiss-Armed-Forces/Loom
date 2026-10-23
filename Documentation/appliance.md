@@ -1839,6 +1839,15 @@ window. `up.sh` now also waits for the node to advertise the vendor's resource b
 a box whose plugin never comes up fails the bring-up with a message naming it, rather than coming up with its
 AI half permanently dead.
 
+A reboot reaches that window without any redeploy at all, and before `up.sh` has run a line. Kubelet replays
+the pods already bound to the node while its device manager still holds no healthy devices — the checkpoint
+under `/var/lib/kubelet/device-plugins` restores each device as registered but not healthy, and the AMD
+plugin took 128 seconds to re-register on an EVO-X2 coming up cold. The ollama pod replayed inside that
+window is rejected the same way. Nothing is actually down: the ReplicaSet has already created a replacement,
+which the scheduler starts the moment the node advertises the resource again. The rejected pod only stays
+visible, because pod GC's threshold does not reach a single corpse — so `up.sh` removes it during
+`create_cluster`, at the next bring-up.
+
 To force a redeploy from the console — after editing the chart in place, say — run `loom-up --offline` without
 the flag, or bump `version` in `charts/Chart.yaml`. A change under `charts/templates/` with no version bump is
 the one edit the check cannot see.
@@ -2152,6 +2161,17 @@ exists it prints a warning, discards the flag and carries on.
 **Loom does not come up after a reboot in run mode.** The first pane of the console session already shows
 `loom`'s log. If the image store is empty, first-time setup either never ran or its images have since been
 dropped — see the `minikube delete` warning above, which is the usual cause and the usual bad news.
+
+**After a reboot, `kubectl get pods` shows a Failed ollama pod.** With reason `UnexpectedAdmissionError`, and
+a second ollama pod Running or Pending beside it. Nothing is down that is not coming back. Kubelet replayed
+that pod while the GPU device plugin had not yet re-registered the vendor's resource — which takes a couple
+of minutes from cold — and rejected it terminally; the ReplicaSet replaced it in the same breath, and the
+scheduler starts the replacement as soon as the node advertises the resource again. The rejected one is
+removed at the next `loom-up`, and `kubectl delete pod <name>` is safe at any time:
+
+```bash
+kubectl --namespace loom get pods --field-selector status.phase=Failed
+```
 
 **The console session will not start.** It prints why and hands over a plain shell on the same screen rather
 than looping; `Alt-F2` gives another one regardless. Reattach by hand with `loom-console`, or throw the session

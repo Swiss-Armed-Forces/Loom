@@ -85,7 +85,8 @@ KUBELET_EVICTION_SOFT_MEMORY=""
 # deletes them. Pod GC is what reaps them, and upstream's default threshold of
 # 12500 means it effectively never runs here. A value <= 0 disables GC
 # entirely; this one sits above the terminated pods a healthy cluster carries
-# from the pre-install Jobs.
+# from the pre-install Jobs. The handful that a reboot leaves below the
+# threshold are removed by remove_admission_rejected_pods instead.
 KUBE_CONTROLLER_TERMINATED_POD_GC_THRESHOLD="50"
 
 #
@@ -1062,6 +1063,7 @@ create_cluster(){
 
     assert_minikube_ip
     assert_gpu_resource_registered
+    remove_admission_rejected_pods
 }
 
 # What --static-ip asked for, against what the node actually got.
@@ -1117,10 +1119,18 @@ assert_minikube_ip(){
 #
 # A pod that requests the resource inside that window is not retried. Kubelet
 # rejects it at admission: phase Failed, reason UnexpectedAdmissionError,
-# "Allocate failed due to no healthy devices present", and the owning ReplicaSet
-# keeps that terminal pod rather than replacing it. Ollama is the only workload
-# that asks for a GPU, so the symptom is an appliance whose AI half is down with
-# nothing in the log that mentions a race.
+# "Allocate failed due to no healthy devices present". That verdict is terminal
+# for the pod but not for the workload -- a Failed pod does not count as active,
+# so the owning ReplicaSet creates a replacement, and the scheduler parks that
+# one on Insufficient <vendor>.com/gpu until the plugin finally registers.
+# Ollama comes back by itself; what the rejection leaves behind is one terminal
+# pod, which remove_admission_rejected_pods below clears.
+#
+# So this wait is not what keeps the AI half alive. It is what makes the
+# bring-up deterministic -- nothing deployed below is put through admission
+# before the resource exists -- and what names a plugin that is never going to
+# register, rather than leaving that to be discovered later as an ollama pod
+# that has been Pending ever since.
 #
 # Called from create_cluster rather than listed in STEPS_SETUP_SYSTEM, for the
 # same reason assert_minikube_ip is: it is an assertion about the command
@@ -1165,6 +1175,64 @@ assert_gpu_resource_registered(){
     done
 
     echo "[*] Node advertises ${GPU_RESOURCE_NAME}"
+}
+
+# Remove the pods kubelet rejected at admission, which nothing else removes.
+#
+# On a reboot kubelet replays the pods already bound to the node, and its device
+# manager starts with an empty healthy set: the checkpoint under
+# /var/lib/kubelet/device-plugins restores every device as registered but not
+# healthy, and only the plugin re-registering makes one allocatable again. From
+# cold that takes about two minutes on an EVO-X2 -- kubelet first tears down the
+# plugin's own stale sandbox, and the Calico CNI teardown cannot finish until
+# the API server answers. A GPU pod replayed inside that window is rejected
+# terminally, with phase Failed and reason UnexpectedAdmissionError.
+#
+# The workload heals on its own: a Failed pod does not count as active, so the
+# ReplicaSet creates a replacement and the scheduler holds it on Insufficient
+# <vendor>.com/gpu until the resource is back. What does not heal is the view.
+# Pod GC is the only thing that reaps terminal pods, and
+# terminated-pod-gc-threshold sits above the terminal pods a healthy cluster
+# carries -- so from that boot onwards `kubectl get pods` shows a Failed ollama
+# beside a Running one, and reads like an outage that is not one.
+#
+# Deliberately not gated on ${GPUS}: the corpse outlives the flag that made it,
+# and a box brought back up with --no-gpu after a GPU boot is exactly the box
+# whose operator is already debugging something else.
+#
+# It never fails the run. The removal is cosmetic and this sits on the
+# appliance's boot path, where `loom.service` reaching the deploy is worth more
+# than a tidy pod list.
+#
+# Narrow on purpose: an Evicted pod carries a different reason, and that pod is
+# the only record a memory-pressure eviction leaves behind.
+remove_admission_rejected_pods(){
+    # --field-selector can test status.phase but not status.reason, so the reason
+    # is filtered client-side. A jsonpath filter skips an item whose
+    # .status.reason is absent; a go-template `eq` on that missing field errors.
+    local rejected=()
+    readarray -t rejected < <(
+        kubectl get pods \
+            --namespace "${NAMESPACE}" \
+            --field-selector status.phase=Failed \
+            --output 'jsonpath={range .items[?(@.status.reason=="UnexpectedAdmissionError")]}{.metadata.name}{"\n"}{end}' \
+        || true
+    )
+
+    # `kubectl delete pods` with no names is an error, and the ordinary run has
+    # nothing to remove -- so this guard is what keeps set -e off the boot path.
+    if [[ "${#rejected[@]}" -eq 0 ]]; then
+        return
+    fi
+
+    echo "[*] Removing ${#rejected[@]} pod(s) kubelet rejected with UnexpectedAdmissionError:"
+    printf '[*]   %s\n' "${rejected[@]}"
+
+    kubectl delete pods \
+        --namespace "${NAMESPACE}" \
+        --ignore-not-found true \
+        "${rejected[@]}" \
+    || echo "[*] Could not remove them; they are terminal either way."
 }
 
 default_use_csi-hostpath-driver(){
