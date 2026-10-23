@@ -32,6 +32,7 @@ import {
     documentDetail,
     documentPreview,
     documentTreeNode,
+    extractionDepthOf,
     treeChildren,
     treeRootStats,
     treeSpine,
@@ -231,6 +232,34 @@ const treeHandler = http.get(/\/api\/v1\/files\/tree$/, ({ request }) => {
     return json({ ...paginated, ...rootStats });
 });
 
+// Mirrors the real endpoint: the deepest path, and the deepest a file was
+// extracted from, across everything the query matches. The folder panel draws
+// its two sliders from this, so a demo corpus has to answer it too.
+const treeDepthLimitsHandler = http.get(
+    /\/api\/v1\/files\/tree\/depth_limits$/,
+    ({ request }) => {
+        const result = safeSearch(queryFromUrl(new URL(request.url)));
+        if (!result.ok) return result.response;
+        // A demo path "/Mail/Inbox/x.eml" is three levels below the root, which
+        // is its separator count: the api path the tree emits adds one leading
+        // slash and the virtual root accounts for it again.
+        const depths = result.documents.map(
+            (document) => document.path.split("/").length - 1,
+        );
+        return json({
+            max_path_depth: depths.length ? Math.max(...depths) : 0,
+            max_extraction_depth: result.documents.reduce(
+                (deepest, document) =>
+                    Math.max(
+                        deepest,
+                        extractionDepthOf(document, result.documents),
+                    ),
+                0,
+            ),
+        });
+    },
+);
+
 const treeSpineHandler = http.get(
     /\/api\/v1\/files\/tree\/spine$/,
     ({ request }) => {
@@ -297,7 +326,12 @@ const filenameHandler = http.post(
             .filter((document) =>
                 document.name.toLowerCase().includes(filename),
             )
-            .map((document) => documentTreeNode(document, result.documents));
+            // Only the flat search reports nesting: these rows reach the client
+            // with no tree around them to derive it from.
+            .map((document) => ({
+                ...documentTreeNode(document, result.documents),
+                recursion_depth: extractionDepthOf(document, result.documents),
+            }));
         return json(paginateFilenameSearch(nodes, body.after ?? null));
     },
 );
@@ -565,6 +599,7 @@ export const filesHandlers = [
     availableHistogramHandler,
     termsHandler,
     histogramHandler,
+    treeDepthLimitsHandler,
     treeSpineHandler,
     treeHandler,
     filenameHandler,

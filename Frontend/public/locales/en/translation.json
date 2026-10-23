@@ -17,7 +17,8 @@
     "common": {
         "close": "Close",
         "cancel": "Cancel",
-        "copy": "Copy"
+        "copy": "Copy",
+        "done": "Done"
     },
     "tour": {
         "takeTour": "Take a Tour",
@@ -595,7 +596,20 @@
         "loadMore": "Load more",
         "filterPlaceholder": "Filter by filename",
         "filterLoadError": "Cannot load filter results.",
-        "filterLoadMoreError": "Cannot load more filter results."
+        "filterLoadMoreError": "Cannot load more filter results.",
+        "viewOptions": "View options",
+        "pathDepthLabel": "Path depth",
+        "pathDepthHelp": "How many path levels to show.",
+        "extractionDepthLabel": "Inside files",
+        "extractionDepthHelp": "How far into attachments and archives to look.",
+        "extractionNone": "None",
+        "depthAll": "All",
+        "resetDepth": "Reset",
+        "pathDepthStatus": "Showing {{n}} path levels",
+        "extractionDepthStatus": "Showing {{n}} level inside files",
+        "extractionNoneStatus": "Nothing from inside files",
+        "depthLimitsLoading": "Measuring how deep the folders go…",
+        "depthLimitsUnavailable": "Nothing here is nested deeply enough to limit."
     },
     "tags": {
         "addTag": "Add tag",
@@ -811,6 +825,7 @@
         "translations_languageTitle": "Translation Language",
         "sizeTitle": "File Size",
         "thumbnail_total_framesTitle": "Frame Count",
+        "path_depthTitle": "Path Depth",
         "recursion_depthTitle": "Recursion Depth",
         "reindex_countTitle": "Reindex Count"
     },

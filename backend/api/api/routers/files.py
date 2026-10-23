@@ -51,7 +51,11 @@ from api.models.statistics_model import (
     GroupedHistogramStatisticsModel,
     TermsStatisticsModel,
 )
-from api.models.tree_model import GetFilesTreeResponse, TreeNodeModel
+from api.models.tree_model import (
+    GetFilesTreeResponse,
+    TreeDepthLimitsModel,
+    TreeNodeModel,
+)
 from api.utils import get_content_disposition_header
 
 logger = logging.getLogger(__name__)
@@ -302,6 +306,21 @@ def search_by_filename(
 
 class GetFilesTreeSpineQuery(QueryParameters):
     full_path: str
+
+
+@router.get("/tree/depth_limits")
+def get_files_tree_depth_limits(
+    query: Annotated[QueryParameters, Query()],
+    file_repository: FileRepository = default_file_repository,
+) -> TreeDepthLimitsModel:
+    """Report how deep this query's folder tree goes, on both axes.
+
+    The folder view sizes its two depth controls from this, so that neither offers a
+    setting the data cannot show a difference at.
+    """
+    logger.info("Get tree depth limits with query: '%s'", query)
+    limits = file_repository.get_tree_depth_limits(query=query)
+    return TreeDepthLimitsModel.model_validate(limits.model_dump())
 
 
 @router.get("/tree/spine")

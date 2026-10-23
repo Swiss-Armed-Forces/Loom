@@ -31,6 +31,8 @@ import type { SearchQuery } from "@features/common/utils/model";
 import { clampSidebarWidth } from "@features/search/components/sidebarWidth";
 import { TagsList } from "@features/search/components/TagsList/TagsList";
 import { FolderView } from "@features/search/views/Folder/FolderView";
+import { FolderViewOptionsButton } from "@features/search/views/Folder/FolderViewOptions";
+import { PathDepthStatus } from "@features/search/views/Folder/PathDepthStatus";
 
 import { Chatbot } from "../ChatMenu/Chatbot";
 import { useChatbot } from "../ChatMenu/useChatbot";
@@ -267,6 +269,9 @@ export const LeftSidebar = memo(() => {
                             </Tooltip>
                         </>
                     )}
+                    {effectiveActivePanel === LeftSidebarPanel.FOLDER && (
+                        <FolderViewOptionsButton expansionKey="global" />
+                    )}
                     <IconButton
                         size="small"
                         onClick={() => {
@@ -277,6 +282,9 @@ export const LeftSidebar = memo(() => {
                         <Close fontSize="small" />
                     </IconButton>
                 </div>
+                {effectiveActivePanel === LeftSidebarPanel.FOLDER && (
+                    <PathDepthStatus expansionKey="global" />
+                )}
                 {showFilter && (
                     <div
                         className={styles.filterBar}

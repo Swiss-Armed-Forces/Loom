@@ -9,6 +9,7 @@ from elasticsearch.dsl.response import Response
 from pydantic import RootModel
 
 from common.file.file_repository import (
+    MIME_SOURCE_FIELDS,
     TAG_LEN_MAX,
     TAG_LEN_MIN,
     TREE_PATH_MAX_ELEMENT_COUNT,
@@ -76,6 +77,16 @@ def _set_bucket_hit(
     return bucket
 
 
+def _set_bucket_hit_mime(bucket: MagicMock, **detector_fields: str) -> MagicMock:
+    """Add detector fields to the _source of a bucket's existing top hit.
+
+    Only the named fields are added, so an unnamed one is absent from _source
+    entirely - which is how ES reports a document indexed before it existed.
+    """
+    bucket.first_hit.hits.hits[0]["_source"].update(detector_fields)
+    return bucket
+
+
 def test_parse_tree_bucket_directory():
     """A bucket whose top hit path differs from the bucket key is a directory."""
     bucket = _make_bucket("//source/docs", doc_count=3, unseen_doc_count=1)
@@ -140,6 +151,89 @@ def test_parse_tree_bucket_missing_flagged_field():
     node = FileRepository._parse_tree_bucket(bucket)  # pylint: disable=protected-access
     assert node.is_flagged is False
     assert node.file_id == "nf1"
+
+
+def test_parse_tree_bucket_leaf_prefers_tika_mime_over_magic():
+    """A leaf reports tika's detection when both detectors ran, as File.mime_type
+    does."""
+    bucket = _make_bucket("//source/report.pdf")
+    _set_bucket_hit(bucket, "//source/report.pdf", "m1")
+    _set_bucket_hit_mime(
+        bucket,
+        tika_file_type="application/pdf",
+        tika_mime_type_group="application",
+        magic_file_type="application/octet-stream",
+        magic_mime_type_group="application",
+    )
+    node = FileRepository._parse_tree_bucket(bucket)  # pylint: disable=protected-access
+    assert node.mime_type == "application/pdf"
+    assert node.mime_type_group == "application"
+
+
+def test_parse_tree_bucket_leaf_falls_back_to_magic_mime():
+    """Tika not having run leaves magic's detection as the only answer."""
+    bucket = _make_bucket("//source/note.txt")
+    _set_bucket_hit(bucket, "//source/note.txt", "m2")
+    _set_bucket_hit_mime(
+        bucket, magic_file_type="text/plain", magic_mime_type_group="text"
+    )
+    node = FileRepository._parse_tree_bucket(bucket)  # pylint: disable=protected-access
+    assert node.mime_type == "text/plain"
+    assert node.mime_type_group == "text"
+
+
+def test_parse_tree_bucket_leaf_without_any_mime_field():
+    """A document indexed before the detector fields existed carries neither."""
+    bucket = _make_bucket("//source/old.bin")
+    _set_bucket_hit(bucket, "//source/old.bin", "m3")
+    node = FileRepository._parse_tree_bucket(bucket)  # pylint: disable=protected-access
+    assert node.mime_type is None
+    assert node.mime_type_group is None
+
+
+def test_parse_tree_bucket_directory_has_no_mime():
+    """The top hit under a directory describes a descendant, so it must not leak up.
+
+    A directory bucket's first_hit is whichever file sorts first beneath it; reading its
+    type would label the folder with one arbitrary child's MIME type.
+    """
+    bucket = _make_bucket("//source/docs", doc_count=3)
+    _set_bucket_hit(bucket, "//source/docs/inner.pdf", "m4")
+    _set_bucket_hit_mime(
+        bucket, tika_file_type="application/pdf", tika_mime_type_group="application"
+    )
+    node = FileRepository._parse_tree_bucket(bucket)  # pylint: disable=protected-access
+    assert node.file_id is None
+    assert node.mime_type is None
+    assert node.mime_type_group is None
+
+
+def test_flat_file_node_without_any_mime_field():
+    """An absent detector attribute must resolve to None, not to a truthy stand-in."""
+    node = FileRepository._build_flat_file_node(  # pylint: disable=protected-access
+        _make_flat_hit("//s/old.bin")
+    )
+    assert node.mime_type is None
+    assert node.mime_type_group is None
+
+
+def test_flat_file_node_reports_recursion_depth():
+    """Filter mode returns bare leaves, so the nesting level has to travel with them.
+
+    There is no tree around a flat hit to derive the depth from, which is why this is
+    the one path that reads the indexed field.
+    """
+    hit = _make_flat_hit("//s/mail.eml/inner.zip/report.pdf")
+    hit.recursion_depth = 2
+    node = FileRepository._build_flat_file_node(hit)  # pylint: disable=protected-access
+    assert node.recursion_depth == 2
+
+
+def test_flat_file_node_without_recursion_depth_defaults_to_zero():
+    """A document indexed before the field existed reads as not extracted at all."""
+    hit = _make_flat_hit("//s/report.pdf")
+    node = FileRepository._build_flat_file_node(hit)  # pylint: disable=protected-access
+    assert node.recursion_depth == 0
 
 
 def _make_terms_bucket(
@@ -411,7 +505,9 @@ def _make_flat_hit(
 
     ``None`` removes the flag from the hit entirely, the way ES omits a field that was
     never indexed — on a plain MagicMock every attribute exists, so without this the
-    getattr defaults in _build_flat_file_node are unreachable.
+    getattr defaults in _build_flat_file_node are unreachable. The detector fields are
+    deleted for the same reason: absent is their default, and a test that wants
+    one sets it on the returned mock.
     """
     hit = MagicMock()
     hit.full_path = path
@@ -421,6 +517,8 @@ def _make_flat_hit(
         del hit.seen
     if flagged is None:
         del hit.flagged
+    for absent_field in (*MIME_SOURCE_FIELDS, "recursion_depth"):
+        delattr(hit, absent_field)
     hit.meta.id = path.replace("/", "_")
     hit.meta.sort = [score, path]
     return hit
@@ -878,3 +976,24 @@ def test_file_full_path(full_name: str, expected_full_path: str):
     absolute path with a leading slash."""
     file = _make_file(full_name)
     assert str(file.full_path) == expected_full_path
+
+
+@pytest.mark.parametrize(
+    "full_name, expected_depth",
+    [
+        # A file straight in the source: root -> //api-upload -> file.
+        ("file.txt", 2),
+        ("dir/file.txt", 3),
+        ("a/b/c/file.txt", 5),
+        ("//api-upload/dir/file.txt", 3),
+        # An extracted file is pathed under its container, which is a level of
+        # its own - this is the shape the folder tree's depth limit cuts on.
+        ("mail.eml/report.pdf", 3),
+        ("archive.zip/inner/report.pdf", 4),
+    ],
+)
+def test_file_path_depth(full_name: str, expected_depth: int):
+    """path_depth counts the levels the folder tree draws: POSIX reads the leading `//`
+    as one root component, not two separators, so the count comes from the path's parts
+    rather than from counting slashes."""
+    assert _make_file(full_name).path_depth == expected_depth

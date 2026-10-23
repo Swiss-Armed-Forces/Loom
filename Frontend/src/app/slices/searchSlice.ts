@@ -37,6 +37,7 @@ import {
 } from "@app/slices/fileDetailSelection";
 import { isPreviewFresh, SearchFileEntry } from "@app/slices/searchFileEntry";
 import { FileDetailTab } from "@features/common/utils/enums";
+import { clamp } from "@features/common/utils/helpers";
 import {
     CombinedStats,
     PitBoundSearchQuery,
@@ -113,6 +114,46 @@ export const THUMBNAIL_WIDTH_STEP_REM = 7;
 /** Most columns a card's fields may be laid out in. Past this a column is
  *  too narrow to hold a value worth reading. */
 export const MAX_FIELD_COLUMNS = 4;
+
+/** Hard ceiling on a stored depth limit.
+ *
+ *  Each control's real top is how deep the indexed data goes, which only the
+ *  backend knows and which the slider is drawn from. This is only here to keep
+ *  a stale or hand-edited localStorage value within something sane. */
+const FOLDER_VIEW_DEPTH_CEILING = 64;
+
+/** The two depth limits of one folder-view instance; `null` means no limit.
+ *
+ *  `pathDepth` counts path segments. `extractionDepth` counts container hops -
+ *  how far inside attachments and archives to look - so 0 hides everything
+ *  extracted from a file and 1 keeps an email's own attachments but not the
+ *  contents of an archive attached to it. */
+export interface FolderViewOptions {
+    pathDepth: number | null;
+    extractionDepth: number | null;
+}
+
+export const NO_FOLDER_VIEW_LIMITS: FolderViewOptions = {
+    pathDepth: null,
+    extractionDepth: null,
+};
+
+/** Clamp a limit into the range its control offers.
+ *
+ *  Persisted state is rehydrated without validation, so a hand-edited or stale
+ *  localStorage blob would otherwise reach the store carrying a depth no button
+ *  can display and no tree can satisfy. */
+const clampDepth = (value: number | null | undefined): number | null => {
+    if (typeof value !== "number" || Number.isNaN(value)) return null;
+    return clamp(Math.trunc(value), 0, FOLDER_VIEW_DEPTH_CEILING);
+};
+
+export const normalizeFolderViewOptions = (
+    options: Partial<FolderViewOptions> | null | undefined,
+): FolderViewOptions => ({
+    pathDepth: clampDepth(options?.pathDepth),
+    extractionDepth: clampDepth(options?.extractionDepth),
+});
 
 // All card-element visibility settings in one shape, shared by presets and state.
 export interface CardVisibilitySettings {
@@ -418,6 +459,8 @@ export interface SearchState {
     suppressDownloadWarning: boolean;
     folderViewExpandedNodes: string[];
     filteredFolderViewExpandedNodes: string[];
+    folderViewOptions: FolderViewOptions;
+    filteredFolderViewOptions: FolderViewOptions;
     pendingFullscreenFileId: string | null;
     showChatReasoning: boolean;
 }
@@ -521,6 +564,10 @@ export const SEARCH_STATE_DOCS = {
     folderViewExpandedNodes: "string[] — expanded node IDs in the folder tree",
     filteredFolderViewExpandedNodes:
         "string[] — expanded node IDs in the filtered folder tree",
+    folderViewOptions:
+        "FolderViewOptions — folder tree depth limits ({pathDepth, extractionDepth}, null = no limit)",
+    filteredFolderViewOptions:
+        "FolderViewOptions — depth limits of the filtered folder tree",
     pendingFullscreenFileId:
         "string | null — file ID queued to open in fullscreen",
     showChatReasoning:
@@ -557,6 +604,20 @@ export const loadPersistedSearchState = (): Partial<SearchState> => {
                 ? {
                       customQueries: normalizeCustomQueries(
                           parsed.customQueries,
+                      ),
+                  }
+                : {}),
+            ...("folderViewOptions" in parsed
+                ? {
+                      folderViewOptions: normalizeFolderViewOptions(
+                          parsed.folderViewOptions,
+                      ),
+                  }
+                : {}),
+            ...("filteredFolderViewOptions" in parsed
+                ? {
+                      filteredFolderViewOptions: normalizeFolderViewOptions(
+                          parsed.filteredFolderViewOptions,
                       ),
                   }
                 : {}),
@@ -635,6 +696,8 @@ const initialState: SearchState = {
     suppressDownloadWarning: false,
     folderViewExpandedNodes: [],
     filteredFolderViewExpandedNodes: [],
+    folderViewOptions: NO_FOLDER_VIEW_LIMITS,
+    filteredFolderViewOptions: NO_FOLDER_VIEW_LIMITS,
     pendingFullscreenFileId: null,
     showChatReasoning: false,
     bindings: {},
@@ -1609,6 +1672,22 @@ export const searchSlice = createSlice({
         ) => {
             state.filteredFolderViewExpandedNodes = action.payload;
         },
+        setFolderViewOptions: (
+            state,
+            action: PayloadAction<FolderViewOptions>,
+        ) => {
+            state.folderViewOptions = normalizeFolderViewOptions(
+                action.payload,
+            );
+        },
+        setFilteredFolderViewOptions: (
+            state,
+            action: PayloadAction<FolderViewOptions>,
+        ) => {
+            state.filteredFolderViewOptions = normalizeFolderViewOptions(
+                action.payload,
+            );
+        },
         setPendingFullscreenFileId: (
             state,
             action: PayloadAction<string | null>,
@@ -1981,6 +2060,8 @@ export const {
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
     setFilteredFolderViewExpandedNodes,
+    setFolderViewOptions,
+    setFilteredFolderViewOptions,
     setPendingFullscreenFileId,
     applyCardPreset,
     setFieldLayout,
@@ -2419,6 +2500,16 @@ export const selectFolderViewExpandedNodes = createSelector(
 export const selectFilteredFolderViewExpandedNodes = createSelector(
     selectSearch,
     (search) => search.filteredFolderViewExpandedNodes,
+);
+
+export const selectFolderViewOptions = createSelector(
+    selectSearch,
+    (search) => search.folderViewOptions,
+);
+
+export const selectFilteredFolderViewOptions = createSelector(
+    selectSearch,
+    (search) => search.filteredFolderViewOptions,
 );
 
 export const selectFieldLayout = createSelector(

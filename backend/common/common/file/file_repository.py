@@ -451,6 +451,18 @@ class File(RepositoryTaskObject):
     def parent_path(self) -> Annotated[str, TermsStat()]:
         return str(self.full_path.parent)
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def path_depth(self) -> Annotated[int, NumberHistogramStat(label="Path Depth")]:
+        """How many levels below the tree's virtual root this file sits.
+
+        Derived rather than stored, so it cannot drift from the path it
+        describes. POSIX reads the leading `//` of a full path as one root
+        component, so dropping that single part counts exactly the levels the
+        folder tree draws: `//source/docs/report.pdf` is three.
+        """
+        return len(self.full_path.parts) - 1
+
     @computed_field(  # type: ignore[misc]
         description="File name without the directory path, e.g. 'report.pdf'"
     )
@@ -610,6 +622,7 @@ class _EsFile(_EsTaskDocument):
     tika_handled_by = Keyword()
     attachments = Object(_EsAttachment, multi=True)
     recursion_depth = Long()
+    path_depth = Long()
     summary = Text(
         term_vector="with_positions_offsets",
         fields={
@@ -680,6 +693,46 @@ class _EsFile(_EsTaskDocument):
         }
 
 
+# The detector fields a tree bucket needs in its `_source` to describe a leaf's type.
+MIME_SOURCE_FIELDS: list[str] = [
+    "magic_file_type",
+    "magic_mime_type_group",
+    "tika_file_type",
+    "tika_mime_type_group",
+]
+
+
+class MimeFields(NamedTuple):
+    """A file's MIME type and group, resolved across the two detectors."""
+
+    mime_type: str | None
+    mime_type_group: MimeTypeGroup | None
+
+
+def read_source_field(source: Any, field: str) -> Any:
+    """Read one field out of an ES `_source`, tolerating a document that lacks it.
+
+    A document indexed before a field existed simply does not carry it, and neither
+    detector is guaranteed to have run.
+    """
+    try:
+        return source[field]
+    except (AttributeError, KeyError, TypeError):
+        return None
+
+
+def resolve_mime_fields(read: Callable[[str], Any]) -> MimeFields:
+    """Apply the same precedence as `File.mime_type`: tika first, magic as fallback.
+
+    The reader is passed in because the two callers hold different things - an ES
+    `_source` mapping in the aggregation path, an `_EsFile` hit in the flat path.
+    """
+    return MimeFields(
+        mime_type=read("tika_file_type") or read("magic_file_type"),
+        mime_type_group=read("tika_mime_type_group") or read("magic_mime_type_group"),
+    )
+
+
 class TreePathsNode(BaseModel):
     """A node in the file path tree.
 
@@ -693,6 +746,13 @@ class TreePathsNode(BaseModel):
         flagged_count: Number of flagged descendant files, excluding the node
             itself when is_flagged is True.
         is_flagged: Whether the file at this node is flagged (leaf nodes only).
+        direct_children_count: Number of direct-child nodes under this node.
+        mime_type: MIME type of the file at this node (leaf nodes only).
+        mime_type_group: MIME group of the file at this node (leaf nodes only).
+        recursion_depth: How many containers this file was extracted out of, 0
+            for a file that came straight from the data source. Reported by the
+            flat filename search only, which returns bare leaves with no tree
+            around them; the tree derives nesting from its own structure.
     """
 
     full_path: FilePurePath
@@ -703,6 +763,27 @@ class TreePathsNode(BaseModel):
     flagged_count: int = 0
     is_flagged: bool = False
     direct_children_count: int = 0
+    mime_type: str | None = None
+    mime_type_group: MimeTypeGroup | None = None
+    recursion_depth: int = 0
+
+
+class TreeDepthLimits(BaseModel):
+    """How deep a tree built from the current query actually goes.
+
+    What the folder view's two limits can usefully be set to is a property of the
+    indexed data, not a constant: a flat corpus has no fourth path level to
+    hide, and one with no attachments has nothing to hide inside a file.
+
+    Attributes:
+        max_path_depth: Deepest node measured in path segments below the
+            virtual root, so the root's own children are at 1.
+        max_extraction_depth: Deepest `recursion_depth` in the result set — how
+            many containers the most deeply extracted file came out of.
+    """
+
+    max_path_depth: int
+    max_extraction_depth: int
 
 
 class TreePathsResult(BaseModel):
@@ -1408,6 +1489,36 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             root_stats=root_stats,
         )
 
+    def get_tree_depth_limits(self, query: QueryParameters) -> TreeDepthLimits:
+        """Report how deep the tree for this query goes, on both axes.
+
+        Both are a plain `max` over an indexed field, so neither walks the
+        documents it summarises.
+
+        The answer describes documents indexed since those fields existed. A
+        mapping change does not rewrite documents, so an index carrying older
+        ones reports only what the newer ones reach - reindexing is what closes
+        that gap, as it is for `recursion_depth`.
+        """
+        search = self._get_search_by_query(query=query, with_highlight=False)
+        search = search[0:0]  # do not fetch hits
+        search.aggs.metric("max_path_depth", "max", field="path_depth")
+        search.aggs.metric("max_extraction_depth", "max", field="recursion_depth")
+        # Against the live index, as the tree's own counts are: a depth limit
+        # describes the tree the user is looking at now.
+        result = search.using(self._elasticsearch).execute()
+
+        path_depth = self.get_aggr(result, ["max_path_depth", "value"], default=None)
+        extraction = self.get_aggr(
+            result, ["max_extraction_depth", "value"], default=None
+        )
+        return TreeDepthLimits(
+            # No matching document carries the field - an empty result set, or
+            # an index predating it - and a tree with no nodes is zero deep.
+            max_path_depth=int(path_depth) if path_depth else 0,
+            max_extraction_depth=int(extraction) if extraction else 0,
+        )
+
     @staticmethod
     def _build_directory_aggregation(include_regex: str, size: int) -> Agg[_EsFile]:
         """Build the terms aggregation over the direct children of a directory.
@@ -1428,7 +1539,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 "top_hits",
                 size=1,
                 sort=[{"full_path.keyword": "asc"}],
-                _source=["full_path", "seen", "flagged"],
+                _source=["full_path", "seen", "flagged", *MIME_SOURCE_FIELDS],
             ),
         )
         dir_aggregation.bucket(
@@ -1565,7 +1676,15 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                     )
                 ],
             )
-        search = search.source(includes=["full_path", "seen", "flagged"])
+        search = search.source(
+            includes=[
+                "full_path",
+                "seen",
+                "flagged",
+                "recursion_depth",
+                *MIME_SOURCE_FIELDS,
+            ]
+        )
         # Relevance leads: the should-clause above exists to rank a hit whose own name
         # matches over one where only a parent folder does, which means nothing unless
         # _score is a sort key. The path breaks ties into a total order for
@@ -1640,7 +1759,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 "top_hits",
                 size=1,
                 sort=[{"full_path.keyword": "asc"}],
-                _source=["full_path", "seen", "flagged"],
+                _source=["full_path", "seen", "flagged", *MIME_SOURCE_FIELDS],
             ),
         )
         terms_agg.bucket("unseen", A("filter", filter=Q("term", seen=False)))
@@ -1703,6 +1822,10 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         file_id = None
         is_unseen = False
         is_flagged = False
+        # The top hit is the alphabetically first document *under* the bucket, which is
+        # the node itself only for a leaf. A directory's hit describes some descendant,
+        # so its type says nothing about the directory and stays unset.
+        mime = MimeFields(mime_type=None, mime_type_group=None)
         hits = first_hit_bucket.hits.hits
         if hits and str(hits[0]["_source"]["full_path"]) == key:
             file_id = hits[0]["_id"]
@@ -1714,6 +1837,8 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 is_flagged = bool(hits[0]["_source"]["flagged"])
             except KeyError:
                 pass
+            source = hits[0]["_source"]
+            mime = resolve_mime_fields(lambda field: read_source_field(source, field))
         return TreePathsNode(
             full_path=dirpath,
             file_count=cast(int, doc_count) - (1 if file_id is not None else 0),
@@ -1724,6 +1849,8 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             - (1 if is_flagged else 0),
             is_flagged=is_flagged,
             direct_children_count=direct_children_count,
+            mime_type=mime.mime_type,
+            mime_type_group=mime.mime_type_group,
         )
 
     @staticmethod
@@ -1734,6 +1861,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         its own seen/flagged state is reported through is_unseen / is_flagged.
         Missing flags default to seen and unflagged, as in _build_tree_paths_node.
         """
+        mime = resolve_mime_fields(lambda field: getattr(hit, field, None))
         return TreePathsNode(
             full_path=FilePurePath(str(hit.full_path)),
             file_count=0,
@@ -1742,6 +1870,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
             is_unseen=not bool(getattr(hit, "seen", True)),
             flagged_count=0,
             is_flagged=bool(getattr(hit, "flagged", False)),
+            mime_type=mime.mime_type,
+            mime_type_group=mime.mime_type_group,
+            recursion_depth=int(getattr(hit, "recursion_depth", 0) or 0),
         )
 
     @classmethod

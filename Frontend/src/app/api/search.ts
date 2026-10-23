@@ -13,6 +13,7 @@ import {
     AvailableStat,
     GetFilesResponse,
     GetFilesTreeResponse,
+    TreeDepthLimitsModel,
     GroupedHistogramStatisticsModel,
     TermsStatisticsModel,
     GetFileResponse,
@@ -119,6 +120,16 @@ export const getTreeSpine = async (
         keepAlive: query.keepAlive ?? undefined,
         searchString: query.query,
         fullPath,
+    });
+};
+
+export const getTreeDepthLimits = async (
+    query: SearchQuery,
+): Promise<TreeDepthLimitsModel> => {
+    return filesApi.getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGet({
+        queryId: query.id ?? undefined,
+        keepAlive: query.keepAlive ?? undefined,
+        searchString: query.query,
     });
 };
 

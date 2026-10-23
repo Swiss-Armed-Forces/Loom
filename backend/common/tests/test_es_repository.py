@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 import logging
+from pathlib import PurePosixPath
 from types import SimpleNamespace
 from typing import Any, Generator
 from unittest.mock import MagicMock
@@ -433,6 +434,15 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                 ),
                 short_name=TestValueDefaults.test_file_pure_path.name,
                 extension=TestValueDefaults.test_file_pure_path.suffix,
+                # Derived from the same path the two fields above are, so the
+                # expectation follows the fixture rather than a fixed number.
+                path_depth=len(
+                    PurePosixPath(
+                        f"//{TestValueDefaults.test_str}/"
+                        f"{str(TestValueDefaults.test_file_pure_path).lstrip('/')}"
+                    ).parts
+                )
+                - 1,
                 source=TestValueDefaults.test_str,
                 parent_id=str(TestValueDefaults.test_uuid),
                 sha256=TestValueDefaults.test_str,

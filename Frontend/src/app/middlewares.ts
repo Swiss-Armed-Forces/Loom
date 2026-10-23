@@ -195,6 +195,8 @@ const SEARCH_PERSIST_FIELDS = [
     "displayHistogramStat",
     "folderViewExpandedNodes",
     "filteredFolderViewExpandedNodes",
+    "folderViewOptions",
+    "filteredFolderViewOptions",
     "bindings",
 ];
 

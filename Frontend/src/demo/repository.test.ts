@@ -32,10 +32,10 @@ describe("demo repository", () => {
         vi.useRealTimers();
     });
 
-    it("returns the fifteen visible integration fixtures by default", () => {
-        expect(searchDocuments("")).toHaveLength(15);
-        expect(searchDocuments("*")).toHaveLength(15);
-        expect(getDocuments()).toHaveLength(16);
+    it("returns the eighteen visible integration fixtures by default", () => {
+        expect(searchDocuments("")).toHaveLength(18);
+        expect(searchDocuments("*")).toHaveLength(18);
+        expect(getDocuments()).toHaveLength(19);
     });
 
     it("links the multipart email to its extracted attachment", () => {
@@ -141,7 +141,7 @@ describe("demo repository", () => {
             searchDocuments(
                 "tika_meta.dcterms_created:{2020-12-31 TO 2025-01-01}",
             ).map((item) => item.extension),
-        ).toEqual([".zip", ".pdf", ".txt", ".txt"]);
+        ).toEqual([".zip", ".pdf", ".txt", ".txt", ".zip", ".pdf"]);
     });
 
     it("treats quoted boolean words as search terms", () => {
@@ -161,8 +161,8 @@ describe("demo repository", () => {
         expect(searchDocuments('"John security"~2')).toHaveLength(1);
         expect(searchDocuments('"John security"~1')).toHaveLength(0);
         expect(searchDocuments("*:John")).toHaveLength(1);
-        expect(searchDocuments("\\*name\\*:*txt*")).toHaveLength(5);
-        expect(searchDocuments("summary:*")).toHaveLength(15);
+        expect(searchDocuments("\\*name\\*:*txt*")).toHaveLength(6);
+        expect(searchDocuments("summary:*")).toHaveLength(18);
     });
 
     it("resolves relative dates against the current browser date", () => {
@@ -180,7 +180,7 @@ describe("demo repository", () => {
         ).toHaveLength(4);
         expect(
             searchDocuments('NOT extension:(".zip" OR ".docx")'),
-        ).toHaveLength(13);
+        ).toHaveLength(15);
     });
 
     it("accepts grouped and negated filters emitted by the frontend helper", () => {

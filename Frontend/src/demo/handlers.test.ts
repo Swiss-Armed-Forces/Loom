@@ -23,7 +23,14 @@ import { handlers, resetDemoHandlerState } from "./handlers";
 import { clearDemoTimers, resetDemoRepository } from "./repository";
 
 interface TreeNodeResponse {
-    nodes: Array<{ full_path: string; file_count: number; file_id?: string }>;
+    nodes: Array<{
+        full_path: string;
+        file_count: number;
+        file_id?: string;
+        mime_type?: string;
+        mime_type_group?: string;
+        recursion_depth?: number;
+    }>;
     next_page_cursor?: string;
 }
 
@@ -144,8 +151,8 @@ describe("demo API handlers", () => {
             thumbnail_file_id: "thumbnail.png",
             thumbnail_total_frames: 1,
         });
-        expect(stats.file_count).toBe(15);
-        expect(stats.data).toContainEqual({ name: ".txt", hits_count: 5 });
+        expect(stats.file_count).toBe(18);
+        expect(stats.data).toContainEqual({ name: ".txt", hits_count: 6 });
     });
 
     it("serves navigable email attachment previews", async () => {
@@ -294,6 +301,65 @@ describe("demo API handlers", () => {
                 file_id: PDF_ATTACHMENT_ID,
             }),
         ]);
+        // A leaf describes its own type, so the tree can draw the same icon the
+        // result card does; a directory has no type to describe.
+        expect(inbox.nodes[0]).toMatchObject({
+            mime_type: "message/rfc822",
+            mime_type_group: "message",
+        });
+        expect(mail.nodes[0].mime_type).toBeUndefined();
+    });
+
+    it("measures how deep the corpus goes on both axes", async () => {
+        const limits = await fetch(
+            "http://loom.test/api/v1/files/tree/depth_limits?search_string=*",
+        ).then((response) =>
+            responseJson<{
+                max_path_depth: number;
+                max_extraction_depth: number;
+            }>(response),
+        );
+
+        // /Projects/Alpha/2025/Phase2/Notes/Drafts/phase-two-notes.txt — six
+        // folders below the root, and the file itself is the seventh level.
+        expect(limits.max_path_depth).toBe(7);
+        // …/testarchive_larger.zip/bundle.zip/home.pdf
+        expect(limits.max_extraction_depth).toBe(2);
+    });
+
+    it("reports extraction nesting on filename search results", async () => {
+        // Filter mode replaces the tree with a flat list, so a row has no
+        // ancestors to count and has to carry its own nesting level - which is
+        // what the "inside files" limit filters that list on.
+        const response = await fetch(
+            "http://loom.test/api/v1/files/search_by_filename",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query_id: DEMO_QUERY_ID,
+                    search_string: "*",
+                    filename: "home.pdf",
+                }),
+            },
+        );
+        const body = await responseJson<TreeNodeResponse>(response);
+        const depthByPath = new Map(
+            body.nodes.map((node) => [node.full_path, node.recursion_depth]),
+        );
+
+        expect(
+            depthByPath.get(
+                "//Mail/Inbox/email_with_pdf_attachment.eml/home.pdf",
+            ),
+        ).toBe(1);
+        // Inside a zip that is itself inside a zip: two containers, though its
+        // path is no deeper than the archive sibling one container in.
+        expect(
+            depthByPath.get(
+                "//Crawler/Imports/testarchive_larger.zip/bundle.zip/home.pdf",
+            ),
+        ).toBe(2);
     });
 
     it("paginates folder nodes with a stable path cursor", async () => {
@@ -489,7 +555,7 @@ describe("demo API handlers", () => {
 
         expect(upload.status).toBe(501);
         expect(archiveImport.status).toBe(501);
-        expect(files.total_files).toBe(15);
+        expect(files.total_files).toBe(18);
         expect(archives.total).toBe(1);
     });
 

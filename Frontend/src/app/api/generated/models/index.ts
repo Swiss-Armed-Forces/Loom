@@ -72,6 +72,7 @@ export * from "./TermsStatisticsModel";
 export * from "./ToolCallActivityEntry";
 export * from "./TranslateAllRequest";
 export * from "./TranslateFileRequest";
+export * from "./TreeDepthLimitsModel";
 export * from "./TreeNodeModel";
 export * from "./UpdateArchiveRequest";
 export * from "./UpdateFileRequest";

@@ -65,6 +65,8 @@ const handleChildrenAddedAction = (
             isFlagged: child.isFlagged ?? false,
             directChildrenCount: child.directChildrenCount ?? 0,
             fileId: child.fileId ?? undefined,
+            mimeType: child.mimeType ?? undefined,
+            mimeTypeGroup: child.mimeTypeGroup ?? undefined,
         };
         if (child.fileId) newFileIds.add(child.fileId);
     }
@@ -174,6 +176,8 @@ const handleSpineNodesMergedAction = (
             isFlagged: node.isFlagged ?? false,
             directChildrenCount: node.directChildrenCount ?? 0,
             fileId: node.fileId ?? undefined,
+            mimeType: node.mimeType ?? undefined,
+            mimeTypeGroup: node.mimeTypeGroup ?? undefined,
         };
         if (node.fileId) newFileIds.add(node.fileId);
     }

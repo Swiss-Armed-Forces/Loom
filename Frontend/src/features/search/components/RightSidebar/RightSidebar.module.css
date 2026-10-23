@@ -44,6 +44,11 @@
     opacity: 0.7;
     white-space: nowrap;
     overflow: hidden;
+    /* The title takes the slack so the header's buttons stay grouped against
+    the right edge. Without it space-between strands a middle button in the
+    middle of the bar. */
+    flex: 1;
+    min-width: 0;
 }
 
 .content {
