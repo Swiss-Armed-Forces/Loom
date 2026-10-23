@@ -48,6 +48,7 @@ export const DATE_STAT_ORDER = [
 export const NUMBER_STAT_ORDER = [
     "size",
     "thumbnail_total_frames",
+    "path_depth",
     "recursion_depth",
     "reindex_count",
 ];

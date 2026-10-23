@@ -37,6 +37,8 @@ import {
 import { clampSidebarWidth } from "@features/search/components/sidebarWidth";
 import { FileDetailView } from "@features/search/views/FileDetail/FileDetailView";
 import { FolderView } from "@features/search/views/Folder/FolderView";
+import { FolderViewOptionsButton } from "@features/search/views/Folder/FolderViewOptions";
+import { PathDepthStatus } from "@features/search/views/Folder/PathDepthStatus";
 import { StatisticsView } from "@features/search/views/Statistics/StatisticsView";
 
 import styles from "./RightSidebar.module.css";
@@ -136,6 +138,9 @@ export const RightSidebar = memo(() => {
                 <Typography className={styles.headerTitle}>
                     {tabTitle}
                 </Typography>
+                {effectiveActiveTab === RightSidebarTab.FOLDER && (
+                    <FolderViewOptionsButton expansionKey="filtered" />
+                )}
                 <IconButton
                     size="small"
                     onClick={() => {
@@ -145,6 +150,9 @@ export const RightSidebar = memo(() => {
                     <Close fontSize="small" />
                 </IconButton>
             </div>
+            {effectiveActiveTab === RightSidebarTab.FOLDER && (
+                <PathDepthStatus expansionKey="filtered" />
+            )}
             {effectiveActiveTab === RightSidebarTab.FOLDER && (
                 <div className={styles.filterBar}>
                     <InputBase

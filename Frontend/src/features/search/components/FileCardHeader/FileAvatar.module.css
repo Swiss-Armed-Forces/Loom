@@ -1,16 +1,22 @@
 .fileAvatar {
-    cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
 }
 
-.fileAvatar:hover {
+/* Only an avatar that does something on click offers to be clicked. In a tree
+row it is a type indicator, and a row-height scale-up on hover reads as the row
+itself twitching. */
+.clickable {
+    cursor: pointer;
+}
+
+.clickable:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     filter: brightness(1.1);
 }
 
-.fileAvatar:active {
+.clickable:active {
     transform: scale(0.95);
 }

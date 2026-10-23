@@ -30,6 +30,15 @@ import { mapValues } from "../runtime";
  *     direct_children_count: Number of direct-child nodes (files and
  *         immediate sub-directories) under this node, not counting deeper
  *         descendants.
+ *     mime_type: MIME type of the file at this node, tika's detection
+ *         preferred over magic's. Set for leaf nodes only; a directory has
+ *         no type of its own.
+ *     mime_type_group: MIME group of the file at this node, resolved the
+ *         same way. Set for leaf nodes only.
+ *     recursion_depth: How many containers this file was extracted out of,
+ *         0 for a file that came straight from the data source. Reported by
+ *         /search_by_filename only, whose results are bare leaves with no
+ *         tree around them; the tree itself derives nesting from its shape.
  * @export
  * @interface TreeNodeModel
  */
@@ -82,7 +91,43 @@ export interface TreeNodeModel {
      * @memberof TreeNodeModel
      */
     directChildrenCount?: number;
+    /**
+     *
+     * @type {string}
+     * @memberof TreeNodeModel
+     */
+    mimeType?: string;
+    /**
+     *
+     * @type {TreeNodeModelMimeTypeGroupEnum}
+     * @memberof TreeNodeModel
+     */
+    mimeTypeGroup?: TreeNodeModelMimeTypeGroupEnum;
+    /**
+     *
+     * @type {number}
+     * @memberof TreeNodeModel
+     */
+    recursionDepth?: number;
 }
+
+/**
+ * @export
+ */
+export const TreeNodeModelMimeTypeGroupEnum = {
+    Application: "application",
+    Audio: "audio",
+    Font: "font",
+    Haptics: "haptics",
+    Image: "image",
+    Message: "message",
+    Model: "model",
+    Multipart: "multipart",
+    Text: "text",
+    Video: "video",
+} as const;
+export type TreeNodeModelMimeTypeGroupEnum =
+    (typeof TreeNodeModelMimeTypeGroupEnum)[keyof typeof TreeNodeModelMimeTypeGroupEnum];
 
 /**
  * Check if a given object implements the TreeNodeModel interface.
@@ -130,6 +175,15 @@ export function TreeNodeModelFromJSONTyped(
             json["direct_children_count"] == null
                 ? undefined
                 : json["direct_children_count"],
+        mimeType: json["mime_type"] == null ? undefined : json["mime_type"],
+        mimeTypeGroup:
+            json["mime_type_group"] == null
+                ? undefined
+                : json["mime_type_group"],
+        recursionDepth:
+            json["recursion_depth"] == null
+                ? undefined
+                : json["recursion_depth"],
     };
 }
 
@@ -154,5 +208,8 @@ export function TreeNodeModelToJSONTyped(
         flagged_count: value["flaggedCount"],
         is_flagged: value["isFlagged"],
         direct_children_count: value["directChildrenCount"],
+        mime_type: value["mimeType"],
+        mime_type_group: value["mimeTypeGroup"],
+        recursion_depth: value["recursionDepth"],
     };
 }

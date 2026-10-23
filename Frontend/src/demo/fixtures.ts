@@ -29,6 +29,15 @@ export const TESTARCHIVE_ZIP_ID = "55555555-5555-4555-8555-555555555555";
 export const ARCHIVE_PDF_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeea";
 export const ARCHIVE_TEXT_01_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeeb";
 export const ARCHIVE_TEXT_02_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeec";
+// A zip inside the zip, and a file inside that: the only chain in the corpus
+// that reaches extraction depth 2, which is what tells the "inside files"
+// settings apart from one another.
+export const NESTED_ARCHIVE_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeed";
+export const NESTED_ARCHIVE_PDF_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+// Two folder levels below the previous deepest path, so that folder depth 3,
+// 4 and 5 each draw a different tree. Named and tagged so that it collides with
+// no other fixture's search assertions.
+export const DEEP_DRAFT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeef";
 
 export const createDemoDocuments = (): DemoDocument[] => {
     const now = new Date().toISOString();
@@ -288,6 +297,7 @@ export const createDemoDocuments = (): DemoDocument[] => {
                 { id: ARCHIVE_PDF_ID, name: "home.pdf" },
                 { id: ARCHIVE_TEXT_01_ID, name: "testfile01.txt" },
                 { id: ARCHIVE_TEXT_02_ID, name: "testfile02.txt" },
+                { id: NESTED_ARCHIVE_ID, name: "bundle.zip" },
             ],
             translations: [],
             archiveIds: [],
@@ -374,6 +384,91 @@ export const createDemoDocuments = (): DemoDocument[] => {
             translations: [],
             archiveIds: [],
             data: "another test file",
+        },
+        {
+            id: NESTED_ARCHIVE_ID,
+            name: "bundle.zip",
+            path: "/Crawler/Imports/testarchive_larger.zip/bundle.zip",
+            extension: ".zip",
+            mimeType: "application/zip",
+            size: 4_210,
+            uploadedAt: "2023-07-11T10:49:00Z",
+            createdAt: "2022-09-27T14:22:00Z",
+            modifiedAt: "2023-07-11T10:49:00Z",
+            state: "processed",
+            tags: ["archive", "crawler"],
+            content: "An archive packed inside the outer archive.",
+            summary:
+                "A zip nested one level inside another zip, so its own contents sit two containers deep.",
+            flagged: false,
+            hidden: false,
+            seen: false,
+            language: "en",
+            authors: [],
+            secrets: [],
+            source: "crawlerX",
+            parentId: TESTARCHIVE_ZIP_ID,
+            attachments: [{ id: NESTED_ARCHIVE_PDF_ID, name: "home.pdf" }],
+            translations: [],
+            archiveIds: [],
+            data: "Binary ZIP fixture bundled with the demo.",
+            downloadUrl: testArchiveUrl,
+        },
+        {
+            id: NESTED_ARCHIVE_PDF_ID,
+            name: "home.pdf",
+            path: "/Crawler/Imports/testarchive_larger.zip/bundle.zip/home.pdf",
+            extension: ".pdf",
+            mimeType: "application/pdf",
+            size: 1_737,
+            uploadedAt: "2023-07-11T10:49:00Z",
+            createdAt: "2023-07-11T10:09:00Z",
+            modifiedAt: "2023-07-11T10:09:00Z",
+            state: "processed",
+            tags: ["archive", "crawler"],
+            content: "A one-page PDF generated with Matplotlib.",
+            summary:
+                "A PDF two containers deep: inside a zip that is itself inside a zip.",
+            flagged: false,
+            hidden: false,
+            seen: true,
+            language: "en",
+            authors: [],
+            secrets: [],
+            source: "crawlerX",
+            parentId: NESTED_ARCHIVE_ID,
+            translations: [],
+            archiveIds: [],
+            data: "Binary PDF fixture bundled with the demo.",
+            downloadUrl: homePdfUrl,
+            rendered: { officePdfUrl: homePdfUrl },
+        },
+        {
+            id: DEEP_DRAFT_ID,
+            name: "phase-two-notes.txt",
+            path: "/Projects/Alpha/2025/Phase2/Notes/Drafts/phase-two-notes.txt",
+            extension: ".txt",
+            mimeType: "text/plain",
+            size: 1_024,
+            uploadedAt: "2025-02-02T09:05:00Z",
+            createdAt: "2025-02-01T17:40:00Z",
+            modifiedAt: "2025-02-02T08:55:00Z",
+            state: "processed",
+            tags: ["planning"],
+            content:
+                "Planning notes filed deep in a project folder structure. Kept deliberately bland so the folder-depth control has something to shorten without colouring any other demo search.",
+            summary:
+                "A draft filed six folders deep, so each folder-depth setting draws a different tree.",
+            flagged: false,
+            hidden: false,
+            seen: false,
+            language: "en",
+            authors: [],
+            secrets: [],
+            source: "api-upload",
+            translations: [],
+            archiveIds: [],
+            data: "Planning notes filed deep in a project folder structure.",
         },
         {
             id: "66666666-6666-4666-8666-666666666666",

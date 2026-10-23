@@ -91,6 +91,7 @@ models/TermsStatisticsModel.ts
 models/ToolCallActivityEntry.ts
 models/TranslateAllRequest.ts
 models/TranslateFileRequest.ts
+models/TreeDepthLimitsModel.ts
 models/TreeNodeModel.ts
 models/UpdateArchiveRequest.ts
 models/UpdateFileRequest.ts

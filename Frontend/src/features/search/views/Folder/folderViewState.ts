@@ -7,6 +7,16 @@ export const ROOT_NODE: FolderTree = {
     label: PATH_ROOT_NAME + PATH_SEPARATOR,
 };
 
+/** Edge length of a file's type avatar in a folder-panel row, in pixels.
+ *  Shared by the tree and the flat filter list, which are the same row height. */
+export const ROW_AVATAR_SIZE_PX = 17;
+
+/** Which of the two mounted folder views a piece of state belongs to.
+ *
+ *  Expansion is already stored per panel under this key, and the depth limits
+ *  follow it rather than inventing a second discriminator. */
+export type FolderViewExpansionKey = "global" | "filtered";
+
 export interface FolderTree {
     id: string;
     label: React.ReactNode;
@@ -17,6 +27,10 @@ export interface FolderTree {
     isFlagged?: boolean;
     directChildrenCount?: number;
     fileId?: string;
+    /** MIME type and group of the file at this node, for its type icon. Set on
+     *  leaf nodes only — a directory has no type of its own. */
+    mimeType?: string;
+    mimeTypeGroup?: string;
     children?: Record<string, FolderTree>;
     loading?: boolean;
     /**

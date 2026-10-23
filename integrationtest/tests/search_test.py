@@ -1,6 +1,8 @@
 import pytest
 import requests
+from api.models.tree_model import TreeDepthLimitsModel
 from api.routers.files import GetFilesTreeQuery, GetFilesTreeResponse
+from common.services.query_builder import QueryParameters
 
 from utils.consts import FILES_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
@@ -282,6 +284,33 @@ def test_file_with_leading_slash_in_name_is_searchable():
     assert (
         "//api-upload" in top_level_paths
     ), f"Expected '//api-upload' in tree root, got: {top_level_paths}"
+
+
+def test_tree_depth_limits_measure_the_indexed_paths():
+    """The folder view sizes its depth sliders from this, against a real index.
+
+    Folder depth is computed in an Elasticsearch runtime field rather than from an
+    indexed number, so nothing but a real query proves the script runs at all - a
+    mocked search would accept Painless that does not compile.
+    """
+    upload_bytes_asset(b"", "depth_probe/one/two/three.txt")
+    fetch_files_from_api(search_string='short_name:"three.txt"')
+
+    response = requests.get(
+        f"{FILES_ENDPOINT}/tree/depth_limits",
+        params=QueryParameters(
+            search_string="*",
+            query_id=fetch_query_id(),
+        ).model_dump(),
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    limits = TreeDepthLimitsModel.model_validate(response.json())
+
+    # //api-upload/depth_probe/one/two/three.txt: four levels below the root.
+    assert limits.max_path_depth >= 4
+    # Nothing in this upload was extracted out of anything.
+    assert limits.max_extraction_depth >= 0
 
 
 class TestEmailQueries:

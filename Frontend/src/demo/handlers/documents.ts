@@ -22,7 +22,29 @@ export interface TreeNodeWire {
     flagged_count?: number;
     is_flagged?: boolean;
     direct_children_count?: number;
+    /** Leaf nodes only, as on the real endpoint — a directory has no type. */
+    mime_type?: string;
+    mime_type_group?: string;
+    /** How many containers this file was extracted out of. Reported by the flat
+     *  filename search, whose results have no tree around them to derive it. */
+    recursion_depth?: number;
 }
+
+/** How deeply a demo document is nested inside other documents.
+ *
+ *  The real worker names an attachment `<container>/<attachment>`, so a file's
+ *  extraction depth is the number of its ancestor paths that are themselves
+ *  documents. Counting containers rather than path segments is what makes an
+ *  archive's inner folders depth 1 alongside a mail attachment. */
+export const extractionDepthOf = (
+    document: DemoDocument,
+    allDocuments: DemoDocument[],
+): number =>
+    allDocuments.filter(
+        (other) =>
+            other.id !== document.id &&
+            document.path.startsWith(`${other.path}/`),
+    ).length;
 
 const pathSegments = (path: string): string[] =>
     path.split("/").filter((segment) => segment.length > 0);
@@ -74,6 +96,8 @@ export const documentTreeNode = (
         flagged_count: children.filter((d) => d.flagged).length,
         is_flagged: document.flagged,
         direct_children_count: 0,
+        mime_type: document.mimeType,
+        mime_type_group: document.mimeType.split("/")[0],
     };
 };
 
@@ -131,6 +155,8 @@ export const treeChildren = (
                 file_id: fileNode.file_id,
                 is_unseen: fileNode.is_unseen,
                 is_flagged: fileNode.is_flagged,
+                mime_type: fileNode.mime_type,
+                mime_type_group: fileNode.mime_type_group,
             });
         });
     return [...children.values()].sort((left, right) =>

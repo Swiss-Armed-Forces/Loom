@@ -16,6 +16,7 @@ from common.file.file_repository import (
     File,
     FilePurePath,
     FlatFilesResult,
+    TreeDepthLimits,
     TreePathsNode,
     TreePathsResult,
 )
@@ -40,7 +41,7 @@ from api.models.statistics_model import (
     HitsPerGroupEntryModel,
     TermsStatisticsModel,
 )
-from api.models.tree_model import GetFilesTreeResponse
+from api.models.tree_model import GetFilesTreeResponse, TreeDepthLimitsModel
 from api.routers.files import (
     FIELD_PREVIEW_LENGTH,
     SOURCE_ID,
@@ -674,6 +675,60 @@ def test_get_files_tree_returns_nodes_and_cursor(client: TestClient):
         tree_node_directory_path="/",
         after=None,
     )
+
+
+def test_get_files_tree_carries_mime_fields_to_the_client(client: TestClient):
+    """The tree's MIME fields must survive the TreePathsNode -> TreeNodeModel bridge.
+
+    The two models are joined by model_validate(model_dump()), so a field added to one
+    and not the other is dropped in silence rather than failing.
+    """
+    get_file_repository().get_full_paths_by_query.return_value = TreePathsResult(
+        nodes=[
+            TreePathsNode(
+                full_path=FilePurePath("//source/report.pdf"),
+                file_count=0,
+                file_id="f1",
+                mime_type="application/pdf",
+                mime_type_group="application",
+            ),
+            TreePathsNode(
+                full_path=FilePurePath("//source/folder"),
+                file_count=2,
+            ),
+        ],
+    )
+
+    response = client.get(
+        "/v1/files/tree",
+        params={"query_id": "abc123", "node_path": "/"},
+    )
+
+    assert response.status_code == 200
+    body = GetFilesTreeResponse.model_validate(response.json())
+    leaf, directory = body.nodes
+    assert leaf.mime_type == "application/pdf"
+    assert leaf.mime_type_group == "application"
+    assert directory.mime_type is None
+    assert directory.mime_type_group is None
+
+
+def test_get_files_tree_depth_limits_reports_both_axes(client: TestClient):
+    """The folder view sizes its controls from this, so both axes must survive."""
+    get_file_repository().get_tree_depth_limits.return_value = TreeDepthLimits(
+        max_path_depth=4,
+        max_extraction_depth=2,
+    )
+
+    response = client.get(
+        "/v1/files/tree/depth_limits",
+        params={"query_id": "abc123"},
+    )
+
+    assert response.status_code == 200
+    body = TreeDepthLimitsModel.model_validate(response.json())
+    assert body.max_path_depth == 4
+    assert body.max_extraction_depth == 2
 
 
 def test_get_files_tree_passes_after_cursor(client: TestClient):

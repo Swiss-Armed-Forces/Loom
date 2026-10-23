@@ -100,6 +100,11 @@ import {
     TranslateFileRequestToJSON,
 } from "../models/TranslateFileRequest";
 import {
+    type TreeDepthLimitsModel,
+    TreeDepthLimitsModelFromJSON,
+    TreeDepthLimitsModelToJSON,
+} from "../models/TreeDepthLimitsModel";
+import {
     type UpdateFileRequest,
     UpdateFileRequestFromJSON,
     UpdateFileRequestToJSON,
@@ -147,6 +152,12 @@ export interface GetFileV1FilesFileIdGetRequest {
 export interface GetFilesCountV1FilesCountGetRequest {
     queryId?: string;
     keepAlive?: GetFilesCountV1FilesCountGetKeepAliveEnum;
+    searchString?: string;
+}
+
+export interface GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRequest {
+    queryId?: string;
+    keepAlive?: GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetKeepAliveEnum;
     searchString?: string;
 }
 
@@ -762,6 +773,74 @@ export class FilesApi extends runtime.BaseAPI {
             requestParameters,
             initOverrides,
         );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGet without sending the request
+     */
+    async getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRequestOpts(
+        requestParameters: GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRequest,
+    ): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        if (requestParameters["queryId"] != null) {
+            queryParameters["query_id"] = requestParameters["queryId"];
+        }
+
+        if (requestParameters["keepAlive"] != null) {
+            queryParameters["keep_alive"] = requestParameters["keepAlive"];
+        }
+
+        if (requestParameters["searchString"] != null) {
+            queryParameters["search_string"] =
+                requestParameters["searchString"];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        let urlPath = `/v1/files/tree/depth_limits`;
+
+        return {
+            path: urlPath,
+            method: "GET",
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Report how deep this query\'s folder tree goes, on both axes.  The folder view sizes its two depth controls from this, so that neither offers a setting the data cannot show a difference at.
+     * Get Files Tree Depth Limits
+     */
+    async getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRaw(
+        requestParameters: GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<TreeDepthLimitsModel>> {
+        const requestOptions =
+            await this.getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            TreeDepthLimitsModelFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Report how deep this query\'s folder tree goes, on both axes.  The folder view sizes its two depth controls from this, so that neither offers a setting the data cannot show a difference at.
+     * Get Files Tree Depth Limits
+     */
+    async getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGet(
+        requestParameters: GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRequest = {},
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<TreeDepthLimitsModel> {
+        const response =
+            await this.getFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetRaw(
+                requestParameters,
+                initOverrides,
+            );
         return await response.value();
     }
 
@@ -2149,6 +2228,16 @@ export const GetFilesCountV1FilesCountGetKeepAliveEnum = {
 } as const;
 export type GetFilesCountV1FilesCountGetKeepAliveEnum =
     (typeof GetFilesCountV1FilesCountGetKeepAliveEnum)[keyof typeof GetFilesCountV1FilesCountGetKeepAliveEnum];
+/**
+ * @export
+ */
+export const GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetKeepAliveEnum = {
+    _10s: "10s",
+    _5m: "5m",
+    _30m: "30m",
+} as const;
+export type GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetKeepAliveEnum =
+    (typeof GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetKeepAliveEnum)[keyof typeof GetFilesTreeDepthLimitsV1FilesTreeDepthLimitsGetKeepAliveEnum];
 /**
  * @export
  */

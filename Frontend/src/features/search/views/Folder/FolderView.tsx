@@ -44,6 +44,8 @@ import {
 import {
     selectFileDetailFileId,
     selectFiles,
+    selectFilteredFolderViewOptions,
+    selectFolderViewOptions,
     selectHighlightedFileId,
     selectQuery,
     selectWebSocketPubSubMessage,
@@ -53,7 +55,9 @@ import {
 } from "@app/slices/searchSlice";
 import { AppDispatch, store } from "@app/store";
 import { PitBoundSearchQuery, SearchQuery } from "@features/common/utils/model";
+import { FileAvatar } from "@features/search/components/FileCardHeader/FileAvatar";
 
+import { isWithinExtractionLimit, shouldLoadChildrenOf } from "./depthLimits";
 import {
     FolderViewNode,
     NodeCountBadges,
@@ -65,7 +69,9 @@ import {
     FolderTree,
     FolderViewAction,
     FolderViewActionType,
+    FolderViewExpansionKey,
     ROOT_NODE,
+    ROW_AVATAR_SIZE_PX,
     PATH_SEPARATOR,
 } from "./folderViewState";
 import {
@@ -147,7 +153,7 @@ interface FolderViewProps {
     filter?: string;
     searchQuery?: SearchQuery;
     persistExpansion?: boolean;
-    expansionKey?: "global" | "filtered";
+    expansionKey?: FolderViewExpansionKey;
     refreshKey?: string | null;
 }
 
@@ -214,6 +220,15 @@ export const FolderView = ({
     const filesRef = useRef(files);
     filesRef.current = files;
 
+    // The two panels hold their own limits, keyed by the same discriminator the
+    // expansion state already uses. Read through the store rather than once at
+    // mount, so changing a limit redraws instead of waiting for a remount.
+    const globalLimits = useAppSelector(selectFolderViewOptions);
+    const filteredLimits = useAppSelector(selectFilteredFolderViewOptions);
+    const limits = expansionKey === "filtered" ? filteredLimits : globalLimits;
+    const limitsRef = useRef(limits);
+    limitsRef.current = limits;
+
     useEffect(() => {
         if (initialExpandSynced.current) return;
         if (folderState.expandedNodes.length === 0) return;
@@ -242,6 +257,11 @@ export const FolderView = ({
         folderState.expandedNodes.forEach((nodeId) => {
             const node = findTreeNode(folderState.tree, nodeId);
             if (node && !node.children && !node.loading) {
+                // A generation the limits hide is not worth a request. On a
+                // deep corpus this is the cascade's whole tail.
+                if (!shouldLoadChildrenOf(folderState.tree, node, limits)) {
+                    return;
+                }
                 loadChildren(
                     node,
                     searchQueryRef.current!,
@@ -251,7 +271,7 @@ export const FolderView = ({
                 ).catch(() => {});
             }
         });
-    }, [folderState.tree, folderState.expandedNodes, folderDispatch]);
+    }, [folderState.tree, folderState.expandedNodes, folderDispatch, limits]);
 
     // Persist user-driven expansion to Redux (→ localStorage via middleware)
     // so the state survives sidebar panel switches and page reloads.
@@ -330,25 +350,33 @@ export const FolderView = ({
         if (searchQueryRef.current) {
             added.forEach((id) => {
                 const node = findTreeNode(folderStateRef.current.tree, id);
-                if (node && !node.children && !node.loading) {
-                    loadChildren(
+                if (!node || node.children || node.loading) return;
+                if (
+                    !shouldLoadChildrenOf(
+                        folderStateRef.current.tree,
                         node,
-                        searchQueryRef.current!,
-                        id,
-                        folderDispatch,
-                        1,
-                    ).catch((err) => {
-                        toast.error(
-                            "Cannot load tree search results. Error: " +
-                                (err &&
-                                typeof err === "object" &&
-                                "detail" in err &&
-                                err.detail
-                                    ? err.detail
-                                    : err),
-                        );
-                    });
+                        limitsRef.current,
+                    )
+                ) {
+                    return;
                 }
+                loadChildren(
+                    node,
+                    searchQueryRef.current!,
+                    id,
+                    folderDispatch,
+                    1,
+                ).catch((err) => {
+                    toast.error(
+                        "Cannot load tree search results. Error: " +
+                            (err &&
+                            typeof err === "object" &&
+                            "detail" in err &&
+                            err.detail
+                                ? err.detail
+                                : err),
+                    );
+                });
             });
         }
     };
@@ -703,11 +731,21 @@ export const FolderView = ({
 
     if (filter) {
         if (filterLoading) return <LoadingIndicator />;
-        if (filterResults.length === 0) return null;
+        // A flat list has no ancestors to count, so the nesting level travels
+        // with each row from the backend. The folder limit has no meaning here:
+        // this is a list, not a tree.
+        const visibleFilterResults = filterResults.filter((node) =>
+            isWithinExtractionLimit(node.recursionDepth, limits),
+        );
+        // A page whose every row was extracted leaves nothing to show, but the
+        // next page may still hold matches — so keep "Load more" reachable.
+        if (visibleFilterResults.length === 0 && !filterNextPageCursor) {
+            return null;
+        }
         return (
             <>
                 <List dense disablePadding>
-                    {filterResults.map((node) => {
+                    {visibleFilterResults.map((node) => {
                         const label =
                             node.fullPath.split(PATH_SEPARATOR).at(-1) ??
                             node.fullPath;
@@ -742,6 +780,13 @@ export const FolderView = ({
                                             spacing={0.5}
                                             sx={{ alignItems: "center" }}
                                         >
+                                            <FileAvatar
+                                                mimeType={node.mimeType}
+                                                mimeTypeGroup={
+                                                    node.mimeTypeGroup
+                                                }
+                                                size={ROW_AVATAR_SIZE_PX}
+                                            />
                                             <Typography
                                                 noWrap
                                                 variant="body2"
@@ -853,6 +898,7 @@ export const FolderView = ({
                         tree={folderState.tree}
                         focusedFileId={focusedFileId}
                         onLoadMore={handleLoadMore}
+                        limits={limits}
                     />
                 </SimpleTreeView>
             </div>

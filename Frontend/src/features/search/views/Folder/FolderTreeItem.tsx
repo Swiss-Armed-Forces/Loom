@@ -29,11 +29,24 @@ import {
     selectQuery,
     updateQuery,
 } from "@app/slices/searchSlice";
+import type { FolderViewOptions } from "@app/slices/searchSlice";
 import { AppDispatch } from "@app/store";
 import { SearchQueryField } from "@features/common/utils/enums";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
+import { FileAvatar } from "@features/search/components/FileCardHeader/FileAvatar";
 
-import { FolderTree, ROOT_NODE, PATH_SEPARATOR } from "./folderViewState";
+import {
+    childDepth,
+    isWithinLimits,
+    NodeDepth,
+    ROOT_DEPTH,
+} from "./depthLimits";
+import {
+    FolderTree,
+    ROOT_NODE,
+    ROW_AVATAR_SIZE_PX,
+    PATH_SEPARATOR,
+} from "./folderViewState";
 import { hasUnloadedChildren } from "./util";
 
 const FOLDER_CHIP_FIELDS = [
@@ -136,10 +149,23 @@ export const NodeViewDetailsButton = ({ fileId }: { fileId: string }) => {
     );
 };
 
-const getIconOfNode = (node: FolderTree): React.ElementType | undefined => {
-    if (node.id === ROOT_NODE.id) return FolderSpecial;
-    if (node.fileId) return Article;
-    return Folder;
+/** The type avatar for a file row, or the directory glyph for everything else.
+ *
+ *  Files reuse the result card's avatar, so one file is the same colour and the
+ *  same glyph in a card, a tab and the tree. A file the index has no MIME group
+ *  for falls back to a generic document glyph. */
+const NodeIconOrAvatar = ({ node }: { node: FolderTree }) => {
+    if (node.fileId !== undefined) {
+        return (
+            <FileAvatar
+                mimeType={node.mimeType}
+                mimeTypeGroup={node.mimeTypeGroup}
+                size={ROW_AVATAR_SIZE_PX}
+            />
+        );
+    }
+    const Icon = node.id === ROOT_NODE.id ? FolderSpecial : Folder;
+    return <Icon sx={{ fontSize: "1rem", flexShrink: 0, opacity: 0.75 }} />;
 };
 
 // Used to suppress the expand arrow while a node's children are being fetched.
@@ -150,6 +176,12 @@ export interface FolderViewNodeProps {
     tree: FolderTree;
     focusedFileId?: string | null;
     onLoadMore: (nodeId: string) => void;
+    /** The two depth limits in force, `null` meaning no limit. */
+    limits: FolderViewOptions;
+    /** Where this node sits under the limits. Passed down rather than searched
+     *  for, so placing a node costs the same at any depth. Defaults to the root,
+     *  which is the only node rendered without a parent to ask. */
+    depth?: NodeDepth;
 }
 
 export const FolderViewNode = React.memo(
@@ -157,6 +189,8 @@ export const FolderViewNode = React.memo(
         tree,
         focusedFileId,
         onLoadMore,
+        limits,
+        depth = ROOT_DEPTH,
     }: FolderViewNodeProps) {
         const { t } = useTranslation();
         const dispatch = useDispatch<AppDispatch>();
@@ -170,10 +204,15 @@ export const FolderViewNode = React.memo(
         const isFocusedFile = fileId !== undefined && fileId === focusedFileId;
         const isRoot = tree.id === ROOT_NODE.id;
 
-        const NodeIcon = getIconOfNode(tree);
-
         // Show "Load more" when there are more backend pages to fetch.
         const hasMore = !!tree.nextPageCursor;
+
+        // Children all sit at the same depth, so either the whole generation
+        // passes the limits or none of it does. A node whose generation is cut
+        // renders as a leaf - no arrow, no row standing in for what is missing.
+        // Its own file-count chip already says how much is in there.
+        const childrenDepth = childDepth(depth, fileId !== undefined);
+        const childrenHidden = !isWithinLimits(childrenDepth, limits);
 
         const handleDirectChildrenClick = (e: React.MouseEvent) => {
             e.stopPropagation();
@@ -303,11 +342,7 @@ export const FolderViewNode = React.memo(
                     "data-tour": "folder-tree-node",
                 })}
             >
-                {NodeIcon && (
-                    <NodeIcon
-                        sx={{ fontSize: "1rem", flexShrink: 0, opacity: 0.75 }}
-                    />
-                )}
+                <NodeIconOrAvatar node={tree} />
                 <Stack
                     direction="row"
                     spacing={0.5}
@@ -342,21 +377,25 @@ export const FolderViewNode = React.memo(
             </Stack>
         );
 
-        const children: ReactNode[] = Object.values(tree.children ?? {}).map(
-            (c) => (
-                <FolderViewNode
-                    key={c.id}
-                    tree={c}
-                    focusedFileId={focusedFileId}
-                    onLoadMore={onLoadMore}
-                />
-            ),
-        );
+        const children: ReactNode[] = childrenHidden
+            ? []
+            : Object.values(tree.children ?? {}).map((c) => (
+                  <FolderViewNode
+                      key={c.id}
+                      tree={c}
+                      focusedFileId={focusedFileId}
+                      onLoadMore={onLoadMore}
+                      limits={limits}
+                      depth={childrenDepth}
+                  />
+              ));
 
         // Render a hidden placeholder for unloaded, non-empty nodes (directories
         // or files such as archives that have extracted children). MUI uses the
-        // placeholder to decide whether to show the expand arrow.
-        if (hasUnloadedChildren(tree)) {
+        // placeholder to decide whether to show the expand arrow, so a node
+        // whose children a limit hides must not get one: the arrow would open
+        // onto nothing.
+        if (hasUnloadedChildren(tree) && !childrenHidden) {
             children.push(
                 <TreeItem
                     key="placeholder"
@@ -367,7 +406,9 @@ export const FolderViewNode = React.memo(
             );
         }
 
-        if (hasMore) {
+        // Paginating a generation that is not being drawn would fetch rows
+        // straight into the stub, so the limit hides this too.
+        if (hasMore && !childrenHidden) {
             children.push(
                 <TreeItem
                     key="load-more"
@@ -446,5 +487,8 @@ export const FolderViewNode = React.memo(
     (prev, next) =>
         prev.tree === next.tree &&
         prev.focusedFileId === next.focusedFileId &&
-        prev.onLoadMore === next.onLoadMore,
+        prev.onLoadMore === next.onLoadMore &&
+        prev.limits === next.limits &&
+        prev.depth?.path === next.depth?.path &&
+        prev.depth?.extraction === next.depth?.extraction,
 );
