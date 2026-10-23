@@ -20,6 +20,23 @@
 # naming a host the rules do not serve breaks nothing at request time and is
 # invisible until somebody reads the certificate it implies.
 #
+# And the question `certificate.requireClientCert` rests on: that every route
+# this chart renders with it set is one the requirement actually reaches.
+#
+# It is carried by a `router.tls.options` annotation pasted into each of the
+# chart's Ingress templates, one copy per service, and by nothing else --
+# `spec.tls` does not imply it, and traefik's `websecure` entrypoint sets
+# `http.tls=true` for everything on it, so a router can be a perfectly good TLS
+# router and still demand no certificate. An Ingress copied from a sibling
+# without those three lines is therefore the regression to catch, and it needs
+# no unusual route to happen. An IngressRouteTCP is the other shape: on a
+# plain entrypoint, or on `websecure` with no `tls`, it terminates nothing the
+# option could attach to.
+#
+# Scope, which is the word "this chart" above: routes rendered by the *traefik*
+# chart are outside it, and the dashboard it enables on `websecure` is one of
+# them. See the threat-model section of Documentation/appliance.md.
+#
 # Runs `helm template`, which is client-side -- no cluster, no network.
 set -eou pipefail
 
@@ -29,8 +46,9 @@ RELEASE="loom"
 # Read off the chart in main, so --chart is honoured.
 DOMAIN=""
 MANIFEST=""
+MTLS_MANIFEST=""
 
-# The two yq programs, in quoted heredocs rather than inline single quotes:
+# The yq programs, in quoted heredocs rather than inline single quotes:
 # both carry backticks and jq variables, which a shell reads as syntax of its
 # own.
 
@@ -59,6 +77,53 @@ select(.kind == "Ingress")
 | $ingress.spec.tls[]?.hosts[]? as $host
 | select(($rules | index($host)) == null)
 | "\($ingress.metadata.name): \($host)"
+JQ
+)"
+
+# The same question for TCP routes, asked of both halves. `websecure` is the
+# only entrypoint traefik terminates TLS on (traefik/values.yaml), so a route
+# on any of the others -- amqp, redis, redis-cache, imap, prometheus -- is a
+# plain listener the requirement cannot reach. And a route that *is* on
+# `websecure` with `tls` unset terminates none either, which is one value away
+# in charts/templates/dovecot/ingressRoute.yaml and would pass a check that
+# only looked at the entrypoint.
+UNSECURED_TCP_ROUTE_PROGRAM="$(cat <<'JQ'
+select(.kind == "IngressRouteTCP")
+| . as $route
+| ([$route.spec.entryPoints[]?] | index("websecure")) as $secure
+| if $secure == null then
+      $route.spec.entryPoints[]?
+      | "\($route.metadata.name): on entrypoint \(.), which terminates no TLS"
+  elif ($route.spec.tls | not) then
+      "\($route.metadata.name): on websecure with no spec.tls"
+  else
+      empty
+  end
+JQ
+)"
+
+# Whether the requirement is attached at all, which is the regression that
+# needs no unusual route to happen.
+#
+# The TLSOption is referenced by a `router.tls.options` annotation pasted into
+# every one of the chart's Ingress templates, one copy each. A new service
+# whose Ingress was copied from a sibling without that block renders on
+# `websecure`, with TLS, demanding nothing -- and every check above passes it.
+# The redirect Ingress is the one legitimate exception: it is on `web`, where
+# there is no TLS to attach an option to.
+#
+# An Ingress with *no* entrypoints annotation counts as being on websecure, and
+# that is not a technicality: traefik attaches such a router to every default
+# entrypoint, and traefik/values.yaml marks none of its seven as non-default.
+# Reading a missing annotation as "not websecure" would have skipped exactly
+# the template that forgot to say where it belongs.
+UNGUARDED_INGRESS_PROGRAM="$(cat <<'JQ'
+select(.kind == "Ingress")
+| . as $ingress
+| ($ingress.metadata.annotations["traefik.ingress.kubernetes.io/router.entrypoints"]) as $entrypoints
+| select($entrypoints == null or ($entrypoints | test("(^|,)[[:space:]]*websecure[[:space:]]*(,|$)")))
+| select($ingress.metadata.annotations["traefik.ingress.kubernetes.io/router.tls.options"] == null)
+| "\($ingress.metadata.name)\(if $entrypoints == null then " (no entrypoints annotation)" else "" end)"
 JQ
 )"
 
@@ -114,6 +179,34 @@ check_tls_hosts(){
     return 1
 }
 
+# What `certificate.requireClientCert` is actually worth, asked of the manifest
+# that sets it. Both answers are "nothing escapes", and both are true today
+# only because of what the chart leaves switched off -- which is the kind of
+# true that stops being true in a merge request nobody connected to mutual TLS.
+check_client_cert_coverage(){
+    local unguarded tcp status=0
+
+    unguarded="$(yq --raw-output "${UNGUARDED_INGRESS_PROGRAM}" <<< "${MTLS_MANIFEST}")"
+    if [[ -n "${unguarded}" ]]; then
+        echo >&2 "[!] Error: an Ingress routes on websecure without the TLSOption that"
+        echo >&2 "    carries the client-certificate requirement, so traefik serves it"
+        echo >&2 "    with the default options and demands nothing:"
+        printf '%s\n' "${unguarded}" | sed 's/^/      /' >&2
+        status=1
+    fi
+
+    tcp="$(yq --raw-output "${UNSECURED_TCP_ROUTE_PROGRAM}" <<< "${MTLS_MANIFEST}")"
+    if [[ -n "${tcp}" ]]; then
+        echo >&2 "[!] Error: an IngressRouteTCP sits on an entrypoint that does not"
+        echo >&2 "    terminate TLS, so certificate.requireClientCert does not cover it:"
+        printf '%s\n' "${tcp}" | sed 's/^/      /' >&2
+        status=1
+    fi
+
+    [[ "${status}" -eq 0 ]] || return 1
+    echo "[*] every route the chart renders is covered by requireClientCert"
+}
+
 check_declared_hosts(){
     local rendered declared count
     rendered="$(rendered_hosts)"
@@ -161,10 +254,16 @@ main(){
 
     MANIFEST="$(helm template "${RELEASE}" "${CHART_DIR}")"
 
+    # A second rendering, because the question the third check asks is only
+    # meaningful with the requirement on, and the default values leave it off.
+    MTLS_MANIFEST="$(helm template "${RELEASE}" "${CHART_DIR}" \
+        --set certificate.requireClientCert=true)"
+
     # Plain calls rather than `||`-collected: `set -e` takes the first failure,
-    # and either one on its own is a stop.
+    # and any one of them on its own is a stop.
     check_declared_hosts
     check_tls_hosts
+    check_client_cert_coverage
 }
 
 while (( $# )); do

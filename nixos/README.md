@@ -29,7 +29,7 @@ this file is about the code.
 | `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
 | `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
 | `portal.nix` | The captive portal: the probe responder, the page behind it, the certificate it publishes and the client identities it issues. Four units, two nginx listeners and a spool — see the section below. |
-| `mtls.nix` | `--require-client-cert`: the chart values that switch mutual TLS on, the two nginx loopback proxies that give the box's own `opencode` and `mc` clients a way through it, and the units that issue and renew the box's own identity. |
+| `mtls.nix` | `--require-client-cert`: the chart values that switch mutual TLS on, the two nginx loopback proxies that give the box's own `opencode` and `mc` clients a way through it, the units that issue and renew the box's two identities, and `loom-curl`, which every image carries. |
 | `portal/` | The program the page server runs — routing, rendering, the password gate and the visitor's side of the issuance spool — with its own pytest suite, run at build time. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
 | `radios.nix` | Radios off, in both boot modes **and on the installer stick** — `evalConfig` hands it to both. A modprobe `install` directive refuses `cfg80211` and `bluetooth`, which every WiFi and Bluetooth driver depends on, so the driver cannot load however it is matched; `options rfkill default_state=0` makes every switch register blocked; `loom-rfkill-block` blocks whatever is left. `wifi.nix` sets `loom.radios.allowWifi` to take the 802.11 half back off. |
@@ -321,6 +321,25 @@ than run out of the seeded checkout: `loom-seed-repo` may not have finished, and
 both an operator's browser and the box is the point. That script sources `../vars.sh` when it finds one,
 which is how it picks up the namespace in a checkout; there is none beside `$out/bin`, so the unit passes
 `--namespace` instead.
+
+It issues **two** identities, into two directories. nginx's stays where it was, `0750 root:nginx`, because
+nginx's own configuration test opens that key as the service user. The second is `loom-console` in
+`/var/lib/loom/console`, `0750 root:loom-console` with the operator in that group, and it is what `loom-curl`
+presents. Two rather than one shared pair for one reason only: sharing would mean putting the operator into
+nginx's group, which hands every process running as `loom` nginx's private key. It buys nothing else —
+Traefik's TLSOption has no CRL, so neither identity is revocable short of rolling the CA, and the access log
+records no certificate subject. The `-checkend` guard at the top of the unit covers both certificates — on
+the proxy's alone, a console identity that is missing or expired is skipped on every day but one in sixty.
+
+`loom-curl` is the counterpart to those proxies rather than a third one. They exist because `opencode` and
+`mc` cannot be handed an identity; `curl` can, so it is handed one as flags and needs no port, listener or
+route. It ships on **every** image, including those with no mutual TLS, for two reasons:
+`tests/appliance-skills.nix` reads the legal command names off this image's `environment.systemPackages`, so
+a command that existed only on an mTLS box could not be named by a skill at all; and Loom's serving
+certificate is self-signed everywhere, so plain `curl https://api.loom/...` fails to verify it on any box. It
+passes every argument through untouched. It deliberately does *not* rewrite the scheme: `websecure` exists
+on every image, so `https://` already works everywhere, and a wrapper that edited the URL also hit the
+loopback proxies, `http://portal.loom/` and the value of any flag that happens to be a URL.
 
 ## `loom.portal`, and the four units behind one page
 

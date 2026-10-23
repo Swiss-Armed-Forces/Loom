@@ -239,17 +239,30 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `--flash`, and `appliance-vm installer` cannot boot such an image - it writes the key partition
   with a plain `dd`. Read the `## Locking the stick's key` section in `Documentation/appliance.md`
 - `build-appliance-image --require-client-cert` - Deploy Loom with mutual TLS, so reaching the
-  appliance segment is no longer enough to use Loom: every route refuses a client that presents no
-  certificate, and `generate-client-certificate` is what issues one. It sets
+  appliance segment is no longer enough to use Loom: every route *the chart renders* refuses a
+  client that presents no certificate, and `generate-client-certificate` is what issues one. That
+  qualifier is exact rather than cautious. The requirement rides on a `router.tls.options`
+  annotation pasted into each Ingress template, not on the entrypoint, so a router can terminate TLS
+  and demand nothing; `cicd/check_chart_hostnames.sh` renders the chart with the requirement set and
+  fails if an Ingress on `websecure` lacks that annotation or an `IngressRouteTCP` sits where no TLS
+  is terminated. **The sibling traefik chart is outside the claim and one route in it escapes
+  today**: `traefik/values.yaml` routes `traefik.loom` to the dashboard on `web` and `websecure`
+  with no `tls:` block and `--api.insecure=true`, so it answers unauthenticated on 443 — see the
+  `## Requiring a client certificate` section in `Documentation/appliance.md`. The flag sets
   `certificate.requireClientCert` through `loom.applianceValues` **and** gives the box's own two
   clients a way through, which is the half that cannot be left out: `opencode` (the assistant pane)
   and `mc` (USB ingest) can both be handed a CA and neither can be handed an identity, so nginx —
   already on the box for the captive portal — reverse-proxies `ollama.loom` and `s3.loom` on two
-  loopback ports and attaches the certificate itself. That identity is issued **on the box**, since
+  loopback ports and attaches the certificate itself. A program that *can* hold an identity needs no
+  proxy port and uses `loom-curl`, which every image carries, instead. Those identities are issued
+  **on the box**, since
   the CA lives in the cluster: `loom-mtls-identity.service` waits for the secret, runs the same
   script an operator runs, and a daily timer reissues it; `loom-mtls-placeholder.service` writes a
   throwaway certificate first so nginx starts without waiting out a bring-up and the captive portal
-  is not held up. It is also the one image that **drops `up.sh --enable-http`** — a plaintext
+  is not held up. `loom-mtls-identity.service` issues **two**: nginx's, and `loom-console` in
+  `/var/lib/loom/console` for `loom-curl` — separate because nginx's key must stay readable by
+  nginx's group, and sharing one pair would mean putting the operator into that group. Traefik has
+  no CRL, so neither is revocable short of rolling the CA. It is also the one image that **drops `up.sh --enable-http`** — a plaintext
   entrypoint beside a client-certificate requirement is either a way around it or a 404 — so the
   portal page's "Open Loom" points at https there, and a visitor is refused at the handshake until
   they hold an identity. Which they get **from that page**: this is the one image whose portal

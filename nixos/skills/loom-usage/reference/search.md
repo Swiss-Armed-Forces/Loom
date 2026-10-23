@@ -49,7 +49,7 @@ In order:
 
 1. Has enough time passed? OCR on a large scanned PDF is slow.
 2. Is the file type supported? Tika handles most things, but not everything.
-3. Is the pipeline healthy? That is an appliance question — queue depths at `http://rabbit.loom`,
+3. Is the pipeline healthy? That is an appliance question — queue depths at `http://rabbit.loom` in a browser,
     or `/v1/queues` on the API. If tasks are piling up in the `graveyard`, `dead` or `abyss` queues,
     they are failing repeatedly and the worker logs have the reason.
 

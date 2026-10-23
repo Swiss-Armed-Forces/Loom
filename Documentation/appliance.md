@@ -926,10 +926,32 @@ build-appliance-image --platform evo-x2 --require-client-cert --flash /dev/disk/
 ```
 
 Every image but this one serves Loom to whoever can reach the appliance segment. This one requires a
-client certificate on every route, so reaching the box is no longer enough: only somebody who was
-handed an identity gets in. Everything about issuing those identities is in
+client certificate on every route the chart renders, so reaching the box is no longer enough: only
+somebody who was handed an identity gets in. Everything about issuing those identities is in
 [installation.md](installation.md#mutual-tls-and-client-certificates) — this section is what changes
 about the box.
+
+"Every route the chart renders" is the exact claim, and the qualifier is doing real work — read on
+before relying on it.
+
+Nothing about `websecure` demands a certificate on its own. The requirement is carried by a
+`router.tls.options` annotation naming the chart's TLSOption, pasted into each of the chart's
+Ingress templates one copy at a time. A router can terminate TLS perfectly well and still demand
+nothing, which is what an Ingress copied from a sibling without those three lines would do. The
+other shape is an `IngressRouteTCP` on an entrypoint that terminates no TLS at all (`amqp`, `redis`,
+`redis-cache`, `imap`, `prometheus`), where there is nothing for the option to attach to. Neither
+exists in this chart today, and the templates for the second are in it, switched off by its default
+values. `cicd/check_chart_hostnames.sh` renders the chart with the requirement set and fails if
+either appears.
+
+**The sibling Traefik chart is outside that guarantee, and one route in it escapes today.**
+`traefik/values.yaml` enables the dashboard on `web` and `websecure` with `Host("traefik.loom")` and
+no `tls:` block, alongside `--api.insecure=true`. So on this image `https://traefik.loom` answers
+any client on the appliance segment, with no certificate demanded, and serves Traefik's API —
+including `/api/rawdata`, which is every router, rule and backend address on the box. `traefik` is
+in `hostnames.extra`, so the name resolves and the served certificate carries it.
+`check_chart_hostnames.sh` renders `charts/` only and cannot see it. Treat the dashboard as
+unauthenticated on every image until that is closed.
 
 ### The box has to get through its own front door
 
@@ -955,6 +977,36 @@ one lands, but the captive portal is not held up behind a cluster bring-up.
 
 The hop from client to proxy is plain http on loopback. It never reaches a wire, and what it stands in
 front of is on the same encrypted disk.
+
+### Reaching Loom from the box's own shell: `loom-curl`
+
+The proxy exists for programs that cannot hold an identity. `curl` can, so it gets one instead of a
+port:
+
+```bash
+loom-curl https://api.loom/v1/about
+loom-curl --silent https://elasticsearch.loom/_cluster/health | jq .status
+```
+
+`loom-curl` is on every image, not only this one, and takes curl's own arguments. It supplies the
+anchor for Loom's self-signed serving certificate — which plain `curl` cannot verify on _any_ box —
+and adds a client certificate where one is required. Arguments are otherwise passed through
+untouched — it is curl. Spell the URL `https`: `websecure` exists on every image, so one documented
+command works on both, which matters for the console's assistant pane that is told to use it. The
+box's own plaintext endpoints — the loopback proxies above, `http://portal.loom/` — stay `http` and
+are passed through as written.
+
+The identity it presents is a **second** one, `loom-console`, issued by the same unit into
+`/var/lib/loom/console` and readable by the operator — nginx's own key stays `root:nginx` and is not
+widened. That is the whole reason there are two: nginx opens its key as the service user while
+parsing its configuration, so the key has to stay readable by nginx's group, and the only way to
+share one pair would be to put the operator into that group — handing every process running as
+`loom` nginx's private key. A second key costs one more certificate and nothing else. It buys no
+revocation: Traefik's TLSOption takes a CA and a mode and has no CRL, so neither identity can be
+withdrawn short of rolling the CA, which invalidates both and every operator certificate with them.
+
+Services with no HTTP route of their own are not reachable this way at all — `kubectl port-forward`
+is the way in, since pod addresses are not routable from the box.
 
 ### It takes the cleartext entrypoint with it
 
