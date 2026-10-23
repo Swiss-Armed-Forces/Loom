@@ -39,6 +39,11 @@ interface FieldItemProps {
     /** Drops the separating top border, so an accordion can sit among the
      *  divider-free rows of the compact field layout. */
     disableDivider?: boolean;
+    /** Draw the label chip and the value bold; see `boldPreviewFields`. */
+    bold?: boolean;
+    /** Show the chip naming the field. The expand, query and sort controls
+     *  stay either way - they are the row's handles, not its label. */
+    showName?: boolean;
 }
 
 // Hoisted out of the render body: a field item renders once per field and
@@ -55,13 +60,36 @@ const ACCORDION_NO_DIVIDER_SX = {
     bgcolor: "transparent",
     "&:before": { display: "none" },
 } as const;
+/* Reached through the accordion rather than set on each piece: the label chip
+and both forms of the value - the one-line preview and the expanded text - set
+a weight of their own, and the expanded text comes from a component shared with
+the highlight list, which has no business knowing about this. */
+const BOLD_FIELD_SX = {
+    "& .MuiChip-label, & .MuiTypography-root": { fontWeight: "bold" },
+} as const;
+const ACCORDION_BOLD_SX = { ...ACCORDION_SX, ...BOLD_FIELD_SX } as const;
+const ACCORDION_NO_DIVIDER_BOLD_SX = {
+    ...ACCORDION_NO_DIVIDER_SX,
+    ...BOLD_FIELD_SX,
+} as const;
+
+const accordionSxFor = (disableDivider: boolean, bold: boolean) => {
+    if (disableDivider)
+        return bold ? ACCORDION_NO_DIVIDER_BOLD_SX : ACCORDION_NO_DIVIDER_SX;
+    return bold ? ACCORDION_BOLD_SX : ACCORDION_SX;
+};
+/* One row tall whatever is in it, matching FieldRow: a value the backend cut
+short is still one field on the card, and an accordion that stood taller than
+its neighbours made a card's height depend on the file. Expanding is the
+reader's own doing and does grow the card. */
 const SUMMARY_SX = {
     pl: 0,
     pr: 0.5,
     minHeight: 0,
+    height: "var(--loom-row-height, 1.5rem)",
     cursor: "default !important",
     "& .MuiAccordionSummary-content": {
-        my: 0.5,
+        my: 0,
         alignItems: "center",
         gap: 1,
         overflow: "hidden",
@@ -96,6 +124,8 @@ export const FieldItem = memo(
         onRemove,
         fullDetails,
         disableDivider,
+        bold = false,
+        showName = true,
     }: FieldItemProps) => {
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
@@ -124,10 +154,12 @@ export const FieldItem = memo(
                 square
                 slotProps={{ transition: { timeout: 0 } }}
                 expanded={expanded}
-                sx={disableDivider ? ACCORDION_NO_DIVIDER_SX : ACCORDION_SX}
+                sx={accordionSxFor(Boolean(disableDivider), bold)}
             >
                 <AccordionSummary sx={SUMMARY_SX}>
-                    <Chip label={field} size="small" sx={LABEL_CHIP_SX} />
+                    {showName && (
+                        <Chip label={field} size="small" sx={LABEL_CHIP_SX} />
+                    )}
                     {!expanded && !fullDetails && (
                         <Typography
                             variant="body2"

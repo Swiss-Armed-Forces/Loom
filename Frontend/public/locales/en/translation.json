@@ -56,10 +56,6 @@
                 "title": "Try digging into your data now",
                 "description": "Click the button below to run a search for all documents. The tour will continue once the first results load, so you can see the tools in action on real data."
             },
-            "resultsTabs": {
-                "title": "Results and document tabs",
-                "description": "The Results tab stays pinned and shows how many documents are loaded out of the total matches. Documents open in additional tabs beside it. Scroll down or use the load-more button to bring in more results."
-            },
             "resultCard": {
                 "title": "Work with a result",
                 "description": "Click a card to select it. Double-click opens its full detail view; Ctrl-click opens it in a background tab without leaving your current results. The footer shows the active sort field and its value for that document."
@@ -74,7 +70,7 @@
             },
             "resultCardSubitems": {
                 "title": "Attachments and related items",
-                "description": "Attachments and documents extracted from this file appear below the path. In the results list, click to open them in their own tabs, or Ctrl-click to open them in the background. In the File Detail panel, clicks highlight in place. Sub-documents also show a link back to the file they came from."
+                "description": "Attachments and documents extracted from this file appear below the path. In the results list, click to open them in their own tabs, or Ctrl-click to open them in the background. Sub-documents also show a link back to the file they came from."
             },
             "resultCardContent": {
                 "title": "Preview content and matches",
@@ -279,6 +275,14 @@
             "conclusion": {
                 "title": "Happy exploring!",
                 "description": "That's the tour. Dive into your collection, refine queries, and organize your findings at your own pace. Restart this tour any time from the About dialog."
+            },
+            "resultsList": {
+                "title": "Your results",
+                "description": "Every search lands here and stays here: the list is the one surface that never goes away. How many documents matched, and which one of them you are standing on, is shown at the end of the search box above."
+            },
+            "fileDetailTabs": {
+                "title": "Reading a document",
+                "description": "The leftmost tab follows whatever you have highlighted, so arrowing through the results changes what it shows. Double-click a result, or click an attachment, to open it as a tab of its own that stays put while you keep looking."
             }
         }
     },
@@ -317,7 +321,10 @@
     "error": {
         "searchResultLoadingError": "Cannot load search results. {{- error}}",
         "webSocketClosed": "The WebSocket lost connection. Please reload the page.",
-        "pdfLoadFailed": "Cannot display this file. It may be corrupt or unavailable."
+        "pdfLoadFailed": "Cannot display this file. It may be corrupt or unavailable.",
+        "boundaryTitle": "Something went wrong on this page",
+        "boundaryDescription": "Loom stopped rendering after an unexpected error. Reloading usually recovers it; the details below are what the page reported.",
+        "boundaryReload": "Reload"
     },
     "globalSearchBox": {
         "searchPlaceholder": "Search and press enter",
@@ -347,7 +354,7 @@
         "sortThisFieldAscending": "Sort by this, ascending",
         "resizeThisColumn": "Drag to resize the column, double-click to even it out",
         "resizeThumbnailColumn": "Drag to resize the preview column, double-click to reset it",
-        "thumbnailColumn": "Preview",
+        "thumbnailColumn": "Thumbnail",
         "contentTruncatedIcon": "Content is truncated",
         "attachmentsSkippedIcon": "Attachments skipped (max recursion depth reached)",
         "spamIcon": "SPAM",
@@ -494,14 +501,21 @@
             "keyTab": "Key",
             "cardDisplay": "Card Display",
             "preset": "Preset",
-            "spacing": "Spacing",
             "elements": "Elements",
             "cardFields": "Card Fields",
             "addField": "Add field",
-            "dragToOrder": "Drag to reorder the columns",
-            "fieldLayoutRows": "Rows — one expandable section per field",
+            "chipHint": "Click to bold this field on the cards, drag to reorder the columns",
             "fieldLayoutCompact": "Compact — one line per field",
-            "fieldLayoutLine": "Line — every field on one shared line"
+            "indicator": {
+                "icons": "Icons",
+                "status": "Status",
+                "state": "State"
+            },
+            "fieldColumn": "Column {{number}}",
+            "addColumn": "Add a column",
+            "removeColumn": "Remove the last column",
+            "fieldLayoutLine": "Line — every field on one shared line",
+            "thumbnailNone": "Off"
         },
         "fields": {
             "title": "Preview Fields",
@@ -509,6 +523,7 @@
             "error": "Failed to load available fields",
             "thumbnails": "Thumbnails",
             "highlights": "Highlights",
+            "fieldNames": "Field names",
             "extensionIcon": "Extension icon",
             "filePath": "File path",
             "parentNavigation": "Parent navigation",
@@ -516,7 +531,6 @@
             "attachments": "Attachments",
             "tags": "Tags",
             "actions": "Actions",
-            "fieldSections": "Selected fields",
             "sortIndicator": "Sort indicator",
             "fieldActions": "Query / sort buttons"
         },
@@ -606,15 +620,15 @@
             "statistics": "Statistics",
             "chatbot": "Chatbot",
             "fileDetail": "File Detail",
-            "fileDetailEmpty": "Select a file to view its details."
+            "fileDetailEmpty": "Select a file to view its details.",
+            "fileDetailFollow": "Highlighted"
         },
         "cardSettings": "Card Display Settings",
-        "cardDensity": {
-            "label": "Density",
-            "auto": "Auto (width-based)",
-            "compact": "Compact",
+        "cardPreset": {
+            "label": "Preset",
+            "compact": "Compact — the fewest elements",
             "standard": "Standard",
-            "full": "Full"
+            "full": "Full — every element"
         },
         "cardFields": {
             "label": "Always-shown fields",
@@ -640,7 +654,16 @@
         "removeField": "Remove field",
         "truncated": "… truncated",
         "expand": "Expand",
-        "collapse": "Collapse"
+        "collapse": "Collapse",
+        "mark": {
+            "attachments": "Has attachments",
+            "tags": "Has tags",
+            "flagged": "Flagged",
+            "unseen": "Not seen yet",
+            "truncated": "Content was cut short",
+            "skipped": "Attachments were skipped",
+            "spam": "Spam"
+        }
     },
     "resultCard": {
         "expandContent": "Expand content",
@@ -703,16 +726,14 @@
             "title": "Keyboard shortcuts",
             "moveDown": "Navigate / scroll down",
             "moveUp": "Navigate / scroll up",
-            "pageDown": "Next page of results / scroll panel down",
-            "pageUp": "Previous page of results / scroll panel up",
+            "pageDown": "Next page of results",
+            "pageUp": "Previous page of results",
             "firstResult": "First result",
             "lastResult": "Last loaded result",
             "loadMore": "Load the next page of results",
-            "prevCenterTab": "Previous center tab",
-            "nextCenterTab": "Next center tab",
             "prevTab": "Previous sub tab",
             "nextTab": "Next sub tab",
-            "openOrClose": "Open / close file details",
+            "openOrClose": "Show / hide file details",
             "open": "Open file details",
             "openBackground": "Open file details in background",
             "shiftClickNegate": "Negate clicked filter",
@@ -732,7 +753,11 @@
             "navigateParentFile": "Navigate to parent file",
             "navigateChildFile": "Navigate to child file",
             "translate": "Translate",
-            "icon": "icon"
+            "icon": "icon",
+            "prevFileTab": "Previous file tab",
+            "nextFileTab": "Next file tab",
+            "scrollDown": "Scroll the open document down",
+            "scrollUp": "Scroll the open document up"
         }
     },
     "statisticsView": {

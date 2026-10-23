@@ -148,14 +148,14 @@ const NullIcon = () => null;
 
 export interface FolderViewNodeProps {
     tree: FolderTree;
-    activeTabFileId?: string | null;
+    focusedFileId?: string | null;
     onLoadMore: (nodeId: string) => void;
 }
 
 export const FolderViewNode = React.memo(
     function FolderViewNode({
         tree,
-        activeTabFileId,
+        focusedFileId,
         onLoadMore,
     }: FolderViewNodeProps) {
         const { t } = useTranslation();
@@ -167,7 +167,7 @@ export const FolderViewNode = React.memo(
         }
 
         const fileId = tree.fileId;
-        const isActiveTab = fileId !== undefined && fileId === activeTabFileId;
+        const isFocusedFile = fileId !== undefined && fileId === focusedFileId;
         const isRoot = tree.id === ROOT_NODE.id;
 
         const NodeIcon = getIconOfNode(tree);
@@ -347,7 +347,7 @@ export const FolderViewNode = React.memo(
                 <FolderViewNode
                     key={c.id}
                     tree={c}
-                    activeTabFileId={activeTabFileId}
+                    focusedFileId={focusedFileId}
                     onLoadMore={onLoadMore}
                 />
             ),
@@ -422,7 +422,7 @@ export const FolderViewNode = React.memo(
                           }
                 }
                 sx={
-                    isActiveTab
+                    isFocusedFile
                         ? {
                               "& > .MuiTreeItem-content": {
                                   borderLeft: "2px solid",
@@ -445,6 +445,6 @@ export const FolderViewNode = React.memo(
     },
     (prev, next) =>
         prev.tree === next.tree &&
-        prev.activeTabFileId === next.activeTabFileId &&
+        prev.focusedFileId === next.focusedFileId &&
         prev.onLoadMore === next.onLoadMore,
 );

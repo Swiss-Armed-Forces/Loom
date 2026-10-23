@@ -1,7 +1,11 @@
 import { DragEvent, useCallback, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { selectPreviewFields, setPreviewFields } from "@app/slices/searchSlice";
+import {
+    selectPreviewFields,
+    setPreviewFields,
+    setPreviewFieldColumn,
+} from "@app/slices/searchSlice";
 import { moveItem } from "@features/common/utils/helpers";
 
 /** Drag type carrying a preview field's position in the selection. */
@@ -16,9 +20,25 @@ export interface FieldDragProps {
     onDragEnd: () => void;
 }
 
+/** What a drop zone standing for one of the card's columns spreads onto
+ *  itself, so a chip can be dropped on the zone rather than on a chip. */
+export interface FieldZoneProps {
+    onDragOver: (event: DragEvent) => void;
+    onDrop: (event: DragEvent) => void;
+}
+
 export interface FieldReorder {
-    /** Drag handlers for the field at `index` of the selection. */
-    dragProps: (index: number) => FieldDragProps;
+    /**
+     * Drag handlers for the field at `index` of the selection.
+     *
+     * `column` is the card column the element dropped on belongs to, so a
+     * chip dragged into another zone changes column as well as position. The
+     * line layout's column header passes none: it has one row of columns and
+     * a drop there is a reorder and nothing else.
+     */
+    dragProps: (index: number, column?: number) => FieldDragProps;
+    /** Drag handlers for the empty part of one column's drop zone. */
+    zoneProps: (column: number) => FieldZoneProps;
     /** Whether that field is the one currently being dragged. */
     isDragging: (index: number) => boolean;
     /** Whether a drop on that field is what the pointer is offering. */
@@ -41,7 +61,7 @@ export const useFieldReorder = (): FieldReorder => {
     const [dropIndex, setDropIndex] = useState<number | null>(null);
 
     const dragProps = useCallback(
-        (index: number): FieldDragProps => ({
+        (index: number, column?: number): FieldDragProps => ({
             draggable: true,
             onDragStart: (event) => {
                 event.dataTransfer.effectAllowed = "move";
@@ -69,12 +89,48 @@ export const useFieldReorder = (): FieldReorder => {
                 setDraggingIndex(null);
                 setDropIndex(null);
                 if (!Number.isInteger(from)) return;
+                const fieldId = previewFields[from];
                 const next = moveItem(previewFields, from, index);
                 if (next !== previewFields) dispatch(setPreviewFields(next));
+                // After the reorder: `setPreviewFields` filters the column
+                // assignments against the selection, and would drop one set
+                // first.
+                if (column !== undefined && fieldId) {
+                    dispatch(setPreviewFieldColumn({ fieldId, column }));
+                }
             },
             onDragEnd: () => {
                 setDraggingIndex(null);
                 setDropIndex(null);
+            },
+        }),
+        [dispatch, previewFields],
+    );
+
+    const zoneProps = useCallback(
+        (column: number): FieldZoneProps => ({
+            onDragOver: (event) => {
+                if (!event.dataTransfer.types.includes(FIELD_INDEX_MIME)) {
+                    return;
+                }
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+            },
+            onDrop: (event) => {
+                if (!event.dataTransfer.types.includes(FIELD_INDEX_MIME)) {
+                    return;
+                }
+                event.preventDefault();
+                const from = Number(
+                    event.dataTransfer.getData(FIELD_INDEX_MIME),
+                );
+                setDraggingIndex(null);
+                setDropIndex(null);
+                const fieldId = previewFields[from];
+                // No reorder: dropping on the empty part of a zone says which
+                // column, and nothing about where in it.
+                if (fieldId)
+                    dispatch(setPreviewFieldColumn({ fieldId, column }));
             },
         }),
         [dispatch, previewFields],
@@ -90,5 +146,5 @@ export const useFieldReorder = (): FieldReorder => {
         [dropIndex, draggingIndex],
     );
 
-    return { dragProps, isDragging, isDropTarget };
+    return { dragProps, zoneProps, isDragging, isDropTarget };
 };

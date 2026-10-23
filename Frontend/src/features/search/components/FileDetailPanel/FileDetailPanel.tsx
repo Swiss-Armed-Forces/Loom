@@ -29,15 +29,19 @@ import {
     unsubscribeChannel,
 } from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { setLastFileDetailTab } from "@app/slices/commonSlice";
+import {
+    FOLLOW_TAB,
+    FileDetailSelection,
+    fileTab,
+} from "@app/slices/fileDetailSelection";
 import {
     fetchPreview,
     selectAutoActionsPreferences,
     selectFileById,
     selectQuery,
     selectWebSocketPubSubMessage,
+    setDetailTab,
     setFilePreview,
-    setFileTabDetailTab,
 } from "@app/slices/searchSlice";
 import { FileRenderer } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileRenderer";
 import { FileTasks } from "@features/common/components/DialogContainer/Dialogs/FileDetailDialog/FileTasks";
@@ -52,13 +56,32 @@ import "ace-builds/esm-resolver";
 const AceEditor = (AceEditorImport as any).default ?? AceEditorImport;
 
 interface FileDetailPanelProps {
+    /**
+     * Which tab of the strip this panel is drawn for, so it can address its own
+     * sub-tab. A primitive rather than the `FileDetailSelection` itself: the
+     * selection is an effect dependency below, and one built per render would
+     * re-run the effect on every render of the view above.
+     *
+     * A panel for an open tab is given `"follow"` while it stands in for the
+     * following tab; see `FileDetailView`.
+     */
+    tabKind: FileDetailSelection["kind"];
     fileId: string;
     detailTab: FileDetailTab;
+    /**
+     * Whether this is the panel in front.
+     *
+     * At most one mounted panel may be active: `FileDetailView` is the only
+     * thing that renders panels and derives this from a single selection. The
+     * keyboard finds the panel it acts on by this and not by `fileId`, which
+     * the following tab and an opened tab may share.
+     */
     isActive: boolean;
     compact?: boolean;
 }
 
 export const FileDetailPanel = ({
+    tabKind,
     fileId,
     detailTab,
     isActive,
@@ -111,12 +134,11 @@ export const FileDetailPanel = ({
         }
     }, [preview, query]);
 
-    // Subscribe to WS updates for this file while the panel is mounted.
-    // All panels are always mounted (just hidden when inactive), so this covers
-    // background tabs that are restored from localStorage on page reload but
-    // were not re-subscribed by openFileTabThunk (which only runs for the
-    // active tab via the URL→Redux hash effect). The ref-counted channel
-    // subscription system handles the overlap with openFileTabThunk safely.
+    // Updates for the file this panel is drawing, for as long as it is drawing
+    // it - which covers the following tab, whose file is the highlight and has
+    // no tab of its own. Open tabs are held by `useOpenFileTabSubscriptions`
+    // instead, because a panel of theirs exists only while this pane is on
+    // screen. Subscriptions are ref-counted, so the overlap is free.
     useEffect(() => {
         subscribeChannel(fileId, dispatch);
         return () => unsubscribeChannel(fileId, dispatch);
@@ -139,9 +161,15 @@ export const FileDetailPanel = ({
         hasAutoActionsRun.current = false;
     }, [autoActionsPreferences]);
 
-    // Auto-actions on open / tab activation
+    // Auto-actions on open / tab activation.
+    //
+    // Never for the following tab: its file is the highlight, and the
+    // highlight's auto-actions belong to the listener in `app/middlewares.ts`,
+    // which waits for the reader to stop moving. Running them here as well
+    // would mark every card walked past as seen.
     useEffect(() => {
-        if (!isActive || !preview || hasAutoActionsRun.current) return;
+        if (tabKind !== "file" || !isActive || !preview) return;
+        if (hasAutoActionsRun.current) return;
         hasAutoActionsRun.current = true;
 
         const prefs = autoActionsPreferences;
@@ -176,7 +204,15 @@ export const FileDetailPanel = ({
             scheduleSingleImageDescription(fileId, null).catch(() => {});
         if (prefs.translate)
             scheduleSingleFileTranslation("", fileId).catch(() => {});
-    }, [isActive, fileId, preview, autoActionsPreferences, dispatch, t]);
+    }, [
+        tabKind,
+        isActive,
+        fileId,
+        preview,
+        autoActionsPreferences,
+        dispatch,
+        t,
+    ]);
 
     // Content fetch
     useEffect(() => {
@@ -229,8 +265,12 @@ export const FileDetailPanel = ({
     }, [searchQueryString, fileId, dispatch]);
 
     const setTab = (value: FileDetailTab) => {
-        dispatch(setFileTabDetailTab({ fileId, detailTab: value }));
-        dispatch(setLastFileDetailTab(value));
+        dispatch(
+            setDetailTab({
+                target: tabKind === "follow" ? FOLLOW_TAB : fileTab(fileId),
+                detailTab: value,
+            }),
+        );
     };
 
     const properties = useMemo(
@@ -260,6 +300,7 @@ export const FileDetailPanel = ({
         <Box
             ref={panelRef}
             data-file-panel={fileId}
+            data-active={isActive ? "true" : undefined}
             sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -279,7 +320,6 @@ export const FileDetailPanel = ({
             >
                 {preview ? (
                     <FileCardHeader
-                        hideDetail
                         compact={compact}
                         filePreview={preview}
                         renderedFile={file?.renderedFile}

@@ -30,6 +30,8 @@ export interface ResultPrefetchOptions {
     highlightedIndex: number;
     /** False when only the highlighted card draws a thumbnail. */
     thumbnailsShownOnEveryCard: boolean;
+    /** Counts the queries that have replaced the list; see the reset below. */
+    resultsReplaced: number;
 }
 
 /**
@@ -55,19 +57,26 @@ export const useResultPrefetch = ({
     thumbnailIdFor,
     highlightedIndex,
     thumbnailsShownOnEveryCard,
+    resultsReplaced,
 }: ResultPrefetchOptions) => {
     const dispatch = useAppDispatch();
-    // Which rows have already been asked for.
+    // Which rows a request actually went out for.
     //
     // `ensureViewPreview` only skips rows whose preview is already cached, and
     // a request in flight has not cached anything yet — so without this, every
     // row scrolled by re-asked for the whole window and the duplicates queued
     // ahead of the rows actually on screen. Measured: it made the list worse,
     // not better.
+    //
+    // A row whose dispatch was *skipped* is deliberately not recorded. It used
+    // to be, which turned this from a record of what had been asked into a
+    // promise never to ask: a card holding a fresh preview was marked here,
+    // and when the preview was later thrown away the row was never fetched
+    // again, so it sat as a skeleton for as long as the result set lasted.
     const requestedRef = useRef(new Set<string>());
     // A new query resets the list; a new page only ever grows it and keeps the
     // row it starts with. Only the former is a reason to ask again.
-    const listShapeRef = useRef({ first: "", length: 0 });
+    const listShapeRef = useRef({ first: "", length: 0, replaced: -1 });
     // Speculative requests still out. Rows on screen do not count against it.
     const inFlightRef = useRef(0);
     // Thumbnail URLs already handed to the browser. The cache serves the real
@@ -84,10 +93,22 @@ export const useResultPrefetch = ({
 
         const first = orderedFileIds[0] ?? "";
         const shape = listShapeRef.current;
-        if (first !== shape.first || orderedFileIds.length < shape.length) {
+        // `resultsReplaced` counts every query that replaced the list, which
+        // the first row's id cannot: the same search asked again returns the
+        // same rows in the same order, so nothing here looked new even though
+        // every preview behind it had just been discarded.
+        if (
+            resultsReplaced !== listShapeRef.current.replaced ||
+            first !== shape.first ||
+            orderedFileIds.length < shape.length
+        ) {
             requestedRef.current = new Set();
         }
-        listShapeRef.current = { first, length: orderedFileIds.length };
+        listShapeRef.current = {
+            first,
+            length: orderedFileIds.length,
+            replaced: resultsReplaced,
+        };
 
         const motion = getMotion();
         // Above the threshold the rows are gone before a request for them
@@ -161,13 +182,26 @@ export const useResultPrefetch = ({
                 continue;
             }
 
-            requestedRef.current.add(fileId);
+            // Recorded only once the dispatch has been accepted: a row the
+            // thunk's condition turned away has not been asked for.
+            const remember = (result: { meta?: { condition?: boolean } }) => {
+                if (result?.meta?.condition) return;
+                requestedRef.current.add(fileId);
+            };
             if (onScreen) {
-                dispatch(ensureViewPreview({ fileId }));
+                remember(
+                    dispatch(ensureViewPreview({ fileId })) as unknown as {
+                        meta?: { condition?: boolean };
+                    },
+                );
                 continue;
             }
             inFlightRef.current += 1;
-            void Promise.resolve(dispatch(ensureViewPreview({ fileId })))
+            const dispatched = dispatch(ensureViewPreview({ fileId }));
+            remember(
+                dispatched as unknown as { meta?: { condition?: boolean } },
+            );
+            void Promise.resolve(dispatched)
                 .catch(() => {})
                 .finally(() => {
                     inFlightRef.current -= 1;
@@ -183,6 +217,7 @@ export const useResultPrefetch = ({
         thumbnailIdFor,
         highlightedIndex,
         thumbnailsShownOnEveryCard,
+        resultsReplaced,
         dispatch,
     ]);
 };

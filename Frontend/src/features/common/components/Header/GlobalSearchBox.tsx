@@ -5,14 +5,37 @@ import {
     Search,
     Sort,
 } from "@mui/icons-material";
-import { IconButton, InputBase, styled } from "@mui/material";
+import { Chip, IconButton, InputBase, styled } from "@mui/material";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
-import { selectQuery, updateQuery } from "@app/slices/searchSlice";
+import {
+    selectCurrentResultRank,
+    selectQuery,
+    selectTotalFiles,
+    updateQuery,
+} from "@app/slices/searchSlice";
+import { formatCompactNumber } from "@features/common/utils/helpers";
 
 import styles from "./GlobalSearchBox.module.css";
+
+/*
+ * A chip, light on dark, with fixed colours rather than theme tokens.
+ *
+ * `StyledInputBase` paints its own near-black ground in both colour schemes,
+ * so anything that follows the scheme - bare `text.secondary`, a default Chip
+ * - comes out black on black in light mode. `inherit` takes the header's own
+ * light text, which is what the input next to it does.
+ */
+const RESULT_COUNT_SX = {
+    height: "1.25rem",
+    fontSize: "0.7rem",
+    mr: 0.5,
+    color: "inherit",
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    "& .MuiChip-label": { px: 0.75 },
+} as const;
 
 const StyledInputBase = styled(InputBase)(() => ({
     width: "100%",
@@ -27,6 +50,8 @@ const StyledInputBase = styled(InputBase)(() => ({
 
 export const GlobalSearchBox = () => {
     const searchQuery = useAppSelector(selectQuery);
+    const totalFiles = useAppSelector(selectTotalFiles);
+    const currentRank = useAppSelector(selectCurrentResultRank);
     const [searchInputFieldContent, setSearchInputFieldContent] =
         useState<string>("");
     const [sortInputFieldContent, setSortInputFieldContent] =
@@ -111,6 +136,19 @@ export const GlobalSearchBox = () => {
                 startAdornment={<Search sx={{ p: 1 }} />}
                 endAdornment={
                     <>
+                        {/* How much the query found, and where in it the
+                        reader is. */}
+                        {totalFiles > 0 && (
+                            <Chip
+                                size="small"
+                                label={
+                                    currentRank === null
+                                        ? formatCompactNumber(totalFiles)
+                                        : `${formatCompactNumber(currentRank)}/${formatCompactNumber(totalFiles)}`
+                                }
+                                sx={RESULT_COUNT_SX}
+                            />
+                        )}
                         {searchInputFieldContent ? (
                             <IconButton
                                 color="inherit"

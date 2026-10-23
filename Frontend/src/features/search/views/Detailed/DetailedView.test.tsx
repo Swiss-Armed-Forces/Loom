@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import commonReducer from "@app/slices/commonSlice";
 import searchReducer, { searchSlice } from "@app/slices/searchSlice";
-import { SearchPanelContext } from "@features/search/components/CenterTabs/SearchPanelContext";
+import { SearchPanelContext } from "@features/search/views/SearchResults/SearchPanelContext";
 
 import { DetailedView } from "./DetailedView";
 
@@ -96,9 +96,7 @@ const Harness = ({ store }: { store: ReturnType<typeof storeWith> }) => {
     return (
         <Provider store={store}>
             <div data-search-panel ref={scrollRef}>
-                <SearchPanelContext.Provider
-                    value={{ scrollRef, isActive: true }}
-                >
+                <SearchPanelContext.Provider value={{ scrollRef }}>
                     <DetailedView />
                 </SearchPanelContext.Provider>
             </div>

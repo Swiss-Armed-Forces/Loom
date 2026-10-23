@@ -1,8 +1,45 @@
 import { describe, expect, it } from "vitest";
 
-import { estimateFromMeasured } from "./useResultVirtualizer";
+import { estimateFromMeasured, measureNonZero } from "./useResultVirtualizer";
 
 const FALLBACK = 260;
+
+/** A virtualizer with one row measured, as `measureNonZero` reads it. */
+const instanceWith = (cached?: number) =>
+    ({
+        indexFromElement: () => 7,
+        itemSizeCache: new Map(cached === undefined ? [] : [["row-7", cached]]),
+        options: {
+            horizontal: false,
+            getItemKey: (index: number) => `row-${index}`,
+            estimateSize: () => FALLBACK,
+        },
+    }) as never;
+
+const reported = (blockSize: number) =>
+    ({ borderBoxSize: [{ blockSize, inlineSize: 0 }] }) as never;
+
+describe("measureNonZero", () => {
+    it("takes the height the row reports", () => {
+        expect(
+            measureNonZero(null as never, reported(180), instanceWith(90)),
+        ).toBe(180);
+    });
+
+    it("keeps the measured height when a hidden row reports nothing", () => {
+        // A row inside a panel that has been switched away from has no layout
+        // box. Recording the zero shrinks the list under the reader.
+        expect(
+            measureNonZero(null as never, reported(0), instanceWith(90)),
+        ).toBe(90);
+    });
+
+    it("falls back to the estimate for a row never measured", () => {
+        expect(measureNonZero(null as never, reported(0), instanceWith())).toBe(
+            FALLBACK,
+        );
+    });
+});
 
 describe("estimateFromMeasured", () => {
     it("falls back while nothing has been measured", () => {

@@ -27,34 +27,38 @@ import KeyRecorder from "../KeyRecorder/KeyRecorder";
 import styles from "./EmptySearchResults.module.css";
 import { SEARCH_TIPS } from "./searchTips";
 
+/* Both chip styles take their colours from the palette rather than from fixed
+hex values, so they follow the colour scheme the rest of the page follows. */
 const searchChipSx = {
     display: "inline-block",
     fontFamily: "monospace",
     fontSize: "0.82em",
-    bgcolor: "#f0f4ff",
-    border: "1px solid #c5cae9",
+    bgcolor: "action.hover",
+    border: "1px solid",
+    borderColor: "divider",
     borderRadius: 0.5,
     px: 0.6,
-    color: "#3949ab",
+    color: "info.main",
     cursor: "pointer",
     verticalAlign: "baseline",
-    "&:hover": { bgcolor: "#e8eaf6", borderColor: "#5c6bc0" },
-    "&:active": { bgcolor: "#c5cae9" },
+    "&:hover": { bgcolor: "action.selected", borderColor: "info.main" },
+    "&:active": { bgcolor: "action.selected" },
 } as const;
 
 const sortChipSx = {
     display: "inline-block",
     fontFamily: "monospace",
     fontSize: "0.82em",
-    bgcolor: "#fffde7",
-    border: "1px solid #ffe082",
+    bgcolor: "action.hover",
+    border: "1px solid",
+    borderColor: "divider",
     borderRadius: 0.5,
     px: 0.6,
-    color: "#e65100",
+    color: "warning.main",
     cursor: "pointer",
     verticalAlign: "baseline",
-    "&:hover": { bgcolor: "#fff9c4", borderColor: "#ffd54f" },
-    "&:active": { bgcolor: "#fff176" },
+    "&:hover": { bgcolor: "action.selected", borderColor: "warning.main" },
+    "&:active": { bgcolor: "action.selected" },
 } as const;
 
 interface EmptySearchResultsProps {

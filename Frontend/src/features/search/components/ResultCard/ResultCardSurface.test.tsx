@@ -71,8 +71,8 @@ describe("ResultCardSurface", () => {
 });
 
 describe("resultCardSurfaceStyle", () => {
-    const styleOf = (isHighlighted: boolean, unread: boolean, flat = false) =>
-        resultCardSurfaceStyle({ isHighlighted, unread, flat }, globalTheme);
+    const styleOf = (isHighlighted: boolean, unread: boolean) =>
+        resultCardSurfaceStyle({ isHighlighted, unread }, globalTheme);
 
     it("marks unread with the left bar and nothing else", () => {
         const unread = styleOf(false, true);
@@ -83,66 +83,36 @@ describe("resultCardSurfaceStyle", () => {
         // Read state applies to every file in the list, so it may not claim
         // the surface - that belongs to the one highlighted card.
         expect(unread.bgcolor).toBeUndefined();
-        expect(unread.boxShadow).toBeUndefined();
     });
 
-    it("tints and glows the highlighted card and nothing else", () => {
-        const highlighted = styleOf(true, false);
-
-        expect(highlighted.bgcolor).toBeTruthy();
-        expect(highlighted.boxShadow).toBeTruthy();
+    it("tints the highlighted card and nothing else", () => {
+        // The tint is the whole mark. An edge of any kind - ring, halo,
+        // border - reads as a different kind of card rather than the same
+        // card under the cursor, and it is what used to change the shape of
+        // the one row the reader was looking at.
+        expect(styleOf(true, false).bgcolor).toBeTruthy();
         expect(styleOf(false, false).bgcolor).toBeUndefined();
-        expect(styleOf(false, false).boxShadow).toBeUndefined();
+        expect(Object.keys(styleOf(true, false))).toEqual([
+            "borderColor",
+            "bgcolor",
+        ]);
     });
 
-    it("tints and glows in the shared amber", () => {
-        const highlighted = styleOf(true, false);
-
-        expect(highlighted.bgcolor).toContain("palette-primary");
-        expect(highlighted.boxShadow).toContain("palette-primary");
+    it("tints in the shared amber", () => {
+        expect(styleOf(true, false).bgcolor).toContain("palette-primary");
     });
 
-    it("keeps the elevation shadow the glow is composed onto", () => {
-        // `box-shadow` is a single property: writing only the glow would drop
-        // the card's elevation instead of adding to it.
-        expect(styleOf(true, false).boxShadow).toContain("shadows-8");
+    it("sits every card at the same height", () => {
+        // The highlighted card used to lift above the list on a deeper
+        // shadow, which is one more way for it to differ from its neighbours.
+        expect(resultCardElevation(false)).toBeGreaterThan(0);
+        expect(resultCardElevation(true)).toBe(0);
     });
 
-    it("spreads the glow evenly rather than dropping it to one side", () => {
-        // A halo surrounds the card; an offset would read as another drop
-        // shadow on top of the elevation it is composed onto.
-        expect(styleOf(true, false).boxShadow).toContain("0 0 ");
-    });
-
-    it("lifts the highlighted card above the list", () => {
-        expect(resultCardElevation(true, false)).toBeGreaterThan(
-            resultCardElevation(false, false),
-        );
-    });
-
-    it("keeps the cursor inside the card in a gapless list", () => {
-        // A halo needs clear space around the card. Where the rows meet, the
-        // blur would land on the neighbouring rows instead.
-        const flat = styleOf(true, false, true);
-
-        expect(flat.boxShadow).toContain("inset");
-        expect(flat.boxShadow).toContain("palette-primary");
-        expect(flat.bgcolor).toBeTruthy();
-    });
-
-    it("does not lift a card that has nowhere to lift into", () => {
-        // The drop shadow of a gapless row falls on the row below it.
-        expect(resultCardElevation(true, true)).toBe(0);
-        expect(resultCardElevation(false, true)).toBe(0);
-    });
-
-    it("resolves every colour to a real theme token", () => {
-        // `rgba(undefined / 0.55)` is a silently invisible cue, so assert the
-        // channel tokens these interpolate actually exist.
-        const { boxShadow, bgcolor } = styleOf(true, true);
-
-        expect(boxShadow).not.toContain("undefined");
-        expect(bgcolor).not.toContain("undefined");
+    it("resolves the tint to a real theme token", () => {
+        // `rgba(undefined / 0.08)` is a silently invisible cue, so assert the
+        // channel token it interpolates actually exists.
+        expect(styleOf(true, true).bgcolor).not.toContain("undefined");
     });
 
     it("keeps the bar independent of the highlight", () => {
@@ -155,10 +125,7 @@ describe("resultCardSurfaceStyle", () => {
         }
     });
 
-    it("keeps the cursor cues independent of the read state", () => {
+    it("keeps the cursor cue independent of the read state", () => {
         expect(styleOf(true, true).bgcolor).toBe(styleOf(true, false).bgcolor);
-        expect(styleOf(true, true).boxShadow).toBe(
-            styleOf(true, false).boxShadow,
-        );
     });
 });

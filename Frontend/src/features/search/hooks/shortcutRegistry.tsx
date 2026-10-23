@@ -99,15 +99,27 @@ export const shortcutRegistry: ShortcutAction[] = [
         context: "results",
     },
     {
-        id: "prevCenterTab",
+        id: "prevFileTab",
         defaultKeys: ["Shift + ArrowLeft", "Shift + h"],
-        labelKey: "emptySearch.hotkeys.prevCenterTab",
+        labelKey: "emptySearch.hotkeys.prevFileTab",
         context: "results",
     },
     {
-        id: "nextCenterTab",
+        id: "nextFileTab",
         defaultKeys: ["Shift + ArrowRight", "Shift + l"],
-        labelKey: "emptySearch.hotkeys.nextCenterTab",
+        labelKey: "emptySearch.hotkeys.nextFileTab",
+        context: "results",
+    },
+    {
+        id: "scrollDown",
+        defaultKeys: ["Ctrl + j"],
+        labelKey: "emptySearch.hotkeys.scrollDown",
+        context: "results",
+    },
+    {
+        id: "scrollUp",
+        defaultKeys: ["Ctrl + k"],
+        labelKey: "emptySearch.hotkeys.scrollUp",
         context: "results",
     },
     {

@@ -1,0 +1,45 @@
+/* The strip of tabs along the top of the File Detail sidebar. */
+.tabBar {
+    flex-shrink: 0;
+    background-color: inherit;
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    min-width: 0;
+}
+
+/* The sidebar is the narrowest column in the window, so these are tighter
+than the same labels were in the centre: 110px and 80px against 180 and 130. */
+.fileTabLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    max-width: 110px;
+}
+
+.followTabLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 110px;
+}
+
+.fileTabName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 80px;
+    font-size: 0.8rem;
+}
+
+/* The pane, and one mounted panel per tab inside it. All but the panel in
+front are hidden with `display`, which is what keeps an editor's scroll
+position across a tab switch. */
+.view,
+.filePanel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}

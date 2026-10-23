@@ -42,7 +42,7 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import {
-    selectActiveTabFileId,
+    selectFileDetailFileId,
     selectFiles,
     selectHighlightedFileId,
     selectQuery,
@@ -162,9 +162,9 @@ export const FolderView = ({
     const reduxSearchQuery = useAppSelector(selectQuery);
     const searchQuery = queryOverride ?? reduxSearchQuery;
     const isLoading = useAppSelector(selectIsLoading);
-    const activeTabFileId = useAppSelector(selectActiveTabFileId);
+    const detailFileId = useAppSelector(selectFileDetailFileId);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
-    const focusedFileId = activeTabFileId ?? highlightedFileId;
+    const focusedFileId = detailFileId ?? highlightedFileId;
     const files = useAppSelector(selectFiles);
     const focusedFilePath = focusedFileId
         ? (files[focusedFileId]?.preview?.path ?? null)
@@ -355,7 +355,7 @@ export const FolderView = ({
 
     const handleFileClick = useCallback(
         (fileId: string) => {
-            dispatch(revealFileThunk({ fileId, openInTab: false }));
+            dispatch(revealFileThunk({ fileId }));
         },
         [dispatch],
     );
@@ -851,7 +851,7 @@ export const FolderView = ({
                 >
                     <FolderViewNode
                         tree={folderState.tree}
-                        activeTabFileId={focusedFileId}
+                        focusedFileId={focusedFileId}
                         onLoadMore={handleLoadMore}
                     />
                 </SimpleTreeView>

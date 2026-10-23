@@ -3,7 +3,11 @@ import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { GetFilePreviewResponse } from "@app/api";
-import { setFieldLayout, setPreviewFields } from "@app/slices/searchSlice";
+import {
+    setFieldLayout,
+    setPreviewFields,
+    setShowFieldNames,
+} from "@app/slices/searchSlice";
 import { store } from "@app/store";
 
 import { FieldSections } from "./FieldSections";
@@ -43,6 +47,7 @@ describe("FieldSections", () => {
     afterEach(() => {
         store.dispatch(setFieldLayout("compact"));
         store.dispatch(setPreviewFields(["content"]));
+        store.dispatch(setShowFieldNames(true));
     });
 
     it("keeps the accordion for a truncated value only", () => {
@@ -58,12 +63,14 @@ describe("FieldSections", () => {
         expect(container.textContent).toContain("subject:Re: invoice");
     });
 
-    it("gives every field an accordion in the rows layout", () => {
-        store.dispatch(setFieldLayout("rows"));
-        store.dispatch(setPreviewFields(["from", "subject", "content"]));
+    it("drops the field names and keeps the values", () => {
+        store.dispatch(setPreviewFields(["from", "subject"]));
 
+        store.dispatch(setShowFieldNames(false));
         const { container } = renderSections();
 
-        expect(accordions(container)).toHaveLength(3);
+        expect(container.textContent).not.toContain("from:");
+        expect(container.textContent).toContain("alice@example.org");
+        expect(container.textContent).toContain("Re: invoice");
     });
 });

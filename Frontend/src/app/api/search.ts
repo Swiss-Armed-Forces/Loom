@@ -259,18 +259,46 @@ export const getFile = async (
 export const getPreviewFields = async (): Promise<PreviewField[]> =>
     filesApi.getPreviewFieldsV1FilesPreviewFieldsGet();
 
+/**
+ * Preview requests that have been sent and not yet answered.
+ *
+ * Two paths ask for the same preview and neither can see the other: the
+ * prefetcher reaching ahead of the viewport, and the card's own in-view effect
+ * when it mounts. Nothing is cached until the answer arrives, so under fast
+ * scrolling every file was fetched twice - 583 requests for 293 files in one
+ * pass down the list. A second asker now joins the request already open.
+ */
+const previewsInFlight = new Map<string, Promise<GetFilePreviewResponse>>();
+
 export const getFilePreview = async (
     fileId: string,
     query: SearchQuery,
     fields?: string[],
 ): Promise<GetFilePreviewResponse> => {
-    return filesApi.getFilePreviewV1FilesFileIdPreviewGet({
-        queryId: query.id ?? undefined,
-        keepAlive: query.keepAlive ?? undefined,
-        fileId: fileId,
-        searchString: query.query,
-        fields: fields,
-    });
+    // Keyed on everything the response depends on: the same file under a
+    // different query carries different highlights.
+    const key = JSON.stringify([
+        fileId,
+        query.id ?? null,
+        query.keepAlive ?? null,
+        query.query,
+        fields ?? null,
+    ]);
+    const open = previewsInFlight.get(key);
+    if (open) return open;
+    const request = filesApi
+        .getFilePreviewV1FilesFileIdPreviewGet({
+            queryId: query.id ?? undefined,
+            keepAlive: query.keepAlive ?? undefined,
+            fileId: fileId,
+            searchString: query.query,
+            fields: fields,
+        })
+        .finally(() => {
+            previewsInFlight.delete(key);
+        });
+    previewsInFlight.set(key, request);
+    return request;
 };
 
 export const scheduleArchiveCreation = async (

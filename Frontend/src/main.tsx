@@ -9,6 +9,7 @@ import { store } from "@app/store";
 import { globalTheme } from "@app/theme";
 import { TourProvider } from "@app/tours/TourProvider";
 import { Archives } from "@features/archives/Archives";
+import { AppErrorBoundary } from "@features/common/components";
 import { Search } from "@features/search/Search";
 
 import App from "./App";
@@ -21,19 +22,24 @@ const root = createRoot(container);
 root.render(
     <React.StrictMode>
         <ThemeProvider theme={globalTheme}>
-            <Provider store={store}>
-                <BrowserRouter basename={import.meta.env.BASE_URL}>
-                    <TourProvider>
-                        <Routes>
-                            <Route path="/" element={<App />}>
-                                <Route path="" element={<Home />} />
-                                <Route path="search" element={<Search />} />
-                                <Route path="archives" element={<Archives />} />
-                            </Route>
-                        </Routes>
-                    </TourProvider>
-                </BrowserRouter>
-            </Provider>
+            <AppErrorBoundary>
+                <Provider store={store}>
+                    <BrowserRouter basename={import.meta.env.BASE_URL}>
+                        <TourProvider>
+                            <Routes>
+                                <Route path="/" element={<App />}>
+                                    <Route path="" element={<Home />} />
+                                    <Route path="search" element={<Search />} />
+                                    <Route
+                                        path="archives"
+                                        element={<Archives />}
+                                    />
+                                </Route>
+                            </Routes>
+                        </TourProvider>
+                    </BrowserRouter>
+                </Provider>
+            </AppErrorBoundary>
         </ThemeProvider>
     </React.StrictMode>,
 );

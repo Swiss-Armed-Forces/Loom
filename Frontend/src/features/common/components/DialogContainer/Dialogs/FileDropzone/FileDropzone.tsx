@@ -48,14 +48,20 @@ export const FileDropzone = ({
                 {({ getRootProps, getInputProps, isDragActive }) => (
                     <div
                         {...getRootProps()}
+                        // Taken from the palette rather than written as hex:
+                        // the label inherits the dialog's text colour, so a
+                        // fixed light ground left it white on light grey for
+                        // anyone on the dark scheme.
                         style={{
                             width: "100%",
                             height: "30vh",
                             borderWidth: "2px",
-                            borderColor: isDragActive ? "#31312e" : "#BDBDBD",
+                            borderColor: isDragActive
+                                ? "var(--mui-palette-primary-main)"
+                                : "var(--mui-palette-divider)",
                             borderStyle: "dashed",
                             borderRadius: "5px",
-                            backgroundColor: "#E0E0E0",
+                            backgroundColor: "var(--mui-palette-action-hover)",
                             cursor: disabled ? "default" : "pointer",
                             boxSizing: "border-box",
                         }}

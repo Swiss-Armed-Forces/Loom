@@ -1,0 +1,65 @@
+/*
+ * The skeleton is what nearly every row mounts as while the list is being
+ * scrolled quickly, so it is written in plain CSS rather than built out of
+ * MUI components: the shape is four boxes, and four boxes should not cost a
+ * styling engine a visit per card.
+ */
+.skeleton {
+    padding: var(--loom-card-padding, 0.5rem) 1rem;
+}
+
+@media (min-width: 600px) {
+    .skeleton {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--loom-row-gap, 0.5rem);
+    margin-bottom: var(--loom-card-padding, 0.5rem);
+}
+
+.avatar {
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+
+.line {
+    height: 1.2em;
+    line-height: var(--loom-row-line-height, 1.4);
+    border-radius: 4px;
+}
+
+.title {
+    flex: 1 1 auto;
+}
+
+/* The same pulse MUI's Skeleton uses, so a card part-way through loading does
+not sit next to one animating differently. */
+.avatar,
+.line {
+    background-color: var(--mui-palette-action-hover, rgba(0, 0, 0, 0.11));
+    animation: skeletonPulse 2s ease-in-out 0.5s infinite;
+}
+
+@keyframes skeletonPulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .avatar,
+    .line {
+        animation: none;
+    }
+}

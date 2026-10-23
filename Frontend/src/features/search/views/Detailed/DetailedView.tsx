@@ -1,5 +1,6 @@
 import React, {
     CSSProperties,
+    ReactNode,
     useCallback,
     useContext,
     useEffect,
@@ -11,12 +12,9 @@ import React, {
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading } from "@app/slices/commonSlice";
 import {
-    NamedDensity,
-    selectCardDensity,
     selectCardElementVisibility,
     selectFieldColumnWidths,
     selectFieldLayout,
-    selectFlatRowChrome,
     selectPreviewFields,
     selectThumbnailColumnWidth,
     selectHighlightedFileId,
@@ -25,11 +23,10 @@ import {
     selectIsPaginating,
     selectOrderedFileIds,
     selectQueuedAdvance,
-    selectResolvedCardDensity,
     selectFiles,
     selectResultOrder,
+    selectResultsReplaced,
     selectTemporaryFileId,
-    setAutoDetectedDensity,
     visibleRangeChanged,
 } from "@app/slices/searchSlice";
 import { TourContext } from "@app/tours/TourContext";
@@ -38,11 +35,11 @@ import {
     LoadMoreButton,
     ResultCard,
 } from "@features/search/components";
-import { useSearchPanel } from "@features/search/components/CenterTabs/SearchPanelContext";
 import { FieldColumnHeader } from "@features/search/components/FieldList/FieldColumnHeader";
 import {
     COLUMN_HOST_ATTR,
     FIELD_COLUMNS_VAR,
+    cardThumbnailStyle,
     columnWidthsOf,
     fieldColumnTemplate,
     reservesThumbnailSlot,
@@ -50,6 +47,7 @@ import {
 } from "@features/search/components/FieldList/fieldColumns";
 import { ResultCardSkeleton } from "@features/search/components/ResultCard/ResultCardSkeleton";
 import { rowRhythmStyle } from "@features/search/components/ResultCard/rowRhythm";
+import { useSearchPanel } from "@features/search/views/SearchResults/SearchPanelContext";
 
 import styles from "./DetailedView.module.css";
 import { alignForHighlight, HighlightScrollMode } from "./highlightScroll";
@@ -72,15 +70,72 @@ const scrollPendingRowIntoView = (
     row?.scrollIntoView({ block: mode === "top" ? "start" : "nearest" });
 };
 
-const AUTO_DENSITY_BREAKPOINTS: { maxWidth: number; density: NamedDensity }[] =
-    [
-        { maxWidth: 500, density: "compact" },
-        { maxWidth: 850, density: "standard" },
-        { maxWidth: Infinity, density: "full" },
-    ];
+interface ResultRowProps {
+    index: number;
+    measureElement: (node: HTMLDivElement | null) => void;
+    recordHeight: (index: number, height: number) => void;
+    /** False while the card is still drawing a skeleton. */
+    hasPreview: boolean;
+    /** True for the card the keyboard is on, which draws every element. */
+    isHighlighted: boolean;
+    children: ReactNode;
+}
 
-const getDensityForWidth = (width: number): NamedDensity =>
-    AUTO_DENSITY_BREAKPOINTS.find((b) => width <= b.maxWidth)!.density;
+/**
+ * One row of the result list.
+ *
+ * Rows sit in normal flow inside the window below, rather than each being
+ * placed at an offset of its own. That is what makes a card drawn over its
+ * neighbour impossible: a row that grows pushes the rows after it down in the
+ * same layout pass, where a row placed at a remembered offset stayed where it
+ * was until the measurement caught up a frame or more later.
+ *
+ * The layout effect still reports the new height, because the virtualizer
+ * needs it for the rows it has *not* rendered - the scrollbar and the offset
+ * the window starts at are computed from the measurements, not from the DOM.
+ */
+const ResultRow = ({
+    index,
+    measureElement,
+    recordHeight,
+    hasPreview,
+    isHighlighted,
+    children,
+}: ResultRowProps) => {
+    const rowRef = useRef<HTMLDivElement>(null);
+    const setRefs = useCallback(
+        (node: HTMLDivElement | null) => {
+            rowRef.current = node;
+            measureElement(node);
+        },
+        [measureElement],
+    );
+    // In a microtask, not inline: reporting makes the virtualizer notify, and
+    // its React adapter answers with `flushSync`, which React refuses from
+    // inside a commit. A microtask still runs before paint.
+    const takeHeight = useCallback(() => {
+        queueMicrotask(() => {
+            const node = rowRef.current;
+            if (!node?.isConnected) return;
+            const height = node.offsetHeight;
+            if (height > 0) recordHeight(index, height);
+        });
+    }, [index, recordHeight]);
+    useLayoutEffect(takeHeight, [hasPreview, isHighlighted, takeHeight]);
+    return (
+        <div
+            className={styles.resultRow}
+            data-index={index}
+            // The zebra stripe of the flat chrome is keyed on this rather than
+            // on nth-child: only a window of rows is rendered, so sibling
+            // position says where the window starts, not where the result is.
+            data-stripe={index % 2 === 1 ? "true" : undefined}
+            ref={setRefs}
+        >
+            {children}
+        </div>
+    );
+};
 
 export const DetailedView: React.FC = React.memo(() => {
     const dispatch = useAppDispatch();
@@ -89,8 +144,6 @@ export const DetailedView: React.FC = React.memo(() => {
     const highlightScrollRequest = useAppSelector(selectHighlightScrollRequest);
     const highlightScrollMode = useAppSelector(selectHighlightScrollMode);
     const temporaryFileId = useAppSelector(selectTemporaryFileId);
-    const cardDensity = useAppSelector(selectCardDensity);
-    const resolvedDensity = useAppSelector(selectResolvedCardDensity);
     const resultOrder = useAppSelector(selectResultOrder);
     const files = useAppSelector(selectFiles);
     const fieldLayout = useAppSelector(selectFieldLayout);
@@ -98,8 +151,8 @@ export const DetailedView: React.FC = React.memo(() => {
     const columnWidths = useAppSelector(selectFieldColumnWidths);
     const thumbnailWidth = useAppSelector(selectThumbnailColumnWidth);
     const visibility = useAppSelector(selectCardElementVisibility);
-    const flatRowChrome = useAppSelector(selectFlatRowChrome);
     const orderedFileIds = useAppSelector(selectOrderedFileIds);
+    const resultsReplaced = useAppSelector(selectResultsReplaced);
     const isPaginating = useAppSelector(selectIsPaginating);
     const queuedAdvance = useAppSelector(selectQueuedAdvance);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -148,28 +201,22 @@ export const DetailedView: React.FC = React.memo(() => {
     // The columns, the row rhythm and the thumbnail slot are published once
     // for the whole list, so the header and every card resolve to the same
     // tracks, the same spacing and the same width kept free on the right.
-    const showColumns = fieldLayout === "line" && visibility.showFieldSections;
+    const showColumns = fieldLayout === "line";
     const listStyle = useMemo(
         () =>
             ({
                 [FIELD_COLUMNS_VAR]: fieldColumnTemplate(
                     columnWidthsOf(previewFields, columnWidths),
                 ),
-                ...rowRhythmStyle(resolvedDensity),
+                ...rowRhythmStyle(),
                 ...thumbnailSlotStyle(
-                    resolvedDensity,
+                    visibility.thumbnailWidthRem,
                     reservesThumbnailSlot(fieldLayout, visibility),
                     thumbnailWidth,
                 ),
+                ...cardThumbnailStyle(visibility.thumbnailWidthRem),
             }) as CSSProperties,
-        [
-            previewFields,
-            columnWidths,
-            resolvedDensity,
-            fieldLayout,
-            visibility,
-            thumbnailWidth,
-        ],
+        [previewFields, columnWidths, fieldLayout, visibility, thumbnailWidth],
     );
 
     // Everything that decides how tall a card is, in one string. The
@@ -181,40 +228,31 @@ export const DetailedView: React.FC = React.memo(() => {
     const layoutSignature = useMemo(
         () =>
             JSON.stringify([
-                resolvedDensity,
                 fieldLayout,
-                flatRowChrome,
                 previewFields,
                 columnWidths,
                 thumbnailWidth,
                 visibility,
             ]),
-        [
-            resolvedDensity,
-            fieldLayout,
-            flatRowChrome,
-            previewFields,
-            columnWidths,
-            thumbnailWidth,
-            visibility,
-        ],
+        [fieldLayout, previewFields, columnWidths, thumbnailWidth, visibility],
     );
 
     // Called above the empty-list early return: hooks cannot be conditional,
     // and a count of zero costs nothing.
-    const { virtualizer, remeasure, getMotion } = useResultVirtualizer({
-        orderedFileIds,
-        stickyIndex: stickyIndex === -1 ? null : stickyIndex,
-        density: resolvedDensity,
-        lineLayout: fieldLayout === "line",
-        layoutSignature,
-        scrollRef,
-        listRef,
-        isActive: panel?.isActive ?? true,
-    });
+    const { virtualizer, remeasure, recordHeight, getMotion } =
+        useResultVirtualizer({
+            orderedFileIds,
+            stickyIndex: stickyIndex === -1 ? null : stickyIndex,
+            lineLayout: fieldLayout === "line",
+            layoutSignature,
+            scrollRef,
+            listRef,
+            // The centre column is the result list and only that, so it is
+            // never hidden and never measures zero.
+        });
 
-    // Auto-detect density from container width when not overridden by user,
-    // and re-measure when the width changes, since that rewraps every card.
+    // Re-measure when the container's width changes, since that rewraps
+    // every card.
     //
     // Width only. The container's *height* follows from how tall the rows
     // are, so treating that as a reason to re-measure is circular: measuring
@@ -226,24 +264,24 @@ export const DetailedView: React.FC = React.memo(() => {
         let lastWidth = el.getBoundingClientRect().width;
         const ro = new ResizeObserver(([entry]) => {
             const width = entry.contentRect.width;
+            // A width of zero is a container with no layout box - before
+            // first layout, or inside a collapsed ancestor - and not a
+            // window the reader has narrowed. Re-measuring then places the
+            // highlight against heights of zero.
+            if (width === 0) return;
             if (width === lastWidth) return;
             lastWidth = width;
             if (debounce) clearTimeout(debounce);
-            debounce = setTimeout(() => {
-                if (cardDensity === "auto") {
-                    dispatch(setAutoDetectedDensity(getDensityForWidth(width)));
-                }
-                remeasure();
-            }, 100);
+            debounce = setTimeout(remeasure, 100);
         });
         ro.observe(el);
         return () => {
             ro.disconnect();
             if (debounce) clearTimeout(debounce);
         };
-    }, [cardDensity, dispatch, remeasure]);
+    }, [remeasure]);
 
-    // Report which rows are on screen, for the results tab's position readout.
+    // Report which rows are on screen, for the search box's position readout.
     // `range` is the genuinely visible rows, before overscan and before the
     // sticky highlight is added back in. This component already re-renders on
     // every scroll — that is what windowing is — so the only cost here is a
@@ -283,7 +321,8 @@ export const DetailedView: React.FC = React.memo(() => {
         getMotion,
         thumbnailIdFor,
         highlightedIndex,
-        thumbnailsShownOnEveryCard: visibility.showThumbnails,
+        thumbnailsShownOnEveryCard: visibility.thumbnailWidthRem > 0,
+        resultsReplaced,
     });
 
     const placeHighlight = useCallback(() => {
@@ -355,6 +394,30 @@ export const DetailedView: React.FC = React.memo(() => {
         };
     }, [scrollRef]);
 
+    // A query that replaces the list puts its first page on screen, so the
+    // reader goes back to the top of it. Without this the scroll position was
+    // carried over from the previous result set and the new one opened
+    // part-way in, with its best matches above the fold.
+    const firstResultsRef = useRef(true);
+    useLayoutEffect(() => {
+        if (firstResultsRef.current) {
+            firstResultsRef.current = false;
+            return;
+        }
+        const scroller = scrollRef.current;
+        if (scroller) scroller.scrollTop = 0;
+        // Through the virtualizer as well as the element: it keeps its own
+        // idea of where the list is scrolled to and will write it back over a
+        // position set behind it.
+        virtualizer.scrollToOffset(0);
+        // A highlight left over from the previous query still names a file,
+        // and if that file happens to be in the new results too, the
+        // correcting placement below would pull the view straight back down to
+        // it. Going to the top of a new result set is the reader's position
+        // now, the same as if they had scrolled there themselves.
+        userTookOverRef.current = true;
+    }, [resultsReplaced, scrollRef, virtualizer]);
+
     // Held in a ref so the effect below can call the current one without
     // listing it as a dependency. Its identity changes whenever the highlight
     // moves, and depending on that is what made a click scroll: picking a card
@@ -415,7 +478,7 @@ export const DetailedView: React.FC = React.memo(() => {
         <div
             className={styles.cardContainer}
             ref={containerRef}
-            data-row-chrome={flatRowChrome ? "flat" : undefined}
+            data-row-chrome="flat"
             {...{ [COLUMN_HOST_ATTR]: "" }}
             style={listStyle}
         >
@@ -426,42 +489,50 @@ export const DetailedView: React.FC = React.memo(() => {
                 ref={listRef}
                 style={{ height: virtualizer.getTotalSize() }}
             >
-                {virtualizer.getVirtualItems().map((item) => {
-                    const fileId = orderedFileIds[item.index];
-                    if (fileId === undefined) return null;
-                    return (
-                        <div
-                            key={item.key}
-                            className={styles.resultRow}
-                            data-index={item.index}
-                            // The zebra stripe of the flat chrome is keyed on
-                            // this rather than on nth-child: only a window of
-                            // rows is rendered, so sibling position says where
-                            // the window starts, not where the result is.
-                            data-stripe={
-                                item.index % 2 === 1 ? "true" : undefined
-                            }
-                            ref={virtualizer.measureElement}
-                            style={{
-                                transform: `translateY(${
-                                    item.start -
-                                    virtualizer.options.scrollMargin
-                                }px)`,
-                            }}
-                        >
-                            <ResultCard
-                                fileId={fileId}
+                {/* The window of rendered rows, moved as one. Offsetting the
+                window rather than every row is what lets the rows inside it
+                lay out against each other. */}
+                <div
+                    className={styles.virtualWindow}
+                    style={{
+                        transform: `translateY(${
+                            (virtualizer.getVirtualItems()[0]?.start ?? 0) -
+                            virtualizer.options.scrollMargin
+                        }px)`,
+                    }}
+                >
+                    {virtualizer.getVirtualItems().map((item) => {
+                        const fileId = orderedFileIds[item.index];
+                        if (fileId === undefined) return null;
+                        return (
+                            <ResultRow
+                                key={item.key}
+                                index={item.index}
+                                measureElement={virtualizer.measureElement}
+                                recordHeight={recordHeight}
+                                // The card draws a skeleton until its preview
+                                // is in hand and its real self afterwards,
+                                // which is a different height.
+                                hasPreview={files[fileId]?.preview != null}
                                 isHighlighted={
                                     fileId === highlightedFileId &&
                                     !highlightPendingRow
                                 }
-                                stale={files[fileId]?.stale ?? false}
-                                isTemporary={fileId === temporaryFileId}
-                                isTourAnchor={fileId === tourAnchorFileId}
-                            />
-                        </div>
-                    );
-                })}
+                            >
+                                <ResultCard
+                                    fileId={fileId}
+                                    isHighlighted={
+                                        fileId === highlightedFileId &&
+                                        !highlightPendingRow
+                                    }
+                                    stale={files[fileId]?.stale ?? false}
+                                    isTemporary={fileId === temporaryFileId}
+                                    isTourAnchor={fileId === tourAnchorFileId}
+                                />
+                            </ResultRow>
+                        );
+                    })}
+                </div>
             </div>
             {isPaginating && (
                 <div

@@ -91,7 +91,6 @@ export const LoadMoreButton = () => {
                     </Typography>
                     <Button
                         startIcon={<Refresh />}
-                        className={styles.loadMoreButton}
                         variant="contained"
                         color="secondary"
                         onClick={

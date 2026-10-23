@@ -45,8 +45,8 @@ vi.mock("@middleware/SocketMiddleware", () => ({
 vi.mock("@features/search/components/ActivityBar/ActivityBar", () => ({
     ActivityBar: () => null,
 }));
-vi.mock("@features/search/components/CenterTabs/CenterTabs", () => ({
-    CenterTabs: () => null,
+vi.mock("@features/search/views/SearchResults/SearchResults", () => ({
+    SearchResults: () => null,
 }));
 vi.mock("@features/search/components/LeftSidebar/LeftSidebar", () => ({
     LeftSidebar: () => null,

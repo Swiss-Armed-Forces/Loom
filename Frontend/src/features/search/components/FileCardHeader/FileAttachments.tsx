@@ -3,7 +3,8 @@ import { Box, Chip } from "@mui/material";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 import { Attachment } from "@app/api";
-import { useFileNavigation } from "@features/search/context/FileNavigationContext";
+import { useAppDispatch } from "@app/hooks";
+import { openFileTabThunk } from "@app/slices/searchSlice";
 
 import { AttachmentsPopover } from "./AttachmentsPopover";
 import styles from "./FileAttachments.module.css";
@@ -22,7 +23,7 @@ export const FileAttachments = ({
     totalCount,
     maxWidthRatio = 0.8,
 }: FileAttachmentsProps) => {
-    const { navigateToFile } = useFileNavigation();
+    const dispatch = useAppDispatch();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [shouldCollapse, setShouldCollapse] = useState(false);
 
@@ -53,10 +54,10 @@ export const FileAttachments = ({
     }, [attachments, maxWidthRatio]);
 
     const handleOpenDirect = useCallback(
-        (fileId: string, openInTab = false) => {
-            navigateToFile(fileId, { openInTab });
+        (fileId: string, background = false) => {
+            dispatch(openFileTabThunk({ fileId, background }));
         },
-        [navigateToFile],
+        [dispatch],
     );
 
     const summaryLabel = useMemo(() => {

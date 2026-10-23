@@ -3,6 +3,7 @@ import * as pdfjs from "pdfjs-dist";
 import * as pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs";
 import {
     forwardRef,
+    useCallback,
     useEffect,
     useImperativeHandle,
     useRef,
@@ -15,6 +16,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 import { Point } from "@features/common/utils/model";
 
 import { ContentRendererRef } from "./contentRendererRef";
+import { shouldFitToWidth } from "./pdfFit";
 import { wheelDeltaInPixels, wheelZoomFactor } from "./previewZoom";
 
 // Assign the worker module to globalThis so pdfjs uses the main-thread
@@ -111,16 +113,60 @@ export const FilePdfRenderer = forwardRef<
     const onPageChangeRef = useRef(onPageChange);
     onPageChangeRef.current = onPageChange;
 
+    // Whether this document has been fitted to the container at a width worth
+    // fitting against; see `shouldFitToWidth`.
+    const hasFittedRef = useRef(false);
+
+    const fitToWidth = useCallback(() => {
+        const viewer = viewerRef.current;
+        const width = containerRef.current?.clientWidth ?? 0;
+        if (!viewer?.pdfDocument) return;
+        if (!shouldFitToWidth(width, hasFittedRef.current)) return;
+        viewer.currentScaleValue = "page-width";
+        hasFittedRef.current = true;
+    }, []);
+
+    // Takes the fit the moment the container gains a width, which is when a
+    // hidden panel is brought to the front. Gated on the flag inside
+    // `fitToWidth`, so an ordinary resize cannot take back a chosen zoom.
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        const observer = new ResizeObserver(() => fitToWidth());
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [fitToWidth]);
+
+    /** Fit if that has not happened yet; false if it still cannot. */
+    const ensureFitted = useCallback((): boolean => {
+        if (hasFittedRef.current) return true;
+        fitToWidth();
+        return hasFittedRef.current;
+    }, [fitToWidth]);
+
     const [outline, setOutline] = useState<OutlineItem[] | null>(null);
     const [totalPages, setTotalPages] = useState(0);
     const [loadError, setLoadError] = useState(false);
 
     useImperativeHandle(ref, () => ({
-        zoomIn: () => viewerRef.current?.increaseScale(),
-        zoomOut: () => viewerRef.current?.decreaseScale(),
+        // Both zoom steps multiply the scale the viewer holds, so neither may
+        // run before a fit has given it one.
+        zoomIn: () => {
+            if (!ensureFitted()) return;
+            viewerRef.current?.increaseScale();
+        },
+        zoomOut: () => {
+            if (!ensureFitted()) return;
+            viewerRef.current?.decreaseScale();
+        },
         zoomReset: () => {
-            if (viewerRef.current)
-                viewerRef.current.currentScaleValue = "page-width";
+            const viewer = viewerRef.current;
+            if (!viewer) return;
+            viewer.currentScaleValue = "page-width";
+            // Asked for by hand, against a container that is on screen: the
+            // scale is set either way, and recording it stops the observer
+            // below taking the view back.
+            hasFittedRef.current = true;
         },
         rotate: () => {
             if (viewerRef.current)
@@ -203,6 +249,8 @@ export const FilePdfRenderer = forwardRef<
             // the deltas pile up until then would land as one jump.
             const viewer = viewerRef.current;
             if (!viewer?.pdfDocument) return;
+            // A document that was never fitted has no scale to zoom from.
+            if (!ensureFitted()) return;
 
             const pixels = wheelDeltaInPixels(
                 event.deltaY,
@@ -253,7 +301,7 @@ export const FilePdfRenderer = forwardRef<
 
         container.addEventListener("wheel", handleWheel, { passive: false });
         return () => container.removeEventListener("wheel", handleWheel);
-    }, []);
+    }, [ensureFitted]);
 
     useEffect(() => {
         if (!containerRef.current || !viewerDivRef.current) return;
@@ -291,7 +339,10 @@ export const FilePdfRenderer = forwardRef<
             linkService.setViewer(viewer);
 
             eventBus.on("pagesinit", () => {
-                viewer.currentScaleValue = "page-width";
+                // May do nothing: a panel that is hidden while its document
+                // loads has no width to fit against. The observer below takes
+                // the fit again when it gains one.
+                fitToWidth();
             });
 
             eventBus.on(
@@ -351,10 +402,11 @@ export const FilePdfRenderer = forwardRef<
             pdfDocRef.current = null;
             viewerRef.current = null;
             linkServiceRef.current = null;
+            hasFittedRef.current = false;
             setOutline(null);
             setTotalPages(0);
         };
-    }, [renderedFileUrl]);
+    }, [fitToWidth, renderedFileUrl]);
 
     const navigateToOutlineItem = async (dest: any) => {
         const linkService = linkServiceRef.current;

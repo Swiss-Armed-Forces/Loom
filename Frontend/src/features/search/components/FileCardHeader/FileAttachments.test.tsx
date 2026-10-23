@@ -4,7 +4,12 @@ import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Attachment } from "@app/api";
-import { closeFileTab, setActiveTabFileId } from "@app/slices/searchSlice";
+import {
+    RightSidebarTab,
+    closeFileTab,
+    closeRightSidebar,
+    focusFollowTab,
+} from "@app/slices/searchSlice";
 import { store } from "@app/store";
 import { FileDetailTab } from "@features/common/utils/enums";
 
@@ -28,7 +33,12 @@ class ResizeObserverStub {
 vi.stubGlobal("ResizeObserver", ResizeObserverStub);
 
 const openTabs = () => store.getState().search.openFileTabs;
-const activeTab = () => store.getState().search.activeTabFileId;
+/** The selected tab's file, or null for the following tab. */
+const activeTab = () => {
+    const selection = store.getState().search.fileDetailSelection;
+    return selection.kind === "file" ? selection.fileId : null;
+};
+const sidebarTab = () => store.getState().search.rightSidebarTab;
 
 /**
  * Renders the attachments the way a result card holds them: inside an element
@@ -65,7 +75,9 @@ describe("FileAttachments", () => {
         for (const tab of [...openTabs()]) {
             store.dispatch(closeFileTab(tab.fileId));
         }
-        store.dispatch(setActiveTabFileId(null));
+        store.dispatch(focusFollowTab());
+        // Opening a tab reveals the sidebar, and the store is shared.
+        store.dispatch(closeRightSidebar());
     });
 
     it("opens only the attachment on Ctrl-click, not the card's file", () => {
@@ -93,6 +105,9 @@ describe("FileAttachments", () => {
             { fileId: "attachment-1", detailTab: FileDetailTab.Rendered },
         ]);
         expect(activeTab()).toBe("attachment-1");
+        // The strip lives in the File Detail sidebar, so opening a tab has
+        // to reveal it or the click does nothing the reader can see.
+        expect(sidebarTab()).toBe(RightSidebarTab.FILE_DETAIL);
         expect(cardAction).not.toHaveBeenCalled();
     });
 

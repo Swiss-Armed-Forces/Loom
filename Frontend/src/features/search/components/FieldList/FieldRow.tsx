@@ -16,6 +16,10 @@ export interface FieldRowProps {
     value: string;
     onQuery?: (negate: boolean, accumulate: boolean) => void;
     onSort?: () => void;
+    /** Draw the label and the value bold; see `boldPreviewFields`. */
+    bold?: boolean;
+    /** Print the field's name ahead of its value. */
+    showName?: boolean;
 }
 
 /**
@@ -24,17 +28,28 @@ export interface FieldRowProps {
  * transparent until the row is hovered or something inside it takes focus,
  * so keyboard users reach them and the layout never shifts.
  */
-export const FieldRow = ({ field, value, onQuery, onSort }: FieldRowProps) => {
+export const FieldRow = ({
+    field,
+    value,
+    onQuery,
+    onSort,
+    bold,
+    showName = true,
+}: FieldRowProps) => {
     const { t } = useTranslation();
 
     return (
         <Box
             sx={{
                 display: "flex",
-                alignItems: "baseline",
+                alignItems: "center",
                 // The list publishes the rhythm; a row never sets its own.
+                // The height is fixed so that the field block of a card is
+                // decided by the selection and nothing about the file.
                 gap: "var(--loom-row-gap, 0.5rem)",
                 minWidth: 0,
+                height: "var(--loom-row-height, 1.5rem)",
+                overflow: "hidden",
                 lineHeight: "var(--loom-row-line-height, 1.4)",
                 [`& .${ACTIONS_CLASS}`]: {
                     opacity: 0,
@@ -50,21 +65,34 @@ export const FieldRow = ({ field, value, onQuery, onSort }: FieldRowProps) => {
                 },
             }}
         >
-            <Typography
-                variant="caption"
-                component="span"
-                color="text.secondary"
-                sx={{ flexShrink: 0 }}
-            >
-                {`${field}:`}
-            </Typography>
+            {showName && (
+                <Typography
+                    variant="caption"
+                    component="span"
+                    color="text.secondary"
+                    sx={{
+                        flexShrink: 0,
+                        fontWeight: bold ? "bold" : undefined,
+                    }}
+                >
+                    {`${field}:`}
+                </Typography>
+            )}
             <Typography
                 variant="body2"
                 component="span"
                 className={styles.resultHighlightText}
-                title={stripHighlightTags(value)}
+                title={
+                    showName
+                        ? stripHighlightTags(value)
+                        : `${field}: ${stripHighlightTags(value)}`
+                }
                 noWrap
-                sx={{ flex: 1, minWidth: 0 }}
+                sx={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontWeight: bold ? "bold" : undefined,
+                }}
             >
                 {renderHighlight(value)}
             </Typography>

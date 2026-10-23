@@ -14,9 +14,10 @@ vi.mock("@features/search/components", () => ({
     EmptySearchResults: ({ forceQueryOverview = false }) => (
         <div data-testid="query-overview" data-forced={forceQueryOverview} />
     ),
+    ScrollToTop: () => null,
 }));
 
-vi.mock("./Detailed/DetailedView", () => ({
+vi.mock("../Detailed/DetailedView", () => ({
     DetailedView: () => <div data-testid="detailed-results" />,
 }));
 

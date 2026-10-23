@@ -24,14 +24,17 @@ import {
     ResponseError,
     PreviewField,
 } from "@app/api/index";
-import {
-    subscribeChannel,
-    unsubscribeChannel,
-} from "@app/channelSubscriptions";
+import {} from "@app/channelSubscriptions";
 import {
     startLoadingIndicator,
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
+import {
+    FileDetailSelection,
+    FOLLOW_TAB,
+    fileTab,
+    selectedFileIdOf,
+} from "@app/slices/fileDetailSelection";
 import { isPreviewFresh, SearchFileEntry } from "@app/slices/searchFileEntry";
 import { FileDetailTab } from "@features/common/utils/enums";
 import {
@@ -39,6 +42,7 @@ import {
     PitBoundSearchQuery,
     SearchQuery,
 } from "@features/common/utils/model";
+import { apiPreviewFields } from "@features/search/components/FieldList/indicatorFields";
 import {
     clampSidebarWidth,
     DEFAULT_LEFT_SIDEBAR_WIDTH,
@@ -75,24 +79,45 @@ export const RightSidebarTab = {
 export type RightSidebarTab =
     (typeof RightSidebarTab)[keyof typeof RightSidebarTab];
 
-/** How much room a card takes: a named spacing, or one picked from the width
- *  available. Spacing is one axis of the card's look; which elements are on is
- *  the other, and the two are set independently - see `DENSITY_PRESETS`. */
-export type CardDensity = "auto" | NamedDensity;
-export type NamedDensity = "compact" | "standard" | "full";
+/**
+ * A shortcut to a whole set of card elements; see `CARD_PRESETS`.
+ *
+ * These were spacings as well once, and the card had a second control that
+ * set the spacing on its own. A card is laid out tight now and only that way,
+ * so a preset says how much of a file a card shows and nothing about how much
+ * room it takes.
+ */
+export type CardPreset = "compact" | "standard" | "full";
 
 /** How a single metadata field is rendered on a card.
- *  "rows" → one expandable accordion per field; "compact" → one `label: value`
- *  line per field, with the accordion kept for truncated values only;
- *  "line" → every selected field side by side on one line, values only, the
- *  way a mail client lays a message list out. */
-export type FieldLayout = "rows" | "compact" | "line";
+ *  "compact" → one `label: value` line per field, with an accordion kept for
+ *  truncated values only; "line" → every selected field side by side on one
+ *  line, values only, the way a mail client lays a message list out.
+ *
+ *  There was a third, "rows", which gave every field an accordion of its own.
+ *  It was "compact" with the collapsed form taken away, so it said nothing
+ *  "compact" does not and cost a card several times the height. */
+export type FieldLayout = "compact" | "line";
+
+/**
+ * Width of the thumbnail column on a card, in rem. Zero draws none.
+ *
+ * A width rather than a few named sizes: how much of a card a picture should
+ * take depends on the pictures, and the reader is the one looking at them.
+ * `THUMBNAIL_WIDTH_STEP_REM` is the slider's step, and is coarse on purpose -
+ * the difference between neighbouring stops has to be one a reader can see.
+ */
+export const THUMBNAIL_WIDTH_MAX_REM = 35;
+export const THUMBNAIL_WIDTH_STEP_REM = 7;
+
+/** Most columns a card's fields may be laid out in. Past this a column is
+ *  too narrow to hold a value worth reading. */
+export const MAX_FIELD_COLUMNS = 4;
 
 // All card-element visibility settings in one shape, shared by presets and state.
 export interface CardVisibilitySettings {
-    showThumbnails: boolean;
+    thumbnailWidthRem: number;
     showHighlights: boolean;
-    showFieldSections: boolean;
     showExtensionIcon: boolean;
     showFilePath: boolean;
     showParentNavigation: boolean;
@@ -104,11 +129,10 @@ export interface CardVisibilitySettings {
     showFieldActions: boolean;
 }
 
-export const DENSITY_PRESETS: Record<NamedDensity, CardVisibilitySettings> = {
+export const CARD_PRESETS: Record<CardPreset, CardVisibilitySettings> = {
     compact: {
-        showThumbnails: false,
+        thumbnailWidthRem: 0,
         showHighlights: false,
-        showFieldSections: true,
         showExtensionIcon: true,
         showFilePath: true,
         showParentNavigation: false,
@@ -120,9 +144,8 @@ export const DENSITY_PRESETS: Record<NamedDensity, CardVisibilitySettings> = {
         showFieldActions: false,
     },
     standard: {
-        showThumbnails: false,
+        thumbnailWidthRem: 14,
         showHighlights: true,
-        showFieldSections: true,
         showExtensionIcon: true,
         showFilePath: true,
         showParentNavigation: true,
@@ -131,12 +154,11 @@ export const DENSITY_PRESETS: Record<NamedDensity, CardVisibilitySettings> = {
         showTags: true,
         showActions: false,
         showSortIndicator: false,
-        showFieldActions: true,
+        showFieldActions: false,
     },
     full: {
-        showThumbnails: true,
+        thumbnailWidthRem: 21,
         showHighlights: true,
-        showFieldSections: true,
         showExtensionIcon: true,
         showFilePath: true,
         showParentNavigation: true,
@@ -152,7 +174,7 @@ export const DENSITY_PRESETS: Record<NamedDensity, CardVisibilitySettings> = {
 /** The flags a preset sets, named once so state and preset can be compared
  *  without listing them again. */
 export const CARD_VISIBILITY_KEYS = Object.keys(
-    DENSITY_PRESETS.standard,
+    CARD_PRESETS.standard,
 ) as (keyof CardVisibilitySettings)[];
 
 const matchesPreset = (
@@ -161,7 +183,8 @@ const matchesPreset = (
 ): boolean =>
     CARD_VISIBILITY_KEYS.every((key) => visibility[key] === preset[key]);
 
-export interface FileTabState {
+/** One tab the reader opened: a file, and the sub-tab it was left on. */
+export interface OpenFileTab {
     fileId: string;
     detailTab: FileDetailTab;
 }
@@ -308,6 +331,16 @@ export interface SearchState {
     totalFiles: number;
     lastFileSortId: any[] | null;
     resultOrder: string[];
+    /**
+     * Bumped whenever a query replaces the result list wholesale.
+     *
+     * The reader's position is measured in pixels, and after a replacement
+     * those pixels describe a different set of results - so a search run from
+     * halfway down the previous one used to open part-way into the new one,
+     * with its best matches above the fold. The view scrolls back to the top
+     * when this changes.
+     */
+    resultsReplaced: number;
     pagination: PaginationState;
     filesInView: string[];
     // Rows of the rendered order currently on screen, or null before the list
@@ -316,20 +349,49 @@ export interface SearchState {
     tags: string[];
     customQueries: CustomQuery[];
     highlightedQueryId: string | null;
-    openFileTabs: FileTabState[];
-    activeTabFileId: string | null;
+    openFileTabs: OpenFileTab[];
+    /** Which tab of the File Detail sidebar is in front. */
+    fileDetailSelection: FileDetailSelection;
+    /** Sub-tab of the following tab, which has no `OpenFileTab` to hold it. */
+    followDetailTab: FileDetailTab;
     expandFilePaths: boolean;
-    cardDensity: CardDensity;
-    autoDetectedDensity: NamedDensity;
     fieldLayout: FieldLayout;
     previewFields: string[];
+    /**
+     * Selected fields the reader has picked out, drawn bold on every card.
+     *
+     * A subset of `previewFields` and kept one by `setPreviewFields`: a field
+     * that is no longer on the card has nothing to be bold about, and leaving
+     * it here would bring the emphasis back unannounced the next time the
+     * field was selected.
+     */
+    boldPreviewFields: string[];
+    /** How many columns a card lays its fields out in, at least one. */
+    fieldColumnCount: number;
+    /**
+     * Which column each selected field is drawn in, zero-based.
+     *
+     * `previewFields` stays the single order for every column and each one
+     * draws its own members in that order, so moving a field between columns
+     * cannot disturb the order the line layout reads by position. A field
+     * with no entry here is in the first column; entries are dropped with the
+     * field they name, and clamped when a column is removed.
+     */
+    fieldColumnOf: Record<string, number>;
+    /**
+     * Whether a card names the fields it draws, or shows the values alone.
+     *
+     * A Card Fields setting and not a card element, so no density preset
+     * touches it: the presets decide how much of a card is drawn, and this
+     * decides what the fields the reader chose look like.
+     */
+    showFieldNames: boolean;
     fieldColumnWidths: Record<string, number>;
     thumbnailColumnWidth: number | null;
     availablePreviewFields: PreviewField[];
     fieldExpansion: Record<string, boolean>;
-    showThumbnails: boolean;
+    thumbnailWidthRem: number;
     showHighlights: boolean;
-    showFieldSections: boolean;
     showExtensionIcon: boolean;
     showFilePath: boolean;
     showParentNavigation: boolean;
@@ -378,6 +440,8 @@ export const SEARCH_STATE_DOCS = {
     lastFileSortId: "any[] | null — sort cursor for pagination",
     resultOrder:
         "string[] — hit IDs of the current query in backend ranking order, one entry per loaded result; the result list renders this, not the key order of `files`",
+    resultsReplaced:
+        "number — bumped when a query replaces the result list, which sends the view back to the top",
     pagination:
         "PaginationState — {pendingCursorKey, queuedAdvance, staged, error}: the in-flight page request, moves waiting on it, a page fetched ahead of the user, and why the last page request failed ({kind: 'expired'|'failed', detail}) if it did",
     filesInView:
@@ -389,18 +453,21 @@ export const SEARCH_STATE_DOCS = {
         "CustomQuery[] — saved queries ({id, query, fileCount, lastSeenCount, hasNewFiles, name, icon})",
     highlightedQueryId:
         "string | null — which custom query is highlighted in the sidebar",
-    openFileTabs:
-        "FileTabState[] — open file detail tabs ({fileId, detailTab})",
-    activeTabFileId: "string | null — which file detail tab is active",
+    openFileTabs: "OpenFileTab[] — opened file tabs ({fileId, detailTab})",
+    fileDetailSelection:
+        "FileDetailSelection — which File Detail tab is in front ({kind:'follow'} or {kind:'file',fileId})",
+    followDetailTab:
+        "FileDetailTab — sub-tab of the following tab, which has no tab entry of its own",
     expandFilePaths:
         "boolean — whether long file paths are shown in full on every result card",
-    cardDensity:
-        "CardDensity — how much room a card takes (auto|compact|standard|full); which elements are shown is the separate show* set",
-    autoDetectedDensity:
-        "NamedDensity — spacing detected from available screen space, used while cardDensity is auto",
     fieldLayout:
-        "FieldLayout — how card metadata fields are rendered (rows|compact|line)",
+        "FieldLayout — how card metadata fields are rendered (compact|line)",
     previewFields: "string[] — field names shown as preview on cards",
+    boldPreviewFields:
+        "string[] — subset of previewFields the reader picked out, drawn bold",
+    fieldColumnCount: "number — how many columns a card lays its fields out in",
+    fieldColumnOf:
+        "Record<fieldId, number> — zero-based card column per selected field",
     fieldColumnWidths:
         "Record<fieldName, number> — width in fr of each column in the line field layout, as left by dragging the column borders; a field absent from the map is one that was never dragged",
     thumbnailColumnWidth:
@@ -409,9 +476,9 @@ export const SEARCH_STATE_DOCS = {
         "PreviewField[] — all fields available for card preview",
     fieldExpansion:
         "Record<fieldName, boolean> — which card field sections are expanded",
-    showThumbnails: "boolean — card visibility: thumbnail images",
+    thumbnailWidthRem:
+        "number — width of a card's thumbnail column in rem; 0 draws none",
     showHighlights: "boolean — card visibility: search hit highlights",
-    showFieldSections: "boolean — card visibility: metadata field sections",
     showExtensionIcon: "boolean — card visibility: file extension icon",
     showFilePath: "boolean — card visibility: file path",
     showParentNavigation: "boolean — card visibility: parent folder navigation",
@@ -421,6 +488,8 @@ export const SEARCH_STATE_DOCS = {
     showTags: "boolean — card visibility: tag chips",
     showActions: "boolean — card visibility: action buttons",
     showSortIndicator: "boolean — card visibility: sort field indicator",
+    showFieldNames:
+        "boolean — card visibility: the label ahead of each field's value",
     showFieldActions: "boolean — card visibility: per-field action buttons",
     autoActionsPreferences:
         "AutoActionsPreferences — which auto-actions run on file open (markAsSeen, flag, reindex, translate, summarize, describeImage)",
@@ -477,36 +546,13 @@ export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
 
 export const SEARCH_STATE_LOCAL_STORAGE_KEY = "SEARCH_STATE";
 
-/**
- * Coerce a persisted card density back into the current shape.
- *
- * Browsers that were left on the "custom" density hold a value the union no
- * longer has. They are handed back to "auto": the switches they customised
- * are now always in effect, so the only thing "custom" still had to say was
- * that it was not a preset - and nothing is lost by letting the spacing
- * follow the window again.
- */
-const normalizeCardDensity = (raw: unknown): CardDensity | undefined => {
-    if (
-        raw === "auto" ||
-        raw === "compact" ||
-        raw === "standard" ||
-        raw === "full"
-    ) {
-        return raw;
-    }
-    return raw === undefined ? undefined : "auto";
-};
-
 export const loadPersistedSearchState = (): Partial<SearchState> => {
     const data = window.localStorage.getItem(SEARCH_STATE_LOCAL_STORAGE_KEY);
     if (!data) return {};
     try {
         const parsed = JSON.parse(data) as Partial<SearchState>;
-        const density = normalizeCardDensity(parsed.cardDensity);
         return {
             ...parsed,
-            ...(density ? { cardDensity: density } : {}),
             ...("customQueries" in parsed
                 ? {
                       customQueries: normalizeCustomQueries(
@@ -521,7 +567,7 @@ export const loadPersistedSearchState = (): Partial<SearchState> => {
 };
 
 const persistedState = loadPersistedSearchState();
-// Seed activeTabFileId from the URL hash so the Redux→URL effect sees a match
+// Seed the selection from the URL hash so the Redux→URL effect sees a match
 // on initial mount and doesn't clear the hash before the URL→Redux effect can
 // open the tab. The URL→Redux effect (syncedHashRef = "") still fires and calls
 // openFileTabThunk to ensure the tab is added to openFileTabs if it isn't yet.
@@ -537,6 +583,7 @@ const initialState: SearchState = {
     lastFileSortId: null,
     totalFiles: 0,
     resultOrder: [],
+    resultsReplaced: 0,
     pagination: {
         pendingCursorKey: null,
         queuedAdvance: 0,
@@ -549,16 +596,19 @@ const initialState: SearchState = {
     customQueries: [],
     highlightedQueryId: null,
     openFileTabs: [],
+    followDetailTab: FileDetailTab.Rendered,
     expandFilePaths: false,
-    cardDensity: "auto",
-    autoDetectedDensity: "standard",
     fieldLayout: "compact",
     previewFields: ["content"],
+    boldPreviewFields: [],
+    fieldColumnCount: 1,
+    fieldColumnOf: {},
+    showFieldNames: true,
     fieldColumnWidths: {},
     thumbnailColumnWidth: null,
     availablePreviewFields: [],
     // The element switches, always authoritative; they start from standard.
-    ...DENSITY_PRESETS.standard,
+    ...CARD_PRESETS.standard,
     fieldExpansion: {},
     autoActionsPreferences: {
         markAsSeen: true,
@@ -593,11 +643,13 @@ const initialState: SearchState = {
     // filled. The results do not survive a reload, so Search re-runs this
     // query on mount whenever the URL does not name one of its own.
     // Strip sortId (pagination cursor) so the first real fetch starts from page 1.
-    // activeTabFileId always comes from the URL hash.
+    // The selection always comes from the URL hash.
     query: persistedState.query
         ? { ...(persistedState.query as SearchQuery), sortId: null }
         : null,
-    activeTabFileId: initialHashFileId,
+    fileDetailSelection: initialHashFileId
+        ? fileTab(initialHashFileId)
+        : FOLLOW_TAB,
 } as SearchState;
 
 /**
@@ -926,7 +978,12 @@ export const fetchPreview = createAsyncThunk(
                   sortId: null,
                   pageSize: null,
               };
-        const fields = (thunkAPI.getState() as RootState).search.previewFields;
+        // The indicator fields are drawn from the preview the request already
+        // returns, so asking for them would be asking the backend for a field
+        // it has never heard of.
+        const fields = apiPreviewFields(
+            (thunkAPI.getState() as RootState).search.previewFields,
+        );
         try {
             return {
                 query: searchQuery,
@@ -1053,7 +1110,9 @@ export const ensureViewPreview = createAsyncThunk(
             const { search } = getState() as RootState;
             return !isPreviewFresh(search.files[fileId], {
                 query: search.query,
-                previewFields: search.previewFields,
+                // Matched against what was recorded at fetch time, so picking
+                // up an indicator field cannot invalidate a cached preview.
+                previewFields: apiPreviewFields(search.previewFields),
             });
         },
     },
@@ -1152,7 +1211,7 @@ export const searchSlice = createSlice({
                 state.openFileTabs.push({ fileId, detailTab });
             }
             if (!background) {
-                state.activeTabFileId = fileId;
+                state.fileDetailSelection = fileTab(fileId);
             }
         },
         closeFileTab: (state, action: PayloadAction<string>) => {
@@ -1165,26 +1224,51 @@ export const searchSlice = createSlice({
             if (state.pendingFullscreenFileId === fileId) {
                 state.pendingFullscreenFileId = null;
             }
-            if (state.activeTabFileId === fileId) {
-                if (state.openFileTabs.length === 0) {
-                    state.activeTabFileId = null;
-                } else {
-                    state.activeTabFileId =
-                        state.openFileTabs[Math.max(0, idx - 1)].fileId;
-                }
+            // Closing the tab in front falls back to the following tab,
+            // never to a neighbour: the reader asked to be rid of this
+            // document, not to be handed the one beside it. Closing any
+            // other tab leaves them where they were.
+            //
+            // The following tab is never closable, so the strip is never
+            // empty and something is always in front.
+            const selection = state.fileDetailSelection;
+            if (selection.kind === "file" && selection.fileId === fileId) {
+                state.fileDetailSelection = FOLLOW_TAB;
             }
         },
-        setActiveTabFileId: (state, action: PayloadAction<string | null>) => {
-            state.activeTabFileId = action.payload;
+        focusFollowTab: (state) => {
+            state.fileDetailSelection = FOLLOW_TAB;
         },
-        setFileTabDetailTab: (
+        focusFileTab: (state, action: PayloadAction<string>) => {
+            // Guarded so that clicking the tab already in front does not hand
+            // out a new selection object, which every consumer of it would
+            // re-render for. `FOLLOW_TAB` is one shared value and needs no
+            // such guard; a file tab is built per call.
+            if (
+                state.fileDetailSelection.kind === "file" &&
+                state.fileDetailSelection.fileId === action.payload
+            ) {
+                return;
+            }
+            state.fileDetailSelection = fileTab(action.payload);
+        },
+        setDetailTab: (
             state,
-            action: PayloadAction<{ fileId: string; detailTab: FileDetailTab }>,
+            action: PayloadAction<{
+                target: FileDetailSelection;
+                detailTab: FileDetailTab;
+            }>,
         ) => {
+            const { target, detailTab } = action.payload;
+            if (target.kind === "follow") {
+                state.followDetailTab = detailTab;
+                return;
+            }
+            // A file that is not open has no tab, and so no sub-tab to set.
             const tab = state.openFileTabs.find(
-                (t) => t.fileId === action.payload.fileId,
+                (t) => t.fileId === target.fileId,
             );
-            if (tab) tab.detailTab = action.payload.detailTab;
+            if (tab) tab.detailTab = detailTab;
         },
         setRightSidebarTab: (state, action: PayloadAction<RightSidebarTab>) => {
             state.rightSidebarTab = action.payload;
@@ -1291,6 +1375,11 @@ export const searchSlice = createSlice({
             // highlight, so the guard belongs here rather than in each of them.
             if (state.highlightedFileId === action.payload) return;
             state.highlightedFileId = action.payload;
+            // Moving the highlight is asking about a different file, so the
+            // File Detail sidebar comes back to the tab that follows it. An
+            // opened tab is a document the reader parked; it stays open, it
+            // just stops being the one in front.
+            state.fileDetailSelection = FOLLOW_TAB;
         },
         /**
          * Record moves that land past the last loaded card.
@@ -1382,40 +1471,15 @@ export const searchSlice = createSlice({
         // left exactly as the user left it - that separation is what removed
         // the "custom" mode, which existed only to say "do not overwrite my
         // switches".
-        setCardDensity: (state, action: PayloadAction<CardDensity>) => {
-            state.cardDensity = action.payload;
+
+        // A shortcut to a whole set of switches, not a mode the card stays
+        // in: the switches are authoritative afterwards and a reader is free
+        // to take any of them somewhere no preset describes.
+        applyCardPreset: (state, action: PayloadAction<CardPreset>) => {
+            Object.assign(state, CARD_PRESETS[action.payload]);
         },
-        // Both axes at once: the preset buttons are a shortcut to a whole
-        // look, not a mode the card stays in. "auto" is a preset like the
-        // others - it applies the look the window resolved to and leaves the
-        // spacing free to follow it.
-        applyDensityPreset: (state, action: PayloadAction<CardDensity>) => {
-            const preset =
-                action.payload === "auto"
-                    ? state.autoDetectedDensity
-                    : action.payload;
-            state.cardDensity = action.payload;
-            Object.assign(state, DENSITY_PRESETS[preset]);
-        },
-        setAutoDetectedDensity: (
-            state,
-            action: PayloadAction<NamedDensity>,
-        ) => {
-            const previous = state.autoDetectedDensity;
-            state.autoDetectedDensity = action.payload;
-            // While the switches still read exactly as some preset left them,
-            // nobody has expressed a preference and auto keeps adapting them
-            // to the width. The first switch the user flips ends that for
-            // good: a deliberate choice is never overwritten by a resize.
-            if (
-                state.cardDensity === "auto" &&
-                matchesPreset(state, DENSITY_PRESETS[previous])
-            ) {
-                Object.assign(state, DENSITY_PRESETS[action.payload]);
-            }
-        },
-        // Deliberately does NOT force cardDensity to "custom": the density
-        // preset decides which card elements are visible, while fieldLayout
+        // Deliberately does NOT reset the preset: a preset decides which
+        // card elements are visible, while fieldLayout
         // only decides how a visible field is drawn. Coupling them would drop
         // the user out of "auto" and freeze visibility behind their back.
         setFieldLayout: (state, action: PayloadAction<FieldLayout>) => {
@@ -1423,6 +1487,48 @@ export const searchSlice = createSlice({
         },
         setPreviewFields: (state, action: PayloadAction<string[]>) => {
             state.previewFields = action.payload;
+            state.boldPreviewFields = state.boldPreviewFields.filter((id) =>
+                action.payload.includes(id),
+            );
+            state.fieldColumnOf = Object.fromEntries(
+                Object.entries(state.fieldColumnOf).filter(([id]) =>
+                    action.payload.includes(id),
+                ),
+            );
+        },
+        setPreviewFieldColumn: (
+            state,
+            action: PayloadAction<{ fieldId: string; column: number }>,
+        ) => {
+            const { fieldId, column } = action.payload;
+            if (!state.previewFields.includes(fieldId)) return;
+            state.fieldColumnOf[fieldId] = Math.max(
+                0,
+                Math.min(column, state.fieldColumnCount - 1),
+            );
+        },
+        addFieldColumn: (state) => {
+            state.fieldColumnCount = Math.min(
+                state.fieldColumnCount + 1,
+                MAX_FIELD_COLUMNS,
+            );
+        },
+        // The fields in the column that goes come back to the last one left,
+        // rather than being dropped: removing a column is about the layout,
+        // and a reader who meant to drop the fields would have removed them.
+        removeFieldColumn: (state) => {
+            if (state.fieldColumnCount <= 1) return;
+            state.fieldColumnCount -= 1;
+            const last = state.fieldColumnCount - 1;
+            for (const [id, column] of Object.entries(state.fieldColumnOf)) {
+                if (column > last) state.fieldColumnOf[id] = last;
+            }
+        },
+        toggleBoldPreviewField: (state, action: PayloadAction<string>) => {
+            const fieldId = action.payload;
+            state.boldPreviewFields = state.boldPreviewFields.includes(fieldId)
+                ? state.boldPreviewFields.filter((id) => id !== fieldId)
+                : [...state.boldPreviewFields, fieldId];
         },
         // Replaces the whole map rather than one column: a drag moves the
         // border between two columns, so it always settles two of them.
@@ -1452,14 +1558,17 @@ export const searchSlice = createSlice({
         ) => {
             state.availablePreviewFields = action.payload;
         },
-        setShowThumbnails: (state, action: PayloadAction<boolean>) => {
-            state.showThumbnails = action.payload;
+        setThumbnailWidthRem: (state, action: PayloadAction<number>) => {
+            state.thumbnailWidthRem = Math.max(
+                0,
+                Math.min(action.payload, THUMBNAIL_WIDTH_MAX_REM),
+            );
         },
         setShowHighlights: (state, action: PayloadAction<boolean>) => {
             state.showHighlights = action.payload;
         },
-        setShowFieldSections: (state, action: PayloadAction<boolean>) => {
-            state.showFieldSections = action.payload;
+        setShowFieldNames: (state, action: PayloadAction<boolean>) => {
+            state.showFieldNames = action.payload;
         },
         setShowExtensionIcon: (state, action: PayloadAction<boolean>) => {
             state.showExtensionIcon = action.payload;
@@ -1516,6 +1625,28 @@ export const searchSlice = createSlice({
             const preview = action.payload;
             if (state.files[preview.fileId]) {
                 state.files[preview.fileId].preview = preview;
+            }
+        },
+        /**
+         * Apply one file update to the cached preview and leave the rest of it
+         * alone.
+         *
+         * Writing a whole preview assembled from a copy read earlier is what
+         * let two overlapping updates fight: the automatic mark-as-seen and a
+         * keypress a few milliseconds later each rebuilt the preview from the
+         * state they had read, so whichever request finished last won and the
+         * card could be left showing the opposite of what the server held.
+         */
+        patchFilePreview: (
+            state,
+            action: PayloadAction<{
+                fileId: string;
+                changes: Partial<GetFilePreviewResponse>;
+            }>,
+        ) => {
+            const entry = state.files[action.payload.fileId];
+            if (entry?.preview) {
+                Object.assign(entry.preview, action.payload.changes);
             }
         },
         setBinding: (
@@ -1620,11 +1751,35 @@ export const searchSlice = createSlice({
                         preserved[state.temporaryFileId] =
                             state.files[state.temporaryFileId];
                     }
+                    if (isSameQueryString) {
+                        // The same search, asked again - coming back from
+                        // another page re-runs it, and so does a keep-alive
+                        // renewal. Only the snapshot id is new, and a preview
+                        // does not describe the snapshot: `isPreviewFresh`
+                        // judges one by the query string and the field set and
+                        // ignores the id entirely. Dropping them here left
+                        // every card that was already on screen showing a
+                        // skeleton that nothing refilled - the cards keep
+                        // their identity across the re-run, so no card asked
+                        // again, and the list stayed that way until a
+                        // different search replaced it.
+                        Object.entries(state.files).forEach(([id, entry]) => {
+                            if (preserved[id] || entry.preview == null) return;
+                            preserved[id] = { ...entry, meta: null };
+                        });
+                    }
                     state.files = preserved;
-                    state.filesInView = [];
-                    // The list is rebuilt from the top, so whatever was on
-                    // screen is gone along with it.
-                    state.visibleRange = null;
+                    if (!isSameQueryString) {
+                        state.filesInView = [];
+                        // The list is rebuilt from the top, so whatever was on
+                        // screen is gone along with it. Asking the same
+                        // question again leaves the same cards on screen, and
+                        // clearing these left nothing to repopulate them:
+                        // both are only ever written on a *change*, so the
+                        // view count read empty and a preview-field change
+                        // stopped refetching what was in view.
+                        state.visibleRange = null;
+                    }
                     // For pure ID changes (keep-alive renewal, React strict-mode
                     // double-mount) preserve the current index and temporary file unchanged.
                     // For a genuine new search query capture the highlighted file ID
@@ -1642,6 +1797,7 @@ export const searchSlice = createSlice({
                 // later pages go through `fetchNextPage` — so the order starts
                 // fresh here rather than growing.
                 state.resultOrder = [];
+                state.resultsReplaced += 1;
                 state.lastFileSortId = null;
                 resetPagination(state);
                 appendPage(state, action.payload.files);
@@ -1657,6 +1813,15 @@ export const searchSlice = createSlice({
                 ) {
                     state.highlightedFileId = null;
                 }
+            })
+            .addCase(updateQuery.pending, (state) => {
+                // Bumped here as well as on fulfilment. The list is about to
+                // be replaced, and the view has to leave the old position
+                // while the old content is still tall enough to hold it -
+                // once the shorter result set has rendered the browser has
+                // already clamped the scroll to its bottom, and a reset after
+                // that reads as "the reader scrolled there".
+                state.resultsReplaced += 1;
             })
             .addCase(updateQuery.rejected, (state, action: any) => {
                 if (action.meta.aborted) return;
@@ -1781,8 +1946,9 @@ export const {
     setHighlightedQueryId,
     openFileTab,
     closeFileTab,
-    setActiveTabFileId,
-    setFileTabDetailTab,
+    focusFollowTab,
+    focusFileTab,
+    setDetailTab,
     setRightSidebarTab,
     toggleRightSidebar,
     addCustomQuery,
@@ -1800,6 +1966,7 @@ export const {
     setSummarizationSystemPrompt,
     setVisionSystemPrompt,
     setFilePreview,
+    patchFilePreview,
     setHighlightedFileId,
     setLeftSidebarWidth,
     setRightSidebarWidth,
@@ -1815,19 +1982,21 @@ export const {
     setFolderViewExpandedNodes,
     setFilteredFolderViewExpandedNodes,
     setPendingFullscreenFileId,
-    setCardDensity,
-    applyDensityPreset,
-    setAutoDetectedDensity,
+    applyCardPreset,
     setFieldLayout,
 
     setPreviewFields,
+    toggleBoldPreviewField,
+    setPreviewFieldColumn,
+    addFieldColumn,
+    removeFieldColumn,
     setFieldColumnWidths,
     setThumbnailColumnWidth,
     setAvailablePreviewFields,
     setFieldExpansion,
-    setShowThumbnails,
+    setThumbnailWidthRem,
     setShowHighlights,
-    setShowFieldSections,
+    setShowFieldNames,
     setShowExtensionIcon,
     setShowFilePath,
     setShowParentNavigation,
@@ -1853,9 +2022,17 @@ export const openFileTabThunk = createAsyncThunk(
         },
         thunkAPI,
     ) => {
-        const { fileId } = payload;
         thunkAPI.dispatch(openFileTab(payload));
-        subscribeChannel(fileId, thunkAPI.dispatch);
+        // A tab nobody can see is not an opened tab. The strip lives in the
+        // right sidebar, so opening one reveals it - background opens too,
+        // where the strip appearing is the only feedback the reader gets.
+        // Dispatched here rather than at each of the dozen call sites: a card
+        // double-click, an attachment chip, a chat citation and a pasted
+        // #fileId all mean "show me this".
+        thunkAPI.dispatch(setRightSidebarTab(RightSidebarTab.FILE_DETAIL));
+        // The channel is not subscribed here: `useOpenFileTabSubscriptions`
+        // holds exactly one per open tab, which is the only way a re-open of
+        // an already-open tab cannot raise a count nothing releases.
     },
 );
 
@@ -1863,31 +2040,16 @@ export const closeFileTabThunk = createAsyncThunk(
     "closeFileTabThunk",
     (fileId: string, thunkAPI) => {
         thunkAPI.dispatch(closeFileTab(fileId));
-        unsubscribeChannel(fileId, thunkAPI.dispatch);
     },
 );
 
+/** Highlight `fileId`, fetching it first when it sits outside the results. */
 export const revealFileThunk = createAsyncThunk(
     "revealFileThunk",
-    (
-        {
-            fileId,
-            openInTab,
-            clearActiveTab,
-        }: { fileId: string; openInTab?: boolean; clearActiveTab?: boolean },
-        thunkAPI,
-    ) => {
-        if (openInTab) {
-            thunkAPI.dispatch(openFileTabThunk({ fileId, background: true }));
-            return;
-        }
-
+    ({ fileId }: { fileId: string }, thunkAPI) => {
         const state = thunkAPI.getState() as RootState;
         const files = state.search.files;
 
-        if (clearActiveTab) {
-            thunkAPI.dispatch(setActiveTabFileId(null));
-        }
         if (!files[fileId]?.meta && fileId !== state.search.highlightedFileId) {
             thunkAPI.dispatch(setTemporaryFileId(fileId));
             thunkAPI.dispatch(fetchPreview({ fileId }));
@@ -1919,9 +2081,14 @@ export const selectOpenFileTabs = createSelector(
     (search) => search.openFileTabs,
 );
 
-export const selectActiveTabFileId = createSelector(
+export const selectFileDetailSelection = createSelector(
     selectSearch,
-    (search) => search.activeTabFileId,
+    (search) => search.fileDetailSelection,
+);
+
+export const selectFollowDetailTab = createSelector(
+    selectSearch,
+    (search) => search.followDetailTab,
 );
 
 export const selectRightSidebarOpen = createSelector(
@@ -2102,6 +2269,11 @@ export const selectExpandFilePaths = createSelector(
 // the whole `files` map returned a fresh array on every preview that arrived.
 // With no temporary card this returns `resultOrder` itself, so the identity is
 // stable until a page lands.
+export const selectResultsReplaced = createSelector(
+    selectSearch,
+    (search) => search.resultsReplaced,
+);
+
 export const selectOrderedFileIds = createSelector(
     [selectResultOrder, selectTemporaryFileId],
     (resultOrder, temporaryFileId) => {
@@ -2151,6 +2323,21 @@ export const selectHasMoreResults = createSelector(
 export const selectHighlightedFileId = createSelector(
     selectSearch,
     (search) => search.highlightedFileId,
+);
+
+/**
+ * The file the File Detail sidebar is actually showing.
+ *
+ * Null when the sidebar is closed, on another tab, or on the following tab
+ * with nothing highlighted. The selection alone cannot answer this: a tab
+ * stays selected while the pane it lives in is shut.
+ */
+export const selectFileDetailFileId = createSelector(
+    [selectRightSidebarTab, selectFileDetailSelection, selectHighlightedFileId],
+    (rightTab, selection, highlightedFileId) =>
+        rightTab === RightSidebarTab.FILE_DETAIL
+            ? selectedFileIdOf(selection, highlightedFileId)
+            : null,
 );
 
 export const selectVisibleRange = createSelector(
@@ -2234,39 +2421,9 @@ export const selectFilteredFolderViewExpandedNodes = createSelector(
     (search) => search.filteredFolderViewExpandedNodes,
 );
 
-export const selectCardDensity = createSelector(
-    selectSearch,
-    (search) => search.cardDensity,
-);
-
-export const selectResolvedCardDensity = createSelector(
-    selectSearch,
-    (search): NamedDensity =>
-        search.cardDensity === "auto"
-            ? search.autoDetectedDensity
-            : search.cardDensity,
-);
-
 export const selectFieldLayout = createSelector(
     selectSearch,
     (search) => search.fieldLayout,
-);
-
-/**
- * Whether the result list draws its rows gapless, with a hairline and
- * alternating backgrounds instead of a gap between cards.
- *
- * Single owner of that decision: the list sets the chrome and each card marks
- * its cursor to match, and the two must agree - a halo needs the gap the flat
- * list does not have.
- *
- * Read from the spacing alone. The field layout decides how a field is drawn
- * and nothing else: a renderer that also rewrote the list's chrome is why
- * neither control could be trusted to say what the cards would look like.
- */
-export const selectFlatRowChrome = createSelector(
-    selectResolvedCardDensity,
-    (density) => density === "compact",
 );
 
 export const selectFieldExpansion = createSelector(
@@ -2277,6 +2434,26 @@ export const selectFieldExpansion = createSelector(
 export const selectPreviewFields = createSelector(
     selectSearch,
     (search) => search.previewFields,
+);
+
+export const selectFieldColumnCount = createSelector(
+    selectSearch,
+    (search) => search.fieldColumnCount,
+);
+
+export const selectFieldColumnOf = createSelector(
+    selectSearch,
+    (search) => search.fieldColumnOf,
+);
+
+export const selectShowFieldNames = createSelector(
+    selectSearch,
+    (search) => search.showFieldNames,
+);
+
+export const selectBoldPreviewFields = createSelector(
+    selectSearch,
+    (search) => search.boldPreviewFields,
 );
 
 export const selectFieldColumnWidths = createSelector(
@@ -2294,9 +2471,9 @@ export const selectAvailablePreviewFields = createSelector(
     (search) => search.availablePreviewFields,
 );
 
-export const selectShowThumbnails = createSelector(
+export const selectThumbnailWidthRem = createSelector(
     selectSearch,
-    (search) => search.showThumbnails,
+    (search) => search.thumbnailWidthRem,
 );
 
 export const selectShowHighlights = createSelector(
@@ -2317,9 +2494,8 @@ export const selectShowHighlights = createSelector(
  */
 export const selectCardElementVisibility = createSelector(
     [
-        (state: RootState) => state.search.showThumbnails,
+        (state: RootState) => state.search.thumbnailWidthRem,
         (state: RootState) => state.search.showHighlights,
-        (state: RootState) => state.search.showFieldSections,
         (state: RootState) => state.search.showExtensionIcon,
         (state: RootState) => state.search.showFilePath,
         (state: RootState) => state.search.showParentNavigation,
@@ -2331,9 +2507,8 @@ export const selectCardElementVisibility = createSelector(
         (state: RootState) => state.search.showFieldActions,
     ],
     (
-        showThumbnails,
+        thumbnailWidthRem,
         showHighlights,
-        showFieldSections,
         showExtensionIcon,
         showFilePath,
         showParentNavigation,
@@ -2344,9 +2519,8 @@ export const selectCardElementVisibility = createSelector(
         showSortIndicator,
         showFieldActions,
     ): CardVisibilitySettings => ({
-        showThumbnails,
+        thumbnailWidthRem,
         showHighlights,
-        showFieldSections,
         showExtensionIcon,
         showFilePath,
         showParentNavigation,
@@ -2367,11 +2541,12 @@ export const selectCardElementVisibility = createSelector(
  * as state, and state that restates what is already knowable is state that
  * can disagree with it.
  */
-export const selectMatchingDensityPreset = createSelector(
+export const selectMatchingCardPreset = createSelector(
     selectCardElementVisibility,
-    selectResolvedCardDensity,
-    (visibility, density): NamedDensity | null =>
-        matchesPreset(visibility, DENSITY_PRESETS[density]) ? density : null,
+    (visibility): CardPreset | null =>
+        (Object.keys(CARD_PRESETS) as CardPreset[]).find((preset) =>
+            matchesPreset(visibility, CARD_PRESETS[preset]),
+        ) ?? null,
 );
 
 export const selectShowChatReasoning = createSelector(

@@ -12,7 +12,7 @@
  * Gap kept between the card and the edge it is aligned to.
  *
  * Handed to the virtualizer as its scroll padding. The same gap is written as
- * `scroll-padding` on `.searchPanel` in `CenterTabs.module.css`, for the
+ * `scroll-padding` on `.searchPanel` in `SearchResults.module.css`, for the
  * pending page row, which sits outside the virtual list and is placed by the
  * browser's own `scrollIntoView`; the two have to be changed together.
  */
