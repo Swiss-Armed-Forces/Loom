@@ -46,3 +46,20 @@ describe("tour scenes", () => {
         expect(getTourRightTab(false, null)).toBeUndefined();
     });
 });
+
+describe("steps whose target lives in the right sidebar", () => {
+    // A step that names no tab is shown with the sidebar shut, so a detail
+    // step that forgot to name one would wait out its timeout on an element
+    // that was never going to appear.
+    it.each([
+        "file-detail",
+        "file-detail-tabs",
+        "document-detail",
+        "detail-rendered",
+        "detail-translations",
+        "detail-highlights",
+        "detail-raw",
+    ])("opens the File Detail sidebar for %s", (stepId) => {
+        expect(getTourRightTab(true, stepId)).toBe(RightSidebarTab.FILE_DETAIL);
+    });
+});

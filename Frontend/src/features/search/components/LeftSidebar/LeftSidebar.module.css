@@ -30,7 +30,11 @@
 .content {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
+    /* Scrollable sideways, not clipped. A folder tree indents a step per
+    level, so a deep path walked past the panel's edge and took the folder
+    names, the file names and the "load more" control with it - with no
+    scrollbar to say there was anything there. */
+    overflow-x: auto;
     padding-right: 0.5rem;
 }
 

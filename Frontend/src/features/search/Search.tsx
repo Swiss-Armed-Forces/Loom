@@ -18,9 +18,9 @@ import {
 import {
     fetchPreview,
     openFileTabThunk,
-    selectActiveTabFileId,
+    selectFileDetailSelection,
     selectWebSocketPubSubMessage,
-    setActiveTabFileId,
+    focusFollowTab,
     updateQuery,
     setSummarizationSystemPrompt,
     setVisionSystemPrompt,
@@ -30,10 +30,11 @@ import {
     closeRightSidebar,
 } from "@app/slices/searchSlice";
 import { ActivityBar } from "@features/search/components/ActivityBar/ActivityBar";
-import { CenterTabs } from "@features/search/components/CenterTabs/CenterTabs";
 import { LeftSidebar } from "@features/search/components/LeftSidebar/LeftSidebar";
 import { RightSidebar } from "@features/search/components/RightSidebar/RightSidebar";
 import { useKeyboardNavigation } from "@features/search/hooks/useKeyboardNavigation";
+import { useOpenFileTabSubscriptions } from "@features/search/hooks/useOpenFileTabSubscriptions";
+import { SearchResults } from "@features/search/views/SearchResults/SearchResults";
 
 import {
     websocketConnect,
@@ -51,12 +52,12 @@ export const Search = () => {
     const searchQuery = useAppSelector(selectQuery);
     const isMobile = useMediaQuery("(max-width:600px)");
     const webSocketPubSubMessage = useAppSelector(selectWebSocketPubSubMessage);
-    const activeTabFileId = useAppSelector(selectActiveTabFileId);
+    const selection = useAppSelector(selectFileDetailSelection);
     // Prevent feedback loops between hash→Redux and Redux→hash effects.
     // Initialized to "" (not location.hash) so the URL→Redux effect processes
     // the initial hash on mount rather than skipping it. The initial
-    // activeTabFileId is seeded from the URL hash in Redux initialState, so
-    // the Redux→URL effect returns early on mount without clearing the hash.
+    // selection is seeded from the URL hash in Redux initialState, so the
+    // Redux→URL effect returns early on mount without clearing the hash.
     const syncedHashRef = useRef<string>("");
     // The file cache is only read inside the WS handler below. Subscribing to it
     // would re-render the whole search page on every preview that arrives, which
@@ -81,6 +82,9 @@ export const Search = () => {
 
     // Initialize keyboard navigation
     useKeyboardNavigation();
+    // Tabs are subscribed from here rather than from their panels, which only
+    // exist while the File Detail pane is the one on screen.
+    useOpenFileTabSubscriptions();
 
     const [searchParams] = useSearchParams();
 
@@ -190,24 +194,29 @@ export const Search = () => {
         );
     }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Redux → URL hash: navigate when the active tab changes.
-    // Push a new history entry when opening the first tab (null → fileId) so
-    // Back returns to the results view; replace for all other transitions.
+    // Redux → URL hash: navigate when the selected File Detail tab changes.
+    //
+    // The hash names an opened tab. The following tab has none: its file is
+    // the highlight, so writing it would mean a `navigate` per arrow key.
+    //
+    // Push a new history entry when opening the first tab (no hash → fileId)
+    // so Back returns to the results; replace for all other transitions.
     useEffect(() => {
-        const targetHash = activeTabFileId ? `#${activeTabFileId}` : "";
+        const targetHash =
+            selection.kind === "file" ? `#${selection.fileId}` : "";
         if (location.hash === targetHash) return;
 
+        const shouldPush = targetHash !== "" && syncedHashRef.current === "";
         syncedHashRef.current = targetHash;
-        const shouldPush = activeTabFileId !== null;
         navigate(
             {
                 pathname: location.pathname,
                 search: location.search,
-                hash: activeTabFileId ?? "",
+                hash: targetHash.substring(1),
             },
             { replace: !shouldPush },
         );
-    }, [activeTabFileId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // URL hash → Redux: open or switch to the file tab when the hash changes
     // (covers initial page load, Back/Forward, and direct URL pasting).
@@ -218,7 +227,7 @@ export const Search = () => {
         // after Back resets the ref to an earlier value.
         syncedHashRef.current = location.hash;
         if (!fileId) {
-            dispatch(setActiveTabFileId(null));
+            dispatch(focusFollowTab());
             return;
         }
         dispatch(openFileTabThunk({ fileId }));
@@ -299,7 +308,7 @@ export const Search = () => {
             {!isMobile && <ActivityBar />}
             <LeftSidebar />
             <div className={styles.mainContent}>
-                <CenterTabs />
+                <SearchResults />
             </div>
             <RightSidebar />
             {isMobile && <ActivityBar />}

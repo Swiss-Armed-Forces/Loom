@@ -20,7 +20,15 @@ import {
     prefetchNextPage,
     queueResultAdvance,
     revealFileThunk,
+    MAX_FIELD_COLUMNS,
     searchSlice,
+    focusFileTab,
+    closeFileTab,
+    setPreviewFields,
+    setPreviewFieldColumn,
+    addFieldColumn,
+    removeFieldColumn,
+    selectBoldPreviewFields,
     selectCardElementVisibility,
     selectFilesInView,
     selectFilesInViewOrdered,
@@ -28,6 +36,9 @@ import {
     selectCurrentResultRank,
     selectIsPaginating,
     selectLeftSidebarWidth,
+    selectFieldColumnCount,
+    selectFieldColumnOf,
+    toggleBoldPreviewField,
     selectRightSidebarWidth,
     selectLoadedFiles,
     selectOrderedFileIds,
@@ -976,29 +987,16 @@ describe("revealFileThunk", () => {
             reducer: { search: searchSlice.reducer },
         });
 
-        await store.dispatch(
-            revealFileThunk({ fileId: "not-in-results", openInTab: false }),
-        );
+        await store.dispatch(revealFileThunk({ fileId: "not-in-results" }));
 
         const state = store.getState().search;
         expect(state.temporaryFileId).toBe("not-in-results");
         expect(state.highlightedFileId).toBe("not-in-results");
-        expect(state.activeTabFileId).toBeNull();
-    });
-
-    it("opens a background tab when openInTab is true", async () => {
-        const store = configureStore({
-            reducer: { search: searchSlice.reducer },
-        });
-
-        await store.dispatch(
-            revealFileThunk({ fileId: "some-file", openInTab: true }),
-        );
-
-        const state = store.getState().search;
-        expect(state.openFileTabs.length).toBeGreaterThan(0);
-        expect(state.highlightedFileId).toBeNull();
-        expect(state.temporaryFileId).toBeNull();
+        // Revealing moves the highlight and nothing else: no tab, and the
+        // File Detail sidebar is left exactly as the reader had it.
+        expect(state.openFileTabs).toEqual([]);
+        expect(state.fileDetailSelection).toEqual({ kind: "follow" });
+        expect(state.rightSidebarTab).toBeNull();
     });
 
     it("highlights a file already highlighted without refetching", async () => {
@@ -1012,16 +1010,13 @@ describe("revealFileThunk", () => {
         });
 
         await store.dispatch(
-            revealFileThunk({
-                fileId: "already-highlighted",
-                openInTab: false,
-            }),
+            revealFileThunk({ fileId: "already-highlighted" }),
         );
 
         const state = store.getState().search;
         expect(state.highlightedFileId).toBe("already-highlighted");
         expect(state.temporaryFileId).toBeNull();
-        expect(state.activeTabFileId).toBeNull();
+        expect(state.fileDetailSelection).toEqual({ kind: "follow" });
     });
 });
 
@@ -1366,5 +1361,181 @@ describe("sidebar widths", () => {
         expect(selectRightSidebarWidth(searchState(widened))).toBe(
             Math.max(14 * 16, window.innerWidth - 20 * 16),
         );
+    });
+});
+
+describe("fields the reader picked out", () => {
+    const withSelection = (fields: string[]) =>
+        searchSlice.reducer(emptySearchState(), setPreviewFields(fields));
+
+    it("turns the emphasis on and off again", () => {
+        let state = withSelection(["content", "path"]);
+
+        state = searchSlice.reducer(state, toggleBoldPreviewField("path"));
+        expect(selectBoldPreviewFields(searchState(state))).toEqual(["path"]);
+
+        state = searchSlice.reducer(state, toggleBoldPreviewField("path"));
+        expect(selectBoldPreviewFields(searchState(state))).toEqual([]);
+    });
+
+    it("drops the emphasis when the field leaves the selection", () => {
+        // Otherwise deselecting a field and selecting it again brings back a
+        // bold the reader has no way of seeing they still have.
+        let state = withSelection(["content", "path"]);
+        state = searchSlice.reducer(state, toggleBoldPreviewField("path"));
+
+        state = searchSlice.reducer(state, setPreviewFields(["content"]));
+
+        expect(selectBoldPreviewFields(searchState(state))).toEqual([]);
+    });
+});
+
+describe("the card's field columns", () => {
+    const withSelection = (fields: string[]) =>
+        searchSlice.reducer(emptySearchState(), setPreviewFields(fields));
+
+    const twoColumns = (fields: string[]) =>
+        searchSlice.reducer(withSelection(fields), addFieldColumn());
+
+    it("moves a field across and back", () => {
+        let state = twoColumns(["content", "path"]);
+
+        state = searchSlice.reducer(
+            state,
+            setPreviewFieldColumn({ fieldId: "path", column: 1 }),
+        );
+        expect(selectFieldColumnOf(searchState(state))).toEqual({ path: 1 });
+
+        state = searchSlice.reducer(
+            state,
+            setPreviewFieldColumn({ fieldId: "path", column: 0 }),
+        );
+        expect(selectFieldColumnOf(searchState(state))).toEqual({ path: 0 });
+    });
+
+    it("clamps a column the card does not have", () => {
+        // The drop zones only offer the columns that exist, but the action is
+        // also where a drag lands and a drag can outlive the zone it started
+        // from.
+        const state = searchSlice.reducer(
+            withSelection(["content"]),
+            setPreviewFieldColumn({ fieldId: "content", column: 3 }),
+        );
+
+        expect(selectFieldColumnOf(searchState(state))).toEqual({ content: 0 });
+    });
+
+    it("ignores a field that is not selected", () => {
+        const state = searchSlice.reducer(
+            withSelection(["content"]),
+            setPreviewFieldColumn({ fieldId: "path", column: 0 }),
+        );
+
+        expect(selectFieldColumnOf(searchState(state))).toEqual({});
+    });
+
+    it("forgets the column of a deselected field", () => {
+        let state = twoColumns(["content", "path"]);
+        state = searchSlice.reducer(
+            state,
+            setPreviewFieldColumn({ fieldId: "path", column: 1 }),
+        );
+
+        state = searchSlice.reducer(state, setPreviewFields(["content"]));
+
+        expect(selectFieldColumnOf(searchState(state))).toEqual({});
+    });
+
+    it("brings the fields of a removed column back rather than dropping them", () => {
+        // Removing a column is about the layout. A reader who meant to drop
+        // the fields would have removed the fields.
+        let state = twoColumns(["content", "path"]);
+        state = searchSlice.reducer(
+            state,
+            setPreviewFieldColumn({ fieldId: "path", column: 1 }),
+        );
+
+        state = searchSlice.reducer(state, removeFieldColumn());
+
+        expect(selectFieldColumnCount(searchState(state))).toBe(1);
+        expect(selectFieldColumnOf(searchState(state))).toEqual({ path: 0 });
+    });
+
+    it("never goes below one column or above the cap", () => {
+        let state = searchSlice.reducer(
+            emptySearchState(),
+            removeFieldColumn(),
+        );
+        expect(selectFieldColumnCount(searchState(state))).toBe(1);
+
+        for (let i = 0; i < MAX_FIELD_COLUMNS + 3; i += 1) {
+            state = searchSlice.reducer(state, addFieldColumn());
+        }
+        expect(selectFieldColumnCount(searchState(state))).toBe(
+            MAX_FIELD_COLUMNS,
+        );
+    });
+});
+
+describe("which File Detail tab is in front", () => {
+    const withTabs = (...fileIds: string[]) =>
+        fileIds.reduce(
+            (state, fileId) =>
+                searchSlice.reducer(state, openFileTab({ fileId })),
+            emptySearchState(),
+        );
+
+    it("comes back to the following tab when the highlight moves", () => {
+        // Moving the highlight is asking about a different file, so the
+        // parked document stops being the one in front - but stays open.
+        const onATab = withTabs("a");
+
+        const moved = searchSlice.reducer(
+            onATab,
+            setHighlightedFileId("elsewhere"),
+        );
+
+        expect(moved.fileDetailSelection).toEqual({ kind: "follow" });
+        expect(moved.openFileTabs).toHaveLength(1);
+    });
+
+    it("stays put when the highlight is only re-asserted", () => {
+        const onATab = searchSlice.reducer(
+            withTabs("a"),
+            setHighlightedFileId("a"),
+        );
+        const reselected = searchSlice.reducer(onATab, focusFileTab("a"));
+
+        const again = searchSlice.reducer(
+            reselected,
+            setHighlightedFileId("a"),
+        );
+
+        expect(again.fileDetailSelection).toEqual({
+            kind: "file",
+            fileId: "a",
+        });
+    });
+
+    it("falls back to the following tab when the tab in front is closed", () => {
+        // Never to a neighbour: the reader asked to be rid of this document,
+        // not to be handed the one beside it.
+        const onB = withTabs("a", "b");
+
+        const closed = searchSlice.reducer(onB, closeFileTab("b"));
+
+        expect(closed.fileDetailSelection).toEqual({ kind: "follow" });
+        expect(closed.openFileTabs.map((t) => t.fileId)).toEqual(["a"]);
+    });
+
+    it("leaves the reader alone when another tab is closed", () => {
+        const onB = withTabs("a", "b");
+
+        const closed = searchSlice.reducer(onB, closeFileTab("a"));
+
+        expect(closed.fileDetailSelection).toEqual({
+            kind: "file",
+            fileId: "b",
+        });
     });
 });

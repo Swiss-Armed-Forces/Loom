@@ -1,7 +1,5 @@
 import { CSSProperties } from "react";
 
-import { NamedDensity } from "@app/slices/searchSlice";
-
 /** Vertical rhythm of one result row. */
 export interface RowRhythm {
     /** Line height of a field's value. */
@@ -10,32 +8,44 @@ export interface RowRhythm {
     gap: string;
     /** Vertical padding of the card's content block. */
     cardPadding: string;
+    /**
+     * Height of one field row, the same for every field.
+     *
+     * Fixed rather than grown from the content so that the field block of a
+     * card is decided by the field *selection* and nothing about the file:
+     * a value the backend cut short used to be drawn as an accordion taller
+     * than its neighbours, and a field the file had no value for was left out
+     * altogether, so two cards showing the same four fields could differ by a
+     * row and a half.
+     */
+    rowHeight: string;
 }
 
 /**
- * Row rhythm per density.
+ * The rhythm every card is laid out on.
  *
- * Density decided which card elements are visible and left the spacing of the
- * ones that stayed untouched, so a "compact" card was a standard card with
- * fewer parts. These are the numbers that make it a denser card as well.
+ * There were three of these once, picked by a spacing control. A list is
+ * scanned, so it is laid out tight and only that way; what a card shows is
+ * still the reader's to choose, through the element switches.
  */
-export const ROW_RHYTHM: Record<NamedDensity, RowRhythm> = {
-    compact: { lineHeight: "1.25", gap: "0.375rem", cardPadding: "0.25rem" },
-    standard: { lineHeight: "1.4", gap: "0.5rem", cardPadding: "0.5rem" },
-    full: { lineHeight: "1.5", gap: "0.75rem", cardPadding: "0.75rem" },
+export const ROW_RHYTHM: RowRhythm = {
+    lineHeight: "1.25",
+    gap: "0.375rem",
+    cardPadding: "0.25rem",
+    rowHeight: "1.25rem",
 };
 
 /** Custom properties the rhythm travels on, inherited by every card. */
 export const ROW_LINE_HEIGHT_VAR = "--loom-row-line-height";
 export const ROW_GAP_VAR = "--loom-row-gap";
 export const CARD_PADDING_VAR = "--loom-card-padding";
+export const ROW_HEIGHT_VAR = "--loom-row-height";
 
-/** The rhythm of `density`, as custom properties for the list container. */
-export const rowRhythmStyle = (density: NamedDensity): CSSProperties => {
-    const rhythm = ROW_RHYTHM[density];
-    return {
-        [ROW_LINE_HEIGHT_VAR]: rhythm.lineHeight,
-        [ROW_GAP_VAR]: rhythm.gap,
-        [CARD_PADDING_VAR]: rhythm.cardPadding,
-    } as CSSProperties;
-};
+/** The rhythm, as custom properties for the list container. */
+export const rowRhythmStyle = (): CSSProperties =>
+    ({
+        [ROW_LINE_HEIGHT_VAR]: ROW_RHYTHM.lineHeight,
+        [ROW_GAP_VAR]: ROW_RHYTHM.gap,
+        [CARD_PADDING_VAR]: ROW_RHYTHM.cardPadding,
+        [ROW_HEIGHT_VAR]: ROW_RHYTHM.rowHeight,
+    }) as CSSProperties;

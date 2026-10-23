@@ -38,13 +38,13 @@ export const ResultCardSurface = ({
     const theme = useTheme();
     return (
         <Card
-            elevation={resultCardElevation(isHighlighted, flat)}
+            elevation={resultCardElevation(flat)}
             data-read-state={seen ? "read" : "unread"}
             data-cursor={isHighlighted ? "true" : undefined}
             sx={{
                 borderLeft: "3px solid",
                 ...resultCardSurfaceStyle(
-                    { isHighlighted, unread: !seen, flat },
+                    { isHighlighted, unread: !seen },
                     theme,
                 ),
             }}

@@ -25,7 +25,10 @@ export const ArchivesActivityBar = ({ position }: ArchivesActivityBarProps) => {
             <IconButton
                 onClick={handleClick}
                 size="medium"
-                data-tour={position === "bottom" ? "archive-upload" : undefined}
+                // Both positions carry it: only one of the two bars is ever
+                // mounted, and tagging the mobile one alone meant the tour's
+                // upload step could never resolve on a desktop.
+                data-tour="archive-upload"
                 sx={{
                     bgcolor: "primary.main",
                     color: "primary.contrastText",

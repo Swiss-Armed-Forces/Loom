@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
     setFieldLayout,
     setPreviewFields,
-    setShowThumbnails,
+    setThumbnailWidthRem,
 } from "@app/slices/searchSlice";
 import { store } from "@app/store";
 
@@ -42,7 +42,7 @@ describe("FieldColumnHeader", () => {
     it("puts a resize handle on every border but the first column's", () => {
         store.dispatch(setFieldLayout("line"));
         store.dispatch(setPreviewFields(["from", "subject", "size"]));
-        store.dispatch(setShowThumbnails(false));
+        store.dispatch(setThumbnailWidthRem(0));
 
         const { container } = renderHeader();
 
@@ -56,7 +56,7 @@ describe("FieldColumnHeader", () => {
     it("names and gives a border to the thumbnail column when the list reserves one", () => {
         store.dispatch(setFieldLayout("line"));
         store.dispatch(setPreviewFields(["from", "subject"]));
-        store.dispatch(setShowThumbnails(true));
+        store.dispatch(setThumbnailWidthRem(16));
 
         const { container } = renderHeader();
 

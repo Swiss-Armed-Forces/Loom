@@ -1,6 +1,8 @@
 import {
-    MarkEmailUnreadOutlined,
+    FiberManualRecord,
+    FiberManualRecordOutlined,
     MarkEmailReadOutlined,
+    MarkEmailUnreadOutlined,
 } from "@mui/icons-material";
 import { t } from "i18next";
 
@@ -32,7 +34,12 @@ export const UpdateSeenButton = ({
             iconOnly={iconOnly}
             colorSecondary={colorSecondary}
             disableTooltip={disableTooltip}
-            Icon={fileSeen ? MarkEmailUnreadOutlined : MarkEmailReadOutlined}
+            // The state, not the action: the same amber dot the folder tree
+            // marks unseen files with, and the empty ring it leaves behind
+            // once the file has been read. A button that drew the action
+            // instead said "seen" on an unseen file.
+            Icon={fileSeen ? FiberManualRecordOutlined : FiberManualRecord}
+            iconColor={fileSeen ? undefined : "primary"}
             iconTitle={
                 fileSeen
                     ? t("updateFileState.seen.disable")

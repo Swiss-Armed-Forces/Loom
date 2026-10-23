@@ -9,16 +9,19 @@ import {
     unsubscribeChannel,
 } from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { FOLLOW_TAB } from "@app/slices/fileDetailSelection";
 import {
+    RightSidebarTab,
     selectQuery,
     selectFileById,
     selectCardElementVisibility,
     selectFieldLayout,
-    selectFlatRowChrome,
-    selectResolvedCardDensity,
+    selectPreviewFields,
     ensureViewPreview,
     fileInViewChanged,
+    setDetailTab,
     setHighlightedFileId,
+    setRightSidebarTab,
     openFileTabThunk,
 } from "@app/slices/searchSlice";
 import { webApiGetFileThumbnail } from "@features/common/urls";
@@ -49,6 +52,70 @@ interface ResultCardProps {
     isTourAnchor?: boolean;
 }
 
+/* Hoisted out of the component: `sx` is re-serialised for every object it is
+given, and a result list mounts and unmounts dozens of cards a second while it
+is being scrolled. These never vary, so they are built once. */
+const CARD_PARENT_SX = { cursor: "pointer", outline: "none" } as const;
+const CARD_PARENT_STALE_SX = {
+    cursor: "pointer",
+    outline: "none",
+    opacity: 0.7,
+} as const;
+const CARD_CONTENT_SX = {
+    py: "var(--loom-card-padding, 0.5rem)",
+    px: { xs: 1, sm: 2 },
+    wordBreak: "break-word",
+    "&:last-child": { pb: "var(--loom-card-padding, 0.5rem)" },
+} as const;
+const STACKED_CONTENT_ROW_SX = {
+    display: "flex",
+    gap: 2,
+    flexDirection: { xs: "column", md: "row" },
+} as const;
+const FIELDS_COLUMN_SX = { flex: 1, minWidth: 0 } as const;
+/* The card as two columns: everything that is text, and the picture. */
+const CARD_BODY_ROW_SX = { display: "flex", alignItems: "stretch" } as const;
+const CARD_MAIN_COLUMN_SX = { flex: 1, minWidth: 0 } as const;
+/**
+ * Keeps the frame count inside the thumbnail it counts.
+ *
+ * MUI anchors a badge on the corner and then translates it half its own size
+ * past it, so a quarter of the bubble hangs below the image. The card is a
+ * `Paper`, which clips to its rounded corners, and the room under the image is
+ * the card's bottom padding - which the spacing presets shrink. The bottom of
+ * the count lost 5px of itself to it.
+ *
+ * Sitting the bubble flush inside the corner makes it independent of the
+ * padding, so no spacing can cut it.
+ */
+const THUMBNAIL_BADGE_SX = {
+    "& .MuiBadge-badge": { transform: "none" },
+} as const;
+/* Fills the side column. Through `sx` rather than the stylesheet because
+MUI's own `.MuiBadge-root` sets `position: relative`, and a class from the CSS
+module loses to it; `sx` is emotion's and wins. Without this the image keeps
+its intrinsic height and sits at the top of a column it should fill. */
+const SIDE_THUMBNAIL_BADGE_SX = {
+    ...THUMBNAIL_BADGE_SX,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    // Explicit rather than `inset: 0`: the badge is a flex box that sizes to
+    // its image, and anchoring all four edges left it at the image's own
+    // height instead of the column's. A percentage resolves against the
+    // column, which the text beside it has already given a height.
+    width: "100%",
+    height: "100%",
+} as const;
+const FOOTER_ROW_SX = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    mt: 1,
+} as const;
+const TEMPORARY_CHIP_SX = { fontSize: "0.7rem" } as const;
+const SORT_CAPTION_SX = { color: "text.disabled", pl: 0.5 } as const;
+
 export const ResultCard = React.memo(
     ({
         fileId,
@@ -63,42 +130,25 @@ export const ResultCard = React.memo(
         const file = useAppSelector((state) => selectFileById(state, fileId));
         const filePreview = file?.preview;
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
-        const visFromStore = useAppSelector(selectCardElementVisibility);
-        const resolvedDensity = useAppSelector(selectResolvedCardDensity);
+        const vis = useAppSelector(selectCardElementVisibility);
         const fieldLayout = useAppSelector(selectFieldLayout);
-        const flatRowChrome = useAppSelector(selectFlatRowChrome);
-        // Highlighted card always shows every element regardless of toggles.
-        const vis = isHighlighted
-            ? {
-                  showThumbnails: true,
-                  showHighlights: true,
-                  showFieldSections: true,
-                  showExtensionIcon: true,
-                  showFilePath: true,
-                  showParentNavigation: true,
-                  showStatusIndicators: true,
-                  showAttachments: true,
-                  showTags: true,
-                  showActions: true,
-                  showSortIndicator: true,
-                  showFieldActions: true,
-              }
-            : visFromStore;
-        // Answered from the store's visibility, never from `vis`: the slot is
-        // reserved once for the whole list, so the highlighted card's
-        // show-everything override has no say in whether it exists.
-        const hasThumbnailSlot = reservesThumbnailSlot(
-            fieldLayout,
-            visFromStore,
+        // Every card draws the same elements, the highlighted one included.
+        // It used to force all of them on, which made it taller than the slot
+        // the list had measured for it - so it was drawn over its neighbour
+        // until the measurement caught up, and the list moved under the reader
+        // as the highlight travelled. The highlight is a mark on a card now,
+        // not a different card.
+        const hasThumbnailSlot = reservesThumbnailSlot(fieldLayout, vis);
+        const thumbnailFileId =
+            vis.thumbnailWidthRem > 0 ? filePreview?.thumbnailFileId : null;
+        // The field block follows the field selection and nothing else. It
+        // used to have a switch of its own as well, which could only ever
+        // disagree with the selection: a reader who wants no fields on the
+        // card has one way to say so, which is to select none under Card
+        // Fields.
+        const hasSelectedFields = useAppSelector(
+            (state) => selectPreviewFields(state).length > 0,
         );
-        const thumbnailFileId = vis.showThumbnails
-            ? filePreview?.thumbnailFileId
-            : null;
-        // The highlighted card shows its thumbnail even where the list
-        // reserved no column for one - below the line rather than beside it,
-        // because a card that widened its own image would take the width out
-        // of its own columns and fall out of line with every other row.
-        const thumbnailBelowLine = !hasThumbnailSlot && fieldLayout === "line";
         const cardRef = useRef<HTMLDivElement>(null);
         const { ref: inViewRef, inView } = useInView({
             threshold: [0.2],
@@ -156,17 +206,14 @@ export const ResultCard = React.memo(
                     e.type === "click" &&
                     (e as React.MouseEvent<HTMLDivElement>).ctrlKey
                 ) {
-                    handleOpenDetailsOnTabClick(FileDetailTab.Rendered, true);
+                    handleOpenInTab(FileDetailTab.Rendered, true);
                 } else {
                     dispatch(setHighlightedFileId(fileId));
                 }
             }
         };
 
-        const handleOpenDetailsOnTabClick = (
-            tab: FileDetailTab,
-            background = false,
-        ) => {
+        const handleOpenInTab = (tab: FileDetailTab, background = false) => {
             if (!filePreview) return;
             dispatch(setHighlightedFileId(fileId));
             dispatch(
@@ -178,16 +225,62 @@ export const ResultCard = React.memo(
             );
         };
 
+        // "Why did this fail?" - answered on the following tab rather than
+        // in a tab of its own. The highlight already puts the file in the
+        // sidebar, so this only has to say which part of it to show.
+        const handleShowTasks = () => {
+            dispatch(setHighlightedFileId(fileId));
+            dispatch(
+                setDetailTab({
+                    target: FOLLOW_TAB,
+                    detailTab: FileDetailTab.Tasks,
+                }),
+            );
+            dispatch(setRightSidebarTab(RightSidebarTab.FILE_DETAIL));
+        };
+
+        /*
+         * Stop the browser selecting a word on the second click.
+         *
+         * Double-clicking a card opens it, and the native behaviour on top of
+         * that is a highlighted word - usually a chunk of the file path - left
+         * behind on every open. `detail > 1` is the second click of the pair,
+         * so an ordinary drag still selects text and the first click still
+         * takes focus.
+         *
+         * Not gated on `isInteractiveTarget`: the path and the chips are what
+         * the selection usually lands in, and cancelling a mousedown's default
+         * does not cancel the click that follows it, so their own actions are
+         * untouched.
+         */
+        const handleCardMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+            if (e.detail > 1) e.preventDefault();
+        };
+
         const handleCardDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
             if (!isInteractiveTarget(e.target)) {
-                handleOpenDetailsOnTabClick(FileDetailTab.Rendered, false);
+                handleOpenInTab(FileDetailTab.Rendered, false);
             }
         };
 
-        // This card shows a thumbnail only because it is highlighted, so the
-        // image is being requested right now rather than already in hand.
-        const thumbnailOnHighlightOnly =
-            isHighlighted && !visFromStore.showThumbnails;
+        // Nothing but padding when there is no field selected, no image and
+        // no footer, so the block is left out rather than drawn empty.
+        const hasCardBody =
+            hasSelectedFields ||
+            Boolean(thumbnailFileId) ||
+            isTemporary ||
+            vis.showSortIndicator;
+
+        // Beside the whole card rather than inside its content block. The
+        // reserved slot of the line layout keeps its own place in the row, so
+        // that the card's columns stay under the header above the list.
+        //
+        // Reserved from the setting and not from the file, and so empty on a
+        // file that has no image: a column that came and went with the file
+        // left the fields of one card sitting to the left of the fields of
+        // the next.
+        const reservesSideThumbnail =
+            vis.thumbnailWidthRem > 0 && !hasThumbnailSlot;
 
         const thumbnail =
             filePreview && thumbnailFileId ? (
@@ -205,21 +298,23 @@ export const ResultCard = React.memo(
                         vertical: "bottom",
                         horizontal: "right",
                     }}
+                    sx={
+                        reservesSideThumbnail
+                            ? SIDE_THUMBNAIL_BADGE_SX
+                            : THUMBNAIL_BADGE_SX
+                    }
                     className={
                         hasThumbnailSlot ? undefined : styles.thumbnailBadge
                     }
                 >
+                    {/* No click of its own: the picture is part of the card,
+                    so it highlights on a single click and opens a tab on a
+                    double one like the rest of the row. */}
                     <img
-                        onClick={(e) =>
-                            handleOpenDetailsOnTabClick(
-                                FileDetailTab.Rendered,
-                                e.ctrlKey,
-                            )
-                        }
                         className={
                             hasThumbnailSlot
                                 ? styles.lineThumbnailImage
-                                : styles.resultImage
+                                : styles.fullHeightImage
                         }
                         src={webApiGetFileThumbnail(
                             filePreview.fileId,
@@ -230,13 +325,6 @@ export const ResultCard = React.memo(
                 </Badge>
             ) : null;
 
-        const thumbnailBlock =
-            thumbnail && thumbnailOnHighlightOnly && !hasThumbnailSlot ? (
-                <div className={styles.thumbnailReserve}>{thumbnail}</div>
-            ) : (
-                thumbnail
-            );
-
         return (
             <Box
                 className="resultCardParent"
@@ -245,14 +333,11 @@ export const ResultCard = React.memo(
                 data-tour="result-card"
                 data-tour-anchor={isTourAnchor ? "true" : undefined}
                 ref={setRefs}
+                onMouseDown={handleCardMouseDown}
                 onClick={handleCardClick}
                 onDoubleClick={handleCardDoubleClick}
                 onFocus={handleCardClick}
-                sx={{
-                    cursor: "pointer",
-                    outline: "none",
-                    ...(stale && { opacity: 0.7 }),
-                }}
+                sx={stale ? CARD_PARENT_STALE_SX : CARD_PARENT_SX}
             >
                 {!filePreview ? (
                     <ResultCardSkeleton />
@@ -260,112 +345,121 @@ export const ResultCard = React.memo(
                     <ResultCardSurface
                         isHighlighted={isHighlighted}
                         seen={filePreview.seen}
-                        flat={flatRowChrome}
+                        flat
                     >
-                        <FileCardHeader
-                            filePreview={filePreview}
-                            onStateChipClick={() =>
-                                handleOpenDetailsOnTabClick(FileDetailTab.Tasks)
+                        <Box
+                            sx={
+                                reservesSideThumbnail
+                                    ? CARD_BODY_ROW_SX
+                                    : undefined
                             }
-                            // Spacing owns how tall the header is, the same
-                            // as it owns the rest of the card's chrome.
-                            compact={resolvedDensity === "compact" || undefined}
-                            denseChrome={resolvedDensity === "compact"}
-                            showExtensionIcon={vis.showExtensionIcon}
-                            showFilePath={vis.showFilePath}
-                            showParentNavigation={vis.showParentNavigation}
-                            showStatusIndicators={vis.showStatusIndicators}
-                            showAttachments={vis.showAttachments}
-                            showTags={vis.showTags}
-                            showActions={vis.showActions}
-                        />
-                        {(vis.showFieldSections || thumbnail) && (
-                            <CardContent
-                                sx={{
-                                    py: "var(--loom-card-padding, 0.5rem)",
-                                    px: { xs: 1, sm: 2 },
-                                    wordBreak: "break-word",
-                                    "&:last-child": {
-                                        pb: "var(--loom-card-padding, 0.5rem)",
-                                    },
-                                }}
+                        >
+                            <Box
+                                sx={
+                                    reservesSideThumbnail
+                                        ? CARD_MAIN_COLUMN_SX
+                                        : undefined
+                                }
                             >
-                                <Box
-                                    className={
-                                        hasThumbnailSlot
-                                            ? styles.lineContentRow
-                                            : undefined
+                                <FileCardHeader
+                                    filePreview={filePreview}
+                                    onStateChipClick={handleShowTasks}
+                                    // No `compact`: the header measures its own
+                                    // width and lays itself out from that,
+                                    // which is what unrolls the file actions
+                                    // into clickable icons where there is room
+                                    // for them. Pinning it on took that away
+                                    // however wide the card was.
+                                    denseChrome
+                                    showExtensionIcon={vis.showExtensionIcon}
+                                    showFilePath={vis.showFilePath}
+                                    showParentNavigation={
+                                        vis.showParentNavigation
                                     }
-                                    sx={
-                                        hasThumbnailSlot
-                                            ? undefined
-                                            : {
-                                                  display: "flex",
-                                                  gap: 2,
-                                                  flexDirection: {
-                                                      xs: "column",
-                                                      md: "row",
-                                                  },
-                                              }
+                                    showStatusIndicators={
+                                        vis.showStatusIndicators
                                     }
-                                    data-tour="result-card-content"
-                                >
-                                    {vis.showFieldSections && (
-                                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                                            <FieldSections
-                                                filePreview={filePreview}
-                                            />
-                                        </Box>
-                                    )}
-                                    {hasThumbnailSlot ? (
-                                        // Empty on a file without a thumbnail:
-                                        // the slot is what keeps this card's
-                                        // columns under the header's.
+                                    showAttachments={vis.showAttachments}
+                                    showTags={vis.showTags}
+                                    showActions={vis.showActions}
+                                    // Also for the card the tour points at:
+                                    // its step is about the actions, and at
+                                    // the default spacing they are drawn for
+                                    // no card the reader is not on.
+                                    keyboardActionsOnly={
+                                        isHighlighted || isTourAnchor
+                                    }
+                                    bodyFollows={hasCardBody}
+                                    singleLineRow={fieldLayout === "line"}
+                                />
+                                {hasCardBody && (
+                                    <CardContent sx={CARD_CONTENT_SX}>
                                         <Box
-                                            className={styles.lineThumbnailSlot}
+                                            className={
+                                                hasThumbnailSlot
+                                                    ? styles.lineContentRow
+                                                    : undefined
+                                            }
+                                            sx={
+                                                hasThumbnailSlot
+                                                    ? undefined
+                                                    : STACKED_CONTENT_ROW_SX
+                                            }
+                                            data-tour="result-card-content"
                                         >
-                                            {thumbnail}
+                                            {hasSelectedFields && (
+                                                <Box sx={FIELDS_COLUMN_SX}>
+                                                    <FieldSections
+                                                        filePreview={
+                                                            filePreview
+                                                        }
+                                                    />
+                                                </Box>
+                                            )}
+                                            {hasThumbnailSlot && (
+                                                // Empty on a file without a thumbnail:
+                                                // the slot is what keeps this card's
+                                                // columns under the header's.
+                                                <Box
+                                                    className={
+                                                        styles.lineThumbnailSlot
+                                                    }
+                                                >
+                                                    {thumbnail}
+                                                </Box>
+                                            )}
                                         </Box>
-                                    ) : (
-                                        !thumbnailBelowLine && thumbnailBlock
-                                    )}
-                                </Box>
-                                {thumbnailBelowLine && thumbnail && (
-                                    <Box sx={{ mt: 1 }}>{thumbnailBlock}</Box>
-                                )}
-                                {(isTemporary || vis.showSortIndicator) && (
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            mt: 1,
-                                        }}
-                                    >
-                                        {isTemporary ? (
-                                            <Chip
-                                                icon={<SearchOff />}
-                                                label={t(
-                                                    "detailedView.outsideLoadedResults",
+                                        {(isTemporary ||
+                                            vis.showSortIndicator) && (
+                                            <Box sx={FOOTER_ROW_SX}>
+                                                {isTemporary ? (
+                                                    <Chip
+                                                        icon={<SearchOff />}
+                                                        label={t(
+                                                            "detailedView.outsideLoadedResults",
+                                                        )}
+                                                        size="small"
+                                                        color="warning"
+                                                        variant="outlined"
+                                                        sx={TEMPORARY_CHIP_SX}
+                                                    />
+                                                ) : (
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={SORT_CAPTION_SX}
+                                                    >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
                                                 )}
-                                                size="small"
-                                                color="warning"
-                                                variant="outlined"
-                                                sx={{ fontSize: "0.7rem" }}
-                                            />
-                                        ) : (
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: "text.disabled",
-                                                    pl: 0.5,
-                                                }}
-                                            >{`${searchQuery?.sortField ?? "score"}: ${sortFieldValue}`}</Typography>
+                                            </Box>
                                         )}
-                                    </Box>
+                                    </CardContent>
                                 )}
-                            </CardContent>
-                        )}
+                            </Box>
+                            {reservesSideThumbnail && (
+                                <Box className={styles.thumbnailColumn}>
+                                    {thumbnail}
+                                </Box>
+                            )}
+                        </Box>
                     </ResultCardSurface>
                 )}
             </Box>

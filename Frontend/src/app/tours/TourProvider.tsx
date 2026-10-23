@@ -214,7 +214,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     const handleStepChange = useCallback((stepId: string) => {
         setActiveTourStepId(stepId);
         setShowQueryOverview(QUERY_OVERVIEW_STEPS.has(stepId));
-        if (stepId === "results-tabs") window.scrollTo({ top: 0 });
+        if (stepId === "results-list") window.scrollTo({ top: 0 });
     }, []);
     const handleStepNext = useCallback(
         async (stepId: string): Promise<boolean> => {
@@ -451,7 +451,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     }, [location.pathname, startConfiguredTour, stepHashes]);
 
     // Memoised because a new context value re-renders every useTour() consumer —
-    // ActivityBar, both sidebars, CenterTabs, BurgerMenu — and context updates pass
+    // ActivityBar, both sidebars, SearchResults, BurgerMenu — and context updates pass
     // straight through React.memo. The provider itself subscribes to `files`, so an
     // unmemoised value turns every preview arrival into a page-wide re-render.
     const contextValue = useMemo<TourContextValue>(

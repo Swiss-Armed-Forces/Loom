@@ -1,11 +1,11 @@
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectAvailablePreviewFields,
+    selectBoldPreviewFields,
     selectCardElementVisibility,
     selectFieldColumnWidths,
     selectFieldLayout,
@@ -18,7 +18,10 @@ import { useFieldReorder } from "@features/search/hooks/useFieldReorder";
 
 import styles from "./FieldColumnHeader.module.css";
 import { reservesThumbnailSlot } from "./fieldColumns";
+import { isIndicatorField, useFieldLabels } from "./indicatorFields";
 import { useColumnResize } from "./useColumnResize";
+
+const BOLD_LABEL_SX = { fontWeight: "bold" } as const;
 
 /**
  * Column labels for the line field layout, one per selected preview field.
@@ -37,6 +40,7 @@ export const FieldColumnHeader = () => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const previewFields = useAppSelector(selectPreviewFields);
+    const boldFields = useAppSelector(selectBoldPreviewFields);
     const availableFields = useAppSelector(selectAvailablePreviewFields);
     const columnWidths = useAppSelector(selectFieldColumnWidths);
     const fieldLayout = useAppSelector(selectFieldLayout);
@@ -51,13 +55,7 @@ export const FieldColumnHeader = () => {
     } = useColumnResize(previewFields, columnWidths);
     const { dragProps, isDragging, isDropTarget } = useFieldReorder();
 
-    const labelFor = useMemo(() => {
-        const map: Record<string, string> = {};
-        for (const field of availableFields) {
-            map[field.id] = field.label;
-        }
-        return map;
-    }, [availableFields]);
+    const labelFor = useFieldLabels(availableFields);
 
     return (
         <Box className={styles.header} data-tour="result-column-header">
@@ -93,49 +91,80 @@ export const FieldColumnHeader = () => {
                                     onDoubleClick={resetBorder(index - 1)}
                                 />
                             )}
-                            <Tooltip
-                                title={t(
-                                    next.sortDirection === "asc"
-                                        ? "generalSearchView.sortThisFieldAscending"
-                                        : "generalSearchView.sortThisFieldDescending",
-                                )}
-                            >
-                                <ButtonBase
-                                    className={styles.label}
-                                    onClick={() => dispatch(updateQuery(next))}
-                                    {...dragProps(index)}
-                                >
+                            {isIndicatorField(id) ? (
+                                /* Not a backend field: there is nothing to
+                                sort by, and offering it sent the API a sort
+                                on `loom:icons`. */
+                                <span className={styles.label}>
                                     <Typography
                                         variant="caption"
-                                        color={
-                                            isSortField
-                                                ? "primary"
-                                                : "text.secondary"
-                                        }
+                                        color="text.secondary"
                                         noWrap
+                                        sx={
+                                            boldFields.includes(id)
+                                                ? BOLD_LABEL_SX
+                                                : undefined
+                                        }
                                     >
                                         {labelFor[id] ?? id}
                                     </Typography>
-                                    {isSortField &&
-                                        (ascending ? (
-                                            <ArrowUpward
-                                                color="primary"
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    ml: 0.25,
-                                                }}
-                                            />
-                                        ) : (
-                                            <ArrowDownward
-                                                color="primary"
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    ml: 0.25,
-                                                }}
-                                            />
-                                        ))}
-                                </ButtonBase>
-                            </Tooltip>
+                                </span>
+                            ) : (
+                                <Tooltip
+                                    title={t(
+                                        next.sortDirection === "asc"
+                                            ? "generalSearchView.sortThisFieldAscending"
+                                            : "generalSearchView.sortThisFieldDescending",
+                                    )}
+                                >
+                                    <ButtonBase
+                                        className={styles.label}
+                                        onClick={() =>
+                                            dispatch(updateQuery(next))
+                                        }
+                                        {...dragProps(index)}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            color={
+                                                isSortField
+                                                    ? "primary"
+                                                    : "text.secondary"
+                                            }
+                                            noWrap
+                                            // The line layout keeps the label up
+                                            // here rather than on the card, so
+                                            // this is the descriptor half of a
+                                            // bold field.
+                                            sx={
+                                                boldFields.includes(id)
+                                                    ? BOLD_LABEL_SX
+                                                    : undefined
+                                            }
+                                        >
+                                            {labelFor[id] ?? id}
+                                        </Typography>
+                                        {isSortField &&
+                                            (ascending ? (
+                                                <ArrowUpward
+                                                    color="primary"
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        ml: 0.25,
+                                                    }}
+                                                />
+                                            ) : (
+                                                <ArrowDownward
+                                                    color="primary"
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        ml: 0.25,
+                                                    }}
+                                                />
+                                            ))}
+                                    </ButtonBase>
+                                </Tooltip>
+                            )}
                         </Box>
                     );
                 })}

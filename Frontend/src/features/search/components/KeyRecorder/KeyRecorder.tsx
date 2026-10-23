@@ -267,7 +267,9 @@ export const KeyRecorder: React.FC<KeyRecorderProps> = ({
                             <Typography
                                 variant="body2"
                                 sx={{
-                                    color: hasConflict ? "#f44336" : "inherit",
+                                    color: hasConflict
+                                        ? "error.main"
+                                        : "inherit",
                                 }}
                             >
                                 {displayKeys.length > 0
@@ -301,7 +303,7 @@ export const KeyRecorder: React.FC<KeyRecorderProps> = ({
                             <Typography
                                 variant="caption"
                                 sx={{
-                                    color: "#f44336",
+                                    color: "error.main",
                                     display: "block",
                                     marginTop: "2px",
                                 }}

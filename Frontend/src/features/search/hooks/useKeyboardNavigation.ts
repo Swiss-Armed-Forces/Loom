@@ -4,6 +4,13 @@ import { flushSync } from "react-dom";
 import { useAppDispatch, useAppSelector, useAppStore } from "@app/hooks";
 import { selectTopDialog } from "@app/slices/commonSlice";
 import {
+    FileDetailSelection,
+    FOLLOW_TAB,
+    fileTab,
+    sameSelection,
+    selectionKey,
+} from "@app/slices/fileDetailSelection";
+import {
     fetchNextPage,
     prefetchNextPage,
     queueResultAdvance,
@@ -12,10 +19,18 @@ import {
     selectOrderedFileIds,
     bumpHighlightScroll,
     setHighlightedFileId,
-    selectActiveTabFileId,
+    selectFileDetailFileId,
+    selectFileDetailSelection,
+    selectRightSidebarOpen,
+    selectRightSidebarTab,
     selectOpenFileTabs,
-    setFileTabDetailTab,
-    setActiveTabFileId,
+    selectFollowDetailTab,
+    setDetailTab,
+    focusFollowTab,
+    focusFileTab,
+    setRightSidebarTab,
+    RightSidebarTab,
+    closeRightSidebar,
     openFileTabThunk,
     revealFileThunk,
     setPendingFullscreenFileId,
@@ -52,7 +67,22 @@ const PANE_NAVIGATION_KEYS = new Set([
 export const useKeyboardNavigation = () => {
     const dispatch = useAppDispatch();
     const topDialog = useAppSelector(selectTopDialog);
-    const activeTabFileId = useAppSelector(selectActiveTabFileId);
+    const selection = useAppSelector(selectFileDetailSelection);
+    const followDetailTab = useAppSelector(selectFollowDetailTab);
+    /**
+     * The file whose detail panel is on screen, or null when there is none.
+     *
+     * The result list is always on screen and is where the keyboard lives.
+     * The detail panel is a side column: keys act on it only where the action
+     * is about a *document* rather than about the list, and only when the
+     * reader can actually see it.
+     */
+    const detailFileId = useAppSelector(selectFileDetailFileId);
+    const rightSidebarOpen = useAppSelector(selectRightSidebarOpen);
+    const rightSidebarTab = useAppSelector(selectRightSidebarTab);
+    /** Whether the File Detail pane is the one on screen. */
+    const fileDetailShowing =
+        rightSidebarOpen && rightSidebarTab === RightSidebarTab.FILE_DETAIL;
     const openFileTabs = useAppSelector(selectOpenFileTabs);
     const highlightedFileId = useAppSelector(selectHighlightedFileId);
     const orderedFileIds = useAppSelector(selectOrderedFileIds);
@@ -98,12 +128,14 @@ export const useKeyboardNavigation = () => {
     }, [highlightedIndex, orderedFileIds.length, hasMoreResults, dispatch]);
 
     // Cache the scrollable element per active panel to avoid a full DOM scan
-    // on every scroll keypress.
+    // on every scroll keypress. Keyed by the file on show and not by the tab:
+    // the following tab keeps one key while its file moves with the highlight.
     const scrollableElementRef = useRef<Element | null>(null);
     const scrollablePanelRef = useRef<string | null>(null);
 
     // Cache the enabled tabs per active panel to avoid a DOM query on every
-    // Tab/Shift+Tab keypress.
+    // Tab/Shift+Tab keypress. Keyed the same way, and for the same reason -
+    // which sub-tabs a panel offers is a property of the document it holds.
     const enabledTabsRef = useRef<FileDetailTab[] | null>(null);
     const enabledTabsPanelRef = useRef<string | null>(null);
 
@@ -256,24 +288,32 @@ export const useKeyboardNavigation = () => {
     }, []);
 
     const getEnabledTabs = useCallback((): FileDetailTab[] => {
-        if (!activeTabFileId) return [];
+        if (!detailFileId) return [];
+        const panelKey = `${selectionKey(selection)}:${detailFileId}`;
 
         // Return cached result if still on the same panel
         if (
-            enabledTabsPanelRef.current === activeTabFileId &&
+            enabledTabsPanelRef.current === panelKey &&
             enabledTabsRef.current !== null
         ) {
             return enabledTabsRef.current;
         }
 
         // Invalidate cache for the new panel
-        enabledTabsPanelRef.current = activeTabFileId;
+        enabledTabsPanelRef.current = panelKey;
         enabledTabsRef.current = null;
 
-        const dialog = document.querySelector(
-            `[data-file-panel="${activeTabFileId}"]`,
-        );
-        if (!dialog) return [];
+        const dialog = activeDetailPanel();
+        // Nothing is cached, and nothing navigated, while the panel still
+        // holds the file before this one - the following tab loads on a
+        // delay, and which sub-tabs are offered is a property of the document.
+        if (
+            !dialog ||
+            dialog.getAttribute("data-file-panel") !== detailFileId
+        ) {
+            enabledTabsPanelRef.current = null;
+            return [];
+        }
 
         const tabElements = dialog.querySelectorAll("[role='tab']");
         if (tabElements.length === 0) return [];
@@ -294,7 +334,7 @@ export const useKeyboardNavigation = () => {
 
         enabledTabsRef.current = enabledTabs;
         return enabledTabs;
-    }, [activeTabFileId]);
+    }, [selection, detailFileId]);
 
     const handleTabNavigationDirection = useCallback(
         (direction: "left" | "right") => {
@@ -302,12 +342,12 @@ export const useKeyboardNavigation = () => {
             if (enabledTabs.length === 0) return;
 
             // Find current tab's position in enabled tabs
-            const activeTab = openFileTabs.find(
-                (t) => t.fileId === activeTabFileId,
-            );
-            const currentIndex = enabledTabs.indexOf(
-                activeTab?.detailTab ?? FileDetailTab.Rendered,
-            );
+            const currentDetailTab =
+                selection.kind === "file"
+                    ? (openFileTabs.find((t) => t.fileId === selection.fileId)
+                          ?.detailTab ?? FileDetailTab.Rendered)
+                    : followDetailTab;
+            const currentIndex = enabledTabs.indexOf(currentDetailTab);
 
             let nextIndex: number;
             if (currentIndex === -1) {
@@ -323,88 +363,76 @@ export const useKeyboardNavigation = () => {
                     enabledTabs.length;
             }
 
-            if (activeTabFileId) {
-                dispatch(
-                    setFileTabDetailTab({
-                        fileId: activeTabFileId,
-                        detailTab: enabledTabs[nextIndex],
-                    }),
-                );
-            }
+            dispatch(
+                setDetailTab({
+                    target: selection,
+                    detailTab: enabledTabs[nextIndex],
+                }),
+            );
         },
-        [activeTabFileId, openFileTabs, getEnabledTabs, dispatch],
+        [selection, followDetailTab, openFileTabs, getEnabledTabs, dispatch],
     );
 
-    const handleCenterTabNavigation = useCallback(
+    const handleFileTabNavigation = useCallback(
         (direction: "left" | "right") => {
-            // Build ordered list: [null (Results), ...file tab IDs]
-            const tabIds: (string | null)[] = [
-                null,
-                ...openFileTabs.map((t) => t.fileId),
+            // The strip: the following tab, then the ones they opened.
+            const tabs: FileDetailSelection[] = [
+                FOLLOW_TAB,
+                ...openFileTabs.map((t) => fileTab(t.fileId)),
             ];
-            if (tabIds.length <= 1) return; // Only Results tab, nothing to navigate
+            if (tabs.length <= 1) return; // Nothing beside the following tab
 
-            const currentIndex = tabIds.indexOf(activeTabFileId);
+            const currentIndex = tabs.findIndex((t) =>
+                sameSelection(t, selection),
+            );
             let nextIndex: number;
             if (currentIndex === -1) {
-                nextIndex = direction === "right" ? 0 : tabIds.length - 1;
+                nextIndex = direction === "right" ? 0 : tabs.length - 1;
             } else if (direction === "right") {
-                nextIndex = (currentIndex + 1) % tabIds.length;
+                nextIndex = (currentIndex + 1) % tabs.length;
             } else {
-                nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+                nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
             }
 
-            dispatch(setActiveTabFileId(tabIds[nextIndex]));
+            // Cycling a strip the reader cannot see is cycling nothing.
+            dispatch(setRightSidebarTab(RightSidebarTab.FILE_DETAIL));
+            const next = tabs[nextIndex];
+            dispatch(
+                next.kind === "follow"
+                    ? focusFollowTab()
+                    : focusFileTab(next.fileId),
+            );
         },
-        [activeTabFileId, openFileTabs, dispatch],
+        [selection, openFileTabs, dispatch],
     );
 
-    const handleSummaryTabNavigation = useCallback(
-        (direction: "left" | "right") => {
-            const card = document.querySelector("[data-highlighted='true']");
-            if (!card) return;
-
-            const allTabs = Array.from(card.querySelectorAll("[role='tab']"));
-            const enabledTabs = allTabs.filter(
-                (tab) =>
-                    tab.getAttribute("aria-disabled") !== "true" &&
-                    !tab.classList.contains("Mui-disabled"),
-            );
-            if (enabledTabs.length === 0) return;
-
-            const currentIndex = enabledTabs.findIndex(
-                (tab) => tab.getAttribute("aria-selected") === "true",
-            );
-
-            let nextIndex: number;
-            if (currentIndex === -1) {
-                nextIndex = direction === "right" ? 0 : enabledTabs.length - 1;
-            } else if (direction === "right") {
-                nextIndex = (currentIndex + 1) % enabledTabs.length;
-            } else {
-                nextIndex =
-                    (currentIndex - 1 + enabledTabs.length) %
-                    enabledTabs.length;
-            }
-
-            (enabledTabs[nextIndex] as HTMLElement).click();
-        },
-        [],
-    );
+    /**
+     * The detail panel in front, or null when the File Detail sidebar is
+     * closed or showing nothing.
+     *
+     * Never looked up by file id: the following tab and an opened tab may
+     * hold the same file, and `querySelector` would silently take whichever
+     * came first in the document. `FileDetailView` is the only thing that
+     * renders panels and marks exactly one of them active.
+     */
+    const activeDetailPanel = (): Element | null =>
+        document.querySelector('[data-file-panel][data-active="true"]');
 
     const handleDialogScroll = useCallback(
         (direction: "up" | "down", amount?: number) => {
-            // Find the scrollable element within the active file panel
-            const panel = activeTabFileId
-                ? document.querySelector(
-                      `[data-file-panel="${activeTabFileId}"]`,
-                  )
-                : null;
+            // Find the scrollable element within the panel in front
+            const panel = activeDetailPanel();
             if (!panel) return;
 
             // Use cached scrollable element; invalidate when the panel changes
-            if (scrollablePanelRef.current !== activeTabFileId) {
-                scrollablePanelRef.current = activeTabFileId;
+            // or when what was cached has left the document - a panel that
+            // re-renders onto another file replaces the node underneath it.
+            const panelKey = `${selectionKey(selection)}:${detailFileId}`;
+            if (
+                scrollablePanelRef.current !== panelKey ||
+                scrollableElementRef.current?.isConnected === false
+            ) {
+                scrollablePanelRef.current = panelKey;
                 scrollableElementRef.current = null;
             }
 
@@ -468,36 +496,62 @@ export const useKeyboardNavigation = () => {
                 behavior: "smooth",
             });
         },
-        [activeTabFileId],
+        [selection, detailFileId],
     );
 
-    // Click a button by aria-label or title within the appropriate container
+    const actionButtonIn = (
+        container: Element | null,
+        actionKey: string,
+    ): HTMLElement | null => {
+        if (!container) return null;
+        // Find by aria-label first, then fall back to title
+        const clickable =
+            container.querySelector(
+                `button[aria-label="${actionKey}"], a[aria-label="${actionKey}"]`,
+            ) ??
+            container.querySelector(
+                `button[title="${actionKey}"], a[title="${actionKey}"]`,
+            );
+        if (!clickable || (clickable as HTMLButtonElement).disabled) {
+            return null;
+        }
+        return clickable as HTMLElement;
+    };
+
+    /**
+     * Press a file action by its label, on the document the reader is on.
+     *
+     * That document is the one the pane is showing, or the highlight when no
+     * pane is. Both places it can be pressed are checked against it rather
+     * than taken on trust:
+     *
+     * - the panel in front may hold the file *before* the current one, since
+     *   the following tab loads on a delay, and flagging or re-indexing that
+     *   one is a write to a document the reader has already left;
+     * - the highlighted card is a different document whenever the reader has
+     *   selected a file tab, so it is a fallback only while it is the subject.
+     *
+     * The fallback is reached by more than "no panel": a panel draws a
+     * skeleton until its preview lands, and at the widths the sidebar is
+     * usually dragged to it keeps tag, share and download in the overflow
+     * menu. Where neither place carries the button, nothing is pressed.
+     */
     const clickActionButton = useCallback(
         (actionKey: string) => {
-            const container = activeTabFileId
-                ? document.querySelector(
-                      `[data-file-panel="${activeTabFileId}"]`,
-                  )
-                : document.querySelector("[data-highlighted='true']");
-
-            if (!container) return;
-
-            // Find by aria-label first, then fall back to title
-            let clickable = container.querySelector(
-                `button[aria-label="${actionKey}"], a[aria-label="${actionKey}"]`,
-            );
-
-            if (!clickable) {
-                clickable = container.querySelector(
-                    `button[title="${actionKey}"], a[title="${actionKey}"]`,
-                );
-            }
-
-            if (clickable && !(clickable as HTMLButtonElement).disabled) {
-                (clickable as HTMLElement).click();
-            }
+            const subject = detailFileId ?? highlightedFileId;
+            const panel = activeDetailPanel();
+            const panelIsSubject =
+                panel?.getAttribute("data-file-panel") === subject;
+            const card =
+                highlightedFileId === subject
+                    ? document.querySelector("[data-highlighted='true']")
+                    : null;
+            const clickable =
+                (panelIsSubject ? actionButtonIn(panel, actionKey) : null) ??
+                actionButtonIn(card, actionKey);
+            clickable?.click();
         },
-        [activeTabFileId],
+        [detailFileId, highlightedFileId],
     );
 
     const handleKeyDown = useCallback(
@@ -533,21 +587,14 @@ export const useKeyboardNavigation = () => {
                     case "moveUp":
                         queueResultMove(-1);
                         break;
-                    // With a file panel open these scroll it; otherwise they
-                    // page the result list, which had no keyboard equivalent.
+                    // The result list is always on screen now, so these
+                    // always page it. A document is scrolled with
+                    // scrollUp/scrollDown, which is why those are bound.
                     case "pageDown":
-                        if (activeTabFileId !== null) {
-                            handleDialogScroll("down");
-                        } else {
-                            queueResultMove(resultPageStep());
-                        }
+                        queueResultMove(resultPageStep());
                         return;
                     case "pageUp":
-                        if (activeTabFileId !== null) {
-                            handleDialogScroll("up");
-                        } else {
-                            queueResultMove(-resultPageStep());
-                        }
+                        queueResultMove(-resultPageStep());
                         return;
                     case "firstResult":
                         highlightResultAt(0);
@@ -564,25 +611,34 @@ export const useKeyboardNavigation = () => {
                     case "nextTab":
                         handleTabNavigationDirection("right");
                         break;
-                    case "prevCenterTab":
-                        handleCenterTabNavigation("left");
+                    case "prevFileTab":
+                        handleFileTabNavigation("left");
                         break;
-                    case "nextCenterTab":
-                        handleCenterTabNavigation("right");
+                    case "nextFileTab":
+                        handleFileTabNavigation("right");
                         break;
+                    // Show or hide the details of whatever is highlighted.
+                    // It opens no tab: the following tab already shows it.
+                    //
+                    // Tested on the pane and not on `detailFileId`, which is
+                    // also null when the pane is open on nothing - and then
+                    // the key would reopen what the reader asked to close.
                     case "openOrClose":
-                        if (activeTabFileId !== null) {
-                            dispatch(closeFileTabThunk(activeTabFileId));
-                        } else if (highlightedFileId !== null) {
-                            clickActionButton("preview");
-                        }
+                        dispatch(
+                            fileDetailShowing
+                                ? closeRightSidebar()
+                                : setRightSidebarTab(
+                                      RightSidebarTab.FILE_DETAIL,
+                                  ),
+                        );
                         break;
                     case "open":
-                        if (
-                            activeTabFileId === null &&
-                            highlightedFileId !== null
-                        ) {
-                            clickActionButton("preview");
+                        if (highlightedFileId !== null) {
+                            dispatch(
+                                openFileTabThunk({
+                                    fileId: highlightedFileId,
+                                }),
+                            );
                         }
                         break;
                     case "openBackground":
@@ -604,20 +660,29 @@ export const useKeyboardNavigation = () => {
                         }
                         break;
                     }
-                    case "fullscreen":
-                        if (activeTabFileId !== null) {
+                    case "fullscreen": {
+                        // A panel on screen already showing the subject can
+                        // go fullscreen where it stands; otherwise open a tab
+                        // and let `pendingFullscreenFileId` do it on arrival.
+                        // The panel is asked what it holds rather than taken on
+                        // trust - the following tab lags the highlight.
+                        const panel = activeDetailPanel();
+                        if (
+                            detailFileId !== null &&
+                            detailFileId ===
+                                (highlightedFileId ?? detailFileId) &&
+                            panel?.getAttribute("data-file-panel") ===
+                                detailFileId
+                        ) {
                             flushSync(() => {
                                 dispatch(
-                                    setFileTabDetailTab({
-                                        fileId: activeTabFileId,
+                                    setDetailTab({
+                                        target: selection,
                                         detailTab: FileDetailTab.Rendered,
                                     }),
                                 );
                             });
-                            const panel = document.querySelector(
-                                `[data-file-panel="${activeTabFileId}"]`,
-                            );
-                            const btn = panel?.querySelector(
+                            const btn = activeDetailPanel()?.querySelector(
                                 'button[aria-label="fullscreen"]',
                             ) as HTMLElement | null;
                             btn?.click();
@@ -633,6 +698,7 @@ export const useKeyboardNavigation = () => {
                             );
                         }
                         break;
+                    }
                     case "flag":
                         clickActionButton("flagged");
                         break;
@@ -642,32 +708,22 @@ export const useKeyboardNavigation = () => {
                     case "tag":
                         clickActionButton("tags-input");
                         break;
+                    // Walk the thread by moving the highlight, so the
+                    // following tab shows each step without leaving a trail
+                    // of tabs behind. The parent *control* still opens one:
+                    // a reader pointing at a thing wants it kept.
                     case "navigateParentFile": {
-                        const currentFileId =
-                            activeTabFileId ?? highlightedFileId;
+                        const currentFileId = detailFileId ?? highlightedFileId;
                         if (!currentFileId) break;
                         const parentId =
                             store.getState().search.files[currentFileId]
                                 ?.preview?.parentId;
                         if (!parentId) break;
-                        if (
-                            activeTabFileId === null &&
-                            highlightedFileId !== null
-                        ) {
-                            dispatch(
-                                revealFileThunk({
-                                    fileId: parentId,
-                                    openInTab: false,
-                                }),
-                            );
-                        } else {
-                            dispatch(openFileTabThunk({ fileId: parentId }));
-                        }
+                        dispatch(revealFileThunk({ fileId: parentId }));
                         break;
                     }
                     case "NavigateChildFile": {
-                        const currentFileId =
-                            activeTabFileId ?? highlightedFileId;
+                        const currentFileId = detailFileId ?? highlightedFileId;
                         if (!currentFileId) break;
                         const currentPreview =
                             store.getState().search.files[currentFileId]
@@ -675,23 +731,9 @@ export const useKeyboardNavigation = () => {
                         const attachments = currentPreview?.attachments;
                         if (!attachments?.length) break;
                         if (attachments.length === 1) {
-                            if (
-                                activeTabFileId === null &&
-                                highlightedFileId !== null
-                            ) {
-                                dispatch(
-                                    revealFileThunk({
-                                        fileId: attachments[0].id,
-                                        openInTab: false,
-                                    }),
-                                );
-                            } else {
-                                dispatch(
-                                    openFileTabThunk({
-                                        fileId: attachments[0].id,
-                                    }),
-                                );
-                            }
+                            dispatch(
+                                revealFileThunk({ fileId: attachments[0].id }),
+                            );
                         } else {
                             clickActionButton("show-attachments");
                         }
@@ -712,40 +754,29 @@ export const useKeyboardNavigation = () => {
                     case "download":
                         clickActionButton("download");
                         break;
+                    // Unwind most-local-first: menus, then an opened tab,
+                    // then the sidebar, then the highlight. It never closes a
+                    // tab the reader cannot see.
                     case "escapeAction":
                         document.dispatchEvent(
                             new CustomEvent("loom:close-menus"),
                         );
-                        if (activeTabFileId !== null) {
-                            dispatch(closeFileTabThunk(activeTabFileId));
+                        if (
+                            detailFileId !== null &&
+                            selection.kind === "file"
+                        ) {
+                            dispatch(closeFileTabThunk(selection.fileId));
+                        } else if (detailFileId !== null) {
+                            dispatch(closeRightSidebar());
                         } else if (highlightedFileId !== null) {
                             dispatch(setHighlightedFileId(null));
                         }
                         break;
                     case "scrollDown":
-                        if (activeTabFileId !== null) {
-                            handleDialogScroll("down", SCROLL_STEP_PX);
-                        }
+                        handleDialogScroll("down", SCROLL_STEP_PX);
                         break;
                     case "scrollUp":
-                        if (activeTabFileId !== null) {
-                            handleDialogScroll("up", SCROLL_STEP_PX);
-                        }
-                        break;
-                    case "closePanel":
-                        if (activeTabFileId !== null) {
-                            dispatch(closeFileTabThunk(activeTabFileId));
-                        }
-                        break;
-                    case "summaryTabLeft":
-                        if (highlightedFileId !== null) {
-                            handleSummaryTabNavigation("left");
-                        }
-                        break;
-                    case "summaryTabRight":
-                        if (highlightedFileId !== null) {
-                            handleSummaryTabNavigation("right");
-                        }
+                        handleDialogScroll("up", SCROLL_STEP_PX);
                         break;
                     default:
                         break;
@@ -760,10 +791,11 @@ export const useKeyboardNavigation = () => {
             highlightResultAt,
             resultPageStep,
             handleTabNavigationDirection,
-            handleCenterTabNavigation,
-            handleSummaryTabNavigation,
+            handleFileTabNavigation,
             handleDialogScroll,
-            activeTabFileId,
+            detailFileId,
+            fileDetailShowing,
+            selection,
             highlightedFileId,
             dispatch,
             clickActionButton,

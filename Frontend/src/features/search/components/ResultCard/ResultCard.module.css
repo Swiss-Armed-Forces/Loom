@@ -9,53 +9,56 @@
     outline: auto;
 }
 
-.resultImage {
+/*
+ * The thumbnail column, down the side of the whole card.
+ *
+ * The image used to sit under the header inside the content block, which left
+ * the header running the full width and pushed the image down below it. A
+ * card is read left to right and the picture is the first thing the eye
+ * reaches, so it stands beside the text instead and is as tall as the card.
+ *
+ * Fixed width, and the badge inside it is taken out of flow by
+ * `SIDE_THUMBNAIL_BADGE_SX`: the column is stretched to whatever height the
+ * text beside it comes to, and an image that could push that height around
+ * would make the card's size depend on the picture rather than on what the
+ * reader chose to show.
+ */
+.thumbnailColumn {
+    position: relative;
+    flex: 0 0 var(--loom-card-thumb-width, 10rem);
+    align-self: stretch;
+    overflow: hidden;
+    /*
+     * A square of the chosen width, so the picture can make the card taller
+     * than its text rather than being squeezed into whatever height the text
+     * happened to come to.
+     *
+     * `min-height` and not a height: the text may still be the taller of the
+     * two, and then it decides. Either way the number comes from the setting
+     * and never from the file, so every card in the list is the same height.
+     */
+    min-height: var(--loom-card-thumb-width, 10rem);
+}
+
+/* `contain`, never `cover`: the column is as tall as the card, and a picture
+cropped to fill it is a picture the reader cannot see. The image is drawn as
+large as it goes inside the column with all of it still showing, so a portrait
+fills the height and a landscape fills the width. */
+.fullHeightImage {
     cursor: pointer;
-    width: auto;
-    min-width: 10rem;
-    max-width: 20vw;
-    max-height: 20vw;
-    transition:
-        transform 0.2s ease,
-        opacity 0.2s ease,
-        box-shadow 0.2s ease;
-
-    @media only screen and (max-width: 768px) {
-        min-width: 5rem;
-        max-width: 50vw;
-        min-height: 5rem;
-        max-height: 50vw;
-    }
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.2s ease;
 }
 
-.resultImage:hover {
-    transform: scale(1.05);
+.fullHeightImage:hover {
     opacity: 0.9;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.resultImage:active {
-    transform: scale(0.98);
 }
 
 .thumbnailBadge {
     align-self: flex-start;
-}
-
-/*
- * Holds the thumbnail's room before it arrives.
- *
- * Only for the card that shows a thumbnail because it is highlighted: that
- * image is requested at the moment of highlighting, and without somewhere to
- * go it grew the card by ~190px a fifth of a second later — moving the card
- * the user had just arrived at, and making the list re-measure it. The height
- * is the most the image is allowed anyway, so nothing is ever clipped; a
- * smaller image sits at the top of the space rather than resizing the card.
- */
-.thumbnailReserve {
-    min-height: min(20vw, 280px);
-    display: flex;
-    align-items: flex-start;
 }
 
 /* Line layout: the fields and the thumbnail share one row whose thumbnail
@@ -67,9 +70,12 @@ with an image as on one without, and as wide as the column header. */
 }
 
 /* Held open on every card, empty or not, and the same declaration the header
-gives its thumbnail column. */
+gives its thumbnail column - plus a height, which the header's copy must not
+have: a square box whatever the picture's shape, so that a landscape image
+does not make a shorter row than a portrait one. */
 .lineThumbnailSlot {
     composes: thumbnailSlot from "../FieldList/columnLayout.module.css";
+    height: var(--loom-thumb-size, 0px);
 }
 
 /* Both bounds are absolute lengths. A percentage would resolve against the
@@ -78,8 +84,8 @@ itself, so it clamps nothing and a landscape thumbnail spills over the last
 field. No hover scale either: a row this dense has no room to grow into. */
 .lineThumbnailImage {
     cursor: pointer;
-    max-width: var(--loom-thumb-size, 0px);
-    max-height: var(--loom-thumb-size, 0px);
+    width: var(--loom-thumb-size, 0px);
+    height: var(--loom-thumb-size, 0px);
     object-fit: contain;
     transition: opacity 0.2s ease;
 }

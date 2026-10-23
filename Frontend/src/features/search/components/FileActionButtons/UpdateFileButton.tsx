@@ -18,9 +18,10 @@ import {
     stopLoadingIndicator,
 } from "@app/slices/commonSlice";
 import {
+    fetchPreview,
+    patchFilePreview,
     selectTotalFiles,
     selectQuery,
-    setFilePreview,
 } from "@app/slices/searchSlice";
 
 import { FileActionButtonBase } from "./FileActionButtonBase";
@@ -78,23 +79,20 @@ export const UpdateFileButton = ({
         }
     };
 
-    const updateLocalFile = () => {
-        if (!fileId) return;
-        const updatedFilePreview = { ...filePreview, ...request };
-        dispatch(setFilePreview(updatedFilePreview));
-        if (filePreview?.fileId == updatedFilePreview.fileId) {
-            dispatch(setFilePreview(updatedFilePreview));
-        }
-    };
-
     const updateSingleOrMultipleFiles = async (request: UpdateFileRequest) => {
         if (!fileId && !searchQuery) return;
 
         try {
             dispatch(startLoadingIndicator());
             if (fileId) {
+                // Applied before the request, not after it. Two updates to the
+                // same file can overlap - selecting a card marks it seen while
+                // a keypress toggles it - and applying each one when its own
+                // request happened to finish let the older of the two land
+                // last and win. In the order the user caused them, they
+                // compose. A failure below resyncs from the server.
+                dispatch(patchFilePreview({ fileId, changes: request }));
                 await updateFile(fileId, request);
-                updateLocalFile();
             } else {
                 setShowDialog(false);
                 // searchQuery will always be != from undefined
@@ -106,6 +104,13 @@ export const UpdateFileButton = ({
             toast.error(
                 t(`updateFileState.${property}.scheduledErrorToast`, { err }),
             );
+            // The optimistic patch above described an update that did not
+            // happen, so take the file's real state back from the server.
+            if (fileId) {
+                dispatch(
+                    fetchPreview({ fileId, query: searchQuery ?? undefined }),
+                );
+            }
         } finally {
             dispatch(stopLoadingIndicator());
         }

@@ -1,5 +1,45 @@
+.container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 4px;
+    padding: 0.125rem 0.25rem;
+    cursor: pointer;
+}
+
 .container.readOnly {
     cursor: default;
+}
+
+/* While a key is being recorded. Without this rule the className template
+interpolated `undefined` into the class list and the control looked idle. */
+.container.recording {
+    outline: 2px solid var(--mui-palette-primary-main);
+    outline-offset: -2px;
+    background-color: var(--mui-palette-action-selected);
+}
+
+.container.compact {
+    gap: 0.25rem;
+    padding: 0;
+}
+
+.keysContainer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+.notSetText {
+    color: var(--mui-palette-text-disabled);
+    font-style: italic;
+}
+
+.cancelButton {
+    padding: 0.125rem;
+    flex-shrink: 0;
 }
 
 kbd {
@@ -29,7 +69,7 @@ kbd {
 }
 
 .separator {
-    color: #9e9e9e;
+    color: var(--mui-palette-text-secondary);
     font-size: 0.82em;
     margin: 0 0.125rem;
 }
@@ -43,7 +83,7 @@ kbd {
 
 .editIcon {
     opacity: 0;
-    color: #757575;
+    color: var(--mui-palette-text-secondary);
     transition: opacity 0.2s ease;
     flex-shrink: 0;
 }
@@ -54,14 +94,14 @@ kbd {
 
 .resetButton {
     opacity: 0;
-    color: #757575;
+    color: var(--mui-palette-text-secondary);
     transition: opacity 0.2s ease;
     padding: 0.25rem;
     flex-shrink: 0;
 }
 
 .resetButton:hover {
-    background-color: #e0e0e0;
+    background-color: var(--mui-palette-action-hover);
 }
 
 .container:hover .resetButton {

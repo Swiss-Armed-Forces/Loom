@@ -1,6 +1,6 @@
 import { CSSProperties } from "react";
 
-import { FieldLayout, NamedDensity } from "@app/slices/searchSlice";
+import { FieldLayout } from "@app/slices/searchSlice";
 
 /**
  * Custom property the result list publishes its column template on.
@@ -55,13 +55,14 @@ const THUMB_GAP = "0.75rem";
  *  box and let a full-width image overhang it. */
 const THUMB_BORDER = "1px";
 
-/** Edge length of the image box. A reserved slot is as tall as it is wide and
- *  sets the row's height, so it follows the density like the rhythm does. */
-const THUMB_SIZE: Record<NamedDensity, string> = {
-    compact: "4rem",
-    standard: "6rem",
-    full: "8rem",
-};
+export const CARD_THUMB_WIDTH_VAR = "--loom-card-thumb-width";
+
+/** The width a stacked card holds for its thumbnail, as a custom property
+ *  for the list container. Zero draws none. */
+export const cardThumbnailStyle = (widthRem: number): CSSProperties =>
+    ({
+        [CARD_THUMB_WIDTH_VAR]: `${widthRem}rem`,
+    }) as CSSProperties;
 
 /** Width of a column that has never been dragged, in `fr`. */
 export const DEFAULT_COLUMN_WIDTH = 1;
@@ -84,8 +85,7 @@ const isUsableWidth = (width: number | null | undefined): width is number =>
 
 /** Visibility flags that decide whether a thumbnail slot exists. */
 export interface ThumbnailSlotVisibility {
-    showFieldSections: boolean;
-    showThumbnails: boolean;
+    thumbnailWidthRem: number;
 }
 
 /**
@@ -100,10 +100,7 @@ export interface ThumbnailSlotVisibility {
 export const reservesThumbnailSlot = (
     fieldLayout: FieldLayout,
     visibility: ThumbnailSlotVisibility,
-): boolean =>
-    fieldLayout === "line" &&
-    visibility.showFieldSections &&
-    visibility.showThumbnails;
+): boolean => fieldLayout === "line" && visibility.thumbnailWidthRem > 0;
 
 /**
  * The reserved width, as custom properties for the list container.
@@ -111,10 +108,10 @@ export const reservesThumbnailSlot = (
  * The inset is built from the image box and the gap rather than stated on its
  * own, so the width the header skips and the width a card holds free cannot
  * drift apart. `draggedPx` is the edge length the reader left the column's
- * border at, and takes precedence over the density's.
+ * border at, and takes precedence over the default.
  */
 export const thumbnailSlotStyle = (
-    density: NamedDensity,
+    widthRem: number,
     reserve: boolean,
     draggedPx: number | null,
 ): CSSProperties => {
@@ -125,13 +122,15 @@ export const thumbnailSlotStyle = (
             [THUMB_SIZE_VAR]: "0px",
         } as CSSProperties;
     }
-    const size = isUsableWidth(draggedPx)
-        ? `${draggedPx}px`
-        : THUMB_SIZE[density];
+    // The chosen width, as given. A slot here is as tall as it is wide and so
+    // sets the row's height, which used to be reason to cap it - but a line
+    // row's height now comes from the settings like every other card's, so
+    // the slider moves it rather than running into a ceiling.
+    const edge = isUsableWidth(draggedPx) ? `${draggedPx}px` : `${widthRem}rem`;
     return {
-        [THUMB_INSET_VAR]: `calc(${size} + ${THUMB_GAP} + ${THUMB_BORDER})`,
+        [THUMB_INSET_VAR]: `calc(${edge} + ${THUMB_GAP} + ${THUMB_BORDER})`,
         [THUMB_GAP_VAR]: THUMB_GAP,
-        [THUMB_SIZE_VAR]: size,
+        [THUMB_SIZE_VAR]: edge,
     } as CSSProperties;
 };
 

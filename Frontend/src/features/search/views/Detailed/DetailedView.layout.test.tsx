@@ -8,12 +8,11 @@ import commonReducer from "@app/slices/commonSlice";
 import searchReducer, {
     bumpHighlightScroll,
     FieldLayout,
-    NamedDensity,
-    setCardDensity,
+    applyCardPreset,
     setFieldLayout,
     setHighlightedFileId,
 } from "@app/slices/searchSlice";
-import { SearchPanelContext } from "@features/search/components/CenterTabs/SearchPanelContext";
+import { SearchPanelContext } from "@features/search/views/SearchResults/SearchPanelContext";
 
 import { DetailedView } from "./DetailedView";
 
@@ -34,26 +33,20 @@ const VIEWPORT_HEIGHT = 800;
  * heights, so a measurement taken under one of them is wrong under the next.
  */
 const ROW_HEIGHT: Record<FieldLayout, number> = {
-    rows: 240,
     compact: 120,
     line: 48,
 };
 
-let currentLayout: FieldLayout = "rows";
-let currentSpacing: NamedDensity = "standard";
+let currentLayout: FieldLayout = "compact";
 
 /**
- * How tall a card is at each spacing.
+ * How tall a stacked card is, which the element preset decides.
  *
- * Tighter spacing trims padding and line height; it does not remove any
- * fields, so even the tightest card is nothing like as short as an empty one.
- * Getting this wrong in the estimate is what puts rows on top of each other.
+ * A preset drops whole elements, so the difference is large; getting it wrong
+ * in the estimate is what puts rows on top of each other. Set by the tests
+ * that change the preset, alongside the dispatch.
  */
-const SPACING_HEIGHT: Record<NamedDensity, number> = {
-    compact: 180,
-    standard: 260,
-    full: 400,
-};
+let currentCardHeight = 260;
 
 /**
  * A ResizeObserver the test can fire, standing in for the browser's.
@@ -128,8 +121,8 @@ const GROWTH = 220;
  * since every wrong guess would happen to be the right answer.
  */
 const rowHeight = (index: number) =>
-    (currentLayout === "rows"
-        ? SPACING_HEIGHT[currentSpacing]
+    (currentLayout === "compact"
+        ? currentCardHeight
         : ROW_HEIGHT[currentLayout]) +
     (index % 5) * 17 +
     (grownRows.has(index) ? GROWTH : 0);
@@ -176,8 +169,8 @@ beforeEach(() => {
     observers.length = 0;
     scrollWrites.length = 0;
     grownRows.clear();
-    currentLayout = "rows";
-    currentSpacing = "standard";
+    currentLayout = "compact";
+    currentCardHeight = 260;
 });
 
 const storeWith = (resultCount: number) => {
@@ -211,9 +204,7 @@ const Harness = ({ store }: { store: ReturnType<typeof storeWith> }) => {
     return (
         <Provider store={store}>
             <div data-search-panel data-testid="search-panel" ref={scrollRef}>
-                <SearchPanelContext.Provider
-                    value={{ scrollRef, isActive: true }}
-                >
+                <SearchPanelContext.Provider value={{ scrollRef }}>
                     <DetailedView />
                 </SearchPanelContext.Provider>
             </div>
@@ -221,43 +212,48 @@ const Harness = ({ store }: { store: ReturnType<typeof storeWith> }) => {
     );
 };
 
-/** Each rendered row's index and the offset it was placed at. */
+/** Each rendered row, in index order. */
 const placedRows = () =>
     screen
         .getAllByTestId("result-card")
         .map((card) => card.parentElement as HTMLElement)
-        .map((row) => ({
-            index: Number(row.dataset.index),
-            offset: Number(
-                /translateY\((-?[\d.]+)px\)/.exec(row.style.transform)?.[1] ??
-                    NaN,
-            ),
-        }))
+        .map((row) => ({ index: Number(row.dataset.index), row }))
         .sort((a, b) => a.index - b.index);
 
-/** The tightest spacing between consecutive rows; negative is an overlap. */
-const worstSlack = () => {
-    const rows = placedRows();
-    let worst = Infinity;
-    for (let i = 1; i < rows.length; i++) {
-        if (rows[i].index !== rows[i - 1].index + 1) continue;
-        // Slack: how much room the previous row was given beyond what it
-        // needs. Negative means the two are drawn on top of each other.
-        worst = Math.min(
-            worst,
-            rows[i].offset - rows[i - 1].offset - rowHeight(rows[i - 1].index),
-        );
-    }
-    return worst;
+/** Where the window of rendered rows has been placed. */
+const windowOffset = () => {
+    const first = placedRows()[0]?.row;
+    const win = first?.parentElement as HTMLElement | undefined;
+    return Number(
+        /translateY\((-?[\d.]+)px\)/.exec(win?.style.transform ?? "")?.[1] ??
+            NaN,
+    );
+};
+
+/**
+ * Where the first rendered row belongs, from the row heights the test models.
+ *
+ * The list places one offset - the window's - and the rows inside it lay out
+ * against each other, so this is the only placement arithmetic left to get
+ * wrong. Getting it wrong shows as the list jumping, not as rows overlapping:
+ * siblings in normal flow cannot be drawn on top of each other, which is why
+ * the overlap assertions this file used to make have no mechanism left to
+ * catch and have been replaced by this one.
+ */
+const expectedWindowOffset = () => {
+    const first = placedRows()[0]?.index ?? 0;
+    let top = 0;
+    for (let i = 0; i < first; i += 1) top += rowHeight(i);
+    return top;
 };
 
 describe("DetailedView under a layout change", () => {
-    it("does not overlap rows when the field layout resizes every card", () => {
+    it("places the window correctly when the field layout resizes every card", () => {
         const store = storeWith(500);
         render(<Harness store={store} />);
         act(() => flushResizeObservers());
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
 
         // The cards really do get shorter, the way they do in the browser.
         act(() => {
@@ -266,7 +262,7 @@ describe("DetailedView under a layout change", () => {
         });
         act(() => flushResizeObservers());
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
     });
 
     // The browser delivers resize notifications after the frame, so what the
@@ -274,7 +270,7 @@ describe("DetailedView under a layout change", () => {
     // already mounted is never handed back to React's ref, so this is its
     // only correction — and the frame before it arrives is the one that shows
     // cards on top of each other.
-    it("does not overlap before the resize notifications arrive", () => {
+    it("places the window before the resize notifications arrive", () => {
         const store = storeWith(500);
         render(<Harness store={store} />);
         act(() => flushResizeObservers());
@@ -284,19 +280,19 @@ describe("DetailedView under a layout change", () => {
             store.dispatch(setFieldLayout("compact"));
         });
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
     });
 
-    // The reported case: everything on screen at the loosest spacing, then
-    // switched to the tightest.
-    it("does not overlap when the spacing is tightened", async () => {
+    // The reported case: everything on screen with every element drawn, then
+    // switched to the preset that draws the fewest.
+    it("places the window when a preset shortens every card", async () => {
         const store = storeWith(500);
-        currentSpacing = "full";
-        store.dispatch(setCardDensity("full"));
+        currentCardHeight = 400;
+        store.dispatch(applyCardPreset("full"));
         render(<Harness store={store} />);
         act(() => flushResizeObservers());
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
 
         // Awaited because the rows are re-read in a microtask: reporting a
         // height makes the virtualizer notify, and its React adapter answers
@@ -304,11 +300,11 @@ describe("DetailedView under a layout change", () => {
         // from inside a commit. The microtask still runs before the browser
         // paints, so the guarantee is the first frame, not the commit.
         await act(async () => {
-            currentSpacing = "compact";
-            store.dispatch(setCardDensity("compact"));
+            currentCardHeight = 180;
+            store.dispatch(applyCardPreset("compact"));
         });
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
     });
 
     // The reserved height is what the scrollbar describes. Every measured
@@ -337,22 +333,22 @@ describe("DetailedView under a layout change", () => {
         expect(reserved()).toBeLessThan(before / 2);
     });
 
-    it("does not overlap rows when the cards get taller", () => {
+    it("places the window when the cards get taller", () => {
         const store = storeWith(500);
         currentLayout = "line";
         store.dispatch(setFieldLayout("line"));
         render(<Harness store={store} />);
         act(() => flushResizeObservers());
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
 
         act(() => {
-            currentLayout = "rows";
-            store.dispatch(setFieldLayout("rows"));
+            currentLayout = "compact";
+            store.dispatch(setFieldLayout("compact"));
         });
         act(() => flushResizeObservers());
 
-        expect(worstSlack()).toBeGreaterThanOrEqual(0);
+        expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
     });
 });
 

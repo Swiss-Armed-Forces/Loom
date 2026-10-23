@@ -14,8 +14,12 @@
     margin-bottom: 2rem;
 }
 
+/* A sha256 has nowhere to break on its own, so without this the name column's
+minimum width is the whole checksum and every other column is squeezed to its
+content - which is how the note ended up one character wide. */
 .checksumText {
     overflow-wrap: break-word;
+    word-break: break-all;
     max-width: 100%;
 }
 
@@ -24,13 +28,18 @@
 }
 
 @media only screen and (max-width: 1100px) {
-    .checksumText {
-        word-break: break-all;
-    }
-
     .nameChecksumCell {
         max-width: 100%;
     }
+}
+
+/* The two free-text columns. `TableView` has always asked for these classes;
+without them the cells carried no width at all and the file-name column took
+everything, leaving the note to wrap one character to a line. */
+.noteCell,
+.queryCell {
+    width: 22%;
+    max-width: 500px;
 }
 
 @media only screen and (min-width: 1501px) {
@@ -39,9 +48,15 @@
     }
 }
 
-/* Vertikale Darstellung (601-1500px) */
+/* Narrower than that the checksums need most of the row, but not all of it:
+the note and the query still have to be readable. */
 @media only screen and (min-width: 601px) and (max-width: 1500px) {
     .nameChecksumCell {
-        width: 100%;
+        width: 40%;
+    }
+
+    .noteCell,
+    .queryCell {
+        width: 18%;
     }
 }

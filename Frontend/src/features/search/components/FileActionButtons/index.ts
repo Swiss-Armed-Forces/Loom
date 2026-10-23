@@ -13,7 +13,6 @@ import { UpdateFlaggedButton } from "./UpdateFlaggedButton";
 import { UpdateHiddenButton } from "./UpdateHiddenButton";
 import { UpdateSeenButton } from "./UpdateSeenButton";
 import { UploadFileButton } from "./UploadFileButton";
-import { ViewDetailButton } from "./ViewDetailButton";
 
 export interface FileActionButtonProps {
     filePreview?: GetFilePreviewResponse;
@@ -36,5 +35,4 @@ export {
     UpdateHiddenButton,
     UpdateSeenButton,
     UploadFileButton,
-    ViewDetailButton,
 };

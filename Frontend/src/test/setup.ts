@@ -44,3 +44,8 @@ Object.defineProperty(window, "matchMedia", {
         dispatchEvent: vi.fn(),
     })),
 });
+
+// jsdom implements no element scrolling at all, so `el.scrollTo` is not a
+// function rather than a no-op. Code that scrolls a panel into place would
+// throw instead of doing nothing.
+Element.prototype.scrollTo = vi.fn();

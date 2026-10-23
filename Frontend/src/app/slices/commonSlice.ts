@@ -14,7 +14,6 @@ import {
     QueuesStats,
 } from "@app/api";
 import { RootState } from "@app/store";
-import { FileDetailTab } from "@features/common/utils/enums";
 import { DialogComponent } from "@features/common/utils/model";
 
 export interface DialogProps {
@@ -31,7 +30,6 @@ export interface CommonState {
     queueStats: QueuesStats;
     completeEstimate: CompleteEstimateResult;
     dialogs: DialogComponent[];
-    lastFileDetailTab: FileDetailTab;
 }
 export const COMMON_STATE_DOCS = {
     loading: "number — active loading indicator count (>0 means loading)",
@@ -39,8 +37,6 @@ export const COMMON_STATE_DOCS = {
         "QueuesStats — background task queue stats ({messagesInQueues, pausedQueues})",
     completeEstimate: "CompleteEstimateResult — processing completion estimate",
     dialogs: "DialogComponent[] — open dialog stack (last entry is topmost)",
-    lastFileDetailTab:
-        "FileDetailTab — last active file detail tab, restored on next open",
 } satisfies Record<keyof CommonState, string>;
 
 const initialState: CommonState = {
@@ -51,7 +47,6 @@ const initialState: CommonState = {
     },
     completeEstimate: {},
     dialogs: [],
-    lastFileDetailTab: FileDetailTab.Rendered,
 };
 
 export const loadConfigAsync = createAsyncThunk(
@@ -117,13 +112,16 @@ export const commonSlice = createSlice({
                 };
             }
         },
-        setLastFileDetailTab: (state, action: PayloadAction<FileDetailTab>) => {
-            state.lastFileDetailTab = action.payload;
-        },
     },
     extraReducers: (builder) => {
         builder.addCase(fetchQueueStatistics.fulfilled, (state, action) => {
-            state.queueStats = action.payload;
+            // Kept whole-shaped whatever the response carried: the header reads
+            // `pausedQueues.length` during render, so a response without the
+            // field used to throw there and take the whole app down with it.
+            state.queueStats = {
+                messagesInQueues: action.payload?.messagesInQueues ?? 0,
+                pausedQueues: action.payload?.pausedQueues ?? [],
+            };
         });
         builder.addCase(fetchCompleteEstimate.fulfilled, (state, action) => {
             state.completeEstimate = action.payload;
@@ -148,7 +146,6 @@ export const {
     openDialog,
     closeDialog,
     updateDialogPropsById,
-    setLastFileDetailTab,
 } = commonSlice.actions;
 
 export const selectCommon = (state: RootState) => state.common;
@@ -174,11 +171,6 @@ export const selectDialogs = createSelector(
 export const selectTopDialog = createSelector(
     selectCommon,
     (common) => common.dialogs[common.dialogs.length - 1] || undefined,
-);
-
-export const selectLastFileDetailTab = createSelector(
-    selectCommon,
-    (common) => common.lastFileDetailTab,
 );
 
 export default commonSlice.reducer;

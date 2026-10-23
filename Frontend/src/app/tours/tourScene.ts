@@ -34,11 +34,41 @@ const CUSTOMIZATION_TAB_BY_STEP: Partial<Record<string, CustomizationTab>> = {
     "customization-shortcuts": "key",
 };
 
+/**
+ * Which tab of the right sidebar a step needs open.
+ *
+ * A step not named here is shown with the sidebar *closed*, so every step
+ * whose target lives inside it has to be listed - the detail steps included,
+ * since a document is drawn there.
+ */
 const RIGHT_TAB_BY_STEP: Partial<Record<string, RightSidebarTab>> = {
     "statistics-pie-chart": RightSidebarTab.STATISTICS,
     "statistics-histogram": RightSidebarTab.STATISTICS,
     "bulk-action-create-archive": RightSidebarTab.BULK_ACTIONS,
+    "file-detail": RightSidebarTab.FILE_DETAIL,
+    "file-detail-tabs": RightSidebarTab.FILE_DETAIL,
+    "document-detail": RightSidebarTab.FILE_DETAIL,
+    "detail-rendered": RightSidebarTab.FILE_DETAIL,
+    "detail-translations": RightSidebarTab.FILE_DETAIL,
+    "detail-highlights": RightSidebarTab.FILE_DETAIL,
+    "detail-raw": RightSidebarTab.FILE_DETAIL,
 };
+
+/**
+ * Steps that want a detail surface of the tour's own choosing, drawn by
+ * `FileDetailView` in place of the reader's own tabs.
+ *
+ * A narrower list than the `FILE_DETAIL` entries above, which also cover the
+ * steps pointing at the pane's button and at its tab strip: those want the
+ * pane open and the reader's tabs left alone.
+ */
+export const TOUR_DETAIL_STEP_IDS = new Set([
+    "document-detail",
+    "detail-rendered",
+    "detail-translations",
+    "detail-highlights",
+    "detail-raw",
+]);
 
 export const getTourLeftPanel = (
     isTourActive: boolean,

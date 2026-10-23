@@ -4,8 +4,9 @@ import { memo } from "react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch } from "@app/hooks";
+import { openFileTabThunk } from "@app/slices/searchSlice";
 import { LazyTooltip } from "@features/common/components";
-import { useFileNavigation } from "@features/search/context/FileNavigationContext";
 
 interface NavigateToParentProps {
     parentId: string;
@@ -13,10 +14,10 @@ interface NavigateToParentProps {
 
 export const NavigateToParent = memo(({ parentId }: NavigateToParentProps) => {
     const { t } = useTranslation();
-    const { navigateToFile } = useFileNavigation();
+    const dispatch = useAppDispatch();
 
     const handleClick = (e: React.MouseEvent) => {
-        navigateToFile(parentId, { openInTab: e.ctrlKey });
+        dispatch(openFileTabThunk({ fileId: parentId, background: e.ctrlKey }));
     };
 
     const label = t("resultCard.navigateToParent");

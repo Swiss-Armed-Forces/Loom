@@ -29,7 +29,7 @@ export const createHighlightFileTool = (
     handler: async (args) => {
         const fileId = String(args.file_id ?? "");
         if (!fileId) return toolError("file_id required");
-        dispatch(revealFileThunk({ fileId, openInTab: false }));
+        dispatch(revealFileThunk({ fileId }));
         return toolSuccess();
     },
 });

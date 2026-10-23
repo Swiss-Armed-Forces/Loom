@@ -44,17 +44,16 @@ const renderHeader = (denseChrome: boolean) =>
         >
             <FileCardHeader
                 filePreview={FILE_PREVIEW}
-                hideDetail
                 compact
                 denseChrome={denseChrome}
             />
         </Provider>,
     );
 
-const actionOpacity = (container: HTMLElement) => {
-    const action = container.querySelector(".MuiCardHeader-action");
-    if (!action) return null;
-    return getComputedStyle(action).opacity;
+const buttonOpacity = (container: HTMLElement, selector: string) => {
+    const button = container.querySelector(`.MuiCardHeader-action ${selector}`);
+    if (!button) return null;
+    return getComputedStyle(button).opacity;
 };
 
 const avatarSize = (container: HTMLElement) =>
@@ -63,11 +62,18 @@ const avatarSize = (container: HTMLElement) =>
     ).width;
 
 describe("FileCardHeader dressed as a dense row", () => {
-    it("hides the actions until the row is hovered", () => {
+    it("hides the actions until the row is hovered, bar the overflow menu", () => {
         const { container } = renderHeader(true);
 
         expect(container.querySelector(".MuiCardHeader-action")).not.toBeNull();
-        expect(actionOpacity(container)).toBe("0");
+        expect(
+            buttonOpacity(container, "button:not([data-always-visible])"),
+        ).toBe("0");
+        // A card that showed nothing at all until the pointer reached it gave
+        // a reader no reason to think there were actions to go looking for.
+        expect(
+            buttonOpacity(container, "button[data-always-visible]"),
+        ).not.toBe("0");
     });
 
     it("shrinks the icon to what a list row can spare", () => {
@@ -84,7 +90,7 @@ describe("FileCardHeader in a narrow pane that is not a list", () => {
         expect(
             container.querySelectorAll(".MuiCardHeader-action button").length,
         ).toBeGreaterThan(0);
-        expect(actionOpacity(container)).not.toBe("0");
+        expect(buttonOpacity(container, "button")).not.toBe("0");
     });
 
     it("keeps its icon full size", () => {

@@ -2,7 +2,8 @@ import { AttachFile } from "@mui/icons-material";
 import { Menu, MenuItem, Typography } from "@mui/material";
 
 import { Attachment } from "@app/api";
-import { useFileNavigation } from "@features/search/context/FileNavigationContext";
+import { useAppDispatch } from "@app/hooks";
+import { openFileTabThunk } from "@app/slices/searchSlice";
 
 import { menuJKNavigation } from "../menuKeyboardNav";
 
@@ -21,10 +22,12 @@ export const AttachmentsPopover = ({
     anchorEl,
     onClose,
 }: AttachmentsPopoverProps) => {
-    const { navigateToFile } = useFileNavigation();
+    const dispatch = useAppDispatch();
 
-    const handleOpen = (fileId: string, openInTab = false) => {
-        navigateToFile(fileId, { openInTab });
+    // Ctrl keeps the reader where they are; a plain click brings the
+    // attachment to the front of the File Detail strip.
+    const handleOpen = (fileId: string, background = false) => {
+        dispatch(openFileTabThunk({ fileId, background }));
         onClose();
     };
 

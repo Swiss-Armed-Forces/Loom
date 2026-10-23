@@ -61,16 +61,39 @@ export const getColorFromString = (str: string): string => {
     return color ?? FALLBACK_COLOR;
 };
 
+/** sRGB channel to the linear value luminance is weighted from. */
+const linearise = (channel: number): number =>
+    channel <= 0.03928
+        ? channel / 12.92
+        : Math.pow((channel + 0.055) / 1.055, 2.4);
+
+/**
+ * WCAG relative luminance.
+ *
+ * The channels have to be linearised before they are weighted. Weighting the
+ * raw sRGB bytes instead overstates how bright a mid-tone is, which is what
+ * put white text on the saturated half of the palette.
+ */
 const calculateLuminance = (color: string): number => {
     const hex = color.substring(1);
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    const r = linearise(parseInt(hex.substring(0, 2), 16) / 255);
+    const g = linearise(parseInt(hex.substring(2, 4), 16) / 255);
+    const b = linearise(parseInt(hex.substring(4, 6), 16) / 255);
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
+/**
+ * Luminance at which black and white are equally readable.
+ *
+ * `sqrt(1.05 * 0.05) - 0.05`: the point where the contrast ratio against white
+ * and the ratio against black meet. Picking the lighter side of 0.5 instead
+ * chose white far too often.
+ */
+const BLACK_OVER_WHITE_THRESHOLD = 0.179;
+
 export const getFontColorFromBackGroundColor = (
     backgroundColor: string,
-): string => {
-    return calculateLuminance(backgroundColor) > 0.5 ? "#000000" : "#ffffff";
-};
+): string =>
+    calculateLuminance(backgroundColor) > BLACK_OVER_WHITE_THRESHOLD
+        ? "#000000"
+        : "#ffffff";

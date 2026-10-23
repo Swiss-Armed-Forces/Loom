@@ -10,11 +10,12 @@ import {
     scheduleSingleImageDescription,
     updateFile,
 } from "@app/api";
+import { HIGHLIGHT_SETTLE_MS } from "@app/highlightSettle";
 import {
     SEARCH_STATE_LOCAL_STORAGE_KEY,
     fetchPreview,
     selectAutoActionsPreferences,
-    setFilePreview,
+    patchFilePreview,
     setHighlightedFileId,
     setPreviewFields,
 } from "@app/slices/searchSlice";
@@ -75,19 +76,11 @@ export const createLocalStoragePersistListener = ({
 
 const PREVIEW_FIELDS_DEBOUNCE_MS = 300;
 
-/**
- * How long the highlight has to settle before auto-actions run.
- *
- * Holding a move key walks the highlight over every card in between, and each
- * of those was a `PUT` per enabled auto-action — a burst of writes for files
- * the user never looked at. Waiting for the highlight to come to rest means
- * only the cards actually stopped on are marked.
- */
-const AUTO_ACTIONS_SETTLE_MS = 300;
-
 let previewFieldsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let autoActionsSettleTimer: ReturnType<typeof setTimeout> | null = null;
 let lastAutoActionsFileId: string | null = null;
+/** Auto-action writes still in flight, per file. See `runAutoActionsForFile`. */
+const pendingAutoActions = new Map<string, Partial<GetFilePreviewResponse>>();
 
 const runAutoActionsForFile = async (
     fileId: string,
@@ -98,55 +91,70 @@ const runAutoActionsForFile = async (
     const filePreview = state.search.files[fileId]?.preview;
     if (!filePreview) return;
 
-    // isFirstRun guards one-shot actions (API scheduling calls) that must only
-    // fire once per highlight session. The optimistic state dispatch below is
-    // NOT guarded — it must re-apply on every fetchPreview.fulfilled so that a
-    // re-fetch triggered by ensureViewPreview (which sees cachedQuery !== activeQuery
-    // for temporary/out-of-results files) doesn't permanently overwrite seen/flagged.
+    // isFirstRun guards the one-shot actions - the API scheduling calls and the
+    // writes below - so they fire once per highlight session rather than on
+    // every preview that arrives.
     const isFirstRun = lastAutoActionsFileId !== fileId;
-    if (isFirstRun) {
-        lastAutoActionsFileId = fileId;
-        if (prefs.reindex)
-            scheduleSingleFileIndexing(filePreview.fileId).catch(() => {});
-        if (prefs.summarize)
-            scheduleSingleFileSummarization(filePreview.fileId, null).catch(
-                () => {},
-            );
-        if (prefs.describeImage)
-            scheduleSingleImageDescription(filePreview.fileId, null).catch(
-                () => {},
-            );
-        if (prefs.translate)
-            scheduleSingleFileTranslation("", filePreview.fileId).catch(
-                () => {},
-            );
+    if (!isFirstRun) {
+        // A preview that was already in flight when this file was opened can
+        // land after the auto-action's own writes and describe the state from
+        // before them. Re-assert what is still in flight, and only that: once
+        // the writes have landed the server's answer is the truth, including
+        // when the user has since changed the same flag by hand. Re-asserting
+        // unconditionally is what made "mark unread" impossible to see - the
+        // middleware put `seen` back on every refetch, without telling the
+        // server, so the card and the server disagreed for good.
+        const stillPending = pendingAutoActions.get(fileId);
+        if (stillPending) {
+            dispatch(patchFilePreview({ fileId, changes: stillPending }));
+        }
+        return;
     }
 
+    lastAutoActionsFileId = fileId;
+    if (prefs.reindex)
+        scheduleSingleFileIndexing(filePreview.fileId).catch(() => {});
+    if (prefs.summarize)
+        scheduleSingleFileSummarization(filePreview.fileId, null).catch(
+            () => {},
+        );
+    if (prefs.describeImage)
+        scheduleSingleImageDescription(filePreview.fileId, null).catch(
+            () => {},
+        );
+    if (prefs.translate)
+        scheduleSingleFileTranslation("", filePreview.fileId).catch(() => {});
+
     const optimisticUpdates: Partial<GetFilePreviewResponse> = {};
+    const writes: Promise<unknown>[] = [];
     if (prefs.markAsSeen && !filePreview.seen) {
-        if (isFirstRun) {
+        optimisticUpdates.seen = true;
+        writes.push(
             updateFile(filePreview.fileId, { seen: true }).catch((err) =>
                 toast.error(
                     i18n.t("updateFileState.seen.scheduledErrorToast", { err }),
                 ),
-            );
-        }
-        optimisticUpdates.seen = true;
+            ),
+        );
     }
     if (prefs.flag && !filePreview.flagged) {
-        if (isFirstRun) {
+        optimisticUpdates.flagged = true;
+        writes.push(
             updateFile(filePreview.fileId, { flagged: true }).catch((err) =>
                 toast.error(
                     i18n.t("updateFileState.flagged.scheduledErrorToast", {
                         err,
                     }),
                 ),
-            );
-        }
-        optimisticUpdates.flagged = true;
+            ),
+        );
     }
     if (Object.keys(optimisticUpdates).length > 0) {
-        dispatch(setFilePreview({ ...filePreview, ...optimisticUpdates }));
+        pendingAutoActions.set(fileId, optimisticUpdates);
+        void Promise.allSettled(writes).then(() => {
+            pendingAutoActions.delete(fileId);
+        });
+        dispatch(patchFilePreview({ fileId, changes: optimisticUpdates }));
     }
 };
 
@@ -157,17 +165,19 @@ const SEARCH_PERSIST_FIELDS = [
     "leftSidebarWidth",
     "rightSidebarWidth",
     "openFileTabs",
-    "activeTabFileId",
+    "followDetailTab",
     "customQueries",
     "expandFilePaths",
-    "cardDensity",
     "fieldLayout",
     "previewFields",
+    "boldPreviewFields",
+    "fieldColumnCount",
+    "fieldColumnOf",
     "fieldColumnWidths",
     "thumbnailColumnWidth",
-    "showThumbnails",
+    "thumbnailWidthRem",
     "showHighlights",
-    "showFieldSections",
+    "showFieldNames",
     "showExtensionIcon",
     "showFilePath",
     "showParentNavigation",
@@ -213,7 +223,7 @@ const scheduleAutoActions = (
         const fileId = state.search.highlightedFileId;
         if (!fileId) return;
         void runAutoActionsForFile(fileId, state, dispatch);
-    }, AUTO_ACTIONS_SETTLE_MS);
+    }, HIGHLIGHT_SETTLE_MS);
 };
 
 // Auto-actions when a file is highlighted (preview already in state)

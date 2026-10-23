@@ -188,7 +188,7 @@ const TourViewHarness = () => {
                 {tourDetailFileId ?? "none"}
             </div>
             <div data-tour="branding">Loom</div>
-            <div data-tour="search-workspace">
+            <div data-tour="search-panel">
                 {showQueryOverview && (
                     <>
                         <div data-tour="query-overview">Queries</div>
@@ -198,7 +198,8 @@ const TourViewHarness = () => {
                 )}
             </div>
             <div data-tour="processing-status">Processing status</div>
-            <div data-tour="results-tabs">Results tabs</div>
+            <div data-tour="search-panel">Results list</div>
+            <div data-tour="file-detail-tabs">File detail tabs</div>
             <div data-tour-anchor="true">
                 Result card
                 <div data-tour="result-card-processing-status">
@@ -791,7 +792,7 @@ describe("TourProvider", () => {
             "tour.controls.searchAll",
         );
         expect(capturedConfig.steps?.[5].element).toBe(
-            '[data-tour="results-tabs"]',
+            '[data-tour="search-panel"]',
         );
         expect(capturedConfig.steps?.[6].element).toBe(
             '[data-tour-anchor="true"]',
@@ -829,7 +830,7 @@ describe("TourProvider", () => {
         });
         expect(driverInstance.moveTo).toHaveBeenCalledWith(5);
         expect(view.getByTestId("tour-view")).toHaveTextContent(
-            "results:results-tabs:file-1",
+            "results:results-list:file-1",
         );
         expect(window.localStorage.getItem(TOUR_STORAGE_KEY)).toBeNull();
 

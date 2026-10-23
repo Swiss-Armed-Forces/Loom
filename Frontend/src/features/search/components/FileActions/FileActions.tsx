@@ -4,8 +4,6 @@ import { useState, useEffect, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse, RenderedFile } from "@app/api";
-import { useAppSelector } from "@app/hooks";
-import { selectQuery } from "@app/slices/searchSlice";
 import { LazyTooltip } from "@features/common/components";
 import {
     AddTagsButton,
@@ -18,7 +16,6 @@ import {
     UpdateFlaggedButton,
     UpdateHiddenButton,
     UpdateSeenButton,
-    ViewDetailButton,
 } from "@features/search/components/FileActionButtons";
 
 import { menuJKNavigation } from "../menuKeyboardNav";
@@ -34,7 +31,6 @@ interface ActionDef {
 interface FileActionsProps {
     filePreview: GetFilePreviewResponse;
     additionalActions?: ReactNode[];
-    hideDetail?: boolean;
     renderedFile?: RenderedFile;
     isCompact: boolean;
 }
@@ -42,13 +38,11 @@ interface FileActionsProps {
 export const FileActions = ({
     filePreview,
     additionalActions = [],
-    hideDetail,
     renderedFile,
     isCompact,
 }: FileActionsProps) => {
     const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const searchQuery = useAppSelector(selectQuery);
     const open = Boolean(anchorEl);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -96,6 +90,32 @@ export const FileActions = ({
                 />
             ),
         },
+    ];
+
+    /*
+     * The two actions that say something about the file as well as doing
+     * something to it. They are drawn at rest like the overflow menu is,
+     * because fading them out until the pointer arrives hides the fact that
+     * the file is flagged or has not been read.
+     */
+    const alwaysVisible = new Set<string>([
+        ...(filePreview.flagged ? ["flag"] : []),
+        ...(filePreview.seen ? [] : ["seen"]),
+    ]);
+    const primaryActions: ReactNode[] = primaryActionDefs.map((d) =>
+        alwaysVisible.has(d.key) ? (
+            <span key={d.key} data-always-visible="true">
+                {d.render(false)}
+            </span>
+        ) : (
+            d.render(false)
+        ),
+    );
+    // additionalActions are caller-supplied (e.g. the close button in FileDetailPanel)
+    // and must always be visible — keep them in primaryActions.
+    primaryActions.push(...additionalActions);
+
+    const overflowActions: ActionDef[] = [
         {
             key: "tags-input",
             tooltip: t("tags.addTag"),
@@ -131,31 +151,7 @@ export const FileActions = ({
                 />
             ),
         },
-    ];
 
-    if (!hideDetail) {
-        primaryActionDefs.push({
-            key: "preview",
-            tooltip: t("generalSearchView.viewDetails"),
-            render: (disableTooltip) => (
-                <ViewDetailButton
-                    key="preview"
-                    fileId={filePreview.fileId}
-                    searchQuery={searchQuery}
-                    disableTooltip={disableTooltip}
-                />
-            ),
-        });
-    }
-
-    const primaryActions: ReactNode[] = primaryActionDefs.map((d) =>
-        d.render(false),
-    );
-    // additionalActions are caller-supplied (e.g. the close button in FileDetailPanel)
-    // and must always be visible — keep them in primaryActions.
-    primaryActions.push(...additionalActions);
-
-    const overflowActions: ActionDef[] = [
         {
             key: "translate",
             tooltip: t("sideMenu.translateQueriedFiles"),
@@ -241,7 +237,11 @@ export const FileActions = ({
     if (isCompact) {
         return (
             <div data-tour="result-card-actions">
-                <IconButton onClick={handleMenuClick}>
+                <IconButton
+                    onClick={handleMenuClick}
+                    aria-label="more actions"
+                    data-always-visible="true"
+                >
                     <MoreVert />
                 </IconButton>
                 <Menu
@@ -278,12 +278,6 @@ export const FileActions = ({
                 {/* Hidden buttons keep hotkey-mapped actions in the DOM so
                 clickActionButton() can find them even when the menu is closed. */}
                 <div style={{ display: "none" }}>
-                    {!hideDetail && (
-                        <ViewDetailButton
-                            fileId={filePreview.fileId}
-                            searchQuery={searchQuery}
-                        />
-                    )}
                     <UpdateFlaggedButton
                         iconOnly
                         filePreview={filePreview}
@@ -318,6 +312,9 @@ export const FileActions = ({
                 size="small"
                 onClick={handleMenuClick}
                 aria-label="more actions"
+                // The one control that does not fade out with the rest: a
+                // card has to say it has actions before the pointer is on it.
+                data-always-visible="true"
             >
                 <MoreVert fontSize="small" />
             </IconButton>

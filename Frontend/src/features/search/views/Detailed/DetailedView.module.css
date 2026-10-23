@@ -18,15 +18,24 @@
 }
 
 /*
- * One row. Absolutely positioned, so the gap between cards cannot come from
- * the container's `gap` any more — and it has to be padding rather than
- * margin, because the virtualizer measures the border box and a margin would
- * fall outside it, stacking the cards flush against each other.
+ * The rendered window, placed where the first row it holds belongs. One
+ * transform for the window rather than one per row: inside it the rows lay
+ * out against each other, so a card that grows pushes the next one down
+ * instead of being drawn under it.
  */
-.resultRow {
+.virtualWindow {
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+}
+
+/*
+ * One row. The gap between cards has to be padding rather than margin,
+ * because the virtualizer measures the border box and a margin would fall
+ * outside it, stacking the cards flush against each other.
+ */
+.resultRow {
     width: 100%;
     padding-bottom: 1rem;
 }
