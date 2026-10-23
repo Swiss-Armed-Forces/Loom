@@ -45,7 +45,7 @@ another.
 ```bash
 kubectl --namespace loom logs deploy/production-loom-ollama --tail 100
 kubectl --namespace loom exec deploy/production-loom-ollama -- ollama list   # what is on the box
-curl --insecure https://ollama.loom/                            # answers "Ollama is running"
+loom-curl https://ollama.loom/                                  # answers "Ollama is running"
 ```
 
 Every workload is `production-loom-<component>` -- see `reference/kubernetes.md`. `deploy/ollama`

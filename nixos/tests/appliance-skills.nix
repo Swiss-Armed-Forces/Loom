@@ -180,6 +180,17 @@ let
         || { echo "$skill: description is not a quoted string" >&2; exit 1; }
     done
 
+    # The generated facts, which are what the skills send the model to when the
+    # right answer depends on which flags this stick was built with. Two skills
+    # say "facts.md says whether this box requires a client certificate", and
+    # for a while it did not -- so the model could not tell an mTLS box from a
+    # normal one, and followed the advice for the wrong one. Checked by the row
+    # label rather than by the verdict, which differs per image.
+    facts="$skills/loom-appliance/facts.md"
+    test -s "$facts" || { echo "no facts.md in $skills" >&2; exit 1; }
+    grep -q 'require-client-cert' "$facts" \
+      || { echo "$facts: says nothing about client certificates" >&2; exit 1; }
+
     # Every loom-* command the skills name has to be one this image carries.
     cat >known <<'EOF'
     ${lib.concatStringsSep "\n" loomNames}

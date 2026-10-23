@@ -59,14 +59,18 @@ entrypoint beside a client-certificate requirement would be a way around it. On 
 TLS handshake from a client holding no certificate is the *correct* answer, not a fault to debug.
 `loom-appliance/facts.md` says which image this is.
 
-The certificate is self-signed, so `curl` over `https` needs `--insecure`:
+Probe it with `loom-curl`, which holds the anchor for the self-signed certificate and the client
+certificate where one is required. Plain `curl` needs `--insecure` for the first and cannot do the
+second at all:
 
 ```bash
-curl --insecure --silent --output /dev/null --write-out '%{http_code}\n' https://frontend.loom
+loom-curl --silent --output /dev/null --write-out '%{http_code}\n' https://frontend.loom
 curl --silent --output /dev/null --write-out '%{http_code}\n' http://frontend.loom
 ```
 
-If `http` answers and `https` does not, that is a certificate problem, not a routing one.
+On a `--require-client-cert` box the second line answering `302` is the global redirect, which is
+all port 80 carries there, rather than a fault. Anywhere else, `http` answering while `https` does
+not is a certificate problem and not a routing one.
 
 ## Publishing Loom
 
@@ -79,7 +83,7 @@ sudo iptables --table nat --list-rules LOOM-EXPOSE
 ```
 
 If the rules are there and a client still gets nothing, the stack is probably still coming up.
-`curl --insecure https://frontend.loom` from the box goes straight to Traefik and separates "not
+`loom-curl https://frontend.loom` from the box goes straight to Traefik and separates "not
 exposed" from "not up yet" in one command.
 
 ## The captive portal page
@@ -105,7 +109,7 @@ units are involved:
 sudo cat /run/loom-portal/password        # today's password, also on the login screen
 journalctl --unit loom-portal-password    # it rotates at midnight
 journalctl --unit loom-portal-issue       # every certificate the page has handed out
-curl --insecure --silent https://portal.loom/ | grep '<form'
+loom-curl --silent https://portal.loom/ | grep '<form'
 ```
 
 `loom-portal-issue` runs as root and is started by a `systemd.path` watching

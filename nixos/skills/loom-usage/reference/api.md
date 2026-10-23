@@ -1,7 +1,9 @@
 # The REST API
 
-Loom's API is a FastAPI application behind `api.loom`. There is no authentication — everyone who
-can reach the box is trusted.
+Loom's API is a FastAPI application behind `api.loom`. The application has no authentication of its
+own: every request that reaches it is trusted. What stands in front of it may not be — a box built
+with `--require-client-cert` refuses a client that presents no certificate, on this route and every
+other. `loom-appliance/facts.md` says which kind of box this is.
 
 ## Where the documentation is
 
@@ -13,15 +15,22 @@ http://api.loom/redoc          ReDoc, easier to read
 http://api.loom/openapi.json   the raw OpenAPI schema
 ```
 
-From the box's own console:
+Those are for a browser on a laptop, so they are spelled `http` — on a `--require-client-cert` box
+it is `https` and the browser needs an identity. From the box itself, use `loom-curl`:
 
 ```bash
-curl --silent http://api.loom/openapi.json | jq '.paths | keys'
-curl --silent http://api.loom/openapi.json | jq -r '.paths | to_entries[] | "\(.key)"' | sort
+loom-curl --silent https://api.loom/openapi.json | jq '.paths | keys'
+loom-curl --silent https://api.loom/openapi.json | jq -r '.paths | to_entries[] | "\(.key)"' | sort
 ```
 
 That last command is the right answer to "what endpoints are there" — it reads the live schema
 rather than trusting a written list.
+
+`loom-curl` is curl told the two things about this box that no stock trust store knows: Loom's
+certificate is self-signed, and where a client certificate is required it holds one. Everything
+else it passes through untouched, so curl's own arguments work. Plain `curl` fails on the first
+count everywhere, and on both where certificates are required. Use `https` — every image serves
+it.
 
 ## The shape of it
 

@@ -498,6 +498,12 @@ let
     | Stick key passphrase (`--lock-key`) | ${
       if cfg.keyStore.enable then "required at boot" else "not used"
     } |
+    | Client certificate (`--require-client-cert`) | ${
+      if cfg.mtls.enable then
+        "**required** -- every route the chart renders refuses a client without one, and only `https` is served"
+      else
+        "not required -- `http` and `https` both reach Loom"
+    } |
 
     ## Names this box resolves
 
@@ -567,7 +573,7 @@ let
   '';
 
   # Always in context, unlike the skills. This exists because the failure mode of
-  # a 9B model here is not picking the wrong skill, it is never reaching for one
+  # a model this size is not picking the wrong skill, it is never reaching for one
   # and answering from priors instead -- which on a box like this produces
   # confident, generic and wrong Linux advice. Nothing in opencode's stock prompt
   # says what kind of machine it is on.

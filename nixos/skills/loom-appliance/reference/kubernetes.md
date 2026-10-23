@@ -52,6 +52,28 @@ them too. The kind matters as much as the name -- half of these are StatefulSets
 A pod that is `Pending` on a one-node cluster is almost always waiting for resources or for a
 volume. `kubectl --namespace loom describe pod <name>` says which.
 
+## Reaching a service from this box
+
+Two patterns, and which applies depends on whether the service has a route of its own.
+
+| The service | How to reach it |
+| --- | --- |
+| Has a `.loom` name that serves HTTP | `loom-curl https://api.loom/v1/about` |
+| Everything else | `kubectl --namespace loom port-forward deploy/production-loom-crawler 8000:8000` |
+
+**Use `loom-curl`, not `curl`, and spell the URL `https`.** Loom's certificate is self-signed, so
+plain `curl` cannot verify it on any box; and where this one was built with
+`--require-client-cert`, every route also demands a client certificate, which `loom-curl` holds and
+`curl` does not. Every image serves `https`, so one spelling works on both.
+`loom-appliance/facts.md` says which kind this is. Arguments are passed through untouched, so this
+is curl — including for the box's own plaintext endpoints, which stay `http`.
+
+`worker`, `crawler`, `beat`, `persister` and `reaper` have no route at all and are reached only
+by `port-forward`. Pod addresses are not routable from this box, so there is no shorter way in.
+
+`redis.loom`, `redis-cache.loom` and `rabbit-amqp.loom` resolve, but nothing answers on them:
+their TCP routes are off in the chart by default. Use `port-forward` for those too.
+
 ## When files are not being indexed
 
 The pipeline is: upload to SeaweedFS → `crawler` notices → a Celery task on RabbitMQ → `worker`
@@ -62,8 +84,8 @@ kubectl --namespace loom logs deploy/production-loom-crawler --tail 100
 kubectl --namespace loom logs deploy/production-loom-worker --tail 200
 ```
 
-Queue depths are visible in the RabbitMQ UI at `https://rabbit.loom`, and through the API at
-`https://api.loom/v1/queues`.
+Queue depths are visible in the RabbitMQ UI at `https://rabbit.loom`, and through the API:
+`loom-curl https://api.loom/v1/queues`.
 
 ## The dead-letter chain
 

@@ -48,8 +48,8 @@ one is for. The ones worth knowing without looking:
 | Address | What it is |
 | --- | --- |
 | `http://frontend.loom` | The Loom web UI — this is the one to use (`https` on a `--require-client-cert` box) |
-| `http://api.loom/docs` | The REST API, with interactive documentation |
-| `http://grafana.loom` | Dashboards and metrics |
+| `http://api.loom/docs` | The REST API, with interactive documentation (`https` on a `--require-client-cert` box) |
+| `http://grafana.loom` | Dashboards and metrics (`https` on a `--require-client-cert` box) |
 
 ## Going deeper
 
