@@ -195,11 +195,13 @@ COPY --chown=${NIX_USER_NAME} \
     nix-dind/devenv.local.nix \
     "${NIX_USER_HOMEDIR}"/nix-dind/
 
-# Entering the shell runs loom:git-hooks:worktree-hooks-path, which executes
-# this script. There is no .git here, so it returns without configuring
-# anything -- but the task is unconditional, so the file has to exist.
+# Entering the shell runs loom:git-hooks:worktree-hooks-path and
+# loom:git:generated-file-merge-driver, which execute these scripts. There is
+# no .git here, so both return without configuring anything -- but the tasks
+# are unconditional, so the files have to exist.
 COPY --chown=${NIX_USER_NAME} \
     cicd/set_worktree_hooks_path.sh \
+    cicd/set_generated_file_merge_driver.sh \
     "${NIX_USER_HOMEDIR}"/cicd/
 
 
