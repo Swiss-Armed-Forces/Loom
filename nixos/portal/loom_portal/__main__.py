@@ -31,6 +31,7 @@ from loom_portal.settings import (
     validated_accent,
 )
 from loom_portal.spool import Spool
+from loom_portal.validated import ValidatedClients
 
 ENV_PREFIX = "LOOM_PORTAL_"
 
@@ -47,6 +48,11 @@ def build_settings(argv: list[str] | None = None) -> PortalSettings:
         "--frontend-url", default=_env("FRONTEND_URL", defaults.frontend)
     )
     parser.add_argument("--portal-url", default=_env("URL", defaults.portal))
+    parser.add_argument(
+        "--portal-redirect-url",
+        default=_env("REDIRECT_URL", defaults.portal_redirect),
+        help="where an unvalidated connectivity probe is sent; `loom.portal.target`",
+    )
     parser.add_argument("--secure-url", default=_env("SECURE_URL", defaults.secure))
     parser.add_argument("--tag", default=_env("TAG", "dev"))
     parser.add_argument("--logo", default=_env("LOGO", ""))
@@ -78,6 +84,7 @@ def build_settings(argv: list[str] | None = None) -> PortalSettings:
         urls=PortalUrls(
             frontend=arguments.frontend_url,
             portal=arguments.portal_url,
+            portal_redirect=arguments.portal_redirect_url,
             secure=arguments.secure_url,
         ),
         brand=PortalBrand(
@@ -125,7 +132,11 @@ def build_portal(
             max_in_flight=limits.max_in_flight,
             timeout_s=limits.issue_timeout_s,
         ),
-        clock=clock,
+        validated=ValidatedClients(
+            directory=settings.validated_dir,
+            clock=clock,
+            ttl_s=limits.validated_ttl_s,
+        ),
     )
 
 

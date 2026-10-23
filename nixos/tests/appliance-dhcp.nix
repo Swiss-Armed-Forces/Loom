@@ -34,6 +34,10 @@ let
   # judged against the pool rather than against its /24.
   poolEnd = "${loomSubnet}.200";
 
+  # The visitor node's own address, deliberately below the pool so it cannot
+  # collide with a lease the appliance hands out during the test.
+  visitorAddress = "${loomSubnet}.50";
+
   dhcp-probe = import ./dhcp-probe.nix { inherit pkgs; };
 in
 pkgs.testers.runNixOSTest {
@@ -97,6 +101,45 @@ pkgs.testers.runNixOSTest {
     environment.systemPackages = [ dhcp-probe ];
   };
 
+  # A visitor's laptop, on the appliance's own segment.
+  #
+  # The first node in this directory that talks to the appliance over the network
+  # it serves, and the gap that let every captive-portal defect ship: every other
+  # assertion in the suite runs `curl` on the appliance itself with a hand-written
+  # `Host:` header, which proves nginx answers a crafted request and says nothing
+  # about whether a real client ever sends one.
+  #
+  # Same vlan, so this is the appliance's wire rather than the framework's. The
+  # framework's own address on eth1 is cleared and a static one out of the
+  # appliance subnet put there instead -- static rather than DHCP because the
+  # lease itself is asserted from the appliance side by `loom-dhcp-probe`, and a
+  # second DHCP client here would only add a wait. The default route is the point:
+  # it is what sends this node's off-subnet traffic at the box, which is the whole
+  # of what the lease now tells a real client to do.
+  nodes.visitor =
+    { pkgs, ... }:
+    {
+      virtualisation.memorySize = 512;
+      virtualisation.diskSize = 1024;
+
+      networking.useDHCP = false;
+      networking.interfaces.eth1.ipv4.addresses = pkgs.lib.mkForce [
+        {
+          address = "${visitorAddress}";
+          prefixLength = 24;
+        }
+      ];
+      networking.defaultGateway = {
+        address = "${boxAddress}";
+        interface = "eth1";
+      };
+      networking.nameservers = [ "${boxAddress}" ];
+      networking.firewall.enable = false;
+
+      # `host` and `ping` are in the default system path already; curl is not.
+      environment.systemPackages = [ pkgs.curl ];
+    };
+
   # The test itself is loom_tests/dhcp.py, so that the repository's Python hooks
   # reach it -- see loom_tests/driver.py for why, and for why `skipTypeCheck` is
   # set above.
@@ -105,6 +148,7 @@ pkgs.testers.runNixOSTest {
 
     run(
         appliance,
+        visitor,
         start_all=start_all,
         subtest=subtest,
         params=Params(

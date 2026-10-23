@@ -1281,21 +1281,38 @@ is resolved by the mobile network, which has never heard of `.loom`.
 
 The box answers the question the phone actually asks. Every operating system probes a URL it knows the
 answer to — `connectivitycheck.gstatic.com/generate_204` on Android, `captive.apple.com` on iOS — to decide
-whether a network reaches the internet. `dnsmasq` points those four names at a second address the box holds,
-where a small nginx answers `302` to `http://portal.loom/`. The phone reads that as a captive portal, offers
-**"Sign in to network"**, and opens that page.
+whether a network reaches the internet. `dnsmasq` answers _every_ name with a second address the box holds,
+where a small nginx answers `302` to the page. The phone reads that as a captive portal, offers
+**"Sign in to network"**, and opens it.
 
-Three things are worth knowing:
+Four things are worth knowing:
 
-- **The "no internet" warning does not go away.** It becomes "Sign in to network". There is no honest way to
-  claim internet connectivity; the box is an island with no upstream and advertises no default route.
-- **Only those four names are intercepted.** `connectivitycheck.gstatic.com`, `captive.apple.com`,
-  `www.msftconnecttest.com` and `detectportal.firefox.com`. Everything else outside `.loom` is still
-  refused, so a visitor's mail client fails cleanly instead of being handed this box.
-- **Android's Private DNS defeats it.** If the phone is set to a DNS-over-TLS provider — the default is
-  "Automatic", but a configured hostname is common — every lookup bypasses the appliance's resolver and
-  `.loom` can never resolve. Set Private DNS to Off while on the appliance network. Nothing on the box can
-  work around this.
+- **The box claims the default route, and that costs a cabled laptop its internet.** This is how every
+  captive portal behaves, and it is not optional here: a client that has no route to the box sends its
+  connectivity probe out of whatever other interface it has, where the probe succeeds — so the operating
+  system never offers the sign-in, and on macOS never evaluates the wired link at all. Everything off the
+  appliance segment is refused immediately rather than dropped, so a visitor's other traffic fails fast
+  instead of hanging. Unplug, or delete the route, to get the internet back.
+- **Every name is intercepted, not a list of known probes.** A client that cannot resolve its probe concludes
+  "no internet" rather than "portal present" — so a Samsung, Xiaomi or Linux-desktop probe that this box
+  refused took the sign-in prompt away rather than merely missing it. The cost is that a visitor's mail
+  client is now handed this box instead of failing cleanly. A handful of names are carved out and answer NXDOMAIN
+  or a literal instead: `dns.msftncsi.com` (which Windows compares against `131.107.255.255` before it will
+  probe over http at all), `use-application-dns.net` (Mozilla's signal to turn DNS-over-HTTPS off),
+  `mask.icloud.com` and `mask-h2.icloud.com` (Apple's, to turn iCloud Private Relay off), and `wpad`.
+- **The warning goes away only when the visitor says so.** Until then every probe gets the redirect, which
+  is honest — the box has no internet. The page's last section is a button that tells _this device_ to stop
+  checking; from then on that client's probes get the success answer its vendor is looking for, and the
+  operating system marks the network usable. Without it Android keeps warning and quietly prefers mobile
+  data, which cannot reach Loom, and Apple re-raises its sign-in sheet every sixty seconds. The answer is
+  per client, lives in RAM, and is forgotten at reboot or after twelve hours.
+- **Android's Private DNS in strict mode still breaks the page, but no longer the detection.** A phone with
+  a configured DNS-over-TLS hostname resolves nothing through the appliance — but Android's connectivity
+  check deliberately bypasses private DNS, so the portal is still detected and the redirect still followed:
+  it names the page's address rather than `portal.loom` precisely so that it needs no resolver. `.loom`
+  names still will not resolve on such a phone, so set Private DNS to Off or Automatic to use Loom itself.
+  Clients with a hardcoded resolver are covered a different way: port 53 and port 80 off the segment are
+  redirected to the box, so the probe lands on the page whatever the client did about DNS.
 
 The standards-based alternative, RFC 8910's DHCP option 114, is deliberately not used: the API it points at
 is governed by RFC 8908, which requires an HTTPS endpoint with a certificate the client can validate and
@@ -1329,14 +1346,22 @@ The page is served from the box itself rather than from the cluster, so it answe
 machine is up. Before Loom has finished coming up it says so, in those words, instead of offering a download
 that is not there yet.
 
-The box is not a gateway and does not advertise itself as one: the lease carries an address, a netmask and a
-DNS server, and deliberately no default route. So a laptop that is also on wifi keeps reaching the internet
-over the wifi, and only `*.loom` comes from the box.
+**A fourth section** appears at the bottom of every page: a button that stops the visitor's own device
+warning them about this network. Pressing it is what makes that device's connectivity probes succeed, so the
+sign-in sheet closes and Android stops preferring mobile data. It changes nothing about what is behind the
+box — there is still no internet — and the page says so above the button, because a captive-portal sheet
+closes the instant a probe succeeds and the visitor may never see the page that follows the press.
 
-The one thing the laptop does take from the box is DNS, and the appliance's resolver has no upstream — it
-answers under `.loom` and refuses everything else. Most systems query both links and are unaffected; one that
-adopts the box as its only resolver will resolve nothing but `*.loom` until it is unplugged. Nothing on the
-box can fix that, there being no internet behind it to forward to.
+The box advertises itself as the default route, and a laptop that is also on wifi will lose its internet
+while cabled in. That is deliberate and it is what makes the portal reachable at all; see the bullets under
+[Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is). Everything off
+the segment is refused immediately rather than dropped, so the failure is fast and obvious rather than a
+succession of hanging tabs.
+
+The laptop also takes its DNS from the box, and the appliance's resolver has no upstream — it answers `.loom`
+with the box, four carved-out names with what their vendors specified, and every other name with the portal
+page. So a browser pointed anywhere else lands on the page rather than failing, and anything that is not a
+browser fails. Nothing on the box can do better, there being no internet behind it to forward to.
 
 ### Ingesting data from USB
 
@@ -2116,13 +2141,20 @@ there, the stack itself is probably still coming up — `curl --insecure https:/
 `Alt-F2` console goes straight to Traefik and bypasses the whole question, so it separates "not exposed" from
 "not up yet" in one command.
 
-**A laptop plugged into the box loses the internet on every other interface.** The box's lease is naming it as
-the laptop's default gateway, and a wired link outranks wifi nearly everywhere, so everything the laptop sends
-anywhere goes to a box with no upstream. Confirm it with `ip route` (`route print` on Windows): a `default via
-<box address>` is the symptom. Sticks built before this was fixed all do it — `dnsmasq` sends a router option
-of its own accord unless one is explicitly suppressed, so leaving it unconfigured was not the same as leaving
-it out. Build a new stick. To finish a session on the stick in hand, delete that route on the laptop
-(`sudo ip route del default via <box address>`); it comes back at the next lease renewal.
+**A laptop plugged into the box loses the internet on every other interface.** Expected, and deliberate. The
+lease names the box as the default gateway, a wired link outranks wifi nearly everywhere, and the box has no
+upstream — so the laptop's traffic goes to an island. This is how every captive portal behaves, and it is
+what makes the portal reachable: a client with no route to the box sends its connectivity probe out of some
+other interface, where it succeeds, and is never offered the sign-in page. Off-segment traffic is refused
+immediately rather than dropped, so the failure is fast rather than a succession of hanging tabs.
+
+Unplug to get the internet back. To stay cabled and keep it, delete the route on the laptop
+(`sudo ip route del default via <box address>`), which comes back at the next lease renewal — and accept
+that nothing will then offer you the portal page, so open `http://<box address>` by hand. The box's own
+login screen prints the address.
+
+Sticks built between the two changes do the opposite: they suppress the router option and their captive
+portal is almost never detected by anything. A new stick is the fix for that one.
 
 **On the Spark, `minikube start` fails with `Error response from daemon: AMD CDI spec not found`.** On a box
 with no AMD anything in it. Sticks built before this was fixed all do it, and the fix is a new stick — with

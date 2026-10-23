@@ -236,7 +236,9 @@ def test_the_form_is_on_the_page_the_tls_listener_serves(tmp_path):
     plain = portal.handle(Request(method="GET", path="/"))
 
     assert b'<form method="post" action="/certificate">' in secure.body
-    assert b"<form" not in plain.body
+    # The certificate form specifically -- the page's own "stop the warning" button is
+    # a form too, and is offered on both listeners.
+    assert b'action="/certificate"' not in plain.body
     assert b"https://portal.loom/#identity" in plain.body
 
 

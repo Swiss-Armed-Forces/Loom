@@ -9,13 +9,21 @@
 # nothing here runs on the machine driving the test. It opens an AF_PACKET socket
 # on the box's own interface, which only exists inside the guest.
 #
-# Asking dnsmasq rather than reading its configuration file is the point. The
-# bug this guards against was not a missing line: it was the belief that leaving
-# option:router out of the configuration left it out of the lease, when dnsmasq
-# defaults that option to its own address and only a valueless
-# `dhcp-option=option:router` suppresses it (see nixos/network.nix). A test that
-# grepped the config would have been written against the same belief and passed
-# throughout.
+# Asking dnsmasq rather than reading its configuration file is the point, and it
+# has now been the point in both directions.
+#
+# This was written when the lease carried no router option, because the bug then
+# was not a missing line but the belief that leaving option:router out of the
+# configuration left it out of the lease -- dnsmasq defaults that option to its
+# own address, and only a valueless `dhcp-option=option:router` suppresses it. A
+# test that grepped the config would have been written against the same belief
+# and passed throughout.
+#
+# The lease now names the box as the gateway again, because a client with no
+# route to it never sends the captive-portal probe this box exists to answer
+# (see nixos/network.nix). What stayed is the reason this asks over the wire:
+# the two spellings differ by one character of configuration and by everything
+# in the lease, and nothing but a real offer tells them apart.
 #
 # The client is the box itself, on the interface the pool lives on:
 # SO_BINDTODEVICE puts the DHCPDISCOVER on that link rather than out of the

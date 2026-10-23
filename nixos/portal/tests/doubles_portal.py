@@ -28,6 +28,10 @@ from loom_portal.spool import BundleFormat, IssuanceOutcome, IssuanceState, Spoo
 PASSWORD = "harbor.ritual.cobalt.fenced"
 PREVIOUS_PASSWORD = "lantern.quartz.meadow.sprig"
 
+# Where an unvalidated probe is sent. An address rather than a name, as on a box: the
+# redirect must not need a resolver. See `loom.portal.target`.
+PROBE_REDIRECT = "http://10.13.37.2/"
+
 # A certificate's worth of bytes. Nothing parses it; the suite only checks that what went
 # into the spool directory is what came back out.
 P12_BYTES = b"\x30\x82fake pkcs12"
@@ -57,6 +61,16 @@ class FakeClock(Clock):
         self.slept += seconds
         if self.on_sleep is not None:
             self.on_sleep(self.current)
+
+    def wall(self) -> float:
+        """The same stored float the monotonic side reads.
+
+        One clock rather than two, so a test that wants a marker to expire advances time
+        the way every other test in this package does. On a box the two are different
+        clocks for the reason `clock.py` gives; here nothing cares, and a second knob
+        would only be a second thing to forget to turn.
+        """
+        return self.current
 
 
 class IssuedRequest(NamedTuple):
@@ -113,12 +127,13 @@ def settings_for(
     settings = PortalSettings(
         state_dir=str(root),
         mtls=mtls,
-        urls=PortalUrls(secure=secure_url),
+        urls=PortalUrls(secure=secure_url, portal_redirect=PROBE_REDIRECT),
         limits=limits or PortalLimits(wrong_password_delay_s=0.0),
         tls_placeholder_path=tls_placeholder_path,
     )
     os.makedirs(settings.requests_dir, exist_ok=True)
     os.makedirs(settings.bundles_dir, exist_ok=True)
+    os.makedirs(settings.validated_dir, exist_ok=True)
     return settings
 
 

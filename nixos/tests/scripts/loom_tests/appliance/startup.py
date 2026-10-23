@@ -139,24 +139,68 @@ def exposure(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # assertion for that flag passed throughout.
         appliance.wait_for_unit("loom-expose.service")
         box = f"{params.loom_subnet}.1"
+        portal = f"{params.loom_subnet}.2"
+        segment = f"{params.loom_subnet}.0/24"
 
         # DNAT: the appliance address becomes the minikube node, which is where
         # traefik's hostPort lives.
         nat = appliance.succeed("iptables --table nat --list-rules LOOM-EXPOSE")
         for port in ["80", "443"]:
             rule = next(
-                (line for line in nat.splitlines() if f"--dport {port} " in line), None
+                (
+                    line
+                    for line in nat.splitlines()
+                    if f"--dport {port} " in line and f"-d {box}/32" in line
+                ),
+                None,
             )
             assert rule, nat
             assert f"--to-destination {params.minikube_ip}:{port}" in rule, rule
             assert "-i loom0" in rule, rule
-            assert f"-d {box}/32" in rule, rule
+
+        # And the catch-all rules, for a client that does not use the resolver in
+        # its lease -- a hardcoded 8.8.8.8, an MDM profile, an encrypted-DNS
+        # setting. Without them, DNS interception is only as good as the
+        # client's willingness to cooperate with it.
+        # In the order iptables prints them, which is not the order they were
+        # written: `--list-rules` emits the destination match before the
+        # interface one.
+        for proto in ["udp", "tcp"]:
+            assert (
+                f"! -d {segment} -i loom0 -p {proto} -m {proto} --dport 53 "
+                f"-j DNAT --to-destination {box}:53"
+            ) in nat, nat
+
+        # Port 80 to the responder and not to the box, which is DNAT'd to
+        # Traefik above -- DNAT is terminal, so a packet sent there would reach
+        # a 404 for a Host Traefik does not route. This is the backstop the
+        # whole portal rests on: every vendor's probe is plaintext http, so it
+        # lands here whatever happened to DNS.
+        assert (
+            f"! -d {segment} -i loom0 -p tcp -m tcp --dport 80 "
+            f"-j DNAT --to-destination {portal}:80"
+        ) in nat, nat
+
+        # Nothing for 443: hijacking TLS is a certificate warning in a webview
+        # that offers no way past it, and a reset is faster and more honest.
+        assert f"--dport 443 -j DNAT --to-destination {portal}" not in nat, nat
+
+        # The two that make frontend.loom work have to be ahead of the
+        # catch-all rules, since the first matching DNAT wins.
+        lines = nat.splitlines()
+        last_box_rule = max(
+            index for index, line in enumerate(lines) if f"-d {box}/32" in line
+        )
+        first_catch_all = min(
+            index for index, line in enumerate(lines) if f"! -d {segment}" in line
+        )
+        assert last_box_rule < first_catch_all, nat
 
         # Nothing else may be forwarded. The tunnel published all seven ports
         # of traefik's Service on this address as a side effect of how it
         # worked; here the list is a decision, so a new one has to be made
         # deliberately.
-        assert len([line for line in nat.splitlines() if "DNAT" in line]) == 2, nat
+        assert len([line for line in lines if "DNAT" in line]) == 5, nat
 
         # And the FORWARD accept, without which dockerd's DROP policy eats the
         # DNAT'd packet and the symptom is identical to no DNAT at all.
@@ -164,6 +208,23 @@ def exposure(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         assert f"-d {params.minikube_ip}/32" in forward, forward
         assert "--dports 80,443 -j ACCEPT" in forward, forward
         assert "RELATED,ESTABLISHED -j ACCEPT" in forward, forward
+
+        # And the blackhole, last, so the two ACCEPT rules above keep winning.
+        #
+        # The lease now names this box as the default route, so a client's
+        # off-subnet traffic arrives here. Most dies in the routing decision
+        # before this chain -- the box has no default route of its own -- but
+        # traffic aimed at docker0 or the minikube bridge does not, and docker's
+        # own chain accepts forwarded packets to any published container port
+        # from any interface, the kube-apiserver included.
+        #
+        # `! -o loom0` and not a bare `-i loom0`: in a --wifi build the wired
+        # port and the radio are two ports of one bridge, and br_netfilter puts
+        # frames between them through this chain.
+        assert forward.strip().splitlines()[-1] == (
+            "-A LOOM-FORWARD -i loom0 ! -o loom0 -j REJECT "
+            "--reject-with icmp-host-unreachable"
+        ), forward
 
         # Both chains have to actually be reached. DOCKER-USER is the hook
         # docker guarantees runs before its own FORWARD rules.
@@ -177,6 +238,15 @@ def exposure(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # Routed rather than delivered locally, so this is not optional -- and
         # not something to leave to dockerd turning it on as a side effect.
         assert appliance.succeed("sysctl -n net.ipv4.ip_forward").strip() == "1"
+
+        # And the two that make the REJECT above arrive. Both default to one
+        # ICMP error per second per peer, which turns "the box refused it" into
+        # "the box ignored it": a browser opens six connections, one is answered
+        # and five hang for the client's own timeout. That is the difference
+        # between a visitor seeing a portal page and a visitor reporting that
+        # the network is broken.
+        for knob in ["net.ipv4.route.error_cost", "net.ipv4.icmp_ratelimit"]:
+            assert appliance.succeed(f"sysctl -n {knob}").strip() == "0", knob
 
         _exposure_is_repeatable(appliance, nat)
 

@@ -16,10 +16,18 @@ worth more than the rest:
 """
 
 import re
+from dataclasses import replace
 
 from loom_portal.anchor import AnchorStatus
 from loom_portal.guides import GuideContext, anchor_guides, identity_guides
-from loom_portal.page import Notice, NoticeKind, PageGuides, PageModel, render
+from loom_portal.page import (
+    Notice,
+    NoticeKind,
+    PageConditions,
+    PageGuides,
+    PageModel,
+    render,
+)
 from loom_portal.settings import PortalUrls
 
 FINGERPRINT = ":".join(["AB"] * 32)
@@ -40,8 +48,7 @@ def model(
     context = GuideContext()
     return PageModel(
         urls=urls or PortalUrls(),
-        secure=secure,
-        mtls=mtls,
+        conditions=PageConditions(secure=secure, mtls=mtls),
         anchor=anchor
         or AnchorStatus(available=True, pem=b"x", fingerprint=FINGERPRINT),
         notice=notice,
@@ -99,7 +106,11 @@ def test_the_form_is_not_offered_over_a_plaintext_connection():
     markup = render(
         model(mtls=True, secure=False, urls=PortalUrls(secure="https://portal.loom/"))
     )
-    assert "<form" not in markup
+    # The certificate form specifically, and no longer "any form at all" -- the page
+    # also carries the "stop the warning" button, which is a form and is offered over
+    # plaintext because it hands out nothing.
+    assert 'action="/certificate"' not in markup
+    assert 'name="password"' not in markup
     assert 'href="https://portal.loom/#identity"' in markup
 
 
@@ -149,3 +160,18 @@ def test_the_mutual_tls_box_explains_why_loom_will_refuse_the_browser():
     )
     assert "requires a client certificate" in markup
     assert "before any request is read" in markup
+
+
+def test_the_finish_button_is_offered_until_it_is_pressed():
+    """Last on the page, and for a reason the section's own docstring gives: pressing it
+    closes a captive-portal sheet, so nothing anybody needs may sit below it."""
+    offered = render(model())
+    assert '<form method="post" action="/done">' in offered
+    assert "This is not internet." in offered
+    assert offered.index('id="done"') > offered.index('id="certificate"')
+
+    pressed = render(replace(model(), conditions=PageConditions(validated=True)))
+    assert 'action="/done"' not in pressed
+    assert "has stopped asking" in pressed
+    # And it still says where the page is, since the sheet it was read in has gone.
+    assert "portal.loom" in pressed

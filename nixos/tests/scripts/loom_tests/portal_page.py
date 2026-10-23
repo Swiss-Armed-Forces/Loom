@@ -83,6 +83,8 @@ def run(
     _the_issuer_answers_rather_than_hangs(appliance, subtest, params)
     _issuance_is_rate_limited(appliance, subtest, params)
     _the_spool_is_not_readable_by_the_page(appliance, subtest)
+    _a_finished_client_gets_the_vendor_answer(appliance, subtest, params)
+    _the_probe_falls_back_when_the_page_server_is_down(appliance, subtest, params)
 
 
 def _nginx_is_up(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
@@ -106,6 +108,12 @@ def _probes_still_redirect(
     appliance: "Machine", subtest: "Subtest", params: Params
 ) -> None:
     with subtest("a captive-portal probe is redirected, never answered"):
+        # Unchanged in body, and stronger in meaning than it used to be. The
+        # catch-all no longer answers every probe itself -- the listed paths are
+        # proxied to the page server, which decides per client -- so this now
+        # asserts that a client which has not pressed the button is byte-for-byte
+        # indistinguishable from before. `_a_finished_client_gets_the_vendor_answer`
+        # is the other half.
         for path in PROBE_PATHS:
             # Sent the way a phone sends it: to the responder's address, with a probe
             # hostname in the Host header. That Host is what makes the catch-all answer
@@ -115,7 +123,9 @@ def _probes_still_redirect(
                 f"http://{params.portal_address}{path}"
             )
             assert "302" in headers.splitlines()[0], f"{path}: {headers}"
-            assert f"Location: http://{params.portal_host}/" in headers, headers
+            # The literal address, not `portal.loom`: a webview resolving a TLD that
+            # does not exist is one dependency more than a redirect needs.
+            assert f"Location: http://{params.portal_address}/" in headers, headers
             # A permanent redirect would be cached, and a phone would go on believing
             # connectivitycheck.gstatic.com is Loom long after it left the appliance.
             assert "301" not in headers.splitlines()[0], headers
@@ -134,6 +144,8 @@ def _the_page_is_served(
             # unstyled, on the first screen a visitor ever sees.
             assert "<script src=" not in body, body
             assert "<link" not in body, body
+            # And the button that stops the visitor's own device nagging them.
+            assert 'action="/done"' in body, body
 
 
 def _the_anchor_is_honest_about_not_being_there(
@@ -157,7 +169,11 @@ def _the_form_is_only_on_the_secure_listener(
 ) -> None:
     with subtest("the certificate form is offered over TLS and nowhere else"):
         plain = appliance.succeed(f"{CURL} http://{params.portal_host}/")
-        assert "<form" not in plain, plain
+        # The certificate form specifically, and no longer "any form at all": the page
+        # also carries the "stop the warning" button, which is a form and is offered
+        # on both listeners because it hands out nothing.
+        assert 'action="/certificate"' not in plain, plain
+        assert 'name="password"' not in plain, plain
         # And it says where to go instead, which is the only way a visitor on the
         # plaintext listener ever reaches the form.
         assert f"https://{params.portal_host}/#identity" in plain, plain
@@ -290,13 +306,13 @@ def _the_spool_is_not_readable_by_the_page(
     appliance: "Machine", subtest: "Subtest"
 ) -> None:
     with subtest("the page server may use the spool and may not read it"):
-        for directory in ("requests", "bundles"):
+        for directory in ("requests", "bundles", "validated"):
             mode = appliance.succeed(
                 f"stat --format='%a %U:%G' /run/loom-portal/{directory}"
             ).strip()
             # 0730 root:loom-portal -- create, stat and unlink by name; never enumerate.
             # A compromise of the one process a visitor talks to therefore cannot list
-            # other visitors' tokens.
+            # other visitors' tokens, nor read back who was on this network.
             assert mode == "730 root:loom-portal", f"{directory}: {mode}"
 
         # And the service that uses it is not root, which is what makes the mode mean
@@ -305,3 +321,72 @@ def _the_spool_is_not_readable_by_the_page(
             "systemctl show loom-portal.service --property=User --value"
         ).strip()
         assert user == "loom-portal", user
+
+
+def _a_finished_client_gets_the_vendor_answer(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest("a client that pressed the button stops being redirected"):
+        # The other half of `_probes_still_redirect`, and the reason the portal can
+        # be left on a network without the visitor's own device fighting it: until
+        # this happens no probe can ever succeed, so Android keeps warning and
+        # quietly prefers cellular -- which cannot reach Loom -- and Apple re-raises
+        # its sheet every sixty seconds.
+        #
+        # curl runs on the box and reaches nginx over the portal address, so
+        # `$remote_addr` is the same for the POST below and for the probes after it.
+        # That is what makes a per-client answer observable in a VM at all.
+        appliance.succeed(
+            f"{CURL} --request POST --data '' http://{params.portal_address}/done"
+        )
+
+        empty = appliance.succeed(
+            f"{CURL} --head --header 'Host: connectivitycheck.gstatic.com' "
+            f"http://{params.portal_address}/generate_204"
+        )
+        assert "204" in empty.splitlines()[0], empty
+        # RFC 9110 forbids the header on a 204, and this is the one answer whose
+        # exact framing something that is not a browser reads and acts on.
+        assert "Content-Length" not in empty, empty
+
+        # And the three whose bodies are compared character for character. A
+        # trailing newline in the wrong place here is the difference between a
+        # network marked good and one marked limited.
+        bodies = {
+            "/hotspot-detect.html": "<TITLE>Success</TITLE>",
+            "/connecttest.txt": "Microsoft Connect Test",
+            "/success.txt": "success",
+        }
+        for path, expected in bodies.items():
+            body = appliance.succeed(
+                f"{CURL} --header 'Host: captive.apple.com' "
+                f"http://{params.portal_address}{path}"
+            )
+            assert expected in body, f"{path}: {body}"
+
+
+def _the_probe_falls_back_when_the_page_server_is_down(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest("a probe gets the redirect, not a 502, while the page server is out"):
+        # The only place in the repository that can observe the `error_page` on the
+        # probe locations, and the whole justification for it: `Restart=always` with
+        # `RestartSec=5` is a real window, and a 502 is neither a redirect nor a
+        # success. Android reads it as "no internet", and Apple renders nginx's error
+        # page inside the sign-in sheet -- the first screen a visitor ever sees of
+        # this box.
+        #
+        # Last, because it stops a unit. Everything that reads the boot's own state
+        # has already run.
+        appliance.succeed("systemctl stop loom-portal.service")
+        try:
+            headers = appliance.succeed(
+                f"{CURL} --head --header 'Host: connectivitycheck.gstatic.com' "
+                f"http://{params.portal_address}/generate_204"
+            )
+            assert "302" in headers.splitlines()[0], headers
+            assert "502" not in headers.splitlines()[0], headers
+            assert f"Location: http://{params.portal_address}/" in headers, headers
+        finally:
+            appliance.succeed("systemctl start loom-portal.service")
+            appliance.wait_for_unit("loom-portal.service")

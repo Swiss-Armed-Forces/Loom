@@ -57,6 +57,25 @@ class PageGuides:
 
 
 @dataclass(frozen=True)
+class PageConditions:
+    """The three answers that decide what this page shows, as one value.
+
+    Each is about a different thing -- the connection, the image, the client -- and
+    grouping them is what keeps `PageModel` a short list of nouns rather than a pile of
+    flags. Every section below reads at most one of them.
+    """
+
+    # Whether this request itself arrived over TLS. Decides whether the issuance form is
+    # shown or replaced by a link that moves the visitor onto the secure listener first.
+    secure: bool = False
+    # Whether this image requires a client certificate, and so has one to hand out.
+    mtls: bool = False
+    # Whether this client has already pressed the button at the bottom of the page.
+    # Decides whether that section offers the button or reports what it did.
+    validated: bool = False
+
+
+@dataclass(frozen=True)
 class PageModel:
     """Everything `render` needs.
 
@@ -67,10 +86,7 @@ class PageModel:
 
     brand: PortalBrand = field(default_factory=PortalBrand)
     urls: PortalUrls = field(default_factory=PortalUrls)
-    # Whether this request itself arrived over TLS. Decides whether the issuance form is
-    # shown or replaced by a link that moves the visitor onto the secure listener first.
-    secure: bool = False
-    mtls: bool = False
+    conditions: PageConditions = field(default_factory=PageConditions)
     anchor: AnchorStatus = field(default_factory=lambda: AnchorStatus(available=False))
     notice: Notice | None = None
     guides: PageGuides = field(default_factory=PageGuides)
@@ -95,6 +111,7 @@ def render(model: PageModel) -> str:
             _open_loom(model),
             _anchor_section(model),
             _identity_section(model),
+            _finish_section(model),
             _footer(model),
             "</main>",
             "</body>",
@@ -131,7 +148,7 @@ def _open_loom(model: PageModel) -> str:
     wants Loom. Everything below it is for the minority who want the warning to stop, or
     who are on the one image where a certificate is not optional.
     """
-    if not model.mtls:
+    if not model.conditions.mtls:
         aside = (
             "<p>The certificate below is optional. Loom works without it; installing it "
             "is what stops your browser warning about this box.</p>"
@@ -190,7 +207,7 @@ def _anchor_section(model: PageModel) -> str:
 
 
 def _identity_section(model: PageModel) -> str:
-    if not model.mtls:
+    if not model.conditions.mtls:
         return ""
 
     heading = "<h2>Get a client certificate</h2>"
@@ -201,7 +218,7 @@ def _identity_section(model: PageModel) -> str:
         "every day.</p>"
     )
 
-    if not model.secure and model.urls.secure:
+    if not model.conditions.secure and model.urls.secure:
         # The form is deliberately not offered here. The answer to it is a PKCS#12 file
         # with an unencrypted private key in it, and this connection is plaintext on a
         # segment that -- on a --wifi box -- is everyone in radio range.
@@ -272,6 +289,54 @@ def _guides(guides: list[InstallGuide]) -> str:
             f"<ol>{steps}</ol>{note}</details>"
         )
     return f'<div class="guides">{"".join(blocks)}</div>'
+
+
+def _finish_section(model: PageModel) -> str:
+    """The last thing on the page, and the only control a visitor who wants nothing from
+    this box will ever use.
+
+    Last, deliberately. Pressing it makes this device's next connectivity probe succeed,
+    and a captive-portal sheet closes the instant that happens -- within sixty seconds
+    on Apple, whatever the visitor happens to be reading. So nothing anybody needs may
+    sit below it, and the label has to carry the whole message on its own, because the
+    page that follows the press may never be seen.
+
+    A form and not a link, for the same reason turned around: a webview that prefetches,
+    a reload, or a browser that follows links on hover would close the sheet while the
+    visitor was still reading. And not a script -- this page has none, and
+    `tests/test_page.py` bans `<script` outright rather than merely `<script src=`.
+
+    The honesty copy sits above the button rather than after it, since above it is the
+    only place it can be read.
+    """
+    if model.conditions.validated:
+        return (
+            '<section id="done">'
+            "<h2>This device has stopped asking</h2>"
+            "<p>It will no longer warn you that this network has no internet. It "
+            "still has none &mdash; this box serves Loom and nothing else. The page "
+            f"stays at <code>{escape(model.urls.portal)}</code>.</p>"
+            "</section>"
+        )
+    return (
+        '<section id="done">'
+        "<h2>Stop the &ldquo;no internet&rdquo; warning</h2>"
+        "<p>Your device keeps checking for internet behind this box, keeps finding "
+        "none, and warns you about it &mdash; and a phone may quietly go back to "
+        "mobile data, which cannot reach Loom at all. This tells it to stop "
+        "checking.</p>"
+        '<div class="notice warn"><strong>This is not internet.</strong>'
+        "<p>There is still nothing behind this box but Loom. The button only stops "
+        "your device asking, so everything that is not Loom will keep failing and "
+        "your device will no longer tell you why. Your sign-in window may close the "
+        "moment you press it &mdash; the page stays at "
+        f"<code>{escape(model.urls.portal)}</code>.</p></div>"
+        '<form method="post" action="/done">'
+        '<button class="primary" type="submit">'
+        "I&rsquo;m done here &mdash; stop the warning</button>"
+        "</form>"
+        "</section>"
+    )
 
 
 def _footer(model: PageModel) -> str:

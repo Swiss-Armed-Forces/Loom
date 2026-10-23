@@ -145,10 +145,24 @@ let
         # of under `--force-utf`. Both were argued for here and neither was
         # asserted, which left the three rich glyphs above -- a dependency's
         # choice -- as the only ones the build actually checked.
+        # The table is read once, into a variable, and every codepoint is then
+        # matched against that -- rather than re-running the pipeline per
+        # codepoint with `grep --quiet` on the end of it.
+        #
+        # That shape was racy, and it failed in the direction that looks like a
+        # real finding: `grep --quiet` exits the moment it matches, which closes
+        # the pipe under `psfgettable`, which dies on SIGPIPE -- and stdenv runs
+        # the builder with `pipefail`, so the pipeline's status became
+        # psfgettable's rather than grep's. A glyph that is present then reports
+        # as missing, intermittently, depending on how far into the table it sits
+        # and on how fast the two processes are scheduled. It fails one build in
+        # a few, naming a different codepoint each time, on a font that has every
+        # one of them.
+        table="$(zcat --force "$src" | psfgettable -)"
         for cp in 2588 2584 2580 00D7 2501 2578 257A \
           2500 2502 250C 2510 2514 2518 251C 2524 252C 2534 253C \
           2581 2582 2583 2585 2586 2587; do
-          if ! zcat --force "$src" | psfgettable - | grep --quiet --ignore-case "U+$cp\b"; then
+          if ! grep --quiet --ignore-case "U+$cp\b" <<< "$table"; then
             echo "$src has no U+$cp, one of the glyphs this appliance draws" >&2
             exit 1
           fi

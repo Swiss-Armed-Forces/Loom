@@ -21,18 +21,49 @@ from typing import TYPE_CHECKING, NamedTuple
 if TYPE_CHECKING:
     from loom_tests.driver import Machine, StartAll, Subtest
 
-# The names portal.nix answers with the responder's own address, and two real
-# sites it deliberately leaves alone. Restated here rather than read off
-# `loom.portal.probeHosts`, as loom_tests/appliance/portal.py restates them: a
-# test that took the list from the configuration it is checking would agree with
-# whatever that list said.
+# The names portal.nix answers with the responder's own address by name.
+# Restated here rather than read off `loom.portal.probeHosts`, as
+# loom_tests/appliance/portal.py restates them: a test that took the list from
+# the configuration it is checking would agree with whatever that list said.
 PROBE_HOSTS = [
     "connectivitycheck.gstatic.com",
     "captive.apple.com",
     "www.msftconnecttest.com",
     "detectportal.firefox.com",
 ]
-UNCLAIMED = ["www.google.com", "www.apple.com"]
+
+# Names nothing in the configuration mentions, which is the point: these reach
+# the responder through the wildcard or not at all. A vendor probe nobody listed
+# used to be REFUSED, and a client that cannot resolve its probe concludes "no
+# internet" rather than "portal present" -- so the refusal was the bug, not the
+# tidiness it looked like.
+WILDCARD_HOSTS = [
+    "www.google.com",  # the AOSP https probe, and its gen_204 fallback
+    "connectivitycheck.android.com",  # another AOSP fallback
+    "captive.samsung.com",  # Samsung's own
+    "connect.rom.miui.com",  # Xiaomi's
+    "nmcheck.gnome.org",  # GNOME
+    "networkcheck.kde.org",  # KDE
+]
+
+# The carve-outs that must answer NXDOMAIN rather than the portal, each because
+# something specified it that way.
+NXDOMAIN_HOSTS = [
+    # Mozilla's canary: anything but NOERROR-with-records turns DNS-over-HTTPS
+    # off for a client that has it on by default. The wildcard would hand it a
+    # positive answer and leave DoH on, pointed at an endpoint this box resets.
+    "use-application-dns.net",
+    # Apple's signal that a network does not permit iCloud Private Relay. Under
+    # the wildcard it resolves and Private Relay fails obscurely instead.
+    "mask.icloud.com",
+    "mask-h2.icloud.com",
+    # The one single-label name a Windows client looks up unprompted.
+    "wpad",
+]
+
+# What Windows compares against before it will probe over http at all.
+NCSI_PROBE = "dns.msftncsi.com"
+NCSI_EXPECTED = "131.107.255.255"
 
 
 class Params(NamedTuple):
@@ -50,14 +81,14 @@ class Offer(NamedTuple):
 
     Named rather than the raw {option code: value} map it is read out of: the codes are
     the wire's spelling, and an assertion written as `options.get(6)` needs a table
-    beside it to say that 6 is the resolver and 3 the gateway that must not be there.
+    beside it to say that 6 is the resolver and 3 the gateway.
     """
 
     netmask: str | None
     """Option 1."""
 
     gateway: str | None
-    """Option 3 -- `None` is the correct answer; see `_lease`."""
+    """Option 3 -- the box's own address is the correct answer; see `_lease`."""
 
     dns_server: str | None
     """Option 6."""
@@ -137,10 +168,15 @@ def _lease(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         assert offer.dns_server == params.box_address, offer
         assert offer.netmask == "255.255.255.0", offer
 
-        # No gateway, for the reason network.nix spells out: the box is an island,
-        # and a lease naming it as the default route takes a visitor's laptop off
-        # the internet on every interface it has.
-        assert offer.gateway is None, offer
+        # The gateway, which this test used to assert the absence of.
+        #
+        # Naming the box as the default route does take a cabled laptop off the
+        # internet, which is why it was suppressed -- but a client with no route
+        # to this box sends its captive-portal probe out of some other interface,
+        # where it succeeds, and is never offered the sign-in. network.nix has
+        # the whole argument; this is the half that fails if somebody takes the
+        # option back out.
+        assert offer.gateway == params.box_address, offer
 
 
 def _wildcard_dns(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
@@ -149,11 +185,35 @@ def _wildcard_dns(appliance: "Machine", subtest: "Subtest", params: Params) -> N
         # /etc/hosts, because that is what a client the box has just leased to
         # will use.
         #
-        # -t A on purpose: a bare `host` also asks for AAAA and MX, and dnsmasq
-        # refuses both -- `address=/loom/<ipv4>` synthesises A records only and
-        # there is no upstream to forward the rest to.
+        # -t A on purpose: a bare `host` also asks for AAAA and MX, which are a
+        # separate assertion below.
         answer = appliance.succeed(f"host -t A frontend.loom {params.box_address}")
         assert f"has address {params.box_address}" in answer, answer
+
+        # And the longest match still wins over the wildcard. This is the
+        # assertion that catches `address=/#/` swallowing `.loom`, which would
+        # send every visitor's frontend.loom at the portal responder instead of
+        # at Traefik -- a box that serves a captive portal page and no Loom.
+        page = appliance.succeed(f"host -t A portal.loom {params.box_address}")
+        assert f"has address {params.portal_address}" in page, page
+
+
+def _no_data_rather_than_refused(
+    appliance: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    with subtest("a query an A record cannot answer is NODATA, not REFUSED"):
+        # What `local=/#/` is for, and the reason it is not optional.
+        #
+        # dnsmasq(8) says that since 2.86 a query whose type the `address=`
+        # literal cannot answer "is sent upstream" -- and there is no upstream
+        # (`no-resolv`), so it comes back REFUSED. A REFUSED AAAA beside a good A
+        # is a lookup some client stacks fail whole, and under the wildcard that
+        # would be every name on the segment rather than just `.loom`.
+        #
+        # `host` exits 1 and prints `5(REFUSED)` without it, so this
+        # distinguishes the two precisely rather than merely noticing an error.
+        answer = appliance.succeed(f"host -t AAAA frontend.loom {params.box_address}")
+        assert "has no AAAA record" in answer, answer
 
 
 def _probe_names(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
@@ -169,16 +229,27 @@ def _probe_names(appliance: "Machine", subtest: "Subtest", params: Params) -> No
             answer = appliance.succeed(f"host -t A {host} {params.box_address}")
             assert f"has address {params.portal_address}" in answer, answer
 
-        # The fallbacks portal.nix deliberately does not claim. They are real
-        # sites, and hijacking them would turn an answer to a question only an OS
-        # asks into blanket interception -- so their absence is as much the
-        # decision as the four entries are.
-        #
-        # REFUSED rather than an answer, because there is no upstream (no-resolv)
-        # and no wildcard: a `address=/#/` would make every one of these resolve
-        # to the box and this subtest is what would catch it.
-        for host in UNCLAIMED:
+        # And the names nothing in the configuration mentions, which the
+        # wildcard answers. These used to be REFUSED on the grounds that
+        # hijacking a real site is blanket interception -- which it is, and the
+        # cost of not doing it was that a Samsung or Xiaomi phone probed a name
+        # this box refused and concluded there was no internet rather than a
+        # portal.
+        for host in WILDCARD_HOSTS:
+            answer = appliance.succeed(f"host -t A {host} {params.box_address}")
+            assert f"has address {params.portal_address}" in answer, answer
+
+        # Three carve-outs that have to be NXDOMAIN rather than the portal, each
+        # because somebody specified it that way. See the lists above.
+        for host in NXDOMAIN_HOSTS:
             appliance.fail(f"host -t A {host} {params.box_address}")
+
+        # And the one carve-out that has to be a specific literal: Windows
+        # compares this answer before it will send its http probe at all, so
+        # handing it the responder makes Windows 10 show the globe and never
+        # offer a sign-in.
+        ncsi = appliance.succeed(f"host -t A {NCSI_PROBE} {params.box_address}")
+        assert f"has address {NCSI_EXPECTED}" in ncsi, ncsi
 
 
 def _portal_responder(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
@@ -257,8 +328,81 @@ def _restarts(appliance: "Machine") -> int:
     )
 
 
+def _a_client_on_the_wire(
+    appliance: "Machine", visitor: "Machine", subtest: "Subtest", params: Params
+) -> None:
+    """The three things a real client depends on, asserted from a real client.
+
+    Everything else in this suite runs on the appliance, which proves the box answers a
+    request somebody crafted and says nothing about whether a visitor's laptop ever gets
+    to send one. That gap is how the captive portal shipped undetectable on every client
+    anyone tried it with.
+    """
+    # The DNAT catch-all rules live in `loom-expose`, which requires docker, so
+    # rules can land well after multi-user.target on a cold VM. Waited for here
+    # rather than at the top of `run`, because nothing before this subtest needs
+    # them.
+    appliance.wait_for_unit("loom-expose.service")
+    visitor.wait_for_unit("network.target")
+
+    with subtest("a client that ignores the lease's resolver still reaches the page"):
+        # The backstop the whole portal rests on. DNS interception only works for
+        # a client willing to use the resolver it was given, and a phone with an
+        # MDM profile, a hardcoded 8.8.8.8 or an encrypted-DNS setting is not --
+        # so port 53 is DNAT'd to the box whatever the client aimed at.
+        answer = visitor.succeed("host -t A frontend.loom 8.8.8.8")
+        assert f"has address {params.box_address}" in answer, answer
+
+    with subtest("a probe to an address nobody intercepted still lands on the page"):
+        # And the other half of it: every vendor's connectivity probe is plaintext
+        # http, so port 80 is DNAT'd to the responder whatever address the client
+        # resolved. 198.51.100.7 is TEST-NET-2 and is not on this segment, so the
+        # only thing that can answer is the catch-all.
+        headers = visitor.succeed(
+            "curl --silent --show-error --max-time 10 --head "
+            "--header 'Host: connectivitycheck.gstatic.com' http://198.51.100.7/"
+        )
+        assert "302" in headers.splitlines()[0], headers
+        assert f"Location: http://{params.portal_address}/" in headers, headers
+
+    with subtest("everything else off the segment is refused rather than dropped"):
+        # The lease names the box as the default route, so this node's off-subnet
+        # traffic arrives there to be told no -- and it has to be told quickly.
+        # A drop is a thirty-second hang in a browser tab; the REJECT plus the two
+        # ICMP rate limits network.nix lifts make it immediate.
+        #
+        # docker0's subnet rather than minikube's: the bridge the cluster would
+        # create does not exist in a test VM, and this is a network the box can
+        # actually route to, which is exactly the traffic the blackhole exists to
+        # stop. Without it docker's own chain accepts a forwarded packet to any
+        # published container port -- the kube-apiserver included, which is the
+        # port asked for here.
+        #
+        # Deliberately not port 80, which is the one port this cannot be tested
+        # on: the catch-all above DNATs it to the portal from anywhere, so a
+        # request there is answered rather than refused. That is the subtest
+        # before this one.
+        visitor.fail("curl --silent --max-time 5 https://172.17.0.2:8443/")
+
+        # And it was refused, not ignored. `ping` reports the ICMP, which is the
+        # difference this asserts; a dropped packet times out silently instead.
+        #
+        # `Host Unreachable` exactly, and not any unreachable: the kernel emits
+        # `Net Unreachable` of its own accord when the box has no route at all,
+        # so the looser match would pass whether or not the REJECT rule is there
+        # -- it would assert the sysctls and nothing else. This wording is the
+        # one `--reject-with icmp-host-unreachable` produces.
+        reply = visitor.succeed("ping -c 1 -W 5 172.17.0.2 || true")
+        assert "Host Unreachable" in reply, reply
+
+
 def run(
-    appliance: "Machine", *, start_all: "StartAll", subtest: "Subtest", params: Params
+    appliance: "Machine",
+    visitor: "Machine",
+    *,
+    start_all: "StartAll",
+    subtest: "Subtest",
+    params: Params,
 ) -> None:
     """The whole test, as the .nix file calls it.
 
@@ -273,6 +417,8 @@ def run(
     _dnsmasq_came_up_first_time(appliance, subtest)
     _lease(appliance, subtest, params)
     _wildcard_dns(appliance, subtest, params)
+    _no_data_rather_than_refused(appliance, subtest, params)
     _probe_names(appliance, subtest, params)
     _portal_responder(appliance, subtest, params)
+    _a_client_on_the_wire(appliance, visitor, subtest, params)
     _survives_a_missing_interface(appliance, subtest, params)

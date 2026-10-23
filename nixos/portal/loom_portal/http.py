@@ -128,3 +128,14 @@ def attachment(payload: bytes, filename: str, content_type: str) -> Response:
 
 def redirect(location: str, status: int = 303) -> Response:
     return Response(status=status, headers=no_store([Header("Location", location)]))
+
+
+def no_content() -> Response:
+    """The answer every Android-family probe is looking for.
+
+    No body and -- in `server.py` -- no `Content-Length`, which RFC 9110 forbids
+    outright on a 204. AOSP tolerates `Content-Length: 0`, and in fact down-converts a
+    200 carrying one into a 204, but this is the single response the whole feature turns
+    on and it is worth being exactly right about.
+    """
+    return Response(status=204, headers=no_store([]))
