@@ -44,6 +44,7 @@ this file is about the code.
 | `installer.nix` | The USB stick: `image.repart` layout and the installer system. |
 | `installer/` | The three programs the stick runs — `loom-menu`, `loom-install`, `loom-wipe` — as one Python package: the device interlock, the auto-install decision, the console drawing (rich), and a pytest suite run at build time. |
 | `scripts/platform_info.sh` | `loom-platform-info`: what the box actually is, next to what the platform file claims. Plain bash with no Nix dependency, because the box it most needs to run on is one that is not running Loom yet. |
+| `scripts/loom_*.sh` | The body of every appliance script over twenty lines, as files the repository's `shellcheck -x -o all` hook can read. The module beside each one keeps the values and reads the body back with `builtins.readFile`; see `## Shell lives in scripts/` below. |
 | `tests/appliance-mouse.nix` | VM test for point-and-click: a `uinput` mouse in the guest, through mousedev, gpm and the pty shim, to the pane tmux focuses. |
 | `tests/appliance-portal.nix` | VM test for the captive portal on a booted `--require-client-cert` box with no cluster behind it — the state every box is in for its first hours. |
 | `tests/appliance-hardware.nix` | Not a VM test: asserts what nixos-hardware gives each platform, and that the Loom overrides still take the desktop userspace back off — in the installer's closure as well as the box's. |
@@ -95,6 +96,84 @@ free to drift from the `dependencies` list in the `.nix` file — `ready/` and `
 imported `rich` while declaring no dependencies at all — because Nix supplied the import either way
 and nothing else read the manifest. The root `pyproject.toml` installs them all as path
 dependencies, so an undeclared import is now visible in the devenv rather than only at a box.
+
+## Shell lives in `scripts/`
+
+The repository runs `shellcheck -x -o all` over every `.sh` file in the tree, with no path
+excludes and two checks switched off for the whole repository in `.shellcheckrc` (SC2310 and
+SC2312, with the reasoning in that file). A Nix string is not a file, so none of that reached the appliance: a
+`writeShellApplication` got nixpkgs' default-option pass at *build* time, and a
+`systemd.services.<n>.script` got nothing whatsoever. Roughly three thousand lines of this box --
+the key guard, the assistant pane, the console session, the portal's certificate handling, the
+stage-1 unlock -- were written where no linter could see them.
+
+So the body of every appliance script over twenty lines is a file in `scripts/`, and the module
+beside it keeps only the values:
+
+```nix
+text = ''
+  LOOM_STATE_DIR=${lib.escapeShellArg cfg.stateDir}
+  LOOM_KEY_DEVICE=${lib.escapeShellArg cfg.keyDevice}
+
+  ${builtins.readFile ./scripts/loom_key_guard.sh}'';
+```
+
+Three details in that are load-bearing:
+
+- **The `readFile` hugs the closing `''`.** On a line of its own, the newline after it is part of
+  the string and the rendered script gains a trailing blank line. Harmless, but it means an
+  extraction can no longer be checked by diffing the rendered text against what it replaced, which
+  is the only cheap proof that one was correct.
+- **The file has no shebang and no executable bit.** It is inlined by Nix, not run from the
+  checkout, and saying so keeps `check-shebang-scripts-are-executable` honest. `# shellcheck
+  shell=bash` on the first line is what tells the hook the dialect instead.
+- **It restates the `set` line its host applies**, because shellcheck has to read the program that
+  actually runs. `writeShellApplication` sets `errexit`, `nounset` and `pipefail`; a stdenv builder
+  the same; a unit `script` gets `set -e` and nothing else, because that is all nixpkgs'
+  `makeJobScript` wraps one in (`nixos/lib/systemd-lib.nix`). Getting this wrong is not cosmetic:
+  a file claiming `nounset` that runs without it reads as safe where it is not, and SC2086,
+  SC2178 and the unreachable-code checks all answer differently under a `set` line that is not
+  the one in force.
+
+Values are read through `:?`, which asserts them the way CLAUDE.md's Helm rule asserts a long
+option, and is also what keeps the names out of SC2154 -- read bare, every one of them is
+"referenced but not assigned", because the assignment is in the `.nix` file:
+
+```sh
+readonly STATE_DIR="${LOOM_STATE_DIR:?nixos/key-guard.nix must set this}"
+```
+
+Names derived from those values -- `${STATE_DIR}/state` and so on -- belong in the `.sh` file.
+They are shell's business, and in the module they were lines Nix rendered without ever reading.
+
+`key-store.nix` is why this is written down. Its stage-1 unlock script is the one part of the
+appliance no test can reach, so the module had grown a `pkgs.runCommand` whose entire job was to
+cat the script into a file and run `shellcheck --enable=all` over it: a private, build-time copy
+of a hook the repository already had, because an inline string could not reach the real one. Both
+are gone, and the check now runs at commit time.
+
+`cicd/check_nix_inline_shell.sh` keeps it that way, as a git hook on `nixos/*.nix`. It is a cap,
+not a ban -- twenty effective lines, where blanks, comments, the prologue assignments, the
+`readFile` line and heredoc bodies do not count. Dropping heredocs is what lets the failure
+reports in `tests/` stay where they are: the `else` arm at `tests/appliance-units.nix:718` is 41
+lines, of which 37 are explanation inside `cat >&2 <<'EOF'` and 4 are shell, and moving that to a
+file would make it worse. A block that genuinely has to stay takes
+`# nix-inline-shell: allow <reason>` above it. `--list` prints every block with its size.
+
+Three things make a line scan sufficient rather than naive. `nixfmt` is also a hook, so an
+indented string always opens as the last token on its line. The closer is found by walking
+characters rather than matching a line, because `''` inside a `${...}` interpolation opens a
+nested string and a regex reads the first one as the end of the block. And the name is taken
+from the binding at the lowest indentation in the window, which is what reaches the `script =`
+above a `let ... in ''` and avoids reading `nativeBuildInputs` off the attribute set a
+`runCommand` was given.
+
+Two things it does not see, both deliberate. A `let` binding holding shell under a name that
+says nothing -- hence the `*Script` convention, which `unlockScript` and `inspectSkillsScript`
+both follow and the check honours; teaching it to follow a reference instead is not worth it.
+And the second arm of an `if c then '' ... '' else '' ... ''`, where the first arm is found and
+the second is not; in this tree both arms of every such pair are heredoc reports that the cap
+would exempt anyway.
 
 ## Why nixos-hardware, and what is forced back off
 
@@ -1132,12 +1211,12 @@ are unique per container and never zero, so identity and the "unprovisioned" sen
 
 The unlock script itself is the one part of this appliance that no test can reach -- nixpkgs'
 qemu-vm module replaces the bootloader and the root device, so nothing under `tests/` ever runs an
-initrd of ours. Two things stand in for that. It is a named binding rather than an inline `script`
-string so that the same text can be handed to `shellcheck --enable=all` in a build check, with the
-`set -e` preamble `makeJobScript` wraps it in -- an inline unit script is linted by nothing, the
-same gap CLAUDE.md records for shell inlined into Helm templates. And `loom.keymap` is checked the
-same way, by resolving the name with `loadkeys` at build time: `systemd-vconsole-setup` falls back
-to US silently at boot, which is the precise failure the option exists to remove.
+initrd of ours. Two things stand in for that. It is `scripts/loom_keystore_unlock.sh` rather than a
+string in the module, so the repository's own `shellcheck -x -o all` hook reads it like any other
+`.sh` file -- see `## Shell lives in scripts/` near the top of this file, which is where the
+build check this used to carry went. And `loom.keymap` is checked by resolving the name with `loadkeys` at build time:
+`systemd-vconsole-setup` falls back to US silently at boot, which is the precise failure the option
+exists to remove.
 
 ### Why USB ingest asks the guard rather than udev
 

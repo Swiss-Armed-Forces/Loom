@@ -232,8 +232,14 @@ def action_per_mode(appliance: "Machine", subtest: "Subtest", setup_sys: str) ->
             exec_start = re.search(r"ExecStart=(\S+)", unit)
             assert exec_start, unit
             script = appliance.succeed(f"cat {exec_start.group(1)}")
+            # `LOOM_<name>`, where this used to read `readonly <name>`: the
+            # guard's body is nixos/scripts/loom_key_guard.sh now, and the
+            # module hands it values through a prologue of `LOOM_*`
+            # assignments. Still the generated script, still the baked-in
+            # value -- only the line it is written on has moved.
+            #
             # Tolerates the quotes lib.escapeShellArg adds only when it has to.
-            value = re.search(rf"^readonly {name}='?(\w+)'?$", script, re.M)
+            value = re.search(rf"^LOOM_{name}='?(\w+)'?$", script, re.M)
             assert value, script
             return value.group(1)
 

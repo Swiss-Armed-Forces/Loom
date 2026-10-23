@@ -932,6 +932,25 @@ in
       pass_filenames = false;
     };
 
+    # How much shell a `.nix` file under nixos/ may inline. The shellcheck hook
+    # above reads every .sh file in the tree and cannot see into a .nix one, so
+    # without this the appliance's shell drifts back out of its coverage one
+    # unit `script` at a time -- which is how three thousand lines of it got
+    # there in the first place.
+    #
+    # A cap rather than a ban: the prologue of `LOOM_FOO=${...}` assignments
+    # above a `builtins.readFile` is the shape being encouraged, and a one-line
+    # `exec` is better inline than in a file of its own.
+    #
+    # `pass_filenames = false`: the checker walks nixos/ itself, so a block that
+    # moves between files is still counted.
+    "check-nix-inline-shell" = {
+      enable = true;
+      entry = "./cicd/check_nix_inline_shell.sh";
+      files = "^(nixos/.*\\.nix$|cicd/check_nix_inline_shell\\.(py|sh)$)";
+      pass_filenames = false;
+    };
+
     # `hostnames.ingress` in charts/values.yaml against the hosts the chart's
     # Ingress rules render. The list is what the TLS certificate is built from
     # and a Helm template cannot enumerate its siblings' output, so a service

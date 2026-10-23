@@ -149,42 +149,13 @@ let
       openssl
     ];
     text = ''
-      state=${lib.escapeShellArg stateDir}
-      mkdir -p "$state"
-      # Restated here as well as in tmpfiles, because this unit is ordered
-      # before nginx and a directory nginx cannot traverse is the failure it
-      # exists to prevent.
-      chgrp ${lib.escapeShellArg nginxGroup} "$state"
-      chmod 750 "$state"
+      LOOM_STATE_DIR=${lib.escapeShellArg stateDir}
+      LOOM_CLIENT_CERT=${lib.escapeShellArg clientCert}
+      LOOM_CLIENT_KEY=${lib.escapeShellArg clientKey}
+      LOOM_SERVER_ANCHOR=${lib.escapeShellArg serverAnchor}
+      LOOM_NGINX_GROUP=${lib.escapeShellArg nginxGroup}
 
-      # Only when there is nothing there. A placeholder written over a real
-      # identity would take the box off its own cluster until the next renewal.
-      if [ -s ${lib.escapeShellArg clientCert} ] && [ -s ${lib.escapeShellArg clientKey} ]; then
-        exit 0
-      fi
-
-      umask 077
-      openssl req -x509 -nodes -days 1 \
-        -newkey rsa:2048 \
-        -subj "/CN=loom-mtls-placeholder" \
-        -keyout ${lib.escapeShellArg clientKey} \
-        -out ${lib.escapeShellArg clientCert} 2>/dev/null
-
-      # Group-readable, for the reason `nginxGroup` is declared at all: the
-      # configuration test reads both halves as the service user.
-      chgrp ${lib.escapeShellArg nginxGroup} \
-        ${lib.escapeShellArg clientKey} ${lib.escapeShellArg clientCert}
-      chmod 640 ${lib.escapeShellArg clientKey}
-      chmod 644 ${lib.escapeShellArg clientCert}
-
-      # `proxy_ssl_trusted_certificate` needs a file too, and the placeholder
-      # identity is as good a stand-in as any: nothing verifies against it while
-      # the upstream is being refused anyway.
-      if [ ! -s ${lib.escapeShellArg serverAnchor} ]; then
-        cp ${lib.escapeShellArg clientCert} ${lib.escapeShellArg serverAnchor}
-        chmod 644 ${lib.escapeShellArg serverAnchor}
-      fi
-    '';
+      ${builtins.readFile ./scripts/loom_mtls_placeholder.sh}'';
   };
 
   # Issue, or reissue, the box's identity.
@@ -202,110 +173,18 @@ let
       loom-client-certificate
     ];
     text = ''
-      state=${lib.escapeShellArg stateDir}
-      console=${lib.escapeShellArg consoleDir}
-      namespace=${lib.escapeShellArg loomNamespace}
-      secret=${lib.escapeShellArg cfg.mtls.caSecret}
-      name=${lib.escapeShellArg cfg.mtls.identityName}
-      console_name=${lib.escapeShellArg cfg.mtls.consoleIdentityName}
-      days=${toString cfg.mtls.validityDays}
-      renew_before=${toString cfg.mtls.renewBefore}
+      LOOM_STATE_DIR=${lib.escapeShellArg stateDir}
+      LOOM_NGINX_GROUP=${lib.escapeShellArg nginxGroup}
+      LOOM_CONSOLE_DIR=${lib.escapeShellArg consoleDir}
+      LOOM_CONSOLE_GROUP=${lib.escapeShellArg consoleGroup}
+      LOOM_NAMESPACE=${lib.escapeShellArg loomNamespace}
+      LOOM_CA_SECRET=${lib.escapeShellArg cfg.mtls.caSecret}
+      LOOM_IDENTITY_NAME=${lib.escapeShellArg cfg.mtls.identityName}
+      LOOM_CONSOLE_IDENTITY_NAME=${lib.escapeShellArg cfg.mtls.consoleIdentityName}
+      LOOM_VALIDITY_DAYS=${toString cfg.mtls.validityDays}
+      LOOM_RENEW_BEFORE=${toString cfg.mtls.renewBefore}
 
-      # The placeholder is a certificate too, so "is there a file" is not the
-      # question -- `-checkend` against a one-day placeholder is false on the
-      # day it was written, which is what gets it replaced.
-      fresh() {
-        openssl x509 -noout -checkend "$((renew_before * 86400))" \
-          -in "$1" >/dev/null 2>&1
-      }
-
-      # Both, and that is the whole reason this is a function. Guarding on the
-      # proxy's certificate alone means a console identity that is missing or
-      # expired is skipped for as long as nginx's is fresh -- which is every day
-      # but one in sixty, so the console would have been issued once and then
-      # silently left to expire.
-      if fresh "$state/client.crt" && fresh "$console/console.crt"; then
-        echo "Both certificates have more than $renew_before days left; nothing to do."
-        exit 0
-      fi
-
-      # Said once per change rather than once per attempt, the way console.nix's
-      # waits do: a box that waits an hour for a bring-up should not fill the
-      # journal with one line every ten seconds.
-      said=""
-      note() {
-        if [ "$1" != "$said" ]; then
-          said="$1"
-          echo "$1"
-        fi
-      }
-
-      until kubectl --request-timeout=5s --namespace "$namespace" \
-        get secret "$secret" >/dev/null 2>&1; do
-        note "Waiting for '$secret'; Loom has not got that far yet."
-        sleep 10
-      done
-
-      work="$(mktemp --directory)"
-      # shellcheck disable=SC2064
-      trap "rm --recursive --force '$work'" EXIT
-
-      # A directory each. The issuer writes `loom-server-ca.pem` beside every
-      # identity it makes, so two runs sharing one output directory would have
-      # the second meet a file the first left there.
-      mkdir -p "$work/proxy" "$work/console"
-
-      # The proxy's identity first, and all the way into place before the
-      # console's is even asked for. Under `set -e` a failure on the second
-      # issuance aborts the script, so doing them both up front and installing
-      # afterwards meant a console that could not be issued discarded a proxy
-      # certificate that had been generated perfectly well -- taking the
-      # assistant pane and USB ingest down to renew something neither uses.
-      loom-client-certificate \
-        --name "$name" \
-        --days "$days" \
-        --namespace "$namespace" \
-        --out-dir "$work/proxy"
-
-      # Moved into place together, and only once all three exist: nginx reloads
-      # on its own schedule as well as on the one below, and a reload that lands
-      # between a new certificate and its key gets a pair that does not match.
-      #
-      # The key is group-readable and the group is nginx's, because nginx runs
-      # as its own user and reads this while parsing -- see `nginxGroup`.
-      install -m 644 "$work/proxy/$name.crt" "$state/client.crt"
-      install -m 640 -g ${lib.escapeShellArg nginxGroup} \
-        "$work/proxy/$name.key" "$state/client.key"
-      install -m 644 "$work/proxy/loom-server-ca.pem" "$state/loom-server-ca.pem"
-
-      echo "Issued a client identity for $name."
-
-      # reload-or-restart rather than reload: on a box where nginx failed to
-      # start at all, a reload is a no-op and the proxy stays down.
-      systemctl reload-or-restart nginx.service
-
-      # And now the console's, group-readable by the operator instead.
-      # `loom-curl` is what reads it, as whoever is at the console or in the
-      # assistant pane.
-      loom-client-certificate \
-        --name "$console_name" \
-        --days "$days" \
-        --namespace "$namespace" \
-        --out-dir "$work/console"
-
-      # The directory is restated here as well as in tmpfiles, the way the
-      # placeholder unit restates its own: `install` creates a file and not the
-      # path above it, so a unit that ran before systemd-tmpfiles would fail on
-      # the first line rather than issue anything.
-      install -d -m 750 -g ${lib.escapeShellArg consoleGroup} "$console"
-
-      install -m 644 "$work/console/$console_name.crt" "$console/console.crt"
-      install -m 640 -g ${lib.escapeShellArg consoleGroup} \
-        "$work/console/$console_name.key" "$console/console.key"
-      install -m 644 "$work/console/loom-server-ca.pem" "$console/loom-server-ca.pem"
-
-      echo "Issued a client identity for $console_name."
-    '';
+      ${builtins.readFile ./scripts/loom_mtls_identity.sh}'';
   };
 
   # curl, told the two things about this box that no stock trust store knows.
@@ -336,98 +215,14 @@ let
       kubectl
     ];
     text = ''
-      cert=${lib.escapeShellArg consoleCert}
-      key=${lib.escapeShellArg consoleKey}
-      anchor=${lib.escapeShellArg consoleAnchor}
-      namespace=${lib.escapeShellArg loomNamespace}
-      secret=${lib.escapeShellArg servingCertSecret}
+      LOOM_CONSOLE_DIR=${lib.escapeShellArg consoleDir}
+      LOOM_CONSOLE_CERT=${lib.escapeShellArg consoleCert}
+      LOOM_CONSOLE_KEY=${lib.escapeShellArg consoleKey}
+      LOOM_CONSOLE_ANCHOR=${lib.escapeShellArg consoleAnchor}
+      LOOM_NAMESPACE=${lib.escapeShellArg loomNamespace}
+      LOOM_SERVING_CERT_SECRET=${lib.escapeShellArg servingCertSecret}
 
-      # Arguments are passed through untouched, deliberately.
-      #
-      # This used to rewrite a leading `http://` to `https://`, so that one
-      # documented spelling would work on an image serving plaintext and on one
-      # that does not. It is not needed -- `websecure` exists on every image, so
-      # `https://` is already the spelling that always works -- and it broke
-      # three things that look exactly like the URL it meant to fix: the
-      # loopback proxies (`http://127.0.0.1:18080/`, which appliance.md gives as
-      # the way to test them, and which speak plain http), `http://portal.loom/`
-      # (whose TLS listener exists only on the mutual TLS image), and the value
-      # of any flag that happens to be a URL, `--proxy` among them. A wrapper
-      # that edits arguments has to know which argument is the URL, and this one
-      # cannot.
-      flags=()
-
-      # The anchor. On a mutual TLS box the issuer already wrote one next to the
-      # console's identity; anywhere else it is read out of the cluster.
-      #
-      # Read every time rather than cached. The chart's pre-install Job replaces
-      # the serving certificate as it nears expiry, and a cached copy would
-      # outlive it and fail verification with an error that says nothing about
-      # why -- on a box whose whole purpose is to be diagnosed from this pane.
-      # One kubectl call on a command somebody typed is not worth that.
-      if [ -r "$anchor" ]; then
-        flags+=( --cacert "$anchor" )
-      else
-        work="$(mktemp --directory)"
-        # shellcheck disable=SC2064
-        trap "rm --recursive --force '$work'" EXIT
-        pem="$work/server-ca.pem"
-
-        # `ca.crt` first and `tls.crt` second, which is the order and the reason
-        # cicd/generate_client_certificate.sh uses: a secret made by `kubectl
-        # create secret tls` has no `ca.crt` at all, and a self-signed leaf is
-        # its own anchor.
-        #
-        # --request-timeout so a cluster that is down costs five seconds rather
-        # than kubectl's default wait, the same bound ready.nix and the identity
-        # unit use.
-        for field in 'ca\.crt' 'tls\.crt'; do
-          encoded="$(kubectl --request-timeout=5s --namespace "$namespace" \
-            get secret "$secret" --output "jsonpath={.data.$field}" 2>/dev/null || true)"
-          [ -n "$encoded" ] || continue
-
-          printf '%s' "$encoded" | base64 --decode > "$pem" 2>/dev/null || true
-
-          # Checked for a PEM header rather than merely for being non-empty,
-          # the way generate_client_certificate.sh and console.nix both check
-          # their own copies of this: anything else handed to `--cacert`
-          # produces the opaque verification failure this whole branch exists
-          # to avoid.
-          if grep --quiet -- "-----BEGIN CERTIFICATE-----" "$pem" 2>/dev/null; then
-            flags+=( --cacert "$pem" )
-            break
-          fi
-        done
-
-        if [ ! -s "$pem" ]; then
-          echo "loom-curl: could not read $secret from the cluster;" \
-            "TLS verification will fail until Loom is up." >&2
-        fi
-      fi
-
-      # The identity, where this box has one. Absent on every image but a
-      # --require-client-cert one, where nothing asks for it.
-      #
-      # The directory is the tell, not the files: tmpfiles creates it at boot
-      # and only on an image that requires certificates, while the files appear
-      # whenever loom-mtls-identity first reaches the cluster -- hours into a
-      # first bring-up. Between the two, every request is refused during the
-      # handshake, and curl's own message for that says nothing about why.
-      if [ -r "$cert" ] && [ -r "$key" ]; then
-        flags+=( --cert "$cert" --key "$key" )
-      elif [ -d ${lib.escapeShellArg consoleDir} ]; then
-        echo "loom-curl: this box requires a client certificate and has not been" \
-          "issued one yet; see 'systemctl status loom-mtls-identity'." >&2
-      fi
-
-      # Ours first: curl takes the last occurrence of either flag, so an
-      # operator passing their own --cert or --cacert still overrides these.
-      #
-      # Not `exec`: the anchor above may be in a temporary directory this script
-      # still has to remove, and an exec'd process never runs the EXIT trap.
-      # `set -e` propagates curl's exit status.
-      curl "''${flags[@]}" "$@"
-    '';
+      ${builtins.readFile ./scripts/loom_curl.sh}'';
   };
 
   # One nginx server per route. The Host header is what Traefik routes on, so

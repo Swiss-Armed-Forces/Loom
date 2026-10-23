@@ -328,47 +328,15 @@ let
       openssl
     ];
     text = ''
-      mkdir --parents ${lib.escapeShellArg tlsDir}
-      chgrp ${lib.escapeShellArg nginxGroup} ${lib.escapeShellArg tlsDir}
-      chmod 750 ${lib.escapeShellArg tlsDir}
+      LOOM_TLS_DIR=${lib.escapeShellArg tlsDir}
+      LOOM_TLS_CERT=${lib.escapeShellArg tlsCert}
+      LOOM_TLS_KEY=${lib.escapeShellArg tlsKey}
+      LOOM_TLS_PLACEHOLDER_MARKER=${lib.escapeShellArg tlsPlaceholderMarker}
+      LOOM_NGINX_GROUP=${lib.escapeShellArg nginxGroup}
+      LOOM_PORTAL_USER=${lib.escapeShellArg portalUser}
+      LOOM_PORTAL_HOST=${lib.escapeShellArg cfg.portal.host}
 
-      # Only when there is nothing usable there. Writing a placeholder over the
-      # real certificate would put the warning back for a day, on the one page
-      # that exists to take it away -- but `-s` alone also kept an *expired*
-      # pair: `tlsDir` is on the encrypted root and survives reboots, this
-      # certificate is `-days 1`, and `loom-portal-certificate` loops until the
-      # cluster answers without ever consulting expiry. On a box whose cluster
-      # never comes up, every boot after the first short-circuited past replacing
-      # it and nginx served an expired certificate indefinitely. `-checkend 0` is
-      # the one-line version of what `loom-mtls-identity` does daily.
-      if [ -s ${lib.escapeShellArg tlsCert} ] && [ -s ${lib.escapeShellArg tlsKey} ] \
-        && openssl x509 -noout -checkend 0 -in ${lib.escapeShellArg tlsCert} \
-          >/dev/null 2>&1; then
-        exit 0
-      fi
-
-      umask 077
-      openssl req -x509 -nodes -days 1 \
-        -newkey rsa:2048 \
-        -subj "/CN=${cfg.portal.host}" \
-        -keyout ${lib.escapeShellArg tlsKey} \
-        -out ${lib.escapeShellArg tlsCert} 2>/dev/null
-
-      chgrp ${lib.escapeShellArg nginxGroup} ${lib.escapeShellArg tlsKey} ${lib.escapeShellArg tlsCert}
-      chmod 640 ${lib.escapeShellArg tlsKey}
-      chmod 644 ${lib.escapeShellArg tlsCert}
-
-      # The marker the page reads. While it exists, 443 is answered by a
-      # certificate nothing can verify -- `-days 1`, rsa:2048, self-signed
-      # `CN=portal.loom` -- and the page must not offer a PKCS#12 over it: the
-      # bundle carries an unencrypted private key, and "the connection was
-      # encrypted" is not the property that matters when the key exchange is
-      # authenticated by nothing. `loom-portal-certificate` removes it once the
-      # cluster's own pair is in place, which on a first boot is hours away.
-      : > ${lib.escapeShellArg tlsPlaceholderMarker}
-      chgrp ${lib.escapeShellArg portalUser} ${lib.escapeShellArg tlsPlaceholderMarker}
-      chmod 644 ${lib.escapeShellArg tlsPlaceholderMarker}
-    '';
+      ${builtins.readFile ./scripts/loom_portal_tls_placeholder.sh}'';
   };
 
   # Publish the certificate Loom serves: as a trust anchor for the page to hand
@@ -383,126 +351,17 @@ let
       systemd
     ];
     text = ''
-      namespace=${lib.escapeShellArg loomNamespace}
-      secret=${lib.escapeShellArg cfg.portal.servingSecret}
-      want_tls=${if enableTls then "1" else "0"}
+      LOOM_TLS_CERT=${lib.escapeShellArg tlsCert}
+      LOOM_TLS_KEY=${lib.escapeShellArg tlsKey}
+      LOOM_TLS_PLACEHOLDER_MARKER=${lib.escapeShellArg tlsPlaceholderMarker}
+      LOOM_ANCHOR_FILE=${lib.escapeShellArg anchorFile}
+      LOOM_FINGERPRINT_FILE=${lib.escapeShellArg fingerprintFile}
+      LOOM_NGINX_GROUP=${lib.escapeShellArg nginxGroup}
+      LOOM_NAMESPACE=${lib.escapeShellArg loomNamespace}
+      LOOM_SERVING_SECRET=${lib.escapeShellArg cfg.portal.servingSecret}
+      LOOM_ENABLE_TLS=${if enableTls then "1" else "0"}
 
-      # Said once per change rather than once per attempt, the way mtls.nix's
-      # issuer does it: a box waiting an hour for a bring-up should not fill the
-      # journal with one line every ten seconds.
-      said=""
-      note() {
-        if [ "$1" != "$said" ]; then
-          said="$1"
-          echo "$1"
-        fi
-      }
-
-      read_secret_key() {
-        local value
-        value="$(kubectl --request-timeout=5s --namespace "$namespace" \
-          get secret "$1" --output "jsonpath={.data.$2}" 2>/dev/null)" || return 1
-        [ -n "$value" ] || return 1
-        base64 --decode <<< "$value"
-      }
-
-      # Whatever the frontend's Ingress names, for a deployment that brought its
-      # own certificate. Same fallback as cicd/generate_client_certificate.sh's
-      # fetch_serving_anchor.
-      ingress_secret() {
-        kubectl --request-timeout=5s --namespace "$namespace" \
-          get ingress --selector app.kubernetes.io/component=frontend \
-          --output "jsonpath={.items[0].spec.tls[0].secretName}" 2>/dev/null || true
-      }
-
-      # Waiting forever is safe here, unlike in the issuer next door: nothing is
-      # ordered behind this unit, the page works without it and says so, and a
-      # visitor is not standing in front of it.
-      until kubectl --request-timeout=5s --namespace "$namespace" \
-        get secret "$secret" >/dev/null 2>&1; do
-        alternative="$(ingress_secret)"
-        if [ -n "$alternative" ] && [ "$alternative" != "$secret" ]; then
-          note "Using '$alternative' from the frontend Ingress instead of '$secret'."
-          secret="$alternative"
-          continue
-        fi
-        note "Waiting for '$secret'; Loom has not got that far yet."
-        sleep 10
-      done
-
-      work="$(mktemp --directory)"
-      # shellcheck disable=SC2064
-      trap "rm --recursive --force '$work'" EXIT
-
-      # The anchor and the serving pair are not necessarily the same certificate.
-      #
-      # On the default path the chart makes `self-signed-cert` with `kubectl
-      # create secret tls`, so it carries no `ca.crt` and the anchor is the leaf
-      # itself -- nothing issued it, and a client that trusts this deployment
-      # trusts that certificate as its own root. On the cert-manager path
-      # (`certificate.enabled`) the secret carries both, and the anchor is the
-      # issuer. Taking `tls.crt` in that case would hand the visitor a leaf to
-      # trust on the one deployment where the leaf rotates underneath them.
-      found=""
-      for key in 'ca\.crt' 'tls\.crt'; do
-        if read_secret_key "$secret" "$key" > "$work/anchor.pem" \
-          && grep --quiet "BEGIN CERTIFICATE" "$work/anchor.pem"; then
-          found="$key"
-          break
-        fi
-      done
-      if [ -z "$found" ]; then
-        echo "Secret '$secret' carries no certificate this page could publish." >&2
-        exit 1
-      fi
-
-      openssl x509 -noout -fingerprint -sha256 -in "$work/anchor.pem" \
-        | cut --delimiter== --fields=2 > "$work/anchor.sha256"
-
-      changed=0
-
-      # Compared before it is written, and that is not tidiness. The reload below
-      # is `reload-or-restart`, which on a box where nginx is down becomes a
-      # restart -- and a restart drops the in-flight connections on
-      # loom-mtls-ollama, which carry the assistant pane's token stream at a
-      # 3600-second read timeout. Doing that every hour for no reason would be a
-      # chat pane that goes blank on the hour.
-      publish() {
-        if cmp --silent "$1" "$2" 2>/dev/null; then
-          return 0
-        fi
-        install --mode="$3" "$1" "$2"
-        changed=1
-      }
-
-      publish "$work/anchor.pem" ${lib.escapeShellArg anchorFile} 644
-      publish "$work/anchor.sha256" ${lib.escapeShellArg fingerprintFile} 644
-
-      if [ "$want_tls" = 1 ]; then
-        if ! read_secret_key "$secret" 'tls\.crt' > "$work/cert.pem" \
-          || ! read_secret_key "$secret" 'tls\.key' > "$work/key.pem"; then
-          echo "Secret '$secret' carries no serving pair; leaving the TLS listener as it is." >&2
-          exit 0
-        fi
-        publish "$work/cert.pem" ${lib.escapeShellArg tlsCert} 644
-        if ! cmp --silent "$work/key.pem" ${lib.escapeShellArg tlsKey} 2>/dev/null; then
-          install --mode=640 --group=${lib.escapeShellArg nginxGroup} \
-            "$work/key.pem" ${lib.escapeShellArg tlsKey}
-          changed=1
-        fi
-        # The listener is now the cluster's own certificate -- the one the page
-        # has been telling the visitor to trust -- so the page may offer a
-        # private key over it. Until this point `_is_secure` was true of a
-        # connection carrying the one-day placeholder, which is authenticated by
-        # nothing and is in force for the hours a first boot takes.
-        rm --force ${lib.escapeShellArg tlsPlaceholderMarker}
-      fi
-
-      if [ "$changed" = 1 ]; then
-        echo "Published the serving certificate from '$secret' (anchor key: $found)."
-        systemctl reload-or-restart nginx.service
-      fi
-    '';
+      ${builtins.readFile ./scripts/loom_portal_certificate.sh}'';
   };
 
   # The privileged half of issuing a visitor a certificate.
@@ -520,146 +379,14 @@ let
       cfg.mtls.issuer
     ];
     text = ''
-      requests=${lib.escapeShellArg requestsDir}
-      bundles=${lib.escapeShellArg bundlesDir}
-      namespace=${lib.escapeShellArg loomNamespace}
-      ca_secret=${lib.escapeShellArg cfg.mtls.caSecret}
-      days=${toString cfg.portal.mtls.validityDays}
+      LOOM_REQUESTS_DIR=${lib.escapeShellArg requestsDir}
+      LOOM_BUNDLES_DIR=${lib.escapeShellArg bundlesDir}
+      LOOM_PORTAL_USER=${lib.escapeShellArg portalUser}
+      LOOM_NAMESPACE=${lib.escapeShellArg loomNamespace}
+      LOOM_CA_SECRET=${lib.escapeShellArg cfg.mtls.caSecret}
+      LOOM_VALIDITY_DAYS=${toString cfg.portal.mtls.validityDays}
 
-      current=""
-
-      # Written to a dot-prefixed temporary and renamed, exactly as the bundle
-      # directory below is, and for a sharper reason than tidiness.
-      #
-      # The page polls `bundles/<token>.error` every 100ms and unlinks it the
-      # instant it appears. Creating the file and *then* chgrp-ing it left a
-      # window of one fork-and-exec in which the page could take it away -- after
-      # which `chgrp` failed, `set -e` aborted the script, and the EXIT trap found
-      # `current` still set and wrote a second answer over a question already
-      # answered. The unit went to `failed` on a perfectly ordinary
-      # "cluster not ready", a stale file was left for the next run's reap, and a
-      # visitor whose timing landed the other way was told the box could not issue
-      # a certificate rather than that Loom was still starting.
-      #
-      # So the name the page watches for appears once, already owned and already
-      # readable, and nothing touches it afterwards.
-      refuse() {
-        local temporary
-        # `mktemp`, not a name derived from the token. `bundlesDir` is
-        # 0730 root:loom-portal, so the portal user may create entries in it by
-        # name -- and the portal generates the token itself, so it could plant
-        # `bundles/.<token>.error.tmp` as a symlink before writing its request.
-        # The redirect below opens O_CREAT|O_TRUNC through such a link, and the
-        # chgrp and chmod follow it too: root truncating a file of the portal's
-        # choosing, writing `cluster-not-ready` into it and handing it to the
-        # portal group. `refuse` is reached on the ordinary cluster-not-ready
-        # branch during every bring-up, so this was not an exotic path. The same
-        # reasoning `put()` below already applies to the password file.
-        temporary="$(mktemp --tmpdir="$bundles" ".tmp.XXXXXXXX")"
-        printf '%s\n' "$2" > "$temporary"
-        # --no-dereference for the same reason, belt to mktemp's braces.
-        chgrp --no-dereference ${lib.escapeShellArg portalUser} "$temporary"
-        chmod 640 "$temporary"
-        # Cleared before the rename rather than after it: once the answer is
-        # visible the trap below must not write a second one, and a failure
-        # between here and the rename is better served by the page's own deadline
-        # than by an answer that contradicts this one.
-        current=""
-        mv "$temporary" "$bundles/$1.error"
-      }
-
-      # TERM as well as EXIT, because TimeoutStartSec kills with SIGTERM and the
-      # visitor whose request was in flight is watching a page that would
-      # otherwise spin until its own deadline.
-      cleanup() {
-        if [ -n "$current" ] && [ ! -d "$bundles/$current" ]; then
-          refuse "$current" issuer-failed
-        fi
-      }
-      trap cleanup EXIT TERM
-
-      # Anything abandoned. The page takes its own request back when it times out
-      # and removes its own bundle once it has handed it over, so this only ever
-      # catches what a crash or a closed tab left -- but a bundle holds an
-      # unencrypted private key, so it is swept rather than left.
-      find "$requests" -mindepth 1 -mmin +5 -delete 2>/dev/null || true
-      find "$bundles" -mindepth 1 -maxdepth 1 -mmin +5 -exec rm --recursive --force {} + 2>/dev/null || true
-
-      shopt -s nullglob
-      for request in "$requests"/*.req; do
-        token="$(basename "$request" .req)"
-
-        # Validated before the name is ever joined to a path again. The page
-        # generates these, so anything else in here came from something that
-        # should not have been writing to this directory at all.
-        if [ "''${#token}" -ne 32 ] || [ -n "''${token//[0-9a-f]/}" ]; then
-          rm --force "$request"
-          continue
-        fi
-
-        # The glob was expanded once, and a visitor whose page times out takes
-        # their own request back -- so by the time this loop reaches an entry the
-        # file may be gone. Under `set -euo pipefail` the sed below would then
-        # exit 2 and abort the whole run mid-batch, with `current` still empty so
-        # the trap writes no answer: a spurious `loom-portal-issue` failure in
-        # `systemctl --failed`, which is a primary diagnostic on this box. The
-        # batch itself recovers either way -- `PathExistsGlob` re-checks the
-        # moment a triggered service exits -- but the noise is worth not making.
-        [ -f "$request" ] || continue
-
-        # Re-validated rather than trusted: the page checked it too, and a
-        # downstream check is not a substitute for the one that decides.
-        label="$(sed --quiet 's/^label=\([a-z0-9][a-z0-9-]\{0,23\}\)$/\1/p' "$request" 2>/dev/null | head --lines=1)" || label=""
-
-        # Consumed before any work, so a retrigger of the path unit cannot hand
-        # the same request to a second run.
-        rm --force "$request"
-        current="$token"
-
-        # Deliberately no wait loop. mtls.nix's issuer waits out a bring-up
-        # because nobody is watching it; here somebody is standing at a page, and
-        # "Loom is still starting" is a better answer than a spinner.
-        if ! kubectl --request-timeout=5s --namespace "$namespace" \
-          get secret "$ca_secret" >/dev/null 2>&1; then
-          refuse "$token" cluster-not-ready
-          continue
-        fi
-
-        work="$bundles/.$token.work"
-        rm --recursive --force "$work"
-        mkdir --parents "$work"
-        chmod 750 "$work"
-
-        # The name is built here and never taken verbatim, so the worst a label
-        # can do is choose 24 lowercase characters of a filename.
-        if loom-client-certificate \
-          --name "''${label:-visitor}-''${token:0:8}" \
-          --days "$days" \
-          --namespace "$namespace" \
-          --out-dir "$work"; then
-          chgrp --recursive ${lib.escapeShellArg portalUser} "$work"
-          chmod --recursive g+rX "$work"
-          # The directory itself also g+w, which is what lets the page shred the
-          # bundle the moment it has handed it over: removing an entry needs
-          # write on the containing directory, so with r-x alone every
-          # `os.unlink` in `Spool._remove_tree` failed with EACCES and the rmdir
-          # then failed ENOTEMPTY -- leaving an unencrypted private key on disk
-          # until another request arrived to trigger the five-minute sweep, or
-          # until reboot. It grants nothing new: `bundlesDir` is 0730
-          # root:loom-portal, so the page can already unlink entries there by
-          # name. The files stay g+r only.
-          chmod g+w "$work"
-          # A rename within one directory, so the page can never see a partial
-          # bundle: either the directory is there and complete, or it is not.
-          mv "$work" "$bundles/$token"
-          current=""
-          echo "Issued a visitor certificate for ''${label:-visitor}."
-        else
-          rm --recursive --force "$work"
-          refuse "$token" issuer-failed
-        fi
-      done
-    '';
+      ${builtins.readFile ./scripts/loom_portal_issue.sh}'';
   };
 in
 {
@@ -1280,60 +1007,13 @@ in
               config.loom.bannerRefresh
             ];
             script = ''
-              state=${lib.escapeShellArg stateDir}
+              LOOM_STATE_DIR=${lib.escapeShellArg stateDir}
+              LOOM_PASSWORD_FILE=${lib.escapeShellArg passwordFile}
+              LOOM_PREVIOUS_PASSWORD_FILE=${lib.escapeShellArg previousPasswordFile}
+              LOOM_PORTAL_USER=${lib.escapeShellArg portalUser}
+              LOOM_PASSWORD_WORDS=${toString cfg.portal.mtls.passwordWords}
 
-              # Words rather than a random string, and drawn by `diceware` from its
-              # own EFF list rather than from a wordlist in this repository -- the
-              # same reasoning, and the same tool, as the --lock-key passphrase in
-              # cicd/build_appliance_image.sh.
-              #
-              # The y/z filter is kept even though the person typing this is on
-              # their own phone rather than on a keyboard somebody else chose. One
-              # box with two different rules for generating a passphrase is worse
-              # than one filter that is merely unnecessary here, and rejection
-              # sampling keeps the result uniform over what survives.
-              passphrase=""
-              for _ in $(seq 100); do
-                candidate="$(diceware --no-caps --delimiter . --num ${toString cfg.portal.mtls.passwordWords})"
-                if ! grep --quiet --extended-regexp '[yz]' <<< "$candidate"; then
-                  passphrase="$candidate"
-                  break
-                fi
-              done
-              if [ -z "$passphrase" ]; then
-                echo "No passphrase without [yz] in 100 draws; diceware or its list has changed." >&2
-                exit 1
-              fi
-
-              # Temp file, chmod, rename -- the shape key-guard.nix's `put` uses,
-              # so the page can never read a half-written password and refuse
-              # somebody who typed the right one.
-              put() {
-                local temporary
-                temporary="$(mktemp --tmpdir="$state" .password.XXXXXX)"
-                printf '%s\n' "$2" > "$temporary"
-                chgrp ${lib.escapeShellArg portalUser} "$temporary"
-                chmod 640 "$temporary"
-                mv "$temporary" "$1"
-              }
-
-              # Yesterday's is kept for one rotation. This runs at midnight and the
-              # password is read off a screen, so there is a minute every day when
-              # somebody is typing one the box has just replaced -- and that is the
-              # worst possible moment for it to refuse a correct answer.
-              if [ -s ${lib.escapeShellArg passwordFile} ]; then
-                put ${lib.escapeShellArg previousPasswordFile} \
-                  "$(cat ${lib.escapeShellArg passwordFile})"
-              fi
-              put ${lib.escapeShellArg passwordFile} "$passphrase"
-
-              # And onto the login screen, which reads the file above at print time
-              # and puts the password in the same block as everything else somebody
-              # has to transcribe. Repaint, unless somebody is already logged in --
-              # which is what loom-banner-refresh decides, and it says so by
-              # exiting 1.
-              loom-banner-refresh || true
-            '';
+              ${builtins.readFile ./scripts/loom_portal_password.sh}'';
           };
 
           systemd.timers.loom-portal-password = {

@@ -375,7 +375,6 @@ is_chart_deployed() {
 #
 
 set_offline_mode(){
-    # shellcheck disable=SC2310
     if is_offline; then
         OFFLINE_MODE=true
     fi
@@ -835,7 +834,6 @@ inject_archive_enc_key() {
 }
 
 create_docker_secret_from_config() {
-    # shellcheck disable=SC2310
     if ! is_serviceaccount_ready; then
         wait_for is_serviceaccount_ready
     fi
@@ -1140,7 +1138,6 @@ assert_gpu_resource_registered(){
     local retry_count
     retry_count=0
 
-    # shellcheck disable=SC2310
     while ! is_gpu_resource_registered; do
         if [[ "${retry_count}" -ge "${WAIT_GPU_MAX_RETRIES}" ]]; then
             echo >&2 "[!] Error: the node still does not advertise ${GPU_RESOURCE_NAME}"
@@ -1180,7 +1177,6 @@ default_use_csi-hostpath-driver(){
 }
 
 create_namespace(){
-    # shellcheck disable=SC2310
     if namespace_exists; then
         echo "[-] Namespace ${NAMESPACE} already exists"
         return
@@ -1228,14 +1224,12 @@ detect_deployed_release(){
         release="production"
     fi
 
-    # shellcheck disable=SC2310
     if ! is_chart_deployed \
         "${release}-loom-api" "loom-${chart_version}"; then
         echo "[*] Deploying: the cluster does not carry loom-${chart_version}."
         return
     fi
 
-    # shellcheck disable=SC2310
     if ! is_chart_deployed \
         "${release}-traefik" "traefik-${TRAEFIK_HELM_VERSION}"; then
         echo "[*] Deploying: the cluster does not carry traefik-${TRAEFIK_HELM_VERSION}."
@@ -1245,7 +1239,6 @@ detect_deployed_release(){
     # KEDA is only installed under --scaling, so asking for it unconditionally
     # would keep every non-scaling deployment off the fast path for good.
     if [[ "${SCALING}" = true ]]; then
-        # shellcheck disable=SC2310
         if ! is_chart_deployed \
             "${release}-keda-operator" "keda-${KEDA_HELM_VERSION}"; then
             echo "[*] Deploying: the cluster does not carry keda-${KEDA_HELM_VERSION}."
@@ -1479,7 +1472,6 @@ install_host_entries(){
     # a bit of a hack here by simply overwriting the file.
     # This most likely won't be persisted, but its probably
     # good enough for now..
-    # shellcheck disable=SC2310
     if ! is_hosts_file_writable_as_root && [[ -L "${HOSTS_FILE}" ]]; then
         echo "[*] Replacing the non-writable '${HOSTS_FILE}' with a copy of its symlink destination to make it writable."
         local real_hosts_file
@@ -1491,7 +1483,6 @@ install_host_entries(){
     fi
 
     # test again
-    # shellcheck disable=SC2310
     if ! is_hosts_file_writable_as_root; then
         echo >&2 "[!] '${HOSTS_FILE}' not writable:"
         echo >&2 "[!] you have to manually add the '${LOOM_DOMAIN}' domain hosts to your DNS"
@@ -1728,7 +1719,6 @@ while [[ $# -gt 0 ]]; do
         ;;
         --skip-*)
             skip_step="${1#--skip-}"
-            # shellcheck disable=SC2310
             if ! is_known_step "${skip_step}"; then
                 echo >&2 "[!] Error: unknown step '${skip_step}' for --skip"
                 echo >&2 "[!] Valid steps:"
@@ -1784,7 +1774,6 @@ fi
 
 # execute steps
 for step in "${STEPS[@]}"; do
-    # shellcheck disable=SC2310
     if is_skipped "${step}"; then
         echo "[*] Skipping: ${step}"
         continue

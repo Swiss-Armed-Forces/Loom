@@ -176,8 +176,8 @@ warn_if_disk_budget_inert(){
     (( requested_gb > 0 )) || return 0
 
     # `"trusted":false` -- a JSON boolean, not the 0/1 the human-readable form
-    # prints. Matched with bash's own regex rather than piped through sed, both
-    # to keep shellcheck's SC2312 happy and because the field is optional:
+    # prints. Matched with bash's own regex rather than piped through sed
+    # because the field is optional:
     # anything other than an explicit false means nix could not tell, which is
     # not the same as "untrusted" and must not warn.
     info="$(nix store info --json 2>/dev/null || true)"

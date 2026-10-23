@@ -140,7 +140,6 @@ create_self_signed_cert() {
         # anything can use, and keeping it means every programmatic client over
         # `https://*.loom` stays broken for the life of the cluster, with the
         # services behind those names serving perfectly.
-        # shellcheck disable=SC2310
         if keep_existing_cert; then
             echo "[-] Certificate '${CERT_SECRET_NAME}' already exists in namespace"
             return

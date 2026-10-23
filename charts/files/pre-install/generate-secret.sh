@@ -59,7 +59,6 @@ is_using_fixed_secret() {
     # reads back as empty too -- so the comparison is only meaningful for a
     # fixed value there is something to match.
     [[ -n "${SECRET_FIXED}" ]] || return 1
-    # shellcheck disable=SC2310
     [[ "$(get_secret_key || true)" == "${SECRET_FIXED}" ]]
 }
 
@@ -71,13 +70,11 @@ create_secret() {
     local secret_key
     local use_fixed_key
 
-    # shellcheck disable=SC2310
     if is_using_fixed_secret; then
         echo "[*] Deleting fixed secret: '${SECRET_NAME}'"
         delete_secret_key
     fi
 
-    # shellcheck disable=SC2310
     if ! use_fixed_secret; then
         use_fixed_key="false"
         secret_key="$(< /dev/urandom tr -dc "${SECRET_CHARS}" | head -c "${SECRET_SIZE}" || true)"
@@ -87,7 +84,6 @@ create_secret() {
         delete_secret_key
     fi
 
-    # shellcheck disable=SC2310
     if get_secret_key &> /dev/null; then
         echo "[*] Secret '${SECRET_NAME}' already exists"
         return
@@ -160,7 +156,6 @@ fi
 # entry in .Values.preInstall.generateSecret with no development secret is a
 # legitimate entry, and it is only in `development` that an empty one would
 # silently install an empty secret.
-# shellcheck disable=SC2310
 if use_fixed_secret && [[ -z "${SECRET_FIXED}" ]]; then
     echo >&2 "[!] Error: --fixed is required in the 'development' environment"
     usage >&2

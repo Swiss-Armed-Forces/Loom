@@ -482,6 +482,21 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   one dot, and OpenSSL will not expand a wildcard under a single-label parent). A host served by
   entrypoint rather than by a route that names it goes in `hostnames.extra` instead. See the
   `## Hostnames and the self-signed certificate` section in `Documentation/installation.md`
+- `cicd/check_nix_inline_shell.sh` - Cap how much shell a `.nix` file under `nixos/` may inline,
+  so the appliance's shell stays inside `shellcheck -x -o all`'s reach. Twenty effective lines per
+  block, counting neither blanks, comments, prologue assignments, the `builtins.readFile` line nor
+  heredoc bodies - so the extracted shape passes by construction and a page of prose in a failure
+  report is not mistaken for a long program. Runs as a git hook on any change under `nixos/` or to
+  the checker itself, and builds nothing: a line scan is enough because `nixfmt` is also a hook and
+  normalises where an indented string may open. `--list` reports every block it found with its
+  size, `--max-lines` moves the cap. See the Nix bullet in `## Code Style and Conventions`
+
+- `.shellcheckrc` - Repository-wide shellcheck settings, read by the hook and by anyone running
+  the tool by hand from the checkout. It turns two optional checks off for the whole tree:
+  SC2310 (a predicate function in an `if` disables `set -e` inside it) and SC2312 (a command
+  substitution in a condition masks its status). Both fire on idioms used everywhere here; the
+  file carries the reasoning, including which of the two was already the decision and which is
+  new. Anything else stays on, so `-o all` still means `-o all` for every other check
 
 **AI developer tools (`aitools` subcommands):**
 
@@ -905,9 +920,39 @@ function, **stop and ask the user first** — there is almost certainly a better
   template.** Anything past a couple of lines is a file mounted through a ConfigMap - see
   `charts/templates/pre-install/` for the pattern (a short `until nc -vz ...; do sleep 2; done` wait
   loop can stay inline). A script inlined into a template is a YAML string that shellcheck never
-  sees, and the repo runs shellcheck with `-o all`. Values reach the script through the container's
+  sees, and the repo runs shellcheck with `-o all` (less the two checks `.shellcheckrc` turns
+  off for the whole tree). Values reach the script through the container's
   `args:` as long options, and the script parses them in a `while`/`case` loop and asserts each one
   is set
+- **Nix: an appliance script belongs in `nixos/scripts/*.sh`, not inline in a `.nix` file.** Same
+  rule as the Helm one above and for the same reason — a Nix string is not a file, so the
+  `shellcheck -x -o all` hook cannot see it, and a `systemd.services.<n>.script` is checked by
+  nothing whatsoever. `cicd/check_nix_inline_shell.sh` caps an inline block at 20 effective lines;
+  blanks, comments, prologue assignments, the `readFile` line and heredoc bodies do not count, so
+  the shape below passes by construction. A block that genuinely has to stay inline takes
+  `# nix-inline-shell: allow <reason>` on the line above it.
+
+  The `.nix` file keeps only the values, as `LOOM_*` assignments, and ends with the `readFile`
+  hugging the closing `''` — on a line of its own it would add a trailing newline to the script:
+
+  ```nix
+  text = ''
+    LOOM_STATE_DIR=${lib.escapeShellArg cfg.stateDir}
+
+    ${builtins.readFile ./scripts/loom_thing.sh}'';
+  ```
+
+  The `.sh` file has **no shebang and no executable bit** — it is inlined by Nix, not run from the
+  checkout — opens with `# shellcheck shell=bash`, and then **restates the `set` line its host
+  applies**, so the linter reads the program that actually runs: `set -euo pipefail` under
+  `writeShellApplication` and in a `runCommand` builder, `set -e` alone under a systemd `script`,
+  which is all nixpkgs' `makeJobScript` wraps one in. Each value is read through `:?`, which
+  asserts it the way the Helm rule asserts a long option, and is also what keeps the name out of
+  SC2154:
+
+  ```sh
+  readonly STATE_DIR="${LOOM_STATE_DIR:?nixos/thing.nix must set this}"
+  ```
 
 ## Additional Documentation
 
