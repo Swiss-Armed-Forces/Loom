@@ -261,7 +261,11 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
         f"bash -c '. {params.operator.repo_dir}/vars.sh;"
         ' printf %s "$LOOM_CHAT_MODEL"\''
     ).strip()
-    got_model = re.search(r"^model='?([\w/.:@-]+)'?$", chat_pane, re.M)
+    # `LOOM_CHAT_MODEL`, where this used to read `model=`: the pane's body is
+    # nixos/scripts/loom_chat.sh now, and the module hands it values through a
+    # prologue of `LOOM_*` assignments. The `model=` that reads it is still
+    # there, further down the same script.
+    got_model = re.search(r"^LOOM_CHAT_MODEL='?([\w/.:@-]+)'?$", chat_pane, re.M)
     assert got_model, chat_pane
     assert (
         got_model.group(1) == want_model
@@ -299,19 +303,22 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     # to the npm registry the first time the operator asks a question.
     #
     # The path has to be put back together rather than read off the export: the
-    # script says `OPENCODE_CONFIG="$config/opencode.json"`, and handing that to
-    # the driver is handing it a `$config` no shell of ours has ever set. Only
-    # `state` is a literal, so the two derived components are spelled out here
-    # the way loom-chat spells them. Quotes are stripped for the same reason the
-    # bring-up pane's `--state-dir` is: lib.escapeShellArg adds them only where
-    # they are needed.
+    # script says `OPENCODE_CONFIG="${config}/opencode.json"`, and handing that
+    # to the driver is handing it a `${config}` no shell of ours has ever set.
+    # Only the prologue's `LOOM_OPENCODE_STATE` is a literal, so the two derived
+    # components are spelled out here the way loom-chat spells them. Quotes are
+    # stripped for the same reason the bring-up pane's `--state-dir` is:
+    # lib.escapeShellArg adds them only where they are needed.
     assert re.search(
-        r'^export OPENCODE_CONFIG="\$config/opencode\.json"$', chat_pane, re.M
+        r'^export OPENCODE_CONFIG="\$\{config\}/opencode\.json"$', chat_pane, re.M
     ), chat_pane
     assert re.search(
-        r'^export OPENCODE_CONFIG_DIR="\$config"$', chat_pane, re.M
+        r'^export OPENCODE_CONFIG_DIR="\$\{config\}"$', chat_pane, re.M
     ), chat_pane
-    state = re.search(r"^state='?([^'\n]+)'?$", chat_pane, re.M)
+    # Braced, since the body is a .sh file the repository's shellcheck reads at
+    # `-o all` and SC2250 wants `${config}`. And read from the prologue rather
+    # than from `state=`, for the reason given at `LOOM_CHAT_MODEL` above.
+    state = re.search(r"^LOOM_OPENCODE_STATE='?([^'\n]+)'?$", chat_pane, re.M)
     assert state, chat_pane
     config_dir = f"{state.group(1)}/config"
     config = json.loads(appliance.succeed(f"cat {config_dir}/opencode.json"))

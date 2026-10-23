@@ -172,7 +172,6 @@ fetch_serving_anchor() {
 
     for secret in "${secrets[@]}"; do
         for key in 'ca\.crt' 'tls\.crt'; do
-            # shellcheck disable=SC2310
             if pem="$(read_secret_key "${secret}" "${key}")"; then
                 printf '%s\n' "${pem}"
                 return 0
@@ -217,7 +216,6 @@ assert_ca_outlives_client() {
         return 0
     fi
 
-    # shellcheck disable=SC2310
     remaining="$(days_left "${ca_cert}" || echo "?")"
     echo >&2 "[!] Error: the CA in '${MTLS_CA_SECRET_NAME}' has ${remaining} days left."
     echo >&2 "    A client certificate valid for ${VALIDITY_DAYS} days would outlive it."
@@ -236,7 +234,6 @@ assert_ca_outlives_client() {
 fetch_ca() {
     echo "[*] Reading the mutual TLS CA from '${MTLS_CA_SECRET_NAME}'"
 
-    # shellcheck disable=SC2310
     if ! read_secret_key "${MTLS_CA_SECRET_NAME}" 'ca\.crt' > "${CA_CERT_FILE}"; then
         echo >&2 "[!] Error: no CA certificate in secret '${MTLS_CA_SECRET_NAME}' in"
         echo >&2 "    namespace '${NAMESPACE}'. That secret is made by the chart's"
@@ -246,7 +243,6 @@ fetch_ca() {
         exit 1
     fi
 
-    # shellcheck disable=SC2310
     if ! read_secret_key "${MTLS_CA_SECRET_NAME}" 'ca\.key' > "${CA_KEY_FILE}"; then
         echo >&2 "[!] Error: no CA private key in secret '${MTLS_CA_SECRET_NAME}'."
         echo >&2 "    Issuing a client certificate needs it."
@@ -347,7 +343,6 @@ write_identity() {
 write_anchor() {
     echo "[*] Exporting the trust anchor"
 
-    # shellcheck disable=SC2310
     if ! fetch_serving_anchor > "${OUT_ANCHOR}"; then
         echo >&2 "[!] Error: could not find the serving certificate. Looked in secret"
         echo >&2 "    '${SERVING_CERT_SECRET_NAME}' and in whatever the frontend"

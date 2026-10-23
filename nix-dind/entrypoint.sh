@@ -153,7 +153,6 @@ if [[ -d "${CODE_DIR_RO}" ]]; then
 fi
 
 # start docker
-# shellcheck disable=SC2310
 if ! is_docker_ready; then
     (
         # dockerd-entrypoint always spawns a tini processes
@@ -175,14 +174,12 @@ fi
 wait_for is_docker_ready
 
 # start nix
-# shellcheck disable=SC2310
 if ! is_nix_daemon_ready; then
     fork nix-daemon
 fi
 wait_for is_nix_daemon_ready
 
 # start tailscale
-# shellcheck disable=SC2310
 if ! is_taiscale_ready; then
     fork tailscaled
 

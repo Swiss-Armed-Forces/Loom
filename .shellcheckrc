@@ -1,0 +1,36 @@
+# Repository-wide shellcheck settings, read by the `shellcheck` git hook
+# (devenv.nix) and by anyone running the tool by hand from the checkout.
+#
+# The hook runs with `-o all`, which turns on every optional check. Two of
+# them fire on idioms this repository uses everywhere. The two arrived here by
+# different routes, and the difference is worth recording.
+
+# "This function is invoked in an 'if' condition so set -e will be disabled."
+#
+# Predicate functions are the idiom here -- `is_offline`, `is_chart_deployed`,
+# `keep_existing_cert`, `is_docker_ready`. Their whole purpose is to answer a
+# question by exit status, so `set -e` not killing the script inside them is
+# the behaviour being asked for rather than an oversight. Honouring the check
+# means hoisting every such call into a variable, which is more code saying
+# less.
+#
+# This one is a consolidation: it was already the decision, taken 30 times in
+# 9 files as `# shellcheck disable=SC2310` with nothing said about why. Those
+# comments are gone; this is the same ruling, once, with the reason attached.
+disable=SC2310
+
+# "Consider invoking this command separately to avoid masking its return
+# value."
+#
+# A command substitution inside a condition is usually the question itself --
+# `[[ -z "$(ls -A "${dir}")" ]]` asks whether a directory is empty, and `ls`
+# failing is one of the ways the answer is "no". Where the status does matter
+# the scripts assign first and test afterwards; that is a code review
+# judgement, and this check cannot tell the two apart.
+#
+# This one is a new policy, not a consolidation: SC2312 was suppressed nowhere
+# before, because almost nothing in the tree was being read at `-o all` in the
+# first place. It silences roughly two dozen findings, most of them in the
+# scripts extracted out of nixos/*.nix. If it is ever reconsidered, that is
+# where to look.
+disable=SC2312

@@ -88,7 +88,6 @@ keep_existing_mtls_cert() {
 
 create_self_signed_mtls_cert() {
     if kubectl get secret "${MTLS_CERT_SECRET_NAME}" -n "${NAMESPACE}" &> /dev/null; then
-        # shellcheck disable=SC2310
         if keep_existing_mtls_cert; then
             echo "[-] Certificate '${MTLS_CERT_SECRET_NAME}' already exists in namespace"
             return

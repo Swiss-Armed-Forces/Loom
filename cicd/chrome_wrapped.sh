@@ -171,7 +171,6 @@ else
 fi
 
 for LOOM_PORT in "${LOOM_HTTP_PORT}" "${LOOM_HTTPS_PORT}"; do
-    # shellcheck disable=SC2310
     if ! is_port "${LOOM_PORT}"; then
         echo >&2 "[!] Error: '${LOOM_PORT}' is not a port number"
         usage >&2
@@ -181,7 +180,6 @@ done
 
 # Check if the input is an IP address or a DNS name
 LOOM_SERVER_RESOLVED="${LOOM_SERVER}"
-# shellcheck disable=SC2310
 if ! is_ipv4 "${LOOM_SERVER}" && ! is_ipv6 "${LOOM_SERVER}"; then
     LOOM_SERVER_RESOLVED="$(resolve_dns "${LOOM_SERVER}")"
 fi

@@ -101,7 +101,6 @@ run(){
     local abs_context_dir
     abs_context_dir="$(get_absolute_path "${CONTEXT_DIR}")"
 
-    # shellcheck disable=SC2310
     if is_tty_attached; then
         docker_run_options+=( "--tty" )
     fi

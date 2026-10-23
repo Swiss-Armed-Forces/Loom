@@ -132,48 +132,9 @@ let
       gnugrep
     ];
     text = ''
-      readonly EXCLUDED=${lib.escapeShellArg (lib.concatStringsSep " " config.loom.platform.netExcludeDrivers)}
+      LOOM_NET_EXCLUDE_DRIVERS=${lib.escapeShellArg (lib.concatStringsSep " " config.loom.platform.netExcludeDrivers)}
 
-      for path in /sys/class/net/*; do
-          name="$(basename "''${path}")"
-
-          if [ "''${name}" = lo ]; then
-              continue
-          fi
-          if [ ! -e "''${path}/device" ]; then
-              continue
-          fi
-          if grep --quiet '^DEVTYPE=' "''${path}/uevent" 2>/dev/null; then
-              continue
-          fi
-          if [ "$(cat "''${path}/type" 2>/dev/null || echo 0)" != 1 ]; then
-              continue
-          fi
-
-          # The driver is read per port rather than matched against `netMatch`,
-          # which is a systemd [Match] block nothing here can evaluate.
-          driver=""
-          if [ -e "''${path}/device/driver" ]; then
-              driver="$(basename "$(readlink --canonicalize "''${path}/device/driver")")"
-          fi
-
-          skip=false
-          for excluded in ''${EXCLUDED}; do
-              if [ "''${driver}" = "''${excluded}" ]; then
-                  skip=true
-                  break
-              fi
-          done
-          if [ "''${skip}" = true ]; then
-              echo >&2 "[*] Skipping ''${name}: this platform excludes ''${driver}."
-              continue
-          fi
-
-          printf '%s %s\n' \
-              "$(basename "$(readlink --canonicalize "''${path}/device")")" \
-              "''${name}"
-      done | sort | awk '{ print $2 }'
-    '';
+      ${builtins.readFile ./scripts/loom_wired_nics.sh}'';
   };
 
   # The ports a visitor may reach on the appliance address.
@@ -216,215 +177,16 @@ let
     name = "loom-expose";
     runtimeInputs = [ pkgs.iptables ];
     text = ''
-      readonly INTERFACE=${lib.escapeShellArg serviceInterface}
-      readonly BOX=${lib.escapeShellArg boxAddress}
-      readonly PORTAL=${lib.escapeShellArg portalAddress}
-      readonly SEGMENT=${lib.escapeShellArg "${loomSubnet}.0/24"}
-      readonly PORTAL_ENABLED=${if config.loom.portal.enable then "1" else "0"}
-      readonly NODE=${lib.escapeShellArg minikubeIp}
-      readonly PORTS=${lib.escapeShellArg (lib.concatMapStringsSep " " toString exposedPorts)}
-      readonly MULTIPORT=${lib.escapeShellArg (lib.concatMapStringsSep "," toString exposedPorts)}
+      LOOM_SERVICE_INTERFACE=${lib.escapeShellArg serviceInterface}
+      LOOM_BOX_ADDRESS=${lib.escapeShellArg boxAddress}
+      LOOM_PORTAL_ADDRESS=${lib.escapeShellArg portalAddress}
+      LOOM_SEGMENT=${lib.escapeShellArg "${loomSubnet}.0/24"}
+      LOOM_PORTAL_ENABLED=${if config.loom.portal.enable then "1" else "0"}
+      LOOM_MINIKUBE_IP=${lib.escapeShellArg minikubeIp}
+      LOOM_EXPOSED_PORTS=${lib.escapeShellArg (lib.concatMapStringsSep " " toString exposedPorts)}
+      LOOM_EXPOSED_MULTIPORT=${lib.escapeShellArg (lib.concatMapStringsSep "," toString exposedPorts)}
 
-      # Our own chains, jumped to from a hook each table guarantees us.
-      readonly NAT_CHAIN=LOOM-EXPOSE
-      readonly FORWARD_CHAIN=LOOM-FORWARD
-
-      up() {
-          # ---------------------------------------------------------------
-          # nat PREROUTING: the appliance address becomes the minikube node.
-          #
-          # Created-or-flushed rather than created-if-absent, so a restart
-          # rebuilds the rules instead of appending a second copy of them.
-          # ---------------------------------------------------------------
-          iptables --table nat --new-chain "''${NAT_CHAIN}" 2>/dev/null \
-              || iptables --table nat --flush "''${NAT_CHAIN}"
-
-          if ! iptables --table nat --check PREROUTING \
-              --jump "''${NAT_CHAIN}" 2>/dev/null; then
-              iptables --table nat --insert PREROUTING --jump "''${NAT_CHAIN}"
-          fi
-
-          local port
-          for port in ''${PORTS}; do
-              iptables --table nat --append "''${NAT_CHAIN}" \
-                  --in-interface "''${INTERFACE}" \
-                  --destination "''${BOX}" \
-                  --protocol tcp --destination-port "''${port}" \
-                  --jump DNAT --to-destination "''${NODE}:''${port}"
-          done
-
-          # ---------------------------------------------------------------
-          # And everything a client aimed off this segment.
-          #
-          # DNS interception is only as good as the client's willingness to use
-          # the resolver in its lease, and a phone with an MDM profile, a
-          # hardcoded 8.8.8.8 or an encrypted-DNS setting uses something else.
-          # These two rules are what make the portal reachable anyway, and the
-          # port 80 one is the real backstop for all of it: every vendor's
-          # connectivity probe is plaintext http, so it lands here whatever
-          # happened to DNS.
-          #
-          # After the loop above rather than before it, although the
-          # `! --destination` below already excludes the box. The rules that
-          # make frontend.loom reach Traefik are the ones a reader has to see
-          # winning, and an ordering that doubles as the correctness argument
-          # costs nothing.
-          #
-          # The exclusion is the whole /24 and not two addresses: iptables
-          # takes one --destination per rule, and the segment is the honest
-          # unit anyway. The box, the responder and every other client are
-          # things on this wire, and nothing here should touch traffic between
-          # them.
-          # ---------------------------------------------------------------
-
-          local proto
-          for proto in udp tcp; do
-              iptables --table nat --append "''${NAT_CHAIN}" \
-                  --in-interface "''${INTERFACE}" \
-                  ! --destination "''${SEGMENT}" \
-                  --protocol "''${proto}" --destination-port 53 \
-                  --jump DNAT --to-destination "''${BOX}:53"
-          done
-
-          # To the responder, and emphatically not to the box: port 80 on the
-          # box is DNAT'd to Traefik four rules above, DNAT is terminal, and a
-          # packet sent there would leave this chain and reach a 404 for a Host
-          # Traefik does not route.
-          #
-          # Nothing for 443. Hijacking TLS produces a certificate warning in a
-          # webview that offers no way past it; the reset a client gets from a
-          # closed port is both faster and more honest.
-          #
-          # Guarded in the shell rather than by building the script two ways,
-          # so there is one script to read and shellcheck sees all of it. With
-          # `loom.portal.enable = false` there is no listener on that address,
-          # and sending every client's http there would hang them on a SYN
-          # rather than fail -- the same reason the dnsmasq wildcard is gated.
-          if [ "''${PORTAL_ENABLED}" = 1 ]; then
-              iptables --table nat --append "''${NAT_CHAIN}" \
-                  --in-interface "''${INTERFACE}" \
-                  ! --destination "''${SEGMENT}" \
-                  --protocol tcp --destination-port 80 \
-                  --jump DNAT --to-destination "''${PORTAL}:80"
-          fi
-
-          # ---------------------------------------------------------------
-          # filter FORWARD: and then it has to be allowed across.
-          #
-          # This is the half that is easy to miss. dockerd sets the FORWARD
-          # policy to DROP, so a DNAT'd packet crossing from the appliance
-          # NIC to the minikube bridge is dropped by default and the symptom
-          # is indistinguishable from the DNAT not being there at all.
-          #
-          # DOCKER-USER is docker's documented hook for this: it is jumped to
-          # ahead of every docker-generated FORWARD rule and docker never
-          # edits its contents. Created here only as a fallback -- `After`
-          # and `Requires` on docker.service mean it normally exists already,
-          # and creating it ourselves would otherwise leave a chain nothing
-          # jumps to.
-          # ---------------------------------------------------------------
-          iptables --new-chain "''${FORWARD_CHAIN}" 2>/dev/null \
-              || iptables --flush "''${FORWARD_CHAIN}"
-
-          iptables --new-chain DOCKER-USER 2>/dev/null || true
-          if ! iptables --check FORWARD --jump DOCKER-USER 2>/dev/null; then
-              iptables --insert FORWARD --jump DOCKER-USER
-          fi
-          if ! iptables --check DOCKER-USER \
-              --jump "''${FORWARD_CHAIN}" 2>/dev/null; then
-              iptables --insert DOCKER-USER --jump "''${FORWARD_CHAIN}"
-          fi
-
-          # Matched on the node's address rather than on the bridge it is
-          # behind: that bridge is `br-<docker network id>`, which changes
-          # every time the cluster is deleted and recreated.
-          iptables --append "''${FORWARD_CHAIN}" \
-              --in-interface "''${INTERFACE}" \
-              --destination "''${NODE}" \
-              --protocol tcp --match multiport --dports "''${MULTIPORT}" \
-              --jump ACCEPT
-
-          # The replies. docker's own per-network rules happen to cover these
-          # today, which is not something to depend on for the direction that
-          # makes the whole thing work.
-          iptables --append "''${FORWARD_CHAIN}" \
-              --out-interface "''${INTERFACE}" \
-              --match conntrack --ctstate RELATED,ESTABLISHED \
-              --jump ACCEPT
-
-          # ---------------------------------------------------------------
-          # And nothing else crosses this box.
-          #
-          # The lease now names the box as the default gateway, so a client's
-          # off-subnet traffic arrives here to be forwarded, and ip_forward is
-          # on for the DNAT above. Most of it dies in the routing decision
-          # before this chain is reached, because the box itself has no default
-          # route. What does not is traffic aimed at a network the box *can*
-          # reach: docker0 and the minikube bridge. docker's own DOCKER chain
-          # accepts forwarded packets to any published container port from any
-          # interface, which on this box includes the kube-apiserver -- so
-          # without this rule a visitor with a default route via the box can
-          # reach it. That is worth closing on its own account, portal or no
-          # portal.
-          #
-          # Last in the chain, so the two ACCEPT rules above keep winning: a
-          # 80/443 to the node, and the replies coming back.
-          #
-          # REJECT and not DROP. A drop is a thirty-second hang in a browser tab
-          # and an afternoon of somebody's patience; icmp-host-unreachable takes
-          # connect() out of SYN_SENT immediately on every client OS here, and
-          # reads correctly in ping -- which is more than icmp-admin-prohibited
-          # manages, since that surfaces as "Permission denied". The rate limit
-          # that would otherwise make this hang anyway is lifted in the sysctls
-          # above.
-          #
-          # `! --out-interface` rather than a bare `--in-interface`, and it
-          # matters only in the --wifi build, where it matters a lot: dockerd
-          # loads br_netfilter, so frames bridged between the wired port and the
-          # radio traverse this chain as in and out of the same bridge. A bare
-          # rule would start rejecting wired-to-wireless traffic that today
-          # falls through to the FORWARD policy, and would answer client
-          # broadcasts with ICMP. This leaves the inside of the bridge exactly
-          # as it is -- hostapd's apIsolate still owns radio-to-radio -- and
-          # takes away only the routed path out.
-          # ---------------------------------------------------------------
-          iptables --append "''${FORWARD_CHAIN}" \
-              --in-interface "''${INTERFACE}" \
-              ! --out-interface "''${INTERFACE}" \
-              --jump REJECT --reject-with icmp-host-unreachable
-
-          echo "[*] Loom is exposed on ''${BOX} ports ''${MULTIPORT} (via ''${NODE})."
-      }
-
-      # Never fails. This runs as ExecStop, including on the way to a
-      # shutdown that is about to discard the whole ruleset anyway, and a
-      # rule that somebody already removed by hand is not a failure worth
-      # refusing to stop over.
-      down() {
-          if iptables --table nat --check PREROUTING \
-              --jump "''${NAT_CHAIN}" 2>/dev/null; then
-              iptables --table nat --delete PREROUTING --jump "''${NAT_CHAIN}" || true
-          fi
-          iptables --table nat --flush "''${NAT_CHAIN}" 2>/dev/null || true
-          iptables --table nat --delete-chain "''${NAT_CHAIN}" 2>/dev/null || true
-
-          if iptables --check DOCKER-USER \
-              --jump "''${FORWARD_CHAIN}" 2>/dev/null; then
-              iptables --delete DOCKER-USER --jump "''${FORWARD_CHAIN}" || true
-          fi
-          iptables --flush "''${FORWARD_CHAIN}" 2>/dev/null || true
-          iptables --delete-chain "''${FORWARD_CHAIN}" 2>/dev/null || true
-      }
-
-      case "''${1:-}" in
-          up)   up   ;;
-          down) down ;;
-          *)
-              echo >&2 "usage: loom-expose up|down"
-              exit 1
-              ;;
-      esac
-    '';
+      ${builtins.readFile ./scripts/loom_expose.sh}'';
   };
 in
 {
@@ -1036,80 +798,12 @@ in
           systemd
         ];
         script = ''
-          # The wait the missing `After=` never provided. Bounded, because a box
-          # whose udev queue never drains must still come up with whatever it has.
-          udevadm settle --timeout=30 || true
+          LOOM_APPLIANCE_INTERFACE=${lib.escapeShellArg applianceInterface}
+          LOOM_FALLBACK_RECORD=${lib.escapeShellArg fallbackRecord}
+          LOOM_INTERFACE_OVERRIDE=${lib.escapeShellArg loomInterface}
+          LOOM_AUTO_SELECT=${if config.loom.autoSelectInterface then "1" else "0"}
 
-          readonly OVERRIDE=${lib.escapeShellArg loomInterface}
-          readonly AUTO_SELECT=${if config.loom.autoSelectInterface then "1" else "0"}
-
-          # Deliberately not brought up here: the scripted network configures and
-          # raises it, and in setup mode dhcpcd does.
-          #
-          # Written through a temporary file, like key-guard.nix's state, so the
-          # console check can never read half a record.
-          claim() {
-            local chosen="''${1}" reason="''${2}" alternatives="''${3:-}"
-
-            # Never fail the boot over this. A device that refuses to be renamed
-            # leaves the box where it would have been anyway, and
-            # loom-network-check still reports it on the console.
-            if ! ip link set dev "''${chosen}" down \
-              || ! ip link set dev "''${chosen}" name ${applianceInterface}; then
-              echo "[!] Could not rename ''${chosen} to ${applianceInterface}."
-              return 1
-            fi
-
-            echo "[*] Claimed ''${chosen} as ${applianceInterface} (''${reason})."
-
-            mkdir --parents /run/loom
-            # %q on the one value that can contain a space. The record is
-            # `.`-sourced by loom-network-check, and `claim` is called with
-            # "''${candidates[*]:1}" -- so two or more leftover ports produced
-            # `LOOM_FALLBACK_ALTERNATIVES=enp2s0 enp3s0`, which bash reads as an
-            # assignment followed by the *command* `enp3s0`. Under the `set -e`
-            # nixpkgs wraps a unit script in, that aborted loom-network-check: no
-            # issue fragment naming the claimed port, and a stale one from the
-            # previous boot left in place -- on exactly the box the fallback
-            # exists for, with unknown hardware and several wired ports.
-            {
-              printf 'LOOM_FALLBACK_INTERFACE=%q\n' "''${chosen}"
-              printf 'LOOM_FALLBACK_REASON=%q\n' "''${reason}"
-              printf 'LOOM_FALLBACK_ALTERNATIVES=%q\n' "''${alternatives}"
-            } >${fallbackRecord}.tmp
-            mv ${fallbackRecord}.tmp ${fallbackRecord}
-          }
-
-          if [ -e /sys/class/net/${applianceInterface} ]; then
-            echo "[*] ${applianceInterface} already exists; udev claimed it."
-            exit 0
-          fi
-
-          # An explicit --interface first, and regardless of AUTO_SELECT: the
-          # operator named a port, which is an instruction rather than a guess.
-          # This is the path that makes the flag work at all -- see the netMatch
-          # comment above for why the .link file cannot do it by itself.
-          if [ -n "''${OVERRIDE}" ]; then
-            if [ -e "/sys/class/net/''${OVERRIDE}" ]; then
-              claim "''${OVERRIDE}" override || true
-              exit 0
-            fi
-            echo "[!] --interface named ''${OVERRIDE}, which does not exist on this box."
-          fi
-
-          if [ "''${AUTO_SELECT}" != 1 ]; then
-            exit 0
-          fi
-
-          mapfile -t candidates < <(loom-wired-nics)
-
-          if [ "''${#candidates[@]}" -eq 0 ]; then
-            echo "[!] No wired interface to claim as ${applianceInterface}."
-            exit 0
-          fi
-
-          claim "''${candidates[0]}" auto "''${candidates[*]:1}" || true
-        '';
+          ${builtins.readFile ./scripts/loom_interface_fallback.sh}'';
       };
     })
 
@@ -1159,67 +853,10 @@ in
           config.loom.banner.fragment
         ];
         script = ''
-          # `60` sorts after box.nix's 50-loom.issue, so this lands under the banner
-          # and above agetty's press-ENTER prompt. loom-issue-fragment owns the rest:
-          # the indent, the rule, the atomic rename a getty respawning mid-write
-          # needs, the copy to the journal, and the rule that no backslash reaches
-          # an issue file.
-          fragment=/run/issue.d/60-loom-network.issue
+          LOOM_APPLIANCE_INTERFACE=${lib.escapeShellArg applianceInterface}
+          LOOM_FALLBACK_RECORD=${lib.escapeShellArg fallbackRecord}
 
-          if [ ! -e /sys/class/net/${applianceInterface} ]; then
-            # With the fallback in place this no longer means "the match missed"
-            # -- it means there was no wired port to claim either.
-            lines=(
-              --warn "${applianceInterface} does not exist -- no address, no DHCP, no *.loom."
-              --warn "No wired interface was found to claim. Present instead:"
-            )
-            for candidate in /sys/class/net/*; do
-              name="$(basename "$candidate")"
-              if [ "$name" = lo ]; then
-                continue
-              fi
-              lines+=(--warn "  $name")
-            done
-            lines+=(--warn "If one of those is in fact wired, rebuild with --interface <name>.")
-            loom-issue-fragment 60-loom-network "''${lines[@]}"
-            exit 0
-          fi
-
-          if [ -e ${fallbackRecord} ]; then
-            # shellcheck source=/dev/null
-            . ${fallbackRecord}
-
-            # An explicit --interface did what it was told; that is not news for
-            # the login screen, and the journal already has it.
-            if [ "$LOOM_FALLBACK_REASON" = override ]; then
-              rm --force "''${fragment}"
-              exit 0
-            fi
-
-            # A notice rather than a problem: the box works, it simply claimed the
-            # port itself. In red it would read as a fault that needs fixing.
-            lines=(
-              --note "${applianceInterface} is $LOOM_FALLBACK_INTERFACE, claimed automatically:"
-              --note "this image has no platform match for the NIC in this box."
-            )
-            if [ -n "$LOOM_FALLBACK_ALTERNATIVES" ]; then
-              lines+=(
-                --note "Other wired ports: $LOOM_FALLBACK_ALTERNATIVES"
-                --note "If nothing reaches the box, move the cable to one of those."
-              )
-            fi
-            lines+=(
-              --note "To pin it, rebuild with --interface $LOOM_FALLBACK_INTERFACE,"
-              --note "or add a platform for this machine."
-            )
-            loom-issue-fragment 60-loom-network "''${lines[@]}"
-            exit 0
-          fi
-
-          # Matched properly. Clear anything an earlier boot left behind.
-          rm --force "''${fragment}"
-          exit 0
-        '';
+          ${builtins.readFile ./scripts/loom_network_check.sh}'';
       };
     }
 

@@ -55,10 +55,15 @@ def oracle_is_off(locked: "Machine", subtest: "Subtest") -> None:
         # same way loom_tests/appliance/guard.py reads ACTION: this is the one
         # constant that decides which of the two arming paths runs, and asserting
         # it directly is what makes the rest of this file mean what it says.
+        #
+        # `LOOM_KEY_ORACLE`, where this used to read `readonly KEY_ORACLE`: the
+        # guard's body is nixos/scripts/loom_key_guard.sh now, and the module
+        # hands it values through a prologue of `LOOM_*` assignments. The
+        # `readonly` is still there, further down, reading this.
         script = locked.succeed(
             "cat $(readlink -f /run/current-system/sw/bin/loom-key-guard)"
         )
-        assert "readonly KEY_ORACLE=false" in script, (
+        assert "LOOM_KEY_ORACLE=false" in script, (
             "the locked build still arms through the root oracle, which it has no"
             " key for -- the guard would never arm"
         )

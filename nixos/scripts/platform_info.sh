@@ -21,10 +21,11 @@
 #
 # Style note: `command -v` is written out at each use rather than wrapped in a
 # `have()` helper, and command substitutions are always assigned to a variable
-# before being passed anywhere. Both are to satisfy `shellcheck -x -o all`,
-# which the repository's hooks run: a *function* in an `if` condition silently
-# disables `set -e` inside it (SC2310), and a substitution used directly as an
-# argument throws its exit status away (SC2312).
+# before being passed anywhere. Both were written to satisfy SC2310 and SC2312,
+# which `.shellcheckrc` has since turned off for the whole repository -- so
+# neither is required any more. They are kept because they are also the clearer
+# form: the status of a substitution is visible at the assignment rather than
+# discarded three arguments deep.
 set -euo pipefail
 
 JSON=false
