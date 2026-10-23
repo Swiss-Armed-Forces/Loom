@@ -97,7 +97,14 @@ def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # a browser -- it refuses an untrusted certificate outright with no way to
         # click through, and the appliance's is self-signed for a TLD no public CA
         # can ever issue for. An https target here would dead-end every visitor.
-        assert f"return 302 http://{page}/" in nginx_conf, nginx_conf
+        #
+        # And the literal address rather than `portal.loom`, which it used to be: a
+        # redirect to a name makes the webview resolve a TLD that does not exist,
+        # and on a phone with Android's Private DNS in strict mode that cannot
+        # succeed at all. Such a phone still detects the portal -- the connectivity
+        # check bypasses private DNS -- and then cannot follow the redirect.
+        assert f"return 302 http://{portal}/" in nginx_conf, nginx_conf
+        assert f"return 302 http://{page}/" not in nginx_conf, nginx_conf
         assert f"https://{page}" not in nginx_conf, nginx_conf
 
         # 302, never 301: these URLs belong to Google and Apple, and a permanent
@@ -105,20 +112,68 @@ def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # connectivitycheck.gstatic.com is Loom long after leaving the appliance.
         assert "return 301" not in nginx_conf, nginx_conf
 
-        # Two server blocks on that socket, and exactly one of them is the default.
-        # That is what decides a probe: it arrives with a Host no `server_name`
-        # matches, falls to the default server and is redirected. Give the page
+        # Exactly one of the server blocks on that socket is the default, and that
+        # is what decides a probe: it arrives with a Host no `server_name` matches,
+        # falls to the default server and is redirected. Give the page
         # `default_server` as well and every probe path starts answering 200 --
         # which is the one failure this whole mechanism exists to avoid, and one
         # nothing else here can see. tests/appliance-portal.nix sends the request.
-        assert nginx_conf.count(f"listen {portal}:80") == 2, nginx_conf
+        #
+        # **This is the invariant**, not the count below it: the number of blocks
+        # on the socket is three today (the catch-all, the page, and the two Linux
+        # desktop probes that can only be told apart by Host) and will change again.
         assert nginx_conf.count(f"listen {portal}:80 default_server") == 1, nginx_conf
+        assert nginx_conf.count(f"listen {portal}:80") == 3, nginx_conf
         assert f"server_name {page} {portal} ;" in nginx_conf, nginx_conf
 
         # And the page is proxied rather than served from a root: the certificate it
         # hands out and the answers it gives change with the cluster, so it is a
         # process rather than a directory.
         assert "proxy_pass http://127.0.0.1:18082;" in nginx_conf, nginx_conf
+
+        # Every proxied location says who the client is, and that is a forgery
+        # guard rather than plumbing: a header written only where it is true is a
+        # header somebody can set where it is not. The same rule the `X-Loom-Secure`
+        # note in portal.nix states, and nothing asserted it for either header
+        # before.
+        # Counted on the prefix, not on the whole directive: the Ubuntu and KDE
+        # vhost's `proxy_pass` carries a path, because it rewrites `/` on the way
+        # to the page server, and an exact match would quietly not count it --
+        # which would make this assertion pass while saying nothing.
+        assert nginx_conf.count(
+            "proxy_set_header X-Loom-Client $remote_addr;"
+        ) == nginx_conf.count("proxy_pass http://127.0.0.1:18082"), nginx_conf
+
+        # The probe paths are proxied so a client that pressed the button on the
+        # page can be told what its vendor wants to hear -- and each of them falls
+        # back to the catch-all's own redirect if the page server is not there, so
+        # a probe never sees an nginx error page inside a captive sheet.
+        probe_locations = nginx_conf.count("error_page 502 503 504 = @probe_fallback;")
+        assert probe_locations >= 11, nginx_conf
+        assert "location @probe_fallback" in nginx_conf, nginx_conf
+
+        # Ubuntu's and KDE's probes both fetch `/`, which on every other listener is
+        # the page -- so that vhost rewrites the URI on the way to the page server
+        # rather than passing it through. Without the rewrite a NetworkManager probe
+        # is answered with the whole portal page at status 200, which is the one
+        # answer a probe must never get.
+        assert "server_name connectivity-check.ubuntu.com networkcheck.kde.org" in (
+            nginx_conf
+        ), nginx_conf
+        assert (
+            "proxy_pass http://127.0.0.1:18082/generate_204;" in nginx_conf
+        ), nginx_conf
+        assert "limit_req_zone  $binary_remote_addr zone=loom_portal_probe" in (
+            nginx_conf
+        ), nginx_conf
+
+        # `location /` stays a static return, on the catch-all and on the probe
+        # vhost, and so does each of their fallbacks -- four in all. It answers every
+        # hostname on the segment now that the resolver is a wildcard, and a static
+        # return has no upstream, no connect, no timeout and no failure mode. The
+        # count is what would catch somebody proxying it wholesale, which is the
+        # obvious implementation and the one this design is built around not taking.
+        assert nginx_conf.count(f"return 302 http://{portal}/") == 4, nginx_conf
 
 
 def http_entrypoint(appliance: "Machine", subtest: "Subtest") -> None:

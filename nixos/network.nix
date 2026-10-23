@@ -218,6 +218,9 @@ let
     text = ''
       readonly INTERFACE=${lib.escapeShellArg serviceInterface}
       readonly BOX=${lib.escapeShellArg boxAddress}
+      readonly PORTAL=${lib.escapeShellArg portalAddress}
+      readonly SEGMENT=${lib.escapeShellArg "${loomSubnet}.0/24"}
+      readonly PORTAL_ENABLED=${if config.loom.portal.enable then "1" else "0"}
       readonly NODE=${lib.escapeShellArg minikubeIp}
       readonly PORTS=${lib.escapeShellArg (lib.concatMapStringsSep " " toString exposedPorts)}
       readonly MULTIPORT=${lib.escapeShellArg (lib.concatMapStringsSep "," toString exposedPorts)}
@@ -249,6 +252,61 @@ let
                   --protocol tcp --destination-port "''${port}" \
                   --jump DNAT --to-destination "''${NODE}:''${port}"
           done
+
+          # ---------------------------------------------------------------
+          # And everything a client aimed off this segment.
+          #
+          # DNS interception is only as good as the client's willingness to use
+          # the resolver in its lease, and a phone with an MDM profile, a
+          # hardcoded 8.8.8.8 or an encrypted-DNS setting uses something else.
+          # These two rules are what make the portal reachable anyway, and the
+          # port 80 one is the real backstop for all of it: every vendor's
+          # connectivity probe is plaintext http, so it lands here whatever
+          # happened to DNS.
+          #
+          # After the loop above rather than before it, although the
+          # `! --destination` below already excludes the box. The rules that
+          # make frontend.loom reach Traefik are the ones a reader has to see
+          # winning, and an ordering that doubles as the correctness argument
+          # costs nothing.
+          #
+          # The exclusion is the whole /24 and not two addresses: iptables
+          # takes one --destination per rule, and the segment is the honest
+          # unit anyway. The box, the responder and every other client are
+          # things on this wire, and nothing here should touch traffic between
+          # them.
+          # ---------------------------------------------------------------
+
+          local proto
+          for proto in udp tcp; do
+              iptables --table nat --append "''${NAT_CHAIN}" \
+                  --in-interface "''${INTERFACE}" \
+                  ! --destination "''${SEGMENT}" \
+                  --protocol "''${proto}" --destination-port 53 \
+                  --jump DNAT --to-destination "''${BOX}:53"
+          done
+
+          # To the responder, and emphatically not to the box: port 80 on the
+          # box is DNAT'd to Traefik four rules above, DNAT is terminal, and a
+          # packet sent there would leave this chain and reach a 404 for a Host
+          # Traefik does not route.
+          #
+          # Nothing for 443. Hijacking TLS produces a certificate warning in a
+          # webview that offers no way past it; the reset a client gets from a
+          # closed port is both faster and more honest.
+          #
+          # Guarded in the shell rather than by building the script two ways,
+          # so there is one script to read and shellcheck sees all of it. With
+          # `loom.portal.enable = false` there is no listener on that address,
+          # and sending every client's http there would hang them on a SYN
+          # rather than fail -- the same reason the dnsmasq wildcard is gated.
+          if [ "''${PORTAL_ENABLED}" = 1 ]; then
+              iptables --table nat --append "''${NAT_CHAIN}" \
+                  --in-interface "''${INTERFACE}" \
+                  ! --destination "''${SEGMENT}" \
+                  --protocol tcp --destination-port 80 \
+                  --jump DNAT --to-destination "''${PORTAL}:80"
+          fi
 
           # ---------------------------------------------------------------
           # filter FORWARD: and then it has to be allowed across.
@@ -293,6 +351,47 @@ let
               --out-interface "''${INTERFACE}" \
               --match conntrack --ctstate RELATED,ESTABLISHED \
               --jump ACCEPT
+
+          # ---------------------------------------------------------------
+          # And nothing else crosses this box.
+          #
+          # The lease now names the box as the default gateway, so a client's
+          # off-subnet traffic arrives here to be forwarded, and ip_forward is
+          # on for the DNAT above. Most of it dies in the routing decision
+          # before this chain is reached, because the box itself has no default
+          # route. What does not is traffic aimed at a network the box *can*
+          # reach: docker0 and the minikube bridge. docker's own DOCKER chain
+          # accepts forwarded packets to any published container port from any
+          # interface, which on this box includes the kube-apiserver -- so
+          # without this rule a visitor with a default route via the box can
+          # reach it. That is worth closing on its own account, portal or no
+          # portal.
+          #
+          # Last in the chain, so the two ACCEPT rules above keep winning: a
+          # 80/443 to the node, and the replies coming back.
+          #
+          # REJECT and not DROP. A drop is a thirty-second hang in a browser tab
+          # and an afternoon of somebody's patience; icmp-host-unreachable takes
+          # connect() out of SYN_SENT immediately on every client OS here, and
+          # reads correctly in ping -- which is more than icmp-admin-prohibited
+          # manages, since that surfaces as "Permission denied". The rate limit
+          # that would otherwise make this hang anyway is lifted in the sysctls
+          # above.
+          #
+          # `! --out-interface` rather than a bare `--in-interface`, and it
+          # matters only in the --wifi build, where it matters a lot: dockerd
+          # loads br_netfilter, so frames bridged between the wired port and the
+          # radio traverse this chain as in and out of the same bridge. A bare
+          # rule would start rejecting wired-to-wireless traffic that today
+          # falls through to the FORWARD policy, and would answer client
+          # broadcasts with ICMP. This leaves the inside of the bridge exactly
+          # as it is -- hostapd's apIsolate still owns radio-to-radio -- and
+          # takes away only the routed path out.
+          # ---------------------------------------------------------------
+          iptables --append "''${FORWARD_CHAIN}" \
+              --in-interface "''${INTERFACE}" \
+              ! --out-interface "''${INTERFACE}" \
+              --jump REJECT --reject-with icmp-host-unreachable
 
           echo "[*] Loom is exposed on ''${BOX} ports ''${MULTIPORT} (via ''${NODE})."
       }
@@ -450,55 +549,160 @@ in
 
           dhcp-range = "${poolStart},${poolEnd},255.255.255.0,12h";
           dhcp-option = [
-            # No default gateway -- stated, because leaving option 3 out does
-            # NOT leave it out.
+            # The default gateway, named with a value rather than left to
+            # dnsmasq's default -- so the lease stays a decision either way.
             #
             # dnsmasq(8): "By default, dnsmasq sends some standard options to
             # DHCP clients, the netmask and broadcast address are set to the
             # same as the host running dnsmasq, and the DNS server and default
             # route are set to the address of the machine running dnsmasq." So
-            # an omitted option:router is an advertised option:router, and the
-            # only way to suppress one dnsmasq provides a default for is to
-            # name it with no value, as here.
+            # an omitted option:router is an advertised option:router, and
+            # naming it with no value is the only way to suppress one.
             #
-            # What that cost: every lease told the visitor's laptop that the
-            # appliance was its default gateway. A wired link outranks wifi on
-            # metric almost everywhere, so the new route won, and from then on
-            # *all* of that laptop's off-link traffic -- not just *.loom -- was
-            # handed to a box that has no upstream. ip_forward is on for the
-            # DNAT below, so the packets were accepted and then dropped rather
-            # than refused. Plugging into Loom took the visitor off the
-            # internet, on every interface they had.
+            # It *was* suppressed, and the cost of that is worth keeping on the
+            # record because it is real: a wired link outranks wifi on metric
+            # almost everywhere, so this route wins, and from here on all of a
+            # cabled laptop's off-link traffic is handed to a box that has no
+            # upstream. Plugging into Loom takes the visitor off the internet,
+            # on every interface they have.
             #
-            # The box is an island: the client needs no route to reach it,
-            # being on the same segment, and there is nothing behind it to
-            # route to.
-            "option:router"
+            # That cost is now accepted, because the alternative turned out to
+            # be worse. A client with no route to this box sends its
+            # captive-portal probe out of some *other* interface, where it
+            # succeeds -- so the OS never offers "Sign in to network" and the
+            # visitor is never told the page exists. macOS goes further and
+            # couples its captive check to publishing a default route, so it
+            # does not evaluate this link at all. A portal nobody is ever shown
+            # is not a portal, and every captive portal in the world takes the
+            # internet away for as long as you are on it.
+            #
+            # Two things make it survivable, and neither is optional: the
+            # wildcard below, which answers every name with the page rather than
+            # refusing it, and the blackhole in `loom-expose`, which fails
+            # everything else immediately instead of letting it hang. A visitor
+            # whose laptop goes quiet now gets a page saying why, in one hop.
+            "option:router,${boxAddress}"
             "option:dns-server,${boxAddress}"
           ];
 
-          # Wildcard, so this covers every name under .loom rather than just
-          # the 22 currently in vars.sh.
+          # Every name on this segment, answered rather than refused.
           #
-          # The portal page is the exception to it, and dnsmasq resolves these
-          # by longest matching domain, so the more specific entry wins. It has
-          # to: port 80 and 443 on the box address are DNAT'd to Traefik before
-          # the routing decision, and the page runs on the box itself.
+          # dnsmasq resolves these by longest matching domain -- dnsmasq(8):
+          # "More specific domains take precedence over less specific domains"
+          # -- and `/#/` parses to the no-domain entry, the least specific there
+          # is. So the carve-outs stay carve-outs whatever order they appear in.
           #
-          # The rest are the captive-portal probes (portal.nix), pointed at the
-          # responder's own address rather than at the box, for the same reason.
+          # `.loom` goes to the box and the portal page to the responder, for the
+          # reason that has always been here: ports 80 and 443 on the box address
+          # are DNAT'd to Traefik before the routing decision, and the page runs
+          # on the box itself.
           #
-          # Named one at a time rather than with a wildcard. Every other name
-          # keeps being REFUSED, so a visitor's mail client fails cleanly
-          # instead of being handed this box.
+          # The wildcard is the line that makes a vendor probe nobody listed --
+          # Samsung, Xiaomi, GNOME, KDE, every AOSP fallback -- land on the
+          # responder instead of failing closed. It used to be named hosts only,
+          # on the grounds that a visitor's mail client should fail cleanly
+          # rather than be handed this box; a client that cannot resolve a probe
+          # concludes "no internet" rather than "portal present", so that
+          # cleanliness was the whole bug. `probeHosts` stays as the explicit
+          # list because the tests are written against it and because a wildcard
+          # that is ever reverted must not take the probes with it.
           address = [
             "/loom/${boxAddress}"
             "/${config.loom.portal.host}/${portalAddress}"
           ]
-          ++ map (host: "/${host}/${portalAddress}") config.loom.portal.probeHosts;
+          ++ map (host: "/${host}/${portalAddress}") config.loom.portal.probeHosts
+          ++ [
+            # Windows compares this answer against a literal before it will
+            # believe the network is worth probing over http at all: NCSI's
+            # ActiveDnsProbeContent is 131.107.255.255 and ActiveDnsProbeContentV6
+            # is the ULA below. Hand it the responder instead and Windows 10 shows
+            # the globe and never offers a sign-in. Nothing ever connects to
+            # either address -- they are compared, not dialled -- so this is a
+            # sentinel rather than a route to anywhere.
+            #
+            # Windows 11 always uses the http probe and only resolves this to
+            # decide where to send it, so this buys Windows 10 and earlier. The
+            # thing that fires Windows 11 is `www.msftconnecttest.com`, which is
+            # in `probeHosts` above.
+            #
+            # Two entries for one name: dnsmasq(8) says "To give multiple
+            # addresses or both IPv4 and IPv6 addresses for a domain, use
+            # repeated --address flags."
+            "/dns.msftncsi.com/131.107.255.255"
+            "/dns.msftncsi.com/fd3e:4f5a:5b81::1"
+
+            # The three names below get no address at all, which dnsmasq(8) says
+            # is "equivalent to --server=/example.com/ and returns NXDOMAIN".
+            # NXDOMAIN is the answer each of them is specified to want, and the
+            # wildcard would otherwise give all three a positive one.
+
+            # Firefox's canary. Mozilla's rule is that any answer which is not
+            # NOERROR-with-records disables DNS-over-HTTPS for a client that has
+            # it on by default; a positive answer leaves DoH on, and every lookup
+            # then goes to an https endpoint this box answers with a reset.
+            "/use-application-dns.net/"
+
+            # Apple's documented signal that a network does not permit iCloud
+            # Private Relay. The device then says so plainly and turns it off for
+            # this network only. Apple is explicit that it has to be NXDOMAIN --
+            # not a timeout, not 0.0.0.0 -- and under the wildcard Private Relay
+            # would instead fail slowly and obscurely.
+            "/mask.icloud.com/"
+            "/mask-h2.icloud.com/"
+            "/mask-api.icloud.com/"
+
+            # The one single-label name a Windows client looks up unprompted.
+            # Answering it is a proxy-configuration attempt: the client would
+            # fetch wpad.dat, get a 302 to an HTML page, and fail anyway -- more
+            # slowly, and with its proxy settings in a stranger state.
+            "/wpad/"
+          ]
+          # Gated, and this is not caution. With `loom.portal.enable = false`
+          # there is no nginx on the responder's address, so an ungated wildcard
+          # would point every name on the segment at a listener that does not
+          # exist and every client would hang on a SYN rather than fail.
+          ++ lib.optional config.loom.portal.enable "/#/${portalAddress}";
+
+          # The other half of the wildcard, and not optional either.
+          #
+          # dnsmasq(8), on `address=`: "the behaviour for queries which don't
+          # match the specified address literal changed in version 2.86.
+          # Previous versions ... would return a NoData answer. From 2.86, the
+          # query is sent upstream. To restore the pre-2.86 behaviour, use the
+          # configuration --address=/example.com/1.2.3.4 --local=/example.com/."
+          #
+          # There is no upstream (`no-resolv`), so "sent upstream" ends as
+          # REFUSED -- for AAAA, HTTPS, SVCB, MX, every type an A record cannot
+          # answer. A REFUSED AAAA beside a good A is a lookup some stacks fail
+          # whole, and under the wildcard that would be every name on the
+          # segment rather than just `.loom`. `local=/#/` makes it NODATA
+          # instead, which is what an IPv4-only name is supposed to look like.
+          #
+          # This has always been wrong for `*.loom`; it is only now bad enough
+          # to notice.
+          #
+          # Ungated, unlike the wildcard above: this is about which *types* a
+          # name can answer, not about which names resolve, and a box with no
+          # portal still serves `*.loom` and still owes a NODATA for the AAAA
+          # beside each A.
+          local = [ "/#/" ];
 
           no-resolv = true;
+          # Load-bearing rather than tidy, now that the wildcard is here:
+          # dnsmasq(8) says /etc/hosts overrides `address=` per name, and
+          # box.nix pins all 22 *.loom names at the minikube node in /etc/hosts
+          # for the box's own use. Without this a client would be handed those
+          # entries, and `frontend.loom` would resolve to an address it has no
+          # route to.
           no-hosts = true;
+          # A DHCP lease also overrides `address=` for the name in it, so a
+          # visitor whose laptop calls itself `portal` or `wpad` could otherwise
+          # claim a name in this resolver out from under the entries above.
+          # Nothing on this box resolves client names.
+          dhcp-ignore-names = true;
+          # Both now inert -- they govern what would be forwarded, and
+          # `local=/#/` forwards nothing. Kept because they cost nothing and
+          # still say what this box is.
           domain-needed = true;
           bogus-priv = true;
           log-dhcp = true;
@@ -551,10 +755,31 @@ in
         ];
       };
 
-      # DNAT'd traffic is routed, not delivered locally, so this is no longer
-      # something to leave to dockerd -- which does enable it, as a side effect
-      # of starting, on a box where nothing has declared it.
-      boot.kernel.sysctl."net.ipv4.ip_forward" = true;
+      boot.kernel.sysctl = {
+        # DNAT'd traffic is routed, not delivered locally, so this is no longer
+        # something to leave to dockerd -- which does enable it, as a side effect
+        # of starting, on a box where nothing has declared it.
+        "net.ipv4.ip_forward" = true;
+
+        # Fail fast, and these two are the difference between "the box refused
+        # it" and "the box ignored it".
+        #
+        # Now that the lease names this box as the default route, a client's
+        # off-subnet traffic arrives here to be told no. Both of these default
+        # to one ICMP error per second per peer: `route.error_cost` (in ms) caps
+        # the net-unreachable the kernel itself sends when a forwarded packet
+        # has no route, which is the common case here, and `icmp_ratelimit`
+        # caps the one the REJECT in `loom-expose` sends. At one per second a
+        # browser opening six parallel connections gets one answer and five
+        # thirty-second hangs -- which is the symptom people report as "the
+        # network is broken" rather than "there is no internet here".
+        #
+        # Zero is safe on this box and would not be on another: these errors
+        # only ever go to clients on our own segment, and the global cap
+        # (`icmp_msgs_per_sec`, 1000) still stands behind them.
+        "net.ipv4.route.error_cost" = 0;
+        "net.ipv4.icmp_ratelimit" = 0;
+      };
 
       # The rules above, with a lifecycle. See `loom-expose` for what they do
       # and why they replaced `up.sh --expose`.

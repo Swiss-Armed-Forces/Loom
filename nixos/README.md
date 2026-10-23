@@ -27,8 +27,8 @@ this file is about the code.
 | `modes.nix` | `loom.mode`, the run/setup services, the `first-time-setup` specialisation, and `loom-promote-boot-entry`. |
 | `ready.nix` | How far the bring-up has got: the `loom-ready` package, and the unit that polls the cluster and publishes readiness for the three screens that draw it. Run mode only. |
 | `ready/` | The program that unit runs — what counts as a workload, what counts as ready, the stage machine, the bar in the bring-up pane and the tmux status segment — with its own pytest suite, run at build time. |
-| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose`, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
-| `portal.nix` | The captive portal: the probe responder, the page behind it, the certificate it publishes and the client identities it issues. Four units, two nginx listeners and a spool — see the section below. |
+| `network.nix` | Static address and dnsmasq in run mode, DHCP client in setup mode, the `--wifi` bridge. Also the `loom0` rename and the fallback that claims a wired NIC when no platform matches, `loom-expose`, which DNATs the appliance address onto the minikube node instead of using `up.sh --expose` and intercepts port 53 and port 80 off the segment, the blackhole that refuses everything else now that the lease names the box as the default route, the wildcard resolver and its carve-outs, and the ordering that keeps dnsmasq behind `network-addresses-<iface>.service` — which `network.target` no longer implies. |
+| `portal.nix` | The captive portal: the probe responder, the page behind it, the certificate it publishes, the client identities it issues, and the per-client "stop warning me" state. Four units, three nginx listeners and two spools — see the section below. |
 | `mtls.nix` | `--require-client-cert`: the chart values that switch mutual TLS on, the two nginx loopback proxies that give the box's own `opencode` and `mc` clients a way through it, the units that issue and renew the box's two identities, and `loom-curl`, which every image carries. |
 | `portal/` | The program the page server runs — routing, rendering, the password gate and the visitor's side of the issuance spool — with its own pytest suite, run at build time. |
 | `wifi.nix` | The optional access point: `loom.wifi.*`, hostapd, and the check that says so on the console when the radio never came up. |
@@ -346,15 +346,35 @@ loopback proxies, `http://portal.loom/` and the value of any flag that happens t
 `portal.nix` grew from a three-line redirect into the only thing on the box a visitor talks to, so it is
 worth saying what each piece is for and which of them is load-bearing.
 
-**Two server blocks on `<subnet>.2:80`, and only one of them is `default_server`.** That is the whole
+**Three server blocks on `<subnet>.2:80`, and only one of them is `default_server`.** That is the whole
 captive-portal mechanism. A probe arrives with `Host: connectivitycheck.gstatic.com`, matches no
 `server_name`, falls to the default server and is redirected; the page answers only for `portal.loom` and for
-the address itself. Make the page the default, or give it a name a probe sends, and every probe path starts
+the address itself; the third exists because Ubuntu's and KDE's probes both fetch `/` and can be told apart
+only by `Host`. Make the page the default, or give it a name a probe sends, and every probe path starts
 answering 200 — at which point Android stops offering "Sign in to network", keeps using mobile data, and
 resolves `frontend.loom` against a network that has never heard of `.loom`. Nothing about that is visible
 from a browser or from `curl`; it happens on a phone, at a site. `tests/appliance-units.nix` asserts the
 decision, `tests/appliance-portal.nix` sends the request, and `loom_portal/routes.py` keeps the server's own
-path table to the five entries that may answer anything but a 404.
+path table to the entries that may answer anything but a 404.
+
+**`location /` on the catch-all is a static `return 302`, and the listed probe paths are not.** The
+resolver answers every name on the segment with this address, so the catch-all is the busiest thing on the
+box and the one with the least recourse — a static return has no upstream, no connect, no timeout and no
+failure mode, which is worth more than answering a path nobody listed. The probe paths are proxied because
+the answer is per client: until a visitor presses the button at the bottom of the page every probe gets the
+same redirect, and afterwards that client's probes get the success answer its vendor compares against. Each
+proxied probe location carries `error_page 502 503 504 = @probe_fallback`, which is byte-for-byte the
+catch-all's own redirect, so a probe that arrives during the five-second window `Restart=always` leaves
+cannot be told from one that never reached the page server — a 502 inside a captive-portal sheet is the
+first thing a visitor would otherwise see of this box.
+
+**Who gets the success answer lives in `/run/loom-portal/validated/`.** A file per client, named by a
+keyed digest with a per-boot key, in a directory the page server may write and not enumerate — the same
+`0730 root:loom-portal` as the two spool directories, and for the same reason. Files rather than a set in
+memory because the symptom of losing the state is exactly the symptom the feature removes: Apple re-probes
+every sixty seconds, so a phone whose marker went away has its sheet raised again on somebody three rooms
+from the box. tmpfs gives the right lifetime — the claim lasts one boot, and twelve hours within it, which
+is the DHCP lease time so that a recycled address stops answering on the next holder's behalf.
 
 **The page server runs as `loom-portal` and can reach nothing.** Issuing a client identity needs the mutual
 TLS CA's *private key*, so the obvious implementation — this service shelling out to

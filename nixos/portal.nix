@@ -2,13 +2,17 @@
 #
 # A phone that joins the appliance asks for a URL whose answer it already knows
 # -- `connectivitycheck.gstatic.com/generate_204` and friends -- to decide
-# whether the network reaches the internet. dnsmasq points those four names at
-# the responder below (network.nix), which answers 302 to the page this module
-# serves, and the OS reacts by offering "Sign in to network" and opening it.
-# Without it the probe is REFUSED, the network is marked unusable, and a visitor
-# is told only that there is no internet.
+# whether the network reaches the internet. dnsmasq answers every name with the
+# responder below (network.nix), which redirects to the page this module serves,
+# and the OS reacts by offering "Sign in to network" and opening it.
 #
-# The page does three things, and the first is the only one most visitors want:
+# Answering *every* name rather than a list of known probes is deliberate, and
+# it is the correction to how this shipped: a client that cannot resolve its
+# probe concludes "no internet" rather than "portal present", so a name nobody
+# thought to list -- a Samsung or Xiaomi probe, an AOSP fallback, a Linux
+# desktop -- took the prompt away rather than merely missing it.
+#
+# The page does four things, and the first is the only one most visitors want:
 #
 #   1. "Open Loom", as the one button above the fold.
 #   2. The certificate this box serves `*.loom` with, to download and install.
@@ -20,6 +24,13 @@
 #      can type the password on the box's own login screen. That image admits
 #      nobody without an identity, so before this there was no way in at all
 #      except being handed files out of band.
+#   4. A button that stops the visitor's own device nagging them. Until it is
+#      pressed every probe gets the redirect; afterwards that client's probes
+#      get the success answer its vendor is looking for, and the OS marks the
+#      network validated. Without it the probes can never succeed, so Android
+#      keeps warning and quietly prefers cellular -- which cannot reach Loom --
+#      and Apple re-raises its sheet every sixty seconds. See
+#      `portal/loom_portal/validated.py` for where the per-client answer lives.
 #
 # The probe redirect is plain http, and that is not a shortcut. A portal webview
 # is not a browser: it refuses an untrusted certificate outright and offers no way
@@ -39,9 +50,12 @@
 # redirect needs no certificate at all, which is why it is the mechanism that
 # works.
 #
-# The box still says "no internet", and truthfully: it is an island with no
-# upstream and advertises no default route. What changes is that the visitor is
-# now offered a way in.
+# The box has no internet, and until the visitor presses the button it says so.
+# It is an island with no upstream, and it now advertises itself as the default
+# route anyway -- because a client that cannot route to us never probes us, and
+# because everything off this segment is rejected immediately rather than
+# dropped (see `loom-expose` in network.nix). What changes is that the visitor
+# is offered a way in, and then a way to stop being asked about it.
 #
 # Run mode only, like everything else here. In first-time setup the box is a DHCP
 # client on somebody's real network, and a page that mints client certificates on
@@ -82,6 +96,7 @@ let
   stateDir = "/run/loom-portal";
   requestsDir = "${stateDir}/requests";
   bundlesDir = "${stateDir}/bundles";
+  validatedDir = "${stateDir}/validated";
   anchorFile = "${stateDir}/anchor.pem";
   fingerprintFile = "${stateDir}/anchor.sha256";
   # Declared as an option below, because the login screen prints it and box.nix
@@ -142,6 +157,11 @@ let
     makeWrapperArgs = [
       "--set LOOM_PORTAL_FRONTEND_URL ${lib.escapeShellArg cfg.portal.frontendUrl}"
       "--set LOOM_PORTAL_URL ${lib.escapeShellArg "http://${cfg.portal.host}/"}"
+      # Where an unvalidated probe is sent, which is the same value nginx's catch-all
+      # returns statically. Status and `Location` match, which is all a probe reads;
+      # the bodies differ, nginx's `return` carrying its own short HTML and this one
+      # none.
+      "--set LOOM_PORTAL_REDIRECT_URL ${lib.escapeShellArg cfg.portal.target}"
       "--set LOOM_PORTAL_SECURE_URL ${lib.escapeShellArg cfg.portal.secureUrl}"
       "--set LOOM_PORTAL_STATE_DIR ${lib.escapeShellArg stateDir}"
       "--set LOOM_PORTAL_TAG ${lib.escapeShellArg tag}"
@@ -163,20 +183,109 @@ let
     meta.mainProgram = "loom-portal";
   };
 
-  # The two locations both page listeners carry.
+  # The two headers every proxied location on every listener carries.
   #
   # `secure` is what the page is told about the connection it is answering, and
-  # it decides whether the certificate form is offered at all. Set on **both**
-  # listeners rather than only on the TLS one, so a header a client invented is
-  # replaced rather than passed through -- nothing outside this box can reach
-  # the loopback port, but a value that is only ever written on the path where
-  # it is true is a value somebody can forge on the path where it is not.
+  # it decides whether the certificate form is offered at all. `X-Loom-Client`
+  # is the only fact about a visitor this service is ever told, and it is what
+  # decides whether their next connectivity probe is answered with a success or
+  # with the redirect everybody else gets.
+  #
+  # Both are set on **every** location on **every** listener rather than only
+  # where they are true, so a header a client invented is replaced rather than
+  # passed through -- nothing outside this box can reach the loopback port, but
+  # a value that is only ever written on the path where it is true is a value
+  # somebody can forge on the path where it is not.
+  #
+  # `$remote_addr` and not `$proxy_add_x_forwarded_for`: nothing stands in front
+  # of this nginx, and the second form appends whatever arrived in the request.
+  clientHeaders = secure: ''
+    proxy_set_header X-Loom-Secure "${if secure then "1" else "0"}";
+    proxy_set_header X-Loom-Client $remote_addr;
+  '';
+
+  # The paths a connectivity probe uses, and the only ones proxied to the page
+  # server from the catch-all.
+  #
+  # The same list `portal/loom_portal/routes.py` answers, and the third copy of
+  # it is `portal/tests/test_routes.py`. `loom_tests/appliance/portal.py` counts
+  # them in the rendered nginx configuration, so the two cannot drift silently.
+  probePaths = [
+    "/generate_204"
+    "/gen_204"
+    "/generate204"
+    "/redirect"
+    "/check_network_status.txt"
+    "/hotspot-detect.html"
+    "/library/test/success.html"
+    "/connecttest.txt"
+    "/ncsi.txt"
+    "/success.txt"
+    "/canonical.html"
+  ];
+
+  # What the catch-all answers a probe with when it cannot ask the page server.
+  # A named location rather than a second copy of the `return`, so the two
+  # cannot drift: a probe that found the page server down and a probe that never
+  # reached it must be indistinguishable from the phone's side.
+  probeFallback = "@probe_fallback";
+
+  probeRedirect = {
+    return = "302 ${cfg.portal.target}";
+    extraConfig = ''
+      add_header Cache-Control "no-store" always;
+    '';
+  };
+
+  # One exact-match location per probe path on the catch-all vhost.
+  #
+  # Only these paths are proxied, and `location /` stays a static `return`: with
+  # the resolver answering every name on the segment with this address, the
+  # catch-all is the busiest thing on the box, and a static return has no
+  # upstream, no connect, no timeout and no failure mode. That is worth more
+  # than answering a path nobody has listed.
+  probeLocationFor = target: {
+    proxyPass = "http://127.0.0.1:${toString cfg.portal.listenPort}${target}";
+    extraConfig = ''
+      ${clientHeaders false}
+      # A budget of its own. Apple re-probes every sixty seconds per client and
+      # Android probes every few seconds while its sign-in notification is up,
+      # so a probe charged against `loom_portal` would spend a visitor's page
+      # budget on requests they never made.
+      limit_req zone=loom_portal_probe burst=30 nodelay;
+
+      # A probe is a question with a deadline. The defaults are sixty seconds,
+      # which on a wedged page server would hold a phone's probe open for a
+      # minute -- and a probe that times out is read as "no internet" by every
+      # vendor here, which is the answer the fallback below gives in two.
+      proxy_connect_timeout 2s;
+      proxy_read_timeout 5s;
+
+      # And when the page server is not there at all. `Restart=always` with
+      # `RestartSec=5` is a real window, and this is what makes it cost a
+      # redirect rather than an nginx error page inside a captive-portal sheet.
+      # `proxy_intercept_errors` stays off, so this catches only what nginx
+      # generated: the 502/504 of a dead upstream, and `limit_req`'s 503, which
+      # belongs here for the same reason -- a throttled probe should be told
+      # what every unvalidated probe is told rather than shown a refusal. An
+      # answer the service itself produced is never touched.
+      error_page 502 503 504 = ${probeFallback};
+
+      # One line per client per minute, forever, about a request nobody made.
+      access_log off;
+    '';
+  };
+
+  # The probe paths keep their own URI, which is how the page server knows which
+  # vendor is asking.
+  probeLocation = probeLocationFor "";
+
+  # The locations both page listeners carry.
   portalLocations = secure: {
     "/" = {
       proxyPass = "http://127.0.0.1:${toString cfg.portal.listenPort}";
       extraConfig = ''
-        proxy_set_header X-Loom-Secure "${if secure then "1" else "0"}";
-
+        ${clientHeaders secure}
         # One visit is a page and a logo, so the budget is per visit rather than
         # per request.
         limit_req zone=loom_portal burst=20 nodelay;
@@ -191,8 +300,7 @@ let
     "= /certificate" = {
       proxyPass = "http://127.0.0.1:${toString cfg.portal.listenPort}";
       extraConfig = ''
-        proxy_set_header X-Loom-Secure "${if secure then "1" else "0"}";
-
+        ${clientHeaders secure}
         limit_req  zone=loom_portal_issue burst=3 nodelay;
         limit_conn loom_portal_conn 4;
 
@@ -579,14 +687,15 @@ in
         "detectportal.firefox.com"
       ];
       description = ''
-        The hostnames dnsmasq answers with the portal address instead of
-        REFUSED. network.nix reads this.
+        The hostnames dnsmasq answers with the portal address by name.
+        network.nix reads this.
 
-        One dedicated probe FQDN per vendor, and deliberately not the fallbacks
-        `www.google.com` and `www.apple.com`: those are real sites people use,
-        and claiming them would make this a blanket interception rather than an
-        answer to a question only an OS asks. Losing a fallback costs nothing
-        while the primary is answered.
+        One dedicated probe FQDN per vendor. It is no longer the whole of the
+        interception -- network.nix also answers every other name with the same
+        address -- so this list is now the part that is written down rather than
+        the part that works. It stays for two reasons: the tests are written
+        against it, and a wildcard that is ever reverted must not silently take
+        the probes with it.
       '';
     };
 
@@ -672,7 +781,7 @@ in
 
     target = lib.mkOption {
       type = lib.types.str;
-      default = "http://${config.loom.portal.host}/";
+      default = "http://${config.loom.portalAddress}/";
       description = ''
         Where a probe is redirected. Plain http, because a portal webview will
         not accept the appliance's self-signed certificate -- see the header.
@@ -681,6 +790,19 @@ in
         certificate a visitor needs, and on a mutual TLS box the identity they
         cannot get in without, are both on it, and "Open Loom" is the first thing
         on it.
+
+        The literal address rather than `portal.loom`, which is also what it
+        used to be. A redirect to a name makes the portal webview do a second
+        lookup, in a TLD that does not exist, from a context that is not a
+        browser -- and on a phone with Android's Private DNS in strict mode that
+        lookup cannot succeed at all. Such a phone still detects the portal and
+        still follows this redirect, because Android's connectivity check
+        deliberately bypasses private DNS; it simply cannot resolve anything the
+        redirect names. An address needs no resolver.
+
+        The name is still served and the page's footer still prints it: it is
+        what somebody types when they come back later, and on a mutual TLS box
+        it is what the certificate on 443 is for.
       '';
     };
 
@@ -796,6 +918,13 @@ in
             # cannot list other visitors' tokens.
             "d ${requestsDir} 0730 root ${portalUser} -"
             "d ${bundlesDir} 0730 root ${portalUser} -"
+            # The same -wx as the two spool directories, and for the same reason:
+            # the page creates and stats markers by name and nothing enumerates
+            # them, so a compromise of the one process a visitor can reach cannot
+            # read back the list of who was on this network. Nothing sweeps it and
+            # nothing needs to -- it is on tmpfs, and a /24 pool caps it at a
+            # hundred empty files. See portal/loom_portal/validated.py.
+            "d ${validatedDir} 0730 root ${portalUser} -"
           ];
 
           systemd.services.loom-portal = {
@@ -842,6 +971,7 @@ in
               ReadWritePaths = [
                 requestsDir
                 bundlesDir
+                validatedDir
               ];
 
               StandardOutput = "journal";
@@ -912,6 +1042,7 @@ in
             appendHttpConfig = ''
               limit_req_zone  $binary_remote_addr zone=loom_portal:1m       rate=60r/m;
               limit_req_zone  $binary_remote_addr zone=loom_portal_issue:1m rate=6r/m;
+              limit_req_zone  $binary_remote_addr zone=loom_portal_probe:1m rate=120r/m;
               limit_conn_zone $binary_remote_addr zone=loom_portal_conn:1m;
             '';
 
@@ -937,22 +1068,26 @@ in
               default = true;
               serverName = null;
 
-              # Every path, every method, one answer. Probe URLs differ per vendor
-              # and per OS release, and nothing else resolves to this address, so a
-              # path this config has never heard of is likelier to be a probe than
-              # not.
+              # Every path, every method, one answer -- except the listed probe
+              # paths, which go to the page server so a client that has finished
+              # with the page can be told what it wants to hear. Probe URLs differ
+              # per vendor and per OS release, and with the resolver answering every
+              # name on the segment with this address, a path this config has never
+              # heard of is likelier to be a probe than not.
               #
               # 302 rather than 301: the URLs being answered belong to Google and
               # Apple, and a permanent redirect is cached -- a phone that kept this
               # one would go on believing connectivitycheck.gstatic.com is Loom long
               # after it left the appliance. `no-store` says the same thing to
               # anything that caches by header instead.
-              locations."/" = {
-                return = "302 ${cfg.portal.target}";
-                extraConfig = ''
-                  add_header Cache-Control "no-store" always;
-                '';
-              };
+              locations = {
+                "/" = probeRedirect;
+                # Byte-for-byte what `/` answers, so a probe that found the page
+                # server down and a probe that never reached it are
+                # indistinguishable from the phone's side.
+                ${probeFallback} = probeRedirect;
+              }
+              // lib.genAttrs (map (path: "= ${path}") probePaths) (_: probeLocation);
             };
 
             virtualHosts.loom-portal-page = {
@@ -967,6 +1102,37 @@ in
               # following the redirect still gets the page.
               serverName = "${cfg.portal.host} ${cfg.portalAddress}";
               locations = portalLocations false;
+            };
+
+            # The two probes that cannot be told apart by path.
+            #
+            # Ubuntu's NetworkManager fetches `http://connectivity-check.ubuntu.com/`
+            # and KDE fetches `http://networkcheck.kde.org/` -- both at `/`, so the
+            # only thing distinguishing them from any other request to the catch-all
+            # is the Host header. A server block is the clean way to read one; the
+            # alternatives are proxying the catch-all's `/` wholesale, which is the
+            # property the design is built around not doing, or an `if`.
+            virtualHosts.loom-portal-probe = {
+              listen = [
+                {
+                  addr = cfg.portalAddress;
+                  port = 80;
+                }
+              ];
+              serverName = "connectivity-check.ubuntu.com networkcheck.kde.org";
+              locations = {
+                # Rewritten to a probe path rather than proxied as it arrived.
+                # `/` is the page, in `routes.py` and on every other listener, so
+                # passing this through unchanged would serve a NetworkManager
+                # probe the whole portal page with status 200 -- which is the one
+                # answer a probe must never get, and the failure this module's
+                # header spends a paragraph on. Both vendors read a 204 as
+                # success, so `/generate_204` is the right thing to ask the page
+                # server on their behalf.
+                "= /" = probeLocationFor "/generate_204";
+                "/" = probeRedirect;
+                ${probeFallback} = probeRedirect;
+              };
             };
           };
 
@@ -992,16 +1158,46 @@ in
                 ssl = true;
               }
             ];
-            # Nothing else is on this socket, so nginx would pick this server
-            # anyway; said out loud so a connection with no SNI, or with the
-            # address in it, is answered rather than left to whatever a later
-            # change makes the default.
-            default = true;
-            serverName = "${cfg.portal.host} ${cfg.portalAddress}";
+            # Name-based, and emphatically not the default server -- which it
+            # used to be, on the grounds that nothing else was on this socket.
+            # The resolver now answers every name on the segment with this
+            # address, so everything a client's phone does over https in the
+            # background lands here: certificate warnings instead of clean
+            # connection failures, and -- the sharp half -- every one of those
+            # requests charged against `loom_portal`, a budget sized for one
+            # visit being a page and a logo. The visitor's own page load then
+            # gets a 503 from a rate limiter they never touched.
+            serverName = "${cfg.portal.host}";
             onlySSL = true;
             sslCertificate = tlsCert;
             sslCertificateKey = tlsKey;
             locations = portalLocations true;
+          };
+
+          # And what unknown SNI gets instead: an immediate TLS alert.
+          #
+          # Faster for the client than a handshake it will reject anyway, and it
+          # keeps the budget above the visitor's. `https://<portal address>`
+          # stops working with it, which costs nothing -- `secureUrl` is the
+          # name, and nothing links to the address over TLS.
+          services.nginx.virtualHosts.loom-portal-tls-reject = {
+            listen = [
+              {
+                addr = cfg.portalAddress;
+                port = 443;
+                ssl = true;
+              }
+            ];
+            default = true;
+            onlySSL = true;
+            serverName = null;
+            # nginx requires a certificate on an ssl listener even where it will
+            # never present one, and `ssl_reject_handshake` is evaluated first.
+            sslCertificate = tlsCert;
+            sslCertificateKey = tlsKey;
+            extraConfig = ''
+              ssl_reject_handshake on;
+            '';
           };
 
           systemd.services.loom-portal-tls-placeholder = {

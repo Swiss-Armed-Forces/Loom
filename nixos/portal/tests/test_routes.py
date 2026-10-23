@@ -11,21 +11,31 @@ against a mobile network that has never heard of `.loom`. Nothing about that is 
 from a browser, from `curl`, or from any other test in this repository -- it is a phone,
 on a site, deciding quietly.
 
-So: no path this router has never heard of resolves to the page. The nginx catch-all in
-portal.nix answers the probes with a 302 before anything reaches this process at all;
-this is the second half of that, for the case where something dials the loopback port.
+So: no path this router has never heard of resolves to the page, and no probe path ever
+does either. What changed is which non-page answer they get. The nginx catch-all used to
+answer every probe with a static 302 and these paths were `NOT_FOUND` here; the listed
+ones are now proxied to this process so a client that has pressed the button on the page
+can be told what its vendor wants to hear. The redirect is still the default, so this
+module resolves them all to one route and `portal.py` decides which of the two answers
+the client asking has earned.
 """
 
 import pytest
 
 from loom_portal.http import Request
-from loom_portal.routes import Route, resolve
+from loom_portal.routes import PROBE_ANSWERS, READABLE, Route, resolve
 
-# The paths the four intercepted probe hostnames are actually fetched with, plus the
-# variants that have appeared across OS releases. None of them may be the page.
+# The paths the intercepted probe hostnames are actually fetched with, plus the variants
+# that have appeared across OS releases. None of them may be the page.
+#
+# The same list as `routes.PROBE_ANSWERS`, restated rather than imported: a test that
+# took the table from the module it is checking would agree with whatever the table
+# said, which is the one thing this file exists not to do. `test_every_probe_path_has_an
+# _answer` is what keeps the two in step -- and did, on its first run.
 PROBE_PATHS = [
     "/generate_204",  # Android, connectivitycheck.gstatic.com
     "/gen_204",  # Android, older
+    "/generate204",  # Samsung and Xiaomi, which drop the underscore
     "/hotspot-detect.html",  # iOS and macOS, captive.apple.com
     "/library/test/success.html",  # iOS, older
     "/success.txt",  # Firefox, detectportal.firefox.com
@@ -43,8 +53,57 @@ def get(path: str) -> Request:
 
 @pytest.mark.parametrize("path", PROBE_PATHS)
 def test_a_probe_path_is_never_the_page(path):
-    assert resolve(get(path), mtls=False) is Route.NOT_FOUND
-    assert resolve(get(path), mtls=True) is Route.NOT_FOUND
+    for mtls in (False, True):
+        resolved = resolve(get(path), mtls=mtls)
+        assert resolved is Route.PROBE
+        assert resolved is not Route.PAGE
+
+
+def test_every_probe_path_has_an_answer():
+    """The two lists are the same list.
+
+    A path in `PROBE_ANSWERS` that is not here is a vendor nobody wrote a case for; one
+    here that is not there resolves to `PROBE` and then finds no answer, which
+    `portal.py` turns into the redirect -- correct, and silently never a success.
+    """
+    assert set(PROBE_ANSWERS) == set(PROBE_PATHS)
+
+
+def test_no_path_is_both_a_probe_and_a_page():
+    """`/` is the page and must never acquire a probe's answer, in either direction."""
+    assert set(PROBE_ANSWERS) & set(READABLE) == set()
+
+
+def test_the_vendor_bodies_are_byte_exact():
+    """The highest-value assertion in this package, and the least obvious.
+
+    Windows compares `connecttest.txt` against `Microsoft Connect Test` character for
+    character and Firefox compares `success.txt` against `success\n`; a trailing newline
+    in the wrong place is the difference between a network marked good and one marked
+    limited. Nothing else in this repository can see that -- not the browser, not curl,
+    not the VM test, which reads the same constants this file does unless they are
+    written out here as literals.
+    """
+    assert PROBE_ANSWERS["/generate_204"].status == 204
+    assert PROBE_ANSWERS["/generate_204"].body == ""
+    assert PROBE_ANSWERS["/connecttest.txt"].body == "Microsoft Connect Test"
+    assert PROBE_ANSWERS["/ncsi.txt"].body == "Microsoft NCSI"
+    assert PROBE_ANSWERS["/success.txt"].body == "success\n"
+    assert "<TITLE>Success</TITLE>" in PROBE_ANSWERS["/hotspot-detect.html"].body
+
+
+def test_the_finish_route_is_a_post_on_every_image():
+    """Unlike issuance, which only exists on a mutual TLS box.
+
+    POST and not GET is the load-bearing half: a prefetch, a reload or a restored tab
+    would otherwise close somebody's sign-in sheet while they were still reading.
+    """
+    for mtls in (False, True):
+        assert resolve(Request(method="POST", path="/done"), mtls=mtls) is Route.FINISH
+        assert resolve(get("/done"), mtls=mtls) is Route.FINISH_RELOAD
+        assert (
+            resolve(Request(method="PUT", path="/done"), mtls=mtls) is Route.NOT_FOUND
+        )
 
 
 def test_only_the_root_is_the_page():
@@ -80,7 +139,10 @@ def test_a_head_is_answered_like_a_get():
     """Some probes send HEAD, and an unanswered method is a 404 -- never a 200."""
     assert resolve(Request(method="HEAD", path="/"), mtls=False) is Route.PAGE
     assert (
-        resolve(Request(method="HEAD", path="/generate_204"), mtls=False)
+        resolve(Request(method="HEAD", path="/generate_204"), mtls=False) is Route.PROBE
+    )
+    assert (
+        resolve(Request(method="HEAD", path="/nothing-here"), mtls=False)
         is Route.NOT_FOUND
     )
 

@@ -30,6 +30,15 @@ PASSWORD_NAME = "password"
 PREVIOUS_PASSWORD_NAME = "password.previous"
 REQUESTS_NAME = "requests"
 BUNDLES_NAME = "bundles"
+VALIDATED_NAME = "validated"
+
+# How long a client stays marked as finished with the page.
+#
+# The DHCP lease sets this, not a preference: network.nix hands out twelve-hour leases,
+# so a client still on the segment has renewed and kept its address and must not be
+# asked again -- and one gone long enough for its address to be handed to somebody else
+# must stop answering on their behalf. Both ends of that are the same twelve hours.
+DEFAULT_VALIDATED_TTL_S = 12 * 3600
 
 # How long the page waits for the root issuer before telling the visitor to try again.
 #
@@ -96,6 +105,12 @@ class PortalUrls:
     # Where this page is, printed in the footer so a visitor can come back to it without
     # making their phone re-run a connectivity probe.
     portal: str = "http://portal.loom/"
+    # Where an unvalidated probe is sent, which is `loom.portal.target` and deliberately
+    # not the name above: a portal webview resolving `portal.loom` is one dependency
+    # more than a redirect needs, and on a phone with Android's Private DNS in strict
+    # mode it is one that cannot be met. nginx's catch-all returns this same value
+    # statically, so the two answers a probe can get are byte-identical.
+    portal_redirect: str = "http://portal.loom/"
     # Empty on an image with no TLS listener of its own, which is every image but the
     # mutual TLS one. The page then offers no "reopen securely" link, because there is
     # nothing to reopen into.
@@ -123,6 +138,7 @@ class PortalLimits:
     attempts: int = DEFAULT_ATTEMPTS
     attempt_window_s: float = DEFAULT_ATTEMPT_WINDOW_S
     wrong_password_delay_s: float = DEFAULT_WRONG_PASSWORD_DELAY_S
+    validated_ttl_s: float = DEFAULT_VALIDATED_TTL_S
 
 
 @dataclass(frozen=True)
@@ -191,3 +207,7 @@ class PortalSettings:
     @property
     def bundles_dir(self) -> str:
         return os.path.join(self.state_dir, BUNDLES_NAME)
+
+    @property
+    def validated_dir(self) -> str:
+        return os.path.join(self.state_dir, VALIDATED_NAME)

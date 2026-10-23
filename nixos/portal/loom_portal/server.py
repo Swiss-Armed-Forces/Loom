@@ -80,7 +80,10 @@ def serve(portal: Portal, settings: PortalSettings) -> None:
                 if header.name.lower() == "content-length":
                     seen_length = True
                 self.send_header(header.name, header.value)
-            if not seen_length:
+            # A 204 carries no body and no `Content-Length` -- RFC 9110 forbids the
+            # header on that status outright. This is the one response in the service
+            # whose exact framing something that is not a browser reads and acts on.
+            if not seen_length and response.status != 204:
                 self.send_header("Content-Length", str(len(response.body)))
             # Set when `_body` refused to read a body it was told was there. Saying so
             # is the difference between a client that moves on and one that waits out

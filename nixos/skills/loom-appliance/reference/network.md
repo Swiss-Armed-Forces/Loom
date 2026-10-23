@@ -1,7 +1,9 @@
 # Network
 
 In run mode the box is an island. It owns a subnet, hands out addresses on it, answers DNS for it,
-and publishes Loom onto it. Nothing routes off the box.
+and publishes Loom onto it. Nothing routes off the box — the lease names the box as the default
+gateway so that captive-portal detection works at all, and everything aimed off the segment is
+refused immediately.
 
 ## What this box's addresses are
 
@@ -88,15 +90,29 @@ exposed" from "not up yet" in one command.
 
 ## The captive portal page
 
-A phone that joins the network is redirected to `http://portal.loom`, which is served by **this box**
-rather than by the cluster — so it answers long before Loom does, and its own failures have nothing to
-do with the stack.
+A phone that joins the network is redirected to the page, which is served by **this box** rather than
+by the cluster — so it answers long before Loom does, and its own failures have nothing to do with the
+stack. The redirect names the box's portal *address* rather than `portal.loom`, so that a client whose
+resolver the box does not control can still follow it; the name is served too, and is what the page
+prints for somebody coming back later.
+
+The resolver answers **every** name with that address, not a list of known probes: a client that cannot
+resolve its probe concludes there is no internet rather than that there is a portal. A handful of names are
+carved out (`dns.msftncsi.com`, `use-application-dns.net`, the iCloud Private Relay mask hosts and
+`wpad`), and port 53 and port 80 off the segment are redirected to the box for clients that ignore the
+lease's resolver entirely.
 
 ```bash
 systemctl status loom-portal              # the page server, on 127.0.0.1:18082 behind nginx
 systemctl status loom-portal-certificate  # publishes the certificate Loom serves, hourly
 curl --silent http://portal.loom/ | head  # the page itself
+ls /run/loom-portal/validated | wc -l     # devices that pressed "stop the warning"
 ```
+
+The last one is the page's fourth section: until a visitor presses that button every connectivity
+probe gets the redirect, and afterwards that client's probes get the success answer its vendor wants,
+so the device stops warning about the network. The markers are keyed digests on tmpfs, expire after
+twelve hours, and are gone at reboot.
 
 If the page says the certificate is **not available yet**, `loom-portal-certificate` is still waiting
 for the cluster — that is the normal state for the first part of a box's life, and
@@ -118,11 +134,13 @@ A visitor who gets "Loom is still starting" is being told the mutual TLS CA does
 
 ## A client that loses its own internet
 
-If a laptop plugged into the box loses connectivity on every other interface, the box's DHCP lease
-is naming it as the default gateway and the box has no upstream. Confirm on the client with
-`ip route` (`route print` on Windows) — a `default via <box address>` is the symptom. Deleting that
-route on the client is the stopgap; it returns at the next lease renewal. The real fix is a newer
-stick.
+Expected. The box's DHCP lease names it as the default gateway and the box has no upstream, so a
+cabled laptop's other traffic goes to an island. This is deliberate and is what makes the portal
+reachable — a client with no route to the box never sends it a probe. Confirm on the client with
+`ip route` (`route print` on Windows): `default via <box address>`.
+
+Unplugging restores it. To stay cabled, delete that route on the client (it returns at the next lease
+renewal) and open the portal by address by hand, since nothing will offer it any more.
 
 ## Full detail
 

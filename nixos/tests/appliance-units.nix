@@ -161,6 +161,57 @@ let
       (check "${label}: dnsmasq answers on ${iface} and nothing else" (
         asList (settings.interface or [ ]) == [ iface ]
       ))
+
+      # The lease names this box as the default route.
+      #
+      # It used to suppress the option with a valueless `dhcp-option`, which is
+      # the only way to stop dnsmasq sending one -- and that is what made the
+      # captive portal unreachable: a client with no route to this box sends its
+      # connectivity probe out of whatever other interface it has, where the
+      # probe succeeds, so the operating system never offers "Sign in to
+      # network". Both halves are asserted, because the suppression is spelled
+      # as the *same option name* with no value and would otherwise read as
+      # present.
+      (check "${label}: the lease names the box as the default route" (
+        lib.elem "option:router,${cfg.loom.boxAddress}" (asList (settings.dhcp-option or [ ]))
+      ))
+      (check "${label}: the router option is not suppressed" (
+        !(lib.elem "option:router" (asList (settings.dhcp-option or [ ])))
+      ))
+
+      # And the resolver answers every name rather than refusing the ones nobody
+      # listed. A client that cannot resolve its probe concludes "no internet"
+      # rather than "portal present", so a Samsung or Xiaomi probe that this box
+      # refused took the sign-in prompt away rather than merely missing it.
+      (check "${label}: every name resolves to the portal responder" (
+        lib.elem "/#/${cfg.loom.portalAddress}" (asList (settings.address or [ ]))
+      ))
+      (check "${label}: .loom still beats the wildcard" (
+        lib.elem "/loom/${cfg.loom.boxAddress}" (asList (settings.address or [ ]))
+      ))
+      # The other half of the wildcard, and not optional: since dnsmasq 2.86 a
+      # query an A record cannot answer is sent upstream, and `no-resolv` means
+      # there is none -- so AAAA, HTTPS and SVCB come back REFUSED rather than
+      # NODATA, which some client stacks fail the whole lookup over.
+      (check "${label}: a type the wildcard cannot answer is NODATA, not REFUSED" (
+        lib.elem "/#/" (asList (settings.local or [ ]))
+      ))
+      # Windows compares this answer against a literal before it will send its
+      # http probe at all. Hand it the responder and Windows 10 shows the globe
+      # and never offers a sign-in.
+      (check "${label}: Windows' DNS probe gets the literal it compares against" (
+        lib.elem "/dns.msftncsi.com/131.107.255.255" (asList (settings.address or [ ]))
+      ))
+      # Mozilla's canary, Apple's Private Relay signal and WPAD all have to be
+      # NXDOMAIN, which dnsmasq spells as an `address=` with no address.
+      (check "${label}: the NXDOMAIN carve-outs survive the wildcard" (
+        lib.all (name: lib.elem name (asList (settings.address or [ ]))) [
+          "/use-application-dns.net/"
+          "/mask.icloud.com/"
+          "/mask-h2.icloud.com/"
+          "/wpad/"
+        ]
+      ))
       # The address, not the attribute key. `networking.interfaces.loom0 = { }`
       # satisfies `? loom0`, and so does
       # `networking.interfaces.loom0.ipv4.addresses = lib.mkForce [ ]` -- which
@@ -422,6 +473,10 @@ let
           asList (cfg.services.dnsmasq.settings.address or [ ])
         )
       ))
+      # Of the entries that name it. The wildcard answers it too, being the least
+      # specific entry there is -- dnsmasq resolves by longest match, so this one
+      # still decides -- and `/etc/hosts` must not name it at all, which is what
+      # box.nix subtracts it for.
       (check "portal: ${portal.host} resolves to the portal address and nowhere else" (
         addressesNaming == [ cfg.loom.portalAddress ]
       ))
@@ -542,8 +597,23 @@ let
 
       # And the probe lands on the page rather than on Loom, which is what makes
       # the two sections above reachable at all.
+      #
+      # At the page's *address* and not its name, which it used to be: a portal
+      # webview following this has to resolve it, and `portal.loom` is a name in
+      # a TLD that does not exist. On a phone with Android's Private DNS in
+      # strict mode that lookup cannot succeed -- the connectivity check bypasses
+      # private DNS and still finds the portal, and then the visitor cannot
+      # follow the redirect to it. An address needs no resolver.
       (check "portal: the probe redirect points at the page" (
-        catchAll.locations."/".return == "302 http://${portal.host}/"
+        catchAll.locations."/".return == "302 http://${cfg.loom.portalAddress}/"
+      ))
+      (check "portal: the probe redirect needs no name resolved" (
+        !(lib.hasInfix portal.host catchAll.locations."/".return)
+      ))
+      # And the fallback is the same answer, so a probe that found the page
+      # server down cannot be told apart from one that never reached it.
+      (check "portal: a probe whose upstream is down gets the same redirect" (
+        catchAll.locations."@probe_fallback".return == catchAll.locations."/".return
       ))
     ];
 

@@ -34,3 +34,16 @@ class Clock:
     def sleep(self, seconds: float) -> None:
         """Block for roughly that long."""
         time.sleep(seconds)
+
+    def wall(self) -> float:
+        """Seconds since the epoch, for comparing against a file's mtime.
+
+        The two above are deliberately monotonic, for the reason in the module header,
+        and this one deliberately is not: `validated.py` measures an interval that
+        outlives the process measuring it, which is the one thing `time.monotonic`
+        cannot express. The box has no NTP, so a step forward expires a marker early
+        and a step backward keeps one a little longer. Both are fine for a value whose
+        job is to stop asking for a while, and neither is a boundary anything depends
+        on.
+        """
+        return time.time()
