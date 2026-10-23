@@ -271,10 +271,16 @@ A fourth thing follows from `--gpus` that is not about the driver at all. `minik
 for the core components and nothing else, so the vendor's device plugin — an ordinary DaemonSet — registers
 `<vendor>.com/gpu` a minute or more later; measured at ~86s on a Spark with the image already on the node.
 A pod that asks for the resource inside that window is rejected at admission, terminally, with reason
-`UnexpectedAdmissionError`, and the owning ReplicaSet keeps the dead pod rather than replacing it. So `up.sh`
-waits for the node to advertise the resource before it deploys, as an assertion inside `create_cluster`
-alongside `assert_minikube_ip` rather than a skippable step. It fails the bring-up on timeout, which is the
-same call `check_host_resources` already makes for `--gpus` on a box whose SMI tool finds nothing.
+`UnexpectedAdmissionError`. The workload survives that: a Failed pod does not count as active, so the owning
+ReplicaSet creates a replacement, and the scheduler holds the replacement on `Insufficient <vendor>.com/gpu`
+until the plugin registers. What survives with it is the rejected pod — one per boot that loses the race,
+left where pod GC's threshold does not reach it. So `up.sh` does two things. It waits for the node to
+advertise the resource before it deploys, as an assertion inside `create_cluster` alongside
+`assert_minikube_ip` rather than a skippable step, which keeps the bring-up deterministic and fails it on
+timeout — the same call `check_host_resources` already makes for `--gpus` on a box whose SMI tool finds
+nothing. And `remove_admission_rejected_pods`, called from `create_cluster` right after it, deletes whatever
+an earlier boot already lost the race with, so `kubectl get pods` stops showing a Failed ollama beside a
+Running one.
 
 The same race is why `modes.nix` passes `--resume-if-deployed` in **run mode only**. `loom.service` runs
 `up.sh` at every boot and `skaffold run` restamps every pod template with a fresh `skaffold.dev/run-id`, so
