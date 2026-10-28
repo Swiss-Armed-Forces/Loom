@@ -16,6 +16,12 @@ import { updateFieldOfQuery } from "@features/common/utils/helpers";
 
 const MAX_PATH_ITEMS = 4;
 const ITEMS_AFTER_COLLAPSE = 3;
+// Omitting maxItems does not disable MUI's own collapse, it defaults it to 8:
+// past that, an expanded path was folded back to the toggle and the filename
+// and grew a second ellipsis beside ours, driven by state the global flag
+// cannot see. The cap has to be set, and out of reach. Not Infinity - the prop
+// is validated as an integer.
+const NEVER_COLLAPSE = Number.MAX_SAFE_INTEGER;
 
 interface ClickableFilePathProps {
     fullPath: string;
@@ -147,7 +153,12 @@ export const ClickableFilePath = ({
 
     return (
         <Box sx={ROOT_SX}>
-            <Breadcrumbs separator="/" sx={BREADCRUMBS_SX} style={style}>
+            <Breadcrumbs
+                separator="/"
+                maxItems={NEVER_COLLAPSE}
+                sx={BREADCRUMBS_SX}
+                style={style}
+            >
                 {/* One control in one place for both directions: it heads the
                     trail where the hidden ancestors would be, so the collapsed
                     state shows that the path continues to the left, and
