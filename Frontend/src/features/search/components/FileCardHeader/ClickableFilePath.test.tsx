@@ -9,6 +9,8 @@ import { ClickableFilePath } from "./ClickableFilePath";
 
 const DEEP_PATH = "/Crawler/Imports/archive.zip/testarchive/testfile01.txt";
 const SHALLOW_PATH = "/Mail/Inbox/basic_email.eml";
+// Nine segments plus the toggle is ten children, past MUI's own default cap.
+const VERY_DEEP_PATH = "/Crawler/Imports/a/b/c/d/e/f/testfile01.txt";
 
 const renderPath = (fullPath: string) =>
     render(
@@ -43,6 +45,16 @@ describe("ClickableFilePath", () => {
         expect(trail()).toBe(
             "/Crawler/Imports/archive.zip/testarchive/testfile01.txt",
         );
+    });
+
+    it("lets MUI collapse no long path of its own accord", () => {
+        store.dispatch(setExpandFilePaths(true));
+        renderPath(VERY_DEEP_PATH);
+
+        // Left to its default cap, MUI folded the expanded trail back to the
+        // toggle and the filename and grew a second ellipsis beside ours.
+        expect(trail()).toBe("/Crawler/Imports/a/b/c/d/e/f/testfile01.txt");
+        expect(screen.queryByRole("button", { name: "Show path" })).toBeNull();
     });
 
     it("keeps the toggle heading the trail in both states", () => {
