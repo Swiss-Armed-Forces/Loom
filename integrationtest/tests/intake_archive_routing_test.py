@@ -176,8 +176,8 @@ def test_an_ordinary_zip_in_the_intake_bucket_is_still_indexed_as_a_file():
     """The prescreen must not route every zip to the importer.
 
     A zip with no MANIFEST.json is an ordinary document as far as Loom is concerned, and
-    misrouting it used to mean losing it outright: the archive pipeline had no outcome
-    for 'not an archive' other than doing nothing.
+    misrouting it means losing it outright: the archive pipeline has no outcome for
+    'not an archive' other than doing nothing.
     """
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
@@ -204,7 +204,7 @@ def test_a_foreign_loom_header_is_indexed_rather_than_dropped():
     case below is the one that produces it.
 
     The blob has to end up findable as an opaque file rather than silently going
-    nowhere, which is what routing used to do with it.
+    nowhere.
     """
     payload = LOOM_ARCHIVE_MAGIC_BYTES + bytes(range(256)) * 16
 
@@ -230,8 +230,8 @@ def test_a_truncated_archive_of_our_own_is_indexed_rather_than_dropped():
 
     `?encrypted=true` hands back a container written with this cluster's own key, so the
     header probe says the key fits and the body is decrypted for real -- and a truncated
-    body then fails `cipher.verify(mac)` with a bare `ValueError`, which is what used to
-    fail the task into the graveyard queue with no File entity at all.
+    body then fails `cipher.verify(mac)` with a bare `ValueError`, which must not fail
+    the task into the graveyard queue with no File entity at all.
     """
     upload_asset("empty_file.txt")
     get_file_preview_by_name("empty_file.txt")

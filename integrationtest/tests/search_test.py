@@ -259,10 +259,10 @@ class TestSearchMultilanguage:
 
 
 def test_file_with_leading_slash_in_name_is_searchable():
-    """Regression: files uploaded with a leading '/' in their name must be indexed,
-    searchable, and visible in the folder tree.
+    """Files uploaded with a leading '/' in their name must be indexed, searchable, and
+    visible in the folder tree.
 
-    Without the fix, pathlib's / operator treats the name as absolute and silently drops
+    Unguarded, pathlib's / operator treats such a name as absolute and silently drops
     the source prefix from full_path, making the file invisible in the tree.
     """
     upload_bytes_asset(b"", "/leading_slash_test.txt")

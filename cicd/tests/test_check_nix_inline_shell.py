@@ -155,8 +155,8 @@ def test_wrapped_bindings_are_still_found(
 ) -> None:
     """A unit script does not stop being one for being wrapped.
 
-    `script = let ... in ''` is how nixos/repo.nix writes its seed unit, and
-    requiring `=` to be the last token on the line missed every form like it.
+    `script = let ... in ''` is how nixos/repo.nix writes its seed unit, so `=` is not
+    always the last token on the line.
     """
     body = "\n".join(f"      echo line{n}" for n in range(25))
     path = write(tmp_path, "{\n" + opener + "\n" + body + closer + "\n}\n")
@@ -208,8 +208,8 @@ def test_repository_passes_its_own_check(name: str) -> None:
 def test_the_unit_script_in_repo_nix_is_seen() -> None:
     """A check that finds nothing passes every file, so anchor one.
 
-    `repo.nix` is the `let ... in` form, and it went undetected until the name rule was
-    fixed -- the kind of blindness the test above cannot tell apart from compliance.
+    `repo.nix` is the `let ... in` form, and a scanner blind to it is the kind of
+    blindness the test above cannot tell apart from compliance.
     """
     names = [block.name for block in scan(REPO_ROOT / "nixos" / "repo.nix")]
     assert "script" in names

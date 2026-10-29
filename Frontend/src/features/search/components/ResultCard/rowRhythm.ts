@@ -13,10 +13,9 @@ export interface RowRhythm {
      *
      * Fixed rather than grown from the content so that the field block of a
      * card is decided by the field *selection* and nothing about the file:
-     * a value the backend cut short used to be drawn as an accordion taller
-     * than its neighbours, and a field the file had no value for was left out
-     * altogether, so two cards showing the same four fields could differ by a
-     * row and a half.
+     * drawing a value the backend cut short as an accordion taller than its
+     * neighbours, or leaving out a field the file has no value for, lets two
+     * cards showing the same four fields differ by a row and a half.
      */
     rowHeight: string;
 }
@@ -24,7 +23,7 @@ export interface RowRhythm {
 /**
  * The rhythm every card is laid out on.
  *
- * There were three of these once, picked by a spacing control. A list is
+ * The only one, with no spacing control to pick between rhythms. A list is
  * scanned, so it is laid out tight and only that way; what a card shows is
  * still the reader's to choose, through the element switches.
  */

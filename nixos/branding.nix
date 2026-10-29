@@ -142,22 +142,21 @@ let
         # chosen -- `console.nix` sets no `pane-border-lines`, so tmux's default
         # `single` draws every one of them on every screen the operator ever
         # sees. 2581..2587 are the partial eighth blocks btop's meters are made
-        # of under `--force-utf`. Both were argued for here and neither was
-        # asserted, which left the three rich glyphs above -- a dependency's
-        # choice -- as the only ones the build actually checked.
+        # of under `--force-utf`.
+        #
         # The table is read once, into a variable, and every codepoint is then
         # matched against that -- rather than re-running the pipeline per
         # codepoint with `grep --quiet` on the end of it.
         #
-        # That shape was racy, and it failed in the direction that looks like a
+        # That shape is racy, and it fails in the direction that looks like a
         # real finding: `grep --quiet` exits the moment it matches, which closes
         # the pipe under `psfgettable`, which dies on SIGPIPE -- and stdenv runs
-        # the builder with `pipefail`, so the pipeline's status became
-        # psfgettable's rather than grep's. A glyph that is present then reports
-        # as missing, intermittently, depending on how far into the table it sits
-        # and on how fast the two processes are scheduled. It fails one build in
-        # a few, naming a different codepoint each time, on a font that has every
-        # one of them.
+        # the builder with `pipefail`, so the pipeline's status is psfgettable's
+        # rather than grep's. A glyph that is present then reports as missing,
+        # intermittently, depending on how far into the table it sits and on how
+        # fast the two processes are scheduled. It fails one build in a few,
+        # naming a different codepoint each time, on a font that has every one
+        # of them.
         table="$(zcat --force "$src" | psfgettable -)"
         for cp in 2588 2584 2580 00D7 2501 2578 257A \
           2500 2502 250C 2510 2514 2518 251C 2524 252C 2534 253C \
@@ -181,14 +180,8 @@ let
   # so that all three carry the glyphs. The VT is in UTF-8 mode by default, so
   # the capture in /run/issue.d survives agetty untouched.
   #
-  # There used to be a second, ASCII pair here, picked by probing the console
-  # device, because the issue file is read by whatever getty is running and a
-  # serial one would have shown a screen of question marks. The appliance has no
-  # serial console any more (platforms/, installer.nix), so the probe only ever
-  # chose between one real answer and a worse one.
-  #
-  # Colour is deliberately NOT applied here, though both consumers now do apply
-  # it. Reaching the exact amber on a VT means redefining a palette entry, and
+  # Colour is deliberately NOT applied here, though both consumers apply it.
+  # Reaching the exact amber on a VT means redefining a palette entry, and
   # that sequence hangs an xterm (console_codes(4)) -- so the decision depends
   # on which console is being written to, which is something only the caller
   # knows. The installer menu makes it in common.sh, the appliance banner in
@@ -381,8 +374,7 @@ in
     # VT that has shown either of those screens, which is all of them, those
     # three are already what is written above. Naming the same values here is
     # what keeps one palette rather than two fighting over the same VT; it is
-    # also why yellow and bright yellow are one colour, as they have been since
-    # the banner existed.
+    # also why yellow and bright yellow are one colour.
     #
     # `console.colors` rather than a `setvtrgb` unit: nixpkgs turns this into
     # `vt.default_red=` and friends on the kernel command line, so it is in force
@@ -419,9 +411,9 @@ in
     # `systemd-vconsole-setup.service` is DefaultDependencies=no and
     # Before=sysinit.target, so it applies the font before most of the machine
     # exists. Anything that re-initialises the console afterwards throws it away
-    # and the kernel's built-in font comes back -- which is exactly what the box
-    # showed: /etc/vconsole.conf named cozette6x13, `setfont cozette6x13` on
-    # tty2 worked by hand, and the login screen was still rendering at 16x32.
+    # and the kernel's built-in font comes back -- with /etc/vconsole.conf still
+    # naming cozette6x13 and `setfont cozette6x13` on tty2 still working by
+    # hand, while the login screen renders at 16x32.
     #
     # Two things here can do that resetting, and this unit is deliberately
     # agnostic between them:
@@ -540,14 +532,13 @@ in
         # console for itself.
         #
         # Both, because neither covers the other's case. A repaint triggered
-        # only from here is the arrangement that shipped a cropped banner: udev
-        # runs this during coldplug on most boxes, before any getty exists, so
-        # the redraw found nothing on screen and was never asked for again. A
-        # watcher alone is the arrangement that shipped a *blank* one: its
-        # window runs for a minute from getty.target, and a DRM driver that
-        # takes the console after that -- 140 seconds after it on an emulated
-        # console, and however long firmware takes on a real GPU -- wipes the
-        # painted banner with nothing left watching.
+        # only from here leaves a cropped banner: udev runs this during coldplug
+        # on most boxes, before any getty exists, so the redraw finds nothing on
+        # screen and is never asked for again. A watcher alone leaves a *blank*
+        # one: its window runs for a minute from getty.target, and a DRM driver
+        # that takes the console after that -- 140 seconds after it on an
+        # emulated console, and however long firmware takes on a real GPU --
+        # wipes the painted banner with nothing left watching.
         #
         # `-` and loom-banner-refresh's own guard are what make this safe to ask
         # for unconditionally: it redraws only a tty1 still sitting at the

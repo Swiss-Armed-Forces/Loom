@@ -1369,8 +1369,7 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         Uses a single ``terms`` aggregation with an ``include`` regex so ES filters
         bucket keys natively at segment level.  The regex matches paths that are exactly
         one component deeper than ``tree_node_directory_path``, which are the direct
-        children.  This avoids the previous composite pagination loop that had to fetch
-        O(total_path_tokens / page_size) pages just to find direct children.
+        children.
 
         Cursor pagination works via a ``range`` filter on ``full_path.tree``.  Because
         the field is multi-value, the filter admits a document when *any* token exceeds

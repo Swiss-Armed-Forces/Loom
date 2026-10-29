@@ -207,11 +207,8 @@ def test_hosted_openai_never_sends_reasoning_effort() -> None:
 def test_instructions_assemble_the_same_way(
     instructions: str | Callable[[], str],
 ) -> None:
-    """Regression guard: the callable branch used to skip ``system_prompt`` entirely.
-
-    Static and dynamic instructions must produce the same layout -- system prompt first,
-    then the caller's instructions, then the guardrails last.
-    """
+    """Static and dynamic instructions must produce the same layout -- system prompt
+    first, then the caller's instructions, then the guardrails last."""
     resolved = _resolve_instructions(
         LLMClientSettings(system_prompt="You are Loom."), instructions
     )()
@@ -233,7 +230,7 @@ def test_instructions_assemble_the_same_way(
     ],
 )
 def test_thinking_survives_every_family(model: str) -> None:
-    """Regression guard for #307 via the profile layering.
+    """``thinking`` survives every family because of the profile layering.
 
     The gemma and gpt-oss family profiles set ``supports_thinking=False``. The provider
     merges the family *under* Loom's claim; the other order would make
@@ -267,8 +264,8 @@ def test_a_small_model_gets_structured_output_as_a_grammar() -> None:
 def test_the_production_model_gets_structured_output_as_a_tool() -> None:
     """The same unmarked type resolves the other way on weights that can carry a call.
 
-    With the test above, this is the pair proving the deleted branch was replaceable by
-    the profile: one output type, one `build_agent`, two modes decided by the model.
+    With the test above, this is the pair proving the profile alone decides: one output
+    type, one `build_agent`, two modes decided by the model.
     """
     body = _request_body(LLMClientSettings(model=_PRODUCTION_MODEL), _StructuredOutput)
 
@@ -290,13 +287,11 @@ def test_a_text_agent_is_untouched_by_the_parameter_floor(model: str) -> None:
 
 
 def test_the_chat_agents_deferred_output_stays_text() -> None:
-    """Regression guard for the guard that was deleted.
+    """`[str, DeferredToolRequests]` builds a text schema on its own.
 
-    `build_agent` used to special-case a `DeferredToolRequests` in the output list so
-    that no output marker would be wrapped around it. `[str, DeferredToolRequests]`
-    builds a text schema on its own, so the special case was describing pydantic-ai's
-    behaviour back to it. The small model is deliberate -- it is the one that would flip
-    if the resolution ever did reach this schema.
+    No output marker is wrapped around it, so `build_agent` needs no special case for a
+    `DeferredToolRequests` in the output list. The small model is deliberate -- it is
+    the one that would flip if the resolution ever did reach this schema.
     """
     body = _request_body(
         LLMClientSettings(model=_DEVELOPMENT_MODEL), [str, DeferredToolRequests]

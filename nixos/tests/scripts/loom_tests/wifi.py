@@ -153,11 +153,11 @@ def _radios_state(appliance: "Machine", subtest: "Subtest") -> None:
         appliance.wait_for_unit("loom-rfkill-unblock-wifi.service")
         # Structured output rather than a slice of prose. `rfkill list` writes no
         # blank line between devices -- each entry is a header plus two
-        # tab-indented lines, back to back -- so `split("\n\n")[0]` returned
+        # tab-indented lines, back to back -- so `split("\n\n")[0]` would return
         # everything from "Wireless LAN" to the end, and any later switch
-        # reporting `Soft blocked: yes` failed this subtest with a message about
-        # wifi. On a box that blocks Bluetooth unconditionally there is reliably a
-        # later entry.
+        # reporting `Soft blocked: yes` would fail this subtest with a message
+        # about wifi. On a box that blocks Bluetooth unconditionally there is
+        # reliably a later entry.
         rows = json.loads(appliance.succeed("rfkill --json"))["rfkilldevices"]
         wlan = [row for row in rows if row.get("type") == "wlan"]
         assert wlan, rows
@@ -177,12 +177,11 @@ def _login_credentials(
         assert f"{params.psk}" in issue, issue
 
         # Asserted against the issue file itself, not against a loom-info run
-        # with arguments that flatter it. The banner briefly measured the console
-        # and trimmed itself to fit, and because the console is resized several
-        # times during boot the reading was whatever the resize sequence happened
-        # to be in the middle of -- which shipped a box whose login screen had
-        # neither the mark nor the QR code on a console with room for both. What
-        # goes into the file is the whole banner, always.
+        # with arguments that flatter it. The banner does not measure the console
+        # and trim itself to fit: the console is resized several times during
+        # boot, so any such reading would be whatever the resize sequence
+        # happened to be in the middle of. What goes into the file is the whole
+        # banner, always.
         assert "▄████▄    ▄████▄" in issue, issue
         assert "Scan to join" in issue, issue
         # Drawn with the half blocks, not with '#'. An ASCII QR has modules
@@ -223,11 +222,11 @@ def restart_banner_watcher(appliance: "Machine") -> None:
 
 def _banner_watcher(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("the banner watcher is running, not hung off the font units"):
-        # It used to be started from loom-console-font-reapply's ExecStartPost.
-        # udev runs that during coldplug, before any getty exists, so the repaint
-        # it asked for found nothing on screen and never ran again -- which is
-        # how tty1 kept a cropped banner while tty2 looked right. It is pulled in
-        # by the boot now and watches the console itself.
+        # loom-console-font-reapply's ExecStartPost must not be what starts it:
+        # udev runs that during coldplug, before any getty exists, so a repaint
+        # asked for there finds nothing on screen and never runs again -- which
+        # leaves tty1 with a cropped banner while tty2 looks right. The watcher
+        # is pulled in by the boot and watches the console itself.
         appliance.succeed("systemctl cat loom-banner-repaint.service")
         reapply = appliance.succeed("systemctl cat loom-console-font-reapply.service")
         assert "loom-banner-repaint" not in reapply, reapply
@@ -263,7 +262,7 @@ def _banner_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         # The bug this reproduces: tty1 is painted while the console is still
         # being resized -- kernel font, Cozette, the DRM driver's reset, Cozette
         # again -- and a VT that shrinks keeps the bottom of the screen and
-        # discards the top. The mark goes first. tty2 and up never showed it,
+        # discards the top. The mark goes first. tty2 and up never show it,
         # because logind spawns them on demand once nothing is moving any more.
         #
         # `setfont -d` doubles the cell, which halves the row count: the same

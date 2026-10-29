@@ -115,8 +115,8 @@ JQ
 # An Ingress with *no* entrypoints annotation counts as being on websecure, and
 # that is not a technicality: traefik attaches such a router to every default
 # entrypoint, and traefik/values.yaml marks none of its seven as non-default.
-# Reading a missing annotation as "not websecure" would have skipped exactly
-# the template that forgot to say where it belongs.
+# Reading a missing annotation as "not websecure" would skip exactly the
+# template that forgot to say where it belongs.
 UNGUARDED_INGRESS_PROGRAM="$(cat <<'JQ'
 select(.kind == "Ingress")
 | . as $ingress

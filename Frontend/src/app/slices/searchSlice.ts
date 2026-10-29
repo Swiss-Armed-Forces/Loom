@@ -83,21 +83,15 @@ export type RightSidebarTab =
 /**
  * A shortcut to a whole set of card elements; see `CARD_PRESETS`.
  *
- * These were spacings as well once, and the card had a second control that
- * set the spacing on its own. A card is laid out tight now and only that way,
- * so a preset says how much of a file a card shows and nothing about how much
- * room it takes.
+ * A card is laid out tight and only that way, so a preset says how much of a
+ * file a card shows and nothing about how much room it takes.
  */
 export type CardPreset = "compact" | "standard" | "full";
 
 /** How a single metadata field is rendered on a card.
  *  "compact" → one `label: value` line per field, with an accordion kept for
  *  truncated values only; "line" → every selected field side by side on one
- *  line, values only, the way a mail client lays a message list out.
- *
- *  There was a third, "rows", which gave every field an accordion of its own.
- *  It was "compact" with the collapsed form taken away, so it said nothing
- *  "compact" does not and cost a card several times the height. */
+ *  line, values only, the way a mail client lays a message list out. */
 export type FieldLayout = "compact" | "line";
 
 /**
@@ -343,8 +337,8 @@ export interface VisibleRange {
 export interface PaginationState {
     // Cursor of the page request currently in flight, or null when idle. Scoped
     // to pagination on purpose: the global loading counter is bumped by uploads,
-    // tag loads and folder fetches, so gating the result list on it made the
-    // same keypress behave differently depending on an unrelated panel.
+    // tag loads and folder fetches, so gating the result list on it would make
+    // the same keypress behave differently depending on an unrelated panel.
     pendingCursorKey: string | null;
     // How many moves past the last loaded card are waiting for that page. Every
     // press counts, so five presses at the boundary advance five cards.
@@ -377,9 +371,9 @@ export interface SearchState {
      *
      * The reader's position is measured in pixels, and after a replacement
      * those pixels describe a different set of results - so a search run from
-     * halfway down the previous one used to open part-way into the new one,
-     * with its best matches above the fold. The view scrolls back to the top
-     * when this changes.
+     * halfway down the old one would open part-way into the new one, with its
+     * best matches above the fold. The view scrolls back to the top when this
+     * changes.
      */
     resultsReplaced: number;
     pagination: PaginationState;
@@ -580,10 +574,8 @@ export const SEARCH_STATE_DOCS = {
  * How many results one page request asks for.
  *
  * Not a user setting: the list loads on its own as it is scrolled, so this is
- * only the size of a fetch and not something anyone sees. It was exposed while
- * paging was a button, when it also decided how many cards a click mounted;
- * windowing took that cost away and left nothing to tune. The API's own
- * default is 10, which put a network boundary every ten cards.
+ * only the size of a fetch and not something anyone sees. The API's own
+ * default is 10, which puts a network boundary every ten cards.
  */
 export const RESULT_PAGE_SIZE = 25;
 
@@ -946,7 +938,7 @@ export const updateQuery = createAsyncThunk(
             // The count is only asked for on the first page of a query. It runs
             // with track_total_hits, which is the most expensive thing the API
             // does, and the point in time freezes the answer for the life of the
-            // query — so re-counting on every page paid for a known total.
+            // query — so re-counting on every page would pay for a known total.
             const isFirstPage = newQuery.sortId === null;
             const [searchRes, countRes] = await Promise.all([
                 searchFiles(newQuery),
@@ -1136,7 +1128,7 @@ export const fetchFailedFiles = createAsyncThunk(
 /**
  * Make sure a card entering the viewport has a usable preview cached.
  *
- * Dispatched on the false→true edge only. It no longer records the in-view
+ * Dispatched on the false→true edge only. It does not record the in-view
  * state — `fileInViewChanged` does that synchronously — so this is free to be
  * skipped, which is the whole point of the condition below.
  */
@@ -1187,7 +1179,7 @@ export const ensureViewPreview = createAsyncThunk(
  * Appending to `resultOrder` is what keeps the list in the backend's ranking
  * order: a file the cache already holds — an open tab, a fetched preview, a card
  * that went stale — keeps the slot it was first inserted at in `files`, so
- * deriving the order from that map put returning hits in the wrong place.
+ * deriving the order from that map would put returning hits in the wrong place.
  */
 const appendPage = (state: SearchState, files: GetFilesFileEntry[]) => {
     const known = new Set(state.resultOrder);
@@ -1531,9 +1523,7 @@ export const searchSlice = createSlice({
             state.expandFilePaths = action.payload;
         },
         // Spacing only. Which elements are shown is the other axis and is
-        // left exactly as the user left it - that separation is what removed
-        // the "custom" mode, which existed only to say "do not overwrite my
-        // switches".
+        // left exactly as the user left it.
 
         // A shortcut to a whole set of switches, not a mode the card stays
         // in: the switches are authoritative afterwards and a reader is free
@@ -1710,11 +1700,11 @@ export const searchSlice = createSlice({
          * Apply one file update to the cached preview and leave the rest of it
          * alone.
          *
-         * Writing a whole preview assembled from a copy read earlier is what
-         * let two overlapping updates fight: the automatic mark-as-seen and a
-         * keypress a few milliseconds later each rebuilt the preview from the
-         * state they had read, so whichever request finished last won and the
-         * card could be left showing the opposite of what the server held.
+         * Writing a whole preview assembled from a copy read earlier lets two
+         * overlapping updates fight: the automatic mark-as-seen and a keypress
+         * a few milliseconds later each rebuild the preview from the state they
+         * read, so whichever request finishes last wins and the card can be
+         * left showing the opposite of what the server holds.
          */
         patchFilePreview: (
             state,
@@ -1836,12 +1826,12 @@ export const searchSlice = createSlice({
                         // renewal. Only the snapshot id is new, and a preview
                         // does not describe the snapshot: `isPreviewFresh`
                         // judges one by the query string and the field set and
-                        // ignores the id entirely. Dropping them here left
-                        // every card that was already on screen showing a
-                        // skeleton that nothing refilled - the cards keep
-                        // their identity across the re-run, so no card asked
-                        // again, and the list stayed that way until a
-                        // different search replaced it.
+                        // ignores the id entirely. Dropping them here would
+                        // leave every card already on screen showing a
+                        // skeleton that nothing refills - the cards keep
+                        // their identity across the re-run, so no card asks
+                        // again, and the list stays that way until a
+                        // different search replaces it.
                         Object.entries(state.files).forEach(([id, entry]) => {
                             if (preserved[id] || entry.preview == null) return;
                             preserved[id] = { ...entry, meta: null };
@@ -1853,10 +1843,10 @@ export const searchSlice = createSlice({
                         // The list is rebuilt from the top, so whatever was on
                         // screen is gone along with it. Asking the same
                         // question again leaves the same cards on screen, and
-                        // clearing these left nothing to repopulate them:
-                        // both are only ever written on a *change*, so the
-                        // view count read empty and a preview-field change
-                        // stopped refetching what was in view.
+                        // clearing these would leave nothing to repopulate
+                        // them: both are only ever written on a *change*, so
+                        // the view count would read empty and a preview-field
+                        // change would stop refetching what is in view.
                         state.visibleRange = null;
                     }
                     // For pure ID changes (keep-alive renewal, React strict-mode
@@ -1884,8 +1874,8 @@ export const searchSlice = createSlice({
                 state.queryError = undefined;
                 // A rebuild after the point in time was recycled drops every
                 // card except open tabs. Leaving the highlight on one of them
-                // left it naming a card that is not rendered, which the next
-                // move silently resolved to the top of the list.
+                // would leave it naming a card that is not rendered, which the
+                // next move silently resolves to the top of the list.
                 if (
                     state.highlightedFileId &&
                     !state.files[state.highlightedFileId]
@@ -2223,9 +2213,9 @@ export const selectLastFileSortId = createSelector(
     (search) => search.lastFileSortId,
 );
 
-// A plain lookup rather than a memoised-selector factory: callers used to build
-// a fresh createSelector on every render, so its cache was never warm and every
-// card re-created its subscription on each pass.
+// A plain lookup rather than a memoised-selector factory: a caller building a
+// fresh createSelector on every render has a cache that is never warm, and
+// every card re-creates its subscription on each pass.
 export const selectFileById = (
     state: RootState,
     fileId: string,
@@ -2347,7 +2337,7 @@ export const selectExpandFilePaths = createSelector(
 // Built from `temporaryFileId` rather than by scanning `files` for the per-entry
 // `temporary` flag: the flag is still maintained by setTemporaryFileId, but the
 // pointer is the single source of truth for what is rendered, and depending on
-// the whole `files` map returned a fresh array on every preview that arrived.
+// the whole `files` map returns a fresh array on every preview that arrives.
 // With no temporary card this returns `resultOrder` itself, so the identity is
 // stable until a page lands.
 export const selectResultsReplaced = createSelector(
@@ -2572,9 +2562,6 @@ export const selectShowHighlights = createSelector(
     (search) => search.showHighlights,
 );
 
-// Memoised on the twelve flags and the two density fields rather than on the
-// whole slice: with `selectSearch` as its only input, the custom branch built a
-// fresh object on every search action, and every result card subscribes to it.
 /**
  * The twelve switches as one object.
  *

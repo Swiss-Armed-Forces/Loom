@@ -64,8 +64,8 @@ done
 # `grep --word-regexp` is not that comparison and the counterexample is the one
 # this check is about: `-w` only requires the match to be bounded by non-word
 # characters, and `-`, `.` and `:` are all non-word -- so a Dockerfile baking
-# `qwen3.8:27b-instruct` satisfied a chart asking for `qwen3.8:27b`, and the box
-# carried no model the chart names. `-x` against the split list compares tokens.
+# `qwen3.8:27b-instruct` satisfies a chart asking for `qwen3.8:27b`, and the box
+# carries no model the chart names. `-x` against the split list compares tokens.
 baked_lines="$(tr ' ' '\n' <<< "${baked}")"
 
 missing=()

@@ -189,8 +189,8 @@ def test_generate_drops_candidate_when_llm_fails(
 ):
     """A failing candidate must degrade, never raise.
 
-    Regression test for #287: this task runs as a chord member, and a chord aborts as
-    soon as any member raises -- discarding every sibling candidate that succeeded.
+    This task runs as a chord member, and a chord aborts as soon as any member raises
+    -- discarding every sibling candidate that succeeded.
     """
     suggest_queries_agent.run_sync.side_effect = error
 
@@ -211,7 +211,7 @@ def test_generate_drops_candidate_without_querying_elasticsearch(
 
 
 def test_dropped_candidates_do_not_suppress_successful_siblings():
-    """The #287 scenario end to end: 1 candidate fails, the other 2 must survive."""
+    """End to end: 1 candidate fails, the other 2 must survive."""
     dropped = QuerySuggestion(query="", matching_docs=0).model_dump()
     good = [
         QuerySuggestion(

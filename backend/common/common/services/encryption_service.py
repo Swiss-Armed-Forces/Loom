@@ -94,14 +94,14 @@ def _derive_key(master_key: AESMasterKey, salt: bytes, context: bytes) -> bytes:
     `context` is the container's magic bytes, and binding them into the derivation is
     what makes the magic a *type* rather than a label. Without it the GCM tag covers
     the ciphertext only and the header is unauthenticated, so stripping `LOOMENC` and
-    prepending `LOOMARCHIVEV2` produced a container the archive service decrypted
+    prepending `LOOMARCHIVEV2` yields a container the archive service decrypts
     happily, MAC and all -- while `archive_detection` reasons explicitly about the
     magic as a discriminator ("an encrypted archive never carries the generic one")
     and `decrypt_prefix` reads it as a type tag.
 
-    Note this changes the key schedule: a container written before this binding
-    existed no longer opens. Loom gives no upgrade guarantees and a deployment's
-    archives are written and read by one cluster, which is what makes that affordable.
+    The magic is therefore part of the key schedule: only a container carrying the same
+    magic opens. Loom gives no upgrade guarantees and a deployment's archives are
+    written and read by one cluster, which is what makes that affordable.
     """
     result = HKDF(
         master_key.key.get_secret_value(),

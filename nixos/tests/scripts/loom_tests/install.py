@@ -233,7 +233,7 @@ def _recovery_passphrase_opens_the_container(
     installer: "Machine", steps: Installer, volume_group: str, root_device: str
 ) -> None:
     # Losing the stick must not mean losing the box. The keyslot is enrolled against
-    # the pooled container now, so one added to the wrong device would leave the
+    # the pooled container, so one added to the wrong device would leave the
     # passphrase on the login banner useless -- and nothing would say so until
     # somebody needed it.
     passphrase = steps.step(
@@ -292,10 +292,10 @@ def _only_its_own_stick_claims_the_pool(
 def _the_wipe_reaches_the_key_material(
     installer: "Machine", steps: Installer, volume_group: str, root_device: str
 ) -> None:
-    # The regression this guards: the container moved onto a logical volume, so
-    # `wipe_disk`'s per-partition sweep no longer finds it. With layer 1 skipped the
-    # wipe says nothing and falls through to layers that are slower and weaker -- a
-    # silent downgrade of the only step that matters.
+    # The container lives on a logical volume, where `wipe_disk`'s per-partition
+    # sweep does not find it. With layer 1 skipped the wipe says nothing and falls
+    # through to layers that are slower and weaker -- a silent downgrade of the only
+    # step that matters.
     # Before: the container really does open with this stick's key.
     steps.step("storage.activate(runner)")
     installer.succeed(
@@ -348,11 +348,11 @@ def _a_locked_key_container_is_just_another_key(
     cryptsetup, and runs the same two steps against it.
 
     The *order* below matters as much as the steps, and is the order `install.run`
-    uses: the container is opened first, and `partition` runs after it. That is
-    what caught the one bug this feature shipped with -- `release_storage` swept
-    every /dev/mapper node before repartitioning and closed the key store along
-    with them, so `encrypt` was handed a key that had stopped existing two steps
-    earlier. An earlier version of this subtest partitioned first and saw nothing.
+    uses: the container is opened first, and `partition` runs after it. That is what
+    exercises `release_storage`, which sweeps every /dev/mapper node before
+    repartitioning and must leave the key store open -- closed along with the rest,
+    it hands `encrypt` a key that stopped existing two steps earlier. A subtest that
+    partitioned first would see none of that.
 
     Not covered here: the prompt that gets the container open on a real stick
     (installer/tests/test_keystore.py) and the initrd unit that does the same job in

@@ -1,9 +1,9 @@
 """What the poll loop remembers, and what it is allowed to forget.
 
-This bucket is now where a whole USB stick is mirrored, so "one entry per object ever
-seen, for the life of the pod" stopped being a reasonable amount of state. The watermark
-is what bounds it; these pin that it bounds it without ever skipping an object that has
-not been handled.
+This bucket is where a whole USB stick is mirrored, so "one entry per object ever seen,
+for the life of the pod" is not a reasonable amount of state. The watermark is what
+bounds it; these pin that it bounds it without ever skipping an object that has not been
+handled.
 """
 
 from datetime import datetime, timedelta, timezone

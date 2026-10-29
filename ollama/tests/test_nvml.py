@@ -90,8 +90,8 @@ def test_a_library_without_the_symbols_is_unavailable_rather_than_fatal() -> Non
     """A driver/stub mismatch is exactly the box this probe exists for.
 
     `AttributeError` is not in the tuple `run_entry_command` catches, so letting one
-    escape turned "this container's NVML is odd" into a traceback out of `main()`
-    instead of a CPU-only server.
+    escape turns "this container's NVML is odd" into a traceback out of `main()` instead
+    of a CPU-only server.
     """
     for symbol in SYMBOLS:
         reading = _read(FakeNvml(missing=frozenset({symbol})))
@@ -113,7 +113,7 @@ def test_a_working_library_reports_every_device_that_has_a_total() -> None:
 
 
 def test_a_library_that_will_not_load_is_unavailable() -> None:
-    """The case every CPU-only box is in, and the one that was already guarded."""
+    """The case every CPU-only box is in."""
 
     def refuse() -> ctypes.CDLL:
         raise OSError(f"{NVML_LIBRARY}: cannot open shared object file")

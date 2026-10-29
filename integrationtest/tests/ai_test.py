@@ -20,8 +20,8 @@ def test_create_context():
 
 @pytest.mark.usefixtures("disable_periodic_tasks")
 class TestChatbot:
-    # A single file is sufficient to exercise the chatbot pipeline; extra files
-    # (knn2-knn5) were removed to keep the test fast.
+    # A single file is sufficient to exercise the chatbot pipeline, and keeps the
+    # test fast.
     asset_list = [
         "knn1.txt",
     ]

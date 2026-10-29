@@ -101,12 +101,12 @@ class Observation:
     blockers: list[Blocker] = field(default_factory=list)
     detail: str = ""
     # Whether the workload listing was *read*, as opposed to read and empty. Without
-    # it a kubectl that missed its 5s `--request-timeout` -- `get
+    # it a kubectl that misses its 5s `--request-timeout` -- `get
     # deployments,statefulsets,daemonsets,jobs -o json` across the namespace, which
-    # is not hypothetical on a busy appliance -- was indistinguishable from "the
-    # cluster answered and nothing is ready": `classify` said DEGRADED on a box that
-    # was fine, the bar collapsed to `--/-- pods`, and `publish` reset its
-    # no-change timer so the stall note could never fire either.
+    # is not hypothetical on a busy appliance -- is indistinguishable from "the
+    # cluster answered and nothing is ready": `classify` would say DEGRADED on a box
+    # that is fine, the bar would collapse to `--/-- pods`, and `publish` would reset
+    # its no-change timer so the stall note could never fire either.
     workloads_known: bool = False
 
 
@@ -375,8 +375,7 @@ def classify(observation: Observation, previous: Stage | None = None) -> Stage:
     if not observation.reachable or not observation.namespace_present:
         return Stage.WAITING
 
-    # Deliberately the same condition console.nix's pane used to evaluate for itself:
-    # the unit is Type=oneshot with RemainAfterExit, so it reads `activating` for the
+    # The unit is Type=oneshot with RemainAfterExit, so it reads `activating` for the
     # hours of a bring-up and `active` only once up.sh has exited 0.
     settled = observation.unit_state is UnitState.ACTIVE
     if not settled:
@@ -384,7 +383,7 @@ def classify(observation: Observation, previous: Stage | None = None) -> Stage:
 
     # A listing that could not be read says nothing about the box, so nothing about
     # the box changes: the previous stage stands, and a box that has never had one
-    # is still WAITING. Treating it as "nothing is ready" turned one slow kubectl
+    # is still WAITING. Treating it as "nothing is ready" would turn one slow kubectl
     # into `Loom: degraded`, a red status line and `loom-ready` exiting 1.
     if not observation.workloads_known:
         return previous or Stage.WAITING

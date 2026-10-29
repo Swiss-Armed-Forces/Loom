@@ -22,7 +22,7 @@ def test_autoretry_exhaustion_does_not_send_to_graveyard_or_abyss():
     and raise AlwaysFailException cleanly via result.get().
 
     On each polling timeout we assert graveyard and abyss are still empty — if either
-    fills up the task leaked into the dead-letter chain (regression).
+    fills up the task leaked into the dead-letter chain.
     """
     result = get_celery_app().send_task(
         "worker.test.autoretry_test_task.always_fail_autoretry_test_task"
@@ -50,9 +50,9 @@ def test_ndl_routes_retry_through_delayed_queue():
     Delivery: the message must appear in a celery_delayed_* queue between failure
     and retry, and the task must ultimately succeed.
 
-    Regression for Bug B (routing key overflow): before the fix, BaseTask.__call__
-    did not strip the NDL prefix from delivery_info['routing_key'], so each retry
-    prepended another 56-char binary prefix until struct.error was raised (~retry 4).
+    BaseTask.__call__ strips the NDL prefix from delivery_info['routing_key']; without
+    that, each retry prepends another 56-char binary prefix until struct.error is
+    raised (~retry 4).
     """
     qs = get_queues_service()
 

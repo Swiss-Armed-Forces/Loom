@@ -18,8 +18,8 @@ DEFAULT_LOOM_SERVER="127.0.0.1"
 # With no server named this points at a local VM, so the defaults are the two
 # ports cicd/run_appliance_vm.sh forwards to it: `hostfwd=tcp::8080-:80` and
 # `hostfwd=tcp::8443-:443`. They have to be taken as a pair -- mapping both of
-# traefik's entrypoints onto the http forward is exactly the 404 this script
-# used to produce.
+# traefik's entrypoints onto the http forward produces a 404 from a healthy
+# stack.
 DEFAULT_LOOM_HTTP_PORT="8080"
 DEFAULT_LOOM_HTTPS_PORT="8443"
 
@@ -184,12 +184,12 @@ if ! is_ipv4 "${LOOM_SERVER}" && ! is_ipv6 "${LOOM_SERVER}"; then
     LOOM_SERVER_RESOLVED="$(resolve_dns "${LOOM_SERVER}")"
 fi
 
-# One rule per port, rather than the single `MAP *` this used to build. A
-# catch-all rewrites the *port* as well as the host, so it also caught the
-# `https://` that every Loom redirects to and sent it back at the http port --
-# where no router matches, because every ingress in charts/values.yaml is
-# annotated `router.entrypoints: websecure` and only values-development widens
-# that to `web`. Traefik answered 404 on a stack that was perfectly healthy.
+# One rule per port, rather than a single catch-all `MAP *`. A catch-all
+# rewrites the *port* as well as the host, so it also catches the `https://`
+# that every Loom redirects to and sends it back at the http port -- where no
+# router matches, because every ingress in charts/values.yaml is annotated
+# `router.entrypoints: websecure` and only values-development widens that to
+# `web`. Traefik then answers 404 on a stack that is perfectly healthy.
 #
 # The patterns are the ports chromium asks for, which are the scheme defaults
 # and not the ports below: what is being mapped is `http://` and `https://`,
@@ -200,7 +200,7 @@ LOOM_HOST_RULES+=",MAP *:443 ${LOOM_SERVER_RESOLVED}:${LOOM_HTTPS_PORT}"
 # A URL rather than a bare hostname, because chromium decides for itself what
 # to do with `frontend.loom` on a command line and the answer is not stable.
 #
-# http, fixed, now that both ports are mapped: on a box it is one redirect to
+# http, fixed, because both ports are mapped: on a box it is one redirect to
 # https, and under charts/values-development.yaml -- the one configuration that
 # widens the routers to the `web` entrypoint -- there is no redirect and http is
 # all that is served. Naming https instead would be one hop shorter on a box and

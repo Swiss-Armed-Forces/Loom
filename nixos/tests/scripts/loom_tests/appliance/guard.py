@@ -188,8 +188,7 @@ def foreign_key(
         # Counted, not grepped for. `cancels` above has already put a
         # 'USB KEY REMOVED' in this same journal, so a plain grep returns on the
         # first poll whatever the foreign loop device did -- which is exactly the
-        # bug this subtest is named for. `key_store.py` was given the count and
-        # this variant, the one that runs on every platform, was not.
+        # bug this subtest is named for.
         removed_before = _removals(appliance)
         rearmed_before = _rearms(appliance)
 
@@ -197,7 +196,7 @@ def foreign_key(
         appliance.succeed(f"ln -sf {other_loop} {params.key_guard.key_device}")
         appliance.wait_until_succeeds(f"test $({_REMOVALS}) -gt {removed_before}")
 
-        # And the half neither file had: the guard must not re-arm on the foreign
+        # And the other half: the guard must not re-arm on the foreign
         # container. Without this the subtest still passes if the guard arms on
         # any LUKS device at all, which is the only failure it is named for.
         assert (
@@ -232,11 +231,9 @@ def action_per_mode(appliance: "Machine", subtest: "Subtest", setup_sys: str) ->
             exec_start = re.search(r"ExecStart=(\S+)", unit)
             assert exec_start, unit
             script = appliance.succeed(f"cat {exec_start.group(1)}")
-            # `LOOM_<name>`, where this used to read `readonly <name>`: the
-            # guard's body is nixos/scripts/loom_key_guard.sh now, and the
-            # module hands it values through a prologue of `LOOM_*`
-            # assignments. Still the generated script, still the baked-in
-            # value -- only the line it is written on has moved.
+            # `LOOM_<name>`: the guard's body is nixos/scripts/loom_key_guard.sh
+            # and the module hands it values through a prologue of `LOOM_*`
+            # assignments, which is where the baked-in value is written.
             #
             # Tolerates the quotes lib.escapeShellArg adds only when it has to.
             value = re.search(rf"^LOOM_{name}='?(\w+)'?$", script, re.M)

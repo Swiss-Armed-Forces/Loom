@@ -25,9 +25,7 @@ def _resolve_instructions(
 
     Always returns a callable so that static and dynamic instructions share one
     assembly order: the configured system prompt first, then the caller's
-    instructions, then the guardrails last. A caller passing a callable used to lose
-    `agent_settings.system_prompt` entirely, because the two cases were assembled by
-    separate branches.
+    instructions, then the guardrails last.
     """
 
     def resolve() -> str:

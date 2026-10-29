@@ -8,7 +8,8 @@ Please review them carefully before starting.
 
 1. [Guidelines for Design Discussions](#guidelines-for-design-discussions)
 2. [Development Workflow and Merge Requests](#development-workflow-and-merge-requests)
-3. [Acknowledgments](#acknowledgments)
+3. [Code Comments](#code-comments)
+4. [Acknowledgments](#acknowledgments)
 
 ## Guidelines for Design Discussions
 
@@ -84,6 +85,26 @@ To maintain transparency and traceability:
 10. **Code Review Guidelines**
     - Reviewers ensure the code adheres to project standards, is thoroughly tested, and does not introduce regressions.
     - They also verify that the MR title and description are clear and complete for release notes.
+
+## Code Comments
+
+**Comments describe the code as it is. They never narrate how it got there — that is what git is
+for.**
+
+A comment about a past state (“previously”, “used to”, “no longer”, “changed because of #366”,
+“see !853”) is wrong the moment the code moves again, and nothing checks it. `git log` and
+`git blame` answer “why did this change”, and they stay correct.
+
+Keep the reason, drop the chronology. “We used to read this from the environment, but that broke
+under systemd” becomes “systemd does not pass this through the environment”. If removing the
+chronology leaves a comment that only restates the code, remove the comment.
+
+Not history, and therefore welcome: `TODO`/`FIXME` for outstanding work, the justification on a
+linter suppression, a link to an **open** upstream bug the code works around, licence headers and
+tooling directives, and ordinary documentation of what a function does.
+
+The story of a change belongs in its issue and its merge request description, which is also what
+the release notes are built from.
 
 ## Acknowledgments
 

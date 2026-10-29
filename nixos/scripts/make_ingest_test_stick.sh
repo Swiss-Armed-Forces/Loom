@@ -275,9 +275,9 @@ parse_arguments(){
 # Refuse a selection that names something that is not a partition number.
 #
 # `is_selected` is a substring test over a comma list and the ROWS numbers are
-# unpadded 1..26, so `--only 07`, `--only 27` and `--only "1 2"` each selected
-# *nothing* -- and the run then wrote nothing, skipped `partition_disk` as it
-# does for any selection, reported a header-only table and declared "All
+# unpadded 1..26, so `--only 07`, `--only 27` and `--only "1 2"` each select
+# *nothing* -- and the run then writes nothing, skips `partition_disk` as it
+# does for any selection, reports a header-only table and declares "All
 # partitions written and identified". The next person to use that stick is
 # debugging `plan_mount` against whatever the previous run left.
 validate_selection(){
@@ -537,8 +537,7 @@ partition_disk(){
 }
 
 settle_partitions(){
-    # partx rather than parted: the appliance build dropped parted for exactly
-    # this, and util-linux is already in the tool set.
+    # partx rather than parted: util-linux is already in the tool set.
     partx --update "${DEVICE_NODE}" > /dev/null 2>&1 || true
     udevadm settle --timeout=30 || true
     return 0
@@ -576,10 +575,11 @@ format_rows(){
         # of || or && -- has `set -e` disabled for its whole body, and bash
         # propagates that even into an explicit `( set -e; ... )`. A maker
         # called that way therefore runs on past its first failed command and
-        # still returns 0, so a failing mkfs was reported as a success and only
-        # the blkid check below noticed. Backgrounding detaches the subshell
-        # from the condition context, so `set -e` applies inside it again, and
-        # `wait` reports the status without becoming a condition for it.
+        # still returns 0, which would report a failing mkfs as a success and
+        # leave only the blkid check below to notice. Backgrounding detaches
+        # the subshell from the condition context, so `set -e` applies inside
+        # it again, and `wait` reports the status without becoming a condition
+        # for it.
         status=0
         ( set -e; "make_${maker}" "${device}" "${label}" "${payload}" "${number}" ) \
             > "${logfile}" 2>&1 &
@@ -597,10 +597,11 @@ format_rows(){
     return 0
 }
 
-# The one check that stays, because it is part of building the stick rather than
-# testing it. A synthetic BitLocker or ZFS signature libblkid declines to name is
-# a partition that silently tests nothing, and `mkfs.fat -F 32` on a too-small
-# device warns rather than failing, so a FAT32 row can quietly come out FAT16.
+# The one check this script makes, because it is part of building the stick
+# rather than testing it. A synthetic BitLocker or ZFS signature libblkid
+# declines to name is a partition that silently tests nothing, and
+# `mkfs.fat -F 32` on a too-small device warns rather than failing, so a FAT32
+# row can quietly come out FAT16.
 verify_row(){
     local number="${1}" device="${2}" want="${3}"
     local got
@@ -660,9 +661,9 @@ populate_mounted(){
     # than something subtly different per filesystem. The appliance overrides
     # ownership at mount time anyway, for exactly these filesystems.
     # The status is captured rather than allowed to propagate, so that the
-    # umount below always runs. Letting `set -e` abort here left the volume
-    # mounted, and because every row mounts on the same path the next one
-    # stacked a second mount on top of it.
+    # umount below always runs. Letting `set -e` abort here would leave the
+    # volume mounted, and because every row mounts on the same path the next
+    # one would stack a second mount on top of it.
     rsync --recursive --times --quiet "${source}/" "${mountpoint}/" || status=$?
 
     sync
@@ -1100,8 +1101,8 @@ acquire_lock(){
 # Unmount everything this run is responsible for, however it exits.
 #
 # Two sources. The script's own mountpoint is a single path reused by every row,
-# so a row that died between mount and umount left it mounted and the next row
-# stacked another mount on top -- hence the loop rather than one umount. The
+# so a row that dies between mount and umount leaves it mounted and the next row
+# stacks another mount on top -- hence the loop rather than one umount. The
 # second is the stick's own partitions: creating 26 filesystems makes a desktop
 # automounter attach whatever it recognises, and leaving a tray full of them
 # behind is not this script's idea of finishing.

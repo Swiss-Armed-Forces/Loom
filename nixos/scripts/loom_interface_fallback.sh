@@ -6,9 +6,8 @@
 # the same name, behind a prologue of `LOOM_*` assignments.
 #
 # A file rather than a string in that module, because a unit `script` string
-# is linted by nothing at all. The comment on `%q` below is there because the
-# bug it describes shipped, and shellcheck is the only thing that reads this
-# between one boot and the next.
+# is linted by nothing at all, and shellcheck is the only thing that reads
+# this between one boot and the next.
 #
 # `set -e` and nothing more, which is what nixpkgs' makeJobScript wraps a unit
 # `script` in (nixos/lib/systemd-lib.nix). Restated so the linter reads the
@@ -47,13 +46,14 @@ claim() {
     mkdir --parents /run/loom
     # %q on the one value that can contain a space. The record is
     # `.`-sourced by loom-network-check, and `claim` is called with
-    # "${candidates[*]:1}" -- so two or more leftover ports produced
-    # `LOOM_FALLBACK_ALTERNATIVES=enp2s0 enp3s0`, which bash reads as an
-    # assignment followed by the *command* `enp3s0`. Under the `set -e`
-    # nixpkgs wraps a unit script in, that aborted loom-network-check: no
-    # issue fragment naming the claimed port, and a stale one from the
-    # previous boot left in place -- on exactly the box the fallback
-    # exists for, with unknown hardware and several wired ports.
+    # "${candidates[*]:1}" -- so without it two or more leftover ports
+    # produce `LOOM_FALLBACK_ALTERNATIVES=enp2s0 enp3s0`, which bash reads
+    # as an assignment followed by the *command* `enp3s0`. Under the
+    # `set -e` nixpkgs wraps a unit script in, that aborts
+    # loom-network-check: no issue fragment naming the claimed port, and a
+    # stale one from the previous boot left in place -- on exactly the box
+    # the fallback exists for, with unknown hardware and several wired
+    # ports.
     {
         printf 'LOOM_FALLBACK_INTERFACE=%q\n' "${chosen}"
         printf 'LOOM_FALLBACK_REASON=%q\n' "${reason}"

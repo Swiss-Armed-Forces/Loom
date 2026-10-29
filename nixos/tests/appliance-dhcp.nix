@@ -3,10 +3,9 @@
 # Every other test in this directory either forces dnsmasq off or runs it on the
 # --wifi bridge. The default image does neither: the appliance address and the
 # DHCP server sit on loom0, a *renamed physical port*, and that combination is
-# the one that shipped broken. A nixpkgs bump took `network-setup.service` away,
-# and with it the chain that held dnsmasq back until the address existed; the
-# --wifi build kept working because network.nix named the ordering explicitly
-# there, and nothing covered the build without it.
+# the one nothing else covers. There is no `network-setup.service` under this pin
+# to hold dnsmasq back until the address exists, so network.nix has to name the
+# ordering explicitly -- on the --wifi bridge and on loom0 alike.
 #
 # The race is reproduced rather than simulated. `loom-interface-fallback` renames
 # this node's only NIC at network-pre.target, so
@@ -103,8 +102,7 @@ pkgs.testers.runNixOSTest {
 
   # A visitor's laptop, on the appliance's own segment.
   #
-  # The first node in this directory that talks to the appliance over the network
-  # it serves, and the gap that let every captive-portal defect ship: every other
+  # This node talks to the appliance over the network it serves: every other
   # assertion in the suite runs `curl` on the appliance itself with a hand-written
   # `Host:` header, which proves nginx answers a crafted request and says nothing
   # about whether a real client ever sends one.

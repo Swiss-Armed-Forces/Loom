@@ -1,10 +1,8 @@
 """The doubles this suite shares, in one place.
 
-`test_gpm.py` and `test_relay.py` each carried their own socket double and their own
-event packer, and they had already drifted: one recorded `close()`, the other did not;
-one hardcoded `GPM_DOWN`, the other parameterised the type. Two doubles for one
-protocol, differing in exactly the dimension the other file needed, is how a test starts
-passing for the wrong reason.
+One socket double and one event packer for both `test_gpm.py` and `test_relay.py`. Two
+doubles for one protocol, each differing in exactly the dimension the other file needs,
+is how a test starts passing for the wrong reason.
 
 Named `doubles_console_mouse` rather than `doubles`: `appliance-pytest` runs every
 appliance suite in one pytest session with no packages, so two modules called

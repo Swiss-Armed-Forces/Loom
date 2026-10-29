@@ -40,7 +40,7 @@ const iconTitles = (container: HTMLElement) =>
 
 describe("FieldIndicator", () => {
     it("draws every mark the file carries on one row", () => {
-        // Four things that each used to cost a line of their own.
+        // Four things that would each cost a line of their own ungrouped.
         expect(iconTitles(renderIndicator("loom:icons"))).toEqual([
             "fieldSections.mark.attachments",
             "fieldSections.mark.flagged",

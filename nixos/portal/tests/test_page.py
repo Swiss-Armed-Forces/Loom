@@ -106,9 +106,9 @@ def test_the_form_is_not_offered_over_a_plaintext_connection():
     markup = render(
         model(mtls=True, secure=False, urls=PortalUrls(secure="https://portal.loom/"))
     )
-    # The certificate form specifically, and no longer "any form at all" -- the page
-    # also carries the "stop the warning" button, which is a form and is offered over
-    # plaintext because it hands out nothing.
+    # The certificate form specifically, not any form at all -- the page also carries
+    # the "stop the warning" button, which is a form and is offered over plaintext
+    # because it hands out nothing.
     assert 'action="/certificate"' not in markup
     assert 'name="password"' not in markup
     assert 'href="https://portal.loom/#identity"' in markup

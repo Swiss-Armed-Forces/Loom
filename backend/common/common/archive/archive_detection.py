@@ -79,9 +79,9 @@ def find_manifest_entry(names: list[str]) -> str | None:
 # The most a MANIFEST.json is allowed to weigh before it is refused unread.
 #
 # A real one is a few kilobytes: `Archive` is a handful of scalar fields. The cap is
-# not about those -- it is about what this function is now pointed at. Since the
-# crawler prescreen (crawler/archive_prescreen.py) it runs on every intake object,
-# which on this appliance means arbitrary zips carried in on a stranger's USB stick.
+# not about those -- it is about what this function is pointed at. The crawler
+# prescreen (crawler/archive_prescreen.py) runs it on every intake object, which on
+# this appliance means arbitrary zips carried in on a stranger's USB stick.
 # Deflate reaches roughly 1000:1, so an unbounded `read` of a member that merely
 # *ends in* /MANIFEST.json inflates a 5 MB entry to ~5 GB. MemoryError is not an
 # OSError and not a ValueError, so neither this except clause nor the prescreen's

@@ -237,9 +237,9 @@ def _pane_outlives_the_copy(
 def _wrapper_path(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("every binary the service shells out to is on its own PATH"):
         # Same reasoning as scripts/appliance.py's check for loom.service: a unit's
-        # PATH is not systemPackages, and the two drifting is what once shipped a box
-        # whose loom.service died on `awk: command not found`. Here the PATH lives in
-        # the wrapper makeWrapper generated, so that is what gets asked.
+        # PATH is not systemPackages, and the two drifting ships a box whose service
+        # dies on `awk: command not found`. Here the PATH lives in the wrapper
+        # makeWrapper generated, so that is what gets asked.
         wrapper = appliance.succeed("readlink -f $(which loom-usb-ingest)").strip()
         # Parsed in Python rather than with sed: the quoting a shell one-liner would
         # need cannot be written inside a Nix indented string.
@@ -274,8 +274,8 @@ def _status_before_ingest(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("status reports cleanly before anything has been ingested"):
         # The output, not the exit status: with no state.json `loom-usb-status`
         # takes its `exit 0` branch before jq is ever reached, so `succeed` alone
-        # asserted nothing -- and in particular nothing about the jq branch, which
-        # is the half that can break (a reshuffled `Manifest`, against
+        # would assert nothing -- and in particular nothing about the jq branch,
+        # which is the half that can break (a reshuffled `Manifest`, against
         # `writeShellApplication`'s `set -euo pipefail`).
         empty = appliance.succeed("loom-usb-status")
         assert "nothing ingested since boot" in empty, empty
@@ -333,7 +333,7 @@ def _mc_runs_in_the_units_environment(
     ):
         # `env -u HOME` is the whole point: systemd sets $HOME only for units that set
         # `User=` (systemd.exec(5)) and the ingest units run as root without one, so
-        # every run of this by hand had a home directory the service never has. Without
+        # every run of this by hand has a home directory the service never has. Without
         # one, mc resolves its config directory by shelling out to `getent` -- which is
         # not on the wrapper's PATH -- and dies before it reads a single argument.
         #
@@ -358,9 +358,7 @@ def _mc_runs_in_the_units_environment(
         assert "connection refused" in output, output
         assert "could not parse" not in output, output
         # And that it got there by *waiting*, which is what a stick plugged into a box
-        # still starting Loom has to do. Registering the endpoint used to probe it,
-        # so an endpoint that was not up yet failed the ingest outright and this wait
-        # was unreachable in exactly the case it was written for.
+        # still starting Loom has to do.
         assert "never answered in 5 seconds" in output, output
         # And the failure it did have is on the operator's screen, not only in the
         # journal: a count of failures with no reason is not something anybody

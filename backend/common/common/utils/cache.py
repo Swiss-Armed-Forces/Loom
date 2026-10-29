@@ -174,9 +174,9 @@ def _canonicalize_key(value: Any) -> Any:
 
     Nothing passed to a cached task is meant to carry either, but every Pydantic model
     smuggles a set in: its pickled state includes ``__pydantic_fields_set__``. Two
-    processes therefore derived two different keys for the very same model, and neither
-    could read what the other had cached — one extra entry, one extra miss, once per
-    argument that happened to be a model.
+    processes would therefore derive two different keys for the very same model, and
+    neither could read what the other had cached — one extra entry, one extra miss,
+    once per argument that happens to be a model.
 
     So every container becomes a ``_CanonicalValue``: sets and dicts ordered by the
     pickled bytes of their members, models reduced to their field values.

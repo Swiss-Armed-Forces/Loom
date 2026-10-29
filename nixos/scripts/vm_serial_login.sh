@@ -16,8 +16,7 @@
 #
 # Read as bash, which is what it is: NixOS interpolates this into
 # /etc/profile and the size probe below uses `read -d`, a bash extension that
-# no POSIX shell has. The `[ ]` tests the module used were habit rather than
-# portability, so they are `[[ ]]` here like the rest of the tree.
+# no POSIX shell has.
 
 if [[ -z "${LOOM_SESSION:-}" ]] \
     && [[ "$(id -un)" == "${LOOM_USER:?nixos/vm-serial.nix must set this}" ]] \

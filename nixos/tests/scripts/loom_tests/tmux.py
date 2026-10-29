@@ -2,14 +2,11 @@
 
 console.nix builds one session on tty1 and three tests have something to ask of it: the
 mouse test clicks on panes, the appliance test asserts what each pane runs, and the
-readiness test reads the status line. They asked in three different ways -- two of them
-parsing `list-panes` output inline, all three with their own copy of the socket path --
-because while the scripts were concatenated rather than imported, this could not be
-shared. It came from loom_tests/mouse.py, which is where it grew up.
+readiness test reads the status line.
 
 `Session` deliberately holds a machine rather than being a set of functions taking one:
 every method is a command against the same server on the same box, and threading the
-machine through each call obscured that.
+machine through each call would obscure that.
 """
 
 from typing import TYPE_CHECKING, NamedTuple
@@ -53,10 +50,10 @@ class Session:
     def tmux(self, command: str) -> str:
         """One tmux command, with the driver's trailing newline removed.
 
-        Only the newline: `.strip()` here ate significant leading and trailing
-        spaces, and `option("status-left")` is exactly where that shows -- the
-        value really is `"  LOOM  ..."`, and the status-line width assertions
-        turn on it.
+        Only the newline: `.strip()` here would eat significant leading and
+        trailing spaces, and `option("status-left")` is exactly where that shows
+        -- the value really is `"  LOOM  ..."`, and the status-line width
+        assertions turn on it.
         """
         return self.machine.succeed(f"tmux -S {SOCKET} {command}").rstrip("\n")
 

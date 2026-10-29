@@ -18,7 +18,8 @@ describe("FieldRow", () => {
 
     it("spends no accordion and no divider on a short value", () => {
         // The accordion and its top border are exactly the chrome this layout
-        // exists to drop - five fields used to cost five of each per card.
+        // exists to drop - five fields would otherwise cost five of each per
+        // card.
         const { container } = render(<FieldRow field="from" value={FROM} />);
 
         expect(container.querySelector(".MuiAccordion-root")).toBeNull();

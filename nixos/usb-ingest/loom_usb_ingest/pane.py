@@ -39,7 +39,7 @@ def _tmux(socket: str, *arguments: str) -> str | None:
     """One tmux command against the operator's server, or None if it did not run.
 
     Best-effort by design -- see the module docstring -- so it goes through the tolerant
-    runner in `commands` rather than carrying a fifth copy of `subprocess.run`.
+    runner in `commands` rather than carrying its own copy of `subprocess.run`.
     """
     outcome = run_tolerant(["tmux", "-S", socket, *arguments], TMUX_TIMEOUT_S)
     if not outcome.ok:
@@ -79,8 +79,8 @@ def open_pane(socket: str, command: list[str]) -> str | None:
 
     # Whichever pane the operator was in, read *before* the split. `main` is the
     # k9s/bring-up pane, and console.nix makes the assistant the pane the session
-    # lands on -- so restoring focus to `main` moved the keyboard to k9s's command
-    # bar mid-prompt, which is no better than leaving it on the new pane.
+    # lands on -- so restoring focus to `main` would move the keyboard to k9s's
+    # command bar mid-prompt, which is no better than leaving it on the new pane.
     previous = _tmux(socket, "display-message", "-p", "-t", "loom", "#{pane_id}")
 
     pane = _tmux(

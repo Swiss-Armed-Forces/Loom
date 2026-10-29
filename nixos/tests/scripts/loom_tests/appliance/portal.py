@@ -39,8 +39,8 @@ def _config_path(appliance: "Machine", unit: str, flag: str) -> str:
     The flag has to be delimited on both sides, which is not fussiness. `systemctl cat`
     prints the whole unit, `Environment=PATH=` included, and a NixOS unit's PATH always
     carries `/nix/store/<hash>-coreutils-<version>/bin` -- in which `-c` appears, with
-    no space after it and a hash character before it. A bare search for the flag matched
-    that first and returned the rest of the PATH as a filename.
+    no space after it and a hash character before it. A bare search for the flag matches
+    that first and returns the rest of the PATH as a filename.
     """
     execstart = appliance.succeed(f"systemctl cat {unit}")
     match = re.search(rf"(?<![\w-]){re.escape(flag)}\s+(\S+)", execstart)
@@ -65,11 +65,10 @@ def addresses(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # Outside the DHCP pool, or the box would hand a visitor one of these two
         # addresses and the lease would collide with a listener.
         #
-        # Read off `LOOM_DHCP_POOL`, which network.nix writes into the same file.
-        # It used to compare `f"{subnet}.100"` against `f"{subnet}.2"` -- both
-        # constructed here out of the same parameter -- so the assertion was
-        # `2 < 100` on every platform and every build, and nothing about the box
-        # was consulted at all.
+        # Read off `LOOM_DHCP_POOL`, which network.nix writes into the same file,
+        # rather than from a pool constructed here out of the same parameter the
+        # reserved addresses are: that would compare two literals and consult
+        # nothing about the box.
         pool = re.search(r"^LOOM_DHCP_POOL=(\S+)-(\S+)$", conf, re.M)
         assert pool, conf
         low, high = (int(end.rsplit(".", maxsplit=1)[-1]) for end in pool.groups())
@@ -98,11 +97,11 @@ def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # click through, and the appliance's is self-signed for a TLD no public CA
         # can ever issue for. An https target here would dead-end every visitor.
         #
-        # And the literal address rather than `portal.loom`, which it used to be: a
-        # redirect to a name makes the webview resolve a TLD that does not exist,
-        # and on a phone with Android's Private DNS in strict mode that cannot
-        # succeed at all. Such a phone still detects the portal -- the connectivity
-        # check bypasses private DNS -- and then cannot follow the redirect.
+        # And the literal address rather than `portal.loom`: a redirect to a name
+        # makes the webview resolve a TLD that does not exist, and on a phone with
+        # Android's Private DNS in strict mode that cannot succeed at all. Such a
+        # phone still detects the portal -- the connectivity check bypasses private
+        # DNS -- and then cannot follow the redirect.
         assert f"return 302 http://{portal}/" in nginx_conf, nginx_conf
         assert f"return 302 http://{page}/" not in nginx_conf, nginx_conf
         assert f"https://{page}" not in nginx_conf, nginx_conf
@@ -134,8 +133,7 @@ def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # Every proxied location says who the client is, and that is a forgery
         # guard rather than plumbing: a header written only where it is true is a
         # header somebody can set where it is not. The same rule the `X-Loom-Secure`
-        # note in portal.nix states, and nothing asserted it for either header
-        # before.
+        # note in portal.nix states.
         # Counted on the prefix, not on the whole directive: the Ubuntu and KDE
         # vhost's `proxy_pass` carries a path, because it rewrites `/` on the way
         # to the page server, and an exact match would quietly not count it --

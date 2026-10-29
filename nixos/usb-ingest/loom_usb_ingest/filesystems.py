@@ -152,17 +152,15 @@ KNOWN: frozenset[str] = frozenset(
 def plan_mount(fstype: str | None, uid: int, gid: int) -> MountPlan:
     """Decide how -- or whether -- to mount a volume of this type.
 
-    There is no `kernel_filesystems` argument any more, and its removal is the fix
-    rather than a simplification. It was /proc/filesystems, which lists the
+    Tier 3 deliberately consults no list of drivers. /proc/filesystems holds the
     filesystems *currently registered* -- built-in plus already-loaded modules -- and
-    `nixos/usb-ingest.nix` sets `boot.supportedFilesystems` to exactly the KNOWN set.
-    So on a freshly booted appliance jfs, ufs, minix, reiserfs, erofs and squashfs are
-    never in it, and tier 3 refused every one of them with "the kernel has no driver
-    for 'jfs'" -- which is untrue: the module ships with the kernel and `mount -t jfs`
-    autoloads it. The whole third tier, the thing that stops coverage being capped by
-    the table, could not fire at all.
+    `nixos/usb-ingest.nix` sets `boot.supportedFilesystems` to exactly the KNOWN set,
+    so on a freshly booted appliance jfs, ufs, minix, reiserfs, erofs and squashfs are
+    never in it even though each module ships with the kernel and `mount -t jfs`
+    autoloads it. Refusing on that list would cap coverage at the table and stop the
+    third tier firing at all.
 
-    The same autoload rule the docstring already stated for tier 1 therefore applies
+    The same autoload rule the module docstring states for tier 1 therefore applies
     here: attempt the generic mount and let mount(8)'s own error be the reason.
     """
     if not fstype:

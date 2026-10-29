@@ -41,8 +41,6 @@ def _gpm_survives_resize(appliance: "Machine", subtest: "Subtest") -> None:
         )
         assert "loom-console-font.service" in ordering, ordering
 
-        # The regression this subtest exists for.
-        #
         # loom-console-font-reapply fires from a udev rule when the DRM driver takes
         # the console, and it has to make gpm re-read the size. Signalling it does
         # not work: gpm's SIGWINCH path segfaults, which is unsurprising once you
@@ -83,9 +81,8 @@ def _session_runs_under_the_shim(
         )
 
         # Asserted on the client's controlling terminal, which is the observable
-        # consequence: without the shim the client sits on /dev/tty1, exactly as
-        # this session used to run, and a pts means something allocated a pty and
-        # put itself in the middle.
+        # consequence: without the shim the client sits on /dev/tty1, and a pts
+        # means something allocated a pty and put itself in the middle.
         #
         # The client is identified by asking tmux rather than by pgrep, because the
         # shim's own command line *is* the tmux command line -- it was handed
@@ -174,7 +171,7 @@ def _prefix_is_unreachable(session: Session, subtest: "Subtest") -> None:
         root_keys = session.tmux("list-keys -T root")
         assert "MouseDown3" not in root_keys, root_keys
 
-        # The proof rather than the configuration: Ctrl-b d is what used to detach,
+        # The proof rather than the configuration: Ctrl-b d is tmux's own detach,
         # and the session must still have its client afterwards.
         session.machine.send_key("ctrl-b")
         session.machine.send_chars("d")
@@ -216,9 +213,9 @@ def run(
     #
     # The *final* pane count, not "at least one": `wc -l | grep -qvx 0` is
     # satisfied the moment tmux has a session, which `pgrep -f tmux` in
-    # `_session_runs_under_the_shim` has already established -- so the race this
-    # is written for was never waited out. Three panes with the assistant, two
-    # without, the way `appliance/session.py` derives it.
+    # `_session_runs_under_the_shim` has already established -- so it would not
+    # wait out this race at all. Three panes with the assistant, two without,
+    # the way `appliance/session.py` derives it.
     panes = 3 if params.ai_enabled else 2
     appliance.wait_until_succeeds(
         f"tmux -S {tmux.SOCKET} list-panes -t loom | wc -l | grep -qx {panes}"

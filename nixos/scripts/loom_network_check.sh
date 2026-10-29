@@ -29,8 +29,8 @@ readonly FALLBACK_RECORD="${LOOM_FALLBACK_RECORD:?nixos/network.nix must set thi
 fragment=/run/issue.d/60-loom-network.issue
 
 if [[ ! -e "/sys/class/net/${APPLIANCE_INTERFACE}" ]]; then
-    # With the fallback in place this no longer means "the match missed"
-    # -- it means there was no wired port to claim either.
+    # With the fallback in place this means there was no wired port to
+    # claim either, not merely that the match missed.
     lines=(
         --warn "${APPLIANCE_INTERFACE} does not exist -- no address, no DHCP, no *.loom."
         --warn "No wired interface was found to claim. Present instead:"

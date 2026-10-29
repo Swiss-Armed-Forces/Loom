@@ -64,9 +64,8 @@ def test_every_stage_has_a_status_segment_tmux_will_not_misread():
 def test_nothing_published_says_nothing_at_all():
     """A setup-mode box, or the first seconds of a boot.
 
-    Both readers treat the empty string as "draw the screen the way it looked before any
-    of this existed", which is what makes this feature safe to add to a banner that is
-    already close to the height of a small console.
+    Both readers treat the empty string as "draw nothing", which is what keeps the
+    readiness line off a banner that is already close to the height of a small console.
     """
     assert summary(None) == ""
     assert oneline(None) == ""

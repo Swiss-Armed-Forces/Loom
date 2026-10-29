@@ -3,11 +3,10 @@ import type { VisibleRange } from "@app/slices/searchSlice";
 /**
  * How close to the end of what is loaded the next page is asked for.
  *
- * Rows rather than pixels. The sentinel this replaced used a 600px margin,
- * which is three rows of a compact card and one and a half of a full one — so
- * the lead quietly shrank exactly where rows are tallest and a page takes
- * longest to cross. Roughly a third of a page, which is the room a request
- * needs to return before the user arrives.
+ * Rows rather than pixels: a pixel margin is three rows of a compact card and
+ * one and a half of a full one, so the lead quietly shrinks exactly where rows
+ * are tallest and a page takes longest to cross. Roughly a third of a page,
+ * which is the room a request needs to return before the user arrives.
  */
 export const PAGE_LEAD_ROWS = 8;
 

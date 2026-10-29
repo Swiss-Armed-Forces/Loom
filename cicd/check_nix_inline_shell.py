@@ -78,7 +78,7 @@ BUILDER_CALLS = ("runCommand", "runCommandLocal", "runCommandWith")
 # the message point at the block.
 OPENER = re.compile(r"^(?P<indent>\s*)(?P<head>.*?)''$")
 # The attribute a string is bound to: the first `name =` on the line, not an
-# `=` that has to be the last token. Requiring it terminal missed every
+# `=` that has to be the last token. Requiring it terminal misses every
 # wrapped form -- `script = let tmp = ...; in ''`,
 # `script = lib.mkAfter ''`, `x = lib.optionalString cond ''` -- and a missed
 # name means the block is never classified at all.
@@ -179,8 +179,8 @@ def _head(lines: list[str], open_index: int) -> list[str]:
         depth += line.count("}") - line.count("{")
         if depth == 0 and not in_let and NAMED.search(stripped):
             # An assignment opens the expression; nothing above it belongs.
-            # `NAMED` rather than a bare `"=" in stripped`, which stopped on
-            # the `==` of `if a == b then ''` and so never reached the
+            # `NAMED` rather than a bare `"=" in stripped`, which stops on
+            # the `==` of `if a == b then ''` and so never reaches the
             # `runCommand` above it. Suspended inside a `let`, whose bindings
             # are assignments the string sits under rather than the one that
             # names it.

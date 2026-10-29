@@ -22,8 +22,8 @@ CELERY_DELAYED_QUEUE_PREFIX = "celery_delayed"
 # refreshes only every collect_statistics_interval (10s, see
 # charts/templates/rabbit/configMap.yaml). Depths read that way describe the broker as it
 # was up to ten seconds ago — and the error is not conservative: a queue that has just
-# been filled still reads as empty, which is how is_idle() came to report an idle system
-# while the workers were saturated.
+# been filled still reads as empty, which would make is_idle() report an idle system
+# while the workers are saturated.
 #
 # With both flags set, rabbit_mgmt_wm_queues takes a different branch and calls
 # rabbit_amqqueue:collect_info_all(..., totals, ...) — the same live query to the queue
@@ -90,7 +90,7 @@ class QueuesService:
             )
         api_endpoint = f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}"
         # No "columns" filter: disable_stats makes the server return the basic field set
-        # regardless, so the parameter would only look like it still did something.
+        # regardless, so the parameter would only look like it does something.
         response: Response = self._session.get(
             self.__rabbit_mq_management_host + api_endpoint,
             params=LIVE_QUEUE_TOTALS_PARAMS,

@@ -36,7 +36,8 @@ from api.utils import get_content_disposition_header
 # `files.py`'s own source id, deliberately reused rather than a second one of our own:
 # a blob imported here that turns out not to be an archive is indexed as an ordinary
 # file, and the Files view and its source facet are where the person who uploaded it
-# will go looking. A distinct `api-archive-import` put it somewhere nothing filters on.
+# will go looking. A distinct `api-archive-import` would put it somewhere nothing
+# filters on.
 ARCHIVE_IMPORT_SOURCE_ID = FILE_UPLOAD_SOURCE_ID
 
 router = APIRouter()

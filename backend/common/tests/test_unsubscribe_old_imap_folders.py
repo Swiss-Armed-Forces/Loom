@@ -119,8 +119,8 @@ class TestUnsubscribeOldImapFoldersTask:
     def test_handles_naive_datetime_from_imap(self, mock_imap: MagicMock):
         """Task should handle offset-naive datetimes returned from IMAP service.
 
-        This reproduces the production bug where get_latest_email_date() returns a naive
-        datetime, causing TypeError when comparing with offset-aware cutoff_date.
+        get_latest_email_date() can return a naive datetime, which raises TypeError when
+        compared with the offset-aware cutoff_date.
         """
         mock_imap.list_subscribed_folders.return_value = ["naive_folder"]
 

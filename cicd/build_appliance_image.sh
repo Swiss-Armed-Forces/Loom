@@ -183,8 +183,7 @@ LOCK_KEY_FORBIDDEN="[yz]"
 LOCK_KEY_MAX_DRAWS=100
 
 # The console keymap for the box, the installer and stage 1 (nixos/keymap.nix).
-# Empty is the kernel's built-in US QWERTY, which is what every image was before
-# this existed.
+# Empty is the kernel's built-in US QWERTY.
 KEYMAP=""
 
 TAG=""
@@ -342,10 +341,10 @@ validate_environment(){
     # stick. Both are util-linux, which `lsblk` already requires.
     # `sgdisk` is deliberately absent: nothing in this script partitions
     # anything -- `flash_image` dd's a whole image -- so requiring gptfdisk
-    # refused a build on a host that had no need of it. `findmnt` and `yq` are
-    # here instead: both are used on every run, and a host missing yq used to
-    # fetch the tags, prompt, clone and repack before failing, which is exactly
-    # what a preflight exists to prevent.
+    # would refuse a build on a host that has no need of it. `findmnt` and `yq`
+    # are here instead: both are used on every run, and without this check a
+    # host missing yq fetches the tags, prompts, clones and repacks before
+    # failing, which is exactly what a preflight exists to prevent.
     for command in git git-lfs nix-build jq yq lsblk findmnt dd sync udevadm \
         partx blockdev sudo head cmp install file; do
         check_command "${command}"
@@ -708,11 +707,11 @@ assert_secret_path(){
     # The parent has to exist, and this is checked where a path typo still costs
     # nothing. `readlink --canonicalize` exits 1 with empty output when a parent
     # directory is missing, and the bare assignment below then kills the script
-    # under `set -e` with nothing but "[*] Exiting..". For --key-backup that used
-    # to happen in `backup_luks_key`, *after* `write_locked_key_partition` had
-    # already luksFormatted the stick with KEY_PASSPHRASE -- so the steps that
-    # print the passphrase never ran, the value existed only in that dead shell,
-    # and the result was an hour of build plus a stick nobody can open.
+    # under `set -e` with nothing but "[*] Exiting..". For --key-backup that has
+    # to happen before `write_locked_key_partition` luksFormats the stick with
+    # KEY_PASSPHRASE: dying after that point kills the steps that print the
+    # passphrase, which exists only in that shell, leaving an hour of build and
+    # a stick nobody can open.
     directory="$(dirname "${path}")"
     if [[ ! -d "${directory}" ]]; then
         echo >&2 "[!] Error: ${flag} names a directory that does not exist: ${directory}"
@@ -1331,11 +1330,11 @@ confirm_flash(){
 
     # Resolved down to the disk under it before it is compared. `findmnt
     # --target /` prints `/dev/mapper/vg-root` on the common LVM, LUKS or mdraid
-    # workstation, which can never prefix-match a physical device node -- so this
-    # branch was unreachable there, the device was caught two checks below by
-    # `MOUNTPOINTS` instead, and the operator was told "has mounted partitions.
-    # Unmount them first": following that instruction is how you get past the
-    # only check that caught it.
+    # workstation, which can never prefix-match a physical device node -- so
+    # without resolving it this branch is unreachable there, and the device is
+    # caught only two checks below by `MOUNTPOINTS`, whose "has mounted
+    # partitions. Unmount them first" is an instruction that leads straight past
+    # the one check that saw it.
     root_source="$(findmnt --noheadings --output SOURCE --target / | head --lines=1)"
     root_disk="$(
         lsblk --noheadings --output PKNAME --paths "${root_source}" 2>/dev/null \
@@ -1424,10 +1423,9 @@ flash_image(){
 
     # Make the kernel adopt the table that was just written.
     #
-    # Deliberately NOT `partprobe`, which is what this used to be. The image's
-    # GPT describes a disk exactly as large as the image, so on any stick
-    # bigger than that parted finds the backup header short of the end of the
-    # device and asks what to do about it:
+    # Deliberately NOT `partprobe`. The image's GPT describes a disk exactly as
+    # large as the image, so on any stick bigger than that parted finds the
+    # backup header short of the end of the device and asks what to do about it:
     #
     #   Warning: Not all of the space available to /dev/sdX appears to be used,
     #   you can fix the GPT to use all of the space (an extra N blocks) or
@@ -1499,13 +1497,13 @@ wait_for_key_partition(){
 # Resolved on the flashed device rather than through /dev/disk/by-partlabel, so
 # a second Loom stick in another port cannot be written to by mistake.
 #
-# Read off the partition table itself, NOT out of `lsblk`'s PARTLABEL column,
-# which is where this used to look. That column comes from udev's database, and
-# udev populates it asynchronously long after the kernel has the table: on a
-# freshly flashed stick the partitions are all correct and visible -- right
-# count, right sizes -- while every PARTLABEL is still empty, and they stay
-# empty for longer than any timeout worth having. Re-plugging the stick fixes
-# it, which is a fine diagnosis and a terrible build step.
+# Read off the partition table itself, NOT out of `lsblk`'s PARTLABEL column.
+# That column comes from udev's database, and udev populates it asynchronously
+# long after the kernel has the table: on a freshly flashed stick the partitions
+# are all correct and visible -- right count, right sizes -- while every
+# PARTLABEL is still empty, and they stay empty for longer than any timeout
+# worth having. Re-plugging the stick fixes it, which is a fine diagnosis and a
+# terrible build step.
 #
 # `partx --show` parses the GPT on the device, so it answers from the same bytes
 # `dd` just wrote and needs nothing to have settled.
@@ -1615,12 +1613,11 @@ write_locked_key_partition(){
     sudo cryptsetup close "${KEYSTORE_MAPPING}"
 
     # Printed the instant it is committed to the stick, not six steps later in
-    # `report`. From here the stick only opens with this value, so anything that
-    # stops the run in between -- a failing backup path, a Ctrl-C, a sync error
-    # -- used to take the only copy with it: the passphrase lived in that shell
-    # and nowhere else, and what was left was an hour of build plus a brick.
-    # `report` prints it again at the end, where it is also the last thing on
-    # the screen.
+    # `report`. From here the stick only opens with this value, and it lives in
+    # this shell and nowhere else, so anything that stops the run in between --
+    # a failing backup path, a Ctrl-C, a sync error -- would otherwise take the
+    # only copy with it and leave an hour of build plus a brick. `report` prints
+    # it again at the end, where it is also the last thing on the screen.
     print_key_passphrase
 }
 
@@ -1834,10 +1831,10 @@ report(){
         echo "[*] Keep the passphrase somewhere other than with the stick. Together they"
         echo "[*] are one factor; apart they are two, which is the point of --lock-key."
         # Last, and on its own. Everything above is metadata that can be worked
-        # out again from the image; this line cannot. It used to sit in the block
-        # with `key sha256`, where --debug's warning pushed it a screen and a half
-        # below the "printed below" that announced it -- which is the exact thing
-        # that message exists to prevent.
+        # out again from the image; this line cannot. In the block with
+        # `key sha256` it would sit a screen and a half below the "printed
+        # below" that announces it, once --debug's warning is in between --
+        # which is the exact thing that message exists to prevent.
         print_key_passphrase
     elif [[ -n "${FLASH_DEVICE}" ]]; then
         echo "      flashed to: ${FLASH_DEVICE}"
@@ -1957,12 +1954,12 @@ usage(){
 
 atexit(){
     # Before KEY_DIR, and the thing that most has to go: under --lock-key two
-    # steps open ${KEYSTORE_MAPPING} and write the raw key through it, and a
-    # failing dd, a failing sync or a Ctrl-C in between left the decrypted
-    # mapping in place -- so the handler carefully deleted the *file* copy of
-    # the key while a device node holding the same bytes stayed open. It also
-    # made the next `--flash --lock-key` run fail at `cryptsetup open` with
-    # "device already exists", on a step nobody would connect to the last run.
+    # steps open ${KEYSTORE_MAPPING} and write the raw key through it, so a
+    # failing dd, a failing sync or a Ctrl-C in between leaves the decrypted
+    # mapping in place -- a device node holding the same bytes as the *file*
+    # copy removed below. It also makes the next `--flash --lock-key` run fail
+    # at `cryptsetup open` with "device already exists", on a step nobody would
+    # connect to the last run.
     if [[ -e "/dev/mapper/${KEYSTORE_MAPPING}" ]]; then
         sudo cryptsetup close "${KEYSTORE_MAPPING}" || true
     fi
@@ -1978,13 +1975,12 @@ atexit(){
     # unreachable box. `report` prints where it is, and disposing of it is the
     # operator's call.
     #
-    # A run that never got that far is the other case, and it used to leak: any
-    # failure before `report` -- `prepare_repo`, `verify_repo`, the hour-long
-    # `build_image` -- left a 0700 directory in $TMPDIR holding an ed25519
-    # private key with nobody told it existed, accumulating one per failed
-    # build. No image was produced, so the key opens nothing; it is still key
-    # material on disk, which is the thing the rest of this script is careful
-    # about.
+    # A run that never got that far is the other case, and it leaks without
+    # this: any failure before `report` -- `prepare_repo`, `verify_repo`, the
+    # hour-long `build_image` -- leaves a 0700 directory in $TMPDIR holding an
+    # ed25519 private key nobody was told about, one per failed build. No image
+    # was produced, so the key opens nothing; it is still key material on disk,
+    # which is the thing the rest of this script is careful about.
     if [[ -n "${DEBUG_KEY_DIR}" && -d "${DEBUG_KEY_DIR}" && "${REPORTED}" != true ]]; then
         echo "[*] Removing the unreported debug key directory: ${DEBUG_KEY_DIR}"
         rm --recursive --force "${DEBUG_KEY_DIR}"
@@ -1998,8 +1994,8 @@ trap atexit EXIT
 #
 # `${1:?...}` throughout, not `${1?...}`: the second fires only when the
 # argument is *unset*, so `--flash ''` from a wrapper with an empty variable
-# silently built an image and flashed nothing, ending with "Flash it with:
-# build-appliance-image --flash /dev/sdX" after an hour. The same applied to
+# would silently build an image and flash nothing, ending with "Flash it with:
+# build-appliance-image --flash /dev/sdX" after an hour. The same goes for
 # `--key-backup ''` (no backup) and `--lock-key-out ''` (no file, and the
 # "given without --lock-key" guard cannot see it).
 #
@@ -2170,9 +2166,9 @@ while [[ $# -gt 0 ]]; do
         ;;
         --skip-*)
             # Validated at parse time, and matched exactly later. A substring
-            # test against a space-joined array accepted any misspelling in
-            # silence -- the step then ran anyway, which contradicts the
-            # operator -- and, worse, skipped more than was asked:
+            # test against a space-joined array would accept any misspelling in
+            # silence -- the step then runs anyway, which contradicts the
+            # operator -- and, worse, skip more than was asked:
             # `--skip-report-only` contains `report`, and on a `--lock-key
             # --flash` run that means the passphrase block is never printed and
             # the stick is a brick.
@@ -2185,9 +2181,7 @@ while [[ $# -gt 0 ]]; do
             # security properties of the artefact -- `--require-client-certs`
             # (plural) builds an image with no mutual TLS, `--wifi-pks hunter2`
             # leaves a randomly generated PSK -- and the three sibling scripts
-            # added alongside it all refuse an unknown option. The `ARGS` idiom
-            # this inherited from up.sh collected them into an array no step
-            # ever read.
+            # beside it all refuse an unknown option too.
             echo >&2 "[!] Error: unknown option: ${1}"
             usage >&2
             exit 1

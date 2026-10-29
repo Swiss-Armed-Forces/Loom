@@ -6,24 +6,24 @@
 # responder below (network.nix), which redirects to the page this module serves,
 # and the OS reacts by offering "Sign in to network" and opening it.
 #
-# Answering *every* name rather than a list of known probes is deliberate, and
-# it is the correction to how this shipped: a client that cannot resolve its
-# probe concludes "no internet" rather than "portal present", so a name nobody
-# thought to list -- a Samsung or Xiaomi probe, an AOSP fallback, a Linux
-# desktop -- took the prompt away rather than merely missing it.
+# Answering *every* name rather than a list of known probes is deliberate: a
+# client that cannot resolve its probe concludes "no internet" rather than
+# "portal present", so a name nobody thought to list -- a Samsung or Xiaomi
+# probe, an AOSP fallback, a Linux desktop -- would take the prompt away rather
+# than merely miss it.
 #
 # The page does four things, and the first is the only one most visitors want:
 #
 #   1. "Open Loom", as the one button above the fold.
 #   2. The certificate this box serves `*.loom` with, to download and install.
 #      `.loom` is not a real TLD, so no public CA can ever issue for it and
-#      every visitor otherwise clicks through a warning. The anchor existed
-#      before this module -- `generate-client-certificate` exports it -- but the
-#      only way to get it was an operator at a console.
+#      every visitor otherwise clicks through a warning. The only other way to
+#      get the anchor is an operator at a console running
+#      `generate-client-certificate`.
 #   3. On a `--require-client-cert` box only: a client certificate, to anyone who
 #      can type the password on the box's own login screen. That image admits
-#      nobody without an identity, so before this there was no way in at all
-#      except being handed files out of band.
+#      nobody without an identity, so the only other way in is being handed
+#      files out of band.
 #   4. A button that stops the visitor's own device nagging them. Until it is
 #      pressed every probe gets the redirect; afterwards that client's probes
 #      get the success answer its vendor is looking for, and the OS marks the
@@ -51,11 +51,11 @@
 # works.
 #
 # The box has no internet, and until the visitor presses the button it says so.
-# It is an island with no upstream, and it now advertises itself as the default
+# It is an island with no upstream, and it advertises itself as the default
 # route anyway -- because a client that cannot route to us never probes us, and
 # because everything off this segment is rejected immediately rather than
-# dropped (see `loom-expose` in network.nix). What changes is that the visitor
-# is offered a way in, and then a way to stop being asked about it.
+# dropped (see `loom-expose` in network.nix). What the page adds is that the
+# visitor is offered a way in, and then a way to stop being asked about it.
 #
 # Run mode only, like everything else here. In first-time setup the box is a DHCP
 # client on somebody's real network, and a page that mints client certificates on
@@ -86,7 +86,7 @@ let
 
   # Who reads the TLS material. The nixpkgs nginx unit runs as its own user and
   # `nginx -t` opens every certificate while parsing -- see the same note in
-  # mtls.nix, which is where that cost a box its whole nginx.
+  # mtls.nix. A certificate nginx cannot read takes the whole of nginx down.
   nginxGroup = config.services.nginx.group;
 
   # The unprivileged account the page server runs as. Static rather than
@@ -170,11 +170,11 @@ let
       # handed to a web page without a second guard.
       "--set LOOM_PORTAL_LOGO ${config.loom.branding.logoPng}"
       "--set LOOM_PORTAL_ACCENT ${lib.escapeShellArg "#${config.loom.branding.amberRgb}"}"
-      # Derived from `enableTls`, not from `cfg.mtls.enable` alone. The two used
-      # to differ: `cfg.portal.tls.enable = false` is a documented option and
-      # leaves the listener off on an mTLS box. The page then advertised an
-      # identity form on a box that could never answer it, and `page.py`'s own
-      # "should not be reachable" branch was the thing being reached.
+      # Derived from `enableTls`, not from `cfg.mtls.enable` alone. The two
+      # differ when `cfg.portal.tls.enable = false`, a documented option that
+      # leaves the listener off on an mTLS box: the page must not advertise an
+      # identity form such a box can never answer, which is what `page.py`'s own
+      # "should not be reachable" branch guards.
       "--set LOOM_PORTAL_MTLS ${if enableTls then "1" else "0"}"
       "--set LOOM_PORTAL_TLS_PLACEHOLDER ${lib.escapeShellArg tlsPlaceholderMarker}"
       "--set LOOM_PORTAL_PORT ${toString cfg.portal.listenPort}"
@@ -400,8 +400,7 @@ in
 
         An option rather than an unconditional import so the wiring is greppable
         from one place, and so a box whose network turns out to dislike it can be
-        built without it. Off leaves the probes REFUSED, which is what every
-        image did before this existed.
+        built without it. Off leaves the probes REFUSED.
       '';
     };
 
@@ -417,12 +416,12 @@ in
         The hostnames dnsmasq answers with the portal address by name.
         network.nix reads this.
 
-        One dedicated probe FQDN per vendor. It is no longer the whole of the
+        One dedicated probe FQDN per vendor. It is not the whole of the
         interception -- network.nix also answers every other name with the same
-        address -- so this list is now the part that is written down rather than
-        the part that works. It stays for two reasons: the tests are written
-        against it, and a wildcard that is ever reverted must not silently take
-        the probes with it.
+        address -- so this list is the part that is written down rather than the
+        part that works. It stays for two reasons: the tests are written against
+        it, and a wildcard that is ever reverted must not silently take the
+        probes with it.
       '';
     };
 
@@ -513,19 +512,18 @@ in
         Where a probe is redirected. Plain http, because a portal webview will
         not accept the appliance's self-signed certificate -- see the header.
 
-        The page rather than the frontend, which is what it used to be: the
-        certificate a visitor needs, and on a mutual TLS box the identity they
-        cannot get in without, are both on it, and "Open Loom" is the first thing
-        on it.
+        The page rather than the frontend: the certificate a visitor needs, and
+        on a mutual TLS box the identity they cannot get in without, are both on
+        it, and "Open Loom" is the first thing on it.
 
-        The literal address rather than `portal.loom`, which is also what it
-        used to be. A redirect to a name makes the portal webview do a second
-        lookup, in a TLD that does not exist, from a context that is not a
-        browser -- and on a phone with Android's Private DNS in strict mode that
-        lookup cannot succeed at all. Such a phone still detects the portal and
-        still follows this redirect, because Android's connectivity check
-        deliberately bypasses private DNS; it simply cannot resolve anything the
-        redirect names. An address needs no resolver.
+        The literal address rather than `portal.loom`. A redirect to a name
+        makes the portal webview do a second lookup, in a TLD that does not
+        exist, from a context that is not a browser -- and on a phone with
+        Android's Private DNS in strict mode that lookup cannot succeed at all.
+        Such a phone still detects the portal and still follows this redirect,
+        because Android's connectivity check deliberately bypasses private DNS;
+        it simply cannot resolve anything the redirect names. An address needs
+        no resolver.
 
         The name is still served and the page's footer still prints it: it is
         what somebody types when they come back later, and on a mutual TLS box
@@ -748,8 +746,8 @@ in
               # to a day handing out an anchor that no longer matches what Traefik
               # serves, so a visitor would install it and the warning would stay:
               # the one failure this whole page exists to remove.
-              # Thirty seconds in, which is what replaced the unit's own
-              # `wantedBy` -- see the note on it.
+              # Thirty seconds in, since the unit has no `wantedBy` of its own
+              # -- see the note on it.
               OnBootSec = "30s";
               OnCalendar = "hourly";
               Persistent = true;
@@ -885,15 +883,14 @@ in
                 ssl = true;
               }
             ];
-            # Name-based, and emphatically not the default server -- which it
-            # used to be, on the grounds that nothing else was on this socket.
-            # The resolver now answers every name on the segment with this
-            # address, so everything a client's phone does over https in the
-            # background lands here: certificate warnings instead of clean
+            # Name-based, and emphatically not the default server. The resolver
+            # answers every name on the segment with this address, so a default
+            # server here would catch everything a client's phone does over
+            # https in the background: certificate warnings instead of clean
             # connection failures, and -- the sharp half -- every one of those
             # requests charged against `loom_portal`, a budget sized for one
-            # visit being a page and a logo. The visitor's own page load then
-            # gets a 503 from a rate limiter they never touched.
+            # visit being a page and a logo. The visitor's own page load would
+            # then get a 503 from a rate limiter they never touched.
             serverName = "${cfg.portal.host}";
             onlySSL = true;
             sslCertificate = tlsCert;
@@ -984,15 +981,14 @@ in
           systemd.services.loom-portal-password = {
             description = "Rotate the portal's certificate password";
             # Started by its timer alone -- `OnBootSec` for the first one and
-            # `OnCalendar` for every day after. It used to be `wantedBy
-            # multi-user.target` *as well*, so a box that had been powered off
-            # across midnight ran it twice within seconds: once from the target
-            # and once from the timer's missed elapse. Nothing was lost (stateDir
-            # is tmpfs, so there is no yesterday's password at boot) but the
-            # password an operator was reading off the login screen changed under
-            # them, and `loom-banner-refresh` restarted the getty twice inside the
-            # window publish.py goes out of its way to keep clear of the
-            # operator's first keypress.
+            # `OnCalendar` for every day after. A `wantedBy multi-user.target`
+            # *as well* runs it twice within seconds on a box that has been
+            # powered off across midnight -- once from the target and once from
+            # the timer's missed elapse -- which changes the password under an
+            # operator reading it off the login screen and has
+            # `loom-banner-refresh` restart the getty twice inside the window
+            # publish.py goes out of its way to keep clear of the operator's
+            # first keypress.
             after = [ "systemd-tmpfiles-setup.service" ];
             serviceConfig = {
               Type = "oneshot";
@@ -1020,8 +1016,8 @@ in
             description = "Rotate the portal's certificate password daily";
             wantedBy = [ "timers.target" ];
             timerConfig = {
-              # The boot trigger as well as the daily one, since the service is no
-              # longer wanted by multi-user.target: /run is empty at boot, so the
+              # The boot trigger as well as the daily one, since the service is
+              # not wanted by multi-user.target: /run is empty at boot, so the
               # first password of a boot has to be written by something.
               OnBootSec = "10s";
               OnCalendar = "daily";
