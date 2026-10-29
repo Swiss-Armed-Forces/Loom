@@ -37,11 +37,10 @@ def declare_terminal_queues(sender: _WorkerReadySender, **__: Any) -> None:
     declared explicitly to ensure dead-letter and alternate-exchange routing works
     correctly on fresh deployments.
 
-    If a queue's exchange already exists with the wrong type (e.g. ae-loom was
-    previously declared as topic but now must be fanout), RabbitMQ closes the AMQP
-    channel with PRECONDITION_FAILED. In that case the stale exchange is deleted and the
-    queue is redeclared on a fresh channel so the correct type takes effect without
-    requiring a RabbitMQ restart or cache invalidation.
+    If a queue's exchange already exists with a type other than the one declared here,
+    RabbitMQ closes the AMQP channel with PRECONDITION_FAILED. In that case the stale
+    exchange is deleted and the queue is redeclared on a fresh channel so the correct
+    type takes effect without requiring a RabbitMQ restart or cache invalidation.
     """
     with sender.app.pool.acquire(block=True) as conn:  # type: ignore[attr-defined]
         for queue in get_terminal_queues():

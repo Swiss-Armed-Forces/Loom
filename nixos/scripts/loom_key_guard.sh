@@ -18,7 +18,7 @@
 # (bashOptions defaults to errexit, nounset and pipefail). Without it the
 # linter would read a different program from the one that runs, and SC2310 --
 # a function in an `if` condition silently disabling `set -e` -- would never
-# fire. The same argument nixos/key-store.nix's own check has always made.
+# fire. The same argument nixos/key-store.nix's own check makes.
 set -euo pipefail
 
 #
@@ -201,9 +201,9 @@ key_present() {
 # carrying a GPT partition named loom-key (a backup key, another
 # appliance's) udev points it at whichever it linked last, and udev gives
 # the loser a suffixed name rather than nothing. Resolving the one symlink
-# and giving up was how a healthy box powered itself off 180 seconds after
-# boot: the guard could never arm, published `idle`, and `countdown` acted
-# on a witness file stage 1 had legitimately written.
+# and giving up is how a healthy box powers itself off 180 seconds after
+# boot: the guard never arms, publishes `idle`, and `countdown` acts on a
+# witness file stage 1 legitimately wrote.
 key_candidates() {
     local link node
     local -a seen=()
@@ -500,13 +500,13 @@ power_off_now() {
     # DefaultTimeoutStopSec, and the indexed data is worth more than the
     # seconds a sysrq would save.
     #
-    # Checked, and the state is only set once it was accepted. A refused or
-    # lost transaction -- a conflicting job already queued, logind not
-    # answering -- used to be ignored: the guard set `tripped`, exited 0,
-    # and `Restart = "on-failure"` did not bring it back. The box then went
-    # on running with an unlocked dm-crypt mapping, no key present and
-    # nothing watching, while the banner and `loom-key-guard status` both
-    # said `tripped`, which reads as "it worked". Exiting non-zero instead
+    # Checked, and the state is only set once it was accepted. Ignoring a
+    # refused or lost transaction -- a conflicting job already queued,
+    # logind not answering -- would set `tripped` and exit 0, which
+    # `Restart = "on-failure"` does not bring back: the box goes on running
+    # with an unlocked dm-crypt mapping, no key present and nothing
+    # watching, while the banner and `loom-key-guard status` both say
+    # `tripped`, which reads as "it worked". Exiting non-zero instead
     # restarts the watcher, which tries again.
     if ! systemctl poweroff; then
         announce "[loom] Poweroff was refused. The key is still gone -- retrying."

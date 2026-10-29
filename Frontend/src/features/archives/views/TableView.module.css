@@ -16,7 +16,7 @@
 
 /* A sha256 has nowhere to break on its own, so without this the name column's
 minimum width is the whole checksum and every other column is squeezed to its
-content - which is how the note ended up one character wide. */
+content. */
 .checksumText {
     overflow-wrap: break-word;
     word-break: break-all;
@@ -33,9 +33,8 @@ content - which is how the note ended up one character wide. */
     }
 }
 
-/* The two free-text columns. `TableView` has always asked for these classes;
-without them the cells carried no width at all and the file-name column took
-everything, leaving the note to wrap one character to a line. */
+/* The two free-text columns. Without a width of their own the file-name column
+takes everything and the note wraps one character to a line. */
 .noteCell,
 .queryCell {
     width: 22%;

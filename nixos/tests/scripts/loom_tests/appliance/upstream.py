@@ -91,8 +91,8 @@ def unit_path(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # Deliberately NOT `command -v` in the test driver's shell: that resolves
         # through /run/current-system/sw/bin, which is never on a unit's PATH. A
         # shell-based check passes while the unit that actually runs up.sh is
-        # missing half the toolchain -- which is exactly how a box shipped whose
-        # loom.service died on `awk: command not found`.
+        # missing half the toolchain, and loom.service dies on
+        # `awk: command not found`.
         env = appliance.succeed("systemctl show -p Environment --value loom.service")
         match = re.search(r"(?:^|\s)PATH=(\S+)", env)
         assert match, env
@@ -105,11 +105,11 @@ def unit_path(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # so it can only arrive via /run/wrappers/bin being on the unit's PATH.
         #
         # And `loom-up`, which is what the unit's ExecStart actually names.
-        # `startup.loom_up_on_path` used to assert that by searching the whole
-        # `Environment=` block for the substring "loom-up" -- several kilobytes
-        # of PATH and unrelated variables, where any future store path containing
-        # those seven characters would satisfy it, and which proves nothing about
-        # whether the name resolves. This does.
+        # Resolved on the unit's PATH rather than searched for in the
+        # `Environment=` block: that block is several kilobytes of PATH and
+        # unrelated variables, where any store path containing those seven
+        # characters would satisfy a substring test while proving nothing about
+        # whether the name resolves.
         for cmd in params.upsh_commands + ["sudo", "loom-up"]:
             appliance.succeed(
                 f"env -i PATH=\"$(cat /tmp/unit-path)\" sh -c 'command -v {cmd}'"

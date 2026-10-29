@@ -123,8 +123,8 @@ describe("scrollViewportsPerSecond", () => {
 
     // The unit matters: an unhurried read of a dense list is 16 rows a second
     // and a leisurely read of a loose one is 2, but both are well under a
-    // screenful. Measuring in rows switched the lead off exactly where the
-    // rows were shortest and most of them were needed.
+    // screenful. Measuring in rows switches the lead off exactly where the
+    // rows are shortest and most of them are needed.
     it("reads the same speed the same however tall the rows are", () => {
         expect(scrollViewportsPerSecond(640, 1_000, 800)).toBe(
             scrollViewportsPerSecond(640, 1_000, 800),
@@ -175,9 +175,9 @@ describe("admitForPrefetch", () => {
         ).toBe(true);
     });
 
-    // Firing a whole window at once is what made the list worse than not
-    // prefetching at all: the speculative requests went out alongside the ones
-    // for rows being looked at, and all of them came back slower.
+    // Firing a whole window at once makes the list worse than not prefetching
+    // at all: the speculative requests go out alongside the ones for rows
+    // being looked at, and all of them come back slower.
     it("holds speculation back once the cap is reached", () => {
         expect(
             admitForPrefetch({ onScreen: false, inFlight: 3, maxInFlight: 3 }),

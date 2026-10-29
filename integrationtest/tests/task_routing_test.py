@@ -79,14 +79,14 @@ def assert_unroutable_has_one_message(task_name: str) -> Generator[None, None, N
 
 
 def test_autoretry_task_succeeds_after_failures():
-    """Regression test for two autoretry bugs:
+    """A retried task must succeed, and must not be mistaken for a dead one.
 
-    Bug A — false DeadTask detection:
+    False DeadTask detection:
         A 3s countdown traverses two TTL levels (binary 11), producing two
-        x-death entries. Before the fix, BaseTask.__call__ counted those
-        entries and raised DeadTask; the task permanently failed.
+        x-death entries. BaseTask.__call__ must not read those entries as
+        redeliveries and raise DeadTask, which fails the task permanently.
 
-    Bug B — unroutable queue leak:
+    Unroutable queue leak:
         DelayedDelivery._bind_queues processes the unroutable queue
         (routing_key="*") and binds ae-loom -> celery_delayed_delivery with
         "#.*". Since "#.*" matches every task routing key's final segment,
@@ -109,10 +109,10 @@ def test_autoretry_task_succeeds_after_failures():
 @pytest.mark.parametrize(
     "task_name",
     [
-        # Single-word key: the original case that worked even with the old topic exchange
+        # Single-word key, which any alternate exchange routes.
         "unroutable_sentinel",
-        # Dotted key: realistic Celery task name; was silently dropped when ae-loom
-        # was a topic exchange with routing_key="*" — fixed by switching to fanout
+        # Dotted key: a realistic Celery task name, which a topic exchange bound with
+        # routing_key="*" silently drops — which is why ae-loom is a fanout.
         "worker.nonexistent.task.nonexistent_task",
     ],
 )

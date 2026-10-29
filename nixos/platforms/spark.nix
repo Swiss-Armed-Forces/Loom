@@ -1,7 +1,7 @@
 # NVIDIA DGX Spark.
 #
-# The original appliance target: 20-core Grace CPU, Blackwell GPU, 128 GB
-# unified memory, ConnectX-7 networking.
+# 20-core Grace CPU, Blackwell GPU, 128 GB unified memory, ConnectX-7
+# networking.
 #
 # Unlike the other two platforms this file imports nothing. nixos-hardware has
 # no DGX Spark, GB10, Grace or Tegra content of any kind, and its
@@ -42,9 +42,8 @@
     # (mlx5_core), two per cage across PCI domains 0000 and 0002. They are left
     # unmatched deliberately: each needs a transceiver to carry anything, while
     # the RJ45 takes the cable an operator already has. Matching the driver
-    # instead -- as this did until a box was available -- claims all four and
-    # hands loom0 to whichever udev reaches first, which on the hardware was a
-    # dark cage sitting beside a live port.
+    # instead claims all four and hands loom0 to whichever udev reaches first,
+    # which on the hardware is a dark cage sitting beside a live port.
     #
     # To serve the appliance network off a QSFP port instead, build with
     # `--interface enp1s0f0np0`, using the name `loom-platform-info` reports:
@@ -74,8 +73,7 @@
     };
 
     # Nothing beyond the shared USB/NVMe list: the LUKS key lives on the stick,
-    # so the initrd never needs the network, and this is the module set the
-    # appliance has always shipped with.
+    # so the initrd never needs the network.
     extraInitrdModules = [ ];
   };
 
@@ -113,9 +111,9 @@
   # decided that it is enough: the RJ45 this box serves from comes up on the
   # pin's own r8169 and carries traffic.
   #
-  # `cppc_cpufreq.auto_sel_mode=1` is not a reason to take the fork either, and
-  # this file used to say it was. That is an out-of-tree module parameter their
-  # kernel adds; mainline gives the identical register write a sysfs name,
+  # `cppc_cpufreq.auto_sel_mode=1` is not a reason to take the fork either. That
+  # is an out-of-tree module parameter their kernel adds; mainline gives the
+  # identical register write a sysfs name,
   # `/sys/devices/system/cpu/cpufreq/policy*/auto_select`, and has since 6.16.
   # Measured on a Spark running this image: present and writable on all twenty
   # policies, reading 0. So the capability is here and switched off, which is a

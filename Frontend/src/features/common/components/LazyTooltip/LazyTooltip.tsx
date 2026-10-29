@@ -36,8 +36,7 @@ interface ChildHandlers {
  * Arming replaces the element: React sees the child where a `Tooltip` now
  * stands and rebuilds the subtree, so the DOM node under the pointer is
  * swapped for a new one. Land that between `mousedown` and `mouseup` and the
- * browser produces no `click` at all - which is what made the first click on
- * a toolbar button after a page load do nothing. Hover schedules the swap on
+ * browser produces no `click` at all. Hover schedules the swap on
  * a short timer rather than doing it in the handler, and a press in progress
  * holds it back until the press is over, so it can never fall inside a
  * click. The timer doubles as the `enterDelay` a plain `Tooltip` has.

@@ -5,17 +5,18 @@
 # rather than POSIX sh, because everything that sources this is bash already and
 # `resolve_loom_values` needs arrays.
 #
-# What is in here is what was written out four times: build_appliance_image.sh,
-# appliance_eval.sh, run_appliance_tests.sh and run_appliance_vm.sh. The one
-# that matters is `platform_system` -- it is the platform-to-architecture table,
-# so a fourth platform used to mean four identical edits with nothing to catch a
-# missed one. The nixSystem assertion in nixos/default.nix catches a *wrong*
-# entry at evaluation time; it cannot catch a missing one, which just makes a
-# script return 1 and report an unknown platform.
+# What is in here is what all four appliance scripts need:
+# build_appliance_image.sh, appliance_eval.sh, run_appliance_tests.sh and
+# run_appliance_vm.sh. The one that matters is `platform_system` -- it is the
+# platform-to-architecture table, so a fourth platform is one edit here rather
+# than four identical ones with nothing to catch a missed one. The nixSystem
+# assertion in nixos/default.nix catches a *wrong* entry at evaluation time; it
+# cannot catch a missing one, which just makes a script return 1 and report an
+# unknown platform.
 #
-# `common_nix_args` is the same argument made about nixos/default.nix's own
-# top-level arguments, which were also written out four times; `image_file` and
-# `write_debug_ssh_config` about two smaller ones.
+# `common_nix_args` is the same argument about nixos/default.nix's own
+# top-level arguments; `image_file` and `write_debug_ssh_config` about two
+# smaller ones.
 #
 # Every caller sets this before sourcing -- it is the repository root, and
 # `resolve_loom_values` reads vars.sh out of it. Declared here so the failure is
@@ -32,12 +33,10 @@ check_command(){
 # The boxes this repository builds appliance images for.
 #
 # One list, here, beside `platform_system` -- which is already bash-with-arrays
-# by its own docstring. It used to be written out in all four scripts that use
-# it, along with the identical validating `case`, and the header above claims to
-# have ended exactly that: a fifth platform meant four identical edits with
-# nothing to catch a missed one. A stale copy is not silent (the script refuses
-# the new platform by name) but it is four discoveries, one per script, each the
-# first time somebody runs it.
+# by its own docstring. A fifth platform is one edit here rather than one per
+# script plus an identical validating `case` in each. A stale copy is not silent
+# (the script refuses the new platform by name) but it is one discovery per
+# script, each the first time somebody runs it.
 KNOWN_PLATFORMS=(spark evo-x2 nuc12)
 
 # Refuse anything that is not one of them, with the list in the message.
@@ -118,10 +117,9 @@ resolve_loom_values(){
 # the caller then appends its own to -- --out-link, --no-out-link,
 # --no-gc-warning, --show-trace, and whatever else is that script's business.
 #
-# Written out four times before this existed, which is the thing the header of
-# this file says it is here to stop: adding a top-level argument to
-# nixos/default.nix meant four identical edits with nothing to catch a missed
-# one.
+# Shared for the reason this file's header gives: a new top-level argument to
+# nixos/default.nix is one edit here rather than four identical ones with
+# nothing to catch a missed one.
 #
 # `system` is a parameter rather than derived from `platform`, because
 # build_appliance_image.sh's `--system` can override it -- the cross-build case.

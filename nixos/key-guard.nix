@@ -5,13 +5,13 @@
 # partition -- but that key is read exactly once, by systemd-cryptsetup in stage
 # 1 (box-hardware.nix). After switch-root nothing touches the stick again: the
 # ESP is on the internal disk, and the installer moves its own loader off the
-# removable-media path. So pulling the stick used to do nothing at all; the box
-# went on running for weeks on an unlocked dm-crypt mapping with no key present,
-# and the removal only armed the *next* boot.
+# removable-media path. So pulling the stick arms only the *next* boot; without
+# this module the box goes on running indefinitely on an unlocked dm-crypt
+# mapping with no key present.
 #
 # That is the gap this module closes, and it is the gap the threat model in
-# Documentation/appliance.md already assumed was closed: "the design assumes the
-# stick is removed, or travels separately, whenever the box is unattended".
+# Documentation/appliance.md assumes is closed: "the design assumes the stick is
+# removed, or travels separately, whenever the box is unattended".
 #
 # The guard polls rather than binding to the key's .device unit. A device unit
 # would fire instantly instead of within two seconds -- irrelevant against a
@@ -256,8 +256,8 @@ in
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         ExecStart = "${lib.getExe loom-key-guard} watch";
-        # Journal only. console.nix moved /dev/console off tty1 so that units
-        # stop painting over the operator's session; the guard reaches a human
+        # Journal only. console.nix keeps /dev/console off tty1 so that units do
+        # not paint over the operator's session; the guard reaches a human
         # through `wall` and tmux instead.
         StandardOutput = "journal";
         StandardError = "journal";

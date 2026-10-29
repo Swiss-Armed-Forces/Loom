@@ -893,6 +893,50 @@ Override Helm values in `charts/values-overwrites.yaml` (empty by default, autom
 
 - Adding linter-disabling rules (e.g. `# noqa`, `# type: ignore`, `# pylint: disable`, `# flake8: noqa`)
 
+### Comments describe the code as it is, never how it got there
+
+**A comment states the current behaviour and the reasons that are still true. It never narrates
+history. The history lives in git.** This applies to every commented language in the tree — Python
+comments and docstrings, TypeScript, shell, Nix, Helm templates and values, CSS — and to commit
+messages only in the sense that the history belongs *there* instead.
+
+A comment about the past is wrong the moment the code moves again, and nothing checks it. The
+reader is then left deciding which of the two stories is current, which is worse than no comment
+at all. `git log` and `git blame` answer "why did this change", correctly, forever.
+
+**Do not write:**
+
+- Past-tense narration about the code — "previously", "used to", "formerly", "originally",
+  "historically", "no longer", "we changed this to", "this was X but now Y", "after the refactor",
+  "this used to break", "once shipped broken"
+- Changelog or diff commentary — "added in 1.4", "removed the fallback", "new in this MR",
+  "see !853", "fixes #366", "per the review comment", "as discussed"
+- A line justified by the incident that produced it, where the incident is a past event rather
+  than a live property of the system
+- An explanation of why something is *absent* — "we don't call X here anymore"
+- Attribution of a decision to a person, a meeting or a review round
+
+**Do write** — the same knowledge, in the present tense, as a property of the system:
+
+| Instead of | Write |
+| ---------- | ----- |
+| `# We used to read this from the env, but that broke under systemd` | `# systemd does not pass this through the environment` |
+| `# Raised from 30s because Tika timed out on large PDFs` | `# Large PDFs need well over 30s in Tika` |
+| `# Keep this before dnsmasq — it once raced the address` | `# dnsmasq must not bind before the address is on the interface` |
+| `# Fixed in !853` | *(delete — `git blame` says so)* |
+
+If dropping the chronology leaves a comment that only restates the code, delete the comment.
+
+These stay, and are not history: `TODO`/`FIXME` about outstanding work, the justification attached
+to a `# noqa` / `# type: ignore` / `# shellcheck disable=` / `eslint-disable`, a link to an
+**open** upstream bug the code works around (phrased as "upstream X is open, so …", not "upstream
+fixed this in …"), licence headers and tooling directives, and ordinary doc comments describing
+what a function does.
+
+**The place for the story is the issue and the merge request**, where it is dated, attributed and
+reachable from `git blame`. When a change replaces an approach, say so there — at length if it
+helps — and leave the code describing only what it now does.
+
 **NEVER put imports inside functions.** All imports must be at the top of the file. This is a hard rule
 with almost no exceptions. Putting an import inside a function hides dependencies, makes code harder to
 read and refactor, and is never necessary for normal code. If you think you need an import inside a

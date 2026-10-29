@@ -41,7 +41,7 @@ const OVERSCAN = 4;
  * leaves a gap that closes as it is measured; one placed at a smaller offset
  * is drawn over its neighbour until then. A card is laid out tight, which
  * trims padding and line height and removes no fields, so it is nowhere near
- * as short as an empty one — which is what this used to assume.
+ * as short as an empty one.
  */
 const STACKED_ROW_ESTIMATE = 180;
 
@@ -169,10 +169,9 @@ const observeNonZeroRect: typeof observeElementRect = (instance, cb) =>
  * ResizeObserver it puts on each row, and the measurement a row takes when it
  * mounts — record that, and a row recorded as nothing tall shrinks the total
  * size, which moves the scroll offset, which renders a different window, whose
- * rows are then measured at zero in their turn. Opening a file in the
- * foreground and reading it walked the result list 146 rows away from where it
- * was left after a second and a half, 259 rows after five seconds and 484
- * after twelve - the longer the file is open, the further it goes.
+ * rows are then measured at zero in their turn. Left unguarded, that runaway
+ * walks the result list hundreds of rows away from where the reader left it
+ * within seconds, and further the longer the list stays hidden.
  */
 export const measureNonZero: typeof measureElement = (
     element,
@@ -362,11 +361,11 @@ export const useResultVirtualizer = ({
      *
      * `resizeItem` treats a report that matches the size the row is currently
      * laid out at as a no-op, and after `measure()` that size *is* the
-     * estimate — so a row whose real height happened to equal the estimate was
-     * never written to the cache at all. It kept following the estimate, and
-     * the moment the estimate was re-derived from the rows around it, the row
-     * was laid out at a height it does not have: a permanent overlap that only
-     * a resize of that row could clear. Nudging the report by a pixel first
+     * estimate — so a row whose real height happens to equal the estimate
+     * never reaches the cache at all. It goes on following the estimate, and
+     * the moment the estimate is re-derived from the rows around it, the row
+     * is laid out at a height it does not have: a permanent overlap that only
+     * a resize of that row can clear. Nudging the report by a pixel first
      * forces the height in.
      */
     const recordHeight = useCallback(
@@ -428,8 +427,7 @@ export const useResultVirtualizer = ({
      * React hands an element to `measureElement` solely when it mounts — so
      * the rows already on screen would be left at the estimate while
      * rendering at their real height, drawn over each other until their
-     * ResizeObserver reported, a frame or more later. Clearing without
-     * refilling is what made the cards overlap.
+     * ResizeObserver reported, a frame or more later.
      */
     const remeasure = useCallback(() => {
         virtualizer.measure();
@@ -452,8 +450,8 @@ export const useResultVirtualizer = ({
     //
     // The reader's place is held by the row at the top of the viewport, not by
     // the pixel offset: every row is about to be a different height, so the
-    // same offset lands somewhere else entirely. Changing the spacing used to
-    // move the first visible result by a hundred places.
+    // same offset lands somewhere else entirely. Without the anchor, changing
+    // the spacing moves the first visible result by a hundred places.
     const firstLayoutRef = useRef(true);
     useLayoutEffect(() => {
         estimateRef.current = rowEstimate;
@@ -484,7 +482,7 @@ export const useResultVirtualizer = ({
         // below, the rows lay out against them in the frame after that, and
         // rows further down are measured as they are reached. Correcting
         // until the anchor stops moving is what holds it exactly, where a
-        // single correction left the reader tens of results adrift.
+        // single correction leaves the reader tens of results adrift.
         let framesLeft = 10;
         const hold = () => {
             const row = listRef.current?.querySelector<HTMLElement>(

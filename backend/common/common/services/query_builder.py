@@ -185,7 +185,7 @@ class TimeTransformer(TreeTransformer):
         return ts.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
     def _format_datetime(self, ts: datetime) -> str:
-        # With the zone, because every writer of `uploaded_datetime` now writes an
+        # With the zone, because every writer of `uploaded_datetime` writes an
         # aware UTC value and this is the reader of that same field: a bare timestamp
         # is parsed by Elasticsearch as UTC, so leaving it off would silently shift
         # every relative date filter by the pod's offset the moment one is set.

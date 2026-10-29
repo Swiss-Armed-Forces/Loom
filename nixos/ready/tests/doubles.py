@@ -34,7 +34,7 @@ OK = Completed(ok=True, stdout="", stderr="")
 # A named alias rather than an enumerated shape: the point of every factory below is to
 # produce the *document kubectl emits*, nested and open-ended, so that `cluster.py`'s
 # parser is exercised against the thing it actually reads rather than against a
-# convenience object this file invented. `-> dict` said nothing about any of that.
+# convenience object this file invented. A bare `dict` says none of that.
 KubectlDocument = dict[str, object]
 
 

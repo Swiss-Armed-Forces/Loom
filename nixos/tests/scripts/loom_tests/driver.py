@@ -1,18 +1,15 @@
 """What the NixOS test driver hands a test script, as types.
 
-Every test in this package used to be a string inside a `.nix` file, where nothing in
-this repository could lint it or check its types. Out here the repository's own hooks
-reach them -- black, isort, flake8, pylint and mypy, the same set every other Python
-directory gets.
+Every test in this package is a Python file rather than a string inside a `.nix` file,
+so the repository's own hooks reach them -- black, isort, flake8, pylint and mypy, the
+same set every other Python directory gets.
 
-They reached that state in two steps, and the second one is why this is a package. At
-first each `.nix` file inlined its script with `builtins.readFile`, which put every
-script the driver ran into one namespace: two files could not both `import json`
-without ruff rejecting the pair, and nothing could be shared *between* tests, so two
-of them grew their own copy of the /dev/vcsa1 decoder. Now `nixos/tests/scripts.nix`
-builds this directory as a Python package and each test installs it through the
-driver's `extraPythonPackages`, so the modules import each other like ordinary Python
-and the helpers live in one place (`vt.py`, `tmux.py`).
+Being a package rather than a script each `.nix` file inlines with `builtins.readFile`
+is the other half of that. Inlined scripts share one namespace: two files cannot both
+`import json` without ruff rejecting the pair, and nothing can be shared *between*
+tests. `nixos/tests/scripts.nix` builds this directory as a Python package and each
+test installs it through the driver's `extraPythonPackages`, so the modules import each
+other like ordinary Python and the helpers live in one place (`vt.py`, `tmux.py`).
 
 The driver's globals (`start_all`, `subtest`, and one object per node) are still not
 importable: they exist only in the namespace the driver `exec`s the testScript in. So

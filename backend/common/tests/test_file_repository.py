@@ -338,8 +338,8 @@ def test_get_full_paths_by_query_single_es_request():
 
 
 def test_get_full_paths_by_query_escapes_the_node_path_for_lucene():
-    """Regression: an `include` is a Lucene RegExp, so a path holding a quote opened a
-    literal that never closed and Elasticsearch rejected the whole aggregation."""
+    """An `include` is a Lucene RegExp, so an unescaped path holding a quote opens a
+    literal that never closes and Elasticsearch rejects the whole aggregation."""
     mock_search = MagicMock()
     node_path = '//s/q"dir'
     search_obj = _make_terms_tree_response(
@@ -385,8 +385,8 @@ def test_get_full_paths_by_query_cursor_bucket_excluded_on_next_page():
 
 
 def test_get_full_paths_by_query_cursor_still_detected_after_cursor_exclusion():
-    """Regression: when ES re-admits the cursor bucket (multi-value range filter),
-    excluding it must not consume the extra slot used to detect a next page.
+    """When ES re-admits the cursor bucket (multi-value range filter), excluding it must
+    not consume the extra slot used to detect a next page.
 
     With `after` set, `size` must be TREE_PATH_MAX_ELEMENT_COUNT + 2 so that after the
     cursor bucket is dropped, N+1 real buckets remain and next_page_cursor is set.
@@ -972,8 +972,8 @@ def _make_file(full_name: str) -> File:
     ],
 )
 def test_file_full_path(full_name: str, expected_full_path: str):
-    """Regression: full_path must always start with //source/, even when full_name is an
-    absolute path with a leading slash."""
+    """full_path must always start with //source/, even when full_name is an absolute
+    path with a leading slash."""
     file = _make_file(full_name)
     assert str(file.full_path) == expected_full_path
 

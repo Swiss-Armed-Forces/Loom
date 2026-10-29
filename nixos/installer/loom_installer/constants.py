@@ -43,11 +43,10 @@ INSTALLED_LABEL: Final = "loom-installed"
 # from the console.
 #
 # 200 GiB exactly, because that is the number Documentation/installation.md publishes
-# as the requirement and `install.check_pool_size` cites. It used to be 250 GB, which
-# is 232.8 GiB: somebody specifying hardware from the installation guide could buy a
-# 240 GB NVMe -- an extremely common size that meets the published requirement -- and
-# have the installer refuse it, with `decide()` answering TOO_SMALL and the box never
-# installing itself.
+# as the requirement and `install.check_pool_size` cites. Anything above it would have
+# the installer refuse hardware that meets the published requirement -- somebody
+# specifying from the installation guide buys a 240 GB NVMe, an extremely common size,
+# and `decide()` answers TOO_SMALL with the box never installing itself.
 MIN_POOL_BYTES: Final = 200 * 1024 * 1024 * 1024
 
 # Set by the menu before it hands over to an unattended install, so that a menu

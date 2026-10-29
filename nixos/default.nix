@@ -59,14 +59,12 @@
   # air-gapped box has no way to fetch another model, and the production target
   # of ollama/Dockerfile.models bakes in exactly that one.
   #
-  # No default, like `loomHostsJson` and `repoSrc`. There used to be one --
-  # `huihui_ai/qwen3.5-abliterated:9b` -- and it named a model the production
-  # image does not carry: `ollama/Dockerfile.models` bakes `qwen3.8:27b`, and
-  # `check_ollama_models.sh` holds that Dockerfile to the chart while nothing
-  # compared this. No shipped or CI path reached it, but it is the kind of
-  # default that is eventually believed; `Documentation/appliance.md` believed
-  # it. Every caller passes the chart's value by way of vars.sh, so a build that
-  # does not is a build that should say so.
+  # No default, like `loomHostsJson` and `repoSrc`. A default here is a model
+  # name nothing holds to the image: `check_ollama_models.sh` holds
+  # `ollama/Dockerfile.models` to the chart and would not see this one, so it
+  # could name a model the production image does not carry -- and a default like
+  # that is eventually believed. Every caller passes the chart's value by way of
+  # vars.sh, so a build that does not is a build that should say so.
   loomChatModel ? throw (
     "nixos: loomChatModel is required. Pass the chart's own value, which is what "
     + "vars.sh reads out of charts/values.yaml's _llmDefaults.model: "
@@ -169,10 +167,9 @@
   # the proxy without the value is two nginx servers nothing dials.
   requireClientCert ? false,
   # The console keymap for the box, the installer and stage 1 (nixos/keymap.nix).
-  # Empty is the kernel's built-in US QWERTY, which is what every image was
-  # before this existed. It matters most for the prompts an operator has to type
-  # blind -- the `--lock-key` passphrase and the LUKS recovery passphrase, both
-  # of which happen in stage 1.
+  # Empty is the kernel's built-in US QWERTY. It matters most for the prompts an
+  # operator has to type blind -- the `--lock-key` passphrase and the LUKS
+  # recovery passphrase, both of which happen in stage 1.
   keymap ? "",
 }:
 let
@@ -234,7 +231,7 @@ let
   #     below are documented (nixos/README.md) as taking `--arg repoSrc ./.`,
   #     and a developer's checkout of this repository runs to ~22 GB of which
   #     ~20 GB is build and test scratch -- .pytest_tmp, node_modules, .venv.
-  #     Unfiltered, every run that touched any of it copied the lot in again.
+  #     Unfiltered, every run that touches any of it copies the lot in again.
   #
   # The second half is a safety net rather than a correctness boundary: a name
   # missing from it costs disk, never a broken image. The first half is not --
@@ -270,8 +267,8 @@ let
         # cicd/build_appliance_image.sh builds a release from. Without this the
         # two differ in a way that matters: `.claude/skills/**/SKILL.md` is a
         # location opencode scans, and the assistant pane's working directory is
-        # this very checkout -- so a locally built box advertised whatever
-        # skills the person who built it happened to have. loom-chat sets
+        # this very checkout -- so a locally built box would advertise whatever
+        # skills the person who built it happens to have. loom-chat sets
         # OPENCODE_DISABLE_EXTERNAL_SKILLS as well; this is the other half, so
         # the file is not on the box at all rather than merely unread.
         ".claude"
@@ -341,14 +338,13 @@ let
 
   # Every test node takes the real `loomSrc`, filtered but complete.
   #
-  # A slim stand-in was tried here -- the wifi, usb-ingest and interface-fallback
-  # tests read nothing out of the checkout, and skipping it would keep an edit
-  # under nixos/ from re-copying the tree. It was dropped: with the filter above,
-  # a working-checkout copy is ~120 MB rather than the 1.3 GB it used to be, so
-  # there is little left to save, and a stand-in changes what the box *is*.
-  # tests/appliance-wifi.nix caught exactly that -- its console-repaint subtest
-  # reads the banner off /dev/vcsa1, and a box seeded from a fixture repository
-  # painted a different one.
+  # Not a slim stand-in, even though the wifi, usb-ingest and interface-fallback
+  # tests read nothing out of the checkout and skipping it would keep an edit
+  # under nixos/ from re-copying the tree: with the filter above a
+  # working-checkout copy is ~120 MB, so there is little to save, and a stand-in
+  # changes what the box *is*. tests/appliance-wifi.nix is sensitive to that --
+  # its console-repaint subtest reads the banner off /dev/vcsa1, and a box
+  # seeded from a fixture repository paints a different one.
   evalConfig =
     modules:
     import "${nixpkgs}/nixos/lib/eval-config.nix" {
@@ -676,7 +672,7 @@ in
   # tests.appliance forces dnsmasq and the static addresses off, and
   # tests.applianceWifi runs them on a bridge the configuration creates rather
   # than on a port renamed during boot. That difference is where the ordering
-  # regression lived, and the rename is what makes the race reproducible here.
+  # race is, and the rename is what makes it reproducible here.
   tests.applianceDhcp = withKvmPolicy (
     import ./tests/appliance-dhcp.nix {
       inherit
@@ -709,7 +705,7 @@ in
   # `nix-build ./nixos -A tests.applianceInterfaceFallback --argstr system x86_64-linux`
   # The box no platform matches: that a wired NIC is claimed as loom0 anyway,
   # which one is picked when there are several, and that switching it off
-  # restores the old behaviour.
+  # leaves nothing claimed and no loom0 at all.
   tests.applianceInterfaceFallback = withKvmPolicy (
     import ./tests/appliance-interface-fallback.nix {
       inherit

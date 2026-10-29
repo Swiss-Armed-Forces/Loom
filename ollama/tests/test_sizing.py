@@ -33,9 +33,7 @@ HOST_BYTES = 125 * GIB
 # `ollama/Dockerfile.models` pulls `qwen3.8:27b nomic-embed-text-v2-moe`, and
 # charts/values.yaml sizes the PVC off "qwen3.8:27b ~18GB + nomic-embed ~0.5GB".
 # `ollama list` prints decimal, so those are 10^9 bytes -- about 17.2 GiB
-# together, not the 6.5 GiB this used to claim for a 9B model that no shipped
-# image carries. The guards exist to make changing a constant something that has
-# to be argued for, and they were arguing about the wrong box.
+# together.
 PRODUCTION_MODELS = ModelSet(
     models=[
         ModelInfo("chat", 18 * (1000**3), 40960),
@@ -124,7 +122,7 @@ def test_the_context_is_clamped_to_what_the_model_was_trained_on() -> None:
 
 
 def test_a_slot_costs_in_proportion_to_its_context() -> None:
-    """The unit fix: the reserve scales with tokens instead of being a constant."""
+    """The reserve scales with the token count rather than being a constant."""
     assert per_slot_reserve_bytes(16384) == 2 * per_slot_reserve_bytes(8192)
 
 
@@ -163,8 +161,7 @@ def test_evo_x2_shape() -> None:
 
     On the real models this box lands on the floor, which is worth knowing: it is the
     platform most likely to be moved off it by a change to the reserve or to the context
-    ladder, and a guard calibrated to a 6.5 GiB model set said 5 and would have stayed
-    green through exactly that change.
+    ladder.
     """
     estimate = estimate_parallelism(
         _detected(dedicated=0, shared=64 * GIB + 512 * MIB),
@@ -212,12 +209,12 @@ def test_discrete_80_gib_card_shape() -> None:
 
 
 def test_an_empty_model_set_falls_back_to_the_floor() -> None:
-    """The error path, which used to produce the *ceiling*.
+    """The error path, where the arithmetic on its own would produce the *ceiling*.
 
     Reached when the temporary server will not start, when `ollama list` times out, or
     when the init container's `cp ... || true` copied nothing. With no models the
     context falls to the default, the per-slot reserve lands exactly on its floor and
-    `max(1, 0)` models divided the budget into MAX_PARALLELISM slots -- 16, the backstop
+    `max(1, 0)` models divides the budget into MAX_PARALLELISM slots -- 16, the backstop
     against an absurd reading -- which inverts this file's stated policy of erring
     toward fewer slots.
     """

@@ -24,10 +24,10 @@ export const refreshSavedQueryCounts = createAction(
 /**
  * Store-level polling for saved-query match counts.
  *
- * Polling used to live in a `setInterval` inside `CustomQueryItem`, which is
- * only mounted while the left sidebar shows the QUERIES panel — so the activity
- * bar badge it feeds could never light up unless the user already had the panel
- * open. Owning the timer at the store level decouples it from the view tree.
+ * Owning the timer at the store level decouples it from the view tree. A timer
+ * inside `CustomQueryItem` only runs while the left sidebar shows the QUERIES
+ * panel, so the activity bar badge it feeds could never light up unless the
+ * user already had the panel open.
  *
  * Its own middleware instance rather than a listener on
  * `localStorageSearchStateMiddleware`: `clearListeners()` is per-instance, so
@@ -52,10 +52,10 @@ export const createSavedQueryListenerMiddleware = () => {
                     listenerApi.getState() as RootState
                 ).search.customQueries.map((customQuery) => customQuery.id);
                 for (const customQueryId of customQueryIds) {
-                    // Sequential: the per-item intervals this replaces were
-                    // accidentally staggered, and firing N requests at once
-                    // would be a regression. The thunk rejects rather than
-                    // throws, so one failure cannot abort the round.
+                    // Sequential: firing one request per saved query at once
+                    // would put the whole round on the backend in a single
+                    // burst. The thunk rejects rather than throws, so one
+                    // failure cannot abort the round.
                     await listenerApi.dispatch(
                         fetchFilesCountForCustomQuery({ customQueryId }),
                     );

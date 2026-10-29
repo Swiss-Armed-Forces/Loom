@@ -103,17 +103,16 @@ def access_policy(appliance: "Machine", subtest: "Subtest", params: Params) -> N
         assert "\033[33m" in on_a_tty, repr(on_a_tty)
         assert "\033]P" not in on_a_tty, repr(on_a_tty)
 
-        # On demand there, and nowhere automatic. The login shell used to
-        # reprint the banner, and agetty renders the issue on every VT -- so
-        # tty2-tty6 showed the same screen twice with nothing between the copies
-        # but the keypress that logged the operator in.
+        # On demand there, and nowhere automatic. agetty renders the issue on
+        # every VT, so a login shell that reprinted the banner would show
+        # tty2-tty6 the same screen twice with nothing between the copies but
+        # the keypress that logged the operator in.
         #
         # Asserted against the shell init rather than against a screen, because
         # a screen cannot see it: two copies of a twenty-line banner scroll the
-        # first one off an 80x25 VT, which is exactly why this survived every
-        # tty match here. tty1 is the one console where the banner is genuinely
-        # covered -- the tmux session draws over it -- and `loom-info` is on the
-        # PATH for that.
+        # first one off an 80x25 VT, so no tty match here would catch it. tty1
+        # is the one console where the banner is genuinely covered -- the tmux
+        # session draws over it -- and `loom-info` is on the PATH for that.
         appliance.fail("grep -q loom-info /etc/bashrc /etc/profile")
 
         # Nothing opens a session by itself. --login-pause holds agetty on the
@@ -151,10 +150,9 @@ def boot_splash(appliance: "Machine", subtest: "Subtest") -> None:
         assert magic.split() == ["89", "50", "4e", "47"], magic
 
     with subtest("the box has a console, and plymouthd lived long enough to use it"):
-        # The files above being right is not the same as the splash having run.
-        # plymouthd used to segfault on every boot of this appliance while every
-        # assertion above still passed, because nothing here had ever looked at
-        # whether the daemon survived starting.
+        # The files above being right is not the same as the splash having run:
+        # plymouthd can segfault on every boot while every assertion above still
+        # passes, so whether the daemon survived starting is a separate question.
         #
         # `plymouth-start.service` stays active for as long as the splash is up
         # and is only stopped by plymouth-quit at the end of boot, so either
@@ -164,7 +162,7 @@ def boot_splash(appliance: "Machine", subtest: "Subtest") -> None:
         ).strip()
         assert state == "success", state
 
-        # The cause of that crash, asserted directly because it is not really
+        # The cause of such a crash, asserted directly because it is not really
         # about plymouth: a box whose firmware names an ACPI SPCR console the
         # appliance has no driver for registers NO console at all unless the
         # command line says otherwise, and then /dev/console cannot be opened.
@@ -174,14 +172,6 @@ def boot_splash(appliance: "Machine", subtest: "Subtest") -> None:
         consoles = appliance.succeed("cat /proc/consoles")
         assert consoles.strip(), "no kernel console registered"
         appliance.succeed("echo loom-console-check > /dev/console")
-
-    # ------------------------------------------------------------------------
-    # The USB key guard.
-    #
-    # Everything from here on manipulates the guard's devices, and the last
-    # subtest really does power the machine off -- so this block stays at the
-    # bottom of the file and nothing may be appended after it.
-    # ------------------------------------------------------------------------
 
 
 def readiness_line(appliance: "Machine", subtest: "Subtest") -> None:

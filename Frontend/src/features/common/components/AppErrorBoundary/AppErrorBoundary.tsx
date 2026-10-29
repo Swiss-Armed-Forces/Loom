@@ -17,7 +17,7 @@ interface AppErrorBoundaryState {
  * tree, so without this any one component - a header status widget reading a
  * field the API stopped sending, say - takes Loom down to an empty document
  * with nothing on screen to say why. The boundary keeps the page, names the
- * error and offers the reload that was previously the only way out.
+ * error and offers a reload.
  */
 export class AppErrorBoundary extends Component<
     AppErrorBoundaryProps,

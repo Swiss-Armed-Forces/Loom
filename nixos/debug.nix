@@ -251,11 +251,11 @@ in
       #
       # This grants no authority the account does not already hold.
       # `${loomUser}` is in `wheel` with `wheelNeedsPassword = false`
-      # (box.nix), so it is root on this box today; `sudo nix-store` was always
-      # available and this only removes the detour. What it does do is turn an
-      # ssh port that is already open in this mode into a build endpoint, which
-      # is why it lives here rather than in box.nix and why it is named in the
-      # threat model in Documentation/appliance.md.
+      # (box.nix), so it is root on this box today; `sudo nix-store` is
+      # available anyway and this only removes the detour. What it does do is
+      # turn an ssh port that is already open in this mode into a build
+      # endpoint, which is why it lives here rather than in box.nix and why it
+      # is named in the threat model in Documentation/appliance.md.
       nix.settings.trusted-users = [
         "root"
         loomUser

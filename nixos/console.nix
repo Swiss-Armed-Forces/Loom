@@ -22,22 +22,20 @@
 #     goes away again when the last stick is unplugged, and k9s has the space
 #     back. usb-ingest.nix owns it; what belongs here is the mark on the pane it
 #     splits (`@loom-main`, below).
-#   * None of those panes is a shell. The middle column used to be, and is now
-#     opencode pointed at the cluster's own Ollama -- the box already carries a
-#     model, and nothing on the console could reach it. A prompt is Alt-F2 away,
-#     on the tty2-tty6 gettys this module has always left alone, and the status
-#     line says so.
-#   * Nothing else writes to that screen. The units that used to log to
-#     /dev/console -- which, with `console=tty0`, means the VT the operator is
-#     looking at -- log to the journal only now, and the first pane is what
-#     shows them.
+#   * None of those panes is a shell. The middle column is opencode pointed at
+#     the cluster's own Ollama -- the box already carries a model, and nothing
+#     on the console could reach it. A prompt is Alt-F2 away, on the tty2-tty6
+#     gettys this module leaves alone, and the status line says so.
+#   * Nothing else writes to that screen. The units log to the journal only --
+#     /dev/console, with `console=tty0`, is the VT the operator is looking at --
+#     and the first pane is what shows them.
 #   * It is driven with a mouse as well as a keyboard, on a console that has no
 #     mouse driver behind it. That takes a daemon and a pty shim, both of which
 #     live in console-mouse.nix; what belongs here is the other half -- the tmux
-#     side. `mouse on` was always set and was inert on tty1; it is now
-#     load-bearing there. The prefix is switched off, since navigation is by
-#     clicking, and the two things the prefix used to be needed for -- detach
-#     and respawning a dead pane -- are clickable regions in the status line.
+#     side. `mouse on` is load-bearing on tty1. The prefix is switched off,
+#     since navigation is by clicking, and the two things the prefix would
+#     otherwise be needed for -- detach and respawning a dead pane -- are
+#     clickable regions in the status line.
 #     None of that is a security boundary; see nixos/README.md.
 #
 # Loom itself is still reached the way Documentation/appliance.md describes --
@@ -72,8 +70,7 @@ let
   # Whether anything on this box publishes readiness for the pane and the status line to
   # draw. False in setup mode, where ready.nix deploys no publisher because there is no
   # cluster to ask about -- and both readers are built to say nothing at all in that case
-  # rather than to show an empty bar, so that console is byte-for-byte the one this box
-  # shipped with before the bar existed.
+  # rather than to show an empty bar.
   readinessPublished = cfg.ready.enable && cfg.mode == "run";
 
   # The status line's readiness segment, or nothing. Built here rather than inline so the
@@ -96,10 +93,9 @@ let
   #
   # One wording, and it is true in both modes: debug.nix gates
   # `services.openssh` on `loom.debug.enable` alone, so first-time setup runs
-  # the sshd too. This used to say `DEBUG IMAGE` in setup mode, because the port
-  # was not open there; the marker has to keep following that gate, since the
-  # mode that holds the screen for hours is the one an operator actually reads
-  # and the one place it must not say something false.
+  # the sshd too. The marker has to keep following that gate, since the mode
+  # that holds the screen for hours is the one an operator actually reads and
+  # the one place it must not say something false.
   debugText = "DEBUG -- SSH OPEN";
   debugSegment = lib.optionalString cfg.debug.enable "#[fg=red,bold]${debugText}#[default]  ";
 
@@ -144,7 +140,7 @@ let
 
     set -g default-terminal "screen-256color"
     set -g history-limit 20000
-    # Load-bearing on tty1 now, not just over serial. The shim
+    # Load-bearing on tty1 as well as over serial. The shim
     # (console-mouse.nix) is the tmux client's terminal and speaks SGR into it,
     # and this is what makes tmux ask for mouse reporting and then route what
     # arrives: focus the pane under the click, translate to pane-relative
@@ -208,7 +204,7 @@ let
     unbind -n M-MouseDown3StatusLeft
 
     # -------------------------------------------------------------------------
-    # The status line, which is now the only user interface tmux itself has.
+    # The status line, which is the only user interface tmux itself has.
     #
     # `#[range=user|X]` marks a clickable region; clicking it fires the
     # `Status` mouse key -- NOT `StatusRight`, however far right it is drawn --
@@ -226,9 +222,9 @@ let
     # before the markup is parsed, so a tight budget cuts a range directive in
     # half and the button stops being clickable rather than looking wrong.
     #
-    # Alt-F2 keeps its wording: no pane of this session is a shell, so it is
-    # still the only route to a prompt -- and with the prefix gone it is also
-    # the backstop for anything this status line cannot do.
+    # Alt-F2 is named here: no pane of this session is a shell, so it is the
+    # only route to a prompt -- and with the prefix off it is also the backstop
+    # for anything this status line cannot do.
     # -------------------------------------------------------------------------
     set -g status-style "bg=colour24,fg=white"
     # -------------------------------------------------------------------------
@@ -260,24 +256,22 @@ let
     # segment beside it running a quarter of a minute behind reads as a bug in
     # one of the two.
     #
-    # Both are empty in setup mode -- see `readinessPublished` -- so that
-    # console is exactly the one this box shipped with before any of this.
+    # Both are empty in setup mode -- see `readinessPublished`.
     # -------------------------------------------------------------------------
     ${lib.optionalString readinessPublished "set -g status-interval 5"}
     # Counted, not estimated. `status-format[0]` trims with
     # `#{T;=/#{status-left-length}:...}` *before* the markup is parsed -- this
     # file says so about `status-right-length` a few lines up -- so the budget has
-    # to cover the `#[fg=red,bold]` and `#[default]` sequences too, which the
-    # hand-counted 80 did not: every readiness stage but `ready` was cut, and the
-    # cut landed inside the segment's trailing `#[default]`, so the line rendered
-    # half-complete (`...degraded 24/2`) on the box where the status line is the
-    # only persistent indicator.
+    # to cover the `#[fg=red,bold]` and `#[default]` sequences too. A budget that
+    # counts only the visible characters cuts inside the segment's trailing
+    # `#[default]`, and the line renders half-complete (`...degraded 24/2`) on the
+    # box where the status line is the only persistent indicator.
     #
     # `"  LOOM  "` is 8, the readiness segment is at most
     # `${toString readinessBudget}` including its two trailing spaces, and the
     # debug marker carries ${toString (builtins.stringLength debugSegment)}
-    # characters of text and markup on a --debug box. Still conditional: an image
-    # built without the flag gets the status line it always had.
+    # characters of text and markup on a --debug box. Conditional, so an image
+    # built without the flag budgets for neither.
     set -g status-left-length ${toString statusLeftLength}
     set -g status-left "  LOOM  ${debugSegment}${readinessSegment}"
     # The two controls are last, so they sit flush against the right-hand edge
@@ -295,8 +289,7 @@ let
     # `respawn-pane -k` without a target acts on the active pane, which is the
     # one the operator just clicked to look at. Every pane is `remain-on-exit`
     # (see `create` below), so a pane whose command died stays on screen with
-    # its error and this is what brings it back -- the job `Ctrl-b
-    # :respawn-pane` used to do.
+    # its error and this is what brings it back.
     #
     # `detach-client` ends the session cleanly rather than killing it: the tmux
     # client exits, the shim exits with it, `loom-console` returns 0, and the
@@ -320,18 +313,18 @@ let
   # `journalctl --follow` on a unit that has not started -- or that a condition
   # skipped -- is an empty screen with no explanation.
   #
-  # And, since the readiness bar went in, it keeps a panel pinned along the bottom of the
-  # pane while the log scrolls past above it: how many of the pods the cluster wants are
-  # ready, what is blocking, how long it has been since that moved. The log has always
-  # said what is happening and never how much is left, which on a box that takes an hour
-  # is the question somebody standing in front of it actually has.
+  # It also keeps a panel pinned along the bottom of the pane while the log scrolls past
+  # above it: how many of the pods the cluster wants are ready, what is blocking, how
+  # long it has been since that moved. The log says what is happening and never how much
+  # is left, which on a box that takes an hour is the question somebody standing in front
+  # of it actually has.
   #
-  # That is why the body of this moved into Python (nixos/ready/, loom_ready/pane.py):
-  # pinning a live region below a stream means the stream has to be read line by line
-  # rather than left to inherit the pane's stdout, and the handover condition is now one
-  # definition shared with the status line and the banner instead of a `case` here.
+  # The body of it is Python (nixos/ready/, loom_ready/pane.py): pinning a live region
+  # below a stream means the stream has to be read line by line rather than left to
+  # inherit the pane's stdout, and the handover condition is one definition shared with
+  # the status line and the banner.
   #
-  # What stays is this wrapper, and it stays deliberately. It is where the unit, the
+  # What stays here is this wrapper, deliberately. It is where the unit, the
   # namespace and the k9s path are written down, which is what nixos/tests/scripts/
   # appliance.py reads to prove that both boot modes follow their own unit and that k9s
   # watches the namespace up.sh actually deploys into.
@@ -345,9 +338,8 @@ let
       # Empty in setup mode, and that is the whole of how the pane is told there is no
       # readiness to draw: ready.nix publishes nothing there, because that mode is a DHCP
       # client pulling images for hours with no cluster to ask and none coming. The pane
-      # is the fetch log alone, exactly as it was, and the handover it has no state to
-      # trigger is the same handover that never fired there before -- see the namespace
-      # note in loom_ready/cluster.py.
+      # is the fetch log alone, and the handover has no state to trigger -- see the
+      # namespace note in loom_ready/cluster.py.
       exec loom-ready --pane \
         --unit "$unit" \
         --namespace "$namespace" \
@@ -409,8 +401,8 @@ let
       # what lets anything -- an operator, the VM test -- see what this command
       # will run with without waiting for a cluster to exist.
       #
-      # --logoless moves in here with it. Leaving it on the command line as
-      # well would be two places deciding the same thing.
+      # --logoless is set here too. Leaving it on the command line as well
+      # would be two places deciding the same thing.
       conf=${lib.escapeShellArg "${builtins.dirOf tmuxSocket}/k9s"}
       mkdir -p "$conf"
       cat > "$conf/config.yaml" <<'EOF'
@@ -526,9 +518,9 @@ let
   # Keeping them in the store also keeps them off a RAM disk, out of the
   # operator's reach, and assertable by the appliance test.
   #
-  # Every reference file ships on every image. Dropping the ones that do not
-  # apply was tried and is worse: each SKILL.md names its reference files, so a
-  # removed file leaves the router pointing at something that is not there.
+  # Every reference file ships on every image. Each SKILL.md names its reference
+  # files, so dropping the ones that do not apply would leave the router pointing
+  # at something that is not there.
   # `facts.md` above is what says which of them this box can act on.
   #
   # The glob opencode applies to a `skills.paths` entry is `**/SKILL.md` -- not
@@ -585,9 +577,9 @@ let
   # It also replaces something. opencode walks up from its working directory for
   # AGENTS.md, then CLAUDE.md -- and the seeded checkout has the repository's
   # own CLAUDE.md, 500-odd lines of instructions about worktrees, GitLab merge
-  # requests and poetry lockfiles, which has been the first thing in this pane's
-  # context on every box so far. `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` in
-  # loom-chat is what stops that; this is what goes in its place.
+  # requests and poetry lockfiles, which would otherwise be the first thing in
+  # this pane's context. `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` in loom-chat is
+  # what stops that; this is what goes in its place.
   loomInstructions = pkgs.writeText "loom-agent-instructions.md" ''
     # This machine
 
@@ -759,8 +751,8 @@ let
   '';
 
   # The full-width pane along the bottom: an agent pointed at the Ollama the rest
-  # of Loom already uses. The pane it replaced was a plain shell; the shell now lives on
-  # Alt-F2..Alt-F6, which console.nix has always left as ordinary prompts (see
+  # of Loom already uses. No pane of this session is a shell; the shell lives on
+  # Alt-F2..Alt-F6, which console.nix leaves as ordinary prompts (see
   # `loginShellInit` at the bottom of this file) and which the status line names.
   #
   # The model is pinned rather than chosen at runtime. An air-gapped box only has
@@ -887,7 +879,7 @@ let
       #     bright and 36.9% carrying a hue -- within a point of what that btop
       #     draws unaided on tty2.
       #
-      #     Handing tmux the original colour instead was tried and is worse:
+      #     Handing tmux the original colour instead is worse:
       #     `terminal-features linux*:RGB` lets the kernel do the reduction, and
       #     the kernel thresholds r/g/b, so btop's near-grey Default gradient
       #     goes to white. 65.7% bright, 3.0% hued -- a brighter screen with the
@@ -911,10 +903,10 @@ let
   # Keeps a pane's program running.
   #
   # Every pane of this session is a single application, and quitting one -- k9s
-  # with `:q`, btop with `q`, opencode with its own exit -- used to leave a dead
-  # pane that stayed dead. On a box whose console is the entire user interface
-  # that is a trap: the operator presses the wrong key once and loses a third of
-  # the screen until they find the restart control.
+  # with `:q`, btop with `q`, opencode with its own exit -- would otherwise
+  # leave a dead pane that stays dead. On a box whose console is the entire user
+  # interface that is a trap: the operator presses the wrong key once and loses
+  # a third of the screen until they find the restart control.
   #
   # So the panes are supervised rather than run directly. This is deliberately
   # NOT a bare `while true`: a command that fails instantly -- a missing
@@ -1071,10 +1063,9 @@ in
 
       Keyed on `loom.platform.gpuVendor` rather than on a second notion of
       "has a GPU", which also means `--no-gpu` gets the plain build for free
-      (nixos/default.nix forces gpuVendor to null there). That is what happened
-      when the Spark gained its GPU: platforms/spark.nix set the vendor and
-      brought `hardware.nvidia` along with it, and the cuda build followed here
-      with no edit -- the dlopen resolves because that file keeps
+      (nixos/default.nix forces gpuVendor to null there). A platform that
+      declares a vendor therefore gets the matching build with no edit here: on
+      the Spark the dlopen resolves because platforms/spark.nix keeps
       `nvidia_x11.out` in `hardware.graphics.extraPackages`, which is what
       populates /run/opengl-driver/lib.
 
@@ -1097,14 +1088,14 @@ in
     #
     # `--login-pause` makes agetty print the issue -- box.nix's banner -- then
     # `[press ENTER to login]`, then block on a single keypress before running
-    # `login -f loom`. The operator types no username and no password, but the
-    # box no longer opens a session for nobody at boot.
+    # `login -f loom`. The operator types no username and no password, and the
+    # box does not open a session for nobody at boot.
     #
-    # `--autologin` is still what performs the login (agetty adds `-f <user>` to
-    # the login command line for it), so PAM sees exactly what it saw before:
-    # the account's locked shadow entry is bypassed the same way it always was.
-    # Removing `autologinUser` instead would not produce a passwordless Enter --
-    # agetty re-prompts on empty input and would simply demand the username.
+    # `--autologin` is what performs the login (agetty adds `-f <user>` to the
+    # login command line for it), so PAM bypasses the account's locked shadow
+    # entry. Removing `autologinUser` instead would not produce a passwordless
+    # Enter -- agetty re-prompts on empty input and would simply demand the
+    # username.
     #
     # Both options apply to every getty, tty2-tty6 included; on NixOS tty1's
     # getty runs as `autovt@tty1.service`, an alias of the `getty@` template, so
@@ -1141,12 +1132,11 @@ in
     #     nowhere at all instead of onto the monitor somebody is standing in
     #     front of.
     #   * `tty0` is neither: it is whatever VT is currently foreground, so it
-    #     cannot move the console off the screen the operator is using. It is the
-    #     behaviour this file already assumed back when it named no console at
-    #     all -- see the paragraph above, which describes /dev/console as "the
-    #     active VT".
+    #     cannot move the console off the screen the operator is using -- which
+    #     is what the paragraph above means by /dev/console being "the active
+    #     VT".
     #
-    # Naming it is load-bearing rather than cosmetic, because that assumption
+    # Naming it is load-bearing rather than cosmetic, because that behaviour
     # only holds where the kernel registers tty0 by itself. Firmware that
     # publishes an ACPI SPCR table names a serial console the appliance has no
     # driver for, that UART never registers, and -- with nothing on the command

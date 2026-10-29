@@ -50,11 +50,10 @@ S3_MAX_OBJECTS_PER_POLL: int = 1000
 # How far behind the newest object it has taken the crawler still remembers
 # individual objects for.
 #
-# The record of what has been processed used to grow for the life of the pod, one
-# entry per object ever seen. That was fine when this bucket received occasional
-# manual uploads; it is not fine now that it is where a whole USB stick is mirrored
-# (nixos/usb-ingest.nix defaults `--bucket loom-intake`, and nothing deletes from it
-# afterwards), because three sticks in, the set is hundreds of thousands of entries
+# Without a watermark the record of what has been processed grows for the life of the
+# pod, one entry per object ever seen. This bucket is where a whole USB stick is
+# mirrored (nixos/usb-ingest.nix defaults `--bucket loom-intake`, and nothing deletes
+# from it afterwards), so three sticks in, that set is hundreds of thousands of entries
 # that are never released.
 #
 # Anything older than this is taken as already done. That is safe because S3 stamps
@@ -88,8 +87,8 @@ class ProcessedLedger:
         self._seen: set[_ProcessedObject] = set()
         # The newest timestamp ever recorded, maintained here rather than scanned for
         # in `advance`: the scan is O(|seen|) and `advance` runs on every poll, so on a
-        # long drain the loop paid roughly 75ms per poll at 300k entries to compute a
-        # watermark it then discarded at the no-op check below.
+        # long drain the loop pays roughly 75ms per poll at 300k entries to compute a
+        # watermark it then discards at the no-op check below.
         self._newest: datetime | None = None
         # None until something has actually been processed, so a freshly started pod
         # never skips an object on the strength of a watermark it has not earned.
@@ -320,8 +319,8 @@ class S3Crawler:
         # listing is the whole bucket -- S3 has no way to ask for "objects newer
         # than X", since `start_after` is lexicographic by key and these keys are
         # not in time order -- so after a few sticks it is hundreds of thousands of
-        # entries. Sorting all of them every five seconds was most of what this loop
-        # did; materialising all of them first is hundreds of megabytes of minio
+        # entries. Sorting all of them every five seconds would be most of what this
+        # loop does; materialising all of them first is hundreds of megabytes of minio
         # `Object`s allocated and discarded on every poll, in a pod that also holds
         # download buffers. `unprocessed` takes an iterable and touches no state the
         # retry would have to undo, so it is safe inside `retry`. What is new is a
@@ -384,7 +383,7 @@ class S3Crawler:
         mirror. Newest-first would leave the oldest objects deferred, which pins
         `advance` to the age of the very first object on the stick for the whole drain
         -- so the ledger grows to the entire backlog and `WATERMARK_GRACE` bounds
-        nothing in the one case it was introduced for. And materialising the tail to
+        nothing in the one case that matters. And materialising the tail to
         take a minimum off it costs tens of megabytes per poll at a few hundred
         thousand objects, in a pod limited to 1.5 GiB; `heapq.nsmallest` holds `limit`
         of them instead.

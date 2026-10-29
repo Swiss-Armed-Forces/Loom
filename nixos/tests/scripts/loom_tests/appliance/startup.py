@@ -91,8 +91,8 @@ def state_directories(appliance: "Machine", subtest: "Subtest", params: Params) 
             ("SKAFFOLD_HOME", f"{params.operator.repo_dir}/.skaffold"),
         ]:
             assert f"{var}={want}" in env, env
-            # The other half of "agree": a login shell, which is where the
-            # value has always been right.
+            # The other half of "agree": a login shell, which reads it from
+            # /etc/profile.
             shell = appliance.succeed(
                 f"runuser -l {params.operator.user} -c 'echo ${var}'"
             ).splitlines()[-1]
@@ -129,14 +129,10 @@ def docker(appliance: "Machine", subtest: "Subtest") -> None:
 
 def exposure(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("Loom is published on the appliance address"):
-        # The one thing a visitor actually depends on, and for a long time
-        # nothing here checked it: the box handed out leases and resolved every
-        # *.loom name to its own address while nothing whatsoever listened
-        # there. `up.sh --expose` ran `minikube tunnel`, which on the docker
-        # driver forwards each service port over the system `ssh` client -- and
-        # `ssh` is not on loom.service's PATH, so every forward failed and the
-        # only symptom was a connection refused from the laptop. The old
-        # assertion for that flag passed throughout.
+        # The one thing a visitor actually depends on: without it the box hands
+        # out leases and resolves every *.loom name to its own address while
+        # nothing whatsoever listens there, and the only symptom is a connection
+        # refused from the laptop.
         appliance.wait_for_unit("loom-expose.service")
         box = f"{params.loom_subnet}.1"
         portal = f"{params.loom_subnet}.2"
@@ -196,10 +192,8 @@ def exposure(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         )
         assert last_box_rule < first_catch_all, nat
 
-        # Nothing else may be forwarded. The tunnel published all seven ports
-        # of traefik's Service on this address as a side effect of how it
-        # worked; here the list is a decision, so a new one has to be made
-        # deliberately.
+        # Nothing else may be forwarded. The list is a decision rather than a
+        # side effect, so a new one has to be made deliberately.
         assert len([line for line in lines if "DNAT" in line]) == 5, nat
 
         # And the FORWARD accept, without which dockerd's DROP policy eats the

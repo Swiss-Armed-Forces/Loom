@@ -23,7 +23,7 @@ interface ClickableFilePathProps {
 }
 
 // Hoisted out of the render body: three of these sit inside the per-segment
-// map, so a four-segment path re-hashed a dozen objects on every card render.
+// map, so a four-segment path re-hashes a dozen objects on every card render.
 const ROOT_SX = { display: "flex", alignItems: "center" } as const;
 const BREADCRUMBS_SX = {
     "& .MuiBreadcrumbs-separator": { mx: 0.25 },

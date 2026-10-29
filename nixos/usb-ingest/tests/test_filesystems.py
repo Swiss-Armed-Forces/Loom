@@ -97,13 +97,13 @@ def test_an_unrecognised_but_supported_filesystem_gets_a_generic_attempt():
 
 
 def test_a_filesystem_outside_the_table_is_attempted_rather_than_refused():
-    """The third tier, which used to be dead.
+    """The third tier may not be gated on /proc/filesystems.
 
-    It was gated on /proc/filesystems, and `nixos/usb-ingest.nix` registers exactly the
-    KNOWN set -- so jfs, ufs, minix, reiserfs, erofs and squashfs were all reported to
-    the operator as "the kernel has no driver for ...", which is untrue: the modules
-    ship with the kernel and mount(8) autoloads them. The ingest test stick's three
-    tier-3 rows were therefore exercising the refusal branch.
+    `nixos/usb-ingest.nix` registers exactly the KNOWN set, so jfs, ufs, minix,
+    reiserfs, erofs and squashfs are absent from that list even though the modules ship
+    with the kernel and mount(8) autoloads them. Refusing on it would report them to the
+    operator as "the kernel has no driver for ...", which is untrue, and leave the
+    ingest test stick's three tier-3 rows exercising the refusal branch.
     """
     for fstype in ("jfs", "minix", "squashfs", "befs"):
         plan = _plan(fstype)

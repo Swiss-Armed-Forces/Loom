@@ -257,9 +257,9 @@ def test_a_rejected_point_in_time_is_not_blamed_on_the_query():
 
 
 def test_another_tools_cursor_gives_an_actionable_error():
-    """The task takes the cursor itself, so a corrupt payload is no longer reachable
-    here — but a cursor minted by a different tool still is, and resuming an unrelated
-    sort would return a plausible but wrong page."""
+    """The task takes the cursor itself, so a corrupt payload is not reachable here —
+    but a cursor minted by a different tool is, and resuming an unrelated sort would
+    return a plausible but wrong page."""
     _set_page(objs=[], total_hits=0, next_sort_id=None)
     cursor = SearchAfterCursor(
         src="list_folder_contents", last_sort=["//docs"], query_digest=_DIGEST

@@ -169,8 +169,8 @@ def run_command(
 def get_minikube_environment(environment: CommandEnvironment) -> CommandEnvironment:
     """Return the environment extended so that docker addresses minikube's daemon.
 
-    The shell version eval'd `minikube docker-env`; applying the same variables to one
-    mapping keeps the change inside this process rather than in a shell.
+    Applying the variables to one mapping keeps the change inside this process rather
+    than in a shell.
     """
     variables = dict(environment.variables)
     variables.update(get_minikube_docker_environment().variables)
@@ -400,8 +400,7 @@ def decide_scan(
 def get_component_licenses() -> str:
     """The licence file each component checks in beside itself.
 
-    The file is emitted verbatim and followed by a blank line, as `cat` and a bare
-    `echo` did before.
+    The file is emitted verbatim and followed by a blank line.
     """
     logging.info("Getting: component_licenses")
     sections: list[str] = []

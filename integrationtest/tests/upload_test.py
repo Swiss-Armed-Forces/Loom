@@ -204,7 +204,7 @@ def test_upload_large_file_does_not_timeout():
     the total transfer time exceeds the default, then asserting the server
     returns 202.
 
-    Fix: set readTimeout to "0s" on the web and websecure entrypoints in
+    The override is readTimeout "0s" on the web and websecure entrypoints in
     traefik/values.yaml (ports.web/websecure.transport.respondingTimeouts.readTimeout).
     """
     upload_duration = _TRAEFIK_DEFAULT_READ_TIMEOUT_SECONDS + 5

@@ -109,8 +109,8 @@ class CeleryInspectService:
         # This only holds because QueuesService reads the counts live from the queue
         # processes (see LIVE_QUEUE_TOTALS_PARAMS). Served from the management stats
         # database instead, they lag ~10s, and the error is not conservative: a queue
-        # filled a moment ago still reads as empty, so this returned True while the
-        # workers were saturated.
+        # filled a moment ago still reads as empty, so this would return True while the
+        # workers are saturated.
         return messages_in_queues <= 0
 
     def wait_for_idle(

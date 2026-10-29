@@ -8,8 +8,8 @@ that can be dropped without any test failing and without anything looking broken
 up until somebody sees grey eyes on a box.
 
 The prompts are here for the opposite reason: Ctrl-C is the one answer an operator can
-give to every question this program asks, and until it was handled it was also the one
-that put a Python traceback on a console whose whole job is being readable.
+give to every question this program asks, and unhandled it is also the one that would
+put a Python traceback on a console whose whole job is being readable.
 """
 
 import io
@@ -40,9 +40,9 @@ def _ui_over(buffer: io.StringIO, terminal: bool) -> Ui:
 
 
 def test_the_eyes_are_drawn_in_the_brand_colour() -> None:
-    # The regression this file exists for: without the pair, the palette entry
-    # redefined for a VT is never selected, so redefining it changes nothing and the
-    # mark comes out in whatever the console's default foreground is.
+    # Without the pair, the palette entry redefined for a VT is never selected, so
+    # redefining it changes nothing and the mark comes out in whatever the console's
+    # default foreground is.
     buffer = io.StringIO()
     _ui_over(buffer, terminal=True).banner()
 

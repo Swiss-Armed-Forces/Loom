@@ -117,7 +117,7 @@ export const commonSlice = createSlice({
         builder.addCase(fetchQueueStatistics.fulfilled, (state, action) => {
             // Kept whole-shaped whatever the response carried: the header reads
             // `pausedQueues.length` during render, so a response without the
-            // field used to throw there and take the whole app down with it.
+            // field would throw there and take the whole app down with it.
             state.queueStats = {
                 messagesInQueues: action.payload?.messagesInQueues ?? 0,
                 pausedQueues: action.payload?.pausedQueues ?? [],

@@ -45,13 +45,11 @@ BASELINE = AutoInstallInputs(
 def inputs(**overrides: object) -> AutoInstallInputs:
     """`BASELINE`, minus whatever the caller breaks.
 
-    The suppression this used to carry is gone with the dict it was suppressing. Note
-    what it is *not*: `dataclasses.replace(**overrides)` would not recover the checking
-    either -- mypy's dataclass plugin only checks `replace` when the keywords are
-    written literally at the call site, so a misspelt field name or a wrongly typed
-    value is invisible through any `**kwargs` helper. `**overrides: object` is left off
-    deliberately: implicitly `Any` checks exactly as much and needs no `# type: ignore`
-    to say so.
+    `dataclasses.replace(**overrides)` recovers no type checking here -- mypy's
+    dataclass plugin only checks `replace` when the keywords are written literally at
+    the call site, so a misspelt field name or a wrongly typed value is invisible
+    through any `**kwargs` helper. `**overrides: object` is left off deliberately:
+    implicitly `Any` checks exactly as much and needs no `# type: ignore` to say so.
     """
     return replace(BASELINE, **overrides)
 

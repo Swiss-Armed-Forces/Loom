@@ -87,8 +87,8 @@ interface ResultRowProps {
  * Rows sit in normal flow inside the window below, rather than each being
  * placed at an offset of its own. That is what makes a card drawn over its
  * neighbour impossible: a row that grows pushes the rows after it down in the
- * same layout pass, where a row placed at a remembered offset stayed where it
- * was until the measurement caught up a frame or more later.
+ * same layout pass, where a row placed at a remembered offset would stay where
+ * it was until the measurement caught up a frame or more later.
  *
  * The layout effect still reports the new height, because the virtualizer
  * needs it for the rows it has *not* rendered - the scrollbar and the offset
@@ -395,8 +395,8 @@ export const DetailedView: React.FC = React.memo(() => {
     }, [scrollRef]);
 
     // A query that replaces the list puts its first page on screen, so the
-    // reader goes back to the top of it. Without this the scroll position was
-    // carried over from the previous result set and the new one opened
+    // reader goes back to the top of it. Without this the scroll position
+    // carries over from the previous result set and the new one opens
     // part-way in, with its best matches above the fold.
     const firstResultsRef = useRef(true);
     useLayoutEffect(() => {
@@ -420,7 +420,7 @@ export const DetailedView: React.FC = React.memo(() => {
 
     // Held in a ref so the effect below can call the current one without
     // listing it as a dependency. Its identity changes whenever the highlight
-    // moves, and depending on that is what made a click scroll: picking a card
+    // moves, and depending on that would make a click scroll: picking a card
     // with the mouse is not a request to move it.
     const placeHighlightRef = useRef(placeHighlight);
     placeHighlightRef.current = placeHighlight;

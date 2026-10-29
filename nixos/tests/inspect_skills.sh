@@ -10,9 +10,8 @@
 #
 # A file rather than a string in that module, so `shellcheck -x -o all` covers
 # it. That matters more here than almost anywhere: this is a chain of `find`,
-# `comm` and `grep` pipelines whose own comments record the times it has
-# failed open, in a test whose entire reason to exist is that opencode fails
-# silently.
+# `comm` and `grep` pipelines whose own comments record the ways it can fail
+# open, in a test whose entire reason to exist is that opencode fails silently.
 #
 # `set -euo pipefail` restates what a stdenv builder applies (setup.sh runs
 # `set -eu` and `set -o pipefail`), so the linter reads the program that runs.
@@ -58,9 +57,9 @@ done
 # The generated facts, which are what the skills send the model to when the
 # right answer depends on which flags this stick was built with. Two skills
 # say "facts.md says whether this box requires a client certificate", and
-# for a while it did not -- so the model could not tell an mTLS box from a
-# normal one, and followed the advice for the wrong one. Checked by the row
-# label rather than by the verdict, which differs per image.
+# without that row the model cannot tell an mTLS box from a normal one and
+# follows the advice for the wrong one. Checked by the row label rather than
+# by the verdict, which differs per image.
 facts="${skills}/loom-appliance/facts.md"
 test -s "${facts}" || { echo "no facts.md in ${skills}" >&2; exit 1; }
 grep -q 'require-client-cert' "${facts}" \
@@ -70,9 +69,9 @@ grep -q 'require-client-cert' "${facts}" \
 printf '%s\n' "${known_names}" > known
 
 # No `|| true`, and the result is required to be non-empty. Any failure of
-# the pipeline -- a wrong path, an empty tree, a pipefail surprise -- used to
-# leave `named` empty, which made `comm` find nothing missing and the check
-# report success: a fail-open headline assertion, in a derivation whose
+# the pipeline -- a wrong path, an empty tree, a pipefail surprise -- leaves
+# `named` empty, which on its own makes `comm` find nothing missing and the
+# check report success: a fail-open headline assertion, in a derivation whose
 # header says its whole reason to exist is that opencode's failures are
 # silent.
 #
@@ -91,7 +90,7 @@ if [[ ! -s named ]]; then
 fi
 
 # On its own line: `comm` exits non-zero on a --check-order violation, and
-# folding that into the `if` short-circuited to "pass" as well.
+# folding that into the `if` would short-circuit to "pass" as well.
 missing="$(comm -23 named <(sort --unique known))"
 if [[ -n "${missing}" ]]; then
   echo "skills name loom-* things this image does not have:" >&2

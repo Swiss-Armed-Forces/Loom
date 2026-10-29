@@ -122,10 +122,10 @@ export const thumbnailSlotStyle = (
             [THUMB_SIZE_VAR]: "0px",
         } as CSSProperties;
     }
-    // The chosen width, as given. A slot here is as tall as it is wide and so
-    // sets the row's height, which used to be reason to cap it - but a line
-    // row's height now comes from the settings like every other card's, so
-    // the slider moves it rather than running into a ceiling.
+    // The chosen width, as given and uncapped. A slot here is as tall as it is
+    // wide and so sets the row's height, and a line row's height comes from
+    // the settings like every other card's, so the slider moves it rather than
+    // running into a ceiling.
     const edge = isUsableWidth(draggedPx) ? `${draggedPx}px` : `${widthRem}rem`;
     return {
         [THUMB_INSET_VAR]: `calc(${edge} + ${THUMB_GAP} + ${THUMB_BORDER})`,

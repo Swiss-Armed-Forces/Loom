@@ -12,12 +12,10 @@ from a browser, from `curl`, or from any other test in this repository -- it is 
 on a site, deciding quietly.
 
 So: no path this router has never heard of resolves to the page, and no probe path ever
-does either. What changed is which non-page answer they get. The nginx catch-all used to
-answer every probe with a static 302 and these paths were `NOT_FOUND` here; the listed
-ones are now proxied to this process so a client that has pressed the button on the page
-can be told what its vendor wants to hear. The redirect is still the default, so this
-module resolves them all to one route and `portal.py` decides which of the two answers
-the client asking has earned.
+does either. The listed probe paths are proxied to this process so that a client which
+has pressed the button on the page can be told what its vendor wants to hear. The
+redirect is the default, so this module resolves them all to one route and `portal.py`
+decides which of the two answers the client asking has earned.
 """
 
 import pytest
@@ -30,8 +28,8 @@ from loom_portal.routes import PROBE_ANSWERS, READABLE, Route, resolve
 #
 # The same list as `routes.PROBE_ANSWERS`, restated rather than imported: a test that
 # took the table from the module it is checking would agree with whatever the table
-# said, which is the one thing this file exists not to do. `test_every_probe_path_has_an
-# _answer` is what keeps the two in step -- and did, on its first run.
+# said, which is the one thing this file exists not to do.
+# `test_every_probe_path_has_an_answer` is what keeps the two in step.
 PROBE_PATHS = [
     "/generate_204",  # Android, connectivitycheck.gstatic.com
     "/gen_204",  # Android, older

@@ -193,7 +193,7 @@ def test_caches_on_nixos_is_manual_and_writes_nothing() -> None:
 def test_caches_needs_a_write_when_nix_conf_lacks_the_block(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A machine configured the old way is told what will change."""
+    """A nix.conf without the managed block is told what will change."""
     conf = tmp_path / "nix.conf"
     conf.write_text("sandbox = true\n")
     monkeypatch.setattr("setup_devenv.NIX_CONF", conf)

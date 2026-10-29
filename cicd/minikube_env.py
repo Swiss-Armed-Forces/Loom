@@ -1,9 +1,7 @@
 """Point a docker client at minikube's daemon.
 
-Three scripts here talk to the cluster's docker daemon rather than the host's,
-and each used to carry its own copy of this parsing. The copies drifted - one
-logged every variable, one stripped quotes differently - and pylint's
-duplicate-code check is what finally surfaced them.
+Three scripts here talk to the cluster's docker daemon rather than the host's, and share
+this one copy of the parsing.
 """
 
 import logging

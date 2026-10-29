@@ -3,8 +3,8 @@
 # tests/appliance.nix asserts the opposite -- that a VM whose only NIC is virtio
 # comes up with no `loom0` at all -- and switches this off to do so. That is the
 # behaviour every supported platform gets, because their `netMatch` hits. This
-# test covers the box nobody wrote a platform for, which is the case that used to
-# need a new USB stick to recover from.
+# test covers the box nobody wrote a platform for, which without the fallback
+# would need a new USB stick to recover from.
 #
 # A virtio NIC is perfect here for the same reason it is awkward there: nothing
 # in `platforms/` matches it, so the fallback is reached exactly as it would be
@@ -52,12 +52,12 @@ pkgs.testers.runNixOSTest {
   node.specialArgs = specialArgs;
 
   # The three nodes take `common` through `imports` rather than `common // { ...
-  # }`, because `//` is a shallow merge: `dual` sets `virtualisation.vlans` and
-  # that replaced the whole `virtualisation` attribute, silently dropping the
+  # }`, because `//` is a shallow merge: `dual` sets `virtualisation.vlans`, which
+  # would replace the whole `virtualisation` attribute and silently drop the
   # memory and disk sizes above. The module system merges the levels below the
-  # first, which is what was meant.
+  # first.
   nodes = {
-    # One NIC: the unambiguous case, and the one that motivated all of this.
+    # One NIC: the unambiguous case.
     single = common;
 
     # Two NICs, so the choice has to be made rather than fallen into. An extra
@@ -70,7 +70,7 @@ pkgs.testers.runNixOSTest {
       ];
     };
 
-    # The fallback switched off: the old behaviour, still reachable.
+    # The fallback switched off: nothing is claimed and no loom0 exists at all.
     disabled = {
       imports = [ common ];
       loom.autoSelectInterface = pkgs.lib.mkForce false;

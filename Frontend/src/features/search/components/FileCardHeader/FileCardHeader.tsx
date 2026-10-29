@@ -43,7 +43,7 @@ interface FileCardHeaderProps {
      * Separate from `compact` because the two are not the same question. The
      * file detail panel is narrow, so it wants the compact layout — but it is
      * a detail view, and hiding its actions behind a hover and shrinking its
-     * icon left it looking empty.
+     * icon leaves it looking empty.
      */
     denseChrome?: boolean;
     showExtensionIcon?: boolean;
@@ -58,10 +58,10 @@ interface FileCardHeaderProps {
      *
      * A dozen keyboard shortcuts work by finding the highlighted card in the
      * document and clicking a button inside it, and at the default spacing
-     * those buttons are switched off for every card. The highlighted card used
-     * to turn them back on, which is why they worked - and why it was taller
-     * than its neighbours. Keeping them in the document without drawing them
-     * keeps the shortcuts and the equal height both.
+     * those buttons are switched off for every card. Turning them back on for
+     * the highlighted card would make it taller than its neighbours, so
+     * keeping them in the document without drawing them keeps the shortcuts
+     * and the equal height both.
      */
     keyboardActionsOnly?: boolean;
     /** Whether the card draws a field block under this header; see

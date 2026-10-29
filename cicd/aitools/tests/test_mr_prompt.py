@@ -3,7 +3,7 @@
 The MR title and description become the title and message of the squashed commit on the
 target branch, so two rules are not cosmetic: the title has to be a conventional commit
 subject, and the description has to carry the template's headings and nothing else. Both
-were gotten wrong by default often enough to be worth pinning, here and in the template
+are gotten wrong by default often enough to be worth pinning, here and in the template
 the prompt embeds.
 """
 
@@ -46,7 +46,7 @@ class TestTitleConvention:
         assert "72 characters" in prompt
 
     def test_a_worked_example_is_given(self) -> None:
-        """A format name alone kept producing sentence-style titles."""
+        """A format name on its own still produces sentence-style titles."""
         prompt = build_mr_update_prompt("")
 
         assert "feat(api):" in prompt
@@ -67,7 +67,8 @@ class TestNoInventedSections:
         assert "Do not add sections of your own" in prompt
 
     def test_the_section_claude_kept_adding_is_named(self, repo_template: str) -> None:
-        """Naming the offender is what stopped it; the generic rule alone did not."""
+        """The generic rule alone is not enough; the offending section has to be
+        named."""
         prompt = build_mr_update_prompt(repo_template)
 
         assert "Notes for review" in prompt
