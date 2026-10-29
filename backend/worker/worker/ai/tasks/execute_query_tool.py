@@ -87,7 +87,7 @@ def execute_query_work_task(
         else query_string
     )
     # search_string already folds in folder_path, so a cursor replayed with a
-    # different folder_path no longer resumes against an unfiltered query.
+    # different folder_path does not resume against an unfiltered query.
     digest = SearchAfterCursor.digest(search_string)
     if after_cursor is not None:
         after_cursor.validate_for(

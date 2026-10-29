@@ -28,9 +28,7 @@ exactly what tests/scripts/loom_tests/wifi.py matches the logo with. A cell that
 written is 0 and comes back as '.', which is what distinguishes "the screen is blank here"
 from "a space was printed here".
 
-This module owns the decoding for every test. Two of them grew their own copy of it while
-the scripts were concatenated rather than imported, which is one of the things that
-arrangement cost.
+This module owns the decoding for every test.
 """
 
 import base64

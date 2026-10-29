@@ -18,8 +18,7 @@ def _build_embedding_settings(
 ) -> EmbeddingSettings:
     """Embedder-level defaults.
 
-    NOTE: `dimensions` is not sent, which keeps the behaviour the embedding path has
-    always had. Its other consumer is `DenseVector(dims=...)` in
+    NOTE: `dimensions` is not sent. Its other consumer is `DenseVector(dims=...)` in
     `common.file.file_repository`, so the same number sizes the Elasticsearch field --
     and asking the server for that width would make the two agree by construction rather
     than by convention. Whether to do that is still open: it needs a model trained for

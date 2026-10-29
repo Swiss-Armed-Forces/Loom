@@ -1,10 +1,8 @@
 """Reading NVIDIA GPU memory through NVML, with ctypes.
 
-Its own module for two reasons. It is the one part of the entrypoint that calls into a C
-library -- every other probe reads a file -- so it is the part whose failure modes are
-about symbols and structs rather than about arithmetic; and `ollama_wrapper.py` had
-reached pylint's thousand-line limit, where the honest answer is a seam rather than a
-suppression.
+Its own module because it is the one part of the entrypoint that calls into a C library
+-- every other probe reads a file -- so it is the part whose failure modes are about
+symbols and structs rather than about arithmetic.
 
 **Not nvidia-smi.** The container toolkit injects a NixOS host's driver executables
 without the ELF interpreter they need, so they cannot exec in a pod at all; the shared
@@ -79,7 +77,7 @@ def read_nvml(load: Callable[[], ctypes.CDLL] = load_nvml) -> NvmlReading:
     The symbol lookups as well as the load: every `nvml.<symbol>` raises
     AttributeError if the library does not export it -- a driver/stub mismatch,
     which is exactly the box this probe is for -- and AttributeError is not in
-    the tuple `run_entry_command` catches, so it escaped `main()`.
+    the tuple `run_entry_command` catches, so it would escape `main()`.
     """
     try:
         nvml = load()

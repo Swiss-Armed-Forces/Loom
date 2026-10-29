@@ -45,8 +45,8 @@ def announce(message: str, console_socket: str) -> None:
         # is not command execution -- what a crafted name buys is garbling the one
         # status-line message the operator sees and reading back `#{session_name}`,
         # `#{pane_current_command}` and `#{socket_path}`. `loom_ready/text.py` knows
-        # the hazard ("No `#`. tmux re-expands ...") and applies it to the other
-        # path; nothing scrubbed tool stderr.
+        # the same hazard ("No `#`. tmux re-expands ...") and applies it to the
+        # other path.
         ["tmux", "-S", console_socket, "display-message", "-l", message],
     ):
         run_tolerant(argv, _ANNOUNCE_TIMEOUT_S)
@@ -71,9 +71,9 @@ def condense(detail: str) -> str:
 def failure(headline: str, detail: str, console_socket: str) -> str:
     """Announce something that went wrong, and say what went wrong.
 
-    Without this the operator got the headline alone -- "not ingested", with the reason
-    it was not ingested only in a journal they have no way to read from the console
-    session. Whatever a stick does not do, the box now says why on the screen.
+    Without this the operator would get the headline alone -- "not ingested", with the
+    reason it was not ingested only in a journal they have no way to read from the
+    console session. Whatever a stick does not do, the box says why on the screen.
 
     The full detail goes to the journal and the condensed line to the console, so the
     journal always shows both what happened and what the operator was told about it.

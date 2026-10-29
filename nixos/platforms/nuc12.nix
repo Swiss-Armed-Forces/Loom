@@ -93,7 +93,7 @@
     extraInitrdModules = [ ];
   };
 
-  # Kept explicit even though common/cpu/intel/cpu-only.nix now sets it from
+  # Kept explicit even though common/cpu/intel/cpu-only.nix sets it from
   # `enableRedistributableFirmware` with mkDefault. The upstream default is a
   # rule about a general-purpose machine; this is a statement about a box that
   # gets handed to somebody, and it should not change because an import moved.

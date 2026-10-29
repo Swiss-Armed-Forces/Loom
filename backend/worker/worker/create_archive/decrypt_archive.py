@@ -1,9 +1,9 @@
 """Opening an encrypted loom archive, when this deployment's key fits.
 
-Beside `index_archive.py` rather than in `tasks/`, where it used to live: every other
-module in that package is a registered Celery task, and this one deliberately is not
--- see the docstring below. A plain function sitting among tasks is exactly what the
-next person will read as "a task somebody forgot to register".
+Beside `index_archive.py` rather than in `tasks/`: every other module in that package is
+a registered Celery task, and this one deliberately is not -- see the docstring below. A
+plain function sitting among tasks is exactly what the next person will read as "a task
+somebody forgot to register".
 """
 
 import logging
@@ -31,7 +31,7 @@ def decrypt_loom_archive(
     nevertheless fails to decrypt is not an archive this box can import, and it has to
     be indexed as an opaque file rather than silently going nowhere. That decision
     cannot be made inside a chain -- a task returning None there just makes every task
-    after it do nothing, which is the bug this replaces.
+    after it do nothing.
 
     The services are arguments rather than looked up here, so that the branch below can
     be exercised against a real encryptor on a known key without anything being patched
@@ -54,10 +54,9 @@ def decrypt_loom_archive(
     # actually fires for a wrong key: get_decrypted_stream ends with
     # `cipher.verify(mac)`, and PyCryptodome raises a bare
     # ValueError("MAC check failed") from there rather than anything this
-    # codebase defines. Catching only FileEncryptionServiceException -- as this
-    # did before -- let that escape and fail the task, so an archive from
-    # another deployment went round the retry chain into the graveyard queue
-    # instead of being indexed.
+    # codebase defines. Catching only FileEncryptionServiceException would let
+    # that escape and fail the task, sending an archive from another deployment
+    # round the retry chain into the graveyard queue instead of indexing it.
     except (FileEncryptionServiceException, ValueError):
         logger.info(
             "Encrypted loom archive did not decrypt with this deployment's master key"

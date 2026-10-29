@@ -56,10 +56,10 @@ def oracle_is_off(locked: "Machine", subtest: "Subtest") -> None:
         # constant that decides which of the two arming paths runs, and asserting
         # it directly is what makes the rest of this file mean what it says.
         #
-        # `LOOM_KEY_ORACLE`, where this used to read `readonly KEY_ORACLE`: the
-        # guard's body is nixos/scripts/loom_key_guard.sh now, and the module
-        # hands it values through a prologue of `LOOM_*` assignments. The
-        # `readonly` is still there, further down, reading this.
+        # `LOOM_KEY_ORACLE`: the guard's body is
+        # nixos/scripts/loom_key_guard.sh and the module hands it values through
+        # a prologue of `LOOM_*` assignments. The `readonly KEY_ORACLE` that
+        # reads it is further down the same script.
         script = locked.succeed(
             "cat $(readlink -f /run/current-system/sw/bin/loom-key-guard)"
         )

@@ -1,10 +1,9 @@
 """The screen an operator stands in front of for the hours a box takes to come up.
 
 Everything here is about the one thing this pane owes them: the log, on the screen, in
-both boot modes. It is the assertion the package did not have when the pane grew its
-panel -- the panel loop became the only reader of the journal, and the mode without a
-panel showed an operator a two-line header and then nothing at all while a fetch ran for
-six hours behind it.
+both boot modes. The mode without a panel is the one at risk -- let the panel loop be
+the journal's only reader and that mode shows an operator a two-line header and then
+nothing at all while a fetch runs for six hours behind it.
 
 The pane is driven through `RecordingPane` (doubles.py), which replaces one call: the
 `execv` that turns the pane into k9s, because a test that let that run would be k9s.
@@ -87,12 +86,12 @@ def publish_stage(state_dir: str, stage: Stage = Stage.ROLLING_OUT) -> None:
 
 
 def test_the_fetch_log_reaches_a_pane_with_no_publisher_behind_it():
-    """The regression this file exists for.
+    """The case this file exists for.
 
-    Setup mode has no cluster and no panel, so it takes the short path out of `run` --
-    and for one release that path opened a `journalctl` whose pipe nobody read. The
-    operator got the preamble and then six hours of nothing, with the follower itself
-    wedged as soon as the pipe filled.
+    Setup mode has no cluster and no panel, so it takes the short path out of `run`. A
+    path that opened a `journalctl` whose pipe nobody reads would give the operator the
+    preamble and then six hours of nothing, with the follower itself wedged as soon as
+    the pipe fills.
     """
     journal = FakeJournal(LOG)
     pane = RecordingPane(setup_mode(), journal, commands=commands("activating"))

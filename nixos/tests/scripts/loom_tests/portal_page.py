@@ -6,11 +6,10 @@ here is therefore about a box that cannot issue anything yet and has to say so.
 
 What this covers that nothing else can:
 
-* **nginx is running at all.** On a `--require-client-cert` image it once was not. The
-  nixpkgs unit runs as the `nginx` user and `nginx -t` in its `preStart` opens every
-  certificate named in the configuration, so a key the service user cannot read takes
-  down the captive portal, the Ollama proxy and USB ingest together -- silently, at boot,
-  on hardware.
+* **nginx is running at all.** The nixpkgs unit runs as the `nginx` user and `nginx -t`
+  in its `preStart` opens every certificate named in the configuration, so a key the
+  service user cannot read takes down the captive portal, the Ollama proxy and USB
+  ingest together -- silently, at boot, on hardware.
 * **A probe is still a redirect.** `loom_tests/appliance/portal.py` reads that decision
   out of the rendered configuration; this one sends the request. The difference matters
   because vhost selection is nginx's, not ours: the catch-all answers because the probe's
@@ -88,7 +87,7 @@ def run(
 
 
 def _nginx_is_up(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
-    with subtest("nginx started, which on a mutual TLS box it once did not"):
+    with subtest("nginx started"):
         appliance.wait_for_unit("nginx.service")
         # Named explicitly, because this is the failure: `nginx -t` runs as the service
         # user during preStart and opens `proxy_ssl_certificate`, so a root-owned 0600
@@ -108,11 +107,9 @@ def _probes_still_redirect(
     appliance: "Machine", subtest: "Subtest", params: Params
 ) -> None:
     with subtest("a captive-portal probe is redirected, never answered"):
-        # Unchanged in body, and stronger in meaning than it used to be. The
-        # catch-all no longer answers every probe itself -- the listed paths are
-        # proxied to the page server, which decides per client -- so this now
-        # asserts that a client which has not pressed the button is byte-for-byte
-        # indistinguishable from before. `_a_finished_client_gets_the_vendor_answer`
+        # The listed paths are proxied to the page server, which decides per
+        # client, so this is the half that asserts what a client which has not
+        # pressed the button gets. `_a_finished_client_gets_the_vendor_answer`
         # is the other half.
         for path in PROBE_PATHS:
             # Sent the way a phone sends it: to the responder's address, with a probe
@@ -169,7 +166,7 @@ def _the_form_is_only_on_the_secure_listener(
 ) -> None:
     with subtest("the certificate form is offered over TLS and nowhere else"):
         plain = appliance.succeed(f"{CURL} http://{params.portal_host}/")
-        # The certificate form specifically, and no longer "any form at all": the page
+        # The certificate form specifically, and not "any form at all": the page
         # also carries the "stop the warning" button, which is a form and is offered
         # on both listeners because it hands out nothing.
         assert 'action="/certificate"' not in plain, plain

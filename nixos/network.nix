@@ -53,8 +53,8 @@ let
   # moment the predictable name does not exist yet: `enp2s0` is the *output* of
   # NamePolicy in 99-default.link, which sorts after this file. So
   # `--interface enp2s0`, which is the name an operator actually reads off the
-  # box and the one Documentation/appliance.md tells them to use, matched nothing
-  # and produced a box with no loom0 -- the exact failure the flag exists to fix.
+  # box and the one Documentation/appliance.md tells them to use, matches nothing
+  # here, and on its own would leave a box with no loom0 at all.
   #
   # Rather than demand a name nobody can discover, the override is applied at
   # runtime by loom-interface-fallback below, which renames whatever is called
@@ -65,9 +65,10 @@ let
 
   # With the access point enabled (wifi.nix), the wired NIC stops being the thing
   # the appliance addresses and becomes one port of a bridge. Everything that
-  # used to pin to `loom0` -- the static address, dnsmasq's binding, the firewall
-  # -- moves onto the bridge, so that a client is on the same segment, in the same
-  # pool, behind the same resolver whether it arrived over the air or over copper.
+  # pins to `loom0` in the default build -- the static address, dnsmasq's
+  # binding, the firewall -- sits on the bridge instead, so that a client is on
+  # the same segment, in the same pool, behind the same resolver whether it
+  # arrived over the air or over copper.
   #
   # `loom0` keeps meaning "the physical NIC" in both builds. Only the name of the
   # interface holding the address changes.
@@ -141,9 +142,7 @@ let
   #
   # Exactly the two the firewall opens, and deliberately not the rest of what
   # traefik's Service carries (imap 143, amqp 5672, redis 6379/6380, prometheus
-  # 9090 -- traefik/values.yaml). `minikube tunnel` used to publish all seven on
-  # this address as a side effect of how it works; only the firewall kept them
-  # from being reachable. Here the list is the decision.
+  # 9090 -- traefik/values.yaml). This list is the decision, not the firewall.
   exposedPorts = [
     80
     443
@@ -158,17 +157,17 @@ let
   # whole job here is to make a packet that a visitor sent to the appliance
   # address arrive there too.
   #
-  # This replaces `up.sh --expose`, which did the same job with
+  # DNAT rather than `up.sh --expose`, which does the same job with
   # `minikube tunnel`. That is not a route: with the docker driver minikube
   # shells out to the system `ssh` client and forwards each service port over a
-  # connection into the node. The appliance never had `ssh` on `loom.service`'s
+  # connection into the node, and the appliance has no `ssh` on `loom.service`'s
   # PATH -- `environment.systemPackages` does not reach a unit -- so every
-  # forward failed with "executable file not found" and nothing ever listened on
-  # the appliance address. DHCP and DNS worked, and the box served nothing.
+  # forward fails with "executable file not found" and nothing listens on the
+  # appliance address.
   #
-  # DNAT is the better mechanism here regardless of that bug: no ssh, no
-  # long-lived root process that has to outlive a oneshot unit, and the client's
-  # own address survives into traefik's access log instead of a tunnel endpoint.
+  # DNAT is the better mechanism here regardless: no ssh, no long-lived root
+  # process that has to outlive a oneshot unit, and the client's own address
+  # survives into traefik's access log instead of a tunnel endpoint.
   #
   # Both chains are ours, which is what makes install and teardown exact: the
   # rules can be flushed and the chains removed without touching anything docker
@@ -321,22 +320,21 @@ in
             # an omitted option:router is an advertised option:router, and
             # naming it with no value is the only way to suppress one.
             #
-            # It *was* suppressed, and the cost of that is worth keeping on the
-            # record because it is real: a wired link outranks wifi on metric
-            # almost everywhere, so this route wins, and from here on all of a
-            # cabled laptop's off-link traffic is handed to a box that has no
-            # upstream. Plugging into Loom takes the visitor off the internet,
-            # on every interface they have.
+            # The cost of advertising it is real: a wired link outranks wifi on
+            # metric almost everywhere, so this route wins, and from here on all
+            # of a cabled laptop's off-link traffic is handed to a box that has
+            # no upstream. Plugging into Loom takes the visitor off the
+            # internet, on every interface they have.
             #
-            # That cost is now accepted, because the alternative turned out to
-            # be worse. A client with no route to this box sends its
-            # captive-portal probe out of some *other* interface, where it
-            # succeeds -- so the OS never offers "Sign in to network" and the
-            # visitor is never told the page exists. macOS goes further and
-            # couples its captive check to publishing a default route, so it
-            # does not evaluate this link at all. A portal nobody is ever shown
-            # is not a portal, and every captive portal in the world takes the
-            # internet away for as long as you are on it.
+            # That cost is accepted, because the alternative is worse. A client
+            # with no route to this box sends its captive-portal probe out of
+            # some *other* interface, where it succeeds -- so the OS never
+            # offers "Sign in to network" and the visitor is never told the page
+            # exists. macOS goes further and couples its captive check to
+            # publishing a default route, so it does not evaluate this link at
+            # all. A portal nobody is ever shown is not a portal, and every
+            # captive portal in the world takes the internet away for as long as
+            # you are on it.
             #
             # Two things make it survivable, and neither is optional: the
             # wildcard below, which answers every name with the page rather than
@@ -354,20 +352,18 @@ in
           # -- and `/#/` parses to the no-domain entry, the least specific there
           # is. So the carve-outs stay carve-outs whatever order they appear in.
           #
-          # `.loom` goes to the box and the portal page to the responder, for the
-          # reason that has always been here: ports 80 and 443 on the box address
-          # are DNAT'd to Traefik before the routing decision, and the page runs
-          # on the box itself.
+          # `.loom` goes to the box and the portal page to the responder: ports
+          # 80 and 443 on the box address are DNAT'd to Traefik before the
+          # routing decision, and the page runs on the box itself.
           #
           # The wildcard is the line that makes a vendor probe nobody listed --
           # Samsung, Xiaomi, GNOME, KDE, every AOSP fallback -- land on the
-          # responder instead of failing closed. It used to be named hosts only,
-          # on the grounds that a visitor's mail client should fail cleanly
-          # rather than be handed this box; a client that cannot resolve a probe
-          # concludes "no internet" rather than "portal present", so that
-          # cleanliness was the whole bug. `probeHosts` stays as the explicit
+          # responder instead of failing closed. Naming hosts only would let a
+          # visitor's mail client fail cleanly rather than be handed this box,
+          # but a client that cannot resolve a probe concludes "no internet"
+          # rather than "portal present". `probeHosts` stays as the explicit
           # list because the tests are written against it and because a wildcard
-          # that is ever reverted must not take the probes with it.
+          # that is ever removed must not take the probes with it.
           address = [
             "/loom/${boxAddress}"
             "/${config.loom.portal.host}/${portalAddress}"
@@ -440,9 +436,6 @@ in
           # segment rather than just `.loom`. `local=/#/` makes it NODATA
           # instead, which is what an IPv4-only name is supposed to look like.
           #
-          # This has always been wrong for `*.loom`; it is only now bad enough
-          # to notice.
-          #
           # Ungated, unlike the wildcard above: this is about which *types* a
           # name can answer, not about which names resolve, and a box with no
           # portal still serves `*.loom` and still owes a NODATA for the AAAA
@@ -450,7 +443,7 @@ in
           local = [ "/#/" ];
 
           no-resolv = true;
-          # Load-bearing rather than tidy, now that the wildcard is here:
+          # Load-bearing rather than tidy, given the wildcard above:
           # dnsmasq(8) says /etc/hosts overrides `address=` per name, and
           # box.nix pins all 22 *.loom names at the minikube node in /etc/hosts
           # for the box's own use. Without this a client would be handed those
@@ -462,7 +455,7 @@ in
           # claim a name in this resolver out from under the entries above.
           # Nothing on this box resolves client names.
           dhcp-ignore-names = true;
-          # Both now inert -- they govern what would be forwarded, and
+          # Both inert -- they govern what would be forwarded, and
           # `local=/#/` forwards nothing. Kept because they cost nothing and
           # still say what this box is.
           domain-needed = true;
@@ -487,7 +480,7 @@ in
       # Ordering constrains two jobs that are both in the queue; with nothing
       # else pulling the address unit in, there is no second job for `after` to
       # be ordered against and the ordering is vacuous. Same trap
-      # loom-bridge-attach describes below -- `after` without `wants` started
+      # loom-bridge-attach describes below -- `after` without `wants` starts
       # nothing.
       #
       # On a box with no interface to find, `wants` leaves dnsmasq's start job
@@ -518,7 +511,7 @@ in
       };
 
       boot.kernel.sysctl = {
-        # DNAT'd traffic is routed, not delivered locally, so this is no longer
+        # DNAT'd traffic is routed, not delivered locally, so this is not
         # something to leave to dockerd -- which does enable it, as a side effect
         # of starting, on a box where nothing has declared it.
         "net.ipv4.ip_forward" = true;
@@ -526,7 +519,7 @@ in
         # Fail fast, and these two are the difference between "the box refused
         # it" and "the box ignored it".
         #
-        # Now that the lease names this box as the default route, a client's
+        # The lease names this box as the default route, so a client's
         # off-subnet traffic arrives here to be told no. Both of these default
         # to one ICMP error per second per peer: `route.error_cost` (in ms) caps
         # the net-unreachable the kernel itself sends when a forwarded packet
@@ -544,7 +537,7 @@ in
       };
 
       # The rules above, with a lifecycle. See `loom-expose` for what they do
-      # and why they replaced `up.sh --expose`.
+      # and why they are DNAT rather than `up.sh --expose`.
       systemd.services.loom-expose = {
         description = "Publish Loom on the appliance address";
         # Wanted by the boot *and* by docker, which is not redundant: the boot's
@@ -638,21 +631,20 @@ in
         wantedBy = [ "network.target" ];
         # `wants` as well as `after`. Ordering pulls nothing into the
         # transaction -- it only says "if both start, this one goes second" --
-        # so with the netdev unit not already being started, this ran first and
-        # `ip` answered `argument "loombr0" is wrong: Device does not exist`.
-        # Measured on a Spark: this unit and wifi.nix's counterpart both failed
-        # 13.17 s into the boot, which left the wired port neither bridged *nor*
-        # up, since the two lines below are the only thing in the configuration
-        # that does either -- in a --wifi build the address lives on the bridge,
-        # so NixOS generates no network-link unit for the port itself.
+        # so without `wants` the netdev unit is not started, this one runs first
+        # and `ip` answers `argument "loombr0" is wrong: Device does not exist`.
+        # That leaves the wired port neither bridged *nor* up, since the two
+        # lines below are the only thing in the configuration that does either
+        # -- in a --wifi build the address lives on the bridge, so NixOS
+        # generates no network-link unit for the port itself.
         #
         # The same trap loom-network-check's getty-pre.target comment describes
-        # from the other side: there `wants` without `after` ordered nothing,
-        # here `after` without `wants` started nothing.
+        # from the other side: there `wants` without `after` orders nothing,
+        # here `after` without `wants` starts nothing.
         wants = [ "${bridgeInterface}-netdev.service" ];
-        # `systemd-udev-settle.service` was named here and removed: it does not
-        # exist on this nixpkgs pin, so the edge ordered nothing. What this unit
-        # genuinely waits for is the netdev above.
+        # Not `systemd-udev-settle.service`: it does not exist on this nixpkgs
+        # pin, so the edge would order nothing. What this unit genuinely waits
+        # for is the netdev above.
         after = [ "${bridgeInterface}-netdev.service" ];
         # Before the address, so a cabled client cannot get a DHCP lease over a
         # port that is not in the bridge yet -- and before network.target, which
@@ -813,8 +805,8 @@ in
       # comes up unreachable -- with no sshd, the console is the only way to find
       # out why. Say so there, loudly, rather than leaving someone to guess.
       #
-      # Three outcomes now, not one: no interface at all, an interface the
-      # fallback above had to claim, or nothing to report.
+      # Three outcomes: no interface at all, an interface the fallback above had
+      # to claim, or nothing to report.
       systemd.services.loom-network-check = {
         description = "Report how the appliance interface was selected";
         wantedBy = [ "multi-user.target" ];
@@ -826,8 +818,8 @@ in
         # to exist before any getty renders the issue. getty-pre.target is
         # passive -- nothing else pulls it into the transaction -- hence `wants`
         # as well as `before`, and the `before` has to name it: `wants` alone
-        # orders nothing at all, which left the only diagnostic an operator can
-        # see racing the login screen on the exact boot it exists to report.
+        # orders nothing at all, which leaves the only diagnostic an operator
+        # can see racing the login screen on the exact boot it exists to report.
         before = [
           "loom.service"
           "getty-pre.target"
@@ -836,12 +828,12 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          # Journal only. This used to be "journal+console", which -- with no
-          # `console=` on the command line -- put it on the active VT. See
-          # modes.nix for why that had to stop. The warning still reaches
-          # somebody standing at the box, through the issue fragment below,
-          # which is a better place for it: the login screen holds it until a
-          # key is pressed instead of scrolling it past at boot.
+          # Journal only, not "journal+console": with no `console=` on the
+          # command line that puts it on the active VT. See modes.nix for why
+          # that is wrong here. The warning still reaches somebody standing at
+          # the box, through the issue fragment below, which is a better place
+          # for it: the login screen holds it until a key is pressed instead of
+          # scrolling it past at boot.
           StandardOutput = "journal";
           StandardError = "journal";
         };

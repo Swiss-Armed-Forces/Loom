@@ -70,8 +70,8 @@ const visibleShape = (container: HTMLElement) =>
 
 describe("ResultCard under the highlight", () => {
     it("draws the same elements highlighted as not", () => {
-        // The highlighted card used to switch extra fields on, which made it
-        // taller than the slot the list had already measured for it.
+        // A highlighted card that switched extra fields on would be taller
+        // than the slot the list has already measured for it.
         expect(visibleShape(renderCard(true))).toBe(
             visibleShape(renderCard(false)),
         );
@@ -80,7 +80,7 @@ describe("ResultCard under the highlight", () => {
     it("keeps the action buttons reachable but out of the layout", () => {
         // A dozen shortcuts find the highlighted card in the document and
         // click a button inside it, so the buttons have to be there — but
-        // taking up room is what changed the card's height.
+        // taking up room would change the card's height.
         const container = renderCard(true);
         expect(screen.getByLabelText("seen")).toBeTruthy();
         const actions = container.querySelector(".MuiCardHeader-action");

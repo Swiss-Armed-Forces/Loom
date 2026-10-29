@@ -582,7 +582,7 @@ validate_environment() {
     # it requires one serves every host to anyone who can reach port 80.
     #
     # The appliance is already safe: nixos/modes.nix drops --enable-http from a
-    # --require-client-cert image. Nothing guarded a deployment driving up.sh by hand.
+    # --require-client-cert image. This guards a deployment driving up.sh by hand.
     local requires_client_cert
     requires_client_cert="$(client_certificate_required)"
     if [[ "${ENABLE_HTTP}" = true ]] && [[ "${requires_client_cert}" = true ]]; then

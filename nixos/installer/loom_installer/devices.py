@@ -165,8 +165,9 @@ def _is_usb(runner: CommandRunner, disk: str) -> bool:
 
     `Subprocess.output` returns "" for a command that failed or could not be run at
     all -- `commands.py` maps OSError to rc 127 with empty stdout -- and an empty
-    answer makes `any(...)` false, so a failed udevadm used to *admit* a USB-attached
-    disk to the target list. On the unattended path no human ever sees that list.
+    answer makes `any(...)` false, so without this a failed udevadm would *admit* a
+    USB-attached disk to the target list. On the unattended path no human ever sees
+    that list.
     """
     properties = runner.output(
         ["udevadm", "info", "--query=property", f"--name={disk}"]

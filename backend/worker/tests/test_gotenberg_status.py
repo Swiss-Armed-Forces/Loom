@@ -19,7 +19,7 @@ def _status_error(status_code: int) -> HTTPStatusError:
 def test_capacity_signals_trigger_a_retry(status_code: int):
     """503 is what a saturated Chromium and LibreOffice pool answers.
 
-    Swallowing it recorded "this document has no rendered PDF" for a document that
+    Swallowing it records "this document has no rendered PDF" for a document that
     renders perfectly well once the pool drains.
     """
     with pytest.raises(GotenbergError):
@@ -37,7 +37,7 @@ def test_failed_conversion_degrades_without_retrying():
 
     Gotenberg answers 500 with "supervisor run task: uno exception" for a file
     LibreOffice cannot open - an RTF body carved out of a PST, for one. Retrying that
-    held the file out of the index for the whole backoff budget and never changed the
+    holds the file out of the index for the whole backoff budget and never changes the
     answer.
     """
     handle_gotenberg_status_error(_status_error(500), MESSAGE)

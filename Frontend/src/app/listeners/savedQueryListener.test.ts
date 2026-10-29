@@ -131,8 +131,8 @@ describe("saved query polling listener", () => {
 
         await tick(3);
 
-        // Three queries over three intervals. The per-item intervals this
-        // replaced were recreated on every response, which reset their clocks.
+        // Three queries over three intervals: a response arriving must not
+        // reset the interval's clock.
         expect(mockGetFilesCount).toHaveBeenCalledTimes(9);
     });
 

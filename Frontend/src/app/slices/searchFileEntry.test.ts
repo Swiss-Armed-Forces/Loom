@@ -62,9 +62,8 @@ describe("isPreviewFresh", () => {
     });
 
     describe("field set", () => {
-        // The reason this predicate exists: changing which fields cards show
-        // used to re-fetch only the previews that happened to be on screen at
-        // that moment, and every other entry kept serving the old set.
+        // The reason this predicate exists: without the field set in it, an
+        // entry fetched for another selection goes on serving the old set.
         it("rejects a preview fetched for a different field set", () => {
             expect(
                 isPreviewFresh(

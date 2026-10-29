@@ -375,8 +375,8 @@ run_box_vm(){
     fi
 
     # `|| true` on the substitution, because `set -o pipefail` makes a `find`
-    # over a missing directory fail the whole assignment -- and `set -e` then
-    # killed the script with a bare "find: ... No such file or directory",
+    # over a missing directory fail the whole assignment -- and `set -e` would
+    # then kill the script with a bare "find: ... No such file or directory",
     # before the three lines below that name the directory and say what should
     # be in it.
     runner="$(find -L "${STATE_DIR}/boxvm/bin" -name 'run-*-vm' -type f 2>/dev/null | head --lines=1 || true)"
@@ -539,7 +539,7 @@ create_usb_stick(){
 
     # dotglob as well as nullglob: without the first, a payload of dotfiles is
     # silently skipped; without the second, an empty directory passes the
-    # literal `.../*` to mcopy. Both produced a formatted-but-empty stick.
+    # literal `.../*` to mcopy. Both produce a formatted-but-empty stick.
     shopt -s nullglob dotglob
     local payload=("${USB_DIR}"/*)
     shopt -u nullglob dotglob
@@ -557,9 +557,9 @@ create_usb_stick(){
     #
     # Checked, and stderr kept. The whole point of --usb is watching what
     # usb-ingest makes of the stick, and with `2>/dev/null || true` a payload
-    # larger than the computed size, or a filename mtools rejects, produced an
-    # empty stick with no diagnostic -- so the operator watched usb-ingest
-    # correctly report an empty stick and debugged the ingest path.
+    # larger than the computed size, or a filename mtools rejects, produces an
+    # empty stick with no diagnostic -- leaving the operator to watch usb-ingest
+    # correctly report an empty stick and debug the ingest path instead.
     if ! mcopy -s -i "${image}" "${payload[@]}" ::; then
         echo >&2 "[!] Error: could not copy ${USB_DIR} into ${image}."
         echo >&2 "    mtools refuses some names, and the image is sized from the payload"

@@ -21,7 +21,7 @@ export const store = configureStore({
             // Both checks are development-only and walk the state tree on every
             // dispatched action. `search.files` holds a full preview per result
             // — tags, attachments, highlight fragments and the extracted text
-            // of every selected field — so walking it is what made them
+            // of every selected field — so walking it is what makes them
             // expensive. Everything else stays covered.
             serializableCheck: {
                 // Channel subscriptions carry a Set. The message rides on the

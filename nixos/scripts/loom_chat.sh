@@ -9,8 +9,7 @@
 # A file rather than a string in that module, so `shellcheck -x -o all`
 # covers it: writeShellApplication runs shellcheck at build time, but with
 # nixpkgs' default options rather than the ones this repository holds its .sh
-# files to. At three hundred and sixty lines this was the largest string in
-# the tree that nothing checked.
+# files to.
 #
 # `set -euo pipefail` restates what writeShellApplication already applies, so
 # the linter reads the program that actually runs.
@@ -29,12 +28,12 @@ probe="${LOOM_OLLAMA_PROBE:?nixos/console.nix must set this}"
 # `http://127.0.0.1:18080` precisely because Traefik there demands a client
 # certificate this pane cannot present, and the loopback proxy forwards
 # `locations."/"` so /api/ps and /api/show work through it unchanged. Hard-
-# coded, both curls failed on every mTLS box, `context_length` returned 1,
-# the jq patch never ran, and the model kept `limit.context = 0` -- which
-# is the state the comment further down says turns compaction off and gets
-# long sessions silently truncated by Ollama. The option's own description
-# says a box behind its own mutual TLS "has to move both at once"; there
-# are three readers, not two.
+# coded to the ingress, both curls below fail on an mTLS box,
+# `context_length` finds nothing, the jq patch never runs, and the model
+# keeps `limit.context = 0` -- which is the state the comment further down
+# says turns compaction off and gets long sessions silently truncated by
+# Ollama. The option's own description says a box behind its own mutual
+# TLS "has to move both at once"; there are three readers, not two.
 api="${LOOM_OLLAMA_API:?nixos/console.nix must set this}"
 namespace="${LOOM_NAMESPACE:?nixos/console.nix must set this}"
 
@@ -207,13 +206,12 @@ fetch_ca() {
 #
 # What this waits for is that Ollama answers over a connection that
 # verifies, and nothing more. Whether the pinned model is in its inventory
-# used to be part of the same condition, on the grounds that opencode exits
-# when its first request fails -- but a model that never arrives is then a
-# pane that waits forever and says only that it is waiting, which is a
-# worse failure than the one it was avoiding. A missing model is now a
-# warning below and opencode's own error afterwards: the pane is
-# `remain-on-exit` and supervised by loom-pane, so that error stays on
-# screen, comes back on a backoff and offers "× restart pane".
+# is deliberately not part of the same condition: a model that never
+# arrives would be a pane that waits forever and says only that it is
+# waiting. A missing model is a warning below and opencode's own error
+# afterwards: the pane is `remain-on-exit` and supervised by loom-pane, so
+# that error stays on screen, comes back on a backoff and offers
+# "× restart pane".
 #
 # Said once per change rather than once per attempt, so a pane that waits
 # an hour for a bring-up does not scroll one line every five seconds.
@@ -231,13 +229,13 @@ note() {
 # resolves to something that is not Ollama", which are fixed by different
 # things.
 #
-# curl's own message is carried into the wait line rather than dropped.
-# This is the whole reason that was worth changing: --silent without
-# --show-error, plus a discarded body, meant one line stood for a cert that
-# does not verify, a route that 404s and a model that is not there, and an
-# operator looking at the pane could not tell which. `2>&1 >"$body"`
-# duplicates stderr onto the substitution's pipe *before* stdout goes to
-# the file, so the status is curl's and the message is curl's.
+# curl's own message is carried into the wait line rather than dropped:
+# --silent without --show-error, plus a discarded body, would make one
+# line stand for a cert that does not verify, a route that 404s and a
+# model that is not there, with no way for an operator looking at the pane
+# to tell which. `2>&1 >"$body"` duplicates stderr onto the substitution's
+# pipe *before* stdout goes to the file, so the status is curl's and the
+# message is curl's.
 #
 # The body is matched too, and not only for tidiness: the appliance answers
 # wildcard *.loom from its own dnsmasq (network.nix), so a misrouted name
@@ -293,11 +291,11 @@ fi
 # Not cosmetics. A model whose `limit.context` is 0 -- which is what a
 # provider invented by this file resolves to, there being no catalogue
 # entry for it -- turns opencode's automatic compaction OFF: the check
-# begins `if (model.limit.context === 0) return false`. So the pane has
-# been running without it, and a long session does not get summarised, it
-# gets silently truncated by Ollama at the far end. The readout is the
-# visible half of the same fact: "N tokens" with no percentage in the
-# session bar, and the sidebar block that used to say `0% used`.
+# begins `if (model.limit.context === 0) return false`. Without the patch
+# below a long session does not get summarised, it gets silently truncated
+# by Ollama at the far end, and the readout is the visible half of the
+# same fact: "N tokens" with no percentage in the session bar, beside a
+# sidebar block reading `0% used`.
 #
 # It cannot be a constant. Ollama sizes the context from the VRAM it
 # measures -- ollama/ollama_wrapper.py mirrors the ladder, 256k above 47

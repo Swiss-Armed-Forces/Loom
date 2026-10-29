@@ -10,11 +10,10 @@
 # nixpkgs' default options rather than the ones this repository holds its .sh
 # files to.
 #
-# Where the module used to splice whole shell fragments in with
-# `lib.optionalString aiEnabled ''...''`, the condition is now
-# `LOOM_AI_ENABLED` and the branches are plain `if`s below. Same two layouts,
-# but the linter sees one program instead of three strings, and the branch a
-# given image does not take is still checked.
+# The two layouts are chosen by `LOOM_AI_ENABLED` and plain `if`s below
+# rather than by splicing shell fragments in from Nix, so the linter sees one
+# program instead of three strings and the branch a given image does not take
+# is checked too.
 #
 # `set -euo pipefail` restates what writeShellApplication already applies, so
 # the linter reads the program that actually runs.
@@ -85,13 +84,13 @@ create() {
     # Guarded, because `create || true` below turns `errexit` off for the
     # whole of this function -- bash suppresses it for every command on the
     # left of `||`, function bodies included, so `writeShellApplication`'s
-    # `set -e` is inert in here. A lost race therefore left `main` empty and
-    # ran every line below with `-t ""`, which tmux resolves to the *current*
-    # session, window and pane: the winner's. The loser then split, respawned
-    # and set `@loom-main` inside the session the operator was looking at --
-    # and usb-ingest/pane.py searches for that option. Reachable today:
-    # vm-serial.nix runs `loom-console -d` from its own login hook at the
-    # same time as tty1's.
+    # `set -e` is inert in here. Unguarded, a lost race leaves `main` empty
+    # and runs every line below with `-t ""`, which tmux resolves to the
+    # *current* session, window and pane: the winner's. The loser then
+    # splits, respawns and sets `@loom-main` inside the session the operator
+    # is looking at -- and usb-ingest/pane.py searches for that option.
+    # Reachable today: vm-serial.nix runs `loom-console -d` from its own
+    # login hook at the same time as tty1's.
     if ! main=$("${tm[@]}" new-session -d -x "${cols}" -y "${lines}" -s loom \
         -n loom -P -F '#{pane_id}' "${supervise}" "${PROGRESS}"); then
         return 1
@@ -129,8 +128,8 @@ create() {
     # Set after the respawns above, which would otherwise have to kill panes
     # that `remain-on-exit` is keeping around.
     #
-    # Every pane, where it used to be two of three: the session no longer
-    # contains a shell, so there is no pane left whose death is routine.
+    # Every pane: the session contains no shell, so there is no pane whose
+    # death is routine.
     "${tm[@]}" set-option -p -t "${main}" remain-on-exit on
     "${tm[@]}" set-option -p -t "${mon}" remain-on-exit on
 

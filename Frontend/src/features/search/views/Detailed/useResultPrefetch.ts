@@ -64,15 +64,16 @@ export const useResultPrefetch = ({
     //
     // `ensureViewPreview` only skips rows whose preview is already cached, and
     // a request in flight has not cached anything yet — so without this, every
-    // row scrolled by re-asked for the whole window and the duplicates queued
-    // ahead of the rows actually on screen. Measured: it made the list worse,
-    // not better.
+    // row scrolled by re-asks for the whole window and the duplicates queue
+    // ahead of the rows actually on screen. Measured: that makes the list
+    // worse, not better.
     //
-    // A row whose dispatch was *skipped* is deliberately not recorded. It used
-    // to be, which turned this from a record of what had been asked into a
-    // promise never to ask: a card holding a fresh preview was marked here,
-    // and when the preview was later thrown away the row was never fetched
-    // again, so it sat as a skeleton for as long as the result set lasted.
+    // A row whose dispatch was *skipped* is deliberately not recorded.
+    // Recording one would turn this from a record of what has been asked into
+    // a promise never to ask: a card holding a fresh preview would be marked
+    // here, and once that preview was thrown away the row would never be
+    // fetched again, so it would sit as a skeleton for as long as the result
+    // set lasts.
     const requestedRef = useRef(new Set<string>());
     // A new query resets the list; a new page only ever grows it and keeps the
     // row it starts with. Only the former is a reason to ask again.
@@ -95,8 +96,8 @@ export const useResultPrefetch = ({
         const shape = listShapeRef.current;
         // `resultsReplaced` counts every query that replaced the list, which
         // the first row's id cannot: the same search asked again returns the
-        // same rows in the same order, so nothing here looked new even though
-        // every preview behind it had just been discarded.
+        // same rows in the same order, so nothing here looks new even though
+        // every preview behind it has just been discarded.
         if (
             resultsReplaced !== listShapeRef.current.replaced ||
             first !== shape.first ||
@@ -140,9 +141,9 @@ export const useResultPrefetch = ({
         }
 
         // The thumbnail is a separate request from the preview, and nothing
-        // was asking for it until the `<img>` mounted — which, with
-        // thumbnails off, is the moment of highlighting. Fetched at low
-        // priority so it never gets in front of the previews above.
+        // else asks for it until the `<img>` mounts — which, with thumbnails
+        // off, is the moment of highlighting. Fetched at low priority so it
+        // never gets in front of the previews above.
         const warm = thumbnailWarmRange({
             window,
             highlightedIndex,

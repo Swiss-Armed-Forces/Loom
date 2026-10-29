@@ -101,9 +101,9 @@ const runAutoActionsForFile = async (
         // before them. Re-assert what is still in flight, and only that: once
         // the writes have landed the server's answer is the truth, including
         // when the user has since changed the same flag by hand. Re-asserting
-        // unconditionally is what made "mark unread" impossible to see - the
-        // middleware put `seen` back on every refetch, without telling the
-        // server, so the card and the server disagreed for good.
+        // unconditionally would put `seen` back on every refetch without
+        // telling the server, leaving the card and the server disagreeing for
+        // good and "mark unread" impossible to see.
         const stillPending = pendingAutoActions.get(fileId);
         if (stillPending) {
             dispatch(patchFilePreview({ fileId, changes: stillPending }));

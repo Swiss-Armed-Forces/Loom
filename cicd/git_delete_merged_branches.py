@@ -172,7 +172,7 @@ def report_protected(repo: Path, main_branch: str) -> None:
 
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
-    """Build the command line, keeping the shell script's flags."""
+    """Build the command line."""
     parser = argparse.ArgumentParser(
         prog="git-delete-merged-branches",
         description="Delete local git branches that have been merged into the "

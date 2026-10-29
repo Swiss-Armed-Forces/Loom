@@ -103,7 +103,7 @@ def test_hide_is_a_no_op_when_nothing_is_drawn() -> None:
 
 
 def test_a_write_is_bracketed_clear_then_show() -> None:
-    """The ordering that finding this bug came down to.
+    """The ordering the stale-cell failure comes down to.
 
     `complement_pos()` caches the cell under the pointer and writes that cache back when
     the pointer next moves. Redrawing *after* the write -- rather than clearing before

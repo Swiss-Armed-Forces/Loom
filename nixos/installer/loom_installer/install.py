@@ -288,8 +288,8 @@ def stamp_pool_installed(runner: CommandRunner) -> None:
 
     `storage.pool_claimed_by_key` reads this label in addition to testing the
     passphrase, because the passphrase alone says only that `encrypt` ran -- and the
-    only state that said "half written" was `constants.AUTO_MARKER`, which lives in /run
-    on purpose so that a reboot clears it.
+    only other state saying "half written" is `constants.AUTO_MARKER`, which lives in
+    /run on purpose so that a reboot clears it.
     """
     runner.check(
         [
@@ -532,8 +532,8 @@ def enroll_recovery_passphrase(runner: CommandRunner, key_device: str) -> str:
     passphrase = generate_passphrase()
     target = os.path.join(constants.MOUNT, constants.RECOVERY_FILE_REL)
 
-    # A pipe rather than the process substitution the shell used: the passphrase
-    # never becomes a path in /proc anywhere, and there is no file to leave behind.
+    # A pipe rather than a file or a process substitution: the passphrase never
+    # becomes a path in /proc anywhere, and there is no file to leave behind.
     runner.check(
         [
             "cryptsetup",
@@ -578,10 +578,10 @@ def fix_boot_order(
 
     # Reinstalls are documented and expected -- "the installer stays reachable from
     # the firmware's own boot menu for reinstalls and wipes" -- and
-    # `efibootmgr --create` never deduplicates, so a box installed three times used to
-    # carry three identical Boot#### entries. Harmless on most firmware, cumulative on
-    # all of it, and NVRAM exhaustion is a known way to brick several of the platforms
-    # in nixos/platforms/.
+    # `efibootmgr --create` never deduplicates, so without this a box installed three
+    # times carries three identical Boot#### entries. Harmless on most firmware,
+    # cumulative on all of it, and NVRAM exhaustion is a known way to brick several of
+    # the platforms in nixos/platforms/.
     _remove_stale_boot_entries(runner, ui)
 
     # efibootmgr does not check that the loader exists, so a wrong name here produces
@@ -648,9 +648,8 @@ def _move_stick_fallback(
             ]
         )
         if not mounted.ok:
-            # Until this was reported it was the one way to reach the consequence
-            # below in silence: an unmountable stick ESP left the fallback loader in
-            # place with nothing printed about it.
+            # An unmountable stick ESP leaves the fallback loader in place, and that
+            # consequence must not be reached in silence.
             ui.warn(
                 f"Could not mount the stick's {constants.LIVE_ESP_LABEL} partition."
             )
@@ -666,8 +665,8 @@ def _move_stick_fallback(
                     # fallback is absent because a previous run already moved it, so
                     # the stick does *not* own the removable-media path and saying it
                     # does -- plus Degradation.BOOT_ORDER, plus
-                    # `hold_for_boot_order` holding the console indefinitely -- was
-                    # both wrong and the end of every reinstall.
+                    # `hold_for_boot_order` holding the console indefinitely -- would
+                    # be both wrong and the end of every reinstall.
                     ui.log(
                         f"Installer already at \\EFI\\loom\\boot{efi_arch}.efi"
                         f" on {boot}."
@@ -732,8 +731,8 @@ def run(runner: CommandRunner, ui: Ui, auto: bool) -> InstallReport:
     the run rather than be confirmed away.
 
     The one refusal that is not here is running as root, which `main` asks instead: it
-    is a fact about this process rather than about this box, and leaving it here is what
-    made everything below unreachable from a test that is not running as root.
+    is a fact about this process rather than about this box, and keeping it here would
+    put everything below out of reach of a test that is not running as root.
     """
     boot = devices.boot_disk(runner)
     if boot is None:
@@ -787,9 +786,9 @@ def run(runner: CommandRunner, ui: Ui, auto: bool) -> InstallReport:
             # The last thing the destructive block does, because it is what makes
             # "this stick installed this box" mean *finished*. From the moment
             # `encrypt` returns, the disk already satisfies everything
-            # `pool_claimed_by_key` tests -- so a power loss during the twenty-minute
-            # `install_system` used to produce, on the very next boot, a FRESH box
-            # that `decide()` called ALREADY_INSTALLED: no bootloader, no NVRAM
+            # `pool_claimed_by_key` tests -- so without this a power loss during the
+            # twenty-minute `install_system` produces, on the very next boot, a FRESH
+            # box that `decide()` calls ALREADY_INSTALLED: no bootloader, no NVRAM
             # entry, and a menu insisting it had installed this box already.
             stamp_pool_installed(runner)
         except BaseException:

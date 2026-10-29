@@ -104,8 +104,7 @@ def test_consecutive_ci_commits_are_counted_across_authors(repo, ctx):
 
     A commit is attributed to whoever's push or token started the pipeline, so a
     regeneration chain alternates between the developer and the pipeline-trigger bot.
-    Counting only one of them resets on every other commit, which is how a loop once ran
-    eight rounds unnoticed.
+    Counting only one of them resets on every other commit, so a loop runs unnoticed.
     """
     _commit(repo, GENERATED, "C\n", CI_MESSAGE, "dev@example.com")
     _commit(repo, GENERATED, "D\n", CI_MESSAGE, "bot@noreply.example.com")

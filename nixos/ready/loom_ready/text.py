@@ -5,8 +5,7 @@ an agetty issue file, and a tmux status line -- so both are ordinary strings wit
 about what may be in them:
 
   * ASCII, and no backslash. agetty reads a backslash in an issue file as the start of an
-    escape of its own and eats it before anyone sees it (box.nix:84-88). The banner's
-    charset has been a real constraint since the QR code went in.
+    escape of its own and eats it before anyone sees it (box.nix:84-88).
   * No `#`. tmux re-expands the output of a `#()` command, so a stray hash in the status
     segment would be read as the start of a format directive.
   * One line. `loom-info` prints the summary with a single `printf`, and a status line is
@@ -53,7 +52,7 @@ def summary(readiness: Readiness | None) -> str:
 
     Empty when there is nothing worth a row, and box.nix prints no line at all in that
     case -- a setup-mode box, the first seconds of a boot, and a box whose cluster has
-    not answered yet all look exactly as they did before any of this existed.
+    not answered yet.
 
     `WAITING` is deliberately among those. The pre-login banner is the one screen here
     with a hard height budget: it is written straight to the VT with no paging, so

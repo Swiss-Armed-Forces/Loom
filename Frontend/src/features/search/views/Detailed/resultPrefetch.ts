@@ -43,10 +43,10 @@ export const MAX_PREFETCH_VIEWPORTS_PER_SECOND = 1.5;
  * Speculative preview requests allowed to be outstanding at once.
  *
  * The window says which rows are worth having; this says how fast to ask for
- * them. Firing a whole window at once is what made the list worse rather than
- * better: the requests for rows being looked at went out alongside a dozen for
- * rows not reached yet, and all of them came back slower. Rows on screen are
- * never subject to this.
+ * them. Firing a whole window at once makes the list worse rather than better:
+ * the requests for rows being looked at go out alongside a dozen for rows not
+ * reached yet, and all of them come back slower. Rows on screen are never
+ * subject to this.
  *
  * Scaled by how many rows a screen holds, because that is how many are
  * consumed per screenful of scrolling: a flat cap that keeps a loose list
@@ -154,7 +154,7 @@ export interface PrefetchAdmission {
  * A row on screen is never held back — a visible card with nothing in it is
  * the thing this exists to prevent, and it is also the request most worth
  * making. Everything else waits its turn, because the requests all share one
- * API: measured, firing a whole window at once made the list worse than not
+ * API: measured, firing a whole window at once makes the list worse than not
  * prefetching at all.
  */
 export const admitForPrefetch = ({

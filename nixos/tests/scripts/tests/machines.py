@@ -29,9 +29,9 @@ class FakeMachine:
         """As the driver's own `succeed`: the output, trailing newline included.
 
         The newline is not cosmetic. `tmux.Session.tmux` strips it, so a fake that
-        returned its canned string verbatim made that strip inert here while it was
-        load-bearing in production -- which is how `.strip()` could eat the leading
-        spaces of `"  LOOM  "` without a test noticing.
+        handed back its canned string verbatim would leave that strip inert here while
+        it is load-bearing in production -- and a `.strip()` eating the leading spaces
+        of `"  LOOM  "` would go unnoticed.
         """
         del timeout
         out = []

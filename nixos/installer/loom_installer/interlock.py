@@ -2,8 +2,7 @@
 
 The action word is the whole interlock: it is never "yes", so it cannot be confirmed by
 muscle memory, and the disk that is about to be destroyed is named on screen directly
-above the prompt. Transcribing a 20-character NVMe serial was the earlier design and was
-simply too tedious to live with.
+above the prompt.
 
 `Aborted` is raised here but defined in console.py, because Ctrl-C at the prompt below
 raises the same exception and the prompt is what turns the keypress into it.

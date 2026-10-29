@@ -31,10 +31,10 @@ def _profile(client_settings: LLMClientSettings) -> ModelProfile:
 def test_services_running_open_weight_templates_merge_system_messages(
     provider: LLMProvider,
 ) -> None:
-    """Regression guard for !756.
+    """VLLM rendering Qwen's template answers "System message must be at the beginning"
+    as soon as a capability's instructions add a second `InstructionPart`.
 
-    vLLM rendering Qwen's template answers "System message must be at the beginning" as
-    soon as a capability's instructions add a second `InstructionPart`. Both keys are
+    Both keys are
     needed: one folds consecutive leading system messages, the other demotes the ones
     that follow.
     """
