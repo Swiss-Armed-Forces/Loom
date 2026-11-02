@@ -16,9 +16,6 @@ rules:
     resources: ["secrets"]
     # `patch` as well as `create`, because the certificate scripts replace a Secret
     # with `kubectl apply`, and apply against an *existing* object is a PATCH.
-    # `generate-secret.sh` does delete-then-create and needs only the other three,
-    # which is why this list went unnoticed: a fresh install never patches, so only
-    # an upgrade of a deployment that already holds `self-signed-cert` -- i.e. every
-    # existing cluster, the moment a hostname is added to the certificate -- failed
-    # the pre-upgrade hook and stopped the release.
+    # `generate-secret.sh` does delete-then-create and needs only the other three.
+    # Only an upgrade patches: a fresh install has no Secret to apply against.
     verbs: ["get", "create", "patch", "delete"]

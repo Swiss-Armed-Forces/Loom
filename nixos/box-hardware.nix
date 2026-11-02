@@ -19,11 +19,10 @@
 # below names that file instead. Everything else here is identical either way --
 # it is the same 4096 bytes at the same offset, reached by a different path.
 #
-# Stage 1 is the only place that *needs* the key, but it is no longer the only
-# place that looks at it: key-guard.nix keeps watching the same device for as
-# long as the box runs, and powers it off when the key goes away. The three
-# values below come from there so the initrd and the guard cannot name
-# different devices.
+# Stage 1 is the only place that *needs* the key, but not the only place that
+# looks at it: key-guard.nix keeps watching the same device for as long as the
+# box runs, and powers it off when the key goes away. The three values below
+# come from there so the initrd and the guard cannot name different devices.
 { config, lib, ... }:
 let
   guard = config.loom.keyGuard;
@@ -95,14 +94,14 @@ in
     script = ''
       # Looked for repeatedly rather than once. The node is probed *after* the
       # unlock, so a stick that is pulled -- or that merely re-enumerates -- in
-      # the seconds between systemd-cryptsetup finishing and this running left no
-      # witness at all, and `deadline_applies` then answered false for the whole
-      # boot: the box ran indefinitely on an unlocked dm-crypt mapping with
-      # nothing watching the key, which is the gap key-guard.nix exists to close,
-      # while the banner said "idle -- no USB key present" exactly as it does for
-      # a legitimate recovery-passphrase boot.
+      # the seconds between systemd-cryptsetup finishing and this running leaves
+      # no witness at all, and `deadline_applies` then answers false for the
+      # whole boot: the box runs indefinitely on an unlocked dm-crypt mapping
+      # with nothing watching the key, which is the gap key-guard.nix exists to
+      # close, while the banner says "idle -- no USB key present" exactly as it
+      # does for a legitimate recovery-passphrase boot.
       #
-      # Still a probe rather than a flag set by the unlock itself: "the key node
+      # A probe rather than a flag set by the unlock itself: "the key node
       # is there" is what tells a stick boot from a recovery boot, and a marker
       # written before the unlock would also be written on a box whose stick
       # carries the *wrong* key -- where the operator types the passphrase and
@@ -171,21 +170,20 @@ in
   # entry is managed by the installer, so there is no need to write EFI vars on
   # every rebuild.
   #
-  # It does more work than that now. `loom-promote-boot-entry` (modes.nix) runs
+  # It does more than that. `loom-promote-boot-entry` (modes.nix) runs
   # the bootloader builder again at the end of first-time setup, and this option
   # is what puts `--no-variables` on the `bootctl` calls it makes -- so that run
   # cannot disturb the `Loom appliance` NVRAM entry, or the boot order, that
   # `fix_boot_order` (installer/loom_installer/install.py) set at install time.
   boot.loader.efi.canTouchEfiVariables = false;
-  # Generous on purpose, though no longer for the reason it started as.
+  # Generous on purpose.
   #
-  # Nobody has to interrupt this menu any more: the installer selects the
+  # Nobody has to interrupt this menu to pick an entry: the installer selects the
   # first-time-setup entry, and setup promotes run mode back when it finishes, so
-  # the default is always the entry that should boot. What survives is the other
-  # half of the original argument -- on a box whose display only wakes up part
-  # way through firmware init, five seconds can elapse before the menu is even
-  # visible -- and it now matters more rather than less. Once setup has removed
-  # its own entry this menu is the only route to `Reboot Into Firmware
+  # the default is always the entry that should boot. The wait is for the display
+  # instead -- on a box whose display only wakes up part way through firmware
+  # init, five seconds can elapse before the menu is even visible. Once setup has
+  # removed its own entry this menu is the only route to `Reboot Into Firmware
   # Interface`, which is how the radios get disabled in firmware and how the boot
   # order is repaired. Shortening it would quietly make that unreachable on
   # exactly the boxes that are slowest to show a picture.

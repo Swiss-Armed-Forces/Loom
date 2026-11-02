@@ -12,10 +12,9 @@
 /*
  * The thumbnail column, down the side of the whole card.
  *
- * The image used to sit under the header inside the content block, which left
- * the header running the full width and pushed the image down below it. A
- * card is read left to right and the picture is the first thing the eye
- * reaches, so it stands beside the text instead and is as tall as the card.
+ * A card is read left to right and the picture is the first thing the eye
+ * reaches, so it stands beside the text rather than under the header inside
+ * the content block, and is as tall as the card.
  *
  * Fixed width, and the badge inside it is taken out of flow by
  * `SIDE_THUMBNAIL_BADGE_SX`: the column is stretched to whatever height the

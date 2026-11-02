@@ -141,10 +141,9 @@ def _setup_mode_gets_in_too(
         # the framework starts the kernel directly and never runs the bootloader
         # that would offer the entry.
         #
-        # This is what fails if the sshd ever goes back behind a
-        # `mode == "run"` gate -- which is how debug.nix was written once, and
-        # what console.nix's `DEBUG -- SSH OPEN` marker now has to agree with in
-        # both modes.
+        # This is what fails if the sshd ever goes behind a `mode == "run"`
+        # gate, which console.nix's `DEBUG -- SSH OPEN` marker has to agree
+        # with in both modes.
         appliance.succeed(
             f"test -e {SETUP}/etc/systemd/system/multi-user.target.wants/sshd.service"
         )
@@ -218,7 +217,7 @@ def _passwords_are_refused(
         # the method before a packet is sent -- and with `PubkeyAuthentication=no`
         # on top there is nothing left to offer, so it exits non-zero whatever
         # sshd_config says. Flip `PasswordAuthentication` to yes on the box and
-        # the old assertion stayed green, on the one flag that takes back the
+        # that probe stays green, on the one flag that takes back the
         # appliance's "no remote access" guarantee.
         effective = appliance.succeed("sshd -T")
         assert re.search(
@@ -261,8 +260,8 @@ def _the_banner_says_so(
         appliance.wait_for_unit("loom-issue.service")
         # Every fragment, in the order agetty reads them -- which is the order they
         # are painted in, and the only order in which "last" means anything. Read
-        # from 50-loom.issue alone, this assertion passed while the portal's own
-        # fragment rendered the day's password *below* the warning.
+        # from 50-loom.issue alone, this assertion would pass while the portal's
+        # own fragment rendered the day's password *below* the warning.
         issue = appliance.succeed("cat /run/issue.d/*.issue")
 
         assert params.warning_phrase in issue, issue

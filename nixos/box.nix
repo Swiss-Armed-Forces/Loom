@@ -179,8 +179,8 @@ let
   # is standing in front of. The getty has to be restarted for that, and restarting it is
   # only safe while it is still *at* the prompt.
   #
-  # That check is the reason this is a command rather than two lines in the one caller it
-  # used to have. loom-banner-repaint.service below wants it for a console that is still
+  # That check is the reason this is a command rather than two lines inside a caller.
+  # loom-banner-repaint.service below wants it for a console that is still
   # resizing; ready.nix's publisher wants it every time the bring-up reaches a new stage,
   # which is the whole point of putting Loom's progress on a screen nobody has logged into.
   # Two copies of "is anybody looking at this" would be two chances to get it wrong, and
@@ -366,8 +366,8 @@ in
   # It is deliberately a shared option rather than a literal here, because the
   # units in modes.nix need exactly the same set on their PATH and a unit's PATH
   # has nothing to do with systemPackages -- `/run/current-system/sw/bin` is
-  # never on it. The two used to be maintained separately and drifted, which
-  # shipped a box whose loom.service died on `awk: command not found`.
+  # never on it. Two separately maintained lists drift, and a loom.service that
+  # dies on `awk: command not found` is what that drift looks like.
   #
   # devenv is deliberately not used on the appliance: once we are building a
   # NixOS closure anyway, this carries the toolchain for free, with no nix store
@@ -488,8 +488,8 @@ in
     ++ [
       config.loom.banner.info
       loom-platform-info
-      # Beside loom-info rather than hidden in the unit that used to be its only
-      # caller: that one prints the banner, this one puts it back on the screen.
+      # Beside loom-info rather than only inside the units that call it: that
+      # one prints the banner, this one puts it back on the screen.
       # An operator who has just changed something the banner reports -- disarmed
       # the key guard, brought the network up -- has no other way to make the
       # login screen agree, and on a box with no remote access "log out and look"
@@ -572,10 +572,6 @@ in
     # `sudo systemctl poweroff` (modes.nix), unattended, from a unit that has no
     # logind session for polkit to key on -- so this cannot prompt. Acceptable
     # only because the box has no sshd and is reachable from the console alone.
-    #
-    # This used to cite `sudo minikube tunnel`, which the appliance no longer
-    # runs: network.nix exposes Loom with a DNAT rule instead of `up.sh
-    # --expose`.
     wheelNeedsPassword = false;
   };
 
@@ -609,10 +605,9 @@ in
     SKAFFOLD_HOME = "${loomRepoDir}/.skaffold";
 
     # Nothing on this box sets an editor otherwise, and the fallbacks that step
-    # in are worse than a choice: git's is `vi`, which the appliance did not
-    # carry at all, so `git commit` on the console died with "not found". Set
-    # here rather than only in up.sh, because the operator's shell never sources
-    # that script -- up.sh's own `export` only reaches what up.sh starts.
+    # in are worse than a choice: git's is a bare `vi`. Set here rather than
+    # only in up.sh, because the operator's shell never sources that script --
+    # up.sh's own `export` only reaches what up.sh starts.
     EDITOR = "vim";
   };
 
@@ -624,12 +619,12 @@ in
   # anyone logs in, as the agetty issue -- console.nix's `--login-pause` then
   # holds the screen there until somebody presses a key.
   #
-  # Shown there and nowhere else. The login shell used to reprint it, which on
-  # tty2-tty6 put the same screen up twice with nothing between the two copies
-  # but the keypress: agetty renders the issue on every VT, not just tty1. The
-  # only console where the banner really is covered is tty1, where the tmux
-  # session draws over it -- and an operator who wants it back there types
-  # `loom-info`, which is on the PATH for exactly that.
+  # Shown there and nowhere else. The login shell does not reprint it: agetty
+  # renders the issue on every VT, not just tty1, so a reprint would put the
+  # same screen up twice on tty2-tty6 with nothing between the two copies but
+  # the keypress. The only console where the banner really is covered is tty1,
+  # where the tmux session draws over it -- and an operator who wants it back
+  # there types `loom-info`, which is on the PATH for exactly that.
   #
   # The recovery passphrase is part of it, which is safe here for the same
   # reason the file itself is: reading it requires the box to have booted, which
@@ -654,16 +649,10 @@ in
     wantedBy = [ "multi-user.target" ];
     wants = [ "getty-pre.target" ];
     before = [ "getty-pre.target" ];
-    # After the font, not merely before the getty.
-    #
-    # Both units are only `before getty-pre.target`, which orders each against
-    # the getty and neither against the other -- and this one used to win by
-    # about two seconds. That mattered once the banner started measuring the
-    # console to decide what fits: the font is what sets the row count, so
-    # measuring first meant measuring the kernel's 16x32 grid and then shedding
-    # the mark and the QR code to fit a screen that was about to become three
-    # times taller. Ordering here is the whole fix; the measurement was never
-    # wrong about the console it was handed.
+    # After the font, not merely before the getty: both units are only
+    # `before getty-pre.target`, which orders each against the getty and
+    # neither against the other, so the ordering between them has to be named
+    # here.
     after = [ "loom-console-font.service" ];
     serviceConfig = {
       Type = "oneshot";
@@ -696,9 +685,9 @@ in
   systemd.services.loom-banner-repaint = {
     description = "Redraw the login banner while the console is still settling";
     # Pulled in by the boot rather than by the font units. Those fire from udev
-    # coldplug, which is before any getty exists -- so the repaint they asked for
-    # found nothing on screen to redraw and never ran again, which is exactly how
-    # tty1 kept its cropped banner while tty2 looked right.
+    # coldplug, which is before any getty exists -- so a repaint asked for from
+    # there finds nothing on screen to redraw and is never asked for again,
+    # which is how tty1 ends up with a cropped banner while tty2 looks right.
     wantedBy = [ "multi-user.target" ];
     after = [ "getty.target" ];
     serviceConfig = {
@@ -737,7 +726,7 @@ in
       # row count an operator finally sees is often exactly the one the banner
       # was drawn at, with the top of that banner thrown away in between.
       # Comparing "is it different now" would see nothing wrong and leave the
-      # screen broken, which is precisely what it did.
+      # screen broken.
       #
       # `dirty` starts set, so the banner is drawn once for the geometry that is
       # current when the getty first appears, whatever happened before that.
@@ -761,11 +750,9 @@ in
         fi
 
         # loom-banner-refresh rewrites the issue and restarts tty1's getty only while
-        # that getty is still at the prompt -- an earlier version of this loop carried
-        # that check itself, and it moved out when a second caller (ready.nix, on every
-        # stage change) needed exactly the same guard. Its exit status is what says
-        # whether the screen was actually redrawn, so a round that found somebody logged
-        # in leaves `dirty` set rather than deciding the banner is done.
+        # that getty is still at the prompt. Its exit status is what says whether the
+        # screen was actually redrawn, so a round that found somebody logged in leaves
+        # `dirty` set rather than deciding the banner is done.
         if [ "$dirty" = yes ] && [ -n "$rows" ] && loom-banner-refresh; then
           dirty=no
         fi
@@ -793,16 +780,15 @@ in
   # it.
   systemd.tmpfiles.rules = [
     # The one declaration of this directory on the box, and it has to serve two
-    # consumers. It used to be declared here *and* in mtls.nix, with different
-    # modes -- and `systemd.tmpfiles.rules` from every module is concatenated into
-    # one file, where systemd-tmpfiles refuses incompatible duplicates for a path,
-    # logs `Duplicate line for path "/var/lib/loom", ignoring.` and keeps the
-    # first. Which module came first was an artefact of module evaluation order,
-    # so a reorder of `applianceModules` would have silently swapped the modes:
-    # one way the hardening on the directory holding
-    # /var/lib/loom/recovery-passphrase was discarded, the other way nginx could
-    # no longer traverse to /var/lib/loom/mtls and the captive portal never
-    # started.
+    # consumers -- this module and mtls.nix. A second declaration with different
+    # modes would be silently wrong: `systemd.tmpfiles.rules` from every module is
+    # concatenated into one file, where systemd-tmpfiles refuses incompatible
+    # duplicates for a path, logs `Duplicate line for path "/var/lib/loom",
+    # ignoring.` and keeps the first. Which module comes first is an artefact of
+    # module evaluation order, so a reorder of `applianceModules` would silently
+    # swap the modes: one way the hardening on the directory holding
+    # /var/lib/loom/recovery-passphrase is discarded, the other way nginx cannot
+    # traverse to /var/lib/loom/mtls and the captive portal never starts.
     #
     # 0751, not 0750: others need `x` to reach ${stateDir}-style subdirectories
     # they are named into -- nginx's key lives in one -- and they still cannot

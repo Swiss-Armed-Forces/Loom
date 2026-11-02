@@ -82,8 +82,8 @@ const CARD_MAIN_COLUMN_SX = { flex: 1, minWidth: 0 } as const;
  * MUI anchors a badge on the corner and then translates it half its own size
  * past it, so a quarter of the bubble hangs below the image. The card is a
  * `Paper`, which clips to its rounded corners, and the room under the image is
- * the card's bottom padding - which the spacing presets shrink. The bottom of
- * the count lost 5px of itself to it.
+ * the card's bottom padding - which the spacing presets shrink, so the bottom
+ * of the count is clipped away with it.
  *
  * Sitting the bubble flush inside the corner makes it independent of the
  * padding, so no spacing can cut it.
@@ -101,7 +101,7 @@ const SIDE_THUMBNAIL_BADGE_SX = {
     top: 0,
     left: 0,
     // Explicit rather than `inset: 0`: the badge is a flex box that sizes to
-    // its image, and anchoring all four edges left it at the image's own
+    // its image, and anchoring all four edges leaves it at the image's own
     // height instead of the column's. A percentage resolves against the
     // column, which the text beside it has already given a height.
     width: "100%",
@@ -132,20 +132,19 @@ export const ResultCard = React.memo(
         const sortFieldValue = file?.meta?.sortFieldValue ?? "";
         const vis = useAppSelector(selectCardElementVisibility);
         const fieldLayout = useAppSelector(selectFieldLayout);
-        // Every card draws the same elements, the highlighted one included.
-        // It used to force all of them on, which made it taller than the slot
-        // the list had measured for it - so it was drawn over its neighbour
-        // until the measurement caught up, and the list moved under the reader
-        // as the highlight travelled. The highlight is a mark on a card now,
-        // not a different card.
+        // Every card draws the same elements, the highlighted one included: a
+        // card that forced all of them on would be taller than the slot the
+        // list has measured for it, drawn over its neighbour until the
+        // measurement catches up, and the list would move under the reader as
+        // the highlight travels. The highlight is a mark on a card, not a
+        // different card.
         const hasThumbnailSlot = reservesThumbnailSlot(fieldLayout, vis);
         const thumbnailFileId =
             vis.thumbnailWidthRem > 0 ? filePreview?.thumbnailFileId : null;
-        // The field block follows the field selection and nothing else. It
-        // used to have a switch of its own as well, which could only ever
-        // disagree with the selection: a reader who wants no fields on the
-        // card has one way to say so, which is to select none under Card
-        // Fields.
+        // The field block follows the field selection and nothing else. A
+        // switch of its own could only ever disagree with the selection: a
+        // reader who wants no fields on the card has one way to say so, which
+        // is to select none under Card Fields.
         const hasSelectedFields = useAppSelector(
             (state) => selectPreviewFields(state).length > 0,
         );
@@ -171,8 +170,8 @@ export const ResultCard = React.memo(
         // cache, and it may legitimately be skipped. It takes no `query`
         // argument and does not depend on `searchQuery`: the thunk reads the
         // active query from the store itself. Depending on the query object
-        // here re-ran this effect for every mounted card whenever its identity
-        // changed.
+        // here re-runs this effect for every mounted card whenever its
+        // identity changes.
         //
         // fileInViewChanged is dispatched in the body and again in the cleanup
         // because a card can be unmounted while still in view — the list is
@@ -277,8 +276,8 @@ export const ResultCard = React.memo(
         //
         // Reserved from the setting and not from the file, and so empty on a
         // file that has no image: a column that came and went with the file
-        // left the fields of one card sitting to the left of the fields of
-        // the next.
+        // would leave the fields of one card sitting to the left of the fields
+        // of the next.
         const reservesSideThumbnail =
             vis.thumbnailWidthRem > 0 && !hasThumbnailSlot;
 
@@ -368,8 +367,8 @@ export const ResultCard = React.memo(
                                     // width and lays itself out from that,
                                     // which is what unrolls the file actions
                                     // into clickable icons where there is room
-                                    // for them. Pinning it on took that away
-                                    // however wide the card was.
+                                    // for them. Pinning it on takes that away
+                                    // however wide the card is.
                                     denseChrome
                                     showExtensionIcon={vis.showExtensionIcon}
                                     showFilePath={vis.showFilePath}

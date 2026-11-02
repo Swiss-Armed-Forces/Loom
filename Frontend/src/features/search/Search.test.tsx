@@ -156,7 +156,8 @@ describe("Search URL synchronisation", () => {
     it("searches what the URL asks for even when it is the cached query", async () => {
         // A link pasted back into the browser that produced it, or a plain
         // reload: the restored query matches the URL while the results are
-        // gone, and matching the two used to count as "nothing to do".
+        // gone, so matching the two is not enough to decide there is
+        // nothing to do.
         persistQuery(SORTED_QUERY);
 
         await renderSearch(SORTED_URL);

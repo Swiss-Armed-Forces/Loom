@@ -88,7 +88,7 @@ export const UpdateFileButton = ({
                 // Applied before the request, not after it. Two updates to the
                 // same file can overlap - selecting a card marks it seen while
                 // a keypress toggles it - and applying each one when its own
-                // request happened to finish let the older of the two land
+                // request happens to finish lets the older of the two land
                 // last and win. In the order the user caused them, they
                 // compose. A failure below resyncs from the server.
                 dispatch(patchFilePreview({ fileId, changes: request }));

@@ -23,9 +23,9 @@ if TYPE_CHECKING:
 def console_font(appliance: "Machine", subtest: "Subtest") -> None:
     with subtest("the console font is re-applied once the display has settled"):
         # systemd-vconsole-setup runs Before=sysinit.target, and on the real box
-        # its early pass logged "Configuration of first virtual console was
-        # skipped" and the login screen kept the kernel's 16x32 built-in even
-        # though /etc/vconsole.conf named the right font and `setfont` worked by
+        # its early pass logs "Configuration of first virtual console was
+        # skipped": the login screen keeps the kernel's 16x32 built-in even
+        # though /etc/vconsole.conf names the right font and `setfont` works by
         # hand. branding.nix therefore applies it a second time, late.
         # Not `is-active`: the unit is `Type=oneshot` with `RemainAfterExit` and
         # an ExecStart prefixed `-`, so it reports active whether the font loaded,
@@ -88,7 +88,7 @@ def console_session(
         # The monitor has to be showing tty1, which is where the banner, the
         # prompt and the session all are -- and where a keypress lands. This is
         # not a given: a `console=ttyN` anywhere on the kernel command line
-        # silently moves the foreground console, and did.
+        # silently moves the foreground console.
         fg = appliance.succeed("fgconsole").strip()
         assert fg == "1", f"foreground console is {fg}, not tty1"
 
@@ -113,8 +113,8 @@ def console_session(
         #
         # `pane_start_command` rather than the current one, and why, is in
         # loom_tests/tmux.py -- which the mouse test reads the same list through.
-        # One path, checked rather than repeated: three tests talk to this session
-        # and each used to carry its own copy of the socket.
+        # One path, checked rather than repeated: three tests talk to this
+        # session, through the one copy of the socket in loom_tests/tmux.py.
         assert tmux.SOCKET == params.console_socket
 
         panes = tmux.Session(appliance).panes()
@@ -190,17 +190,17 @@ def pane_restart(
         if params.ai_enabled:
             _assistant_pane(appliance, params, commands)
 
-        # The session no longer holds a shell, so the promise the status line
-        # makes -- "Alt-F2 for a shell" -- is the thing worth asserting. Every
-        # getty carries --login-pause, tty2 included, so this is the same
-        # press-a-key dance as tty1 and then an ordinary prompt.
+        # The session holds no shell, so the promise the status line makes --
+        # "Alt-F2 for a shell" -- is the thing worth asserting. Every getty
+        # carries --login-pause, tty2 included, so this is the same press-a-key
+        # dance as tty1 and then an ordinary prompt.
         appliance.send_key("alt-f2")
         appliance.wait_until_tty_matches("2", "press ENTER to login")
         appliance.send_key("ret")
         appliance.wait_until_tty_matches("2", f"{params.operator.user}@")
         appliance.send_chars("touch /tmp/loom-console-alive\n")
         appliance.wait_for_file("/tmp/loom-console-alive")
-        # Back to tty1: the key-guard block at the bottom of this file asserts on
+        # Back to tty1: the key-guard subtests in appliance/guard.py assert on
         # what the operator's session shows.
         appliance.send_key("alt-f1")
         appliance.wait_until_succeeds("fgconsole | grep -x 1 >/dev/null")
@@ -214,7 +214,7 @@ def _log_pane_hands_over(
     # read here is the wrapper that pane starts -- which names the unit, the namespace
     # and the thing it hands over to.
     # Two store paths: loom-pane and the program it supervises. `cat` of both is
-    # what these assertions have always read.
+    # what these assertions read.
     progress_pane = appliance.succeed(f"cat {commands[0]}")
     k9s = re.search(r"/nix/store/\S+-loom-k9s/bin/loom-k9s", progress_pane)
     assert k9s, progress_pane
@@ -238,8 +238,8 @@ def _log_pane_hands_over(
     want = appliance.succeed(
         f"bash -c '. {params.operator.repo_dir}/vars.sh; printf %s \"$NAMESPACE\"'"
     ).strip()
-    # Tolerates the quotes lib.escapeShellArg adds, as the guard action
-    # subtest at the bottom of this file does.
+    # Tolerates the quotes lib.escapeShellArg adds, as `action_per_mode` in
+    # appliance/guard.py does.
     for script in [progress_pane, appliance.succeed(f"cat {k9s.group(0)}")]:
         got = re.search(r"^namespace='?([\w-]+)'?$", script, re.M)
         assert got, script
@@ -252,7 +252,7 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     # argument as the namespace above, with a sharper failure: an
     # air-gapped box only has what ollama/Dockerfile.models baked in, so a pane
     # pinned to anything else warns and then fails every question the
-    # operator asks it. The pane no longer *waits* on the model -- see
+    # operator asks it. The pane does not *wait* on the model -- see
     # `ready` in console.nix -- which is what makes this assertion the only
     # thing standing between a typo in vars.sh and an assistant that is
     # simply broken on a box with no way to fetch the tag it wants.
@@ -261,10 +261,9 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
         f"bash -c '. {params.operator.repo_dir}/vars.sh;"
         ' printf %s "$LOOM_CHAT_MODEL"\''
     ).strip()
-    # `LOOM_CHAT_MODEL`, where this used to read `model=`: the pane's body is
-    # nixos/scripts/loom_chat.sh now, and the module hands it values through a
-    # prologue of `LOOM_*` assignments. The `model=` that reads it is still
-    # there, further down the same script.
+    # `LOOM_CHAT_MODEL`: the pane's body is nixos/scripts/loom_chat.sh and the
+    # module hands it values through a prologue of `LOOM_*` assignments. The
+    # `model=` that reads it is further down the same script.
     got_model = re.search(r"^LOOM_CHAT_MODEL='?([\w/.:@-]+)'?$", chat_pane, re.M)
     assert got_model, chat_pane
     assert (
@@ -290,11 +289,11 @@ def _assistant_pane(appliance: "Machine", params: Params, commands: list[str]) -
     # like the right answer while leaving `.agents` scanned.
     assert "OPENCODE_DISABLE_EXTERNAL_SKILLS=1" in chat_pane, chat_pane
     # The same walk, for instruction files: AGENTS.md, then CLAUDE.md. There
-    # is no AGENTS.md in the seeded checkout, so the fallback used to hit the
-    # repository's own -- 500-odd lines about worktrees, merge requests and
-    # poetry lockfiles, prepended to every question asked of a box with no
-    # git remote. A package bump that lost this flag would put it back
-    # silently, and the only symptom is a worse assistant.
+    # is no AGENTS.md in the seeded checkout, so without this the fallback
+    # hits the repository's own -- 500-odd lines about worktrees, merge
+    # requests and poetry lockfiles, prepended to every question asked of a
+    # box with no git remote. A package bump that lost this flag would put it
+    # back silently, and the only symptom is a worse assistant.
     assert "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1" in chat_pane, chat_pane
 
     # And the config it ships. "@ai-sdk/openai-compatible" is the

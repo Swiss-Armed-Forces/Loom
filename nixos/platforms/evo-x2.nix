@@ -5,7 +5,7 @@
 #
 # The one platform here that offloads Ollama to its GPU. amdgpu is mainline and
 # already loaded -- it is what puts the installer menu on the monitor -- and
-# up.sh gained the AMD half in #284, so `--gpus amd` now has both ends.
+# up.sh carries the AMD half, so `--gpus amd` has both ends.
 { lib, nixosHardware, ... }:
 {
   # nixos-hardware has no GMKtec EVO-X2. What it has is the same SoC:
@@ -58,8 +58,8 @@
     # The second is the one to watch. Strix Halo is recent enough that ROCm
     # support for it arrived late, and a box where it does not enumerate fails
     # closed rather than dropping to CPU -- see the gpuVendor option in
-    # ../platform.nix. `build-appliance-image --no-gpu` builds the CPU-only
-    # stick this platform used to produce.
+    # ../platform.nix. `build-appliance-image --no-gpu` builds a CPU-only stick
+    # for this platform.
     gpuVendor = "amd";
 
     # Both 2.5GbE ports are Realtek, claimed by r8169, so the driver does not
@@ -91,7 +91,7 @@
     extraInitrdModules = [ ];
   };
 
-  # Kept explicit even though common/cpu/amd now sets it from
+  # Kept explicit even though common/cpu/amd sets it from
   # `enableRedistributableFirmware` with mkDefault. The upstream default is a
   # rule about a general-purpose machine; this is a statement about a box that
   # gets handed to somebody, and it should not change because an import moved.

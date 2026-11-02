@@ -79,7 +79,7 @@ export const FieldSections = memo(
         const selectedEntries = useMemo(
             () =>
                 // Every selected field, whether or not this file has a value
-                // for it. Skipping the empty ones made a card's height depend
+                // for it. Skipping the empty ones makes a card's height depend
                 // on the file rather than on the selection, which is what the
                 // fixed row height is there to stop; an empty line also keeps
                 // a card's fields under the same ones on the card above.

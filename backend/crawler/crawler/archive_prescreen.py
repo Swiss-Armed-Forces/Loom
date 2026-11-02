@@ -52,10 +52,9 @@ def classify_intake_object(
     will open with this deployment's key. That question is settled in the worker,
     cheaply, by `index_archive._inspect_encrypted_header`.
 
-    Falls back to `PLAIN_FILE` on anything unexpected. That direction matters: a plain
-    file misrouted to the archive pipeline used to be discarded without a trace, whereas
-    an archive misrouted to the ordinary indexing pipeline is merely indexed as the zip
-    it is. Degrade towards the recoverable mistake.
+    Falls back to `PLAIN_FILE` on anything unexpected. That direction is the recoverable
+    one: an archive misrouted to the ordinary indexing pipeline is merely indexed as the
+    zip it is.
     """
     try:
         reader = S3RangeReader(client, bucket, object_name, size)

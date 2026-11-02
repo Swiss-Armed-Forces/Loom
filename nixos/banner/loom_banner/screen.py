@@ -87,7 +87,7 @@ def _identity(box: Box, live: Live) -> tuple[str, ...]:
 def _connect(live: Live) -> Section:
     """The two facts somebody with a laptop needs.
 
-    http rather than https, and the friendlier of the two now that both work: the
+    http rather than https, and the friendlier of the two where both work: the
     certificate is self-signed, so the https spelling costs whoever reads this an
     interstitial, and it is the URL the captive portal sends a phone to.
     """

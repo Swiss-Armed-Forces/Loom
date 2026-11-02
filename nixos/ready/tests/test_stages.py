@@ -3,8 +3,7 @@
 The stage is the frame the whole display hangs on: it picks the words on the banner, the
 colour in the status line, and -- through `Readiness.settled` -- the moment the bring-up
 pane hands the screen over to k9s. That last one is why this file matters more than it
-looks: it is the appliance's definition of "Loom is up", and it used to be written out
-twice.
+looks: it is the appliance's definition of "Loom is up".
 """
 
 import doubles
@@ -51,10 +50,9 @@ def test_a_listing_that_could_not_be_read_changes_nothing():
     """A kubectl that missed its five-second deadline is not a verdict about the box.
 
     `get deployments,statefulsets,daemonsets,jobs -o json` across the namespace is not a
-    cheap call on a busy appliance, and an empty `workloads` used to be
-    indistinguishable from "nothing is ready": the box went to `Loom: degraded` with a
-    red status line, `loom-ready` exited 1, and the stall detector was reset by the
-    counts flipping to (0, 0) and back.
+    cheap call on a busy appliance, and an empty `workloads` read as "nothing is ready"
+    would send the box to `Loom: degraded` with a red status line, make `loom-ready`
+    exit 1, and reset the stall detector as the counts flip to (0, 0) and back.
     """
     timed_out = observation(workloads=[], workloads_known=False)
 
@@ -145,12 +143,12 @@ def test_recovering_from_degraded_reaches_ready_again():
     )
 
 
-def test_settled_is_exactly_the_old_handover_condition():
+def test_settled_is_exactly_the_handover_condition():
     """What the pane waits for before giving the screen to k9s.
 
-    console.nix used to evaluate "the unit is active and the namespace exists" in the
-    pane itself. That is precisely these three stages, and stating it once is what keeps
-    the pane, the status line and the banner from disagreeing about whether Loom is up.
+    The handover turns on "the unit is active and the namespace exists". That is
+    precisely these three stages, and stating it once is what keeps the pane, the status
+    line and the banner from disagreeing about whether Loom is up.
     """
     settled = {stage for stage in Stage if stage in SETTLED_STAGES}
     assert settled == {Stage.ROLLING_OUT, Stage.READY, Stage.DEGRADED}
@@ -206,10 +204,10 @@ def test_the_banner_is_refreshed_on_a_stage_change_and_not_otherwise(tmp_path):
 def test_a_flapping_cluster_does_not_repaint_the_login_screen_every_tick(tmp_path):
     """Every stage change restarts autovt@tty1, and two per ten seconds is allowed.
 
-    One kubectl missing its deadline and the next succeeding used to alternate DEGRADED
-    and READY as often as every five seconds, clearing and repainting the pre-login
-    screen each time -- with a narrow race in which the operator's first keypress is
-    eaten.
+    One kubectl missing its deadline and the next succeeding alternates DEGRADED and
+    READY as often as every five seconds, which without the rate limit clears and
+    repaints the pre-login screen each time -- with a narrow race in which the
+    operator's first keypress is eaten.
     """
     commands = doubles.FakeCommands()
     ready = observation(workloads=[workload(desired=1, ready=1)])

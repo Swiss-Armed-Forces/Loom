@@ -59,7 +59,7 @@ def test_no_estimate_and_no_preset_falls_back_to_the_floor() -> None:
 
 # --- Parsing ---
 def test_the_context_length_is_read_in_tokens() -> None:
-    """The number this used to treat as bytes."""
+    """`ollama show` reports the context length in tokens, not bytes."""
     assert parse_context_length_tokens("  context length    40960\n") == 40960
     assert parse_context_length_tokens("  parameters   9.7B\n") is None
 
@@ -67,7 +67,7 @@ def test_the_context_length_is_read_in_tokens() -> None:
 def test_model_sizes_are_read_as_the_decimal_units_ollama_prints() -> None:
     """`format.HumanBytes` is decimal; its binary sibling prints GiB and MiB.
 
-    Reading "6.0 GB" as 6 * 1024**3 overstated every model by 7.4%, which reaches
+    Reading "6.0 GB" as 6 * 1024**3 overstates every model by 7.4%, which reaches
     `calculate_parallelism` and can cost a slot on a tight VRAM budget.
     """
     assert parse_size_to_bytes("6.0 GB") == 6 * (1000**3)
@@ -75,7 +75,7 @@ def test_model_sizes_are_read_as_the_decimal_units_ollama_prints() -> None:
 
 
 def test_every_unit_ollama_can_print_is_understood() -> None:
-    """An unhandled suffix used to abort the container entrypoint outright."""
+    """An unhandled suffix would abort the container entrypoint outright."""
     assert parse_size_to_bytes("900 B") == 900
     assert parse_size_to_bytes("64 KB") == 64_000
     assert parse_size_to_bytes("1.2 TB") == int(1.2 * 1000**4)

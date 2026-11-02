@@ -81,8 +81,7 @@ def _pane(arguments: argparse.Namespace) -> int:
 def _oneline(arguments: argparse.Namespace) -> int:
     # Never touches the cluster and never blocks: this runs out of the tmux server on
     # `status-interval`, and a status line that can hang is a session that can hang.
-    # Nothing to say prints nothing, and the status line then looks exactly as it did
-    # before any of this existed.
+    # Nothing to say prints nothing, leaving the status line without a Loom segment.
     line = text.tmux_oneline(read(arguments.state_dir))
     if line:
         sys.stdout.write(line)

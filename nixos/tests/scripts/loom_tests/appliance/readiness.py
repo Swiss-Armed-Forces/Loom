@@ -50,13 +50,13 @@ def published(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         # Both readers run as the operator -- two of them are spawned by the tmux
         # server -- while the writer is root, so neither file may be root-only.
         #
-        # Asked of the operator rather than read off the mode digits. `endswith("6")`
-        # accepted 0666 and 0646, which is world-*writable*: `box.nix`'s `loom-info`
-        # prints `summary` straight into the pre-login banner, and `text.py`'s header
+        # Asked of the operator rather than read off the mode digits, which cannot
+        # say whether the path is reachable at all and are easy to write in a way
+        # that admits a world-*writable* mode: `box.nix`'s `loom-info` prints
+        # `summary` straight into the pre-login banner, and `text.py`'s header
         # exists to guarantee that line is one ASCII line with no backslash, because
-        # agetty reads a backslash as an escape. A mode that assertion permitted would
-        # hand that guarantee to any local account. It also silently rejected 5 and 7,
-        # which are just as readable, and said nothing about the directory.
+        # agetty reads a backslash as an escape. A writable mode hands that
+        # guarantee to any local account.
         for path in [STATE, SUMMARY]:
             appliance.succeed(f"runuser -u {params.operator.user} -- cat {path}")
             appliance.fail(f"runuser -u {params.operator.user} -- test -w {path}")

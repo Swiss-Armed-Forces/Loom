@@ -44,10 +44,9 @@ export interface PreviewFreshness {
 /**
  * Whether `entry`'s cached preview can be rendered as-is.
  *
- * One predicate for every caller, because there were two copies of it and the
- * field set was in neither: changing which fields cards show re-fetched only
- * the previews that happened to be on screen at that moment, and every other
- * card kept rendering the old set for as long as the entry survived.
+ * One predicate for every caller, field set included: a copy that leaves the
+ * field set out lets a card go on rendering the old set for as long as the
+ * entry survives, however the selection changes.
  */
 export const isPreviewFresh = (
     entry: SearchFileEntry | undefined,

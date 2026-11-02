@@ -60,7 +60,7 @@ _FAMILY_PROFILES: dict[str, Callable[[str], ModelProfile | None]] = {
 
 # Claimed for services on which no lookup table recognises the model name: pydantic-ai's
 # `supports_thinking=False` default is absence of knowledge there, and leaving it makes
-# `Model.prepare_request` strip `thinking` and send no reasoning_effort at all (#307).
+# `Model.prepare_request` strip `thinking` and send no reasoning_effort at all.
 #
 # Merged above the family profile, which spells the same ignorance as a hard `False`:
 # gemma reaches it through Google's `'gemini-2.5' in model_name` test and gpt-oss through
@@ -77,9 +77,9 @@ _CLAIMS_THINKING_SUPPORT = ModelProfile(supports_thinking=True)
 #
 # Required for vLLM behind LiteLLM: rendering Qwen's template, it answers "System message
 # must be at the beginning" as soon as a capability's instructions add a second
-# `InstructionPart` (!756). Claimed for Ollama and Infomaniak as well -- they run the same
-# family of templates, and merging costs nothing where it is not needed, as it is a no-op
-# on the single leading instruction every non-agent client sends.
+# `InstructionPart`. Claimed for Ollama and Infomaniak as well -- they run the same
+# family of templates, and merging costs nothing where it is not needed, as it is a
+# no-op on the single leading instruction every non-agent client sends.
 #
 # Absent deliberately:
 #   OpenAIProvider  -- accepts repeated system messages, and demoting them to user text

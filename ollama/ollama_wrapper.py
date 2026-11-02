@@ -45,8 +45,7 @@ MIN_RESERVED_VRAM_FOR_MODEL_BYTES = 1 * (1024**3)
 # What one concurrent slot costs. KV cache is `context x parallel`, so the reserve has
 # to scale with the context: 128 KiB/token is a GQA-shaped f16 estimate
 # (2 x layers x kv_heads x head_dim x 2 B) -- the production 9B chat model is around
-# 144 KiB/token. The floor is what this file used to reserve unconditionally, kept so
-# a small context does not price a slot at nothing.
+# 144 KiB/token. The floor keeps a small context from pricing a slot at nothing.
 KV_BYTES_PER_TOKEN = 128 * 1024
 MIN_PER_SLOT_RESERVE_BYTES = 512 * (1024**2)
 
@@ -275,7 +274,7 @@ def clamp(value: int, lowest: int, highest: int) -> int:
 # column with `format.HumanBytes`, whose thresholds are KiloByte = 1000,
 # MegaByte = 1000*1000 and GigaByte = 1000^3. The binary renderer in that same
 # package prints GiB and MiB, which is how the two are told apart. Reading "6.0 GB"
-# as 6 * 1024**3 overstated every model by 7.4%, and that number flows through
+# as 6 * 1024**3 overstates every model by 7.4%, and that number flows through
 # `build_memory_budget` into `calculate_parallelism`, where on a tight VRAM budget it
 # costs a parallel slot.
 SIZE_UNITS: Final[dict[str, int]] = {
@@ -291,10 +290,10 @@ def parse_size_to_bytes(size_str: str) -> int:
     """Convert a size as `ollama list` prints it ("6.5 GB") into bytes.
 
     Every suffix `format.HumanBytes` can emit is covered. A model small enough to be
-    printed in KB is unusual but reachable -- a LoRA adapter -- and an unknown suffix
-    used to raise out of `get_installed_models`, past `run_entry_command`, and abort the
-    container entrypoint before `os.execvpe`: a pod that neither serves nor crashes. See
-    `parse_model_list` for what happens instead.
+    printed in KB is unusual but reachable -- a LoRA adapter. An unknown suffix raises,
+    and `parse_model_list` catches it: an exception escaping through
+    `get_installed_models` and `run_entry_command` aborts the container entrypoint
+    before `os.execvpe`, leaving a pod that neither serves nor crashes.
     """
     match = re.match(r"([\d.]+)\s*([kmgt]?b)\b", size_str.lower())
     if not match:
@@ -432,7 +431,7 @@ def probe_amd(sysfs_root: Path) -> GpuProbeResult:
     names = ", ".join(card.name for card in cards)
     # GTT counts only for an APU, where it and the carve-out are one pool. On a
     # discrete card GTT is host RAM over PCIe and not where ROCm puts KV cache,
-    # so booking it gave the same 24 GiB card twice the slots this probe's
+    # so booking it would give the same 24 GiB card twice the slots this probe's
     # NVIDIA counterpart gives it -- which makes the two exclusive on purpose.
     apu = chosen.vram_bytes < AMD_DISCRETE_VRAM_BYTES
     return GpuProbeResult(

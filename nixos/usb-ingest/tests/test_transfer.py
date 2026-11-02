@@ -129,8 +129,8 @@ def test_events_from_a_command_that_succeeds_are_passed_through() -> None:
 def test_the_endpoint_is_declared_in_the_environment() -> None:
     # Not registered with `mc alias set`: that command probes the endpoint and refuses
     # to record one that does not answer, so on a box still starting Loom -- the case
-    # the wait below exists for -- configuring mc failed outright and the wait was
-    # never reached. An environment alias needs nothing to be up.
+    # the wait below exists for -- configuring mc would fail outright and the wait
+    # would never be reached. An environment alias needs nothing to be up.
     env = mc_env(CONFIG_DIR, ENDPOINT, UNIT_ENVIRONMENT)
 
     assert env[f"MC_HOST_{ALIAS}"] == ENDPOINT
@@ -140,8 +140,8 @@ def test_the_endpoint_is_declared_in_the_environment() -> None:
 #
 # A named alias rather than an enumerated shape, because that is what it is: these
 # helpers put a directory on PATH and the module under test reads whatever else the
-# unit was given. `-> dict[str, str]` read identically to half a dozen other maps in
-# this file.
+# unit was given. `-> dict[str, str]` would read identically to half a dozen other maps
+# in this file.
 Environment = dict[str, str]
 
 
@@ -191,8 +191,9 @@ def test_the_wait_gives_up_saying_what_it_last_heard(tmp_path) -> None:
 
 def test_the_cluster_ca_is_retried_until_it_lands(tmp_path) -> None:
     # Installing it needs the Kubernetes API, which on a box still coming up is no more
-    # awake than the S3 endpoint. Done once before the wait, it never happened at all,
-    # and every later call failed verification against the box's own certificate.
+    # awake than the S3 endpoint. Done once before the wait, it would never happen at
+    # all, and every later call would fail verification against the box's own
+    # certificate.
     attempts: list[int] = []
     probe = tmp_path / "probe"
     body = f"test -f {probe} || exit 1"
@@ -228,7 +229,7 @@ def test_a_cluster_that_is_already_trusted_is_not_asked_again(tmp_path) -> None:
 def test_the_summary_event_is_not_a_file(tmp_path) -> None:
     # `mc mirror --json` ends with totals rather than a file, and it carries
     # `"status": "success"` like every object before it. Counted as one, a stick with
-    # ten documents reported eleven and an empty volume reported one.
+    # ten documents would report eleven and an empty volume would report one.
     env = _fake_mc(
         tmp_path,
         "printf '%s\\n' "

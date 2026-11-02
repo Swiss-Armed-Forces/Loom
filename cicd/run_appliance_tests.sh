@@ -86,10 +86,7 @@ EVAL_ONLY_TESTS=(hardware units skills)
 # Of those, the ones still bound to this machine's architecture -- see the
 # `skills` paragraph above. Membership of EVAL_ONLY_TESTS is what lifts the KVM
 # and disk requirements; membership here puts the architecture check and the
-# `--platform all` refusal back, which that membership had taken away. Without
-# it `appliance-test skills --platform all` was accepted and ran `skills` for
-# spark and nuc12 on an x86_64 workstation, failing deep inside nix-build --
-# "a platform mismatch rather than a verdict", as the paragraph above puts it.
+# `--platform all` refusal back, which that membership had taken away.
 HOST_ARCH_TESTS=(skills)
 
 # What `--platform all` is for: eval-only *and* architecture-free. Spelled out
@@ -260,9 +257,9 @@ validate_environment(){
 # anything. Both lines together, because the first appears in the healthiest run
 # there is -- the driver prints it while waiting for a shell that does arrive.
 #
-# Seen twice on the shared runners in one day, on two different targets, with
-# nothing in the appliance's own log to explain it. A target that fails this way
-# is run once more; one that fails any other way is reported as it always was.
+# A shared runner stalls this way with nothing in the appliance's own log to
+# explain it. A target that fails this way is run once more; one that fails any
+# other way is reported as it is.
 readonly STALL_WAITING="Guest root shell did not produce any data yet"
 readonly STALL_TIMEOUT="timeout reached; test terminating"
 

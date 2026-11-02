@@ -2090,7 +2090,7 @@ def test_es_repository_update(obj: _TestEsRepositoryObject):
 
     es_repository.update(obj)
 
-    # update() now uses to_es_dict() which applies mode="json" serialization
+    # update() uses to_es_dict() which applies mode="json" serialization
     # (UUIDs become strings)
     document_mock.update.assert_called_once_with(
         id=str(obj.id_),
@@ -2177,7 +2177,7 @@ def test_es_repository_update_exclude(obj: _TestEsRepositoryObject):
 
     es_repository.update(obj, exclude={"test_int", "test_str"})
 
-    # update() now uses to_es_dict() which applies mode="json" serialization
+    # update() uses to_es_dict() which applies mode="json" serialization
     # (UUIDs become strings)
     document_mock.update.assert_called_once_with(
         id=str(obj.id_),

@@ -57,7 +57,7 @@ def test_an_apu_is_planned_as_unified_memory(tmp_path: Path) -> None:
 
     Both are system memory, so both go in `shared_bytes` and the card has no dedicated
     VRAM at all -- the same shape `probe_nvidia` produces for a GB10, and the reason the
-    two vendors now plan the same box the same way.
+    two vendors plan the same box the same way.
     """
     sysfs = make_sysfs(
         tmp_path,
@@ -73,7 +73,7 @@ def test_an_apu_is_planned_as_unified_memory(tmp_path: Path) -> None:
 
 
 def test_a_discrete_card_is_planned_at_its_own_vram(tmp_path: Path) -> None:
-    """An iGPU beside a dGPU, which is the topology this used to get wrong.
+    """An iGPU beside a dGPU, the topology this probe is easiest to get wrong on.
 
     Both cards report the same system-wide GTT pool, so summing them claims the box
     twice -- and booking GTT *at all* for the discrete card claims host memory it cannot

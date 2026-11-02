@@ -3,9 +3,9 @@
 #
 # Every value in nixos/platforms/<id>.nix is a claim about hardware -- which
 # driver claims the wired port, whether the radio can run an access point, how
-# much memory the iGPU may pin. Those claims were written from spec sheets and
-# other people's write-ups, because the boxes were not in the room. This is how
-# they get checked.
+# much memory the iGPU may pin. Those claims come from spec sheets and other
+# people's write-ups rather than from the hardware itself. This is how they get
+# checked.
 #
 # It is deliberately plain bash with no Nix dependency, because the box it most
 # needs to run on is the one that is NOT yet running Loom: a DGX Spark on DGX
@@ -21,9 +21,7 @@
 #
 # Style note: `command -v` is written out at each use rather than wrapped in a
 # `have()` helper, and command substitutions are always assigned to a variable
-# before being passed anywhere. Both were written to satisfy SC2310 and SC2312,
-# which `.shellcheckrc` has since turned off for the whole repository -- so
-# neither is required any more. They are kept because they are also the clearer
+# before being passed anywhere. Neither is required, but both are the clearer
 # form: the status of a substitution is visible at the assignment rather than
 # discarded three arguments deep.
 set -euo pipefail
@@ -305,7 +303,7 @@ section_cpu_memory(){
     # `auto_select` is the cpufreq attribute mainline has carried since 6.16;
     # `cppc_cpufreq.auto_sel_mode=` is an out-of-tree parameter NVIDIA's own
     # kernel adds on top of it, which no stock kernel parses -- so grepping
-    # /proc/cmdline for it answered "not requested" whatever the register held.
+    # /proc/cmdline for it answers "not requested" whatever the register holds.
     scaling_driver="$(slurp /sys/devices/system/cpu/cpufreq/policy0/scaling_driver)"
     governor="$(slurp /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)"
     if [[ -n "${scaling_driver}" ]]; then
@@ -412,10 +410,9 @@ section_radios(){
 
     heading "Radios"
     # A plain glob with an existence test, not `compgen -G`: that builtin does
-    # not expand this pattern consistently across bash versions -- the bash in
-    # the appliance's own closure reported no radio on a machine that has one --
-    # and this script has to behave the same on whatever bash the box it is
-    # diagnosing happens to ship.
+    # not expand this pattern consistently across bash versions, and this script
+    # has to behave the same on whatever bash the box it is diagnosing happens
+    # to ship.
     for wireless in /sys/class/net/*/wireless; do
         [[ -e "${wireless}" ]] || continue
         found=$(( found + 1 ))
@@ -823,10 +820,10 @@ emit_json(){
     # The first card that answers, not card0. `section_gpu` iterates
     # `/sys/class/drm/card*` for a reason -- the index is not stable, and a
     # simpledrm/efifb console or a discrete card enumerating ahead of the APU
-    # puts something else at card0 -- so reading card0 here made the
-    # machine-readable report say nothing on exactly the boxes the loop was
-    # written for. `--json` is the form an agent consumes, and the stated point
-    # of this script is checking guessed platform values against real hardware.
+    # puts something else at card0 -- so reading card0 here would make the
+    # machine-readable report say nothing on exactly the boxes the loop is there
+    # for. `--json` is the form an agent consumes, and the stated point of this
+    # script is checking guessed platform values against real hardware.
     vram=""
     gtt=""
     for card in /sys/class/drm/card*; do

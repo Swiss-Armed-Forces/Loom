@@ -29,13 +29,14 @@ chmod 750 "${TLS_DIR}"
 
 # Only when there is nothing usable there. Writing a placeholder over the
 # real certificate would put the warning back for a day, on the one page
-# that exists to take it away -- but `-s` alone also kept an *expired*
-# pair: `tlsDir` is on the encrypted root and survives reboots, this
-# certificate is `-days 1`, and `loom-portal-certificate` loops until the
-# cluster answers without ever consulting expiry. On a box whose cluster
-# never comes up, every boot after the first short-circuited past replacing
-# it and nginx served an expired certificate indefinitely. `-checkend 0` is
-# the one-line version of what `loom-mtls-identity` does daily.
+# that exists to take it away -- but `-s` alone would also keep an
+# *expired* pair: `tlsDir` is on the encrypted root and survives reboots,
+# this certificate is `-days 1`, and `loom-portal-certificate` loops until
+# the cluster answers without ever consulting expiry. On a box whose
+# cluster never comes up, every boot after the first would short-circuit
+# past replacing it and nginx would serve an expired certificate
+# indefinitely. `-checkend 0` is the one-line version of what
+# `loom-mtls-identity` does daily.
 if [[ -s "${TLS_CERT}" ]] && [[ -s "${TLS_KEY}" ]] \
   && openssl x509 -noout -checkend 0 -in "${TLS_CERT}" \
     >/dev/null 2>&1; then

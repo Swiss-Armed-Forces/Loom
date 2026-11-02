@@ -54,9 +54,8 @@ def _loom_archive_bytes(comment: bytes = b"") -> bytes:
 def _client_for(payload: bytes) -> S3Double:
     """The shared S3 doubles, which ship inside `common` so this package can reach them.
 
-    They used to be restated here verbatim -- the crawler cannot import from the common
-    package's *tests* -- and the copy promptly lost the request accounting the
-    assertions below are built on.
+    The crawler cannot import from the common package's *tests*, so a copy restated here
+    would drift from the request accounting the assertions below are built on.
     """
     return s3_serving(payload, BUCKET, OBJECT)
 

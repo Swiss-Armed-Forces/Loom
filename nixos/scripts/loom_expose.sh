@@ -155,7 +155,7 @@ up() {
     # ---------------------------------------------------------------
     # And nothing else crosses this box.
     #
-    # The lease now names the box as the default gateway, so a client's
+    # The lease names the box as the default gateway, so a client's
     # off-subnet traffic arrives here to be forwarded, and ip_forward is
     # on for the DNAT above. Most of it dies in the routing decision
     # before this chain is reached, because the box itself has no default

@@ -147,8 +147,8 @@ class IMAPService:
     def _imap_context(self) -> Generator[IMAPClient, None, None]:
         # We do create a new connection here because IMAPClient is not thread safe
         # We could probably be a bit smarter here, but we have to be very careful
-        # Note that at the time of writing this class is instantiated in the
-        # celery master process, which is then forked for the children.
+        # Note that this class is instantiated in the celery master process,
+        # which is then forked for the children.
         # See:
         # - https://imapclient.readthedocs.io/en/2.2.0/api.html#thread-safety
         with IMAPClient(

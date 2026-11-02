@@ -280,8 +280,9 @@ def test_save_task_run_with_oversized_arguments_and_exception():
     must still persist, and must come back in full.
 
     `arguments` and `exception` are mapped with `index=False, doc_values=False`, so no
-    term is produced and the limit cannot apply. Previously Elasticsearch rejected the
-    *whole document*, which permanently prevented the object from being persisted.
+    term is produced and the limit cannot apply. Without that mapping Elasticsearch
+    rejects the *whole document*, permanently preventing the object from being
+    persisted.
     """
     repository = ArchiveRepository(
         query_builder=get_query_builder(), pubsub_service=get_pubsub_service()

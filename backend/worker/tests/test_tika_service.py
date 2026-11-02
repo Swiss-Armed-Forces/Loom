@@ -24,7 +24,7 @@ def test_server_side_statuses_are_transient(status_code: int):
     """A tika that is unwell has to be asked again, not routed around.
 
     503 in particular is what a saturated fork pool answers, and treating it as a
-    property of the document is what sent PDFs to the strings extractor.
+    property of the document sends PDFs to the strings extractor.
     """
     assert isinstance(
         classify_tika_http_error(_http_error(status_code)), TikaTransientError

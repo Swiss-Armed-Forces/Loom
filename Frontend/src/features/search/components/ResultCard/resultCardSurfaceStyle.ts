@@ -34,10 +34,10 @@ const cursorTint = (theme: Theme): string =>
 /**
  * Elevation of a result card.
  *
- * The same for every card. The highlighted one used to lift above the list on
- * a deeper shadow, which is one more way for it to differ from its neighbours
- * and one more thing to catch the eye as the highlight moves. A gapless list
- * has nothing to lift into either - the shadow would fall on the row below.
+ * The same for every card. Lifting the highlighted one above the list on a
+ * deeper shadow is one more way for it to differ from its neighbours and one
+ * more thing to catch the eye as the highlight moves. A gapless list has
+ * nothing to lift into either - the shadow would fall on the row below.
  */
 export const resultCardElevation = (flat: boolean): number =>
     flat ? 0 : BASE_ELEVATION;

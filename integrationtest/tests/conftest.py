@@ -26,10 +26,9 @@ def global_test_init():
 def wipe_data():
     """The cleanup will delete all data, which takes up to a few seconds.
 
-    Initially this was run for every test, but some tests can safely share a common
-    dataset. Using the class scope allows a test author to only run cleanup once for a
-    group of tests by putting them into the same class and importing a testset in a
-    local fixture.
+    Some tests can safely share a common dataset. Using the class scope allows a test
+    author to only run cleanup once for a group of tests by putting them into the same
+    class and importing a testset in a local fixture.
     """
     _wipe_data()
     # wipe_redis() flushes all Redis data including the task group registry;

@@ -4,9 +4,9 @@ from openai.types.chat import ChatCompletion
 
 
 def length_finish_reason_error() -> LengthFinishReasonError:
-    """The failure observed in #287: reasoning tokens exhausted ``max_tokens``.
+    """The failure raised when reasoning tokens exhaust ``max_tokens``.
 
-    The model never emitted the structured JSON, so the SDK's ``.parse()`` raised before
+    The model emits no structured JSON, so the SDK's ``.parse()`` raises before
     returning a response.
     """
     return LengthFinishReasonError(

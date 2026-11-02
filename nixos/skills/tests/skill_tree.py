@@ -22,7 +22,7 @@ from typing import NamedTuple
 import pytest
 import yaml
 
-# nixos/skills/tests/conftest.py -> the repository root.
+# nixos/skills/tests/skill_tree.py -> the repository root.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILLS_ROOT = REPO_ROOT / "nixos" / "skills"
 

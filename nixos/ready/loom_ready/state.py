@@ -58,10 +58,9 @@ class Stage(StrEnum):
     FAILED = "failed"
 
 
-# The stages in which up.sh has returned and the namespace exists -- which is, to the
-# letter, the condition console.nix's pane used to evaluate for itself before handing the
-# screen over to k9s. Keeping it as a set here rather than as a comparison means the pane
-# and the publisher cannot drift about what "up" means.
+# The stages in which up.sh has returned and the namespace exists -- to the letter, the
+# condition the pane hands the screen over to k9s on. Keeping it as a set here rather than
+# as a comparison means the pane and the publisher cannot drift about what "up" means.
 SETTLED_STAGES = frozenset({Stage.ROLLING_OUT, Stage.READY, Stage.DEGRADED})
 
 
@@ -93,8 +92,8 @@ class UnitState(StrEnum):
 
     `cluster.classify` decides a Stage from it and `pane._preamble` decides which one-
     line note to print, so they legitimately ask different questions -- but nothing
-    checked that they shared a vocabulary, and a misspelt literal silently makes a
-    branch dead. UNKNOWN is the answer when systemctl could not be asked, and anything
+    checks that they share a vocabulary, and a misspelt literal silently makes a branch
+    dead. UNKNOWN is the answer when systemctl could not be asked, and anything
     unrecognised folds into it.
     """
 
@@ -260,9 +259,8 @@ def read(state_dir: str, now: float | None = None) -> Readiness | None:
     """The published record, or None if there is not a usable one.
 
     None covers every way this can fail, and the readers all treat it the same way: draw
-    nothing. A status line that says nothing looks exactly like the one this box shipped
-    with before any of this existed, which is the right thing for a setup-mode box, for
-    the first seconds of a boot, and for a publisher that has died.
+    nothing. A status line that says nothing is the right thing for a setup-mode box,
+    for the first seconds of a boot, and for a publisher that has died.
     """
     try:
         with open(state_path(state_dir), encoding="utf-8") as handle:

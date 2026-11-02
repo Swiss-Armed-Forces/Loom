@@ -38,9 +38,7 @@ class Stopped(NamedTuple):
 
     The run happens in the fixture rather than in each test, because the arrange and the
     act are identical for every assertion made about one of these moments -- what
-    differs is only which half of the aftermath is being looked at, and running the
-    install twice to look at two facts about the same run is how that was written
-    before.
+    differs is only which half of the aftermath is being looked at.
     """
 
     runner: FakeRunner
@@ -122,9 +120,9 @@ def test_an_interrupt_after_the_disks_are_written_says_the_box_will_not_boot(
 
 
 def test_a_failed_command_is_treated_as_the_same_kind_of_stop() -> None:
-    # An sgdisk that dies leaves the box in exactly the state a Ctrl-C does. It used
-    # to print one line and return to a menu that said "Installation failed", with
-    # nothing to say the disks had already been rewritten.
+    # An sgdisk that dies leaves the box in exactly the state a Ctrl-C does, so it has
+    # to say the disks have already been rewritten rather than print one line and
+    # return to a menu saying "Installation failed".
     runner = with_installable_box(FakeRunner())
     runner.raises[" ".join(ZAP)] = RuntimeError
     ui = scripted_ui()

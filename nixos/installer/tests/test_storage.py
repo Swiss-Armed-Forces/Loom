@@ -38,9 +38,9 @@ def test_everything_holding_the_disks_is_closed() -> None:
 
 
 def test_the_key_store_survives_the_sweep() -> None:
-    # The regression. Found on hardware: the passphrase was accepted, the disks
-    # were repartitioned, and then `encrypt` could not open the key it had been
-    # given -- because this sweep had closed it three steps earlier.
+    # A sweep that closes it takes the key away three steps before `encrypt` needs
+    # it: the passphrase is accepted, the disks are repartitioned, and then the key
+    # it was given cannot be opened.
     present = ["control", "cryptroot", KEY_STORE]
 
     assert mappings_to_close(present, KEY_STORE) == ["cryptroot"]

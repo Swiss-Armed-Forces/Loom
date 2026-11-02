@@ -535,7 +535,7 @@ class InMemoryLazyBytesService(LazyBytesService[_Tag]):
     def _store(self, data: Iterator[bytes] | IO[bytes]) -> Any:
         # `_get_service_id` rather than `len(self._storage)`, which is not monotonic:
         # after a delete, the next store reuses the freed id and silently aliases a
-        # live LazyBytes onto someone else's bytes. That matters now that the archive
+        # live LazyBytes onto someone else's bytes. That matters because the archive
         # router deletes mid-flow, and because `stored_objects` (a `len` over this
         # dict) is what the router's tests use as their leak assertion.
         service_id = self._get_service_id()

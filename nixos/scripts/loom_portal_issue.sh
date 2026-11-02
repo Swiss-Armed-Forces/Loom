@@ -34,14 +34,14 @@ current=""
 # directory below is, and for a sharper reason than tidiness.
 #
 # The page polls `bundles/<token>.error` every 100ms and unlinks it the
-# instant it appears. Creating the file and *then* chgrp-ing it left a
-# window of one fork-and-exec in which the page could take it away -- after
-# which `chgrp` failed, `set -e` aborted the script, and the EXIT trap found
-# `current` still set and wrote a second answer over a question already
-# answered. The unit went to `failed` on a perfectly ordinary
-# "cluster not ready", a stale file was left for the next run's reap, and a
-# visitor whose timing landed the other way was told the box could not issue
-# a certificate rather than that Loom was still starting.
+# instant it appears. Creating the file and *then* chgrp-ing it leaves a
+# window of one fork-and-exec in which the page can take it away -- after
+# which `chgrp` fails, `set -e` aborts the script, and the EXIT trap finds
+# `current` still set and writes a second answer over a question already
+# answered. The unit goes to `failed` on a perfectly ordinary
+# "cluster not ready", a stale file is left for the next run's reap, and a
+# visitor whose timing lands the other way is told the box cannot issue a
+# certificate rather than that Loom is still starting.
 #
 # So the name the page watches for appears once, already owned and already
 # readable, and nothing touches it afterwards.
@@ -55,7 +55,7 @@ refuse() {
   # chgrp and chmod follow it too: root truncating a file of the portal's
   # choosing, writing `cluster-not-ready` into it and handing it to the
   # portal group. `refuse` is reached on the ordinary cluster-not-ready
-  # branch during every bring-up, so this was not an exotic path. The same
+  # branch during every bring-up, so this is not an exotic path. The same
   # reasoning `put()` below already applies to the password file.
   temporary="$(mktemp --tmpdir="${bundles}" ".tmp.XXXXXXXX")"
   printf '%s\n' "$2" > "${temporary}"
@@ -144,9 +144,9 @@ for request in "${requests}"/*.req; do
     # The directory itself also g+w, which is what lets the page shred the
     # bundle the moment it has handed it over: removing an entry needs
     # write on the containing directory, so with r-x alone every
-    # `os.unlink` in `Spool._remove_tree` failed with EACCES and the rmdir
-    # then failed ENOTEMPTY -- leaving an unencrypted private key on disk
-    # until another request arrived to trigger the five-minute sweep, or
+    # `os.unlink` in `Spool._remove_tree` fails with EACCES and the rmdir
+    # then fails ENOTEMPTY -- leaving an unencrypted private key on disk
+    # until another request arrives to trigger the five-minute sweep, or
     # until reboot. It grants nothing new: `bundlesDir` is 0730
     # root:loom-portal, so the page can already unlink entries there by
     # name. The files stay g+r only.

@@ -9,7 +9,7 @@ export const stripHighlightTags = (text: string): string =>
 
 /** Parses text with `<highlight>` tags into JSX, each marked span as an `<em>`.
  *  Shared by every field renderer so both layouts mark hits identically.
- *  Module scope: it closes over nothing, and rebuilding it per render defeated
+ *  Module scope: it closes over nothing, and rebuilding it per render defeats
  *  memoisation of its callers. */
 export const renderHighlight = (text: string): ReactNode =>
     text.split(PATTERN_HIGHLIGHT_TAG).map((part, i) => {

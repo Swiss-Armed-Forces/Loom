@@ -484,8 +484,8 @@ appliance_test:
       # Blocking, deliberately. This is the only job that boots the appliance --
       # `appliance_check` is eval-and-pytest and boots nothing -- so with
       # `allow_failure` the whole of nixos/tests/ could not turn a pipeline red,
-      # and the MR's headline deliverable shipped with its only end-to-end
-      # verification unable to fail. If a runner turns out not to manage it, the
+      # and the appliance would ship with its only end-to-end verification
+      # unable to fail. If a runner turns out not to manage it, the
       # answer is a narrower `changes:` list or a smaller selection, not a job
       # whose result nobody has to read.
       when: on_success

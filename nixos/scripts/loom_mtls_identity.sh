@@ -46,8 +46,8 @@ fresh() {
 # Both, and that is the whole reason this is a function. Guarding on the
 # proxy's certificate alone means a console identity that is missing or
 # expired is skipped for as long as nginx's is fresh -- which is every day
-# but one in sixty, so the console would have been issued once and then
-# silently left to expire.
+# but one in sixty, so the console would be issued once and then silently
+# left to expire.
 if fresh "${state}/client.crt" && fresh "${console}/console.crt"; then
   echo "Both certificates have more than ${renew_before} days left; nothing to do."
   exit 0
@@ -82,9 +82,9 @@ mkdir -p "${work}/proxy" "${work}/console"
 # The proxy's identity first, and all the way into place before the
 # console's is even asked for. Under `set -e` a failure on the second
 # issuance aborts the script, so doing them both up front and installing
-# afterwards meant a console that could not be issued discarded a proxy
-# certificate that had been generated perfectly well -- taking the
-# assistant pane and USB ingest down to renew something neither uses.
+# afterwards would have a console that cannot be issued discard a proxy
+# certificate that was generated perfectly well -- taking the assistant
+# pane and USB ingest down to renew something neither uses.
 loom-client-certificate \
   --name "${name}" \
   --days "${days}" \

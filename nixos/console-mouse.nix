@@ -86,10 +86,10 @@ in
 
         It deliberately does NOT gate the shim below. `loom-console` wraps the
         tmux client either way, and the shim `exec`s straight through when it
-        cannot reach gpm -- so switching this off leaves exactly the
-        keyboard-only session console.nix shipped before, by the same code
-        path that already has to work when no mouse is plugged in. One path
-        that is always exercised beats a second one that is not.
+        cannot reach gpm -- so switching this off leaves a keyboard-only
+        session, by the same code path that already has to work when no mouse
+        is plugged in. One path that is always exercised beats a second one
+        that is not.
       '';
     };
 
@@ -161,9 +161,9 @@ in
         # resized four times during boot: fbcon's built-in font, then Cozette,
         # then the DRM driver taking over and resetting it, then Cozette again.
         # A gpm that started before the last of those has clamped its pointer to a
-        # grid that no longer exists -- on the 2560x1600 panel the appliance was
-        # tested on that is the difference between 160x50 and 426x123, so roughly
-        # two thirds of the screen becomes unreachable with the mouse.
+        # grid that no longer exists -- on a 2560x1600 panel that is the
+        # difference between 160x50 and 426x123, so roughly two thirds of the
+        # screen becomes unreachable with the mouse.
         #
         # loom-console-font.service is After=plymouth-quit-wait.service, which is
         # what makes it late enough to be on the far side of the reset in run

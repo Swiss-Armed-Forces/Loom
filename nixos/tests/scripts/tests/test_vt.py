@@ -3,8 +3,7 @@
 The arithmetic here decides whether a VM test is asserting the banner, some other row,
 or nothing at all -- and getting it wrong is invisible: an off-by-one row still returns
 a string, and the assertion that follows fails for a reason that looks like the box's
-fault. Before this was a module it could only be exercised by booting a machine for ten
-minutes.
+fault.
 """
 
 import base64
@@ -68,12 +67,12 @@ def test_a_character_that_is_not_ascii_reads_as_a_hash():
 
 
 def test_a_bright_cell_is_still_the_character_that_was_printed():
-    """The regression that read a whole login screen as the Loom mark.
+    """Otherwise a whole login screen reads as the Loom mark.
 
     The banner is painted bright under a 512-glyph font, and a VGA-style cell cannot say
     whether bit 3 of its attribute is that brightness or the ninth bit of a font index.
-    Every cell of the screen answered '#' to a decoder that assumed the latter, so the
-    mark -- two block groups with a gap -- was nowhere to be found in a screen with no
+    A decoder that assumes the latter answers '#' for every cell of the screen, so the
+    mark -- two block groups with a gap -- is nowhere to be found in a screen with no
     gaps in it. The unicode device has no attribute byte to misread.
     """
     assert screen(1, 4, ["LOOM"]).line(0) == "LOOM"

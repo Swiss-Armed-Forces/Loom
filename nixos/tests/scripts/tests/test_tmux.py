@@ -88,7 +88,7 @@ def test_a_cell_in_no_pane_is_none():
 
 
 def test_every_command_names_the_socket_and_the_session():
-    """One copy of this path now; three tests used to carry their own.
+    """One copy of this path, shared by every test that needs it.
 
     tests/appliance.nix asserts the constant against console.nix's `loom.consoleSocket`
     on a booted box, which is what makes keeping it here safe. What is checked here is

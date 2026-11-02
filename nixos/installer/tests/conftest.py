@@ -7,8 +7,7 @@ fixture necessary rather than a module-level `os.environ` update is the `lru_cac
 `settings()` -- it is deliberately read once per process, so a test that changes the
 environment has to clear it on both sides.
 
-Written once here rather than in each module that needs it. It was two copies, and a
-third would have been the obvious way to add the next test.
+Written once here rather than in each module that needs it.
 """
 
 from collections.abc import Iterator

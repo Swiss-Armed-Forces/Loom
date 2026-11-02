@@ -322,7 +322,7 @@ def inspect_disk(device: str) -> Disk:
     with an fstype and no children, and is treated here as one volume covering the whole
     device.
     """
-    # Two flags this call cannot do without, both learned the hard way:
+    # Two flags this call cannot do without:
     #
     #   * `--tree`, because `--json` alone lists a disk and its partitions as
     #     siblings (util-linux 2.42). Without it `children` is never there, a
@@ -335,7 +335,7 @@ def inspect_disk(device: str) -> Disk:
     #     both exclusions in `classify_disk` stop matching -- nor `os.path.join`,
     #     which discards everything before an absolute component when the
     #     mountpoint is built. PATH is a full path either way, which is all that
-    #     was wanted from it.
+    #     is wanted from it.
     output = _run(
         [
             "lsblk",

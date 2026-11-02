@@ -1,7 +1,7 @@
 """The first pane of the operator's console session, in two halves of one life.
 
-console.nix builds a three-pane session; this is what the widest of them runs. It was a
-shell script there until the bar went in, and it does the same three things it always did:
+console.nix builds a three-pane session; this is what the widest of them runs. It does
+three things:
 
   * Say where the unit stands before following it, because a bare `journalctl --follow` on
     a unit that has not started -- or that a condition skipped -- is an empty screen with
@@ -10,9 +10,9 @@ shell script there until the bar went in, and it does the same three things it a
   * Hand the pane over to k9s once up.sh has returned and the namespace exists, because by
     then the log is a finished transcript and the pods are the live thing.
 
-What is new is the panel pinned along the bottom while all that scrolls past above it: how
-many of the pods the cluster wants are ready, what is blocking, and how long it has been
-since that moved. The log says what is happening; it has never said how much is left.
+A panel is pinned along the bottom while all that scrolls past above it: how many of the
+pods the cluster wants are ready, what is blocking, and how long it has been since that
+moved. The log says what is happening; it never says how much is left.
 
 The pinning is rich's `Live`. Anything printed through the console `Live` was given lands
 *above* the live renderable rather than overwriting it, so the journal keeps scrolling
@@ -23,19 +23,18 @@ draw through it.
 
 Which makes the reading load-bearing rather than incidental, and that is the shape of
 `Journal` below: the pipe has exactly one reader, `_drain`, and it is the thing that
-prints. Both boot modes go through it. The first cut of this had the reader inside the
-panel loop, which setup mode does not run -- so that pane opened a `journalctl` nobody
-read, printed its two-line preamble and then showed an operator nothing at all for the
-hours of a fetch, with the follower itself wedged once the pipe filled.
+prints. Both boot modes go through it. A reader inside the panel loop would not serve
+setup mode, which does not run that loop: the pane would open a `journalctl` nobody reads,
+print its two-line preamble and then show an operator nothing at all for the hours of a
+fetch, with the follower itself wedged once the pipe fills.
 
 The handover condition is deliberately not evaluated here. It is `Readiness.settled`,
-which is the publisher's `ROLLING_OUT`/`READY`/`DEGRADED` -- the same "unit is active and
-the namespace exists" this pane used to test for itself, now stated once for the pane, the
-status line and the banner alike. It costs one thing worth writing down: the handover now
-depends on ready.nix's publisher still running, where the old shell asked systemd and
-kubectl itself. A publisher that has died takes k9s with it (the unit is `Restart=always`,
-so it has to die persistently), and what is left is the log -- which is the screen this
-pane exists to show anyway.
+which is the publisher's `ROLLING_OUT`/`READY`/`DEGRADED` -- the "unit is active and the
+namespace exists" condition, stated once for the pane, the status line and the banner
+alike. It costs one thing worth writing down: the handover depends on ready.nix's
+publisher still running. A publisher that has died takes k9s with it (the unit is
+`Restart=always`, so it has to die persistently), and what is left is the log -- which is
+the screen this pane exists to show anyway.
 """
 
 import logging
@@ -235,8 +234,8 @@ class Pane:
         """The same question `cluster.Cluster` asks, in the same vocabulary.
 
         Two readers of systemd's ActiveState that ask different things of it -- this one
-        picks a note, the other decides a Stage -- but nothing checked that they spelled
-        the states the same way, and a misspelt literal silently makes a branch dead.
+        picks a note, the other decides a Stage -- and nothing checks that they spell
+        the states the same way, where a misspelt literal silently makes a branch dead.
         `UnitState` is that shared vocabulary.
         """
         completed = self._commands.run(

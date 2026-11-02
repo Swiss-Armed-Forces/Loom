@@ -82,9 +82,9 @@ class Publisher:
         stage = classify(observation, self._stage)
         # The previous counts stand when the listing could not be read. They are not
         # (0, 0): a kubectl that missed its deadline says nothing about the box, and
-        # publishing zeros collapsed the bar to `--/-- pods` *and* reset the stall
+        # publishing zeros would collapse the bar to `--/-- pods` *and* reset the stall
         # timer below -- so `text.stall_note`, the one signal for a wedged bring-up,
-        # could never reach 300s on a cluster that timed out intermittently.
+        # could never reach 300s on a cluster that times out intermittently.
         counts = (
             tally(observation.workloads)
             if observation.workloads_known

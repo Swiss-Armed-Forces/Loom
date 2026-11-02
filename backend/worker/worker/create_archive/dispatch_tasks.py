@@ -5,7 +5,7 @@ from common.services.task_scheduling_service import ArchiveImportRequest
 app = get_celery_app()
 
 
-# In DISPATCH, like `index_file/dispatch_tasks.py`'s sibling, because this is now an
+# In DISPATCH, like `index_file/dispatch_tasks.py`'s sibling, because this is an
 # ingest root of its own: the crawler routes every archive-shaped object in the intake
 # bucket through here -- every archive on a USB stick, unattended. `set_throttled(True)`
 # pauses only that group, so outside it the throttle cannot "stop new file ingestion

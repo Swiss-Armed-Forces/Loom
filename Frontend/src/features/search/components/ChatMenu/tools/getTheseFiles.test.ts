@@ -91,8 +91,8 @@ describe("get_these_files", () => {
     });
 
     // Nothing is loaded, as opposed to nothing being scrolled into view: a
-    // viewport answer used to error out whenever the window happened to be
-    // empty, which a windowed list makes easy to hit.
+    // windowed list makes an empty viewport easy to hit, and that is not an
+    // error.
     it("errors only when no results are loaded at all", async () => {
         expect((await answerFor(emptySearchState())).success).toBe(false);
         expect((await answerFor(withResults(3))).success).toBe(true);

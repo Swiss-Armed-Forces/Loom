@@ -32,8 +32,8 @@ const FILE_PREVIEW: GetFilePreviewResponse = {
  * `compact` is a statement about width - the detail panel is a narrow pane
  * and wants the tighter layout. `denseChrome` is a statement about what the
  * header *is*: one row of a long list, which can spare neither a full-size
- * icon nor a permanent action cluster. Conflating the two is what left the
- * detail panel looking empty.
+ * icon nor a permanent action cluster. Conflating the two leaves the detail
+ * panel looking empty.
  */
 const renderHeader = (denseChrome: boolean) =>
     render(
@@ -82,8 +82,8 @@ describe("FileCardHeader dressed as a dense row", () => {
 });
 
 describe("FileCardHeader in a narrow pane that is not a list", () => {
-    // The regression: the detail panel is compact, so it was given the dense
-    // dressing too, and its actions became invisible.
+    // The detail panel is compact, but giving it the dense dressing for that
+    // reason would make its actions invisible.
     it("shows its actions", () => {
         const { container } = renderHeader(false);
 

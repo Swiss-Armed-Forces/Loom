@@ -1,9 +1,8 @@
 """What the copy is doing, published where the operator can watch it.
 
-A `mc mirror` of a full stick is minutes to hours, and until now the only sign of it was
-two lines from `report.announce` -- one when it started and one when it finished. Anyone
-standing at the box had no way to tell a slow copy from a stuck one, and no way to know
-when the stick could come out.
+A `mc mirror` of a full stick is minutes to hours, and the two lines `report.announce`
+puts out -- one when it starts and one when it finishes -- leave anyone standing at the
+box unable to tell a slow copy from a stuck one, or to know when the stick can come out.
 
 So each device keeps a small record here, and `loom-usb-ingest --watch` renders every
 record it finds into the pane `pane.py` splits off the console session. Two processes
@@ -238,10 +237,10 @@ class Reporter:
         self._record = DeviceProgress(device=device, kernel_name=kernel_name, name=name)
         # What the volumes *before* the one in flight moved. `mc mirror` reports
         # absolute per-volume totals and resets to zero for each invocation, so
-        # `advance` publishes `carried + objects`: without it the counter ran
+        # `advance` publishes `carried + objects`: without it the counter runs
         # backwards on a multi-partition stick -- "8431 files" dropping to "1 files"
-        # the moment p2 started -- which `finish` then overwrote with the device
-        # total, so the end state looked right and nobody noticed.
+        # the moment p2 starts -- and `finish` overwrites it with the device total,
+        # so only the end state looks right.
         self._carried_objects = 0
         self._carried_bytes = 0
         # Rate-limited: `mc mirror` reports every object, and a stick of small files
@@ -314,10 +313,9 @@ class Reporter:
 
         `copied` is the whole device's byte count, not the volume in flight's, and it
         replaces what `advance` last wrote. This row is the last thing an operator reads
-        before pulling the stick, and until the pane started outliving the copy it was
-        never read at all -- so it has to say what the *stick* moved. `advance` resets
-        per volume, so on a two-partition stick the figure left behind was the second
-        partition's alone.
+        before pulling the stick, so it has to say what the *stick* moved: `advance`
+        resets per volume, and on a two-partition stick the figure it leaves behind is
+        the second partition's alone.
         """
         self._record = replace(
             self._record,

@@ -135,7 +135,7 @@ def test_the_search_string_narrows_the_name_match():
 
 
 def test_the_whole_index_is_searched_by_default():
-    """Omitting the query has to keep the tool's original behaviour."""
+    """Omitting the query matches the name against the whole index."""
     file_repository = _set_result(nodes=[], next_cursor=None)
 
     _run("report")

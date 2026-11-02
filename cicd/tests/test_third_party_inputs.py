@@ -91,11 +91,11 @@ def test_a_key_is_stable_across_runs() -> None:
 
 
 def test_every_key_is_distinct() -> None:
-    """Two images sharing a key is how a ROCm runtime got documented as CUDA.
+    """Two images sharing a key documents one of them as the other.
 
     Skaffold's input digest covers the build context but not the build arguments,
     so ollama-runtime-nvidia and ollama-runtime-rocm - one context, one Dockerfile,
-    different GPU_VARIANT - used to hash identically.
+    different GPU_VARIANT - hash identically on the context alone.
     """
     keys = [image.key for image in load_image_inputs()]
 
@@ -105,9 +105,9 @@ def test_every_key_is_distinct() -> None:
 def test_no_application_source_is_keyed() -> None:
     """The property this whole scheme exists for.
 
-    A key covers Dockerfiles, dependency manifests and installer scripts. The
-    moment it covers a `.py` or a `.tsx`, an ordinary code change starts rewriting
-    the lock again - which is the conflict and the wasted rebuild this replaced.
+    A key covers Dockerfiles, dependency manifests and installer scripts. The moment it
+    covers a `.py` or a `.tsx`, an ordinary code change rewrites the lock - the conflict
+    and the wasted rebuild this scheme exists to prevent.
     """
     source_suffixes = {".py", ".ts", ".tsx", ".js", ".jsx", ".php", ".vue"}
 

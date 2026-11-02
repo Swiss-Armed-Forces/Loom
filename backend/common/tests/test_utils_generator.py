@@ -204,7 +204,7 @@ def test_readable_stream_short_reads_reassemble_full_stream():
 def test_readable_stream_memory_consumption():
     """Test that FileLikeStream does not materialise the stream for large reads.
 
-    A consumer asking for a 10 MiB multipart part used to make FileLikeStream buffer
+    A consumer asking for a 10 MiB multipart part must not make FileLikeStream buffer
     that whole part (plus two copies of it) before returning. Streaming a gibibyte in
     mebibyte chunks must stay within a few chunks worth of memory.
     """

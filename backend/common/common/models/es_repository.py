@@ -989,7 +989,7 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
             # ES 9.2+ excludes dense_vector fields from _source by default. The
             # persister re-reads documents from ES and expects the full document;
             # without the vectors in _source it would write them back empty,
-            # permanently deleting them (#281).
+            # permanently deleting them.
             #
             # exclude_source_vectors is a final (immutable) index setting — ES
             # rejects it in PUT _settings even if the value is unchanged. Only

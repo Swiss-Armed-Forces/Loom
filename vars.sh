@@ -86,9 +86,7 @@ LOOM_MINIKUBE_IP="$(yq --raw-output '.kubernetes.api' "${LOOM_VALUES_FILE}")"
 # and is the one case the paragraph above does not describe.
 #
 # Sorted, so the list is a set rather than an order somebody has to maintain.
-# Nothing depends on the order any more: cicd/chrome_wrapped.sh used to open a
-# tab per entry, which made the first one the focused tab, and now opens the
-# frontend alone.
+# Nothing depends on the order.
 LOOM_HOSTS_RAW="$(yq --raw-output '.hostnames.ingress[], .hostnames.extra[]' "${LOOM_VALUES_FILE}")"
 LOOM_HOSTS_RAW="$(sort --unique <<< "${LOOM_HOSTS_RAW}")"
 

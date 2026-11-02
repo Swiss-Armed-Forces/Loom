@@ -9,10 +9,9 @@
 #
 # This is the one part of the appliance no test can reach -- nixpkgs' qemu-vm
 # module replaces the bootloader and the root device, so nothing under
-# nixos/tests/ ever runs an initrd of ours. That is why the module used to
-# build a `pkgs.runCommand` whose only job was to cat the script into a file
-# and run shellcheck on it. The file *is* that now, and the repository's own
-# hook does the checking, at commit time rather than at image-build time.
+# nixos/tests/ ever runs an initrd of ours. Shellcheck is the whole of the
+# checking it gets, and the repository's own hook is what runs it, at commit
+# time rather than at image-build time.
 #
 # `set -e` and nothing more, which is what nixpkgs' makeJobScript wraps a
 # unit `script` in (nixos/lib/systemd-lib.nix) -- and `set -e` is what most
@@ -76,8 +75,9 @@ umask 277
 #
 # Falling through is deliberate: a box whose stick is dead has no other
 # way in, so making this unit a hard dependency of the root would trade a
-# real escape hatch for a tidier failure. What was missing is that the
-# next prompt wants a *different secret*, and says nothing to say so.
+# real escape hatch for a tidier failure. The message below is there
+# because the next prompt wants a *different secret* and has nothing to
+# say so with.
 #
 # plymouth first, because with the splash up it is the only thing on the
 # screen -- then out of the way, because a still logo over a boot that has
@@ -109,7 +109,7 @@ attempt=1
 while true; do
     # `|| give_up` rather than letting `set -e` take it: a prompt that
     # timed out or found no agent is not a wrong passphrase, and dying
-    # here silently is how this looked like "it just asks again".
+    # here silently would read as "it just asks again".
     passphrase="$(systemd-ask-password --echo=yes --id=loom-keystore \
       "${prompt}")" \
       || give_up 'The key stick passphrase prompt was cancelled.'

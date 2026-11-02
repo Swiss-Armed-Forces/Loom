@@ -191,14 +191,14 @@ def test_a_manifest_one_byte_over_the_cap_is_refused():
 
 
 def test_an_entry_name_that_lies_about_being_utf8_is_declined():
-    """What a CP932 or GBK zip tool writes, and what used to escape this function.
+    """What a CP932 or GBK zip tool writes.
 
     ZipFile decodes a central directory name with `.decode("utf-8")` and no guard when
     general-purpose bit 11 is set, so a name whose bytes are not UTF-8 raises
     UnicodeDecodeError -- not BadZipFile, and not pydantic's ValidationError. On the
-    worker that escaped the router and took the blob round the retry chain into the
-    graveyard queue with no File entity: exactly the silent disappearance this module
-    exists to make impossible.
+    worker such an error escapes the router and takes the blob round the retry chain
+    into the graveyard queue with no File entity: exactly the silent disappearance this
+    module exists to make impossible.
     """
     # Written with a non-ASCII name so zipfile sets bit 11, then the two UTF-8 bytes
     # are replaced in place by two that are not. Same length, so every offset in the

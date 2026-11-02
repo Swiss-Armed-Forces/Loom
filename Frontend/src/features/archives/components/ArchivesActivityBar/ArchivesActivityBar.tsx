@@ -26,8 +26,8 @@ export const ArchivesActivityBar = ({ position }: ArchivesActivityBarProps) => {
                 onClick={handleClick}
                 size="medium"
                 // Both positions carry it: only one of the two bars is ever
-                // mounted, and tagging the mobile one alone meant the tour's
-                // upload step could never resolve on a desktop.
+                // mounted, so tagging the mobile one alone would leave the
+                // tour's upload step unable to resolve on a desktop.
                 data-tour="archive-upload"
                 sx={{
                     bgcolor: "primary.main",

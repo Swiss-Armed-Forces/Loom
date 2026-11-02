@@ -50,9 +50,9 @@ const PREFETCH_WITHIN_RESULTS = 3;
 const FALLBACK_RESULT_PAGE_STEP = 5;
 
 // Keys the pane under the focus drives itself. The handler is bound to the
-// document, so without this an arrow press inside the folder tree moved the
-// tree selection *and* the result highlight. Letter shortcuts still reach the
-// result list from anywhere, which is how they are expected to work.
+// document, so without this an arrow press inside the folder tree would move
+// the tree selection *and* the result highlight. Letter shortcuts still reach
+// the result list from anywhere, which is how they are expected to work.
 const PANE_NAVIGATION_KEYS = new Set([
     "ArrowUp",
     "ArrowDown",
@@ -89,7 +89,7 @@ export const useKeyboardNavigation = () => {
     const hasMoreResults = useAppSelector(selectHasMoreResults);
     const reverseBindings = useAppSelector(selectReverseBindings);
     // The file cache is only read inside hotkey callbacks. Subscribing to it
-    // re-rendered the whole search page on every preview that arrived.
+    // would re-render the whole search page on every preview that arrives.
     const store = useAppStore();
 
     // Keep refs so hotkey callbacks don't need these in their dependency arrays.
@@ -587,8 +587,8 @@ export const useKeyboardNavigation = () => {
                     case "moveUp":
                         queueResultMove(-1);
                         break;
-                    // The result list is always on screen now, so these
-                    // always page it. A document is scrolled with
+                    // The result list is always on screen, so these always
+                    // page it. A document is scrolled with
                     // scrollUp/scrollDown, which is why those are bound.
                     case "pageDown":
                         queueResultMove(resultPageStep());

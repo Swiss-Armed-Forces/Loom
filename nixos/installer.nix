@@ -38,9 +38,9 @@ let
   #
   #   * repart turns each store path into a `CopyFiles=` instruction, and that
   #     dereferences a store path that is itself a symlink. `nix-<v>-man` is
-  #     one: it is a symlink to `nix-manual-<v>-man`. On the stick it became a
-  #     134-file directory, so its NAR no longer matched the hash Nix had for
-  #     it, and the install died with "hash mismatch importing path".
+  #     one: it is a symlink to `nix-manual-<v>-man`. On the stick it lands as a
+  #     134-file directory, so its NAR no longer matches the hash Nix has for
+  #     it, and the install dies with "hash mismatch importing path".
   #   * make-squashfs also emits `nix-path-registration`, which is what lets
   #     the paths be registered as valid below. Without that, nixos-install
   #     cannot copy them at all.

@@ -68,18 +68,14 @@ ENV_PREFIX = "LOOM_USB_INGEST_"
 def _env(name: str, default: str) -> str:
     """A default the wrapper may set, the way `loom_ready` takes its namespace.
 
-    Five of the values below -- the bucket, the endpoint, the prefix, the mount root
-    and the state directory -- are also Nix option defaults in `usb-ingest.nix`, and
-    nothing kept the two copies equal. `loom_ready` argued the case for this the
-    other way round and is worth quoting: "`loom` looks like a safe default for the
-    namespace right up until somebody changes NAMESPACE in vars.sh, at which point a
-    command that quietly defaulted would report on a namespace that does not exist."
-    Here it is worse, because a wrong bucket is silent rather than empty: nothing
-    creates it, `wait_for_cluster` never succeeds, and the ingest fails an hour
-    later. `usb-ingest.nix`'s `ingestArgs` passes every one of them explicitly, so
-    the Nix option is the single source for the box; `LOOM_USB_INGEST_*` is how an
-    operator or a test overrides one without editing a unit, and the literals below
-    are only what a bare invocation on a developer's machine gets.
+    Five of the values below -- the bucket, the endpoint, the prefix, the mount root and
+    the state directory -- are also Nix option defaults in `usb-ingest.nix`, and nothing
+    keeps the two copies equal. A wrong bucket is silent rather than empty: nothing
+    creates it, `wait_for_cluster` never succeeds, and the ingest fails an hour later.
+    `usb-ingest.nix`'s `ingestArgs` passes every one of them explicitly, so the Nix
+    option is the single source for the box; `LOOM_USB_INGEST_*` is how an operator or a
+    test overrides one without editing a unit, and the literals below are only what a
+    bare invocation on a developer's machine gets.
     """
     return os.environ.get(ENV_PREFIX + name, default)
 
@@ -251,10 +247,10 @@ def _inspect(device: str) -> devices.Disk:
 
     `inspect_disk` runs lsblk with `check=True`, and lsblk exits non-zero for a node
     that has gone away -- a stick pulled right after the udev event, or one that
-    never fully enumerated. Letting that escape took the exception out through
-    `settle`, `run` and `main`, so the operator got a traceback in the journal and
+    never fully enumerated. Letting that escape would carry the exception out through
+    `settle`, `run` and `main`, leaving the operator a traceback in the journal and
     nothing on the console: exactly what the `report.failure` call below it exists to
-    prevent, for the case it was written for.
+    prevent.
     """
     try:
         return devices.inspect_disk(device)
@@ -270,9 +266,9 @@ def _volume_prefix(
 
     Always one level below the stick's own directory, even for a single-volume
     stick. That level is what keeps the stick's files and the provenance record in
-    separate namespaces: they used to share a directory, so a file called
-    `_loom-usb.json` in the root of a one-partition stick was overwritten by the
-    manifest written after it -- one fewer document, and no message.
+    separate namespaces: sharing a directory would let the manifest, written after
+    the mirror, silently overwrite a file called `_loom-usb.json` in the root of a
+    one-partition stick -- one fewer document, and no message.
     """
     component = identity.prefix_component
     if total <= 1:
@@ -327,14 +323,13 @@ def _manifest_key(
 ) -> str:
     """Where the provenance record goes, where nothing off the stick can land.
 
-    For a single-volume stick `_volume_prefix` returns the bare prefix component, so the
-    mirror target and this key used to share a directory -- and `put_manifest` runs
-    *after* the mirror, so a stick whose root held a file called `_loom-usb.json` had
-    that object silently replaced by the record. On an evidence box the thing
+    `put_manifest` runs *after* the mirror, so a stick whose root held a file called
+    `_loom-usb.json` would have that object silently replaced by the record if the
+    mirror target and this key shared a directory. On an evidence box the thing
     overwritten is evidence. The data therefore always sits one level down, whatever the
     volume count.
     """
-    del disk  # the layout no longer depends on how many volumes there were
+    del disk  # the layout does not depend on how many volumes there are
     return f"{prefix}/{identity.prefix_component}/{MANIFEST_NAME}"
 
 
@@ -388,11 +383,11 @@ def run(args: IngestOptions) -> int:
     identity = naming.derive_identity(disk.properties, disk.size)
     owner = _resolve_owner(args.owner)
     # The owner is resolved before the plan is described, not after: `describe`
-    # records the mount options in the manifest and prints them for --dry-run, and
-    # hardcoding uid=0,gid=0 there meant both said `uid=0,gid=0` for every
-    # NEEDS_OWNER filesystem -- vfat, exfat, ntfs, hfs+, iso9660, udf, i.e. most USB
-    # media -- while `_ingest_volumes` mounted them as `loom`. A provenance record
-    # and a dry run that do not describe the real terms are worse than none.
+    # records the mount options in the manifest and prints them for --dry-run, so it
+    # needs the same uid and gid `_ingest_volumes` mounts with. Every NEEDS_OWNER
+    # filesystem -- vfat, exfat, ntfs, hfs+, iso9660, udf, i.e. most USB media --
+    # carries them in its options, and a provenance record and a dry run that do not
+    # describe the real terms are worse than none.
     plan_rows = describe(disk, identity, owner.uid, owner.gid)
 
     if args.dry_run:
@@ -418,7 +413,7 @@ def run(args: IngestOptions) -> int:
 
     config_dir = os.path.join(args.state_dir, "mc")
     os.makedirs(config_dir, mode=0o700, exist_ok=True)
-    # Built once and handed to every call: the endpoint lives in here now (see
+    # Built once and handed to every call: the endpoint lives in here (see
     # `mc_env`), so there is no step between here and the copy that can fail because
     # Loom has not finished starting.
     env = transfer.mc_env(config_dir, args.endpoint)
@@ -455,10 +450,10 @@ def run(args: IngestOptions) -> int:
     # One stick at a time -- around the *copy* only. Two large copies at once would
     # contend for the same USB bus, the same disk and the same cluster, and finish
     # later than if they had queued. The cluster wait above is exactly what does not
-    # contend for any of that, and holding the lock across it meant a second stick
-    # was invisible for up to an hour (`CLUSTER_WAIT_TIMEOUT_S`): no announcement,
+    # contend for any of that, and holding the lock across it would leave a second
+    # stick invisible for up to an hour (`CLUSTER_WAIT_TIMEOUT_S`): no announcement,
     # no pane row, no progress record, during the box's longest and most confusing
-    # window. Everything a visitor sees now happens before this blocks.
+    # window. Everything a visitor sees therefore happens before this blocks.
     def queued() -> None:
         reporter.note("queued behind another stick")
         report.announce(
@@ -477,9 +472,9 @@ def _ingest_lock(state_dir: str, on_queued: Callable[[], None]) -> Iterator[None
     """Hold the exclusive ingest lock, saying so first if it has to wait.
 
     Taken non-blocking first so that the instance that has to queue can put a row on the
-    console before it blocks. A queued stick used to produce nothing at all -- no line,
-    no pane row, no progress record -- for as long as the one ahead of it took, which
-    with the cluster wait inside the lock could be an hour.
+    console before it blocks. Without that row a queued stick produces nothing at all
+    -- no line, no pane row, no progress record -- for as long as the one ahead of it
+    takes.
     """
     os.makedirs(state_dir, mode=0o700, exist_ok=True)
     with open(os.path.join(state_dir, ".lock"), "w", encoding="utf-8") as lock:
@@ -506,11 +501,11 @@ def _ingest_volumes(
     total_bytes = 0
     total_failures = 0
     # Counted apart from failures, which only ever count per-object `mc mirror`
-    # errors. A stick whose every partition is crypto_LUKS, or whose one filesystem
-    # the table refuses, used to produce status="complete", a green DONE in the pane,
-    # "0 failures -- safe to remove" and exit 0 -- a provenance record claiming a
-    # complete read of media that was never opened, which is the one claim the
-    # manifest exists to make trustworthy.
+    # errors. Without this count a stick whose every partition is crypto_LUKS, or
+    # whose one filesystem the table refuses, would report status="complete", a green
+    # DONE in the pane, "0 failures -- safe to remove" and exit 0 -- a provenance
+    # record claiming a complete read of media that was never opened, which is the one
+    # claim the manifest exists to make trustworthy.
     skipped = 0
     # A partition with no filesystem at all is its own outcome rather than a skip: a
     # Microsoft Reserved Partition or a blank one is nothing anybody expected
@@ -537,8 +532,8 @@ def _ingest_volumes(
             plan_rows = annotate(plan_rows, volume.path, "skipped", mounted.reason)
             # A volume that could not be mounted is the commonest way for a stick to
             # produce fewer documents than the operator expected -- an encrypted
-            # partition, a filesystem this box has no driver for -- and until now the
-            # only account of it was in a manifest inside the bucket.
+            # partition, a filesystem this box has no driver for -- so it is reported
+            # on the console rather than only in the manifest inside the bucket.
             first_error = first_error or f"{volume.path} skipped: {mounted.reason}"
             report.failure(
                 f"{volume.path} was not copied", mounted.reason, args.console_socket
@@ -678,9 +673,9 @@ def release(args: IngestOptions) -> int:
         end of a copy -- is the event the pane is waiting for.
       * The ingest unit's ExecStopPost, which fires when the *copy* stops. A oneshot
         stops the moment its work is done, so this runs while a finished stick is
-        still in the box, and the sweep deliberately leaves that record alone. This
-        used to withdraw it unconditionally, which took the pane off the screen about
-        a second after it had anything worth reading on it.
+        still in the box, and the sweep deliberately leaves that record alone --
+        withdrawing it here would take the pane off the screen about a second after
+        it had anything worth reading on it.
 
     `--release <device>` additionally says whose ingest has ended, which is the one
     thing a sweep cannot see: a record for a device that is still present but whose

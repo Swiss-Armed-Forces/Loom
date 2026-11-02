@@ -204,8 +204,7 @@ let
   #
   # What it does on a box with no mutual TLS is still worth having: the serving
   # certificate is self-signed there too, so plain `curl https://api.loom/...`
-  # fails to verify it. Every `https://*.loom` example in the skills was broken
-  # that way, independently of this issue.
+  # fails to verify it.
   loom-curl = pkgs.writeShellApplication {
     name = "loom-curl";
     runtimeInputs = with pkgs; [
@@ -469,9 +468,9 @@ in
 
       systemd.tmpfiles.rules = [
         # /var/lib/loom itself is box.nix's, declared once for the whole box --
-        # see the comment there. Declaring it again with another mode produced a
-        # duplicate systemd-tmpfiles refuses, keeping whichever module happened to
-        # be evaluated first.
+        # see the comment there. Declaring it again with another mode is a
+        # duplicate systemd-tmpfiles refuses, keeping whichever module is
+        # evaluated first.
         #
         # 0750 root:nginx, not 0700 root:root. See `nginxGroup`: the
         # configuration test opens the key in here as the service user, and a
@@ -496,13 +495,13 @@ in
 
       systemd.services.loom-mtls-identity = {
         description = "Issue the appliance's mutual TLS client identity";
-        # Deliberately NOT `wantedBy = [ "multi-user.target" ]`, which is what it
-        # used to be. A target implicitly orders itself `After=` everything in
-        # its `.wants` (systemd.target(5)), and this unit waits for a cluster
-        # bring-up -- so a box that requires client certificates never reached
-        # multi-user.target at all, for however many hours the fetch took. The
+        # Deliberately NOT `wantedBy = [ "multi-user.target" ]`. A target
+        # implicitly orders itself `After=` everything in its `.wants`
+        # (systemd.target(5)), and this unit waits for a cluster bring-up -- so
+        # a box that requires client certificates would not reach
+        # multi-user.target at all, for however many hours the fetch takes. The
         # timer below starts it instead, thirty seconds in, which is the same
-        # moment for every purpose except the one that was broken.
+        # moment for every purpose except that one.
         after = [ "loom-mtls-placeholder.service" ];
 
         serviceConfig = {
@@ -533,8 +532,8 @@ in
         description = "Renew the appliance's mutual TLS client identity";
         wantedBy = [ "timers.target" ];
         timerConfig = {
-          # Both, and the first is what replaced the unit's own `wantedBy` --
-          # see the note on it.
+          # Both, and the first is what stands in for the unit's own `wantedBy`
+          # -- see the note on it.
           OnBootSec = "30s";
           OnCalendar = "daily";
           Persistent = true;

@@ -62,9 +62,9 @@ def test_a_finished_device_says_so(tmp_path) -> None:
 
 
 def test_what_a_finished_device_reports_is_the_whole_device(tmp_path) -> None:
-    # `advance` resets per volume, so the figure left behind on a two-partition
-    # stick used to be the second partition's alone -- on a row nobody had time to
-    # read. Now that the row stays until the stick comes out, it is read.
+    # `advance` resets per volume, so on a two-partition stick the figure it leaves
+    # behind is the second partition's alone. The row stays until the stick comes
+    # out, so it is the one the operator reads.
     reporter = Reporter(str(tmp_path), "sdb", "/dev/sdb", "kingston-a1b2")
     reporter.start_volume("/dev/sdb1", 1, 2, 4096)
     reporter.advance(3, 4096)
@@ -99,10 +99,10 @@ def test_why_it_failed_reaches_the_pane(tmp_path) -> None:
 
 
 def test_a_stage_without_a_reason_beside_it_is_not_a_record(tmp_path) -> None:
-    # The shape a record had before a failure carried its reason -- which is what a
-    # box halfway through an upgrade has, the watcher being the operator's process
-    # and the ingest being root's. It costs that one row and nothing else: the
-    # records around it are still drawn.
+    # A record carrying a bare stage with no reason beside it -- the shape written by
+    # another version of this program, which is what a box halfway through an upgrade
+    # has, the watcher being the operator's process and the ingest being root's. It
+    # costs that one row and nothing else: the records around it are still drawn.
     reporter = Reporter(str(tmp_path), "sdb", "/dev/sdb", "kingston-a1b2")
     reporter.finish(3, 1024, 0)
     raw = json.loads((tmp_path / "sdb.json").read_text())
@@ -222,10 +222,10 @@ class _Box:
 
 
 def test_a_finished_stick_stays_in_the_pane_until_it_is_pulled(tmp_path) -> None:
-    # The whole point of the pane, and what it did not do: the ingest unit is a
-    # oneshot, so its ExecStopPost fires when the COPY ends -- about a second after
-    # the row says "done", and with the stick still in the operator's box. Releasing
-    # on that event took the screen away before anyone could read it.
+    # The whole point of the pane: the ingest unit is a oneshot, so its ExecStopPost
+    # fires when the COPY ends -- about a second after the row says "done", and with
+    # the stick still in the operator's box. Releasing on that event would take the
+    # screen away before anyone could read it.
     box = _Box(tmp_path)
     box.plug("sdb").finish(12, 4096, 0)
 
@@ -291,10 +291,10 @@ def test_every_stage_renders_as_something_of_its_own() -> None:
     # rendering would be an empty cell on a console in the field.
     #
     # Drawn and compared, not `is not None`: `render` is annotated -> RenderableType and
-    # never returns None, so that assertion only restated the signature. What it caught
-    # by luck was the KeyError from STAGE_STYLE; what it could not catch is the likelier
-    # mistake -- a stage given a style but no branch in `watch._status_text`, which
-    # falls through to the DONE text and tells the operator a copy finished.
+    # never returns None, so that assertion would only restate the signature. Comparing
+    # the drawn text catches both the KeyError from STAGE_STYLE and the likelier mistake
+    # -- a stage given a style but no branch in `watch._status_text`, which falls
+    # through to the DONE text and tells the operator a copy finished.
     drawn = {stage: _drawn(_record(stage=stage)) for stage in Stage}
 
     for stage, text in drawn.items():

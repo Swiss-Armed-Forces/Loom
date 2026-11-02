@@ -1,9 +1,9 @@
 """One pass of the poll loop, end to end against a fake bucket.
 
 `test_s3_crawler_watermark.py` covers the ledger thoroughly and never enters the loop
-itself, so the batching, the `as_completed` wiring and the backoff -- the three things
-this MR changed about it -- had no coverage at all, and the memory behaviour the batch
-bound exists for lives entirely in that region.
+itself, so the batching, the `as_completed` wiring and the backoff are covered here
+instead -- and the memory behaviour the batch bound exists for lives entirely in that
+region.
 """
 
 import io

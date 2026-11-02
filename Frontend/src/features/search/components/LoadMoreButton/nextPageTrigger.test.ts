@@ -37,8 +37,8 @@ describe("shouldFetchNextPage", () => {
         ).toBe(false);
     });
 
-    // The sentinel this replaced could not see this case at all: with nothing
-    // to scroll, it never came into view and the list sat half empty.
+    // A sentinel element cannot see this case at all: with nothing to scroll
+    // it never comes into view, and the list sits half empty.
     it("fills a list shorter than the viewport", () => {
         expect(
             shouldFetchNextPage({

@@ -71,8 +71,8 @@ const linearise = (channel: number): number =>
  * WCAG relative luminance.
  *
  * The channels have to be linearised before they are weighted. Weighting the
- * raw sRGB bytes instead overstates how bright a mid-tone is, which is what
- * put white text on the saturated half of the palette.
+ * raw sRGB bytes instead overstates how bright a mid-tone is, which puts white
+ * text on the saturated half of the palette.
  */
 const calculateLuminance = (color: string): number => {
     const hex = color.substring(1);
@@ -87,7 +87,7 @@ const calculateLuminance = (color: string): number => {
  *
  * `sqrt(1.05 * 0.05) - 0.05`: the point where the contrast ratio against white
  * and the ratio against black meet. Picking the lighter side of 0.5 instead
- * chose white far too often.
+ * chooses white far too often.
  */
 const BLACK_OVER_WHITE_THRESHOLD = 0.179;
 

@@ -24,8 +24,8 @@ def _sweep_query(tag: str) -> QueryParameters:
 
 @pytest.mark.parametrize("tag", ['Tag with Quote"', "Tag with backslash \\"])
 def test_remove_tag_sweeps_for_a_tag_the_model_accepts(tag: str):
-    """Regression: a tag is only length-constrained, so a quote or a backslash in one is
-    a legal tag that ended the phrase and left the sweep unable to find its files."""
+    """A tag is only length-constrained, so a quote or a backslash in one is a legal tag
+    that would otherwise end the phrase and leave the sweep unable to find its files."""
     query = _sweep_query(tag)
 
     QueryBuilder().parse_and_transform(query)

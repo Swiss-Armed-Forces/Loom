@@ -94,15 +94,14 @@ spec:
             {{- with include "app.trustedCerts.volumeMount" . }}{{ . | nindent 12 }}{{- end }}
           {{- /*
             The GPU request is rendered from `gpuVendor` rather than taken from
-            `resources` alone, because the two come from the same values file and
-            used to sit under two independent guards: `values-no-resources.yaml`
-            sets `ollama.resources.requests: null`, Helm drops the null keys, and
-            the whole `resources` block then disappears -- taking `amd.com/gpu`
-            with it while `LOOM_GPU_VENDOR` stayed. Without the request the device
-            plugin injects no /dev/kfd, so `ollama_wrapper.py` sees a vendor it was
-            told to expect and no device, and exits 1: a permanent CrashLoopBackOff
-            where before the pod simply ran on CPU. It also made the outcome depend
-            on the order the values files were merged in.
+            `resources` alone, because the two come from the same values file:
+            `values-no-resources.yaml` sets `ollama.resources.requests: null`,
+            Helm drops the null keys, and the whole `resources` block then
+            disappears -- which would take `amd.com/gpu` with it while
+            `LOOM_GPU_VENDOR` stays. Without the request the device plugin injects
+            no /dev/kfd, so `ollama_wrapper.py` sees a vendor it was told to expect
+            and no device, and exits 1: a permanent CrashLoopBackOff, and one whose
+            occurrence would depend on the order the values files are merged in.
 
             `merge` lets the values files keep the last word on the amount, so a
             deployment asking for two GPUs still gets two.

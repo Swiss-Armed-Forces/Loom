@@ -187,7 +187,7 @@ def test_generate_hypothetical_document_retries_while_budget_remains(
 def test_generate_hypothetical_document_drops_document_when_exhausted(
     hyde_agent: MagicMock, error: Exception
 ):
-    """Regression guard for #287, applied to the HyDE fanout.
+    """A document that cannot be generated is dropped, not fatal to the fanout.
 
     ``generate_hypothetical_document`` is a chord member, and a chord aborts as soon as
     one member raises -- which would discard the question embedding and every sibling
@@ -251,7 +251,7 @@ def test_aggregate_embeddings_survives_every_document_dropped(
 
 
 # ---------------------------------------------------------------------------
-# rerank -- the same chord-member shape, with the same #287 blind spot
+# rerank -- the same chord-member shape, with the same failure to guard against
 # ---------------------------------------------------------------------------
 
 
@@ -272,8 +272,9 @@ def test_rerank_retries_while_budget_remains(rerank_agent: MagicMock):
 def test_rerank_drops_chunk_when_exhausted(rerank_agent: MagicMock):
     """A chunk that cannot be ranked is dropped, not fatal to its siblings.
 
-    ``LengthFinishReasonError`` is the #287 failure, and the rerank chord used to abort
-    outright on it instead of dropping the one chunk that could not be ranked.
+    ``LengthFinishReasonError`` arrives when reasoning tokens exhaust ``max_tokens``,
+    and aborting the rerank chord on it discards every chunk that was ranked
+    successfully.
     """
     rerank_agent.run_sync.side_effect = length_finish_reason_error()
 

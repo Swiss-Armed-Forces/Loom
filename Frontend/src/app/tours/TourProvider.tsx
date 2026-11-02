@@ -97,10 +97,10 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     //
     // A card carrying all three optional elements is preferred, because the
     // thumbnail, tags and sub-item steps each point inside the one card the
-    // tour has settled on and have nothing to point at otherwise. They used to
-    // find whichever card in the whole list happened to have the element,
-    // which could be three different cards and is not possible at all now that
-    // only a window of the list is rendered.
+    // tour has settled on and have nothing to point at otherwise. Finding
+    // whichever card in the whole list happens to have the element could point
+    // at three different cards, and is not possible at all while only a window
+    // of the list is rendered.
     const existingResultFileId = useMemo(() => {
         const usable = Object.entries(files).filter(
             ([, file]) => isLoadedResult(file) && !file.stale,
@@ -171,8 +171,8 @@ export const TourProvider = ({ children }: TourProviderProps) => {
      *  by the time it ends. Restoring from here rather than from the
      *  conclusion step covers a dismissal half way through as well. A tour
      *  that never reached a search of its own leaves the query alone; one that
-     *  started with no query to speak of has nothing to give back and ends the
-     *  way it always did, on the empty query the conclusion sets. */
+     *  started with no query to speak of has nothing to give back and ends on
+     *  the empty query the conclusion sets. */
     const restorePreTourQuery = useCallback(() => {
         const preTourQuery = preTourQueryRef.current;
         const tookOverSearch = tourDroveSearchRef.current;

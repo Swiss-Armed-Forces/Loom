@@ -50,7 +50,7 @@ export const FileDropzone = ({
                         {...getRootProps()}
                         // Taken from the palette rather than written as hex:
                         // the label inherits the dialog's text colour, so a
-                        // fixed light ground left it white on light grey for
+                        // fixed light ground leaves it white on light grey for
                         // anyone on the dark scheme.
                         style={{
                             width: "100%",

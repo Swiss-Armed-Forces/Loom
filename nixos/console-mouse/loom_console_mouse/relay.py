@@ -265,11 +265,11 @@ class Relay:
             # Pure motion: coalesce. A wheel notch is *also* a GPM_MOVE -- sgr.py is
             # explicit that a notch is not a type of its own, it is a move carrying
             # `wdy`, and `translate` checks `wdy` before the type table for that
-            # reason -- so classifying on the type alone coalesced scrolling as if it
-            # were drift: one notch per frame survived, a motion report arriving
-            # before the flush replaced the notch outright, and a button press
-            # discarded it. The module's own rule, stated near the top, is that only
-            # motion with no button down is ever coalesced.
+            # reason -- so classifying on the type alone would coalesce scrolling as
+            # if it were drift: one notch per frame would survive, a motion report
+            # arriving before the flush would replace the notch outright, and a button
+            # press would discard it. The module's own rule, stated near the top, is
+            # that only motion with no button down is ever coalesced.
             self._motion.pending = translation.report
             return
 
@@ -418,7 +418,7 @@ def run(argv: list[str]) -> int:
         # No daemon, no socket, or no permission. console-mouse.nix orders gpm
         # long before anyone can log in, so in practice this is the
         # `loom.consoleMouse.enable = false` build -- which has to behave
-        # exactly like the session did before any of this existed.
+        # exactly like a session running the command with no shim at all.
         _exec(argv)
 
     master, slave = os.openpty()

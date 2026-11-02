@@ -10,11 +10,10 @@ Two runners, and the difference between them is the only thing a caller has to d
     `blockdev` that refused, a `wall` on a box with no terminals, a tmux server that is
     not running.
 
-One module rather than one per caller. There used to be five -- `devices._run`,
-`transfer._run`, `mounts.run_command`, `pane._tmux` and an inline loop in `report` --
-two of which had the same name in the same package and differed only in whether `env`
-and `timeout` were parameters. That is how a call gets moved between modules and
-silently loses its timeout.
+One module rather than one per caller. A runner per module means several functions with
+the same name in the same package differing only in whether `env` and `timeout` are
+parameters, and that is how a call gets moved between modules and silently loses its
+timeout.
 
 `mounts.Runner` stays an injected `Callable`, because mounting a stranger's filesystem
 is the one thing in this package whose failure paths are worth exercising without a

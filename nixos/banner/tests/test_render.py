@@ -103,8 +103,8 @@ class TestMarkup:
     def test_bracketed_values_survive(self, paint):
         """Rich's markup parser would eat these.
 
-        The screen's own history is full of them -- `[*]` and `[!]` were its markers
-        -- and an SSID is whatever somebody typed into a build flag.
+        An SSID is whatever somebody typed into a build flag, and a bracketed run is
+        exactly what the parser claims.
         """
         painted = visible(paint(render.row("WiFi network:", "loom-[ap]-1")))
         assert "loom-[ap]-1" in painted

@@ -152,11 +152,10 @@ let
       Group = "users";
       WorkingDirectory = loomRepoDir;
       TimeoutStartSec = "infinity";
-      # Journal only. These used to also go to /dev/console, which -- with no
-      # `console=` on the command line -- meant the active VT, so hours of
-      # bring-up log painted over the login screen. The first pane of
-      # console.nix's session follows this journal instead, which is where it is
-      # actually readable.
+      # Journal only, not /dev/console: with no `console=` on the command line
+      # that is the active VT, so hours of bring-up log would paint over the
+      # login screen. The first pane of console.nix's session follows this
+      # journal instead, which is where it is actually readable.
       StandardOutput = "journal";
       StandardError = "journal";
     };
@@ -173,12 +172,12 @@ let
     # Where minikube and skaffold keep their state.
     #
     # box.nix sets both in `environment.sessionVariables`, which is written into
-    # /etc/profile and therefore reaches login shells and nothing else -- so the
-    # units below ran without them and minikube fell back to `$HOME/.minikube`.
-    # The result was two state directories for one box: the cluster these units
-    # built lived in /home/loom/.minikube, while every `minikube` command an
-    # operator typed at the console addressed the empty repo-relative one and
-    # reported no cluster at all.
+    # /etc/profile and therefore reaches login shells and nothing else. Without
+    # them here the units below run with minikube falling back to
+    # `$HOME/.minikube`, which is two state directories for one box: the cluster
+    # these units build lives in /home/loom/.minikube, while every `minikube`
+    # command an operator types at the console addresses the empty repo-relative
+    # one and reports no cluster at all.
     #
     # Inherited from the session variables rather than restated, because the
     # whole point is that the two agree; the values themselves belong next to

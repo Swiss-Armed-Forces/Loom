@@ -1,15 +1,10 @@
 """Routing a blob that was handed to the archive importer.
 
-This used to be a `group` of two chains -- one assuming an encrypted archive, one
-assuming a plain zip -- each of which detected its own case and returned None when it
-did not apply. A blob that was neither therefore ended up in *both* branches doing
-nothing: no File entry, no index entry, and no error anywhere, because `POST
-/v1/archive/import` had already answered 202. A file handed to the wrong endpoint simply
-disappeared.
-
-So the decision is made here, up front and in one place, and there is a third outcome:
-anything that is not an importable archive is indexed as the ordinary file it is.
-Nothing that reaches this task can be dropped.
+The decision is made here, up front and in one place, and there is a third outcome
+beside the two archive shapes: anything that is not an importable archive is indexed as
+the ordinary file it is. Nothing that reaches this task can be dropped -- `POST
+/v1/archive/import` has already answered 202 by the time it runs, so a blob that
+produces no File entry, no index entry and no error disappears silently.
 
 Detecting synchronously is affordable because none of it transfers content. Every check
 here reads through `load_seekable`, so deciding what a 300 GB archive is costs a handful
@@ -215,9 +210,9 @@ def route_archive_blob(
 
     Separate from the task so the decision can be tested on its own: everything
     below this line is Celery canvas plumbing, and everything above it is the
-    part that used to get this wrong. `services` defaults to the deployment's own
-    and is a parameter so a caller can hand in doubles -- the same shape as
-    `loom_installer.install.run` taking its CommandRunner.
+    decision itself. `services` defaults to the deployment's own and is a parameter
+    so a caller can hand in doubles -- the same shape as `loom_installer.install.run`
+    taking its CommandRunner.
 
     `unattended` says nobody asked for this import, which is the crawler's case and
     the one where a too-large archive is declined rather than unpacked.
@@ -352,12 +347,12 @@ def index_archive_task(
     # up to three simultaneous 300 GB temp files, and `dispatch_archive_file_stats_task`
     # streams the object end to end twice more for its checksum and its size.
     #
-    # Pre-existing in unzip_loom_archive.py -- but the crawler prescreen now reaches
-    # this path with no operator in it, so on a single-disk appliance it bites once an
-    # archive passes a third of the free space. `route_archive_blob` therefore declines
-    # an unattended archive that large outright, which bounds the exposure; the proper
-    # fix is still a chain over one `load_file` (or one `load_file_named` path shared
-    # by the three passes), with the checksum folded into the same pass.
+    # The crawler prescreen reaches this path with no operator in it, so on a
+    # single-disk appliance that bites once an archive passes a third of the free
+    # space. `route_archive_blob` therefore declines an unattended archive that large
+    # outright, which bounds the exposure; the proper fix is a chain over one
+    # `load_file` (or one `load_file_named` path shared by the three passes), with the
+    # checksum folded into the same pass.
     unzip_loom_archive.signature(
         encrypted_archive_zip=encrypted_archive_zip
     ).apply_async(args=(routing.archive_zip,)).forget()

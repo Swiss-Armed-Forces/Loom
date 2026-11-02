@@ -47,8 +47,9 @@ interface FieldItemProps {
 }
 
 // Hoisted out of the render body: a field item renders once per field and
-// once per highlight on every card, so these were re-hashed by emotion dozens
-// of times per list render. The conditional ones become two frozen variants.
+// once per highlight on every card, so a literal here is re-hashed by emotion
+// dozens of times per list render. The conditional ones are two frozen
+// variants.
 const ACCORDION_SX = {
     bgcolor: "transparent",
     "&:before": { display: "none" },

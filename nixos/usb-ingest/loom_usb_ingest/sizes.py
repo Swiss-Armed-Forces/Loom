@@ -1,10 +1,8 @@
 """One spelling of a byte count, for the whole package.
 
-There were four: `report._gib`, `watch.GIBIBYTE`, and two inline `(1024 ** 3)` literals
-in `__main__` that used neither. They agreed, which is the only reason nobody noticed --
-and "GiB" appears on the console pane, in the journal and in the operator's final
-summary line, where three of them being 1.1 and one being 1.2 is the kind of
-disagreement that costs an afternoon.
+One definition rather than one per caller: "GiB" appears on the console pane, in the
+journal and in the operator's final summary line, where three of them reading 1.1 and a
+fourth reading 1.2 is the kind of disagreement that costs an afternoon.
 
 A leaf module with no imports of its own, because the three callers do not import each
 other: `watch` reaches only `progress`, `report` only `jsonfile` and `manifest`.

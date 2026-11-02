@@ -82,8 +82,7 @@ in
     description = ''
       The console keymap for the box, the installer and stage 1, as
       `loadkeys` names it -- `de_CH-latin1`, `fr`, `uk`. Empty means the
-      kernel's built-in US QWERTY, which is what every image was before this
-      option existed.
+      kernel's built-in US QWERTY.
 
       Set by `build-appliance-image --keymap`.
     '';

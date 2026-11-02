@@ -349,11 +349,10 @@ def count_consecutive_ci_commits(
 ) -> int:
     """Count consecutive commits from HEAD backwards that look like CI commits.
 
-    The message prefix alone decides. Authorship does not: a commit is
-    attributed to whoever's push or token started the pipeline, so a chain
-    alternates between the developer and the pipeline-trigger bot, and counting
-    only one of them resets on every other commit - which is how a regeneration
-    loop ran eight rounds without this ever tripping.
+    The message prefix alone decides. Authorship does not: a commit is attributed to
+    whoever's push or token started the pipeline, so a chain alternates between the
+    developer and the pipeline-trigger bot, and counting only one of them resets on
+    every other commit.
     """
     count = 0
     for commit in repo.iter_commits(max_count=limit):

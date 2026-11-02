@@ -1,8 +1,8 @@
 """The exception types every LLM-backed Celery task retries on.
 
-Before this module each task package defined its own ``LLMError``, so five unrelated
-classes shared a name and an ``autoretry_for`` entry could silently match none of them.
-There is one hierarchy now, split by whether another attempt can plausibly succeed.
+One hierarchy shared by every task package, split by whether another attempt can
+plausibly succeed, so an ``autoretry_for`` entry names the class the code below it
+actually raises.
 """
 
 from pydantic import ValidationError

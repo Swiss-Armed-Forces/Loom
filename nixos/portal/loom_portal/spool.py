@@ -270,11 +270,11 @@ class Spool:
 
         if want is BundleFormat.P12:
             # A failed read is told apart from a successful read of an empty file.
-            # They used to be the same `b""`, and `_await` deletes the bundle the
-            # moment this returns -- so an unreadable .p12 was delivered as a 0-byte
-            # download, logged as "Issued a client certificate", with the only copy
-            # already gone. On the one image where holding a certificate is the only
-            # way into Loom, and every install guide on the page then fails opaquely.
+            # `_await` deletes the bundle the moment this returns, so delivering an
+            # unreadable .p12 would mean a 0-byte download logged as "Issued a client
+            # certificate" with the only copy already gone -- on the one image where
+            # holding a certificate is the only way into Loom, and every install guide
+            # on the page then fails opaquely.
             payload = _read_file(os.path.join(bundle_dir, identity))
             if not payload:
                 return IssuanceOutcome(
@@ -365,7 +365,5 @@ def _remove_tree(path: str) -> None:
     except OSError as error:
         # A warning, not a debug line. What is left behind when this fails is an
         # unencrypted private key on disk until the issuer's next sweep -- which only
-        # runs when another request arrives -- so on a quiet box, until reboot. It was
-        # at debug level while a missing `g+w` on the bundle directory made it fail
-        # every time; nobody saw it.
+        # runs when another request arrives -- so on a quiet box, until reboot.
         logger.warning("Could not remove %s: %s", path, error)

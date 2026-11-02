@@ -114,11 +114,11 @@ in
       #
       # Mode-gated, like everything that *uses* the radio. In setup mode nothing
       # can run an access point and nothing ever calls `rfkill unblock wifi`, so
-      # relaxing the block there only left cfg80211/mac80211 loadable, skipped the
-      # `install cfg80211 .../false` chokepoint and had loom-rfkill-block block
-      # `bluetooth` instead of `all` -- on the one boot the box spends on somebody
-      # else's LAN. "`--wifi` opts a box into an access point, not into a radio
-      # free-for-all" is this module's own stated policy.
+      # relaxing the block there would only leave cfg80211/mac80211 loadable, skip
+      # the `install cfg80211 .../false` chokepoint and have loom-rfkill-block
+      # block `bluetooth` instead of `all` -- on the one boot the box spends on
+      # somebody else's LAN. "`--wifi` opts a box into an access point, not into a
+      # radio free-for-all" is this module's own stated policy.
       loom.radios.allowWifi = active;
 
       assertions = [
@@ -257,18 +257,17 @@ in
         wantedBy = [ "network.target" ];
         # `wants` as well as `after`, and the netdev unit is the reason. Ordering
         # alone pulls nothing into the transaction: it says "if both start, this
-        # one goes second", so when the bridge was not already being started this
-        # unit ran first and `ip` answered `argument "loombr0" is wrong: Device
-        # does not exist`. Measured on a Spark -- it and network.nix's wired
-        # counterpart failed in the same 50 ms, leaving an access point that was
-        # broadcasting and attached to nothing.
+        # one goes second", so a bridge that is not already being started leaves
+        # this unit running first and `ip` answering `argument "loombr0" is
+        # wrong: Device does not exist` -- an access point that broadcasts and is
+        # attached to nothing.
         #
         # `wants`, not `requires` or `bindsTo`: a bridge that failed to appear
         # should leave this unit failed and visible, not cascade into whatever
         # else wanted it.
         wants = [ "${cfg.wifi.bridge}-netdev.service" ];
         # `systemd-udev-settle.service` is not on this nixpkgs pin, so naming it
-        # here ordered nothing; the two real edges are the netdev and hostapd.
+        # here orders nothing; the two real edges are the netdev and hostapd.
         after = [
           "${cfg.wifi.bridge}-netdev.service"
           "hostapd.service"
@@ -293,7 +292,7 @@ in
         # radio hostapd already enslaved does nothing. Spelled as a script rather
         # than a one-line ExecStart so that each failure can say which device was
         # missing -- `ip`'s own message names the bridge whichever argument was
-        # wrong, which cost an evening once.
+        # wrong.
         script = ''
           if [ ! -e /sys/class/net/${wifiIface} ]; then
             echo "[!] ${wifiIface} does not exist; loom-wifi-check reports the radio."

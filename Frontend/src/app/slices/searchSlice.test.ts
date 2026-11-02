@@ -319,10 +319,9 @@ const previewReported = (fileId: string) => ({
 // re-applying selectLoadedFiles' own predicate: selectOrderedFileIds leads with
 // the temporary card when there is one, so dropping that leaves the result
 // cards DetailedView renders.
-// #338 read "13 of 12". The bound holds as long as every counted card is still
-// a hit of the reported total, which is the case in every scenario it is
-// asserted in below; a stale card can outlive its hit, so the stale test
-// deliberately makes no such claim.
+// The bound holds as long as every counted card is still a hit of the reported
+// total, which is the case in every scenario it is asserted in below; a stale
+// card can outlive its hit, so the stale test deliberately makes no such claim.
 const expectWithinTotal = (search: SearchStateSlice) =>
     expect(selectLoadedFiles(searchState(search))).toBeLessThanOrEqual(
         selectTotalFiles(searchState(search)),
@@ -429,9 +428,8 @@ describe("loaded result count", () => {
         expectWithinTotal(withPreview);
     });
 
-    // Regression guard only: every entry is clean here, so the previous filter
-    // also counted 20. It guards against an over-correction that would count
-    // just the last page.
+    // Guards against an over-correction that would count just the last page.
+    // Every entry here is clean, so filtering plays no part in the total.
     it("counts every page once pagination has loaded them", () => {
         // The count runs with the first page only, so it reports the whole
         // result set up front and later pages carry no total of their own.
@@ -725,8 +723,8 @@ describe("paging at the end of the list", () => {
         expect(landed.pagination.queuedAdvance).toBe(0);
     });
 
-    // The press that arrives while the page is in flight used to be dropped:
-    // intent was a boolean, so five presses still advanced one card.
+    // A press that arrives while the page is in flight is queued, not dropped:
+    // a boolean intent would let five presses advance one card.
     it("spends every queued move, not just the first", () => {
         let state = atTheBoundary();
         for (let press = 0; press < 3; press += 1) {
@@ -762,8 +760,8 @@ describe("paging at the end of the list", () => {
         );
     });
 
-    // An exhausted cursor used to be nulled while the total still claimed more,
-    // which left the button offering a page that would restart from page one.
+    // Nulling an exhausted cursor while the total still claims more leaves the
+    // button offering a page that would restart from page one.
     it("stops offering more once a page comes back empty", () => {
         const exhausted = searchSlice.reducer(
             atTheBoundary(),
@@ -961,7 +959,7 @@ describe("temporary highlight that re-enters the results", () => {
         );
 
         // selectOrderedFileIds reads `temporaryFileId`, so a carried-over flag
-        // can no longer put a card-less id in the index space. The flag is
+        // cannot put a card-less id in the index space. The flag is
         // still cleared: an entry that kept it would claim for the rest of its
         // life to exist only for a highlight that ended with the last query.
         expect(newQuery.files["late"].temporary).toBe(false);

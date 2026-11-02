@@ -9,21 +9,17 @@
 # nothing here runs on the machine driving the test. It opens an AF_PACKET socket
 # on the box's own interface, which only exists inside the guest.
 #
-# Asking dnsmasq rather than reading its configuration file is the point, and it
-# has now been the point in both directions.
+# Asking dnsmasq rather than reading its configuration file is the point.
+# Leaving option:router out of the configuration does not leave it out of the
+# lease -- dnsmasq defaults that option to its own address, and only a valueless
+# `dhcp-option=option:router` suppresses it. The two spellings differ by one
+# character of configuration and by everything in the lease, and nothing but a
+# real offer tells them apart; a test that grepped the configuration would be
+# written against whatever belief its author held and pass either way.
 #
-# This was written when the lease carried no router option, because the bug then
-# was not a missing line but the belief that leaving option:router out of the
-# configuration left it out of the lease -- dnsmasq defaults that option to its
-# own address, and only a valueless `dhcp-option=option:router` suppresses it. A
-# test that grepped the config would have been written against the same belief
-# and passed throughout.
-#
-# The lease now names the box as the gateway again, because a client with no
-# route to it never sends the captive-portal probe this box exists to answer
-# (see nixos/network.nix). What stayed is the reason this asks over the wire:
-# the two spellings differ by one character of configuration and by everything
-# in the lease, and nothing but a real offer tells them apart.
+# The lease names the box as the gateway, because a client with no route to it
+# never sends the captive-portal probe this box exists to answer (see
+# nixos/network.nix).
 #
 # The client is the box itself, on the interface the pool lives on:
 # SO_BINDTODEVICE puts the DHCPDISCOVER on that link rather than out of the
@@ -159,21 +155,20 @@ pkgs.writers.writePython3Bin "loom-dhcp-probe" { } ''
       next_send = 0.0
       offer = None
       while offer is None and time.monotonic() < deadline:
-          # Retransmitted, as a real client does. One DISCOVER and a single
-          # lost frame was a flaky VM test with no retry.
+          # Retransmitted, as a real client does. A single DISCOVER with no
+          # retry makes one lost frame a flaky VM test.
           now = time.monotonic()
           if now >= next_send:
               client.sendto(request(), ("255.255.255.255", SERVER_PORT))
               next_send = now + RESEND_INTERVAL_S
 
           # The socket's deadline is what is left of the budget, not the whole
-          # of it. It used to be set once before the loop, so on a quiet link
-          # `recv` raised an uncaught TimeoutError after ten seconds and the
-          # `sys.exit` below -- the diagnostic naming the server and the
-          # interface, which is the whole point of this probe -- could only
-          # ever fire on a *busy* link. `dhcp.py` wraps this in
-          # `appliance.succeed`, so the failure it exists for surfaced as a
-          # Python traceback.
+          # of it. Set once before the loop, `recv` would raise an uncaught
+          # TimeoutError on a quiet link after ten seconds and the `sys.exit`
+          # below -- the diagnostic naming the server and the interface, which
+          # is the whole point of this probe -- could only ever fire on a *busy*
+          # link. `dhcp.py` wraps this in `appliance.succeed`, where that
+          # failure would surface as a Python traceback.
           remaining = min(next_send, deadline) - time.monotonic()
           sniffer.settimeout(max(0.1, remaining))
           try:

@@ -1,10 +1,9 @@
 # Is Loom up yet, and how far along is it.
 #
-# A bring-up on these boxes is tens of minutes to hours, and until now nothing on the
-# console answered that question. The journal says what is happening rather than how much
-# is left; k9s appears when up.sh returns -- which is well before the pods are Ready -- and
-# shows twenty-five rows with no total; and the pre-login banner said nothing about the
-# cluster at all.
+# A bring-up on these boxes is tens of minutes to hours, and nothing else on the console
+# answers that question. The journal says what is happening rather than how much is left,
+# and k9s appears when up.sh returns -- which is well before the pods are Ready -- and
+# shows twenty-five rows with no total.
 #
 # So one unit works the answer out and writes it into /run/loom/ready, and three things
 # draw it:
@@ -35,10 +34,10 @@ let
 
   # Everything the program shells out to, baked into the wrapper rather than left to the
   # unit's PATH. A unit's PATH is its own `path` plus a minimal default and never
-  # /run/current-system/sw/bin, which is the drift that once shipped a box whose
-  # loom.service died on `awk: command not found` (box.nix, `loom.toolchain`). Here the
-  # same list also has to serve the operator typing `loom-ready` at an Alt-F2 prompt and
-  # the tmux server spawning it for the status line, neither of which is a unit at all.
+  # /run/current-system/sw/bin, so a tool reached through the system profile is a tool a
+  # unit cannot find (box.nix, `loom.toolchain`). Here the same list also has to serve the
+  # operator typing `loom-ready` at an Alt-F2 prompt and the tmux server spawning it for
+  # the status line, neither of which is a unit at all.
   runtimeInputs = with pkgs; [
     kubectl
     systemd # systemctl, for the bring-up unit's ActiveState
@@ -113,8 +112,8 @@ in
 
         It does not gate the readers. The status line and the banner print nothing when
         there is no record to read, and the pane falls back to the log alone -- which is
-        the same path setup mode takes, so switching this off leaves the console exactly
-        as it was before any of this existed rather than leaving a hole in it.
+        the same path setup mode takes, so switching this off leaves a working console
+        rather than a hole in it.
       '';
     };
 

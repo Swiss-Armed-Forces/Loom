@@ -45,13 +45,12 @@
     # appliance's own console out from under it.
     virtualisation.graphics = true;
 
-    # The cost of that `console=ttyS0`, and the reason the splash was untested
-    # for as long as it was: plymouth's device manager treats any serial console
-    # as a reason to abandon graphics entirely. It logs "serial consoles
-    # detected, managing them with details forced", loads the `details` plugin --
-    # a plain scrolling log -- and never opens the DRM renderer or the theme at
-    # all. So a VM would render a text boot while a real box rendered the splash,
-    # and no test here could tell the difference.
+    # The cost of that `console=ttyS0`: plymouth's device manager treats any
+    # serial console as a reason to abandon graphics entirely. It logs "serial
+    # consoles detected, managing them with details forced", loads the `details`
+    # plugin -- a plain scrolling log -- and never opens the DRM renderer or the
+    # theme at all. So a VM would render a text boot while a real box rendered
+    # the splash, and no test here could tell the difference.
     #
     # Only plymouth's view of the port changes. The getty vm-serial.nix puts on
     # ttyS0 and the boot log copied to the serial socket are both untouched.

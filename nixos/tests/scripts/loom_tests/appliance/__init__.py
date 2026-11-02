@@ -1,11 +1,11 @@
 """The appliance itself, booted in a VM.
 
 This is the big one: one machine, and everything about it that can be asserted without a
-cluster. It is split by subject rather than left as the thousand-line file it grew into
--- `upstream` for what box.nix restates from up.sh, `banner` for the screen a passer-by
-sees, `session` for tty1, `readiness` for how far a bring-up has got, `startup` for what
-Loom is launched through, `portal` for how a visitor is pointed at the frontend, `modes`
-for the two boot entries, and `guard` for the USB key.
+cluster. It is split by subject rather than left as one thousand-line file -- `upstream`
+for what box.nix restates from up.sh, `banner` for the screen a passer-by sees,
+`session` for tty1, `readiness` for how far a bring-up has got, `startup` for what Loom
+is launched through, `portal` for how a visitor is pointed at the frontend, `modes` for
+the two boot entries, and `guard` for the USB key.
 
 `run()` below is the table of contents, and the one thing in this package whose order
 matters: everything under the key guard manipulates its devices, and the last subtest

@@ -89,8 +89,8 @@ let
 
   # The rocm-smi that a GPU btop links has to be the one the toolchain already
   # carries for up.sh's preflight. If these ever diverge the image has gained a
-  # second ~169 MiB copy of ROCm, which is exactly the cost the plain build used
-  # to be justified by avoiding.
+  # second ~169 MiB copy of ROCm, which is exactly the cost the plain build
+  # avoids.
   toolchainHasRocmSmi = lib.any (
     p: p.drvPath == pkgs.rocmPackages.rocm-smi.drvPath
   ) box.loom.toolchain;

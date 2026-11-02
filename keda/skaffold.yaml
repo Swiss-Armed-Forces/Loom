@@ -41,11 +41,11 @@ build:
           - command: ["../cicd/tag_latest.sh"]
 
 # deploy.helm runs `helm upgrade --install` directly, which routes each resource to
-# its declared namespace. This correctly handles the metrics-apiserver auth RoleBinding
-# that targets kube-system, which the previous manifests.helm + deploy.kubectl approach
-# could not deploy (skaffold passed --namespace=loom globally to kubectl apply).
+# its declared namespace. The metrics-apiserver auth RoleBinding needs that: it targets
+# kube-system, and a manifests.helm + deploy.kubectl arrangement cannot deploy it
+# because skaffold passes --namespace=loom globally to kubectl apply.
 # It also sidesteps the 262144-byte kubectl annotation limit that the ScaledJobs CRD
-# hit with client-side kubectl apply.
+# hits with client-side kubectl apply.
 deploy:
   helm:
     flags:

@@ -190,9 +190,9 @@ let
     # directory of Python that is not packaged at all -- nixos/skills is tests
     # and nothing else -- where the two lockfile hooks have nothing to check and
     # `poetry check` would fail on the missing manifest. Everything else, which
-    # is every formatter and linter, applies either way: that directory was the
-    # only Python in the tree with no gate at all, which also left the typing
-    # rules the rest of the repository is held to unenforced there.
+    # is every formatter and linter, applies either way, so an unpackaged
+    # directory is still held to the typing rules the rest of the repository is
+    # held to.
     {
       subdir,
       poetry ? true,
@@ -410,8 +410,7 @@ let
   # integrationtest is checked alongside it, because it takes the root project as
   # a path dependency (`loom-overarching-dev = {path = "../"}`). A change to the
   # root manifest therefore stales two lockfiles, and its own hooks do not fire on
-  # a file outside its directory -- which is how both went stale at once when
-  # nixos/ready was added to the root pyproject.toml and neither was regenerated.
+  # a file outside its directory.
   #
   # `poetry check` reports a lockfile that no longer matches its manifest, so this
   # fails the commit and points at `poetry-lock`; it deliberately does not
@@ -857,12 +856,12 @@ in
 
     # `*.patch` and `*.diff` are excluded from both, and that is not cosmetic: a
     # unified diff's context line for a blank source line is a single space, and
-    # these hooks strip it. They had already rewritten every patch in the tree
-    # -- nixos/patches/btop-aarch64-gpu.patch has two such lines, the two
-    # Frontend patches five between them -- so a regenerated patch shows
-    # spurious noise and anyone comparing against upstream sees a mismatch that
-    # has nothing to do with the change. (`patch` and `git apply` both accept a
-    # wholly empty line as blank context, which is why the hunks still applied.)
+    # these hooks strip it. The patches in the tree carry such lines --
+    # nixos/patches/btop-aarch64-gpu.patch two, the two Frontend patches five
+    # between them -- so a stripped patch shows spurious noise and anyone
+    # comparing against upstream sees a mismatch that has nothing to do with the
+    # change. (`patch` and `git apply` both accept a wholly empty line as blank
+    # context, so the hunks still apply.)
     trim-trailing-whitespace = {
       enable = true;
       excludes = [
@@ -934,9 +933,8 @@ in
 
     # How much shell a `.nix` file under nixos/ may inline. The shellcheck hook
     # above reads every .sh file in the tree and cannot see into a .nix one, so
-    # without this the appliance's shell drifts back out of its coverage one
-    # unit `script` at a time -- which is how three thousand lines of it got
-    # there in the first place.
+    # without this the appliance's shell drifts out of its coverage one unit
+    # `script` at a time.
     #
     # A cap rather than a ban: the prologue of `LOOM_FOO=${...}` assignments
     # above a `builtins.readFile` is the shape being encouraged, and a one-line
@@ -990,9 +988,9 @@ in
     };
 
     # ollama/Dockerfile.models hardcodes the models the production image bakes,
-    # and charts/values.yaml names the ones Loom asks for. They agreed, and
-    # nothing made them: a drift is invisible until an air-gapped box is in
-    # front of somebody with a console pane that cannot answer. vars.sh's
+    # and charts/values.yaml names the ones Loom asks for. Nothing structural
+    # holds the two together, and a drift is invisible until an air-gapped box
+    # is in front of somebody with a console pane that cannot answer. vars.sh's
     # LOOM_CHAT_MODEL reads the chart precisely so there is no second literal;
     # this is what keeps the Dockerfile from being one.
     "check-ollama-models" = {
@@ -1070,8 +1068,9 @@ in
       # `appliance` too: it is tracked, committed empty, part of skaffold's default
       # valuesFiles and written with real content by nixos/repo.nix -- and unlike
       # the other three it is deliberately *not* skip-worktree'd, so without this
-      # it was the one override layer that was neither ignored nor checked, and
-      # box-specific values staged from a seeded checkout committed silently.
+      # it would be the one override layer that is neither ignored nor checked,
+      # and box-specific values staged from a seeded checkout would commit
+      # silently.
       files = "charts/values-(overwrites|user|up-flags|appliance)\\.yaml$";
       types = [ "file" ];
     };

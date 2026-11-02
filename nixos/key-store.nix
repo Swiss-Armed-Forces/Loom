@@ -6,7 +6,7 @@
 # live inside it. Getting at them costs a word passphrase that the build script
 # generated and printed, and that exists nowhere on the stick.
 #
-# What that buys is the one thing the stick could not do before. Unlocked, it is
+# What that buys is the one thing an unlocked stick cannot do. Unlocked, it is
 # a bearer token: whoever holds it unlocks the box, which is why the threat model
 # (Documentation/appliance.md) has to assume the stick "is removed, or travels
 # separately, whenever the box is unattended". Locked, the stick is one factor of
@@ -84,12 +84,6 @@ let
   # The values the unlock script needs, and nothing else: the program itself
   # is scripts/loom_keystore_unlock.sh, which the repository's own
   # `shellcheck -x -o all` hook reads like any other .sh file.
-  #
-  # This used to be sixty lines of inline control flow around a passphrase,
-  # kept in a named binding only so that a `pkgs.runCommand` here could cat it
-  # into a file and run shellcheck over that -- a private copy of the hook,
-  # built because an inline `script` string is checked by nothing. The file
-  # replaces both, and moves the check from image-build time to commit time.
   unlockScript = ''
     LOOM_KEYBOARD=${lib.escapeShellArg "[keyboard: ${config.loom.keymapLabel}]"}
     LOOM_ATTEMPTS=${toString cfg.attempts}

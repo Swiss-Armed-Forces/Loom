@@ -236,9 +236,9 @@ const windowOffset = () => {
  * The list places one offset - the window's - and the rows inside it lay out
  * against each other, so this is the only placement arithmetic left to get
  * wrong. Getting it wrong shows as the list jumping, not as rows overlapping:
- * siblings in normal flow cannot be drawn on top of each other, which is why
- * the overlap assertions this file used to make have no mechanism left to
- * catch and have been replaced by this one.
+ * siblings in normal flow cannot be drawn on top of each other, so there is no
+ * overlap for an assertion to catch and this offset is what the file asserts
+ * instead.
  */
 const expectedWindowOffset = () => {
     const first = placedRows()[0]?.index ?? 0;
@@ -283,7 +283,7 @@ describe("DetailedView under a layout change", () => {
         expect(windowOffset()).toBeCloseTo(expectedWindowOffset(), 0);
     });
 
-    // The reported case: everything on screen with every element drawn, then
+    // The worst case: everything on screen with every element drawn, then
     // switched to the preset that draws the fewest.
     it("places the window when a preset shortens every card", async () => {
         const store = storeWith(500);

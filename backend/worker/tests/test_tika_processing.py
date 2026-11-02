@@ -92,9 +92,9 @@ def test_transient_failure_is_raised_while_retries_remain(
     tika_service: MagicMock,
     lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
-    """The regression test: a tika 5xx must reach autoretry_for, not the fallbacks.
+    """A tika 5xx must reach autoretry_for, not the fallbacks.
 
-    Degrading here is what indexed PDFs as raw byte sequences whenever tika was busy.
+    Degrading here indexes PDFs as raw byte sequences whenever tika is busy.
     """
     tika_service.parse_from_generator.side_effect = TikaTransientError("HTTP 503")
     content = lazybytes_service_inmemory.from_bytes(data=b"%PDF-1.7")
@@ -160,7 +160,7 @@ def test_unforeseen_exception_degrades_rather_than_failing_the_file(
 
 
 def test_only_transient_failures_are_declared_retryable():
-    """The invariant the whole defect was about, and the one a refactor breaks
+    """The invariant the retry classification rests on, and one a refactor breaks
     quietly."""
     assert TikaTransientError in TIKA_RETRY_EXCEPTIONS
     assert TikaPermanentError not in TIKA_RETRY_EXCEPTIONS

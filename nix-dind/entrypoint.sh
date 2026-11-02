@@ -186,8 +186,8 @@ if ! is_taiscale_ready; then
     echo "[*] ============================================================"
     echo "[*] Joining tailscale network as: '${TAILSCALE_HOSTNAME_SAFE}'"
     echo "[*] ============================================================"
-    # Do not use tailscale dns.
-    # We have seen issues like the following:
+    # Do not use tailscale dns. Its resolver answers SERVFAIL when it has no
+    # upstream resolvers set:
     # format("dns: resolver: forward: no upstream resolvers set, returning SERVFAIL")
     tailscale up \
         --authkey="${TAILSCALE_AUTHKEY}" \

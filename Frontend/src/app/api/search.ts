@@ -275,9 +275,9 @@ export const getPreviewFields = async (): Promise<PreviewField[]> =>
  *
  * Two paths ask for the same preview and neither can see the other: the
  * prefetcher reaching ahead of the viewport, and the card's own in-view effect
- * when it mounts. Nothing is cached until the answer arrives, so under fast
- * scrolling every file was fetched twice - 583 requests for 293 files in one
- * pass down the list. A second asker now joins the request already open.
+ * when it mounts. Nothing is cached until the answer arrives, so without this
+ * a fast pass down the list fetches roughly every file twice. A second asker
+ * joins the request already open.
  */
 const previewsInFlight = new Map<string, Promise<GetFilePreviewResponse>>();
 

@@ -57,7 +57,7 @@ def restore_archive_metadata_task(
     # bounded. `zf.read(entry)` is `read(-1)`, which loops with a 2 GiB per-call output
     # bound -- so a member declaring a few bytes in the central directory and inflating
     # to gigabytes passes the router's bounded probe and lands here, on a path the
-    # crawler now reaches unattended.
+    # crawler reaches unattended.
     with get_file_storage_service().load_file(archive_zip) as fd:
         with ZipFile(fd) as zf:
             manifest_entry = find_manifest_entry(zf.namelist())

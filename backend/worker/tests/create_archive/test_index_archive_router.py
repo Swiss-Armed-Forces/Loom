@@ -1,14 +1,13 @@
 """index_archive_task must never drop a blob.
 
-The regression this guards is specific: the old canvas ran two chains that each
-returned None when their case did not apply, so a blob that was neither an
-encrypted archive nor a plain one produced no File entry, no index entry and no
-error -- the endpoint had already answered 202.
+What this guards is specific: a blob that is neither an encrypted archive nor a plain
+one must still produce a File entry and an index entry, because the endpoint answers 202
+before any of this runs and a dropped blob leaves no error behind.
 
-Everything that can be is driven through `route_archive_blob(content, services)`,
-which takes its services as an argument. Only the tests that go through the Celery
-task itself -- which resolves its own -- install anything globally, and those do it
-through the `install_services` fixture so it is put back afterwards.
+Everything that can be is driven through `route_archive_blob(content, services)`, which
+takes its services as an argument. Only the tests that go through the Celery task itself
+-- which resolves its own -- install anything globally, and those do it through the
+`install_services` fixture so it is put back afterwards.
 """
 
 import io
@@ -305,7 +304,7 @@ def test_a_blob_that_cannot_even_be_inspected_is_indexed_rather_than_dropped(
     loses the blob outright: the app sets `task_acks_late` together with
     `task_acks_on_failure_or_timeout`, so a failed task is acked rather than
     redelivered, nothing is dead-lettered to `graveyard`, and the endpoint answered 202
-    long ago. That is the exact disappearance this module replaced.
+    long ago.
     """
 
     class _UnreadableStorage(InMemoryFileStorageLazyBytesService):
@@ -326,14 +325,13 @@ def test_a_blob_that_cannot_even_be_inspected_is_indexed_rather_than_dropped(
 def test_a_foreign_loom_blob_is_rejected_without_transferring_it(
     storage, dispatched_files
 ):
-    """The cost regression, not the correctness one.
+    """The cost of the decision, not its correctness.
 
-    Routing used to answer "does this key fit?" by running the decryption: GCM's MAC
-    sits at the tail, so `get_decrypted_stream` had to stream every byte -- and write
-    every decrypted byte back into storage -- before raising. On a several-hundred
-    gigabyte `.loom` that is a full round trip to produce `return None`, and since
-    `archive_enc_master_key` is per-deployment it happened to *every* archive carried in
-    from another box.
+    Answering "does this key fit?" by running the decryption would mean streaming every
+    byte -- GCM's MAC sits at the tail -- and writing every decrypted byte back into
+    storage before raising. On a several-hundred gigabyte `.loom` that is a full round
+    trip to produce `return None`, and since `archive_enc_master_key` is per-deployment
+    it would happen to *every* archive carried in from another box.
 
     The header probe settles it from ~61 bytes, so nothing may be transferred at all.
     """

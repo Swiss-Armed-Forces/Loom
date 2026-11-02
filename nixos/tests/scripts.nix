@@ -1,11 +1,11 @@
 # The VM tests, as a Python package the test driver imports.
 #
 # Each nixos/tests/*.nix installs this through `extraPythonPackages` and its testScript
-# is then two lines: an import and the call. What that replaced was `builtins.readFile`,
-# which concatenated every script the driver ran into one namespace -- so two files could
-# not both `import json` without the driver's own ruff rejecting the pair, a reference
-# across files was a pylint `used-before-assignment`, and nothing could be shared between
-# tests at all. See loom_tests/driver.py.
+# is then two lines: an import and the call. A `builtins.readFile` testScript instead
+# concatenates every script the driver runs into one namespace -- so two files cannot
+# both `import json` without the driver's own ruff rejecting the pair, a reference across
+# files is a pylint `used-before-assignment`, and nothing can be shared between tests at
+# all. See loom_tests/driver.py.
 #
 # Built from *inside* the `extraPythonPackages` callback rather than from the repository's
 # `pkgs`, which is the one thing about this file that is not cosmetic: the argument is the
@@ -41,9 +41,9 @@ pythonPackages.buildPythonPackage {
   # for ten minutes before saying so.
   #
   # The leaves, not the package: `loom_tests/__init__.py` is a docstring and
-  # nothing else, so `[ "loom_tests" ]` realised none of the modules a test
-  # actually runs, and a NameError at module scope in install.py still cost a
-  # ten-minute boot to discover. (`loom_tests.appliance` is the exception and
+  # nothing else, so `[ "loom_tests" ]` would realise none of the modules a test
+  # actually runs, and a NameError at module scope in install.py would still cost
+  # a ten-minute boot to discover. (`loom_tests.appliance` is the exception and
   # imports its own submodules, which is why it stands for the whole subpackage.)
   pythonImportsCheck = [
     "loom_tests.appliance"

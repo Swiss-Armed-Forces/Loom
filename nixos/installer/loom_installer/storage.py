@@ -182,10 +182,10 @@ def pool_claimed_by_key(runner: CommandRunner, key_device: str) -> bool:
 
     Two conditions, not one. The passphrase test alone is satisfied from the instant
     `install.encrypt` returns -- twenty minutes before there is a system on the disk
-    -- so a power loss during `install_system` produced a box that answered "already
-    installed" with no bootloader and no NVRAM entry, and sat at the menu refusing to
-    try again. The LUKS2 label is written last, by `install.stamp_pool_installed`, so
-    it means *finished*.
+    -- so on its own a power loss during `install_system` leaves a box that answers
+    "already installed" with no bootloader and no NVRAM entry, sitting at the menu
+    refusing to try again. The LUKS2 label is written last, by
+    `install.stamp_pool_installed`, so it means *finished*.
     """
     root_device = settings().storage.root_device
 
@@ -213,9 +213,9 @@ def pool_claimed_by_key(runner: CommandRunner, key_device: str) -> bool:
             ]
         ).ok
     )
-    # Leave the box as it was found -- which is what this says and now also does. An
-    # active group would make the partition table busy if the operator picks Install
-    # off the menu, so the common case still deactivates.
+    # Leave the box as it was found. An active group would make the partition table
+    # busy if the operator picks Install off the menu, so the common case still
+    # deactivates.
     if not was_active:
         deactivate(runner)
 

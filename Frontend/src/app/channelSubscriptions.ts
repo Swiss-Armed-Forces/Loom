@@ -21,9 +21,9 @@ const refCounts = new Map<string, number>();
  * How long a channel is kept after the last view of it goes away.
  *
  * Cards subscribe when they scroll into view and release when they leave, so
- * a fast scroll used to send a subscribe and an unsubscribe for every row it
- * passed - measured at about sixty-four a second, each one a `SUBSCRIBE` and
- * an `UNSUBSCRIBE` against Redis for a file nobody stopped to read. Holding
+ * without a grace period a fast scroll sends a subscribe and an unsubscribe
+ * for every row it passes - dozens a second, each one a `SUBSCRIBE` and an
+ * `UNSUBSCRIBE` against Redis for a file nobody stopped to read. Holding
  * the channel briefly means a row scrolled past and back costs nothing, and a
  * row genuinely left behind is released a moment later.
  */

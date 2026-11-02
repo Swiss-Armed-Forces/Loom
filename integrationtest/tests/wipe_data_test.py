@@ -61,11 +61,11 @@ def _wipe(components: list[str] | None = None) -> requests.Response:
 
 
 def test_wipe_celery_purges_per_task_queues_no_worker_is_draining():
-    """Regression test for wipe_celery() purging from local Celery state.
+    """wipe_celery() must purge the per-task queues local Celery state cannot see.
 
-    "Queues are empty afterwards" alone does not discriminate — the broken version also
-    ends up empty, by waiting for the workers to drain the backlog rather than by
-    purging. So consumption is stopped first: with DISPATCH throttled the messages sit
+    "Queues are empty afterwards" alone does not discriminate — a wipe that purges only
+    from local Celery state also ends up empty, by waiting for the workers to drain the
+    backlog. So consumption is stopped first: with DISPATCH throttled the messages sit
     in loom:worker.index_file.dispatch_tasks.* — per-task queues, outside the API's four
     — with no consumer. A wipe that cannot purge them can never reach idle either, so it
     exhausts its timeout and returns 504 instead of 200.

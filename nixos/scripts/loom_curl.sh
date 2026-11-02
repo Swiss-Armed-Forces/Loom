@@ -30,17 +30,15 @@ secret="${SERVING_CERT_SECRET}"
 
 # Arguments are passed through untouched, deliberately.
 #
-# This used to rewrite a leading `http://` to `https://`, so that one
-# documented spelling would work on an image serving plaintext and on one
-# that does not. It is not needed -- `websecure` exists on every image, so
-# `https://` is already the spelling that always works -- and it broke
-# three things that look exactly like the URL it meant to fix: the
-# loopback proxies (`http://127.0.0.1:18080/`, which appliance.md gives as
-# the way to test them, and which speak plain http), `http://portal.loom/`
-# (whose TLS listener exists only on the mutual TLS image), and the value
-# of any flag that happens to be a URL, `--proxy` among them. A wrapper
-# that edits arguments has to know which argument is the URL, and this one
-# cannot.
+# Rewriting a leading `http://` to `https://` buys nothing -- `websecure`
+# exists on every image, so `https://` is already the spelling that always
+# works -- and breaks three things that look exactly like the URL such a
+# rewrite would aim at: the loopback proxies (`http://127.0.0.1:18080/`,
+# which appliance.md gives as the way to test them, and which speak plain
+# http), `http://portal.loom/` (whose TLS listener exists only on the
+# mutual TLS image), and the value of any flag that happens to be a URL,
+# `--proxy` among them. A wrapper that edits arguments has to know which
+# argument is the URL, and this one cannot.
 flags=()
 
 # The anchor. On a mutual TLS box the issuer already wrote one next to the

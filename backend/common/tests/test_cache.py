@@ -41,13 +41,13 @@ def test_cache_decorator():
         f"{{rc:{expected_namespace}}}:vals", f"{{rc:{expected_namespace}}}:{identifier}"
     )
     assert redis_client.zadd.call_args.args[0] == f"{{rc:{expected_namespace}}}:keys"
-    # Value is now stored atomically via hsetnx
+    # Value is stored atomically via hsetnx
     assert redis_client.hsetnx.call_args.args[0] == f"{{rc:{expected_namespace}}}:vals"
     assert (
         redis_client.hsetnx.call_args.args[1]
         == f"{{rc:{expected_namespace}}}:{identifier}"
     )
-    # hset is now used for settings
+    # hset is used for settings
     assert (
         redis_client.hset.call_args.args[0] == f"{{rc:{expected_namespace}}}:settings"
     )

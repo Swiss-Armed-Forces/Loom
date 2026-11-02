@@ -13,13 +13,12 @@ So no path this module has never heard of resolves to the page. Unknown is `NOT_
 and `tests/test_routes.py` holds the table of real probe paths that must never come back
 as the page.
 
-A probe now *does* reach this process, which it did not use to -- nginx answered the
-whole catch-all with a static 302. What changed is that the answer became conditional:
-the redirect is still the default, and the success below is the exception, granted to a
-client that has pressed the button at the bottom of the page. The catch-all's `location
-/` is still a static 302, so only the paths in `PROBE_ANSWERS` are proxied here at all,
-and `test_routes.py` now guards both directions -- that each of them resolves to
-`Route.PROBE`, and that none of them is ever the page.
+A probe reaches this process, and the answer it gets is conditional: the redirect is
+the default, and the success below is the exception, granted to a client that has
+pressed the button at the bottom of the page. nginx's catch-all `location /` is a
+static 302, so only the paths in `PROBE_ANSWERS` are proxied here at all, and
+`test_routes.py` guards both directions -- that each of them resolves to `Route.PROBE`,
+and that none of them is ever the page.
 """
 
 from dataclasses import dataclass
@@ -91,9 +90,8 @@ _GNOME = ProbeAnswer(
 
 # The probe contract, as one table.
 #
-# Deliberately the same list `tests/test_routes.py` has guarded since this module was
-# written. That test used to assert every one of these resolves to `NOT_FOUND`; it now
-# asserts that every one resolves to `PROBE` and that none is ever the page.
+# `tests/test_routes.py` asserts that every one of these resolves to `PROBE` and that
+# none is ever the page.
 #
 # portal.nix proxies exactly these paths to this process and nothing else, so the list
 # is also a contract with the nginx configuration -- `loom_tests/appliance/portal.py`

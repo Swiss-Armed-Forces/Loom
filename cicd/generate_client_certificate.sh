@@ -276,8 +276,8 @@ sign_client_cert() {
     # anchors on this one. It is an end entity presented to a server that
     # already holds the CA, so saying what it is for costs nothing.
     #
-    # Go accepts a client certificate with no extendedKeyUsage at all, which is
-    # why mutual TLS appeared to work without this.
+    # Go accepts a client certificate with no extendedKeyUsage at all, so
+    # mutual TLS works whether or not this is here.
     cat > "${EXT_FILE}" <<'EOF'
 basicConstraints = critical, CA:FALSE
 keyUsage = critical, digitalSignature, keyEncipherment

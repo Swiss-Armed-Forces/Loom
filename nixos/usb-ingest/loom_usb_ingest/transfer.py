@@ -99,9 +99,9 @@ def mc_env(
     `mc alias set`. That is not a simplification: `alias set` *probes* the endpoint and
     refuses to record one that does not answer, so on a box still bringing Loom up --
     which is the ordinary case for a stick plugged in at the console, and what
-    `wait_for_cluster` below exists for -- configuring mc failed outright and the wait
-    was never reached. An environment alias is recorded by being read, so the only
-    thing that waits for the cluster is the thing whose job that is.
+    `wait_for_cluster` below exists for -- configuring mc would fail outright and the
+    wait would never be reached. An environment alias is recorded by being read, so the
+    only thing that waits for the cluster is the thing whose job that is.
 
     No credentials: charts/values.yaml leaves intakeStorage's keys null, so SeaweedFS's
     S3 gateway takes unauthenticated requests, and a bare URL is how mc spells that.
@@ -297,8 +297,8 @@ def mirror(
         if event.get("status") == "success":
             # `mc mirror --json` closes with a summary event -- totals, duration,
             # speed -- which is a success like any other to `status` alone. Counted as
-            # an object it made every copy report one more file than it moved, and an
-            # empty volume report one. Only a per-object event names a target.
+            # an object it would make every copy report one more file than it moved,
+            # and an empty volume report one. Only a per-object event names a target.
             if "target" not in event:
                 continue
             objects += 1

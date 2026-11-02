@@ -33,9 +33,9 @@ let
 
   # Everything the service shells out to. A unit's PATH is built from its own
   # `path` plus a minimal default -- /run/current-system/sw/bin is never on it --
-  # which is the drift that once shipped a box whose loom.service died on
-  # `awk: command not found` (box.nix, `loom.toolchain`). Here the list is baked
-  # into the wrapper instead, so it cannot be out of step with the unit.
+  # so a tool reached through the system profile is a tool a unit cannot find
+  # (box.nix, `loom.toolchain`). Here the list is baked into the wrapper instead,
+  # so it cannot be out of step with the unit.
   runtimeInputs = with pkgs; [
     coreutils
     util-linux # lsblk, blkid, mount, umount, findmnt, blockdev, wall
@@ -120,10 +120,8 @@ let
         exit 0
       fi
       # The paths follow `Manifest`, which nests: `.device` lives under `.stick`
-      # and the counts under `.totals`. Asked for at the top level they came back
-      # as jq's `null` -- silently, since `.status` and `.prefix` really are top
-      # level -- so the operator's only supported way to ask what happened printed
-      # `null` for the device, the object count and the failure count.
+      # and the counts under `.totals`. Asked for at the top level they come back
+      # as jq's `null`, silently -- `.status` and `.prefix` really are top level.
       #
       # `// "?"` rather than a bare path, so that the next reshuffle of `Manifest`
       # shows up as a question mark rather than as a plausible-looking answer.
@@ -204,11 +202,11 @@ in
         Where the lock, the mc configuration and state.json live.
 
         Deliberately not `mountRoot`, which is the thing two options exist to keep
-        apart: the mount tree is `<mountRoot>/<kname>/pN`, so sharing a directory put
-        somebody else's filesystems beside this service's own `.lock`, `mc/` and
-        `state.json` -- and a stick whose kernel name happened to be `mc` would land
-        on top of them. It also made systemd-tmpfiles log a duplicate line for the
-        same path on every boot.
+        apart: the mount tree is `<mountRoot>/<kname>/pN`, so sharing a directory
+        would put somebody else's filesystems beside this service's own `.lock`,
+        `mc/` and `state.json` -- and a stick whose kernel name happened to be `mc`
+        would land on top of them. It would also have systemd-tmpfiles log a
+        duplicate line for the same path on every boot.
       '';
     };
 
@@ -358,10 +356,10 @@ in
         # device's directory. `${cfg.mountRoot}/%i` is a plain directory created by
         # `os.makedirs`; the mounts are one level down at `.../p1`, `.../p2`, and
         # `umount --recursive` derives its recursion set from the *target's own*
-        # entry in /proc/self/mountinfo -- so it always exited "not mounted", with
-        # the leading `-` hiding it. That left a stranger's filesystem mounted
-        # indefinitely after a SIGKILL or a stick pulled mid-copy, and re-plugging
-        # stacked a second mount on the same path.
+        # entry in /proc/self/mountinfo -- so naming the directory exits "not
+        # mounted" with the leading `-` hiding it, leaves a stranger's filesystem
+        # mounted indefinitely after a SIGKILL or a stick pulled mid-copy, and
+        # stacks a second mount on the same path when it is re-plugged.
         ExecStopPost = [
           (
             "-${pkgs.bash}/bin/sh -c 'for m in ${cfg.mountRoot}/%i/*; do "

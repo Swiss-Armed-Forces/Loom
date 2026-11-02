@@ -35,7 +35,7 @@ def test_cited_headings_exist() -> None:
     Attributed to the nearest preceding path rather than checked against the
     union of every doc the file cites: the agent is sent to one specific file,
     and `reference/network.md` cites both appliance.md and installation.md --
-    both of which have a `## Troubleshooting`, so the union left the pairing
+    both of which have a `## Troubleshooting`, so a union would leave the pairing
     unchecked exactly where it matters.
 
     Heading level is part of it: `## Hostnames and the self-signed certificate`
@@ -105,10 +105,10 @@ def test_no_relative_paths_in_skill_prose() -> None:
         for token in line.split("`")
         if token.startswith("Documentation/")
     ]
-    # Any other `*.md` the prose names, too. `Documentation/` alone missed the
-    # one that actually bit: `reference/wifi.md` said "check `facts.md` first",
-    # and facts.md sits at the skill *root*, so from inside `reference/` that
-    # name resolves to a file that is not there. A skill-relative path
+    # Any other `*.md` the prose names, too, which `Documentation/` alone does
+    # not cover: "check `facts.md` first" written in `reference/wifi.md` names a
+    # file that sits at the skill *root*, so from inside `reference/` that name
+    # resolves to a file that is not there. A skill-relative path
     # (`loom-appliance/facts.md`, `reference/units.md`) is what the agent can
     # follow from either starting directory.
     relative += [

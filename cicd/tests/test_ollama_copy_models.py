@@ -75,9 +75,9 @@ def test_copies_the_whole_tree(store: Path, destination: Path) -> None:
 def test_replaces_a_truncated_destination(store: Path, destination: Path) -> None:
     """A short blob is copied again even though it is newer than its source.
 
-    This is the regression. `cp --update` compares modification times, and a file left
-    half-written carries the time it was written -- so the one file that has to be
-    copied again is exactly the one an mtime comparison skips.
+    `cp --update` compares modification times, and a file left half-written carries the
+    time it was written -- so the one file that has to be copied again is exactly the
+    one an mtime comparison skips.
     """
     source_blob = store / "blobs" / BLOB_NAME
     truncated = write(
@@ -123,8 +123,8 @@ def test_discards_a_partial_file_left_behind(store: Path, destination: Path) -> 
 def test_a_failed_copy_fails_the_run(store: Path, destination: Path) -> None:
     """An unreadable source stops the script instead of being reported as success.
 
-    The initContainer ran `cp ... || true`, which turned a killed copy into a completed
-    one. A non-zero exit is what gets the container retried.
+    A non-zero exit is what gets the initContainer retried; swallowing the failure turns
+    a killed copy into a completed one.
     """
     unreadable = store / "blobs" / BLOB_NAME
     unreadable.chmod(0o000)

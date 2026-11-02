@@ -130,7 +130,7 @@ def test_a_declared_vendor_is_case_and_space_insensitive() -> None:
 def test_a_declared_vendor_with_no_device_node_stops_the_pod(tmp_path: Path) -> None:
     """The refuse-to-start path, from the environment variable to the verdict.
 
-    `charts/values-amd-gpu.yaml` set LOOM_GPU_VENDOR and the box did not enumerate its
+    `charts/values-amd-gpu.yaml` sets LOOM_GPU_VENDOR and the box does not enumerate its
     GPU -- the case `--no-gpu` exists for. Asserted through `detect_gpu_memory` rather
     than through the policy alone, because what has to be true is that the *absence of
     /dev/kfd under dev_root* is what produced it: a probe reached anyway would read the

@@ -22,7 +22,7 @@
 # so leaving it on makes the whole values file invisible at request time.
 #
 # Rendered twice: once with the chart's defaults, and once with
-# charts/values-development.yaml beneath it, because up.sh now applies
+# charts/values-development.yaml beneath it, because up.sh applies
 # values-http.yaml for the dev and integration-test profiles too. A component that
 # values-development.yaml enables and values.yaml leaves off would otherwise get an
 # Ingress in dev that this check never renders -- and the dev deployment is

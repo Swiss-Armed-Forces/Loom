@@ -129,14 +129,13 @@ class Subprocess:
         Every caller of this is a probe whose answer is a line on the operator's screen
         or an input to a decision that treats "nothing" as its own case.
 
-        `ok` is consulted, which the docstring and the Protocol always claimed and the
-        code did not: partial output from a command that then failed was returned as
-        authoritative. `install._closure_bytes` is the sharp case -- a
-        `nix-store --query --requisites` that dies part way yields a truncated path
-        list, the sizes over it a fraction of the real total, and the progress bar
-        then reaches 100% and sits there for the remaining tens of gigabytes, on the
-        one step the operator is standing there watching. A caller that genuinely
-        wants best-effort stdout from a failing command should call `run`.
+        `ok` is consulted, so partial output from a command that then failed is never
+        returned as authoritative. `install._closure_bytes` is the sharp case -- a `nix-
+        store --query --requisites` that dies part way yields a truncated path list, the
+        sizes over it a fraction of the real total, and the progress bar then reaches
+        100% and sits there for the remaining tens of gigabytes, on the one step the
+        operator is standing there watching. A caller that genuinely wants best-effort
+        stdout from a failing command should call `run`.
         """
         result = self.run(argv, timeout=timeout)
         return result.stdout if result.ok else ""

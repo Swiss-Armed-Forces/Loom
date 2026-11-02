@@ -88,8 +88,8 @@ describe("resultCardSurfaceStyle", () => {
     it("tints the highlighted card and nothing else", () => {
         // The tint is the whole mark. An edge of any kind - ring, halo,
         // border - reads as a different kind of card rather than the same
-        // card under the cursor, and it is what used to change the shape of
-        // the one row the reader was looking at.
+        // card under the cursor, and it changes the shape of the one row the
+        // reader is looking at.
         expect(styleOf(true, false).bgcolor).toBeTruthy();
         expect(styleOf(false, false).bgcolor).toBeUndefined();
         expect(Object.keys(styleOf(true, false))).toEqual([
@@ -103,8 +103,8 @@ describe("resultCardSurfaceStyle", () => {
     });
 
     it("sits every card at the same height", () => {
-        // The highlighted card used to lift above the list on a deeper
-        // shadow, which is one more way for it to differ from its neighbours.
+        // Lifting the highlighted card above the list on a deeper shadow is
+        // one more way for it to differ from its neighbours.
         expect(resultCardElevation(false)).toBeGreaterThan(0);
         expect(resultCardElevation(true)).toBe(0);
     });

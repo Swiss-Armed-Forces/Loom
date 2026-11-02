@@ -3,9 +3,9 @@
 # The `--require-client-cert` build, which nothing else in this directory boots:
 # tests/appliance.nix asserts the opposite of it (no loopback proxies, plain http
 # served) and tests/appliance-units.nix reads its unit edges off an evaluation
-# without starting anything. That left the one image where a visitor cannot get in
-# without a certificate entirely unbooted -- which is how it shipped with an nginx
-# that could not start.
+# without starting anything. Without this test the one image where a visitor
+# cannot get in without a certificate is never booted at all, and an nginx that
+# cannot start is nothing's failure.
 #
 # Division of labour with the two tests next to it, which must not be collapsed
 # into this one:

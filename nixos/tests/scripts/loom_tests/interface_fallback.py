@@ -1,8 +1,8 @@
 """The box no platform matches: which wired NIC becomes loom0, and what is said.
 
 Four nodes, because the answer differs by what the box has: one wired port, two, the
-fallback switched off -- which is the old behaviour, still reachable -- and a platform
-that excludes the driver behind the only port there is.
+fallback switched off, and a platform that excludes the driver behind the only port
+there is.
 
 Nothing here is interpolated from the Nix file -- every value this asserts is a name the
 appliance itself chooses.
@@ -35,8 +35,8 @@ def _single_nic_claimed(single: "Machine", subtest: "Subtest") -> None:
         # Nothing is left carrying the kernel-assigned name it arrived with --
         # asserted against the box rather than against the record. `claim` writes
         # the *pre-rename* name here and exits early when loom0 already exists,
-        # so `LOOM_FALLBACK_INTERFACE=loom0` was a string that could never appear
-        # under any configuration: an assertion that cannot fail.
+        # so `LOOM_FALLBACK_INTERFACE=loom0` is a string that can never appear
+        # under any configuration: matching it is an assertion that cannot fail.
         recorded = re.search(r"^LOOM_FALLBACK_INTERFACE=(\S+)$", record, re.M)
         assert recorded, record
         claimed = recorded.group(1).strip("'\"")

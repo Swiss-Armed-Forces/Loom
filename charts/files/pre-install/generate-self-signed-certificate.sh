@@ -112,13 +112,10 @@ keep_existing_cert() {
         return 1
     fi
 
-    # Checked like every other read in this function. `|| true` here used to read
-    # as though it were load-bearing -- as though an unreadable SAN silently made
-    # every hostname "not covered" -- which it never was: this line is reached only
-    # for a certificate this Job issued, and `create_self_signed_cert` always passes
-    # a non-empty `-addext subjectAltName=`. The emptiness test is explicit because
-    # openssl does *not* signal a missing SAN through its exit status: on a
-    # certificate with no extensions at all it exits 0 with empty stdout.
+    # Checked like every other read in this function. The emptiness test is
+    # explicit because openssl does *not* signal a missing SAN through its exit
+    # status: on a certificate with no extensions at all it exits 0 with empty
+    # stdout.
     san="$(openssl x509 -noout -ext subjectAltName <<< "${pem}" 2>/dev/null)"
     if [[ -z "${san}" ]]; then
         echo "[-] '${CERT_SECRET_NAME}' carries no subjectAltName"

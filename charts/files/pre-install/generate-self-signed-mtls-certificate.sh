@@ -100,14 +100,14 @@ create_self_signed_mtls_cert() {
 
     # The extensions are stated rather than inherited. `openssl req -x509` with no
     # `-extensions` picks up the stock config's `x509_extensions = v3_ca`, which does
-    # emit `basicConstraints: critical, CA:TRUE` -- so this worked, but it worked by
-    # way of the base image's openssl.cnf.
+    # emit `basicConstraints: critical, CA:TRUE` -- but only by way of the base image's
+    # openssl.cnf.
     #
-    # `keyUsage` is the half that was genuinely missing. This really is an issuing CA:
+    # `keyUsage` has to be stated here. This really is an issuing CA:
     # cicd/generate_client_certificate.sh signs every client certificate with it and
     # templates/common/tls-option.yaml verifies against it, and RFC 5280 4.2.1.3 says
     # such a certificate SHOULD assert keyCertSign. Go and OpenSSL enforce the bit
-    # only when the extension is present, which is why its absence cost nothing yet.
+    # only when the extension is present.
     #
     # This is the opposite case to the sibling script: there the certificate is a leaf
     # that clients also install as their own anchor, and it deliberately asserts no

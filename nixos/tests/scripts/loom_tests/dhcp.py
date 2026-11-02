@@ -3,14 +3,13 @@
 Everything else in this package either forces dnsmasq off or, in wifi.py, reads a lease
 off the --wifi bridge. This is the build that gets flashed, and the one where dnsmasq's
 interface is a physical port renamed during boot rather than a bridge created by the
-configuration -- which is why it was the build that broke.
+configuration.
 
 Two distinct failures are covered, and they fail in opposite directions:
 
 * The ordering. dnsmasq must not start before the address unit has run. Asserted as
   "it came up on the first attempt", not as "it is up now": Restart=on-failure means a
-  box that lost the race can still look healthy a minute later, which is exactly how
-  this shipped.
+  box that lost the race can still look healthy a minute later.
 * The binding mode. bind-dynamic must survive an interface that is not there when
   dnsmasq starts -- asserted by taking the interface away and putting it back, rather
   than by hoping the boot reproduces the timing.
@@ -33,10 +32,9 @@ PROBE_HOSTS = [
 ]
 
 # Names nothing in the configuration mentions, which is the point: these reach
-# the responder through the wildcard or not at all. A vendor probe nobody listed
-# used to be REFUSED, and a client that cannot resolve its probe concludes "no
-# internet" rather than "portal present" -- so the refusal was the bug, not the
-# tidiness it looked like.
+# the responder through the wildcard or not at all. A client that cannot resolve
+# its probe concludes "no internet" rather than "portal present", so a vendor
+# probe nobody listed must not be REFUSED.
 WILDCARD_HOSTS = [
     "www.google.com",  # the AOSP https probe, and its gen_204 fallback
     "connectivitycheck.android.com",  # another AOSP fallback
@@ -102,7 +100,7 @@ def _offer(appliance: "Machine", params: Params) -> Offer:
     # probe already refuses an offer from any other server on the segment, so this
     # is the second half of that: the right server, handing out the right range.
     #
-    # The last octet, not the /24 prefix. Comparing prefixes accepted any address
+    # The last octet, not the /24 prefix. Comparing prefixes accepts any address
     # on the segment -- including the box's own and the portal responder's, which
     # is the collision `appliance-units.nix` calls out in prose and which nothing
     # else in this suite covers.
@@ -161,21 +159,19 @@ def _dnsmasq_came_up_first_time(appliance: "Machine", subtest: "Subtest") -> Non
 
 def _lease(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("a client on the wire gets a lease, from this box"):
-        # The field symptom was "no DHCP", so this is the assertion that matches
-        # it. An active dnsmasq is not the same thing: with bind-dynamic the
-        # daemon starts whether or not its `interface=` ever matched anything.
+        # The symptom in the field is "no DHCP", so this is the assertion that
+        # matches it. An active dnsmasq is not the same thing: with bind-dynamic
+        # the daemon starts whether or not its `interface=` ever matched anything.
         offer = _offer(appliance, params)
         assert offer.dns_server == params.box_address, offer
         assert offer.netmask == "255.255.255.0", offer
 
-        # The gateway, which this test used to assert the absence of.
-        #
-        # Naming the box as the default route does take a cabled laptop off the
-        # internet, which is why it was suppressed -- but a client with no route
-        # to this box sends its captive-portal probe out of some other interface,
-        # where it succeeds, and is never offered the sign-in. network.nix has
-        # the whole argument; this is the half that fails if somebody takes the
-        # option back out.
+        # The gateway. Naming the box as the default route does take a cabled
+        # laptop off the internet, but a client with no route to this box sends
+        # its captive-portal probe out of some other interface, where it
+        # succeeds, and is never offered the sign-in. network.nix has the whole
+        # argument; this is the half that fails if somebody takes the option
+        # back out.
         assert offer.gateway == params.box_address, offer
 
 
@@ -220,21 +216,21 @@ def _probe_names(appliance: "Machine", subtest: "Subtest", params: Params) -> No
     with subtest(
         "the captive-portal probes resolve to the responder, and nothing else"
     ):
-        # Moved here from loom_tests/appliance/portal.py, which could only grep
-        # the rendered configuration: tests/appliance.nix forces dnsmasq off, so
-        # that node has no dnsmasq.service and no config file to read. This node
-        # runs the resolver, so the decision can be asked rather than inferred --
-        # which is the same argument tests/dhcp-probe.nix makes about the lease.
+        # Asked of the resolver rather than grepped out of the rendered
+        # configuration, which is all loom_tests/appliance/portal.py can do:
+        # tests/appliance.nix forces dnsmasq off, so that node has no
+        # dnsmasq.service and no config file to read. This node runs the
+        # resolver, so the decision can be asked rather than inferred -- which is
+        # the same argument tests/dhcp-probe.nix makes about the lease.
         for host in PROBE_HOSTS:
             answer = appliance.succeed(f"host -t A {host} {params.box_address}")
             assert f"has address {params.portal_address}" in answer, answer
 
         # And the names nothing in the configuration mentions, which the
-        # wildcard answers. These used to be REFUSED on the grounds that
-        # hijacking a real site is blanket interception -- which it is, and the
-        # cost of not doing it was that a Samsung or Xiaomi phone probed a name
-        # this box refused and concluded there was no internet rather than a
-        # portal.
+        # wildcard answers. Refusing them would be the tidier answer --
+        # hijacking a real site is blanket interception -- but a Samsung or
+        # Xiaomi phone whose probe this box refuses concludes there is no
+        # internet rather than a portal.
         for host in WILDCARD_HOSTS:
             answer = appliance.succeed(f"host -t A {host} {params.box_address}")
             assert f"has address {params.portal_address}" in answer, answer
@@ -254,10 +250,9 @@ def _probe_names(appliance: "Machine", subtest: "Subtest", params: Params) -> No
 
 def _portal_responder(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
     with subtest("the portal responder holds port 80 on the second address"):
-        # The sibling of the dnsmasq assertion, and the reason the bug was
-        # survivable at all: portal.nix has ordered nginx on this very address
-        # unit since it was written, and network.nix did not. Both now do, and
-        # both are checked, so they cannot drift apart again.
+        # The sibling of the dnsmasq assertion: portal.nix orders nginx on this
+        # very address unit, as network.nix orders dnsmasq, and both are checked
+        # so the two cannot drift apart.
         appliance.wait_for_unit("nginx.service")
 
         # With the probe's own Host header, because that is what decides which of
@@ -281,9 +276,8 @@ def _survives_a_missing_interface(
     ):
         # The other half of the fix, asserted directly rather than left to the
         # boot to reproduce. With bind-interfaces, dnsmasq resolves `interface=`
-        # once at startup and exits "unknown interface loom0" -- the message a
-        # 1.5.0-rc4 box left in its journal. bind-dynamic starts anyway and
-        # listens once the interface appears.
+        # once at startup and exits "unknown interface loom0"; bind-dynamic
+        # starts anyway and listens once the interface appears.
         #
         # Last, because it leaves the box perturbed: the interface is renamed out
         # from under the running daemon and put back by hand, not by the address
@@ -296,7 +290,7 @@ def _survives_a_missing_interface(
         appliance.succeed(f"ip link set {params.interface} down")
         appliance.succeed(f"ip link set {params.interface} name gone")
 
-        # Starts, rather than exiting the way bind-interfaces did. dnsmasq logs
+        # Starts, rather than exiting the way bind-interfaces would. dnsmasq logs
         # "error binding DHCP socket to device loom0" here and carries on; that
         # message in the journal is the daemon coping, not the daemon failing.
         appliance.succeed("systemctl restart dnsmasq.service")
@@ -305,10 +299,10 @@ def _survives_a_missing_interface(
         appliance.succeed(f"ip link set gone name {params.interface}")
         appliance.succeed(f"ip link set {params.interface} up")
 
-        # No restart between here and the offer. That is the assertion -- and it
-        # is now made: `dnsmasq.service` carries `Restart=on-failure`, so a
-        # daemon that exited "unknown interface" would be restarted by systemd
-        # and would bind cleanly the moment the name came back, with
+        # No restart between here and the offer. That is the assertion:
+        # `dnsmasq.service` carries `Restart=on-failure`, so a daemon that
+        # exited "unknown interface" would be restarted by systemd and would
+        # bind cleanly the moment the name came back, with
         # `wait_until_succeeds` then getting its lease and the test passing
         # having proved the opposite of what it claims.
         restarts_before = _restarts(appliance)
@@ -335,8 +329,8 @@ def _a_client_on_the_wire(
 
     Everything else in this suite runs on the appliance, which proves the box answers a
     request somebody crafted and says nothing about whether a visitor's laptop ever gets
-    to send one. That gap is how the captive portal shipped undetectable on every client
-    anyone tried it with.
+    to send one -- the gap in which a captive portal is undetectable on every client
+    anyone tries it with.
     """
     # The DNAT catch-all rules live in `loom-expose`, which requires docker, so
     # rules can land well after multi-user.target on a cold VM. Waited for here

@@ -12,7 +12,7 @@
 }
 
 /* While a key is being recorded. Without this rule the className template
-interpolated `undefined` into the class list and the control looked idle. */
+interpolates `undefined` into the class list and the control looks idle. */
 .container.recording {
     outline: 2px solid var(--mui-palette-primary-main);
     outline-offset: -2px;

@@ -38,7 +38,7 @@ def boot_modes(appliance: "Machine", subtest: "Subtest", params: Params) -> str:
         start_script = appliance.succeed(f"cat {match.group(1)}")
         assert "--offline" in start_script, start_script
         # And deliberately *not* --expose. Publishing the stack is
-        # loom-expose's job now (see exposure below), and the two cannot be
+        # loom-expose's job (see exposure below), and the two cannot be
         # combined: DNAT happens in nat PREROUTING, ahead of the routing
         # decision that would hand a packet to a tunnel's local socket.
         assert "--expose" not in start_script, start_script
@@ -136,9 +136,9 @@ def _kernel_command_lines(appliance: "Machine", setup_sys: str) -> None:
 
     # Neither mode may name a *numbered* VT as a console. `console=ttyN`
     # does not just redirect output there, it makes that VT the foreground
-    # one -- which once left this box showing the kernel log while the
-    # banner and the press-a-key prompt sat on a tty1 nobody could see or
-    # type into. `console=tty0` is exempt and is what the test framework
+    # one -- which leaves the box showing the kernel log while the banner
+    # and the press-a-key prompt sit on a tty1 nobody can see or type
+    # into. `console=tty0` is exempt and is what the test framework
     # itself passes: tty0 means "whichever VT is current", so it moves
     # nothing. A specialisation only *adds* to its parent's command line,
     # so checking both is checking every combination.

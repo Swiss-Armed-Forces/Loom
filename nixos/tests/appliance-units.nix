@@ -6,15 +6,13 @@
 # no KVM, and nothing in it is architecture-specific, so one workstation checks
 # every platform.
 #
-# It exists because of one upstream change that broke a flashed box in silence.
-# nixpkgs' scripted networking used to put `network-addresses-<iface>.service`
-# ahead of a `network-setup.service` that was itself ahead of `network.target`,
-# so a daemon ordered after `network.target` -- which is every daemon nixpkgs
-# ships, dnsmasq included -- got the address for free. Under this pin
-# `network-setup.service` does not exist, and the address unit is pulled in by
-# the interface's .device unit alone, deliberately out of `network.target` so
-# that a missing NIC cannot hang the boot. Nothing failed to evaluate, nothing in
-# this repository changed, and the appliance stopped serving DHCP.
+# It exists because nothing else notices when these edges come apart. Under this
+# pin there is no `network-setup.service`, and `network-addresses-<iface>.service`
+# is pulled in by the interface's .device unit alone, deliberately out of
+# `network.target` so that a missing NIC cannot hang the boot. So a daemon ordered
+# after `network.target` -- which is every daemon nixpkgs ships, dnsmasq included
+# -- does not get the address for free: drop the explicit edge and everything
+# still evaluates while the appliance stops serving DHCP.
 #
 # So what is asserted is the edge itself, on both builds the image is ever
 # flashed as: the default one, where the address sits on loom0, and the --wifi
@@ -89,8 +87,8 @@ let
   asList = v: if builtins.isList v then v else [ v ];
 
   # One list per build rather than one list over both, so a failure names which
-  # of the two it came from. The bug this file exists for was present in exactly
-  # one of them, which is how it survived a suite that covers the other.
+  # of the two it came from: an edge can be missing on one build and present on
+  # the other.
   checksFor =
     label: cfg:
     let
@@ -111,9 +109,8 @@ let
       ))
 
       # The same pair for the captive portal responder, which binds the *second*
-      # address out of that very unit. portal.nix has had this since it was
-      # written and network.nix did not, which is the whole of the bug; asserting
-      # both is what keeps them from drifting apart again.
+      # address out of that very unit. Asserting both is what keeps portal.nix
+      # and network.nix from drifting apart.
       (check "${label}: nginx is ordered after ${addresses}" (lib.elem addresses nginx.after))
       (check "${label}: nginx wants ${addresses}" (lib.elem addresses nginx.wants))
 
@@ -145,10 +142,10 @@ let
         )
       ))
 
-      # The binding mode, which is the other half of the fix: bind-interfaces
-      # resolves `interface=` once at startup and exits if the name is not there
-      # yet, so an interface renamed, re-created or re-bridged after dnsmasq
-      # started needs a restart nobody is at the box to give it.
+      # The binding mode, which is the other half of the same problem:
+      # bind-interfaces resolves `interface=` once at startup and exits if the
+      # name is not there yet, so an interface renamed, re-created or re-bridged
+      # after dnsmasq started needs a restart nobody is at the box to give it.
       (check "${label}: dnsmasq binds dynamically" (asList (settings.bind-dynamic or false) == [ true ]))
       (check "${label}: dnsmasq does not bind its interfaces once, at startup" (
         !(settings ? bind-interfaces)
@@ -164,14 +161,13 @@ let
 
       # The lease names this box as the default route.
       #
-      # It used to suppress the option with a valueless `dhcp-option`, which is
-      # the only way to stop dnsmasq sending one -- and that is what made the
-      # captive portal unreachable: a client with no route to this box sends its
-      # connectivity probe out of whatever other interface it has, where the
-      # probe succeeds, so the operating system never offers "Sign in to
-      # network". Both halves are asserted, because the suppression is spelled
-      # as the *same option name* with no value and would otherwise read as
-      # present.
+      # Suppressing that option -- a valueless `dhcp-option`, which is the only
+      # way to stop dnsmasq sending one -- makes the captive portal unreachable: a
+      # client with no route to this box sends its connectivity probe out of
+      # whatever other interface it has, where the probe succeeds, so the
+      # operating system never offers "Sign in to network". Both halves are
+      # asserted, because the suppression is spelled as the *same option name*
+      # with no value and would otherwise read as present.
       (check "${label}: the lease names the box as the default route" (
         lib.elem "option:router,${cfg.loom.boxAddress}" (asList (settings.dhcp-option or [ ]))
       ))
@@ -181,8 +177,8 @@ let
 
       # And the resolver answers every name rather than refusing the ones nobody
       # listed. A client that cannot resolve its probe concludes "no internet"
-      # rather than "portal present", so a Samsung or Xiaomi probe that this box
-      # refused took the sign-in prompt away rather than merely missing it.
+      # rather than "portal present", so a Samsung or Xiaomi probe this box
+      # refuses takes the sign-in prompt away rather than merely missing it.
       (check "${label}: every name resolves to the portal responder" (
         lib.elem "/#/${cfg.loom.portalAddress}" (asList (settings.address or [ ]))
       ))
@@ -216,10 +212,10 @@ let
       # satisfies `? loom0`, and so does
       # `networking.interfaces.loom0.ipv4.addresses = lib.mkForce [ ]` -- which
       # is precisely the override `tests/appliance-debug.nix` applies, so the
-      # shape that leaves dnsmasq and nginx with nothing to bind was already in
-      # the tree and would have evaluated green. This file exists to pin that
-      # ordering ("network.target does not imply a static address under this
-      # nixpkgs pin"), so it has to assert the address.
+      # shape that leaves dnsmasq and nginx with nothing to bind is in the tree
+      # and evaluates green. This file exists to pin that ordering
+      # ("network.target does not imply a static address under this nixpkgs
+      # pin"), so it has to assert the address.
       (check "${label}: the appliance address is declared on ${iface}" (
         lib.any (a: a.address == cfg.loom.boxAddress) (
           cfg.networking.interfaces.${iface}.ipv4.addresses or [ ]
@@ -235,8 +231,7 @@ let
   # The three units that assemble the bridge, and the daemon that is handed it.
   # Upstream's own bridge, bond and vlan units are `wantedBy` network.target and
   # `before` it; these are their peers and have to say the same, or a consumer of
-  # network.target runs while the wired port is still outside the bridge. They
-  # had that edge transitively until `network-setup.service` was removed.
+  # network.target runs while the wired port is still outside the bridge.
   bridgeChecks =
     let
       cfg = wifiSystem.config;
@@ -392,8 +387,7 @@ let
         (cfg.systemd.timers.loom-mtls-identity.timerConfig.OnBootSec or null) != null
       ))
 
-      # The flag is the whole gate: a box built without it must be the box it
-      # always was.
+      # The flag is the whole gate: a box built without it gets none of this.
       (check "default: no mutual TLS proxy" (
         !(boxSystem.config.services.nginx.virtualHosts ? loom-mtls-ollama)
       ))
@@ -598,12 +592,12 @@ let
       # And the probe lands on the page rather than on Loom, which is what makes
       # the two sections above reachable at all.
       #
-      # At the page's *address* and not its name, which it used to be: a portal
-      # webview following this has to resolve it, and `portal.loom` is a name in
-      # a TLD that does not exist. On a phone with Android's Private DNS in
-      # strict mode that lookup cannot succeed -- the connectivity check bypasses
-      # private DNS and still finds the portal, and then the visitor cannot
-      # follow the redirect to it. An address needs no resolver.
+      # At the page's *address* and not its name: a portal webview following this
+      # has to resolve the name, and `portal.loom` is a name in a TLD that does
+      # not exist. On a phone with Android's Private DNS in strict mode that
+      # lookup cannot succeed -- the connectivity check bypasses private DNS and
+      # still finds the portal, and then the visitor cannot follow the redirect
+      # to it. An address needs no resolver.
       (check "portal: the probe redirect points at the page" (
         catchAll.locations."/".return == "302 http://${cfg.loom.portalAddress}/"
       ))
