@@ -61,12 +61,13 @@ def get_file_field_work_task(file_id: str, field: str) -> GetFileFieldResult:
     if raw_value is None:
         raise LookupError(f"Field '{field}' is not available for file {file_id}")
 
-    value = serialize_field_value(field, raw_value)
+    serialized = serialize_field_value(raw_value)
 
     return GetFileFieldResult(
         file_id=str(file.id_),
         field=field,
-        value=value,
+        value=serialized.value,
+        truncated=serialized.truncated,
     )
 
 

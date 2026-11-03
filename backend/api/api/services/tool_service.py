@@ -390,6 +390,12 @@ class ToolService:
     ) -> GetFileFieldResult:
         """Get the value of a specific field for a file by its UUID.
 
+        Long fields are capped. When the response has truncated set to True, value
+        holds only the leading characters of the field and the rest cannot be
+        reached through this tool — use summarize_file to cover the whole document,
+        or execute_query to find the passages that matter. Do not answer as though
+        a truncated value were the complete field.
+
         Args:
             file_id: UUID string of the file to retrieve.
             field: Name of the field to retrieve. Use get_file to see which
