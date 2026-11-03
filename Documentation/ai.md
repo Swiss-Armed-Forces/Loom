@@ -93,6 +93,10 @@ Tools are split into two tiers:
 
 ### Provider
 
+> ℹ️ This section is why each provider differs. For pointing a deployment at one — which
+> values to set, and on which of the twelve clients — see
+> [External services](external-services.md#inference-endpoints-outside-the-cluster).
+
 Pointing a client at an endpoint takes one setting beyond the endpoint and the model name:
 
 | Setting                 | Answers                             | Values                                                |

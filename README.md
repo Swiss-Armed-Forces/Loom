@@ -97,6 +97,7 @@ Loom is licensed under the MIT License. See the full text of the license in the 
 ## 🔗 More Documentation and Links
 
 - [Installation Guide](Documentation/installation.md)
+- [External services](Documentation/external-services.md)
 - [Interactive frontend demo](Documentation/demo-mode.md)
 - [Development environment setup](Documentation/devenv-setup.md)
 - [Performance](Documentation/performance.md)

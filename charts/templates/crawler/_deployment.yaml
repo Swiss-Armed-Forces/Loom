@@ -8,8 +8,13 @@ Parameters (all passed as a dict):
   nameSuffix   – suffix appended to "<release>-crawler"; empty string = default deployment name
   s3Storage    – optional dict; when nil the pod inherits intake_storage__* from the shared ConfigMap
   bucketAlias  – optional string; overrides s3_bucket_alias from the shared ConfigMap
-  sourceId     – optional string; overrides crawler_source_id from the shared ConfigMap
-  replicaCount – optional int; defaults to .Values.crawler.replicaCount
+  sourceId     – optional string; sets crawler_source_id on this pod. Not in the shared
+    ConfigMap (only s3_bucket_alias is), so when nil the application default "crawler"
+    applies. extra-s3-sources.yaml substitutes the entry's name, so an extraS3Sources
+    entry never reaches that fallback.
+  replicaCount – optional int; defaults to .Values.crawler.replicaCount. Only
+    deployment.yaml passes nil: extra-s3-sources.yaml substitutes 1 first, so an
+    extraS3Sources entry defaults to 1 rather than to .Values.crawler.replicaCount.
   resources    – optional dict; falls back to .Values.crawler.resources
 
 s3Storage fields (all optional):
