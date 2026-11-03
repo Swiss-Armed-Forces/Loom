@@ -74,6 +74,20 @@ describe("ClickableFilePath", () => {
         expect(store.getState().search.expandFilePaths).toBe(true);
     });
 
+    it("lets the row and the trail be squeezed below the path's width", () => {
+        // Both are flex items whose automatic minimum size is the whole
+        // unbroken path, and a trail that cannot be squeezed is laid out at
+        // its full length and clipped mid-word by the header's
+        // `overflow: hidden`. jsdom lays nothing out, so the floor itself is
+        // what there is to assert.
+        const { container } = renderPath(DEEP_PATH);
+        const row = container.firstElementChild!;
+        const trailRoot = screen.getByRole("list").parentElement!;
+
+        expect(getComputedStyle(row).minWidth).toBe("0px");
+        expect(getComputedStyle(trailRoot).minWidth).toBe("0px");
+    });
+
     it("reaches no ancestor handler, by click or by focus", () => {
         // The result card highlights itself from both events, and a highlight
         // mid-click re-renders the row and swallows the click.

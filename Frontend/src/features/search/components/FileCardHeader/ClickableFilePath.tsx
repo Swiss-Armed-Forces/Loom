@@ -24,9 +24,26 @@ interface ClickableFilePathProps {
 
 // Hoisted out of the render body: three of these sit inside the per-segment
 // map, so a four-segment path re-hashes a dozen objects on every card render.
-const ROOT_SX = { display: "flex", alignItems: "center" } as const;
+/*
+ * `minWidth: 0` on the row and on the trail inside it is what lets a path
+ * narrower than its container be shortened at all.
+ *
+ * Both are flex items - the row of the card header, the trail of this row -
+ * and a flex item's automatic minimum size is its content's min-content
+ * width. A crumb is `white-space: nowrap` wherever the header is laid out
+ * dense, which makes that min-content width the whole unbroken path, so
+ * without this the trail is laid out at its full length and clipped by the
+ * header's `overflow: hidden` - mid-word, flush against the thumbnail column.
+ * Dropping the floor to nought squeezes the crumbs instead, which is what
+ * their `text-overflow: ellipsis` needs to fire.
+ */
+const ROOT_SX = { display: "flex", alignItems: "center", minWidth: 0 } as const;
 const BREADCRUMBS_SX = {
+    minWidth: 0,
     "& .MuiBreadcrumbs-separator": { mx: 0.25 },
+    // The toggle is a control of a fixed size, not a crumb: squeezing it
+    // clips the icon inside it rather than shortening any text.
+    "& .MuiBreadcrumbs-li:has([data-path-toggle])": { flexShrink: 0 },
 } as const;
 const TOGGLE_SX = {
     borderRadius: 1,
@@ -156,6 +173,7 @@ export const ClickableFilePath = ({
                     <LazyTooltip title={toggleLabel} placement="top" arrow>
                         <ButtonBase
                             focusRipple
+                            data-path-toggle
                             aria-label={toggleLabel}
                             onClick={(e) => {
                                 e.stopPropagation();
