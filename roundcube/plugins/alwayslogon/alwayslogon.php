@@ -50,7 +50,11 @@ class alwayslogon extends rcube_plugin
     {
         $args['user'] = 'user';
         $args['pass'] = 'pass';
-        $args['host'] = getenv('ROUNDCUBEMAIL_DEFAULT_HOST');
+        // The hook carries no port of its own, so the target is passed as
+        // host[:port]. Without the port Roundcube connects on 143, which the
+        // Dovecot service does not serve.
+        $port = getenv('ROUNDCUBEMAIL_DEFAULT_PORT');
+        $args['host'] = getenv('ROUNDCUBEMAIL_DEFAULT_HOST') . ($port ? ':' . $port : '');
         $args['cookiecheck'] = false;
         $args['valid'] = true;
 
