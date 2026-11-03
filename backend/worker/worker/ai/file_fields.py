@@ -1,7 +1,7 @@
 import json
 from collections.abc import Iterator
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from common.ai_context.tool_models import FileFieldInfo
@@ -9,7 +9,14 @@ from common.llm.prompt_sanitizer import sanitize_document_text
 from common.utils.pydantic_field_paths import iter_model_fields
 from pydantic import BaseModel
 
-_MAX_CONTENT_CHARS = 8000
+_MAX_FIELD_CHARS = 8000
+
+
+class SerializedFieldValue(NamedTuple):
+    """A field rendered for the agent, and whether the cap cut it short."""
+
+    value: str
+    truncated: bool
 
 
 def iter_described_fields(
@@ -47,13 +54,28 @@ def validate_file_id(file_id: str) -> UUID:
         ) from exc
 
 
-def serialize_field_value(path: str, value: Any) -> str:
-    if path == "content":
-        return sanitize_document_text(str(value))[:_MAX_CONTENT_CHARS]
+def serialize_field_value(value: Any) -> SerializedFieldValue:
+    """Render one field for the agent, sanitized and capped at _MAX_FIELD_CHARS.
+
+    Both the sanitization and the cap apply to every field. Every field is derived from
+    the document, so any of them can carry role tokens and delimiters into the prompt,
+    and any of them can be unbounded: a recipient header on a mailing list, an LLM
+    summary whose sentence limit is prompt text rather than an enforced one, and
+    arbitrary document metadata all are. The flag is what tells the agent the value it
+    holds is a prefix rather than the field.
+    """
     if isinstance(value, BaseModel):
-        return value.model_dump_json()
-    if isinstance(value, list):
-        return json.dumps(value, default=str)
-    if isinstance(value, datetime):
-        return value.isoformat()
-    return str(value)
+        rendered = value.model_dump_json()
+    elif isinstance(value, list):
+        rendered = json.dumps(value, default=str)
+    elif isinstance(value, datetime):
+        rendered = value.isoformat()
+    else:
+        rendered = str(value)
+
+    sanitized = sanitize_document_text(rendered)
+
+    return SerializedFieldValue(
+        value=sanitized[:_MAX_FIELD_CHARS],
+        truncated=len(sanitized) > _MAX_FIELD_CHARS,
+    )

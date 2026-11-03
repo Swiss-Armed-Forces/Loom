@@ -102,9 +102,16 @@ class GetFileResult(ToolResult):
 
 
 class GetFileFieldResult(ToolResult):
+    """One field of a file.
+
+    ``truncated`` says the field is longer than ``value``, which then holds its leading
+    characters. The remainder is not reachable through this tool.
+    """
+
     file_id: str
     field: str
     value: str
+    truncated: bool = False
 
 
 class RagChunk(BaseModel):

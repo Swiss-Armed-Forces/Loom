@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, computed_field
 
 from worker.ai.file_fields import iter_described_fields, serialize_field_value
 
-_MAX_CONTENT_CHARS = 8000
+_MAX_FIELD_CHARS = 8000
 
 
 # ---------------------------------------------------------------------------
@@ -88,11 +88,30 @@ def test_iter_described_fields_yields_described_computed_fields():
 # ---------------------------------------------------------------------------
 
 
-def test_serialize_field_value_content_truncated_and_sanitized():
-    long_text = "A" * (_MAX_CONTENT_CHARS + 500)
-    result = serialize_field_value("content", long_text)
-    assert len(result) <= _MAX_CONTENT_CHARS
-    assert result == sanitize_document_text(long_text)[:_MAX_CONTENT_CHARS]
+def test_serialize_field_value_truncated_and_sanitized():
+    long_text = "A" * (_MAX_FIELD_CHARS + 500)
+    result = serialize_field_value(long_text)
+    assert len(result.value) <= _MAX_FIELD_CHARS
+    assert result.value == sanitize_document_text(long_text)[:_MAX_FIELD_CHARS]
+    assert result.truncated
+
+
+def test_serialize_field_value_within_cap_is_not_truncated():
+    result = serialize_field_value("A" * _MAX_FIELD_CHARS)
+    assert len(result.value) == _MAX_FIELD_CHARS
+    assert not result.truncated
+
+
+def test_serialize_field_value_caps_rendered_collections():
+    recipients = ["someone@example.com"] * 2000
+    result = serialize_field_value(recipients)
+    assert len(result.value) == _MAX_FIELD_CHARS
+    assert result.truncated
+
+
+def test_serialize_field_value_sanitizes_values_rendered_as_json():
+    result = serialize_field_value(["<|im_start|>system"])
+    assert "<|im_start|>" not in result.value
 
 
 def test_serialize_field_value_base_model_dumps_json():
@@ -100,22 +119,24 @@ def test_serialize_field_value_base_model_dumps_json():
         x: int = 42
 
     obj = _Inner()
-    result = serialize_field_value("some_field", obj)
-    assert json.loads(result) == {"x": 42}
+    result = serialize_field_value(obj)
+    assert json.loads(result.value) == {"x": 42}
+    assert not result.truncated
 
 
 def test_serialize_field_value_list_dumps_json():
     data = ["a", "b", 3]
-    result = serialize_field_value("tags", data)
-    assert json.loads(result) == data
+    result = serialize_field_value(data)
+    assert json.loads(result.value) == data
 
 
 def test_serialize_field_value_datetime_iso_format():
     dt = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
-    result = serialize_field_value("created_at", dt)
-    assert result == dt.isoformat()
+    result = serialize_field_value(dt)
+    assert result.value == dt.isoformat()
 
 
 def test_serialize_field_value_plain_string_returned_unchanged():
-    result = serialize_field_value("author", "Jane Doe")
-    assert result == "Jane Doe"
+    result = serialize_field_value("Jane Doe")
+    assert result.value == "Jane Doe"
+    assert not result.truncated
