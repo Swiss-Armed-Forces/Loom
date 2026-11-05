@@ -820,6 +820,11 @@ elasticsearch:
   priorityClass: infrastructure
   shardsCount: null
   shardsReplicasCount: null
+  # How long the backend waits for a single Elasticsearch request before giving
+  # up, in seconds. It applies to every call the api, the worker, the persister
+  # and the crawler make, bulk indexing and aggregations included. Unset, the
+  # backend uses its own default of 120.
+  requestTimeoutSeconds: null
   # Memory budget to assume when no limit is set below (e.g. under
   # values-no-resources.yaml). It mirrors resources.limits.memory so the heap
   # comes out the same either way. With a limit set, ES derives its own heap
