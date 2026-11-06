@@ -6,6 +6,10 @@
 #
 # Pass --disable-ai to up.sh to apply this file automatically.
 #
+# NOT for pointing Loom at an external inference endpoint: the skips below mean
+# nothing is ever embedded, so RAG retrieves from an empty set with no error. Use
+# ollama.enabled: false alone -- see Documentation/external-services.md.
+#
 ollama:
   enabled: false
 

@@ -6,7 +6,7 @@
   "nameSuffix"   .name
   "s3Storage"    .s3Storage
   "bucketAlias"  .bucketAlias
-  "sourceId"     .sourceId
+  "sourceId"     (.sourceId | default .name)
   "replicaCount" (.replicaCount | default 1)
   "resources"    .resources
 ) }}

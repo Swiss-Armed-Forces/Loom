@@ -268,6 +268,11 @@ ingress: &default-ingress-config
   tls:
     enabled: true
 
+# Outbound connections to anything outside the cluster: an external S3 source, an
+# external inference endpoint. NOTE: this does not add an allow rule, it removes
+# charts/templates/common/networkpolicy.yaml entirely -- including the deny-all-egress
+# that fences Tika and Gotenberg, the two components that parse untrusted documents.
+# See Documentation/external-services.md before enabling it.
 egress:
   enabled: false
 
@@ -374,11 +379,18 @@ pipeline:
   celery_alternate_exchange_name: null
 
 
-# Shared LLM defaults — override per sub-key via YAML anchors
+# Shared LLM defaults — override per sub-key via YAML anchors.
+# NOTE: this anchor is resolved within this file only. Redefining it in an overlay
+# changes nothing; every client below has to be set individually. See
+# Documentation/external-services.md for pointing these outside the cluster.
 _llmDefaults: &llm-defaults
-  # which service answers at `endpoint`: ollama | litellm | infomaniak | openai
+  # which service answers at `endpoint`: ollama | litellm | infomaniak | openai.
+  # null means ollama -- set this whenever you set endpoint, or a hosted API is
+  # driven with Ollama's request quirks and the answers quietly get worse.
   provider: null
-  endpoint: null      # set per sub-key in configmap when null
+  # null -> the in-cluster Ollama Service, not "unset". The configmap renders
+  # `endpoint | default $ollamaEndpoint` for every client below.
+  endpoint: null
   api_key: null
   model: qwen3.8:27b
   temperature: null
@@ -769,7 +781,9 @@ crawler:
 # All extra-source Deployments are generated from the same template as the built-in crawler.
 #
 # NOTE: External S3 endpoints are outside the cluster. You must set egress.enabled=true
-# to allow the crawler pods to reach them.
+# to allow the crawler pods to reach them -- read the comment on that value first.
+# Objects are copied into SeaweedFS rather than read in place, and a crawler restart
+# re-downloads the whole bucket. See Documentation/external-services.md.
 #
 # Example (plain credentials):
 # extraS3Sources:
@@ -779,10 +793,12 @@ crawler:
 #       bucketName: my-bucket
 #       accessKey: my-access-key      # use accessKeySecretRef for ESO-managed credentials
 #       secretKey: my-secret-key      # use secretKeySecretRef for ESO-managed credentials
-#       secureConnection: false       # set to true for HTTPS
+#       secureConnection: true        # set false only for a plaintext endpoint
 #     bucketAlias: "Archive Bucket"  # optional display name shown in file paths
 #     sourceId: archive-server       # optional source identifier, defaults to name
-#     replicaCount: 1                # optional; defaults to 1
+#     replicaCount: 1                # optional; defaults to 1. Leave it there: the
+#                                    # record of what has been crawled is per-process,
+#                                    # so N replicas download every object N times
 #     resources: {}                  # optional; falls back to crawler.resources when omitted
 #
 # Example (ESO-managed credentials via K8s Secret):
@@ -804,6 +820,11 @@ elasticsearch:
   priorityClass: infrastructure
   shardsCount: null
   shardsReplicasCount: null
+  # How long the backend waits for a single Elasticsearch request before giving
+  # up, in seconds. It applies to every call the api, the worker, the persister
+  # and the crawler make, bulk indexing and aggregations included. Unset, the
+  # backend uses its own default of 120.
+  requestTimeoutSeconds: null
   # Memory budget to assume when no limit is set below (e.g. under
   # values-no-resources.yaml). It mirrors resources.limits.memory so the heap
   # comes out the same either way. With a limit set, ES derives its own heap
@@ -1112,9 +1133,6 @@ ollama:
     repository: swiss-armed-forces/cyber-command/cea/loom/ollama
   service:
     port: 11434
-    # External hostname for the service.
-    # If set, routes to external service instead of internal pods.
-    externalHost: ""
   pvc:
     enabled: true
     # Holds every model in the models image (qwen3.8:27b ~18GB + nomic-embed ~0.5GB).
@@ -1571,9 +1589,13 @@ kubeStateMetrics:
 #     FEATURE_FLAG_X: "true"
 extraEnv: {}
 
-# Trusted CA certificates to inject into all pods via an init container.
+# Trusted CA certificates for endpoints Loom dials that present a private CA.
+# Injected via an init container into every application pod and most infrastructure
+# pods; the SeaweedFS workloads and the pre-install Jobs are not covered.
 # Only rendered (ConfigMap + init container) when certs is non-empty, so
 # deployments that don't require custom CAs incur no overhead.
+# See Documentation/external-services.md for which pods get the environment variables
+# as well as the mount, and why editing the rendered ConfigMap does not restart them.
 # Example:
 #   trustedCertificates:
 #     certs:

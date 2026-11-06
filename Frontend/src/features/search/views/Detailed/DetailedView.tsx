@@ -1,3 +1,4 @@
+import { VirtualItem } from "@tanstack/react-virtual";
 import React, {
     CSSProperties,
     ReactNode,
@@ -51,6 +52,7 @@ import { useSearchPanel } from "@features/search/views/SearchResults/SearchPanel
 
 import styles from "./DetailedView.module.css";
 import { alignForHighlight, HighlightScrollMode } from "./highlightScroll";
+import { splitRowWindow } from "./rowWindow";
 import { useResultPrefetch } from "./useResultPrefetch";
 import { useResultVirtualizer } from "./useResultVirtualizer";
 
@@ -78,6 +80,11 @@ interface ResultRowProps {
     hasPreview: boolean;
     /** True for the card the keyboard is on, which draws every element. */
     isHighlighted: boolean;
+    /**
+     * How far below the top of the window the row belongs, for a row that is
+     * not part of the run the window holds, or null to lay out in flow.
+     */
+    pinnedOffset: number | null;
     children: ReactNode;
 }
 
@@ -90,6 +97,12 @@ interface ResultRowProps {
  * same layout pass, where a row placed at a remembered offset would stay where
  * it was until the measurement caught up a frame or more later.
  *
+ * A pinned row is the exception and is placed at an offset: the rows between
+ * it and the window are not rendered, so it has nothing to lay out against.
+ * It is taken out of flow rather than given a wrapper, so that the window's
+ * rows stay one keyed list with one parent and a row crossing in or out of
+ * the run keeps the card, its focus and its subscriptions.
+ *
  * The layout effect still reports the new height, because the virtualizer
  * needs it for the rows it has *not* rendered - the scrollbar and the offset
  * the window starts at are computed from the measurements, not from the DOM.
@@ -100,6 +113,7 @@ const ResultRow = ({
     recordHeight,
     hasPreview,
     isHighlighted,
+    pinnedOffset,
     children,
 }: ResultRowProps) => {
     const rowRef = useRef<HTMLDivElement>(null);
@@ -124,13 +138,23 @@ const ResultRow = ({
     useLayoutEffect(takeHeight, [hasPreview, isHighlighted, takeHeight]);
     return (
         <div
-            className={styles.resultRow}
+            className={
+                pinnedOffset === null
+                    ? styles.resultRow
+                    : `${styles.resultRow} ${styles.pinnedRow}`
+            }
             data-index={index}
+            data-pinned={pinnedOffset === null ? undefined : "true"}
             // The zebra stripe of the flat chrome is keyed on this rather than
             // on nth-child: only a window of rows is rendered, so sibling
             // position says where the window starts, not where the result is.
             data-stripe={index % 2 === 1 ? "true" : undefined}
             ref={setRefs}
+            style={
+                pinnedOffset === null
+                    ? undefined
+                    : { transform: `translateY(${pinnedOffset}px)` }
+            }
         >
             {children}
         </div>
@@ -280,6 +304,11 @@ export const DetailedView: React.FC = React.memo(() => {
             if (debounce) clearTimeout(debounce);
         };
     }, [remeasure]);
+
+    // Resolved before `range` is read below. The virtualizer works the range
+    // out as a step of resolving the items, so reading it first answers with
+    // the range of the render before this one.
+    const virtualItems = virtualizer.getVirtualItems();
 
     // Report which rows are on screen, for the search box's position readout.
     // `range` is the genuinely visible rows, before overscan and before the
@@ -463,6 +492,48 @@ export const DetailedView: React.FC = React.memo(() => {
         // anything, and `mousedown` has already recorded that they are driving.
     }, [highlightedStart, highlightedSize]);
 
+    // The rows the reader is looking at, and the rows kept rendered from
+    // elsewhere in the list for the keyboard and the tour to reach. The first
+    // lot lay out against each other; the second cannot, having no rendered
+    // neighbours, so they are placed at the offset they actually have.
+    const { rows, pinned } = splitRowWindow(virtualItems, visibleStart);
+    // Where the window sits. Measurements carry the scroll margin, and the
+    // window is inside the list, which starts after it.
+    const windowStart = rows[0]?.start ?? 0;
+    const pinnedKeys = new Set(pinned.map((item) => item.key));
+
+    const renderRow = (item: VirtualItem) => {
+        const fileId = orderedFileIds[item.index];
+        if (fileId === undefined) return null;
+        return (
+            <ResultRow
+                key={item.key}
+                index={item.index}
+                measureElement={virtualizer.measureElement}
+                recordHeight={recordHeight}
+                // The card draws a skeleton until its preview is in hand and
+                // its real self afterwards, which is a different height.
+                hasPreview={files[fileId]?.preview != null}
+                isHighlighted={
+                    fileId === highlightedFileId && !highlightPendingRow
+                }
+                pinnedOffset={
+                    pinnedKeys.has(item.key) ? item.start - windowStart : null
+                }
+            >
+                <ResultCard
+                    fileId={fileId}
+                    isHighlighted={
+                        fileId === highlightedFileId && !highlightPendingRow
+                    }
+                    stale={files[fileId]?.stale ?? false}
+                    isTemporary={fileId === temporaryFileId}
+                    isTourAnchor={fileId === tourAnchorFileId}
+                />
+            </ResultRow>
+        );
+    };
+
     if (resultOrder.length === 0 && !temporaryFileId) {
         if (!isLoading) return <EmptySearchResults />;
         // Carries the list's own style: the skeleton reads the spacing from
@@ -491,47 +562,19 @@ export const DetailedView: React.FC = React.memo(() => {
             >
                 {/* The window of rendered rows, moved as one. Offsetting the
                 window rather than every row is what lets the rows inside it
-                lay out against each other. */}
+                lay out against each other. A pinned row rides along as a
+                child taken out of flow, so that the rows stay one keyed list
+                and crossing in or out of the window is not a remount. */}
                 <div
                     className={styles.virtualWindow}
+                    data-testid="virtual-window"
                     style={{
                         transform: `translateY(${
-                            (virtualizer.getVirtualItems()[0]?.start ?? 0) -
-                            virtualizer.options.scrollMargin
+                            windowStart - virtualizer.options.scrollMargin
                         }px)`,
                     }}
                 >
-                    {virtualizer.getVirtualItems().map((item) => {
-                        const fileId = orderedFileIds[item.index];
-                        if (fileId === undefined) return null;
-                        return (
-                            <ResultRow
-                                key={item.key}
-                                index={item.index}
-                                measureElement={virtualizer.measureElement}
-                                recordHeight={recordHeight}
-                                // The card draws a skeleton until its preview
-                                // is in hand and its real self afterwards,
-                                // which is a different height.
-                                hasPreview={files[fileId]?.preview != null}
-                                isHighlighted={
-                                    fileId === highlightedFileId &&
-                                    !highlightPendingRow
-                                }
-                            >
-                                <ResultCard
-                                    fileId={fileId}
-                                    isHighlighted={
-                                        fileId === highlightedFileId &&
-                                        !highlightPendingRow
-                                    }
-                                    stale={files[fileId]?.stale ?? false}
-                                    isTemporary={fileId === temporaryFileId}
-                                    isTourAnchor={fileId === tourAnchorFileId}
-                                />
-                            </ResultRow>
-                        );
-                    })}
+                    {virtualItems.map(renderRow)}
                 </div>
             </div>
             {isPaginating && (

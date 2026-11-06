@@ -136,11 +136,23 @@ const heightOf = (el: HTMLElement) => {
 /** Every scroll the virtualizer writes, in order; jsdom implements none. */
 const scrollWrites: number[] = [];
 
+/** Where the panel is scrolled to; jsdom has no scrolling of its own. */
+let scrollOffset = 0;
+
 beforeAll(() => {
     vi.stubGlobal("ResizeObserver", FakeResizeObserver);
     HTMLElement.prototype.scrollTo = ((options: ScrollToOptions) => {
         scrollWrites.push(options.top ?? 0);
     }) as HTMLElement["scrollTo"];
+    Object.defineProperty(HTMLElement.prototype, "scrollTop", {
+        configurable: true,
+        get(this: HTMLElement) {
+            return isScroller(this) ? scrollOffset : 0;
+        },
+        set(this: HTMLElement, value: number) {
+            if (isScroller(this)) scrollOffset = value;
+        },
+    });
     for (const prop of ["clientHeight", "offsetHeight"] as const) {
         Object.defineProperty(HTMLElement.prototype, prop, {
             configurable: true,
@@ -151,15 +163,19 @@ beforeAll(() => {
     }
     HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
         const height = heightOf(this);
+        // The scroller stays put and its content moves up under it, which is
+        // what makes `measureScrollMargin` read the same margin at every
+        // scroll position - it adds `scrollTop` back to cancel exactly this.
+        const top = isScroller(this) ? 0 : -scrollOffset;
         return {
-            top: 0,
+            top,
             left: 0,
             width: 1_200,
             height,
-            bottom: height,
+            bottom: top + height,
             right: 1_200,
             x: 0,
-            y: 0,
+            y: top,
             toJSON: () => ({}),
         } as DOMRect;
     };
@@ -168,6 +184,7 @@ beforeAll(() => {
 beforeEach(() => {
     observers.length = 0;
     scrollWrites.length = 0;
+    scrollOffset = 0;
     grownRows.clear();
     currentLayout = "compact";
     currentCardHeight = 260;
@@ -396,6 +413,91 @@ describe("DetailedView when the highlighted card turns out taller", () => {
         act(() => flushResizeObservers());
 
         expect(scrollWrites.length).toBe(placements);
+    });
+});
+
+/**
+ * The highlighted card is kept rendered however far the reader scrolls away
+ * from it, because a dozen keyboard shortcuts reach it through the DOM. The
+ * rendered rows are then two runs from two places in the list, and only one of
+ * them is the one being read.
+ */
+describe("DetailedView when the highlight is left far up the list", () => {
+    const offsetOf = (el: HTMLElement) =>
+        Number(
+            /translateY\((-?[\d.]+)px\)/.exec(el.style.transform)?.[1] ?? NaN,
+        );
+    const rowsIn = (el: HTMLElement, pinned: boolean) =>
+        [...el.querySelectorAll<HTMLElement>("[data-index]")]
+            .filter((row) => (row.dataset.pinned === "true") === pinned)
+            .map((row) => ({ index: Number(row.dataset.index), row }));
+
+    const AWAY = 30_000;
+
+    const scrollAwayFromTheHighlight = () => {
+        const store = storeWith(500);
+        store.dispatch(setHighlightedFileId("f-3"));
+        render(<Harness store={store} />);
+        act(() => flushResizeObservers());
+        // A wheel is the reader taking the scroll, which is what leaving a
+        // highlight behind consists of.
+        fireEvent.wheel(screen.getByTestId("search-panel"));
+        act(() => {
+            scrollOffset = AWAY;
+            fireEvent.scroll(screen.getByTestId("search-panel"));
+        });
+        act(() => flushResizeObservers());
+        return store;
+    };
+
+    it("draws the rows on screen at the reader's scroll position", () => {
+        scrollAwayFromTheHighlight();
+        const block = screen.getByTestId("virtual-window");
+        const onScreen = rowsIn(block, false);
+
+        expect(onScreen.length).toBeGreaterThan(0);
+        expect(onScreen.every(({ index }) => index > 3)).toBe(true);
+        // Within a screenful or so of where the reader is, the slack being the
+        // overscan above the viewport. Placing it at the highlight instead is
+        // tens of thousands of pixels out, which is the empty space.
+        expect(Math.abs(offsetOf(block) - AWAY)).toBeLessThan(
+            VIEWPORT_HEIGHT * 2,
+        );
+    });
+
+    it("draws the highlighted card up where it belongs", () => {
+        scrollAwayFromTheHighlight();
+        const block = screen.getByTestId("virtual-window");
+        const pinned = rowsIn(block, true);
+
+        expect(pinned.map(({ index }) => index)).toEqual([3]);
+        // The row is placed within the window, so where it lands in the list
+        // is the two offsets together: near the top, where result 3 is.
+        expect(offsetOf(pinned[0].row) + offsetOf(block)).toBeLessThan(
+            VIEWPORT_HEIGHT * 2,
+        );
+    });
+
+    // The reader scrolls past the card they highlighted, so a row crosses in
+    // and out of the window's run. Remounting it there would tear down the
+    // card — and `ResultCard` takes the focus when it mounts highlighted,
+    // which would pull it out of whatever the reader was typing in.
+    it("keeps the highlighted card mounted across the boundary", () => {
+        scrollAwayFromTheHighlight();
+        const card = () =>
+            screen
+                .getAllByTestId("result-card")
+                .find((el) => el.dataset.fileId === "f-3");
+        const before = card();
+        expect(before).toBeDefined();
+
+        act(() => {
+            scrollOffset = 0;
+            fireEvent.scroll(screen.getByTestId("search-panel"));
+        });
+        act(() => flushResizeObservers());
+
+        expect(card()).toBe(before);
     });
 });
 

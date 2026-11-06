@@ -1001,6 +1001,13 @@ function, **stop and ask the user first** — there is almost certainly a better
 ## Additional Documentation
 
 - `Documentation/devenv-setup.md` - Development environment setup
+- `Documentation/external-services.md` - Running Loom against an S3 bucket or an inference
+  endpoint it did not deploy. The twelve `llm.<client>` clients and the fact that an unset
+  `endpoint` means the in-cluster Ollama rather than "unset", so a client nobody named stays
+  pointed at an Ollama that is about to be removed; `extraS3Sources`, where objects are copied
+  into SeaweedFS rather than read in place; and the two mechanisms both halves need -
+  `egress.enabled`, which deletes every NetworkPolicy in the namespace rather than adding a
+  rule, and `trustedCertificates`
 - `Documentation/appliance.md` - NixOS appliance image and air-gapped deployment
 - `nixos/README.md` - The appliance Nix code and how to build/test it
 - `Documentation/performance.md` - Finding out what is slow

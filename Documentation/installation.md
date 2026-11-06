@@ -276,9 +276,12 @@ Under `up -d` and `up --integrationtest` there is a sixth: skaffold's dev profil
   and service redundancy across nodes: Elasticsearch shard replicas, SeaweedFS volume replication,
   and Prometheus cluster-metrics handoff to central monitoring infrastructure.
 - **[`values-disable-ai-services.yaml`](../charts/values-disable-ai-services.yaml)** — Use this when
-  you want to provide external AI endpoints or skip AI features entirely. It also skips the
-  AI-powered indexing steps (embedding, auto-tagging), so nothing retries against an Ollama that is
-  not deployed.
+  you want to skip AI features entirely. It stops deploying Ollama **and** skips the AI-powered
+  indexing steps (embedding, auto-tagging), so nothing retries against an Ollama that is not
+  deployed. **It is not how you point Loom at an external endpoint**: with embedding skipped, RAG
+  retrieves from an empty set and nothing says so. That case wants `ollama.enabled: false` on its
+  own — see
+  [External services](external-services.md#inference-endpoints-outside-the-cluster).
 - **[`values-external-tls-certificates.yaml`](../charts/values-external-tls-certificates.yaml)** —
   Use this when your cluster manages TLS certificates centrally via Vault and you do not
   want Loom to provision its own ClusterIssuer.
@@ -357,6 +360,11 @@ because cert-manager always emits a `keyUsage` extension and defaults it to one 
 certificate. Without that, OpenSSL-based clients (`curl`, Python) and Go accept the certificate while
 BoringSSL-based ones reject it with "unable to verify the first certificate" — so the breakage shows up in
 one client and nowhere else.
+
+> ℹ️ That is the certificate Loom _serves_. For CAs Loom has to _trust_ when it dials something
+> outside the cluster — an external S3 endpoint or an external inference endpoint behind a
+> corporate CA — see
+> [External services](external-services.md#a-private-ca-trustedcertificates).
 
 ### Mutual TLS and client certificates
 
@@ -497,53 +505,9 @@ moves the policy but not the node, and `up.sh` will stop on the disagreement.
 
 ### Crawling external S3 sources
 
-By default Loom deploys a single S3 crawler that watches the internal SeaweedFS intake bucket.
-You can add any number of additional crawlers that watch external S3-compatible endpoints by
-listing them in `extraS3Sources`. Each entry spawns a dedicated crawler `Deployment` rendered
-from the same Helm template as the built-in crawler.
-
-> ⚠️ External S3 endpoints are outside the cluster. Set `egress.enabled=true` in your values
-> override to allow the crawler pods to open outbound connections to them. Without it, the
-> network policy blocks all external egress.
-
-**With plain credentials:**
-
-```yaml
-egress:
-  enabled: true
-
-extraS3Sources:
-  - name: archive-server          # unique identifier; used in the Deployment name
-    s3Storage:
-      host: minio.example.com:9000  # host[:port] of the external S3 endpoint
-      bucketName: my-bucket
-      accessKey: my-access-key
-      secretKey: my-secret-key
-      secureConnection: false       # set to true for HTTPS
-    bucketAlias: "Archive Bucket"  # optional display name shown in file paths
-    sourceId: archive-server       # optional source identifier, defaults to name
-```
-
-**With ESO-managed credentials** (credentials stored in a K8s Secret, e.g. via External Secrets
-Operator — see [External Secrets Operator](#external-secrets-operator-eso)):
-
-```yaml
-extraS3Sources:
-  - name: vault-managed-source
-    s3Storage:
-      host: minio.example.com:9000
-      bucketName: my-bucket
-      accessKeySecretRef:         # references a K8s Secret by name + key
-        name: my-s3-credentials
-        key: access_key
-      secretKeySecretRef:
-        name: my-s3-credentials
-        key: secret_key
-```
-
-Multiple sources can be listed under `extraS3Sources`. Each produces an independent crawler
-pod with its own intake storage credentials, so buckets on different servers or with different
-credentials are all supported simultaneously.
+Moved to [External services](external-services.md#s3-buckets-outside-the-cluster), alongside the
+other half of the same subject — pointing Loom at an inference endpoint it does not run. Both need
+`egress.enabled`, both may need a private CA trusted, and both are documented there.
 
 ### External Secrets Operator (ESO)
 
@@ -604,9 +568,15 @@ environment-variable name as the data key. Loom pods automatically prefer such s
 the corresponding entry in the settings ConfigMap.
 
 The full list of supported keys is documented in `charts/values.yaml` under
-`externalSecrets.secrets`.
+`externalSecrets.secrets`. There is one `llm__<client>__api_key` entry per LLM client; see
+[External services](external-services.md#inference-endpoints-outside-the-cluster) for which clients
+exist and what else each of them needs.
 
 ### Ollama GPU Configuration
+
+> ℹ️ This section is about the Ollama this chart deploys, on a GPU attached to one of your nodes.
+> To use inference that runs outside the cluster — another host, or a hosted service — see
+> [External services](external-services.md#inference-endpoints-outside-the-cluster).
 
 Ollama runs on the CPU unless you tell it otherwise. With `up.sh` there is nothing to configure —
 `--gpus nvidia` or `--gpus amd` applies the right values file, enables the matching device plugin

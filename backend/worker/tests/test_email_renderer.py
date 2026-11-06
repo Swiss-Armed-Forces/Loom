@@ -71,6 +71,13 @@ def email_img_02_bytes() -> bytes:
 
 
 @pytest.fixture
+def nested_email_bytes() -> bytes:
+    """Load sample bytes from test assets."""
+    email_path = TEST_ASSETS_DIR / "nested_email.eml"
+    return email_path.read_bytes()
+
+
+@pytest.fixture
 def very_long_email_bytes() -> bytes:
     email_path = TEST_ASSETS_DIR / "very_long_email.eml"
     return email_path.read_bytes()
@@ -223,6 +230,39 @@ def test_parse_email_body_none_payload():
 
     parsed_email = _parse_email_body(msg)
     assert "Visible&#32;content&#10;" in parsed_email.html_body
+
+
+def test_attached_message_is_listed_and_kept_out_of_the_body(
+    nested_email_bytes: bytes,
+) -> None:
+    """A carried message is an attachment, not part of the body of its carrier."""
+    msg = message_from_bytes(nested_email_bytes, policy=default)
+
+    parsed_email = _parse_email_body(msg)
+
+    # The carried message is named, its own attachment is not.
+    assert [a.name for a in parsed_email.attachments] == ["original_message.eml"]
+    assert parsed_email.attachments[0].size > 0
+
+    # The carrier's body renders, and nothing of the message it carries does.
+    assert "Regards,&#10;Alice" in parsed_email.html_body
+    assert "Dave" not in parsed_email.html_body
+
+
+def test_attached_message_without_filename_is_named_by_its_subject() -> None:
+    """A forwarded message frequently carries no filename parameter."""
+    carried = EmailMessage()
+    carried["Subject"] = "Quarterly dummy report"
+    carried.set_content("Carried body")
+
+    msg = EmailMessage()
+    msg.set_content("Carrier body")
+    msg.add_attachment(carried)
+
+    parsed_email = _parse_email_body(msg)
+
+    assert [a.name for a in parsed_email.attachments] == ["Quarterly dummy report.eml"]
+    assert "Carried&#32;body" not in parsed_email.html_body
 
 
 def test_parse_and_render_email_rfc2047_encoded_headers(

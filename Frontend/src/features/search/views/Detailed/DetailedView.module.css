@@ -31,6 +31,25 @@
 }
 
 /*
+ * A row kept rendered from elsewhere in the list - the highlighted card that a
+ * dozen keyboard shortcuts reach through the DOM, the tour's anchor. The rows
+ * between it and the window are not rendered, so it has nothing to lay out
+ * against and is placed at the offset it actually has instead. Out of flow, so
+ * the rows that do have neighbours go on laying out against each other, and
+ * full width like the window, so it wraps and measures as it would in flow.
+ *
+ * It is a child of the window rather than a sibling: a row crosses this
+ * boundary whenever the reader scrolls past the card they highlighted, and one
+ * keyed list under one parent is what keeps that from remounting the card.
+ */
+.virtualWindow .pinnedRow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+/*
  * One row. The gap between cards has to be padding rather than margin,
  * because the virtualizer measures the border box and a margin would fall
  * outside it, stacking the cards flush against each other.

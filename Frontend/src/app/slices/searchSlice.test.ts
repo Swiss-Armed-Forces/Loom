@@ -315,6 +315,64 @@ const previewReported = (fileId: string) => ({
     payload: { query: SAVED_QUERY, preview: { fileId } },
 });
 
+// A search being asked for, and the answer to one, as the thunk reports them.
+const queryAsked = (requestId: string) => ({
+    type: updateQuery.pending.type,
+    meta: { requestId },
+});
+
+const answeredBy = (
+    requestId: string,
+    answer: ReturnType<typeof resultsReported>,
+) => ({ ...answer, meta: { requestId } });
+
+describe("two searches in flight", () => {
+    // Both are asked for before either answers: a component dispatches one and
+    // the search page, arriving at a URL that names another, dispatches a
+    // second. The answers come back in whatever order the API produces them.
+    const bothAsked = () =>
+        [queryAsked("first"), queryAsked("second")].reduce(
+            searchSlice.reducer,
+            emptySearchState(),
+        );
+
+    it("keeps the search asked for last when the earlier one answers late", () => {
+        const answered = [
+            answeredBy("second", resultsReported("q2", "bar", hits(1, "b"))),
+            answeredBy("first", resultsReported("q1", "foo", hits(1, "a"))),
+        ].reduce(searchSlice.reducer, bothAsked());
+
+        expect(answered.query?.query).toBe("bar");
+        expect(answered.resultOrder).toEqual(["b-0"]);
+    });
+
+    it("shows nothing of the earlier one when it answers first", () => {
+        const earlyAnswer = searchSlice.reducer(
+            bothAsked(),
+            answeredBy("first", resultsReported("q1", "foo", hits(1, "a"))),
+        );
+
+        expect(earlyAnswer.query?.query).toBeUndefined();
+        expect(earlyAnswer.resultOrder).toEqual([]);
+    });
+
+    it("takes the earlier answer once the later search is abandoned", () => {
+        // An aborted search answers nothing, so dropping everything else
+        // would leave the results describing neither search.
+        const abandoned = searchSlice.reducer(bothAsked(), {
+            type: updateQuery.rejected.type,
+            meta: { aborted: true, requestId: "second" },
+        });
+        const answered = searchSlice.reducer(
+            abandoned,
+            answeredBy("first", resultsReported("q1", "foo", hits(1, "a"))),
+        );
+
+        expect(answered.query?.query).toBe("foo");
+        expect(answered.resultOrder).toEqual(["a-0"]);
+    });
+});
+
 // Oracle for the counter, cross-checked against the other selector instead of
 // re-applying selectLoadedFiles' own predicate: selectOrderedFileIds leads with
 // the temporary card when there is one, so dropping that leaves the result

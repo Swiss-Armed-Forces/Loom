@@ -93,6 +93,10 @@ Tools are split into two tiers:
 
 ### Provider
 
+> ℹ️ This section is why each provider differs. For pointing a deployment at one — which
+> values to set, and on which of the twelve clients — see
+> [External services](external-services.md#inference-endpoints-outside-the-cluster).
+
 Pointing a client at an endpoint takes one setting beyond the endpoint and the model name:
 
 | Setting                 | Answers                             | Values                                                |
@@ -501,7 +505,7 @@ toolset) so the agent focuses on research rather than UI control.
 | `list_folder_contents` | `search_and_browse` | Lists direct children (subfolders and files) of a folder path. Paginated: optional `after_cursor`; the response carries `has_more` and `next_cursor`. |
 | `search_by_filename` | `search_and_browse` | Finds files whose name contains a given substring, best matches first. Optional `search_string` parameter (default `*`) restricts the name match to the files a Lucene query matches. Paginated: optional `after_cursor`; the response carries `has_more` and `next_cursor`. |
 | `get_file` | `file_access` | Returns the full path and available field list for a file by UUID |
-| `get_file_field` | `file_access` | Reads the value of a specific field for a file (e.g. `content`, `summary`) |
+| `get_file_field` | `file_access` | Reads the value of a specific field for a file (e.g. `content`, `summary`). Every field is capped at 8000 characters and the response carries `truncated`; there is no way to page past the cap. |
 | `summarize_file` | `ai_processing` | Triggers AI summarization for a file and returns the summary |
 | `translate_file` | `ai_processing` | Triggers AI translation for a file and returns the translated text |
 | `describe_image` | `ai_processing` | Triggers AI image description for an image file |
