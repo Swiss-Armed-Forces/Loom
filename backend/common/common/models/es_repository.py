@@ -735,7 +735,10 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         if sort_params is None:
             sort_params = SortingParameters()
 
-        search = self._get_search_by_query(query=query)
+        # No highlighting: this generator yields ids and the sort cursor, and the
+        # source filter below cannot stop a highlighter from loading each hit's
+        # full field values server-side.
+        search = self._get_search_by_query(query=query, with_highlight=False)
 
         # limit fields to fetch to just id
         sort_by_field = sort_params.sort_by_field
