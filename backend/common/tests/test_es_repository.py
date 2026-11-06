@@ -1740,7 +1740,7 @@ def test_es_repository_get_id_generator_by_query_uses_large_scan_page_size():
 
     # Follow the actual call chain inside get_id_generator_by_query:
     # _get_search_by_query → .source() → _paginate_search: .sort()
-    sort_mock = search_mock.highlight_options().highlight().query().source().sort()
+    sort_mock = search_mock.query().source().sort()
 
     list(
         es_repository.get_id_generator_by_query(
@@ -1750,6 +1750,28 @@ def test_es_repository_get_id_generator_by_query_uses_large_scan_page_size():
 
     # The first .extra() call in _paginate_search must set size=_ID_SCAN_PAGE_SIZE
     sort_mock.extra.assert_called_once_with(size=_ID_SCAN_PAGE_SIZE)
+
+
+def test_es_repository_get_id_generator_by_query_requests_no_highlighting():
+    """An id scan asks for no highlights: the source filter trims the response, but a
+    highlighter still makes Elasticsearch load every hit's full field values, and this
+    generator yields ids and the sort cursor."""
+    es_repository = _TestEsRepository(
+        query_builder=get_query_builder(),
+        pubsub_service=get_pubsub_service(),
+        mock_types=True,
+    )
+    search_mock = MagicMock(spec=Search)
+    es_repository.document_type.search.return_value = search_mock
+
+    list(
+        es_repository.get_id_generator_by_query(
+            QueryParameters(query_id="0123456789", search_string="just a random query")
+        )
+    )
+
+    search_mock.highlight_options.assert_not_called()
+    search_mock.highlight.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -1778,17 +1800,7 @@ def test_es_repository_reports_no_sort_value_for_a_document_without_one(
     )
     search_mock = MagicMock(spec=Search)
     es_repository.document_type.search.return_value = search_mock
-    execute_mock = (
-        search_mock.highlight_options()
-        .highlight()
-        .query()
-        .source()
-        .sort()
-        .extra()
-        .index()
-        .extra()
-        .execute
-    )
+    execute_mock = search_mock.query().source().sort().extra().index().extra().execute
     hit = MagicMock()
     hit.to_es_dict.return_value = dict(document_dict)
     hit.meta.sort = [1.0, "a"]
