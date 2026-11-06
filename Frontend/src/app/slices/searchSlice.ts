@@ -353,6 +353,17 @@ export interface PaginationState {
 export interface SearchState {
     query: SearchQuery | null;
     queryError?: string;
+    /**
+     * The most recently asked `updateQuery` request, or null before the first.
+     *
+     * Two searches can be in flight at once - one dispatched by a component
+     * and one by the search page reading the URL it was opened with - and they
+     * come back in whatever order the API answers them, which follows result
+     * set size rather than the order they were asked in. The query is the one
+     * last asked for, so an answer carrying any other id is dropped whenever
+     * it arrives.
+     */
+    latestQueryRequestId: string | null;
     leftSidebarPanel: LeftSidebarPanel | null;
     rightSidebarTab: RightSidebarTab | null;
     leftSidebarWidth: number;
@@ -462,6 +473,8 @@ export interface SearchState {
 export const SEARCH_STATE_DOCS = {
     query: "SearchQuery | null — active search query (text, filters, sort)",
     queryError: "string | undefined — validation error for the current query",
+    latestQueryRequestId:
+        "string | null — id of the most recent search request; an answer carrying any other id is dropped",
     leftSidebarPanel:
         "LeftSidebarPanel | null — active left sidebar panel (folder/tags/queries/card_customization/chat)",
     rightSidebarTab: "RightSidebarTab | null — active right sidebar tab",
@@ -702,6 +715,7 @@ const initialState: SearchState = {
     query: persistedState.query
         ? { ...(persistedState.query as SearchQuery), sortId: null }
         : null,
+    latestQueryRequestId: null,
     fileDetailSelection: initialHashFileId
         ? fileTab(initialHashFileId)
         : FOLLOW_TAB,
@@ -920,6 +934,16 @@ export const updateQuery = createAsyncThunk(
             cleanupQuerySubscription();
             dispatch(stopLoadingIndicator());
         };
+        // Whether a newer search has been asked for while the point in time
+        // this one needs was being opened. Its answer is then not the one the
+        // reader is waiting for, and the snapshot it opened is read by nobody.
+        const isSuperseded = () =>
+            isSupersededRequest(
+                (thunkAPI.getState() as RootState).search.latestQueryRequestId,
+                thunkAPI.requestId,
+            );
+
+        if (isSuperseded()) return;
 
         dispatch(startLoadingIndicator());
 
@@ -947,6 +971,10 @@ export const updateQuery = createAsyncThunk(
                     : Promise.resolve({ totalFiles: lastTotalFiles }),
             ]);
             if (thunkAPI.signal.aborted) return;
+            if (isSuperseded()) {
+                cleanupQuerySubscription();
+                return;
+            }
 
             if (queryIdChanged && lastQuery?.id) {
                 dispatch(
@@ -1226,6 +1254,20 @@ const resetPagination = (state: SearchState) => {
     state.pagination.staged = null;
     state.pagination.error = null;
 };
+
+/**
+ * Whether an `updateQuery` request has been left behind by a later one.
+ *
+ * Judged against the search last asked for rather than against one still
+ * outstanding, so an answer that overtook a newer request is dropped as surely
+ * as one that lagged behind it. A null id belongs to nobody and supersedes
+ * nothing: no search is outstanding, and an abandoned request hands the id
+ * back so that whatever is still in flight may answer.
+ */
+const isSupersededRequest = (
+    latestRequestId: string | null,
+    requestId: string | undefined,
+): boolean => latestRequestId !== null && latestRequestId !== requestId;
 
 export const searchSlice = createSlice({
     name: "search",
@@ -1767,6 +1809,13 @@ export const searchSlice = createSlice({
                 state.failedFilesCount = action.payload.totalFiles;
             })
             .addCase(updateQuery.fulfilled, (state, action) => {
+                if (
+                    isSupersededRequest(
+                        state.latestQueryRequestId,
+                        action.meta?.requestId,
+                    )
+                )
+                    return;
                 if (!action.payload) {
                     if (state.query) state.query.query = "";
                     state.totalFiles = 0;
@@ -1883,7 +1932,8 @@ export const searchSlice = createSlice({
                     state.highlightedFileId = null;
                 }
             })
-            .addCase(updateQuery.pending, (state) => {
+            .addCase(updateQuery.pending, (state, action) => {
+                state.latestQueryRequestId = action.meta.requestId;
                 // Bumped here as well as on fulfilment. The list is about to
                 // be replaced, and the view has to leave the old position
                 // while the old content is still tall enough to hold it -
@@ -1893,7 +1943,22 @@ export const searchSlice = createSlice({
                 state.resultsReplaced += 1;
             })
             .addCase(updateQuery.rejected, (state, action: any) => {
-                if (action.meta.aborted) return;
+                if (action.meta.aborted) {
+                    // An abandoned search answers nothing, so it gives the id
+                    // back rather than holding the query shut against a
+                    // request that is still in flight.
+                    if (state.latestQueryRequestId === action.meta.requestId) {
+                        state.latestQueryRequestId = null;
+                    }
+                    return;
+                }
+                if (
+                    isSupersededRequest(
+                        state.latestQueryRequestId,
+                        action.meta?.requestId,
+                    )
+                )
+                    return;
                 state.queryError = action.payload;
                 toast.error(
                     t("error.searchResultLoadingError", {
