@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { ArchiveHit } from "@app/api";
 import { useAppDispatch } from "@app/hooks";
 import { openDialog } from "@app/slices/commonSlice";
-import { updateQuery } from "@app/slices/searchSlice";
 import {
     webApiGetArchive,
     webApiGetArchiveEncrypted,
@@ -34,13 +33,14 @@ export const ArchiveActions = ({ archive }: ArchiveActions) => {
         setAnchorEl(null);
     };
 
+    // The search page runs the query its URL names, so the query goes in the
+    // URL. That also makes the link shareable and leaves the archive view
+    // behind Back.
     const showArchiveQuery = (archiveId: string) => {
-        dispatch(
-            updateQuery({
-                query: `archives:"${archiveId}"`,
-            }),
-        );
-        navigate("/search");
+        const params = new URLSearchParams({
+            query: `archives:"${archiveId}"`,
+        });
+        navigate({ pathname: "/search", search: params.toString() });
     };
 
     const handleDeleteArchive = (archiveId: string) => {
