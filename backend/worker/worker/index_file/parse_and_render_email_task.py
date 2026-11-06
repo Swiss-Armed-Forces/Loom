@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Iterator
 from email import message_from_bytes
-from email.message import EmailMessage
+from email.message import EmailMessage, MIMEPart
 from email.policy import default
 from re import IGNORECASE, escape, sub
 from typing import TypedDict
@@ -18,6 +19,12 @@ from worker.index_file.infra.file_indexing_task import FileIndexingTask
 logger = logging.getLogger(__name__)
 
 app = get_celery_app()
+
+# The content type of an email carried as an attachment by another email.
+ATTACHED_MESSAGE_TYPE = "message/rfc822"
+
+# Shown for an attached message that names neither a file nor a subject.
+UNNAMED_ATTACHED_MESSAGE = "attached_message.eml"
 
 # Tags beyond nh3.ALLOWED_TAGS needed for email HTML rendering
 _EMAIL_EXTRA_TAGS: set[str] = {"style", "font", "big", "tfoot"}
@@ -174,10 +181,14 @@ class EmailTemplateData(TypedDict):
     Attachments: list[str]
 
 
+class EmailAttachment(BaseModel):
+    name: str
+    size: int
+
+
 class ParsedEmail(BaseModel):
     html_body: str
-    attachment_names: list[str] = []
-    attachment_sizes: list[int] = []
+    attachments: list[EmailAttachment] = []
 
 
 def generate_email(data: EmailTemplateData) -> str:
@@ -326,10 +337,10 @@ def parse_and_render_email_task(
     # headers are auto-decoded string objects when policy=default
     email_data: ParsedEmail = _parse_email_body(msg)
 
-    attachments = []
-    for index, name in enumerate(email_data.attachment_names):
-        size = email_data.attachment_sizes[index]
-        attachments.append(name + " " + size_to_string(size))
+    attachments = [
+        attachment.name + " " + size_to_string(attachment.size)
+        for attachment in email_data.attachments
+    ]
 
     data: EmailTemplateData = {
         "From": str(msg.get("From", "")),
@@ -345,20 +356,70 @@ def parse_and_render_email_task(
     return RenderedEmail(rendered_content=generate_email(data))
 
 
+def _iter_parts(part: MIMEPart) -> Iterator[MIMEPart]:
+    """Yield a message and its parts, treating an attached message as a leaf.
+
+    `walk` descends through a `message/rfc822` part into the message it carries, which
+    puts that message's body, attachments and inline images into the preview of the
+    message carrying it. An attached message is an attachment: it is yielded whole and
+    not entered.
+    """
+    yield part
+
+    if part.get_content_type() == ATTACHED_MESSAGE_TYPE:
+        return
+
+    for subpart in part.iter_parts():
+        yield from _iter_parts(subpart)
+
+
+def _describe_attached_message(part: MIMEPart) -> EmailAttachment:
+    """Name and measure an attached message.
+
+    A forwarded message frequently carries no `filename` parameter, so the subject of
+    the message it carries stands in as the name.
+    """
+    carried = next(iter(part.iter_parts()), None)
+    size = len(carried.as_bytes()) if carried is not None else 0
+
+    filename = part.get_filename()
+    if not filename and carried is not None:
+        subject = str(carried.get("Subject", "")).strip()
+        filename = f"{subject}.eml" if subject else ""
+
+    return EmailAttachment(name=filename or UNNAMED_ATTACHED_MESSAGE, size=size)
+
+
+def _collect_attachments(msg: EmailMessage) -> list[EmailAttachment]:
+    attachments = []
+
+    for part in _iter_parts(msg):
+        if part.get_content_type() == ATTACHED_MESSAGE_TYPE:
+            attachments.append(_describe_attached_message(part))
+            continue
+
+        if part.get_content_disposition() != "attachment":
+            continue
+
+        filename = part.get_filename()
+        if filename:
+            data = part.get_payload(decode=True) or b""
+            attachments.append(EmailAttachment(name=filename, size=len(data)))
+
+    return attachments
+
+
 def _parse_email_body(
     msg: EmailMessage,
 ) -> ParsedEmail:
-    # pylint: disable=too-many-locals
 
     html_body = ""
     plain_body = ""
     cid_map = {}
-    attachment_names = []
-    attachment_sizes = []
 
-    for part in msg.walk():
+    for part in _iter_parts(msg):
 
-        # Continue for multipart container
+        # Continue for multipart container, which an attached message also is
         if part.is_multipart():
             continue
 
@@ -366,14 +427,8 @@ def _parse_email_body(
         if part.get_payload() is None:
             continue
 
-        # Save attachment names
+        # Attachments are collected separately
         if part.get_content_disposition() == "attachment":
-            filename = part.get_filename()
-            if filename:
-                attachment_names.append(filename)
-                data = part.get_payload(decode=True) or b""
-                attachment_sizes.append(len(data))
-
             continue
 
         content_type = part.get_content_type()
@@ -412,6 +467,5 @@ def _parse_email_body(
 
     return ParsedEmail(
         html_body=html_body,
-        attachment_names=attachment_names,
-        attachment_sizes=attachment_sizes,
+        attachments=_collect_attachments(msg),
     )
