@@ -150,7 +150,7 @@ data:
 
     # worker concurrency
     {{- if ne .Values.worker.concurrency nil }}
-    worker_concurrency: {{ .Values.worker.cncurrency | quote }}
+    worker_concurrency: {{ .Values.worker.concurrency | quote }}
     {{- end }}
 
     # persister sharding
