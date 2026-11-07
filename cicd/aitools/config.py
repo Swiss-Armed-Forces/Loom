@@ -8,6 +8,7 @@ MODEL: str = "none"
 
 CI_SERVER_HOST = os.getenv("CI_SERVER_HOST", "gitlab.com")
 GITLAB_TOKEN = os.getenv("GITLAB_TOKEN") or os.getenv("PROJECT_ACCESS_TOKEN")
+CI_JOB_TOKEN = os.getenv("CI_JOB_TOKEN")
 CI_PROJECT_ID = os.getenv("CI_PROJECT_ID")
 AI_TIMEOUT = int(os.getenv("AI_TIMEOUT", "120"))
 MAX_DIFF_CHARS = int(os.getenv("MAX_DIFF_CHARS", "50000"))

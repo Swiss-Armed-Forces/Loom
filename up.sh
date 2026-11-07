@@ -36,6 +36,7 @@ SCALING_VALUES_FILE="${SCRIPT_DIR}/charts/values-scaling.yaml"
 HTTP_VALUES_FILE="${SCRIPT_DIR}/charts/values-http.yaml"
 DEBUG_PROBES_VALUES_FILE="${SCRIPT_DIR}/charts/values-debug-probes.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
+ONLINE_TEST_TIMEOUT_SECONDS="5"
 OFFLINE_IMAGE_TAG="latest"
 CERTIFICATE_SECRET_NAME="self-signed-cert"
 MINIKUBE_HOSTPATH_PROVISIONER_DIR="/var/hostpath-provisioner"
@@ -324,12 +325,29 @@ is_serviceaccount_ready() {
     &>/dev/null
 }
 
+# Any HTTP answer proves connectivity, so this deliberately runs without
+# --fail: a 429 from ${ONLINE_TEST_URL}'s rate limit means online just as a 200
+# does, and only a transport failure (DNS, connect, TLS, timeout) means offline.
+# The probe is https, so an intercepting portal fails the handshake rather than
+# passing for a reachable internet.
+#
+# An authenticated request is exempt from the per-address limit that anonymous
+# traffic shares, which a CI egress address reaches on its own.
 is_offline() {
+    local curl_opts=()
+    if [[ -n "${CI_JOB_TOKEN:-}" ]]; then
+        curl_opts+=(--header "JOB-TOKEN: ${CI_JOB_TOKEN}")
+    elif [[ -n "${GITLAB_TOKEN:-}" ]]; then
+        curl_opts+=(--header "PRIVATE-TOKEN: ${GITLAB_TOKEN}")
+    else
+        echo >&2 "[!] Warning: neither CI_JOB_TOKEN nor GITLAB_TOKEN is set; the ${ONLINE_TEST_URL} probe counts against the anonymous rate limit."
+    fi
     ! curl \
         --silent \
-        --fail \
-        --max-time 5 \
-        --head "${ONLINE_TEST_URL}" \
+        --max-time "${ONLINE_TEST_TIMEOUT_SECONDS}" \
+        --head \
+        "${curl_opts[@]}" \
+        "${ONLINE_TEST_URL}" \
     &>/dev/null
 }
 

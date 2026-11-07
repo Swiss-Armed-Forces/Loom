@@ -19,7 +19,7 @@ from gitlab.v4.objects import (
     ProjectPipeline,
 )
 
-from .config import CI_PROJECT_ID, CI_SERVER_HOST, GITLAB_TOKEN
+from .config import CI_JOB_TOKEN, CI_PROJECT_ID, CI_SERVER_HOST, GITLAB_TOKEN
 from .git_helpers import build_initial_mr_description
 from .models import (
     IssueBranchResult,
@@ -47,11 +47,19 @@ logger = logging.getLogger(__name__)
 
 
 def get_gitlab_client() -> gitlab.Gitlab | None:
-    """Create GitLab client from environment variables."""
-    if not GITLAB_TOKEN:
-        logger.warning("No GitLab token found (GITLAB_TOKEN or PROJECT_ACCESS_TOKEN)")
-        return None
-    return gitlab.Gitlab(f"https://{CI_SERVER_HOST}", private_token=GITLAB_TOKEN)
+    """Create GitLab client from environment variables.
+
+    Prefers a personal/project access token (full API scope) and falls back to
+    CI_JOB_TOKEN when running inside GitLab CI.
+    """
+    url = f"https://{CI_SERVER_HOST}"
+    if GITLAB_TOKEN:
+        return gitlab.Gitlab(url, private_token=GITLAB_TOKEN)
+    if CI_JOB_TOKEN:
+        logger.info("Using CI_JOB_TOKEN for GitLab authentication")
+        return gitlab.Gitlab(url, job_token=CI_JOB_TOKEN)
+    logger.warning("No GitLab token found (GITLAB_TOKEN or CI_JOB_TOKEN)")
+    return None
 
 
 def get_project_id_from_remote(repo: Repo) -> str | None:
