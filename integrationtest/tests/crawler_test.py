@@ -8,21 +8,29 @@ from utils.consts import ASSETS_DIR
 from utils.fetch_from_api import (
     fetch_files_from_api,
     fetch_files_tree,
+    get_file_by_name,
     get_file_preview_by_name,
 )
+from utils.upload_asset import reindex_uploaded_asset
 
 
 @pytest.mark.parametrize(
-    "upload_name,src_filename,expected_tree_children",
+    "upload_name,src_filename,additional_recursion_depth,extracted_member,"
+    "expected_tree_children",
     [
-        ("empty_file.txt", "empty_file.txt", []),
-        (".hidden", "empty_file.txt", []),
-        # The quoted archive extracts to a member whose own name is a quote.
-        ('".zip', '".zip', ['"']),
+        ("empty_file.txt", "empty_file.txt", 0, None, []),
+        (".hidden", "empty_file.txt", 0, None, []),
+        # The quoted archive holds `"/"""/"""text"".txt`, so one level of extraction
+        # puts a member whose own name is a quote under the archive's path.
+        ('".zip', '".zip', 1, '"""text"".txt', ['"']),
     ],
 )
 def test_upload_file(
-    upload_name: str, src_filename: str, expected_tree_children: list[str]
+    upload_name: str,
+    src_filename: str,
+    additional_recursion_depth: int,
+    extracted_member: str | None,
+    expected_tree_children: list[str],
 ):
     client = get_s3_intake_client()
     file_src = ASSETS_DIR / src_filename
@@ -35,6 +43,14 @@ def test_upload_file(
             len(f),
         )
     fileprev = get_file_preview_by_name(upload_name)
+
+    if additional_recursion_depth > 0:
+        reindex_uploaded_asset(upload_name, additional_recursion_depth)
+
+    if extracted_member is not None:
+        # Wait for the extracted member before asking the tree for the children.
+        get_file_by_name(extracted_member)
+
     res_path = f"//{settings.intake_storage.bucket_name}/{upload_name}"
     assert fileprev
     assert fileprev.name == upload_name

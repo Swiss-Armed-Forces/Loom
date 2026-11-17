@@ -10,7 +10,7 @@ from common.dependencies import (
 )
 from common.file.file_repository import Attachment, File
 from common.services.lazybytes_service import TempTypedLazyBytes
-from common.settings import settings
+from common.services.task_scheduling_service import IndexingPriority
 from common.utils.iterhash import iterhash
 
 from worker.index_file.dispatch_tasks import dispatch_index_file
@@ -25,20 +25,21 @@ app = get_celery_app()
 
 
 @app.task(base=FileIndexingTask)
-def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file: File):
+def schedule_attachments(
+    lazy_tika_result: TempTypedLazyBytes[TikaResult],
+    file: File,
+    max_recursion_depth: int,
+    priority: IndexingPriority = IndexingPriority.MEDIUM,
+):
     tika_result = get_lazybytes_service().load_object(lazy_tika_result)
 
-    if (
-        tika_result.attachments
-        and settings.max_recursion_depth is not None
-        and file.recursion_depth >= settings.max_recursion_depth
-    ):
+    if tika_result.attachments and file.recursion_depth >= max_recursion_depth:
         logger.info(
             "Skipping %d attachment(s) of '%s': max recursion depth %d reached"
             " (file depth: %d)",
             len(tika_result.attachments),
             file.full_name,
-            settings.max_recursion_depth,
+            max_recursion_depth,
             file.recursion_depth,
         )
         persist_attachments_skipped.s(file.id_).delay().forget()
@@ -58,15 +59,30 @@ def schedule_attachments(lazy_tika_result: TempTypedLazyBytes[TikaResult], file:
     # AMQP round-trip, so threads hide per-publish latency. The `with` block
     # (shutdown(wait=True)) ensures all publishes complete before the task exits.
     def _publish(attachment: TikaAttachment) -> None:
-        schedule_attachment.s(attachment, file).delay().forget()
+        schedule_attachment.s(
+            attachment, file, max_recursion_depth, priority
+        ).apply_async(priority=priority).forget()
 
     with ThreadPoolExecutor() as executor:
-        for attachment in tika_result.attachments:
+        futures = [
             executor.submit(_publish, attachment)
+            for attachment in tika_result.attachments
+        ]
+
+    # A future that raised is the only record that an attachment was never published:
+    # the publish happens off the task's own stack, so without this the parent reports
+    # success and the attachment is simply absent from the index.
+    for future in futures:
+        future.result()
 
 
 @app.task(base=FileIndexingTask)
-def schedule_attachment(tika_attachment: TikaAttachment, file: File) -> None:
+def schedule_attachment(
+    tika_attachment: TikaAttachment,
+    file: File,
+    max_recursion_depth: int,
+    priority: IndexingPriority = IndexingPriority.MEDIUM,
+) -> None:
     attachment_name = str(file.full_name / tika_attachment.name)
 
     lazybytes_service = get_lazybytes_service()
@@ -96,9 +112,11 @@ def schedule_attachment(tika_attachment: TikaAttachment, file: File) -> None:
             file.id_,
             None,  # uploaded_datetime
             file.recursion_depth + 1,
+            max_recursion_depth,
+            priority,
         ),
         persist_attachment.s(file.id_),
-    ).delay().forget()
+    ).apply_async(priority=priority).forget()
 
 
 @persisting_task(

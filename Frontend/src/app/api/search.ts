@@ -429,8 +429,15 @@ export const scheduleFileSummarization = async (
     });
 };
 
+// Opening a file is not a request to unpack it: the auto-action re-index exists to
+// finish the processing of the file itself, and extracting attachments on every
+// preview would multiply the corpus behind the user's back. The re-index dialog is
+// where a depth is chosen deliberately.
+export const AUTO_ACTION_REINDEX_DEPTH = 0;
+
 export const scheduleFileIndexing = async (
     query: SearchQuery,
+    additionalRecursionDepth: number,
 ): Promise<void> => {
     return indexApi.indexFilesOnDemandV1FilesIndexPost({
         indexAllRequest: {
@@ -439,15 +446,18 @@ export const scheduleFileIndexing = async (
                 keepAlive: query.keepAlive ?? undefined,
                 searchString: query.query,
             },
+            additionalRecursionDepth: additionalRecursionDepth,
         },
     });
 };
 
 export const scheduleSingleFileIndexing = async (
     fileId: string,
+    additionalRecursionDepth: number,
 ): Promise<void> => {
     return filesApi.indexFileV1FilesFileIdIndexPost({
         fileId: fileId,
+        additionalRecursionDepth: additionalRecursionDepth,
     });
 };
 

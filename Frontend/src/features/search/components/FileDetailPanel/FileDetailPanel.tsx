@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
 import {
+    AUTO_ACTION_REINDEX_DEPTH,
     GetFileResponse,
     MessageFileUpdate,
     getFile,
@@ -197,7 +198,10 @@ export const FileDetailPanel = ({
             dispatch(setFilePreview({ ...preview, ...optimisticUpdates }));
         }
 
-        if (prefs.reindex) scheduleSingleFileIndexing(fileId).catch(() => {});
+        if (prefs.reindex)
+            scheduleSingleFileIndexing(fileId, AUTO_ACTION_REINDEX_DEPTH).catch(
+                () => {},
+            );
         if (prefs.summarize)
             scheduleSingleFileSummarization(fileId, null).catch(() => {});
         if (prefs.describeImage)

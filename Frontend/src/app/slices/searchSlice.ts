@@ -449,6 +449,7 @@ export interface SearchState {
     showFieldActions: boolean;
     autoActionsPreferences: AutoActionsPreferences;
     contentTruncatedFilesCount: number;
+    indexingAdditionalRecursionDepth: number;
     attachmentsSkippedFilesCount: number;
     failedFilesCount: number;
     displayStat: string;
@@ -545,6 +546,8 @@ export const SEARCH_STATE_DOCS = {
         "AutoActionsPreferences — which auto-actions run on file open (markAsSeen, flag, reindex, translate, summarize, describeImage)",
     contentTruncatedFilesCount:
         "number — files with truncated content in current results",
+    indexingAdditionalRecursionDepth:
+        "number — levels of attachments a re-index extracts below each file",
     attachmentsSkippedFilesCount:
         "number — files with skipped attachments in current results",
     failedFilesCount:
@@ -685,6 +688,7 @@ const initialState: SearchState = {
         describeImage: false,
     },
     contentTruncatedFilesCount: 0,
+    indexingAdditionalRecursionDepth: 0,
     attachmentsSkippedFilesCount: 0,
     failedFilesCount: 0,
     displayStat: DEFAULT_TERMS_STAT,
@@ -1456,6 +1460,12 @@ export const searchSlice = createSlice({
             state.autoActionsPreferences[action.payload.key] =
                 action.payload.value;
         },
+        setIndexingAdditionalRecursionDepth: (
+            state,
+            action: PayloadAction<number>,
+        ) => {
+            state.indexingAdditionalRecursionDepth = action.payload;
+        },
         setSuppressDownloadWarning: (state, action: PayloadAction<boolean>) => {
             state.suppressDownloadWarning = action.payload;
         },
@@ -2111,6 +2121,7 @@ export const {
     fileInViewChanged,
     visibleRangeChanged,
     setAutoActionPreference,
+    setIndexingAdditionalRecursionDepth,
     setExpandFilePaths,
     setSuppressDownloadWarning,
     setFolderViewExpandedNodes,
@@ -2294,6 +2305,11 @@ export const selectStatsData = createSelector(
 export const selectContentTruncatedFilesCount = createSelector(
     selectSearch,
     (search) => search.contentTruncatedFilesCount,
+);
+
+export const selectIndexingAdditionalRecursionDepth = createSelector(
+    selectSearch,
+    (search) => search.indexingAdditionalRecursionDepth,
 );
 
 export const selectAttachmentsSkippedFilesCount = createSelector(

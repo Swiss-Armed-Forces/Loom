@@ -1,5 +1,6 @@
 """Base task service providing shared Celery dispatch infrastructure."""
 
+from enum import IntEnum
 from typing import Optional
 from uuid import UUID
 
@@ -12,6 +13,23 @@ from common.task_object.root_task_information_repository import (
     RootTaskInformationRepository,
 )
 from common.utils.sharding import compute_shard, get_persister_shard_name
+
+
+class TaskPriority(IntEnum):
+    """Priority carried by a task message, higher favoured by the broker.
+
+    Quorum queues are the only kind loom declares, and on the RabbitMQ 4.1 the chart
+    pins they carry two bands rather than graded levels: [0, 4] is normal and anything
+    above 4 is high, with high favoured over normal at a 2:1 ratio. Only the step from
+    MEDIUM to HIGH therefore changes where a message lands -- LOW and MEDIUM share the
+    normal band, and HIGH is the first value in the other one. `x-max-priority` is what
+    opts a *classic* queue into priorities and is ignored by quorum queues, so the
+    priority on the message is all that is needed.
+    """
+
+    LOW = 0
+    MEDIUM = 4
+    HIGH = 5
 
 
 class TaskService:
@@ -35,6 +53,7 @@ class TaskService:
         args: list,
         root_id: str,
         task_id: Optional[str] = None,
+        priority: TaskPriority = TaskPriority.MEDIUM,
     ) -> AsyncResult:
         """Send a task to its dedicated queue via the shared exchange routing key.
 
@@ -54,6 +73,7 @@ class TaskService:
             args=args,
             root_id=root_id,
             routing_key=task_name,
+            priority=priority,
             **kwargs,
         )
 

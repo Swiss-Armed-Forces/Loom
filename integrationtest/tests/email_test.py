@@ -18,6 +18,10 @@ from utils.upload_asset import upload_asset, upload_bytes_asset
 
 # pylint: disable=redefined-outer-name
 
+# test_email_nested_with_long_filename waits for an idle worker, and beat traffic keeps
+# is_idle() false for as long as it runs.
+pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
+
 EMAIL_ASSET_NAMES = [
     "basic_email.eml",
     "unicode_email.eml",
@@ -120,7 +124,9 @@ def test_email_nested_with_long_filename(imap_service: IMAPService):
     eml_name = "has_nested.eml"
     eml = create_nested_eml(nested_filenames)
 
-    upload_bytes_asset(eml.as_bytes(), upload_file_name=eml_name)
+    upload_bytes_asset(
+        eml.as_bytes(), upload_file_name=eml_name, additional_recursion_depth=2
+    )
 
     for name in [eml_name] + nested_filenames:
         indexed_email = get_file_by_name(name, wait_for_celery_idle=True)

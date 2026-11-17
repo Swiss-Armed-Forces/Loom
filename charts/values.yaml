@@ -360,7 +360,7 @@ pipeline:
   max_no_of_persisted_failed_tasks: null
   auto_tag_file_similarity_threshold: null
   throttle_max_lazybytes__bytes: null
-  max_recursion_depth: null
+  indexing_max_recursion_depth: null
   tika_ocr_languages: null
   imagemagick_timeout_seconds: null
   celery_queue_name_prefix: null

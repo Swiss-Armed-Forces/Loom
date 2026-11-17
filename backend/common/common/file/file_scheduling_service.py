@@ -19,9 +19,11 @@ from common.services.lazybytes_service import (
     TempStorageTag,
 )
 from common.services.task_scheduling_service import (
+    IndexingPriority,
     TaskSchedulingService,
     UpdateFileRequest,
 )
+from common.settings import settings
 from common.utils.iterhash import CountingHash, iterhash
 
 logger = logging.getLogger(__name__)
@@ -51,6 +53,8 @@ class FileSchedulingService:
         parent_id: UUID | None,
         uploaded_datetime: datetime | None = None,
         recursion_depth: int = 0,
+        max_recursion_depth: int = settings.indexing_max_recursion_depth,
+        priority: IndexingPriority = IndexingPriority.MEDIUM,
     ) -> File:
         """Schedule indexing of a file.
 
@@ -64,7 +68,11 @@ class FileSchedulingService:
                 parallel. Defaults to now() if not provided.
             recursion_depth: Nesting depth of this file within the attachment hierarchy.
                 0 for root files, incremented by 1 for each level of attachment
-                extraction. Used to enforce settings.max_recursion_depth limits.
+                extraction. Used to enforce settings.indexing_max_recursion_depth limits.
+            max_recursion_depth: Depth at which attachment extraction stops. A file whose
+                recursion_depth has reached it is still indexed, but its attachments are
+                left unextracted.
+            priority: Priority of the resulting indexing tasks.
 
         Returns:
             The created File object.
@@ -111,19 +119,70 @@ class FileSchedulingService:
             # duplicate found:
             # - delete uploaded raw file from permanent storage
             # - delete lazybytes copy
+            # - deepen the duplicate's subtree if this request reaches further
             # - return duplicate
             logger.info("Deduplication of file: '%s'", full_name)
             self._file_storage_service.delete(file_content)
             self._lazybytes_service.delete(lazybytes_handle)
+            self._deepen_deduplicated_file(deduplicated_file, max_recursion_depth)
             return deduplicated_file
 
         self._file_repository.save(file)
 
-        self._task_scheduling_service.index_file(file, lazybytes_handle)
+        self._task_scheduling_service.index_file(
+            file,
+            lazybytes_handle,
+            max_recursion_depth=max_recursion_depth,
+            priority=priority,
+        )
 
         return file
 
-    def reindex_file(self, file_id: UUID):
+    def _deepen_deduplicated_file(
+        self, deduplicated_file: File, max_recursion_depth: int
+    ) -> None:
+        """Re-index a deduplicated file whose own subtree stops short of this request.
+
+        An attachment's deduplication fingerprint is deterministic, so a second
+        indexing pass at a greater depth finds every already-extracted file here and
+        would otherwise return without dispatching anything -- leaving the levels
+        below it unbuilt. Re-indexing the duplicate with whatever depth is left over
+        is what builds them.
+
+        Args:
+            deduplicated_file: The file this upload turned out to duplicate.
+            max_recursion_depth: Absolute depth this request extracts to.
+        """
+        remaining_depth = max_recursion_depth - deduplicated_file.recursion_depth
+        if not deduplicated_file.attachments_skipped or remaining_depth <= 0:
+            return
+
+        logger.info(
+            "Deepening extraction of deduplicated file '%s' by %d level(s)",
+            deduplicated_file.full_name,
+            remaining_depth,
+        )
+        self.reindex_file(
+            file_id=deduplicated_file.id_,
+            additional_recursion_depth=remaining_depth,
+        )
+
+    def reindex_file(
+        self,
+        file_id: UUID,
+        additional_recursion_depth: int,
+        priority: IndexingPriority = IndexingPriority.MEDIUM,
+    ):
+        """Re-index an already indexed file.
+
+        Args:
+            file_id: Id of the file to re-index.
+            additional_recursion_depth: How many levels of attachments to extract
+                *below* this file. It is relative to the file's own recursion_depth,
+                which a re-index preserves, so 0 re-indexes the file alone and 2
+                extracts two further levels out of it.
+            priority: Priority of the resulting indexing tasks.
+        """
         old_file = self._file_repository.get_by_id(file_id)
         if old_file is None:
             raise FileNotFoundException(f"Could not find file with id: {file_id}")
@@ -154,7 +213,7 @@ class FileSchedulingService:
             tags=old_file.tags,
             archives=old_file.archives,
             flagged=old_file.flagged,
-            recursion_depth=0,
+            recursion_depth=old_file.recursion_depth,
         )
         # Preserve the original file ID
         file.es_meta.id = file_id
@@ -167,7 +226,12 @@ class FileSchedulingService:
         lazybytes = self._lazybytes_service.from_generator(storage_data_stream)
 
         logger.info("Scheduling re-index of file '%s'", old_file.full_name)
-        self._task_scheduling_service.index_file(file, lazybytes)
+        self._task_scheduling_service.index_file(
+            file,
+            lazybytes,
+            max_recursion_depth=old_file.recursion_depth + additional_recursion_depth,
+            priority=priority,
+        )
 
     def translate_file(self, file_id: UUID, lang: str):
         # update status

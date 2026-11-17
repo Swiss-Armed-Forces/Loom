@@ -11,8 +11,19 @@ from common.celery_app import get_beat_schedule
 from common.file.file_repository import File, Tag
 from common.services.lazybytes_service import FileStorageLazyBytes, TempLazyBytes
 from common.services.query_builder import QueryParameters
-from common.services.task_service import TaskService
+from common.services.task_service import TaskPriority, TaskService
+from common.settings import settings
 from common.task_object.root_task_information_repository import RootTaskInformation
+
+IndexingPriority = TaskPriority
+
+# Ceiling the API enforces on a caller-supplied recursion depth. Every level multiplies
+# the number of extracted entries, and each entry costs a permanent object-storage
+# write, a disposable lazybytes copy, an Elasticsearch document and an indexing
+# fan-out, so a depth a caller can type is bounded rather than taken as given. A
+# deployment configured deeper than 20 raises the ceiling to its own setting, which is
+# also what both routes default to -- otherwise the default would be out of bounds.
+MAX_ADDITIONAL_RECURSION_DEPTH = max(settings.indexing_max_recursion_depth, 20)
 
 
 class UpdateFileRequest(BaseModel):
@@ -76,6 +87,8 @@ class TaskSchedulingService(TaskService):
         parent_id: UUID | None = None,
         uploaded_datetime: datetime | None = None,
         recursion_depth: int = 0,
+        max_recursion_depth: int = settings.indexing_max_recursion_depth,
+        priority: IndexingPriority = IndexingPriority.MEDIUM,
     ):
         """Dispatch file for indexing.
 
@@ -86,6 +99,10 @@ class TaskSchedulingService(TaskService):
             parent_id: Optional parent file ID for nested files.
             uploaded_datetime: Timestamp captured at dispatch time to preserve ordering.
             recursion_depth: Nesting depth within the attachment hierarchy.
+            max_recursion_depth: Depth at which attachment extraction stops. A file whose
+                recursion_depth has reached it is still indexed, but its attachments are
+                left unextracted.
+            priority: Indexing task priority
         """
         root_task_id = uuid4()
         self._send_task(
@@ -97,28 +114,72 @@ class TaskSchedulingService(TaskService):
                 parent_id,
                 uploaded_datetime,
                 recursion_depth,
+                max_recursion_depth,
+                priority,
             ],
             root_id=str(root_task_id),
+            priority=priority,
         ).forget()
 
-    def dispatch_reindex_files(self, query: QueryParameters):
+    def dispatch_reindex_files(
+        self,
+        query: QueryParameters,
+        additional_recursion_depth: int,
+        priority: IndexingPriority = IndexingPriority.MEDIUM,
+    ):
+        """Dispatch every file matching the query for re-indexing.
+
+        Args:
+            query: Query selecting the files to re-index.
+            additional_recursion_depth: Levels of attachments to extract below each
+                matched file, relative to that file's own recursion_depth.
+            priority: Priority of the resulting indexing tasks.
+        """
         root_task_id = uuid4()
         self._send_task(
             "worker.index_file.dispatch_tasks.dispatch_reindex_files",
-            args=[query],
+            args=[query, additional_recursion_depth, priority],
             root_id=str(root_task_id),
+            priority=priority,
         ).forget()
 
-    def dispatch_reindex_file(self, file_id: UUID):
+    def dispatch_reindex_file(
+        self,
+        file_id: UUID,
+        additional_recursion_depth: int,
+        priority: IndexingPriority = IndexingPriority.MEDIUM,
+    ):
+        """Dispatch a single file for re-indexing.
+
+        Args:
+            file_id: Id of the file to re-index.
+            additional_recursion_depth: Levels of attachments to extract below the
+                file, relative to its own recursion_depth.
+            priority: Priority of the resulting indexing tasks.
+        """
         root_task_id = uuid4()
         self._send_task(
             "worker.index_file.dispatch_tasks.dispatch_reindex_file",
-            args=[file_id],
+            args=[file_id, additional_recursion_depth, priority],
             root_id=str(root_task_id),
+            priority=priority,
         ).forget()
 
-    def index_file(self, file: File, file_content: TempLazyBytes):
-        """Schedule the indexing of a file."""
+    def index_file(
+        self,
+        file: File,
+        file_content: TempLazyBytes,
+        max_recursion_depth: int,
+        priority: IndexingPriority = IndexingPriority.MEDIUM,
+    ):
+        """Schedule the indexing of a file.
+
+        Args:
+            file: The file to index.
+            file_content: LazyBytes handle holding the file's content for processing.
+            max_recursion_depth: Absolute depth at which attachment extraction stops.
+            priority: Priority of this message and of the per-file fan-out it starts.
+        """
         root_task_id = uuid4()
         self._root_task_information_repository.save(
             RootTaskInformation(
@@ -128,8 +189,9 @@ class TaskSchedulingService(TaskService):
         )
         self._send_task(
             "worker.index_file.index_file_task.index_file_task",
-            args=[file, file_content],
+            args=[file, file_content, max_recursion_depth, priority],
             root_id=str(root_task_id),
+            priority=priority,
         ).forget()
 
     def dispatch_index_archive(self, request: ArchiveImportRequest) -> None:

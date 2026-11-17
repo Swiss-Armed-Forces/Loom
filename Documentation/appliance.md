@@ -1114,7 +1114,7 @@ build-appliance-image --platform evo-x2 --tag 1.5.0 --values ./swiss-archive.yam
 # swiss-archive.yaml
 pipeline:
   tika_ocr_languages: [deu, fra, ita]
-  max_recursion_depth: 12
+  indexing_max_recursion_depth: 12
   skip_translate_while_indexing: true
 ```
 
@@ -1122,6 +1122,28 @@ pipeline:
 them. A `--set` value is read as JSON when it parses as JSON — `5` is a number, `true` a boolean,
 `["deu","fra"]` a list — and as a string when it does not. Quote it as JSON (`'"123"'`) when you want
 a number-looking string.
+
+### Attachment extraction depth
+
+`pipeline.indexing_max_recursion_depth` is the depth at which attachment extraction stops, and **0 —
+the default — extracts nothing**: a stock box indexes an archive, a mail or a PST as one document and
+leaves what is inside it alone. Set it to the number of levels the pile actually nests. Each level
+multiplies the corpus, and every extracted entry costs an object-storage write, an Elasticsearch
+document and an indexing fan-out, so a mail attaching an archive of mails is three levels and a
+value sized for the worst case is not free.
+
+On upload the number is an **absolute** ceiling: a file already at depth 3 has its attachments
+extracted only while 3 is below it. The two re-index routes take their own depth instead, as
+`additional_recursion_depth` — a query parameter on `POST /v1/files/{id}/index`, a body field on
+`POST /v1/files/index` — and there the number is **relative to the file's own depth**, so 2 means
+"two further levels out of this file" wherever it sits. Both are optional and fall back to this
+setting, and both refuse anything outside 0–20. The Re-index dialog in the frontend is the same
+parameter with a slider on it; opening a file with the auto-action re-index turned on never extracts
+anything.
+
+The key is read by name and the chart has no values schema, so a values file still carrying the old
+`pipeline.max_recursion_depth` is **accepted and ignored** rather than rejected — a box built from
+one extracts nothing and says so nowhere. Rename the key when upgrading.
 
 ### What wins
 

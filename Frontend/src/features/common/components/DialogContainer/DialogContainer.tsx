@@ -23,6 +23,7 @@ import {
     SummaryDialog,
     TranslationDialog,
     UploadFileDialog,
+    ReIndexDialog,
 } from "./Dialogs";
 
 // Validates at registration time that a dialog component accepts DialogProps
@@ -42,6 +43,7 @@ const dialogRegistry: Record<DialogType, React.ComponentType<any>> = {
     [DialogType.DeleteCustomQuery]: registerDialog(DeleteCustomQueryDialog),
     [DialogType.DeleteTagGlobally]: registerDialog(DeleteTagGloballyDialog),
     [DialogType.ImageDescription]: registerDialog(ImageDescriptionDialog),
+    [DialogType.ReIndex]: registerDialog(ReIndexDialog),
     [DialogType.ImportArchive]: registerDialog(ImportArchiveDialog),
     [DialogType.Summary]: registerDialog(SummaryDialog),
     [DialogType.Translation]: registerDialog(TranslationDialog),

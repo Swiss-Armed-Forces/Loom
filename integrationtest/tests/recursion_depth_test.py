@@ -11,10 +11,12 @@ def test_recursion_depth_field():
     - archive.zip should have recursion_depth=0
     - file.txt (extracted from the archive) should have recursion_depth=1
     """
-    upload_asset("archive.zip")
+    upload_asset("archive.zip", additional_recursion_depth=1)
 
     parent = get_file_by_name("archive.zip")
-    child = get_file_by_name("file.txt")
 
     assert json.loads(parent.raw).get("recursion_depth", 0) == 0
+
+    child = get_file_by_name("file.txt")
+
     assert json.loads(child.raw).get("recursion_depth", 0) == 1

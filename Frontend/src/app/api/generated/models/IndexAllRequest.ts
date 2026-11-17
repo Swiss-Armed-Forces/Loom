@@ -34,6 +34,12 @@ export interface IndexAllRequest {
      * @memberof IndexAllRequest
      */
     query: QueryParameters;
+    /**
+     * Levels of attachments to extract below each matched file, relative to that file's own recursion depth. 0 re-indexes the matched files alone. Defaults to the deployment's configured indexing_max_recursion_depth.
+     * @type {number}
+     * @memberof IndexAllRequest
+     */
+    additionalRecursionDepth?: number;
 }
 
 /**
@@ -59,6 +65,10 @@ export function IndexAllRequestFromJSONTyped(
     }
     return {
         query: QueryParametersFromJSON(json["query"]),
+        additionalRecursionDepth:
+            json["additional_recursion_depth"] == null
+                ? undefined
+                : json["additional_recursion_depth"],
     };
 }
 
@@ -76,5 +86,6 @@ export function IndexAllRequestToJSONTyped(
 
     return {
         query: QueryParametersToJSON(value["query"]),
+        additional_recursion_depth: value["additionalRecursionDepth"],
     };
 }

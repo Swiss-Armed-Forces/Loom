@@ -1,6 +1,9 @@
 import pytest
 
-from utils.fetch_from_api import build_search_string, fetch_files_from_api
+from utils.fetch_from_api import (
+    build_search_string,
+    fetch_files_from_api,
+)
 from utils.upload_asset import upload_asset
 
 
@@ -139,7 +142,7 @@ from utils.upload_asset import upload_asset
     ],
 )
 def test_extraction(file: str, expected_content: list[str]):
-    upload_asset(file)
+    upload_asset(file, additional_recursion_depth=2)
 
     # Test expected content
     fetch_files_from_api(

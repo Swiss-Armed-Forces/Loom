@@ -13,6 +13,8 @@ from worker.services.tika_service import TIKA_MAX_TEXT_SIZE, TIKA_UNPACK_MAX_SIZ
 from utils.consts import ASSETS_DIR, FILES_ENDPOINT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
+    build_search_string,
+    fetch_files_from_api,
     get_file_preview_by_name,
 )
 from utils.upload_asset import upload_asset
@@ -66,7 +68,10 @@ def test_upload_email():
 
 
 def test_upload_email_with_attachment():
-    upload_asset("attachment_content_disposition.eml")
+    """Re-index attachment_content_disposition.eml one level deep and expect its
+    attachment, api.rb, to be extracted and indexed."""
+    asset_name = "attachment_content_disposition.eml"
+    upload_asset(asset_name, additional_recursion_depth=1)
 
     attachment = get_file_preview_by_name("api.rb")
 
@@ -76,7 +81,9 @@ def test_upload_email_with_attachment():
 
 @pytest.mark.flaky(reruns=3)
 def test_upload_mbox_email_with_attachment():
-    upload_asset("attachment_pdf.eml")
+    """Re-index attachment_pdf.eml two levels deep and expect the mail it wraps and that
+    mail's own PDF attachment to be extracted and indexed."""
+    upload_asset("attachment_pdf.eml", additional_recursion_depth=2)
 
     mail = get_file_preview_by_name("attachment_pdf.eml")
     mail_content = get_file_preview_by_name("0.eml")
@@ -107,10 +114,30 @@ def test_upload_pdf():
     assert file.path == "//api-upload/home.pdf"
 
 
-def test_upload_zip_archive():
-    """Upload archive.zip and expect its content, file.txt to be extracted and
-    indexed."""
+@pytest.mark.usefixtures("disable_periodic_tasks")
+def test_upload_alone_extracts_no_attachment():
+    """The shipped default depth is 0, so an upload indexes the container and stops.
+
+    Every other archive test in this module reaches its member by re-indexing, which
+    would also pass if uploading still extracted one.
+    """
     upload_asset("archive.zip")
+
+    get_file_preview_by_name("archive.zip")
+
+    fetch_files_from_api(
+        search_string=build_search_string(
+            search_string="*", field="short_name", field_value="file.txt"
+        ),
+        expected_no_of_files=0,
+        wait_for_celery_idle=True,
+    )
+
+
+def test_upload_zip_archive():
+    """Re-index archive.zip one level deep and expect its content, file.txt, to be
+    extracted and indexed."""
+    upload_asset("archive.zip", additional_recursion_depth=1)
 
     file = get_file_preview_by_name("file.txt")
 
@@ -120,9 +147,9 @@ def test_upload_zip_archive():
 
 
 def test_upload_tar_gz_archive():
-    """Upload archive.zip and expect its content, file.txt to be extracted and
-    indexed."""
-    upload_asset("archive.tar.gz")
+    """Re-index archive.tar.gz two levels deep and expect the tar member it wraps and
+    that member's own content, emptyfile, to be extracted and indexed."""
+    upload_asset("archive.tar.gz", additional_recursion_depth=2)
 
     file = get_file_preview_by_name("emptyfile")
 
