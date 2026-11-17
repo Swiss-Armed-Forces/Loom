@@ -300,18 +300,21 @@ Under `up -d` and `up --integrationtest` there is a sixth: skaffold's dev profil
   timeouts and switching liveness off for the celery components. Deliberately kept out of
   `values-development.yaml`, because `up --integrationtest` loads that file too and integration
   tests have to run with production probe behaviour.
-- **[`values-http.yaml`](../charts/values-http.yaml)** — Use this when the deployment's network is
-  already trusted and a self-signed certificate is more trouble than it is worth. Every ingress is
-  served on Traefik's `web` entrypoint as well as `websecure`, and the global http-to-https
-  redirect is switched off, so `http://frontend.loom/` answers directly. Use with `up
-  --enable-http`.
+- **[`values-development-http.yaml`](../charts/values-development-http.yaml)** — Development only,
+  and applied automatically wherever `up.sh` selects the `dev` profile (`--development` and
+  `--integrationtest`); **there is no flag that applies it and no deployment uses it.** Every
+  ingress is served on Traefik's `web` entrypoint as well as `websecure`, and the global
+  http-to-https redirect is switched off, so `http://elasticsearch.loom/` answers directly.
 
-  **This gives up transport security for the whole stack** — Elasticsearch, Grafana, RedisInsight,
-  S3, Prometheus and the Traefik dashboard included — so anyone who can see the network can read
-  what is on it. It exists because a phone's captive-portal webview refuses a self-signed
-  certificate outright and offers no way to click through; the appliance uses it for exactly that
-  (see [appliance.md](appliance.md)). HTTPS keeps working either way; this only adds the plain-http
-  route beside it.
+  It exists for the integration tests, which run on the host and reach Loom through the ingress
+  with the defaults in `backend/common/common/settings.py` — `http://elasticsearch.loom`,
+  `http://guest:guest@rabbit.loom`, `http://api.loom`, `ws://api.loom` and `s3.loom` with
+  `secure_connection: false`. None of those clients is given the cluster's self-signed CA, so a
+  redirect to https would end each request in a verification failure.
+
+  **It gives up transport security for the whole stack** — Elasticsearch, Grafana, RedisInsight,
+  S3 and Prometheus included — so anyone who can see the network can read what is on it. A local
+  minikube is the only network ever asked to carry it.
 
 ### Hostnames and the self-signed certificate
 
@@ -445,16 +448,17 @@ call.
 
 #### Plain HTTP goes around it, it does not weaken it
 
-`up --enable-http` (and `charts/values-http.yaml`, which it applies) widens every route onto
-Traefik's `web` entrypoint and switches the global redirect to https off. The client-certificate
-requirement is attached as `traefik.ingress.kubernetes.io/router.tls.options`, which constrains the
-TLS handshake and nothing else — so the same routes then answer in cleartext, asking for no
-certificate at all, and every host the chart serves is open to anyone who can reach port 80.
+The client-certificate requirement is attached as
+`traefik.ingress.kubernetes.io/router.tls.options`, which constrains the TLS handshake and nothing
+else. A route that also answered on Traefik's `web` entrypoint would therefore ask for no
+certificate at all, and every host the chart serves would be open to anyone who can reach port 80 —
+not a weaker requirement, no requirement.
 
-`up.sh` refuses the combination outright, and the appliance never builds it: a
-`--require-client-cert` image is the one that drops `--enable-http` (`nixos/modes.nix`). The dev and
-integration-test profiles apply `values-http.yaml` implicitly, so neither is a deployment to switch
-this on in.
+No deployment can reach that state: every ingress is on `websecure` alone and port 80 carries the
+global redirect, with `cicd/check_https_only.sh` asserting both. The one layer that does widen the
+routes is `charts/values-development-http.yaml`, which only the `dev` Skaffold profile applies, and
+`up.sh` refuses `--development` and `--integrationtest` outright beside
+`certificate.requireClientCert`.
 
 #### The CA rotates, and takes every certificate with it
 

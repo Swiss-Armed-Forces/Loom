@@ -10,13 +10,14 @@ other. `loom-appliance/facts.md` says which kind of box this is.
 The API documents itself, and that is always more current than this file:
 
 ```text
-http://api.loom/docs           Swagger UI, interactive
-http://api.loom/redoc          ReDoc, easier to read
-http://api.loom/openapi.json   the raw OpenAPI schema
+https://api.loom/docs           Swagger UI, interactive
+https://api.loom/redoc          ReDoc, easier to read
+https://api.loom/openapi.json   the raw OpenAPI schema
 ```
 
-Those are for a browser on a laptop, so they are spelled `http` — on a `--require-client-cert` box
-it is `https` and the browser needs an identity. From the box itself, use `loom-curl`:
+Those are for a browser on a laptop, and they are `https` because that is all this box serves —
+port 80 carries a redirect to it and nothing else. On a `--require-client-cert` box the browser
+needs an identity as well. From the box itself, use `loom-curl`:
 
 ```bash
 loom-curl --silent https://api.loom/openapi.json | jq '.paths | keys'
@@ -29,8 +30,7 @@ rather than trusting a written list.
 `loom-curl` is curl told the two things about this box that no stock trust store knows: Loom's
 certificate is self-signed, and where a client certificate is required it holds one. Everything
 else it passes through untouched, so curl's own arguments work. Plain `curl` fails on the first
-count everywhere, and on both where certificates are required. Use `https` — every image serves
-it.
+count everywhere, and on both where certificates are required.
 
 ## The shape of it
 

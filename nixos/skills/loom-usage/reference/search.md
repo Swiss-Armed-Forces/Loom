@@ -17,7 +17,7 @@ fault.
 
 Search is full-text over the extracted content **and** the extracted metadata, so a scanned image
 with no text layer becomes searchable once OCR has run on it. The web UI at
-`http://frontend.loom` is the way in; the same queries are available through `/v1/files` on the
+`https://frontend.loom` is the way in; the same queries are available through `/v1/files` on the
 API — which answers with file *ids* and sort cursors, nothing else, so a hit needs
 `GET /v1/files/{file_id}` to become a name. When the question is a filename,
 `/v1/files/search_by_filename` answers it directly.
@@ -49,7 +49,7 @@ In order:
 
 1. Has enough time passed? OCR on a large scanned PDF is slow.
 2. Is the file type supported? Tika handles most things, but not everything.
-3. Is the pipeline healthy? That is an appliance question — queue depths at `http://rabbit.loom` in a browser,
+3. Is the pipeline healthy? That is an appliance question — queue depths at `https://rabbit.loom` in a browser,
     or `/v1/queues` on the API. If tasks are piling up in the `graveyard`, `dead` or `abyss` queues,
     they are failing repeatedly and the worker logs have the reason.
 

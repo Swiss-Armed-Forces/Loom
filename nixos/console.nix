@@ -628,14 +628,11 @@ let
   # npm registry, which this box has no route to. Any other adapter name would be
   # looked up there the first time the operator asks a question.
   #
-  # https, not http. The appliance serves both -- modes.nix passes up.sh's
-  # --enable-http, which widens every ingress to `web, websecure` so the captive
-  # portal has a page it can reach without TLS (portal.nix) -- but that exists
-  # for visitors, whose phones cannot be handed a CA. This pane runs on the box,
-  # where the certificate is verifiable, so it stays on the path that is
-  # authenticated. The certificate is cert-manager's, from a selfSigned
-  # ClusterIssuer (charts/templates/common/certificate.yaml), which is why
-  # loom-chat below has to hand Bun the CA.
+  # https, because that is the whole of what the appliance serves: every ingress
+  # is on Traefik's `websecure` entrypoint and port 80 carries the chart's global
+  # redirect and nothing else. The certificate is cert-manager's, from a
+  # selfSigned ClusterIssuer (charts/templates/common/certificate.yaml), which is
+  # why loom-chat below has to hand Bun the CA.
   #
   # apiKey restates backend/common/common/settings.py's LLMClientSettings. The
   # endpoint deliberately does NOT: settings.py's `http://ollama.loom/v1/` is a
@@ -992,10 +989,8 @@ in
     description = ''
       Where the assistant pane reaches Ollama, without a trailing slash.
 
-      The ingress by default, over https: the appliance serves plain http as
-      well (modes.nix passes up.sh's --enable-http, for the captive portal), but
-      that exists for visitors who cannot be handed a CA, and this pane runs on
-      the box where the certificate is verifiable.
+      The ingress by default, over https, which is the only thing the appliance
+      serves: port 80 carries the chart's global redirect and nothing else.
 
       mtls.nix points it at the loopback proxy instead, which is http -- one
       hop, on this machine, in front of the certificate that opencode has

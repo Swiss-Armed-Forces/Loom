@@ -12,20 +12,22 @@ box's ethernet port — there is no browser on the box itself.
 ## Getting to it
 
 ```text
-http://frontend.loom
+https://frontend.loom
 ```
 
 A client on the appliance network gets an address by DHCP and the box answers DNS for every `.loom`
 name, so that address works with no configuration on the client side.
 
-`https://frontend.loom` is served too. It costs a browser warning, because the certificate is
-self-signed and nothing on the client can verify it — which is why the plain `http` spelling is the
-one to hand to a visitor.
+`https` is the only spelling Loom answers. Port 80 carries a redirect to it and nothing else, so
+`http://frontend.loom` arrives at the same place one round trip later.
 
-**Unless this box was built with `--require-client-cert`.** There only `https` is served, and only
-to a client holding a certificate this box issued: port 80 carries nothing but the redirect, and a
-visitor with no identity is refused during the TLS handshake, which is the intended answer rather
-than a fault. A visitor gets an identity from the captive portal at `http://portal.loom`, using the
+It costs a browser warning, because the certificate is self-signed and nothing on the client can
+verify it. The captive portal at `http://portal.loom` hands out the certificate that ends the
+warning, with a fingerprint to check against this box's own console.
+
+**A box built with `--require-client-cert` asks for more.** There Loom answers only a client holding
+a certificate this box issued, and a visitor with no identity is refused during the TLS handshake —
+the intended answer rather than a fault. They get one from the same captive portal, using the
 password shown on the box's own login screen. `loom-appliance/facts.md` says which image this is.
 
 ## Getting documents in
@@ -34,7 +36,7 @@ Two ways, and on an appliance the first is the normal one:
 
 - **A USB stick.** Plug it into the box. It is mounted read-only and its contents are copied into
   Loom automatically. `loom-usb-status` on the console reports what happened.
-- **The web UI.** Upload through `http://frontend.loom`.
+- **The web UI.** Upload through `https://frontend.loom`.
 
 Either way the file lands in object storage, the crawler notices it, and a worker extracts,
 OCRs and indexes it. Nothing is searchable until that finishes, so a file that was just added and
@@ -47,9 +49,9 @@ one is for. The ones worth knowing without looking:
 
 | Address | What it is |
 | --- | --- |
-| `http://frontend.loom` | The Loom web UI — this is the one to use (`https` on a `--require-client-cert` box) |
-| `http://api.loom/docs` | The REST API, with interactive documentation (`https` on a `--require-client-cert` box) |
-| `http://grafana.loom` | Dashboards and metrics (`https` on a `--require-client-cert` box) |
+| `https://frontend.loom` | The Loom web UI — this is the one to use |
+| `https://api.loom/docs` | The REST API, with interactive documentation |
+| `https://grafana.loom` | Dashboards and metrics |
 
 ## Going deeper
 

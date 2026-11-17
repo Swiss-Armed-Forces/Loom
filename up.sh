@@ -33,7 +33,7 @@ NVIDIA_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-nvidia-gpu.yaml"
 AMD_GPU_VALUES_FILE="${SCRIPT_DIR}/charts/values-amd-gpu.yaml"
 DISABLE_AI_VALUES_FILE="${SCRIPT_DIR}/charts/values-disable-ai-services.yaml"
 SCALING_VALUES_FILE="${SCRIPT_DIR}/charts/values-scaling.yaml"
-HTTP_VALUES_FILE="${SCRIPT_DIR}/charts/values-http.yaml"
+DEV_HTTP_VALUES_FILE="${SCRIPT_DIR}/charts/values-development-http.yaml"
 DEBUG_PROBES_VALUES_FILE="${SCRIPT_DIR}/charts/values-debug-probes.yaml"
 ONLINE_TEST_URL="https://gitlab.com"
 ONLINE_TEST_TIMEOUT_SECONDS="5"
@@ -182,7 +182,7 @@ RESUME_IF_DEPLOYED=false
 OFFLINE_MODE=false
 NO_RESOURCES=false
 SCALING=false
-ENABLE_HTTP=false
+PLAIN_HTTP=false
 DELETE=false
 DOWN=false
 SKAFFOLD_PROFILE="prod"
@@ -423,27 +423,29 @@ set_offline_mode(){
 set_skaffold_profile(){
     if [[ "${DEVELOPMENT}" = true ]] || [[ "${INTEGRATIONTEST}" = true ]]; then
         SKAFFOLD_PROFILE="dev"
-        # The dev profile is served over plain http as well as https, and that
-        # decision lives in one file rather than being restated in
-        # values-development.yaml -- so cicd/check_http_values.sh covers the dev
-        # deployment too, and a component added to the chart cannot be widened
-        # for `--enable-http` and forgotten here.
+        # The dev profile is the only thing this script serves over plain http,
+        # and this is the only place that layer is applied. A deployment gets
+        # https alone, with globalHttpRedirect answering port 80 for every host;
+        # cicd/check_https_only.sh asserts both halves of that.
         #
-        # Appended where the profile is chosen rather than in the flag cases,
-        # because both flags arrive here and the integration tests are the half
-        # that actually depends on it: they reach Loom over http://rabbit.loom
-        # and http://elasticsearch.loom throughout.
+        # The integration tests are what depends on it. They run on the host and
+        # reach Loom through the ingress over http://elasticsearch.loom,
+        # http://rabbit.loom, http://api.loom, ws://api.loom and s3.loom, none of
+        # which is given the cluster's self-signed CA -- so a redirect to https
+        # ends the request in a verification failure.
         #
-        # ENABLE_HTTP is set with it, not just the values file. This step runs before
+        # Appended where the profile is chosen rather than in a flag case,
+        # because the profile is what decides it: both --development and
+        # --integrationtest arrive here and neither is a deployment.
+        #
+        # PLAIN_HTTP is set with it, not just the values file. This step runs before
         # validate_environment, which refuses plain http beside
-        # certificate.requireClientCert -- and that guard reads ENABLE_HTTP, so
+        # certificate.requireClientCert -- and that guard reads PLAIN_HTTP, so
         # widening every route to the `web` entrypoint while leaving the flag false
         # would accept `up -d` on a deployment requiring a client certificate and
-        # serve every host in cleartext: the exact bypass the guard exists for. A
-        # duplicate values-file entry when --enable-http is also given is harmless,
-        # since yq deep-merges.
-        ENABLE_HTTP=true
-        UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
+        # serve every host in cleartext: the exact bypass the guard exists for.
+        PLAIN_HTTP=true
+        UP_FLAG_VALUES+=("${DEV_HTTP_VALUES_FILE}")
     fi
     if [[ "${OFFLINE_MODE}" = true ]]; then
         SKAFFOLD_PROFILE="offline"
@@ -591,7 +593,8 @@ validate_environment() {
         exit 1
     fi
 
-    # --enable-http does not weaken certificate.requireClientCert, it bypasses it.
+    # The dev profile's plain http does not weaken certificate.requireClientCert,
+    # it bypasses it.
     #
     # The `-mtls` TLSOption is attached as `router.tls.options`, which constrains the
     # TLS handshake and nothing else. Widening every router onto the `web` entrypoint
@@ -599,15 +602,16 @@ validate_environment() {
     # where no client certificate is asked for at all -- so a deployment that believes
     # it requires one serves every host to anyone who can reach port 80.
     #
-    # The appliance is already safe: nixos/modes.nix drops --enable-http from a
-    # --require-client-cert image. This guards a deployment driving up.sh by hand.
+    # Only --development and --integrationtest can reach this state; no deployment
+    # serves cleartext at all.
     local requires_client_cert
     requires_client_cert="$(client_certificate_required)"
-    if [[ "${ENABLE_HTTP}" = true ]] && [[ "${requires_client_cert}" = true ]]; then
-        echo >&2 "[!] Error: --enable-http and certificate.requireClientCert are incompatible."
-        echo >&2 "[!] The client-certificate requirement only applies to the TLS handshake, so"
-        echo >&2 "[!] serving the same routes over plain http bypasses it entirely rather than"
-        echo >&2 "[!] weakening it. Drop one of the two."
+    if [[ "${PLAIN_HTTP}" = true ]] && [[ "${requires_client_cert}" = true ]]; then
+        echo >&2 "[!] Error: --development/--integrationtest and certificate.requireClientCert"
+        echo >&2 "[!] are incompatible. The development profile serves every route over plain"
+        echo >&2 "[!] http, and the client-certificate requirement only applies to the TLS"
+        echo >&2 "[!] handshake -- so cleartext bypasses it entirely rather than weakening it."
+        echo >&2 "[!] Drop one of the two."
         exit 1
     fi
 
@@ -1666,11 +1670,6 @@ usage(){
     echo "                                        it (see charts/values-disable-ai-services.yaml). No summaries,"
     echo "                                        translation, embeddings, auto-tags or RAG."
     echo "  --scaling                             enable autoscaling (KEDA/HPA) for compute-intensive services (see charts/values-scaling.yaml)"
-    echo "  --enable-http                         also serve every ingress over plain http, without the"
-    echo "                                        redirect to https (see charts/values-http.yaml). Gives up"
-    echo "                                        transport security for the whole stack, Elasticsearch,"
-    echo "                                        Grafana, S3 and the Traefik dashboard included. Only for a"
-    echo "                                        deployment whose network is already trusted."
     echo "  --resume-if-deployed                  skip the deploy when the cluster already carries this"
     echo "                                        checkout's chart versions. For a host that runs this"
     echo "                                        script at every boot; the cluster itself is still started."
@@ -1785,11 +1784,6 @@ while [[ $# -gt 0 ]]; do
         --scaling)
             SCALING=true
             UP_FLAG_VALUES+=("${SCALING_VALUES_FILE}")
-            shift
-        ;;
-        --enable-http)
-            ENABLE_HTTP=true
-            UP_FLAG_VALUES+=("${HTTP_VALUES_FILE}")
             shift
         ;;
         --resume-if-deployed)

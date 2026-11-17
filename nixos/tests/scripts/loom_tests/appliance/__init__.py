@@ -87,7 +87,7 @@ def run(
     # How a visitor who has never heard of frontend.loom is told where it is.
     portal.addresses(appliance, subtest, params)
     portal.redirect(appliance, subtest, params)
-    portal.http_entrypoint(appliance, subtest)
+    portal.open_loom_link(appliance, subtest)
 
     # The two boot modes, and the branding both of them wear.
     setup_sys = modes.boot_modes(appliance, subtest, params)

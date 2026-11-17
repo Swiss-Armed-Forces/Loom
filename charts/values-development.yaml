@@ -7,8 +7,9 @@
 #
 # Not suitable for production use.
 #
-# Plain http is not here: up.sh adds charts/values-http.yaml wherever it selects
-# the dev profile, so this file on its own still renders the https redirect.
+# Plain http is not here: up.sh adds charts/values-development-http.yaml wherever
+# it selects the dev profile, so this file on its own still renders the https
+# redirect.
 #
 environment: development
 

@@ -87,33 +87,6 @@ let
     + lib.optionalString cfg.platform.runsAutoscaling " --scaling"
     + lib.optionalString (!cfg.platform.meetsResourceMinimum) " --no-resources";
 
-  # Serve every ingress over plain http as well as https.
-  #
-  # This is what makes the captive portal land somewhere (portal.nix). A phone's
-  # portal webview refuses the appliance's self-signed certificate and offers no
-  # way to click through, so the page the probe is redirected to has to be
-  # reachable without TLS or the portal dead-ends on a certificate error.
-  #
-  # Platform-independent rather than platform-derived: every box serves the same
-  # visitors, and the appliance segment is the trusted network the flag asks
-  # for. What it gives up is in Documentation/appliance.md's threat model.
-  #
-  # Both modes, so the two invocations describe one deployment. It is the flag
-  # that *disables* the global http-to-https redirect, so run mode never needs
-  # an image a setup run without it would have skipped -- the asymmetry that
-  # makes --scaling load-bearing in both does not arise here.
-  #
-  # The one build that goes without it is `--require-client-cert` (mtls.nix),
-  # where nothing is meant to reach Loom without an issued identity. A plaintext
-  # entrypoint beside that requirement is either a way around it or a route that
-  # answers 404 -- which of the two depends on how Traefik binds a TLS router to
-  # the `web` entrypoint, and neither is worth shipping. It costs the captive
-  # portal its destination: the redirect still points a visitor at the frontend,
-  # and the visitor is then refused at the handshake like every other client
-  # with no certificate, which on that box is the intended answer.
-  #
-  httpArgs = lib.optionalString (!cfg.mtls.enable) " --enable-http";
-
   # How long setup mode leaves its closing message on screen before powering the
   # box off. Long enough for whoever walks past to read why the box is going
   # down and to cancel it if they want the box up, short enough that nobody
@@ -361,7 +334,7 @@ in
           # must never do is decide the box is already deployed and skip the
           # fetch.
           script = ''
-            exec loom-up --offline${resumeArgs}${gpuArgs}${platformArgs}${httpArgs}
+            exec loom-up --offline${resumeArgs}${gpuArgs}${platformArgs}
           '';
         }
       ];
@@ -402,7 +375,7 @@ in
             # --delete tears the deployment down again afterwards: the goal here
             # is a warm image store, not a running stack. Documentation/
             # installation.md:107 prescribes exactly this before going offline.
-            loom-up --offline --delete${gpuArgs}${platformArgs}${httpArgs}
+            loom-up --offline --delete${gpuArgs}${platformArgs}
 
             touch ${loomRepoDir}/.loom-setup-complete
 

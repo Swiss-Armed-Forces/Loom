@@ -262,10 +262,8 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   is not held up. `loom-mtls-identity.service` issues **two**: nginx's, and `loom-console` in
   `/var/lib/loom/console` for `loom-curl` — separate because nginx's key must stay readable by
   nginx's group, and sharing one pair would mean putting the operator into that group. Traefik has
-  no CRL, so neither is revocable short of rolling the CA. It is also the one image that **drops `up.sh --enable-http`** — a plaintext
-  entrypoint beside a client-certificate requirement is either a way around it or a 404 — so the
-  portal page's "Open Loom" points at https there, and a visitor is refused at the handshake until
-  they hold an identity. Which they get **from that page**: this is the one image whose portal
+  no CRL, so neither is revocable short of rolling the CA. A visitor is refused at the handshake
+  until they hold an identity. Which they get **from that page**: this is the one image whose portal
   carries a password field, and the password is on the box's own login screen and rotates daily
   (`nixos/portal.nix`), so "stood in front of the box" becomes the authorisation for getting into
   Loom. It also gains a TLS listener on the portal address, because a PKCS#12 carries an
@@ -440,9 +438,10 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   with a server named, at its `80`/`443`. The two ports are mapped **separately and must be given as
   a pair** - a single catch-all rule rewrites the port as well as the host, so it sends the `https`
   that every ingress redirects to (all of them are on Traefik's `websecure` entrypoint; only
-  `charts/values-http.yaml` widens that to `web`, which `up --enable-http` applies — as does
-  `up -d` and `up --integrationtest` implicitly) back at the http port, where Traefik answers 404 on
-  a perfectly healthy stack. Expect one self-signed certificate interstitial
+  `charts/values-development-http.yaml` widens that to `web`, which `up -d` and
+  `up --integrationtest` apply implicitly and nothing else applies at all) back at the http port,
+  where Traefik answers 404 on a perfectly healthy stack. Expect one self-signed certificate
+  interstitial
 - `generate-third-party` - Regenerate `THIRD-PARTY.md`, its `Frontend/public/` copy and
   `THIRD-PARTY.lock`. A section is a syft scan of an image's *package inventory*, so the lock keys
   it on the inputs that can change that inventory and on nothing else: the image's Dockerfile
@@ -482,6 +481,20 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   one dot, and OpenSSL will not expand a wildcard under a single-label parent). A host served by
   entrypoint rather than by a route that names it goes in `hostnames.extra` instead. See the
   `## Hostnames and the self-signed certificate` section in `Documentation/installation.md`
+- `cicd/check_https_only.sh` - Assert that **no deployment serves Loom in cleartext**: rendered with
+  the chart's defaults, every Ingress is on Traefik's `websecure` entrypoint alone and the
+  `globalHttpRedirect` objects do render, so port 80 answers every `*.<domain>` host with a redirect
+  to https and nothing else. The Traefik dashboard is checked too, read straight out of
+  `traefik/values.yaml` because that route is in the sibling chart and no render of this one can see
+  it. The same script asserts the inverse for the one layer that is allowed cleartext:
+  `charts/values-development-http.yaml` has to move *every* Ingress onto `web` and switch the
+  redirect off, so **adding a component with an ingress means adding its path there too** - a
+  component missed stays on `websecure` and 404s over http in the development profile for no visible
+  reason (note `rabbit`'s path is `rabbit.ingress.http`, a level deeper than the rest). That file is
+  applied by `up.sh` wherever it selects the `dev` profile - `--development` and `--integrationtest`
+  - and by nothing else; there is no flag for it, because the integration tests are the only thing
+  that needs it and they are not a deployment. Runs as a git hook on any change under `charts/`, to
+  `traefik/values.yaml` or to the checker itself, and needs no cluster
 - `cicd/check_nix_inline_shell.sh` - Cap how much shell a `.nix` file under `nixos/` may inline,
   so the appliance's shell stays inside `shellcheck -x -o all`'s reach. Twenty effective lines per
   block, counting neither blanks, comments, prologue assignments, the `builtins.readFile` line nor
