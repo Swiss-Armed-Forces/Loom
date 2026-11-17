@@ -223,9 +223,19 @@ COPY --chown=${NIX_USER_NAME} \
 # needs, such as the devenv-nixpkgs tree and the patches applied to it.  No GC
 # root points at them while the nix fetcher cache keeps referring to them,
 # which makes a later evaluation fail with "path '/nix/store/...' is not
-# valid".  The `devenv build shell` after the collection restores them, so
-# nothing may collect garbage past that point.  As a build it is a no-op - the
-# shell is already realised and rooted by then - we run it for the evaluation.
+# valid".  Entering the shell a second time after the collection restores
+# them, so nothing may collect garbage past that point.  It realises nothing -
+# the package set is already realised and rooted by then - we run it for the
+# evaluation.
+#
+# That second entry has to be `devenv shell -- true`, the same command as the
+# first, and not `devenv build shell`.  The job user is not in trusted-users
+# (see above), so nix refuses the restricted `system` option that devenv
+# passes on every invocation and warns about it.  `devenv build` reads an
+# attribute back out of that output, and gets the warning instead of the
+# attribute whenever the evaluation is instantaneous - which is exactly the
+# case this step exists to handle, the one where the collection left the
+# sources in place and there is nothing to rebuild.
 # hadolint ignore=DL3004
 RUN set -exu \
     && fork() { (setsid "$@" &); } && fork nix-daemon ${NIX_DAEMON_ARGS} \
@@ -236,7 +246,10 @@ RUN set -exu \
     -- true \
     && nix-collect-garbage --quiet --delete-old \
     && sudo -i -u "${NIX_USER_NAME}" \
-    devenv build shell \
+    devenv shell \
+    --option languages.python.poetry.install.enable:bool false \
+    --option languages.javascript.pnpm.install.enable:bool false \
+    -- true \
     && if [ "${NIX_STORE_OPTIMIZE}" == "true" ]; then nix-store --quiet --optimise; fi \
     && nix-store --verify --check-contents
 
