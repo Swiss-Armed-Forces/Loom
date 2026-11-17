@@ -2,6 +2,7 @@ import argparse
 import sqlite3
 import sys
 
+from ._color import print_error, stdout_colors
 from ._constants import FILES_DIR
 from ._db import get_storage_results
 from ._utils import _vpath
@@ -25,11 +26,12 @@ def cmd_id(
         results = [r for r in results if _vpath(r.name).startswith(cwd + "/")]
 
     if not results:
-        print(f"Error: no file found with id '{storage_id}'", file=sys.stderr)
+        print_error(f"Error: no file found with id '{storage_id}'")
         sys.exit(1)
 
+    colors = stdout_colors()
     for name, role in results:
         if role == "file":
-            print(name)
+            print(colors.path(name))
         else:
-            print(f"{name} ({role})")
+            print(f"{colors.path(name)} ({role})")

@@ -2,6 +2,7 @@ import fnmatch
 import sys
 from collections.abc import Iterable
 
+from ._color import print_error
 from ._constants import ERR_NO_FILE_FOUND
 from ._types import IndexEntry
 
@@ -27,7 +28,7 @@ def resolve_name(
     matches = exact or suffix or prefix or glob_matches
 
     if not matches:
-        print(f"Error: {ERR_NO_FILE_FOUND} '{name}'", file=sys.stderr)
+        print_error(f"Error: {ERR_NO_FILE_FOUND} '{name}'")
         sys.exit(1)
 
     return matches

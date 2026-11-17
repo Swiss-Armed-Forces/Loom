@@ -1,3 +1,4 @@
+from ._color import set_color_mode
 from ._commands import _dispatch, build_parser
 from ._constants import ARCHIVE_ROOT
 from ._db import open_shell_db
@@ -9,6 +10,8 @@ def main() -> None:
 
     parser = build_parser()
     args = parser.parse_args()
+    # --color is SUPPRESS-defaulted, so an unset option leaves no attribute behind.
+    set_color_mode(getattr(args, "color", None))
 
     if args.command is None or args.command == "shell":
         cmd_shell(args, db=db)

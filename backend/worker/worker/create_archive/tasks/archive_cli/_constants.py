@@ -42,6 +42,17 @@ python cli.py --help                                # show all available command
 The interactive shell supports tab completion for commands and file paths, persistent
 command history saved between sessions, `Ctrl+R` to search history, and `!N` / `!!`
 to repeat a previous command. Type `help` inside the shell for the full reference.
+
+## Colour
+
+Output is colourised when it goes to a terminal and left as plain text when it is
+piped or redirected, so the CLI can be scripted without turning anything off.
+
+```
+python cli.py grep "secret" --color=always | less -R   # keep colour through a pager
+python cli.py ls --color=never                         # plain text on a terminal
+NO_COLOR=1 python cli.py tree                          # same, via the environment
+```
 """
 
 # ---------------------------------------------------------------------------
