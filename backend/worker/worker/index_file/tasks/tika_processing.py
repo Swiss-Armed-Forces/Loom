@@ -11,6 +11,7 @@ from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
 from common.file.file_repository import File
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
+from common.services.task_scheduling_service import IndexingPriority
 from common.utils.cache import cache
 from pydantic import BaseModel, ConfigDict
 
@@ -259,7 +260,12 @@ FALLBACK_TASKS_LEVEL2: list[Task] = [
 ]
 
 
-def signature(file_content: TempLazyBytes, file: File) -> Signature:
+def signature(
+    file_content: TempLazyBytes,
+    file: File,
+    max_recursion_depth: int,
+    priority: IndexingPriority = IndexingPriority.MEDIUM,
+) -> Signature:
     return group(
         chain(
             extract_magic_file_type.signature(file_content, file),
@@ -283,7 +289,9 @@ def signature(file_content: TempLazyBytes, file: File) -> Signature:
                             group(
                                 persist_tika_result_task.s(file.id_),
                                 persist_tika_meta_task.s(file.id_),
-                                schedule_attachments.s(file),
+                                schedule_attachments.s(
+                                    file, max_recursion_depth, priority
+                                ),
                                 chain(
                                     extract_text_from_lazy_tika_result.s(),
                                     group(

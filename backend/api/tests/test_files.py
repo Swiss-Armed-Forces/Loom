@@ -31,7 +31,12 @@ from common.models.cursor_pagination import SearchAfterCursor
 from common.models.es_repository import EsIdObject, _EsMeta
 from common.services.lazybytes_service import LazyBytes
 from common.services.query_builder import QueryParameters
-from common.services.task_scheduling_service import UpdateFileRequest
+from common.services.task_scheduling_service import (
+    MAX_ADDITIONAL_RECURSION_DEPTH,
+    IndexingPriority,
+    UpdateFileRequest,
+)
+from common.settings import settings
 from elasticsearch import BadRequestError
 from fastapi.testclient import TestClient
 
@@ -905,3 +910,49 @@ def test_search_by_filename_requires_a_point_in_time(client: TestClient):
 
     assert response.status_code == 422
     get_file_repository().get_flat_files_by_query.assert_not_called()
+
+
+def test_index_file_dispatches_the_requested_depth(client: TestClient):
+    file_id = uuid4()
+
+    response = client.post(
+        f"/v1/files/{file_id}/index", params={"additional_recursion_depth": 3}
+    )
+
+    assert response.status_code == 202
+    get_task_scheduling_service().dispatch_reindex_file.assert_called_once_with(
+        file_id=file_id,
+        additional_recursion_depth=3,
+        priority=IndexingPriority.HIGH,
+    )
+
+
+def test_index_file_falls_back_to_the_configured_depth(client: TestClient):
+    """The parameter is optional, so a client written before it existed still works."""
+    file_id = uuid4()
+
+    response = client.post(f"/v1/files/{file_id}/index")
+
+    assert response.status_code == 202
+    get_task_scheduling_service().dispatch_reindex_file.assert_called_once_with(
+        file_id=file_id,
+        additional_recursion_depth=settings.indexing_max_recursion_depth,
+        priority=IndexingPriority.HIGH,
+    )
+
+
+@pytest.mark.parametrize(
+    "additional_recursion_depth", [-1, MAX_ADDITIONAL_RECURSION_DEPTH + 1]
+)
+def test_index_file_rejects_a_depth_outside_the_bounds(
+    client: TestClient, additional_recursion_depth: int
+):
+    """A negative depth marks every container attachments_skipped behind a 202, and an
+    unbounded one multiplies the corpus a level at a time."""
+    response = client.post(
+        f"/v1/files/{uuid4()}/index",
+        params={"additional_recursion_depth": additional_recursion_depth},
+    )
+
+    assert response.status_code == 422
+    get_task_scheduling_service().dispatch_reindex_file.assert_not_called()

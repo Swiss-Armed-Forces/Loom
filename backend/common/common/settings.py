@@ -337,8 +337,8 @@ class Settings(BaseSettings):
     # Max lazybytes storage before throttling new indexing
     throttle_max_lazybytes__bytes: int = 10 * (1024**3)  # 10 GB
 
-    # Maximum attachment recursion depth. None = unlimited.
-    max_recursion_depth: int | None = None
+    # Depth at which attachment extraction stops. 0 extracts no attachments.
+    indexing_max_recursion_depth: int = 0
 
     # Maximum number of times a lost file is reindexed before giving up.
     max_reindex_count: int = 2

@@ -12,7 +12,8 @@ from common.file.file_repository import File, Tag
 from common.models.es_repository import PointInTimeExpiredError
 from common.services.lazybytes_service import FileStorageLazyBytes
 from common.services.query_builder import SCAN_PIT_KEEPALIVE, QueryParameters
-from common.services.task_scheduling_service import UpdateFileRequest
+from common.services.task_scheduling_service import IndexingPriority, UpdateFileRequest
+from common.settings import settings
 from common.utils.lucene import escape_lucene_phrase
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,8 @@ def dispatch_index_file(
     parent_id: UUID | None = None,
     uploaded_datetime: datetime | None = None,
     recursion_depth: int = 0,
+    max_recursion_depth: int = settings.indexing_max_recursion_depth,
+    priority: IndexingPriority = IndexingPriority.MEDIUM,
 ) -> File:
     """Dispatch file for indexing."""
     return get_file_scheduling_service().index_file(
@@ -39,21 +42,62 @@ def dispatch_index_file(
         parent_id=parent_id,
         uploaded_datetime=uploaded_datetime,
         recursion_depth=recursion_depth,
+        max_recursion_depth=max_recursion_depth,
+        priority=priority,
     )
 
 
-@app.task()
-def dispatch_reindex_files(query: QueryParameters):
-    logger.info("Dispatching tasks to reindex files with query '%s'", query)
-    for file in get_file_repository().get_id_generator_by_query(query=query):
-        dispatch_reindex_file.s(file_id=file.id_).delay().forget()
+# A lapsed point-in-time is transient: the sweep succeeds against a fresh snapshot.
+# Retrying restarts the scan from the beginning, which is the only correct way to
+# finish it — resuming across snapshots would skip or duplicate files.
+@app.task(autoretry_for=(PointInTimeExpiredError,), retry_backoff=True)
+def dispatch_reindex_files(
+    query: QueryParameters,
+    additional_recursion_depth: int,
+    priority: IndexingPriority = IndexingPriority.MEDIUM,
+):
+    logger.info(
+        "Dispatching tasks to reindex files with query '%s'"
+        " (additional_recursion_depth: %s)",
+        query,
+        str(additional_recursion_depth),
+    )
+    file_repository = get_file_repository()
+    # The caller's snapshot is sized for a page of search results, and this sweep walks
+    # the whole result set one synchronous publish at a time. Both halves of the
+    # snapshot's lifetime are set here: open_point_in_time gives it its initial one,
+    # and keep_alive is what every page extends it by.
+    scan_query = QueryParameters(
+        query_id=file_repository.open_point_in_time(keep_alive=SCAN_PIT_KEEPALIVE),
+        keep_alive=SCAN_PIT_KEEPALIVE,
+        search_string=query.search_string,
+    )
+    for file in file_repository.get_id_generator_by_query(query=scan_query):
+        dispatch_reindex_file.s(
+            file_id=file.id_,
+            additional_recursion_depth=additional_recursion_depth,
+            priority=priority,
+        ).apply_async(priority=priority).forget()
 
 
 @task_group(TaskGroupName.DISPATCH)
 @app.task()
-def dispatch_reindex_file(file_id: UUID):
-    logger.info("Dispatching tasks to reindex files with id '%s'", file_id)
-    get_file_scheduling_service().reindex_file(file_id=file_id)
+def dispatch_reindex_file(
+    file_id: UUID,
+    additional_recursion_depth: int,
+    priority: IndexingPriority = IndexingPriority.MEDIUM,
+):
+    logger.info(
+        "Dispatching tasks to reindex files with id '%s'"
+        " (additional_recursion_depth: %s)",
+        file_id,
+        str(additional_recursion_depth),
+    )
+    get_file_scheduling_service().reindex_file(
+        file_id=file_id,
+        additional_recursion_depth=additional_recursion_depth,
+        priority=priority,
+    )
 
 
 @app.task()

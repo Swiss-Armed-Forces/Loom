@@ -3,6 +3,7 @@ import i18n from "i18next";
 import { toast } from "react-toastify";
 
 import {
+    AUTO_ACTION_REINDEX_DEPTH,
     GetFilePreviewResponse,
     scheduleSingleFileIndexing,
     scheduleSingleFileSummarization,
@@ -113,7 +114,10 @@ const runAutoActionsForFile = async (
 
     lastAutoActionsFileId = fileId;
     if (prefs.reindex)
-        scheduleSingleFileIndexing(filePreview.fileId).catch(() => {});
+        scheduleSingleFileIndexing(
+            filePreview.fileId,
+            AUTO_ACTION_REINDEX_DEPTH,
+        ).catch(() => {});
     if (prefs.summarize)
         scheduleSingleFileSummarization(filePreview.fileId, null).catch(
             () => {},

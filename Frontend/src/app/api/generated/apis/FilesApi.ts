@@ -230,6 +230,7 @@ export interface ImageDescriptionV1FilesFileIdImageDescriptionPostRequest {
 
 export interface IndexFileV1FilesFileIdIndexPostRequest {
     fileId: string;
+    additionalRecursionDepth?: number;
 }
 
 export interface SearchByFilenameV1FilesSearchByFilenamePostRequest {
@@ -1683,6 +1684,11 @@ export class FilesApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters["additionalRecursionDepth"] != null) {
+            queryParameters["additional_recursion_depth"] =
+                requestParameters["additionalRecursionDepth"];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 

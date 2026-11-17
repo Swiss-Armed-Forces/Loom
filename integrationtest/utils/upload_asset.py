@@ -7,18 +7,46 @@ from requests import Response
 from requests_toolbelt import MultipartEncoder
 
 from utils.consts import ASSETS_DIR, FILES_ENDPOINT, REQUEST_TIMEOUT
+from utils.fetch_from_api import get_file_by_name
+
+
+def reindex_uploaded_asset(
+    upload_file_name: str,
+    additional_recursion_depth: int,
+    request_timeout=REQUEST_TIMEOUT,
+) -> None:
+    """Re-index an uploaded file so its attachments are extracted.
+
+    :param upload_file_name: Name the file was uploaded under
+    :param additional_recursion_depth: Levels of attachments to extract below the file.
+        The deployment default is 0, so an upload on its own extracts nothing.
+    :param request_timeout: Timeout for the re-index request
+    """
+    file = get_file_by_name(upload_file_name)
+
+    api_response: Response = requests.post(
+        f"{FILES_ENDPOINT}/{file.file_id}/index",
+        params={"additional_recursion_depth": additional_recursion_depth},
+        timeout=request_timeout,
+    )
+    api_response.raise_for_status()
 
 
 def upload_asset(
     asset_name: str,
     upload_file_name: Optional[str] = None,
     request_timeout=REQUEST_TIMEOUT,
+    additional_recursion_depth: int = 0,
 ) -> None:
     """Upload a file from the assets dir to the API.
 
     :param asset_name: Name of the file in the assets dir
     :param upload_file_name: Name that will be used for the upload, if not provided, the
         asset name will be used
+    :param request_timeout: Timeout for each request this makes
+    :param additional_recursion_depth: Levels of attachments to extract out of the
+        uploaded file. Anything above 0 re-indexes it after the upload, since the
+        deployment default extracts nothing.
     """
     asset = ASSETS_DIR / asset_name
 
@@ -39,17 +67,26 @@ def upload_asset(
         )
         api_response.raise_for_status()
 
+    if additional_recursion_depth > 0:
+        reindex_uploaded_asset(
+            upload_file_name, additional_recursion_depth, request_timeout
+        )
+
 
 def upload_many_assets(
     asset_names: list[str],
     upload_file_names: Optional[list] = None,
     request_timeout=REQUEST_TIMEOUT,
+    additional_recursion_depth: int = 0,
 ) -> None:
     """Upload a list of files from the assets dir to the API.
 
     :param asset_names: List of names of the files in the assets dir
     :param upload_file_names: List of names that will be used for the uploads, if not
         provided, the original names will be used
+    :param request_timeout: Timeout for each request this makes
+    :param additional_recursion_depth: Levels of attachments to extract out of each
+        uploaded file
     """
     if upload_file_names is None:
         upload_file_names = [None] * len(asset_names)
@@ -66,6 +103,7 @@ def upload_many_assets(
             asset_name=asset_name,
             upload_file_name=upload_file_name,
             request_timeout=request_timeout,
+            additional_recursion_depth=additional_recursion_depth,
         )
 
 
@@ -73,12 +111,16 @@ def upload_bytes_asset(
     bytes_to_upload: bytes,
     upload_file_name: str | None = None,
     request_timeout=REQUEST_TIMEOUT,
+    additional_recursion_depth: int = 0,
 ) -> None:
     """Upload a file which contains the given bytes.
 
-    :param string_to_upload: The string to upload
+    :param bytes_to_upload: The bytes to upload
     :param upload_file_name: Name that will be used for the upload, if not provided, the
-        original name will be used
+        sha256 of the content will be used
+    :param request_timeout: Timeout for each request this makes
+    :param additional_recursion_depth: Levels of attachments to extract out of the
+        uploaded file
     """
     if not upload_file_name:
         upload_file_name = sha256(bytes_to_upload).hexdigest()
@@ -95,3 +137,8 @@ def upload_bytes_asset(
         timeout=request_timeout,
     )
     api_response.raise_for_status()
+
+    if additional_recursion_depth > 0:
+        reindex_uploaded_asset(
+            upload_file_name, additional_recursion_depth, request_timeout
+        )

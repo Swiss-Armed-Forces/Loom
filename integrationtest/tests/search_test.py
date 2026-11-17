@@ -208,8 +208,7 @@ class TestCommonQueries:
 
 def test_search_for_file_name_with_quotation_mark():
     search_string = 'short_name:\\"\\"\\"text\\"\\".txt'
-
-    upload_asset(asset_name='".zip')
+    upload_asset(asset_name='".zip', additional_recursion_depth=1)
 
     fetch_files_from_api(search_string=search_string)
 

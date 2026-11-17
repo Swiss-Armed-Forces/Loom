@@ -12,6 +12,7 @@ import { EncryptionKeyInfoDialog } from "./EncryptionKeyInfoDialog/EncryptionKey
 import { FileDropzone } from "./FileDropzone/FileDropzone";
 import { ImageDescriptionDialog } from "./ImageDescriptionDialog/ImageDescriptionDialog";
 import { ImportArchiveDialog } from "./ImportArchiveDialog/ImportArchiveDialog";
+import { ReIndexDialog } from "./ReIndexDialog/ReIndexDialog";
 import { SummaryDialog } from "./SummaryDialog/SummaryDialog";
 import { TranslationDialog } from "./TranslationDialog/TranslationDialog";
 import { UploadFileDialog } from "./UploadFileDialog/UploadFileDialog";
@@ -34,4 +35,5 @@ export {
     SummaryDialog,
     TranslationDialog,
     UploadFileDialog,
+    ReIndexDialog,
 };

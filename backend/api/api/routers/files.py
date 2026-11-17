@@ -37,9 +37,12 @@ from common.services.query_builder import (
     QueryParameters,
 )
 from common.services.task_scheduling_service import (
+    MAX_ADDITIONAL_RECURSION_DEPTH,
+    IndexingPriority,
     TaskSchedulingService,
     UpdateFileRequest,
 )
+from common.settings import settings
 from common.task_object.task_object import TaskRecord
 from common.utils.pydantic_field_paths import traverse_attr_path
 from elasticsearch import BadRequestError
@@ -704,9 +707,24 @@ def get_rendered(
 @router.post("/{file_id}/index", status_code=202)
 def index_file(
     file_id: UUID,
+    additional_recursion_depth: Annotated[
+        int,
+        Query(
+            ge=0,
+            le=MAX_ADDITIONAL_RECURSION_DEPTH,
+            description="Levels of attachments to extract below this file, relative to"
+            " its own recursion depth. 0 re-indexes the file alone. Defaults to the"
+            " deployment's configured indexing_max_recursion_depth.",
+        ),
+    ] = settings.indexing_max_recursion_depth,
     task_scheduling_service: TaskSchedulingService = default_task_scheduling_service,
 ):
-    task_scheduling_service.dispatch_reindex_file(file_id=file_id)
+    # A single file is what someone is looking at, so it outranks a bulk sweep.
+    task_scheduling_service.dispatch_reindex_file(
+        file_id=file_id,
+        additional_recursion_depth=additional_recursion_depth,
+        priority=IndexingPriority.HIGH,
+    )
 
 
 class TranslateFileRequest(BaseModel):

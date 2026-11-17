@@ -51,9 +51,16 @@ def reindex_lost_files(self: PeriodicTask, *_, **__):
         sort_by_field="uploaded_datetime", sort_direction="desc"
     )
 
+    # An unattended sweep extracts nothing new: a lost file is re-indexed to finish the
+    # processing it never completed, at whatever depth its own tree was built with. Any
+    # other value ratchets, since the children it creates are fresh documents this
+    # sweep picks up again and expands another level deeper on the next pass.
     self.replace(
         group(
-            dispatch_reindex_file.s(file_id=file.id_)
+            dispatch_reindex_file.s(
+                file_id=file.id_,
+                additional_recursion_depth=0,
+            )
             for file in islice(
                 file_repository.get_id_generator_by_query(
                     query=query, sort_params=sort_params

@@ -11,7 +11,10 @@ class TestRenderer:
     @pytest.fixture(scope="class", autouse=True)
     @classmethod
     def setup_testfiles(cls):
-        upload_many_assets(asset_names=cls.asset_list)
+        # sample3.docx carries two embedded images, so one level of extraction makes
+        # the corpus the three assets plus those two. Rendering an extracted file is
+        # only covered here.
+        upload_many_assets(asset_names=cls.asset_list, additional_recursion_depth=1)
 
         search_string = "*"
         file_count = len(cls.asset_list)

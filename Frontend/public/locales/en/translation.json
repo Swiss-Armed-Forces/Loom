@@ -468,7 +468,11 @@
     "reIndex": {
         "confirmationTitle": "Confirm Re-indexing",
         "confirmationMessage": "Would you like to re-index {{count}} files?",
-        "executeButton": "Re-index"
+        "executeButton": "Re-index",
+        "scheduledErrorToast": "Can not re-index files. {{err}}",
+        "scheduledToast": "Re-indexing successfully scheduled, this might take a while.",
+        "additionalRecDepthLabel": "Additional recursion depth",
+        "additionalRecDepthHint": "Levels of attachments to extract below each file, relative to its own depth. 0 re-indexes the files alone."
     },
     "sideMenu": {
         "actions": "Actions",

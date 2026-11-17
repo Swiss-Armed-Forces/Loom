@@ -9,6 +9,7 @@ export const DialogType = {
     DeleteCustomQuery: "deleteCustomQuery",
     DeleteTagGlobally: "deleteTagGlobally",
     ImageDescription: "imageDescriptionDialog",
+    ReIndex: "reIndexDialog",
     Summary: "summary",
     Translation: "translation",
     EncryptionKeyInfo: "encryptionKeyInfo",
