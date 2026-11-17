@@ -307,7 +307,8 @@ again, and a missing one is a client silently on `ollama`.
 | ------------- | -------- |
 | `values-disable-ai-services.yaml` | Turns AI off, including the indexing steps. See above |
 | `up.sh --disable-ai` | Applies that same file. Same answer |
-| `extraEnv` | Lands in the settings ConfigMap verbatim, so it *can* set `llm__*` keys. Use the values above instead — one way, with ESO integration and no silent typos |
+| `extraEnv`, at the top level | Lands in the settings ConfigMap verbatim, so it *can* set `llm__*` keys. Use the values above instead — one way, with ESO integration and no silent typos |
+| `ollama.extraEnv` | Environment for the Ollama container itself, which no backend service reads. Tunes the server you deployed; says nothing about which one a client dials |
 
 ---
 
