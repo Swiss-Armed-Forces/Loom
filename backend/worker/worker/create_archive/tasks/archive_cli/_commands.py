@@ -9,6 +9,7 @@ from ._cmd_info import cmd_info
 from ._cmd_ls import cmd_ls
 from ._cmd_translate import cmd_translate
 from ._cmd_tree import cmd_tree
+from ._color import COLOR_ALWAYS, COLOR_CHOICES, COLOR_HELP
 from ._constants import CLI_DESCRIPTION, CLI_ENTRYPOINT_FILENAME
 
 
@@ -63,6 +64,12 @@ _SHELL_HELP_EPILOG = (
     "Note: requires GNU readline (standard on Unix/macOS);"
     " on Windows, pyreadline3 is bundled automatically when installed on the archive server.\n"
     "\n"
+    "Colour\n"
+    "  --color=auto    Colourise only when writing to a terminal (the default)\n"
+    "  --color=always  Colourise even through a pipe (for `less -R`)\n"
+    "  --color=never   Never colourise\n"
+    "  Setting NO_COLOR, or TERM=dumb, disables colour under 'auto'.\n"
+    "\n"
     "Exit codes\n"
     "  0  success\n"
     "  1  no results found\n"
@@ -84,12 +91,34 @@ def _non_negative_int(value: str) -> int:
     return n
 
 
+def _build_color_parent() -> argparse.ArgumentParser:
+    """Return a parent parser carrying --color, shared by every (sub)parser.
+
+    The default is SUPPRESS so that the attribute is absent unless the option is given.
+    A subparser copies its whole namespace over the main parser's, so any other default
+    would discard a --color passed before the subcommand.
+    """
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument(
+        "--color",
+        nargs="?",
+        const=COLOR_ALWAYS,
+        default=argparse.SUPPRESS,
+        choices=COLOR_CHOICES,
+        metavar="WHEN",
+        help=COLOR_HELP,
+    )
+    return parent
+
+
 def build_parser() -> argparse.ArgumentParser:
+    color_parent = _build_color_parent()
     parser = argparse.ArgumentParser(
         prog=CLI_ENTRYPOINT_FILENAME,
         description=CLI_DESCRIPTION,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_SHELL_HELP_EPILOG,
+        parents=[color_parent],
     )
     subparsers = parser.add_subparsers(dest="command", required=False)
 
@@ -97,6 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
         "ls",
         aliases=["list"],
         help="List files in the archive",
+        parents=[color_parent],
     )
     ls_parser.add_argument(
         "path",
@@ -109,6 +139,7 @@ def build_parser() -> argparse.ArgumentParser:
         "x",
         aliases=["extract"],
         help="Extract file(s) from the archive",
+        parents=[color_parent],
     )
     x_parser.add_argument(
         "members",
@@ -177,6 +208,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Provide FILE arguments to restrict the search to specific files. "
             "Exits with code 1 when no matches are found."
         ),
+        parents=[color_parent],
     )
     grep_parser.add_argument(
         "pattern",
@@ -215,6 +247,7 @@ def build_parser() -> argparse.ArgumentParser:
     info_parser = subparsers.add_parser(
         "info",
         help="Show information about a file",
+        parents=[color_parent],
     )
     info_parser.add_argument(
         "name",
@@ -236,6 +269,7 @@ def build_parser() -> argparse.ArgumentParser:
     cat_parser = subparsers.add_parser(
         "cat",
         help="Print the text content of a file (alias for: info NAME content)",
+        parents=[color_parent],
     )
     cat_parser.add_argument(
         "name",
@@ -250,6 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Without LANGUAGE, lists the available language codes and their confidence scores. "
             "With LANGUAGE, prints the translated text for that language."
         ),
+        parents=[color_parent],
     )
     translate_parser.add_argument(
         "name",
@@ -265,11 +300,13 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "tree",
         help="Display archive files as a directory tree",
+        parents=[color_parent],
     )
 
     id_parser = subparsers.add_parser(
         "id",
         help="Resolve a files/{id} path to its human-readable name",
+        parents=[color_parent],
     )
     id_parser.add_argument(
         "file_ref",
@@ -284,6 +321,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Without options lists all files under the current directory. "
             "Use -name or -iname to filter by filename glob pattern."
         ),
+        parents=[color_parent],
     )
     name_group = find_parser.add_mutually_exclusive_group()
     name_group.add_argument(
@@ -310,7 +348,9 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
-    cd_parser = subparsers.add_parser("cd", help="Change virtual directory")
+    cd_parser = subparsers.add_parser(
+        "cd", help="Change virtual directory", parents=[color_parent]
+    )
     cd_parser.add_argument(
         "path",
         nargs="?",
@@ -318,20 +358,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory to navigate to (default: /)",
     )
 
-    subparsers.add_parser("pwd", help="Print current virtual directory")
+    subparsers.add_parser(
+        "pwd", help="Print current virtual directory", parents=[color_parent]
+    )
 
-    subparsers.add_parser("clear", help="Clear the terminal screen")
+    subparsers.add_parser(
+        "clear", help="Clear the terminal screen", parents=[color_parent]
+    )
 
-    subparsers.add_parser("history", help="Show command history")
+    subparsers.add_parser(
+        "history", help="Show command history", parents=[color_parent]
+    )
 
     subparsers.add_parser(
         "help",
         help="Show this help message",
+        parents=[color_parent],
     )
 
     subparsers.add_parser(
         "shell",
         help="Start an interactive shell (default when run with no arguments)",
+        parents=[color_parent],
     )
 
     return parser

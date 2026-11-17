@@ -5,12 +5,14 @@ import sqlite3
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from typing import NamedTuple
 
+from ._color import print_error, stdout_colors
 from ._constants import FILES_INDEX
 from ._db import _entries_under_db, _FileEntry, get_json_filename
 from ._resolve import resolve_name
 from ._types import IndexEntry
-from ._utils import _iter_values, _matches_field_prefix, _sanitize
+from ._utils import _FieldValue, _iter_values, _matches_field_prefix, _sanitize
 
 _MAX_GREP_PATTERN_LEN = 512
 
@@ -18,14 +20,12 @@ _MAX_GREP_PATTERN_LEN = 512
 def _compile_grep_pattern(raw: str, flags: int) -> re.Pattern[str]:
     """Validate and compile a grep regex pattern, exiting on error."""
     if len(raw) > _MAX_GREP_PATTERN_LEN:
-        print(
-            f"grep: pattern too long (>{_MAX_GREP_PATTERN_LEN} chars)", file=sys.stderr
-        )
+        print_error(f"grep: pattern too long (>{_MAX_GREP_PATTERN_LEN} chars)")
         sys.exit(2)
     try:
         return re.compile(raw, flags)
     except re.error as exc:
-        print(f"grep: invalid pattern: {exc}", file=sys.stderr)
+        print_error(f"grep: invalid pattern: {exc}")
         sys.exit(2)
 
 
@@ -47,6 +47,34 @@ def _iter_target_entries(
                     yield _FileEntry(vpath=match.name, json_filename=json_fn)
 
 
+class _GrepMatch(NamedTuple):
+    key_path: str
+    line: str
+
+
+def _searched_values(data: object, fields: list[str]) -> Iterator[_FieldValue]:
+    """Yield the metadata values the search covers, honouring any -f restriction."""
+    return (
+        value
+        for value in _iter_values(data)
+        if not fields or any(_matches_field_prefix(value.key_path, f) for f in fields)
+    )
+
+
+def _has_match(data: object, pattern: re.Pattern[str], fields: list[str]) -> bool:
+    return any(pattern.search(value) for _, value in _searched_values(data, fields))
+
+
+def _iter_matches(
+    data: object, pattern: re.Pattern[str], fields: list[str]
+) -> Iterator[_GrepMatch]:
+    """Yield every matching line, with the field path it was found under."""
+    for key_path, value in _searched_values(data, fields):
+        for line in value.splitlines() or [value]:
+            if pattern.search(line):
+                yield _GrepMatch(key_path=key_path, line=line)
+
+
 def cmd_grep(
     args: argparse.Namespace,
     *,
@@ -58,6 +86,7 @@ def cmd_grep(
         args.pattern, re.IGNORECASE if args.ignore_case else 0
     )
 
+    colors = stdout_colors()
     found = False
     cwd_prefix = (cwd + "/") if cwd else ""
     fields: list[str] = args.field or []
@@ -67,29 +96,20 @@ def cmd_grep(
         if args.files
         else _entries_under_db(db, cwd_prefix)
     ):
-        with open(index_dir / json_filename, encoding="utf-8") as f:
-            data = json.load(f)
+        data = json.loads((index_dir / json_filename).read_text(encoding="utf-8"))
 
         if args.files_with_matches:
-            for key_path, value in _iter_values(data):
-                if fields and not any(
-                    _matches_field_prefix(key_path, f) for f in fields
-                ):
-                    continue
-                if pattern.search(value):
-                    print(_sanitize(vpath))
-                    found = True
-                    break
+            if _has_match(data, pattern, fields):
+                print(colors.path(_sanitize(vpath)))
+                found = True
         else:
-            for key_path, value in _iter_values(data):
-                if fields and not any(
-                    _matches_field_prefix(key_path, f) for f in fields
-                ):
-                    continue
-                for line in value.splitlines() or [value]:
-                    if pattern.search(line):
-                        print(f"{_sanitize(vpath)} [{key_path}]: {line}")
-                        found = True
+            for key_path, line in _iter_matches(data, pattern, fields):
+                print(
+                    f"{colors.path(_sanitize(vpath))}"
+                    f" [{colors.field(key_path)}]:"
+                    f" {colors.highlight(pattern, line)}"
+                )
+                found = True
 
     if not found:
         sys.exit(1)

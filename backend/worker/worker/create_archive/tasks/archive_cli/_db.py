@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, NamedTuple
 
+from ._color import Colors, print_error, stdout_colors
 from ._constants import ARCHIVE_ROOT, SHELL_INDEX_FILENAME
 from ._resolve import resolve_name
 from ._types import IndexEntry, ServiceIdResult, StorageEntry
@@ -40,10 +41,9 @@ CREATE TABLE storage (
 def open_shell_db(archive_root: Path = ARCHIVE_ROOT) -> sqlite3.Connection:
     db_path = archive_root / SHELL_INDEX_FILENAME
     if not db_path.exists():
-        print(
+        print_error(
             f"Error: {SHELL_INDEX_FILENAME} not found. "
-            "This archive was created by an older version of Loom and is not supported.",
-            file=sys.stderr,
+            "This archive was created by an older version of Loom and is not supported."
         )
         sys.exit(2)
     try:
@@ -54,7 +54,7 @@ def open_shell_db(archive_root: Path = ARCHIVE_ROOT) -> sqlite3.Connection:
         db.execute("SELECT COUNT(*) FROM files").fetchone()
         return db
     except sqlite3.DatabaseError as exc:
-        print(f"Error: {SHELL_INDEX_FILENAME} is corrupt: {exc}", file=sys.stderr)
+        print_error(f"Error: {SHELL_INDEX_FILENAME} is corrupt: {exc}")
         sys.exit(2)
 
 
@@ -81,13 +81,15 @@ def _entries_under_db(db: sqlite3.Connection, prefix: str) -> Iterator[_FileEntr
         yield _FileEntry(vpath=row[0], json_filename=row[1])
 
 
+def _tree_label(child_name: str, colors: Colors) -> str:
+    """Return the displayed name of a tree entry, coloured when it is a directory."""
+    name = child_name.rstrip("/")
+    return colors.directory(name) if child_name.endswith("/") else name
+
+
 def _print_tree_from_db(root: str, db: sqlite3.Connection, prefix: str = "") -> None:
     """Print a directory tree using the children table (iterative DFS)."""
-    rows = db.execute(
-        "SELECT child_name FROM children WHERE parent_path = ? ORDER BY child_name",
-        (root,),
-    ).fetchall()
-    items = [row[0] for row in rows]
+    items = get_children(db, root)
     # Stack items: (child_name, parent_path, display_prefix, is_last)
     # Reversed so that the first child is on top of the stack.
     stack: list[tuple[str, str, str, bool]] = list(
@@ -98,10 +100,11 @@ def _print_tree_from_db(root: str, db: sqlite3.Connection, prefix: str = "") -> 
             ]
         )
     )
+    colors = stdout_colors()
     while stack:
         child, parent_root, current_prefix, is_last = stack.pop()
         connector = "└── " if is_last else "├── "
-        print(current_prefix + connector + child.rstrip("/"))
+        print(current_prefix + connector + _tree_label(child, colors))
         if child.endswith("/"):
             ext = "    " if is_last else "│   "
             child_dir = (
@@ -109,11 +112,7 @@ def _print_tree_from_db(root: str, db: sqlite3.Connection, prefix: str = "") -> 
                 if parent_root
                 else child.rstrip("/")
             )
-            sub_rows = db.execute(
-                "SELECT child_name FROM children WHERE parent_path = ? ORDER BY child_name",
-                (child_dir,),
-            ).fetchall()
-            sub_items = [row[0] for row in sub_rows]
+            sub_items = get_children(db, child_dir)
             stack.extend(
                 reversed(
                     [
@@ -247,7 +246,7 @@ def _resolve_and_load(
     matches = resolve_name(stubs, name)
 
     if len(matches) > 1:
-        print(f"Error: ambiguous name '{name}', matches:", file=sys.stderr)
+        print_error(f"Error: ambiguous name '{name}', matches:")
         for match in matches:
             print(f"  {match.name}", file=sys.stderr)
         sys.exit(1)
@@ -255,7 +254,7 @@ def _resolve_and_load(
     vpath = matches[0].name
     json_filename = get_json_filename(db, vpath)
     if json_filename is None:
-        print(f"Error: '{vpath}' not found in shell index", file=sys.stderr)
+        print_error(f"Error: '{vpath}' not found in shell index")
         sys.exit(1)
 
     with open(index_dir / json_filename, encoding="utf-8") as f:

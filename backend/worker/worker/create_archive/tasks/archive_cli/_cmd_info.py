@@ -1,9 +1,9 @@
 import argparse
-import json
 import sqlite3
 import sys
 from pathlib import Path
 
+from ._color import print_error, stdout_colors
 from ._constants import FILES, FILES_INDEX
 from ._db import _resolve_and_load, get_vpaths_by_file_ids
 from ._types import IndexEntry
@@ -22,16 +22,17 @@ def _print_info(
     files_dir: Path = FILES,
 ) -> None:
     meta = entry.meta
+    colors = stdout_colors()
 
-    print(f"name:      {entry.name}")
+    print(f"{colors.field('name:')}      {entry.name}")
 
     service_id = (meta.get("storage_data") or {}).get("service_id")
     if service_id:
-        print(f"file:      {format_path(files_dir / service_id)}")
+        print(f"{colors.field('file:')}      {format_path(files_dir / service_id)}")
 
     thumbnail_id = (meta.get("thumbnail_data") or {}).get("service_id")
     if thumbnail_id:
-        print(f"thumbnail: {format_path(files_dir / thumbnail_id)}")
+        print(f"{colors.field('thumbnail:')} {format_path(files_dir / thumbnail_id)}")
 
     rendered = [
         (name, data["service_id"])
@@ -39,13 +40,16 @@ def _print_info(
         if data and data.get("service_id")
     ]
     if rendered:
-        print("rendered:")
+        print(colors.field("rendered:"))
         for render_name, render_id in rendered:
-            print(f"  {render_name}: {format_path(files_dir / render_id)}")
+            print(
+                f"  {colors.field(render_name)}:"
+                f" {format_path(files_dir / render_id)}"
+            )
 
     attachments = meta.get("attachments") or []
     if attachments:
-        print("attachments:")
+        print(colors.field("attachments:"))
         for attachment in attachments:
             name = (
                 entries_by_id.get(attachment.get("id") or "")
@@ -57,9 +61,9 @@ def _print_info(
 
     fields = [key_path for key_path, _ in _iter_values(meta)]
     if fields:
-        print("fields:")
+        print(colors.field("fields:"))
         for field in _collapse_field_ranges(fields):
-            print(f"  {field}")
+            print(f"  {colors.field(field)}")
 
 
 def _handle_info_field(field: str, meta: object) -> None:
@@ -68,13 +72,14 @@ def _handle_info_field(field: str, meta: object) -> None:
         (kp, v) for kp, v in _iter_values(meta) if _matches_field_prefix(kp, field)
     ]
     if not matched:
-        print(f"Error: field '{field}' not found", file=sys.stderr)
+        print_error(f"Error: field '{field}' not found")
         sys.exit(1)
     if len(matched) == 1 and matched[0][0] == field:
         print(matched[0][1])  # exact leaf — print value only
     else:
+        colors = stdout_colors()
         for kp, v in matched:
-            print(f"{kp}: {v}")  # sub-tree — print path: value pairs
+            print(f"{colors.field(kp)}: {v}")  # sub-tree — print path: value pairs
 
 
 def cmd_info(
@@ -100,7 +105,7 @@ def cmd_info(
         return
 
     if args.json:
-        print(json.dumps(meta, indent=2))
+        print(stdout_colors().json_text(meta))
         return
 
     entries_by_id = get_vpaths_by_file_ids(

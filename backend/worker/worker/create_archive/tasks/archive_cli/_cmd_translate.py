@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from sqlite3 import Connection
 
+from ._color import print_error
 from ._constants import FILES_INDEX
 from ._db import _resolve_and_load
 
@@ -28,7 +29,7 @@ def cmd_translate(
     translations: list[dict[str, object]] = resolved.meta.get("translations") or []
 
     if not translations:
-        print("No translations available for this file.", file=sys.stderr)
+        print_error("No translations available for this file.")
         sys.exit(1)
 
     if args.language is None:
@@ -40,7 +41,7 @@ def cmd_translate(
     )
     if translation is None:
         available = [str(t.get("language") or "") for t in translations]
-        print(f"Error: no '{args.language}' translation available", file=sys.stderr)
+        print_error(f"Error: no '{args.language}' translation available")
         print(f"Available: {', '.join(available)}", file=sys.stderr)
         sys.exit(1)
 

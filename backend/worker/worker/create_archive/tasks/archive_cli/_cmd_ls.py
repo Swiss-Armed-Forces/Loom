@@ -1,6 +1,7 @@
 import argparse
 import sqlite3
 
+from ._color import stdout_colors
 from ._db import _entries_under_db, get_children
 from ._resolve import resolve_name
 from ._types import IndexEntry
@@ -13,6 +14,7 @@ def cmd_ls(
     db: sqlite3.Connection,
     cwd: str | None = None,
 ) -> None:
+    colors = stdout_colors()
     if cwd is None:
         # Standalone mode: list all or filtered
         path = args.path if args.path is not None else "*"
@@ -22,12 +24,12 @@ def cmd_ls(
         )
         matches = resolve_name(stubs, path)
         for entry in sorted(matches, key=lambda x: x.name):
-            print(_sanitize(entry.name))
+            print(colors.path(_sanitize(entry.name)))
     else:
         if args.path is None:
             # Shell mode, no path: fast lookup from children table
             for child in get_children(db, cwd):
-                print(_sanitize(child))
+                print(colors.entry(_sanitize(child)))
         else:
             cwd_prefix = cwd + "/" if cwd else ""
             stubs = (
@@ -36,4 +38,4 @@ def cmd_ls(
             )
             matches = resolve_name(stubs, args.path)
             for entry in sorted(matches, key=lambda x: x.name):
-                print(_sanitize(entry.name))
+                print(colors.path(_sanitize(entry.name)))

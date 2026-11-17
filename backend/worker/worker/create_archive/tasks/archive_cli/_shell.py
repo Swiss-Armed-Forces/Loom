@@ -12,6 +12,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import NamedTuple, cast
 
+from ._color import Colors, color_mode, print_error, set_color_mode, stdout_colors
 from ._commands import _dispatch, build_parser
 from ._constants import (
     FILES_INDEX,
@@ -57,7 +58,8 @@ _SHELL_SPECIAL_RE = re.compile(r"([ \t\n\\\"'`$!#@&;|<>*()?[\]{}~])")
 
 _FIELD_SAMPLE_LIMIT = 20
 
-_HELP_FLAGS: list[str] = ["-h", "--help"]
+# --color comes from a parent parser shared by every subcommand.
+_COMMON_FLAGS: list[str] = ["--color", "-h", "--help"]
 
 _EXTRACT_FLAGS: list[str] = [
     "-C",
@@ -69,8 +71,7 @@ _EXTRACT_FLAGS: list[str] = [
     "--no-index",
     "--no-meta",
     "--strip-components",
-    "-h",
-    "--help",
+    *_COMMON_FLAGS,
 ]
 
 # Every argparse subparser automatically gains -h/--help. Commands handled
@@ -78,8 +79,8 @@ _EXTRACT_FLAGS: list[str] = [
 # MAINTENANCE: this mapping mirrors the flags defined in _commands.py. When a
 # flag is added or removed in any subparser there, update this dict to match.
 _COMMAND_FLAGS: dict[str, list[str]] = {
-    "ls": _HELP_FLAGS,
-    "list": _HELP_FLAGS,
+    "ls": _COMMON_FLAGS,
+    "list": _COMMON_FLAGS,
     "x": _EXTRACT_FLAGS,
     "extract": _EXTRACT_FLAGS,
     "grep": [
@@ -89,20 +90,19 @@ _COMMAND_FLAGS: dict[str, list[str]] = {
         "--files-with-matches",
         "-f",
         "--field",
-        "-h",
-        "--help",
+        *_COMMON_FLAGS,
     ],
-    "info": ["-j", "--json", "-h", "--help"],
-    "cat": _HELP_FLAGS,
-    "translate": _HELP_FLAGS,
-    "tree": _HELP_FLAGS,
-    "id": _HELP_FLAGS,
-    "find": ["-name", "-iname", "-attr", "-h", "--help"],
-    "cd": _HELP_FLAGS,
-    "pwd": _HELP_FLAGS,
-    "clear": _HELP_FLAGS,
-    "history": _HELP_FLAGS,
-    "help": _HELP_FLAGS,
+    "info": ["-j", "--json", *_COMMON_FLAGS],
+    "cat": _COMMON_FLAGS,
+    "translate": _COMMON_FLAGS,
+    "tree": _COMMON_FLAGS,
+    "id": _COMMON_FLAGS,
+    "find": ["-name", "-iname", "-attr", *_COMMON_FLAGS],
+    "cd": _COMMON_FLAGS,
+    "pwd": _COMMON_FLAGS,
+    "clear": _COMMON_FLAGS,
+    "history": _COMMON_FLAGS,
+    "help": _COMMON_FLAGS,
 }
 
 
@@ -448,13 +448,14 @@ def _do_cd(cwd: str, target: str, *, db: sqlite3.Connection) -> str:
     new_cwd = resolve_cwd(cwd, target)
     # root always exists — skip the presence check when new_cwd is empty
     if new_cwd and not directory_exists(db, new_cwd):
-        print(f"cd: no such directory: {target}", file=sys.stderr)
+        print_error(f"cd: no such directory: {target}")
         return cwd
     return new_cwd
 
 
-def _make_prompt(cwd: str) -> str:
-    return f"{SHELL_PROMPT}{cwd or '/'}> "
+def _make_prompt(cwd: str, colors: Colors) -> str:
+    location = cwd or "/"
+    return f"{colors.prompt(SHELL_PROMPT + location)}> "
 
 
 class _StepResult(NamedTuple):
@@ -506,7 +507,7 @@ def _shell_step(
         cmd_args = parser.parse_args(tokens)
     except (ValueError, SystemExit) as exc:
         if isinstance(exc, ValueError):
-            print(f"Parse error: {exc}", file=sys.stderr)
+            print_error(f"Parse error: {exc}")
         return _StepResult(cwd, False)
     if cmd_args.command == "shell":
         print("Already in shell.", file=sys.stderr)
@@ -514,6 +515,10 @@ def _shell_step(
     if cmd_args.command in ("help", "pwd", "cd", "clear", "history"):
         cwd = _handle_shell_only_cmd(cmd_args, parser, cwd, db=db)
         return _StepResult(cwd, False)
+    # A --color on one command applies to that command alone; the session keeps
+    # whatever mode the shell was started with.
+    session_color = color_mode()
+    set_color_mode(getattr(cmd_args, "color", None) or session_color)
     try:
         _dispatch(cmd_args, db=db, cwd=cwd)
     except SystemExit:
@@ -521,9 +526,8 @@ def _shell_step(
     except KeyboardInterrupt:
         print()
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(
-            f"Error: an unexpected error occurred.\n" f"{type(exc).__name__}: {exc}",
-            file=sys.stderr,
+        print_error(
+            f"Error: an unexpected error occurred.\n{type(exc).__name__}: {exc}"
         )
         if crash_log_file is not None:
             _write_crash_log(crash_log_file, line, exc)
@@ -531,6 +535,8 @@ def _shell_step(
                 f"Details written to: {crash_log_file}",
                 file=sys.stderr,
             )
+    finally:
+        set_color_mode(session_color)
     return _StepResult(cwd, False)
 
 
@@ -543,6 +549,8 @@ def cmd_shell(
     crash_log_file: Path | None = SHELL_CRASH_LOG_FILE,
     input_fn: Callable[[str], str] = input,
 ) -> None:
+    # The prompt keeps the session's colour mode even while a command overrides it.
+    prompt_colors = stdout_colors()
     parser = build_parser()
     print("Loom archive shell. Type 'help' for available commands, 'exit' to quit.")
     completer = ShellCompleter(db=db, index_dir=index_dir)
@@ -559,7 +567,7 @@ def cmd_shell(
     try:
         while True:
             try:
-                line = input_fn(_make_prompt(cwd)).strip()
+                line = input_fn(_make_prompt(cwd, prompt_colors)).strip()
             except EOFError:
                 print()
                 break
