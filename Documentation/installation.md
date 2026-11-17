@@ -647,6 +647,46 @@ supersedes — the copy takes whatever the volume does not already carry at the 
 never prunes. Inference wants a GPU with at least 20 GB of VRAM; with less, Ollama offloads layers
 to the CPU and generation slows down sharply.
 
+### Tuning the Ollama server
+
+Ollama is configured entirely through its server's environment, and two values reach it:
+
+| Value | Renders as | Default |
+| ----- | ---------- | ------- |
+| `ollama.keepAlive` | `OLLAMA_KEEP_ALIVE` | `24h` |
+| `ollama.extraEnv` | one variable per key | `{}` |
+
+`keepAlive` is how long a model stays in memory after its last request: a duration (`30m`, `24h`), a
+number of seconds, `0` to unload as soon as the response is finished, or a negative value to hold it
+until the pod restarts. Set it to `null` and the variable is not rendered at all, which leaves
+Ollama's own default of five minutes. The chart asks for a day because the production chat model is
+~18 GB and the request that finds it unloaded waits for the reload off the models volume — on a
+deployment that spends its life over one corpus, that is a cost with nothing to show for it. The
+memory is not held hostage: Ollama evicts a loaded model when another one needs the room.
+
+`extraEnv` is a map, and it is where every other server knob goes — the chart has no named value for
+them because they are decisions about a particular box rather than about Loom:
+
+```yaml
+ollama:
+  extraEnv:
+    OLLAMA_FLASH_ATTENTION: "1"
+    OLLAMA_KV_CACHE_TYPE: q8_0
+```
+
+A name this map carries replaces the chart's own rather than being added beside it, so `OLLAMA_HOST`,
+`OLLAMA_MODELS`, `LOOM_GPU_VENDOR` and `OLLAMA_KEEP_ALIVE` can all be overridden here — the first
+three at your own risk, since the chart derives them from the Service port, the volume mount and the
+GPU request.
+
+Two of those knobs come with conditions worth knowing before reaching for them. `OLLAMA_KV_CACHE_TYPE`
+is honoured only while flash attention is on, so `q8_0` without `OLLAMA_FLASH_ATTENTION: "1"` is
+either ignored or refused depending on the backend. And `OLLAMA_CONTEXT_LENGTH`, which this map can
+set, is the one the container deliberately leaves alone — see above.
+
+This is unrelated to the top-level `extraEnv`, which lands in the settings ConfigMap that the backend
+services read and never reaches the Ollama container.
+
 ## Troubleshooting
 
 This section covers known issues and their solutions. If you encounter a problem not listed here,

@@ -52,14 +52,24 @@ spec:
           ports:
             - name: {{ $component }}
               containerPort: {{ $values.service.port }}
+          {{- /*
+            Assembled as one map rather than appended entry by entry, so that a
+            name `extraEnv` also carries replaces the chart's own rather than
+            appearing beside it. Kubernetes accepts a container holding the same
+            variable twice and leaves it to the runtime to decide which one the
+            process reads, which is not a way for an override to work.
+
+            `range` over a map walks it in key order, so the rendered Deployment
+            is stable and a redeploy that changes nothing rolls nothing.
+          */}}
+          {{- $env := dict "OLLAMA_HOST" (printf "0.0.0.0:%v" $values.service.port) "OLLAMA_MODELS" "/ollama-models" }}
+          {{- with $values.gpuVendor }}{{- $_ := set $env "LOOM_GPU_VENDOR" . }}{{- end }}
+          {{- with $values.keepAlive }}{{- $_ := set $env "OLLAMA_KEEP_ALIVE" . }}{{- end }}
+          {{- range $name, $value := (default dict $values.extraEnv) }}{{- $_ := set $env $name $value }}{{- end }}
           env:
-            - name: OLLAMA_HOST
-              value: "0.0.0.0:{{ $values.service.port }}"
-            - name: OLLAMA_MODELS
-              value: /ollama-models
-            {{- with $values.gpuVendor }}
-            - name: LOOM_GPU_VENDOR
-              value: {{ . | quote }}
+            {{- range $name, $value := $env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
             {{- end }}
             {{- with include "app.trustedCerts.env" . }}{{ . | nindent 12 }}{{- end }}
           startupProbe:
