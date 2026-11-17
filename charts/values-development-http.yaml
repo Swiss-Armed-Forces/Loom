@@ -1,16 +1,28 @@
-# Plain HTTP
+# Plain HTTP, for the development profile and nothing else
 #
 # Serve every ingress on Traefik's `web` entrypoint alongside `websecure`, so
-# `http://frontend.loom/` answers directly instead of redirecting to a
+# `http://elasticsearch.loom/` answers directly instead of redirecting to a
 # self-signed `https://`.
 #
-# Pass --enable-http to up.sh to apply this file automatically.
+# **No deployment applies this file.** `up.sh` adds it where it selects the
+# `dev` Skaffold profile -- `--development` and `--integrationtest` -- and there
+# is no flag that reaches it otherwise. A deployment serves Loom over https
+# alone, with `globalHttpRedirect` answering port 80 for every host, and
+# cicd/check_https_only.sh asserts that of the chart as it renders without
+# this file.
 #
-# This gives up transport security for the whole stack: Elasticsearch, Grafana,
-# RedisInsight, S3, Prometheus and the Traefik dashboard included. Only for a
-# deployment whose network is already trusted -- on the appliance that is the
-# appliance segment, which with --wifi is everyone in radio range holding the
-# PSK. See the threat model in Documentation/appliance.md.
+# The profile keeps cleartext because it is not a deployment and because the
+# integration suite depends on it: the tests run on the host and reach Loom
+# through the ingress with the defaults in backend/common/common/settings.py --
+# `http://elasticsearch.loom`, `http://guest:guest@rabbit.loom`,
+# `http://api.loom`, `ws://api.loom` and `s3.loom` with
+# `secure_connection: false`. None of those clients is given the box's
+# self-signed CA, so a redirect to https ends the request in a verification
+# failure.
+#
+# What it gives up is transport security for the whole stack: Elasticsearch,
+# Grafana, RedisInsight, S3 and Prometheus included. A local minikube on the
+# developer's own machine is the only network that is ever asked to carry it.
 #
 # It is also incompatible with `certificate.requireClientCert`, and not merely in
 # tension with it: the `-mtls` TLSOption is attached as
@@ -18,8 +30,7 @@
 # handshake and nothing else. The routes widened below answer in cleartext, where
 # no client certificate is asked for at all -- so this file does not weaken that
 # requirement, it goes around it. up.sh's `validate_environment` refuses the
-# combination, and nixos/modes.nix never builds it: a --require-client-cert image
-# is the one appliance that drops --enable-http.
+# combination.
 #
 # Both halves below are required. Widening the entrypoints alone changes
 # nothing a client can see, because templates/global-http-redirect/ingress.yaml
@@ -27,7 +38,7 @@
 # of these routers is consulted.
 #
 # Every component carrying an ingress in values.yaml is listed. That set is
-# asserted by cicd/check_http_values.sh, which fails the commit when the two
+# asserted by cicd/check_https_only.sh, which fails the commit when the two
 # drift apart.
 #
 # The IngressRoute CRDs -- dovecot (IMAPS), rabbit (AMQP), redis -- are absent

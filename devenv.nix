@@ -967,23 +967,33 @@ in
       pass_filenames = false;
     };
 
-    # charts/values-http.yaml has to name every component carrying an ingress,
-    # and nothing about adding one to values.yaml points at it. A component
-    # missed there stays on `websecure` alone, so `--enable-http` never reaches
-    # it and the service 404s over http for no visible reason -- and the
-    # appliance's captive portal is built on that flag.
+    # No deployment serves Loom in cleartext: every Ingress is on `websecure`
+    # alone and port 80 carries the global http-to-https redirect and nothing
+    # else. Neither half is visible in the file being edited -- an ingress
+    # annotation added to one component, or globalHttpRedirect switched off,
+    # reads as a local change and is a cluster-wide one.
+    #
+    # The same script covers the inverse for the one layer that is allowed
+    # cleartext: charts/values-development-http.yaml has to name every component
+    # carrying an ingress, and nothing about adding one to values.yaml points at
+    # it. A component missed there stays on `websecure` in the development
+    # profile and 404s over http for no visible reason.
     #
     # Renders the chart and reads the annotation each Ingress ends up with,
     # rather than comparing key sets: rabbit's path is a level deeper than the
     # rest and dovecot shares the same values anchor while rendering a TCP
     # route, so a textual comparison has to special-case both.
     #
+    # `traefik/` is in the pattern because the dashboard route is declared
+    # there, outside the chart this renders, and is read straight out of its
+    # values.
+    #
     # `pass_filenames = false`: the script checks the chart as a whole and
     # rejects arguments it does not know.
-    "check-http-values" = {
+    "check-https-only" = {
       enable = true;
-      entry = "./cicd/check_http_values.sh";
-      files = "^(charts/|cicd/check_http_values\\.sh$)";
+      entry = "./cicd/check_https_only.sh";
+      files = "^(charts/|traefik/values\\.yaml$|cicd/check_https_only\\.sh$)";
       pass_filenames = false;
     };
 

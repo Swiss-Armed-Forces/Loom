@@ -87,9 +87,10 @@ def _identity(box: Box, live: Live) -> tuple[str, ...]:
 def _connect(live: Live) -> Section:
     """The two facts somebody with a laptop needs.
 
-    http rather than https, and the friendlier of the two where both work: the
-    certificate is self-signed, so the https spelling costs whoever reads this an
-    interstitial, and it is the URL the captive portal sends a phone to.
+    https, because it is the only spelling Loom answers: every ingress is on Traefik's
+    `websecure` entrypoint and port 80 carries the global redirect alone. The
+    certificate is self-signed, so this costs one interstitial, and the captive portal
+    is the page that hands out the anchor ending that.
     """
     if not (live.wired_interface and live.subnet):
         return Section("Connect")
@@ -97,7 +98,7 @@ def _connect(live: Live) -> Section:
         "Connect",
         notes=(
             f"Plug a laptop into {live.wired_interface} and browse "
-            "http://frontend.loom",
+            "https://frontend.loom",
             f"DHCP and *.loom are served on {live.subnet}",
         ),
     )

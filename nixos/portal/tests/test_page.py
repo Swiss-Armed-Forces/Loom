@@ -9,10 +9,9 @@ worth more than the rest:
     browser's connect timeout and then renders unstyled, on the first screen a visitor
     ever sees. A stylesheet moved into a file "for tidiness" is exactly the change this
     catches.
-  * **The frontend link follows the build.** A `--require-client-cert` box serves no
-    plain http at all, so `http://frontend.loom/` is a dead link there and `https://` is
-    a dead link on every other image's portal webview. Nix computes it; this asserts the
-    page prints what it was given rather than a literal.
+  * **The frontend link is whatever Nix computed.** Only the Nix side knows this image's
+    hostnames, and the button is the one thing most visitors came for; a literal baked in
+    here would survive every rename. This asserts the page prints what it was given.
 """
 
 import re
@@ -81,17 +80,8 @@ def test_the_only_image_is_served_by_this_process():
 
 
 def test_the_frontend_link_is_whatever_nix_computed():
-    plain = render(model(urls=PortalUrls(frontend="http://frontend.loom/")))
-    assert 'href="http://frontend.loom/"' in plain
-
-    # The mutual TLS build, which serves no plain http at all.
-    secured = render(
-        model(
-            mtls=True, secure=True, urls=PortalUrls(frontend="https://frontend.loom/")
-        )
-    )
-    assert 'href="https://frontend.loom/"' in secured
-    assert "http://frontend.loom/" not in secured
+    markup = render(model(urls=PortalUrls(frontend="https://search.loom/")))
+    assert 'href="https://search.loom/"' in markup
 
 
 def test_the_identity_section_exists_only_on_a_mutual_tls_box():

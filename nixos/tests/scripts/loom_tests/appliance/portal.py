@@ -174,13 +174,18 @@ def redirect(appliance: "Machine", subtest: "Subtest", params: Params) -> None:
         assert nginx_conf.count(f"return 302 http://{portal}/") == 4, nginx_conf
 
 
-def http_entrypoint(appliance: "Machine", subtest: "Subtest") -> None:
-    with subtest("loom.service asks up.sh to serve the frontend over http"):
-        # Without this the redirect above lands on a Traefik that has no router on
-        # port 80 for the host, and the visitor gets a 404 instead of Loom. The two
-        # halves are only useful together, so they are asserted together.
-        unit = appliance.succeed("systemctl cat loom.service")
+def open_loom_link(appliance: "Machine", subtest: "Subtest") -> None:
+    with subtest("the page sends the visitor to Loom over https"):
+        # The one thing most visitors came for, and the one link on the page that
+        # leaves the box. Loom answers on https alone -- port 80 carries the
+        # cluster's global redirect and nothing else -- so an http link here would
+        # cost every visitor a redirect, and a link to a host this image does not
+        # serve would cost them Loom.
+        # Through the unit, because `loom-portal` is reached by store path and is
+        # on nobody's PATH -- the service is the only thing that runs it.
+        unit = appliance.succeed("systemctl cat loom-portal.service")
         match = re.search(r"ExecStart=(\S+)", unit)
         assert match, unit
-        start_script = appliance.succeed(f"cat {match.group(1)}")
-        assert "--enable-http" in start_script, start_script
+        wrapper = appliance.succeed(f"cat {match.group(1)}")
+        assert "https://frontend.loom/" in wrapper, wrapper
+        assert "http://frontend.loom" not in wrapper, wrapper

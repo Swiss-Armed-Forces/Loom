@@ -96,12 +96,12 @@ def validated_accent(value: str) -> str:
 class PortalUrls:
     """The absolute URLs the page prints.
 
-    All three are computed in Nix, because only Nix knows whether this image serves
-    plain http at all -- a `--require-client-cert` box does not, so `frontend` is https
-    there and http everywhere else.
+    All three are computed in Nix, because only Nix knows this image's hostnames and
+    whether it serves this page over TLS as well. Loom itself is https on every image:
+    port 80 carries the cluster's global redirect and nothing else.
     """
 
-    frontend: str = "http://frontend.loom/"
+    frontend: str = "https://frontend.loom/"
     # Where this page is, printed in the footer so a visitor can come back to it without
     # making their phone re-run a connectivity probe.
     portal: str = "http://portal.loom/"

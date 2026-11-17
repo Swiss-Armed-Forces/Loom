@@ -116,16 +116,14 @@ let
   # `page.py`'s identity section.
   tlsPlaceholderMarker = "${tlsDir}/placeholder";
 
-  # Where "Open Loom" points, and the one detail in this module that cannot be a
-  # constant.
+  # Where "Open Loom" points.
   #
-  # `--require-client-cert` is the one image that does not pass `up.sh
-  # --enable-http` (modes.nix), so on that box port 80 carries only the global
-  # redirect to https and `http://frontend.loom/` is a link to a redirect to a
-  # handshake. Naming https directly is both honest and one round trip shorter,
-  # and the page says in a sentence why the browser will be refused until the
-  # certificate from its own second section is installed.
-  frontendUrl = "http${lib.optionalString cfg.mtls.enable "s"}://${frontendHost}/";
+  # Port 80 carries the chart's global redirect to https and nothing else, on
+  # every image, so `http://frontend.loom/` would be a link to a redirect.
+  # Naming https directly is both honest and one round trip shorter, and the
+  # page's own certificate section is what makes the browser stop warning about
+  # the destination.
+  frontendUrl = "https://${frontendHost}/";
 
   # Whether the box may serve this page over TLS as well. The listener needs a
   # certificate that names `portal.loom`, which the cluster issues because
@@ -449,12 +447,11 @@ in
       description = ''
         Where the page's "Open Loom" button points.
 
-        https on a `--require-client-cert` box and http on every other one, because
-        that is the one image modes.nix does not give `up.sh --enable-http` -- so
-        there, port 80 carries only a redirect to a handshake the visitor will be
-        refused at. An option because `nixos/tests/appliance-units.nix` asserts the
-        two directions against each other, and a value only the wrapper carries is
-        a value only a built image can be asked about.
+        https on every image: port 80 carries the chart's global redirect to https
+        and nothing else, so naming http here would send the visitor through a
+        redirect to the same place. An option because
+        `nixos/tests/appliance-units.nix` asserts it, and a value only the wrapper
+        carries is a value only a built image can be asked about.
       '';
     };
 

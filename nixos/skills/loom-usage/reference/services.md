@@ -1,9 +1,9 @@
 # The services on this box
 
-Every name below resolves on the appliance network and is served by the box. Both `http` and
-`https` work; `https` costs a self-signed-certificate warning in a browser. On a
-`--require-client-cert` box only `https` is served, and only to a client holding an issued
-certificate.
+Every name below resolves on the appliance network and is served by the box, over `https` alone —
+port 80 carries a redirect to it and nothing else. The certificate is self-signed, so a browser
+warns about it until the anchor from `portal.loom` is installed. On a `--require-client-cert` box
+each of these also refuses a client holding no issued certificate.
 
 The authoritative list for the *cluster's* names is `hostnames` in
 `/home/loom/loom/charts/values.yaml`. `grep loom /etc/hosts` shows what the box resolves for

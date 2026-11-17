@@ -3,11 +3,19 @@ image:
   repository: swiss-armed-forces/cyber-command/cea/loom/traefik
 
 # expose traefik ui
+#
+# `websecure` alone, like every route the Loom chart renders. Port 80 carries
+# nothing but that chart's global http-to-https redirect, which matches
+# `*.<domain>` and so covers this host too. TLS is terminated without a `tls:`
+# section here because the chart sets `--entryPoints.websecure.http.tls=true`
+# and tls-store.yaml makes `self-signed-cert` the default certificate.
+#
+# This route is outside the chart cicd/check_https_only.sh renders, so that
+# script reads the entrypoints below directly.
 ingressRoute:
   dashboard:
     enabled: true
     entryPoints:
-      - web
       - websecure
     matchRule: Host("traefik.loom")
 

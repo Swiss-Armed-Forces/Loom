@@ -78,19 +78,16 @@ def _platform_flags(
 
 
 def _http_flag(appliance: "Machine", setup_sys: str, start_script: str) -> None:
-    """--enable-http is unconditional, and reaches both modes."""
-    # Unlike --scaling next door it is not platform-derived: every box serves the
-    # same visitors, and the captive portal redirects all of them to a plain-http
-    # frontend because a portal webview will not accept the appliance's
-    # self-signed certificate (portal.nix).
-    #
-    # Both modes, so the two invocations describe one deployment. Asserted rather
-    # than assumed because the failure is silent: run mode would come up with every
-    # ingress back on `websecure` alone, and the portal would land a visitor on a
-    # Traefik 404 that looks exactly like a broken box.
+    """No mode asks up.sh for cleartext."""
+    # The box serves Loom over https alone; port 80 carries the chart's global
+    # redirect and nothing else. `--enable-http` is not a flag up.sh takes any
+    # more, and its parser has no reject branch -- an unknown option is collected
+    # into ARGS and forwarded to skaffold, so a unit that still passed one would
+    # kill the boot with `unknown flag` from skaffold, naming neither up.sh nor
+    # the unit that added it.
     fetch_script = _fetch_script(appliance, setup_sys)
     for mode, script in [("run", start_script), ("setup", fetch_script)]:
-        assert "--enable-http" in script, f"{mode}: {script}"
+        assert "--enable-http" not in script, f"{mode}: {script}"
 
 
 def _fetch_script(appliance: "Machine", setup_sys: str) -> str:

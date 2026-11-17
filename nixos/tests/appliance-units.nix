@@ -356,16 +356,14 @@ let
         !(lib.elem "nginx.service" identity.before) && !(lib.elem "nginx.service" identity.wantedBy)
       ))
 
-      # A plaintext entrypoint beside a client-certificate requirement is either
-      # a way around it or a route that 404s, so the one build that requires a
-      # certificate is the one build that does not pass --enable-http. Asserted
-      # in both directions: dropping it from every box would cost the captive
-      # portal its destination.
-      (check "mtls: the box does not also serve plain http" (
+      # No box serves Loom in cleartext, so no box asks up.sh for it. The flag is
+      # gone from up.sh entirely; a unit still passing one would die on `unknown
+      # flag` from skaffold, naming neither up.sh nor the unit that added it.
+      (check "mtls: the box does not serve plain http" (
         !(lib.hasInfix "--enable-http" cfg.systemd.services.loom.script)
       ))
-      (check "default: the box serves plain http, for the captive portal" (
-        lib.hasInfix "--enable-http" boxSystem.config.systemd.services.loom.script
+      (check "default: the box does not serve plain http either" (
+        !(lib.hasInfix "--enable-http" boxSystem.config.systemd.services.loom.script)
       ))
 
       # Nothing else reissues it, and the certificate outlives neither the CA
@@ -573,14 +571,13 @@ let
       (check "default: the page is served anyway" (plain.services.nginx.virtualHosts ? loom-portal-page))
       (check "default: the anchor is published anyway" (plain.systemd.services ? loom-portal-certificate))
 
-      # "Open Loom" follows the build, because the mutual TLS image is the one
-      # that does not pass --enable-http: there, port 80 carries only a redirect
-      # to a handshake the visitor is about to be refused at.
+      # "Open Loom" is https on every image: port 80 carries the chart's global
+      # redirect and nothing else, so an http link is a link to a redirect.
       (check "mtls: the page links to the frontend over https" (
         lib.hasPrefix "https://" portal.frontendUrl
       ))
-      (check "default: the page links to the frontend over http" (
-        lib.hasPrefix "http://" plain.loom.portal.frontendUrl
+      (check "default: the page links to the frontend over https too" (
+        lib.hasPrefix "https://" plain.loom.portal.frontendUrl
       ))
       (check "mtls: the page knows where its own TLS listener is" (
         portal.secureUrl == "https://${portal.host}/"

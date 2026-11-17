@@ -60,16 +60,17 @@ Read this before building anything; the design only makes sense if these hold.
   this from eating a working box: it refuses when the disks already hold a Loom pool that _this_ stick's
   key unlocks, and it refuses a second attempt in the same boot. Neither covers a stick pointed at
   somebody else's hardware — treat a Loom stick as a device that erases whatever it is booted on.
-- **The appliance serves everything in cleartext as well as over TLS.** Every image passes `up.sh`'s
-  `--enable-http`, so `http://frontend.loom` answers directly and so do `grafana.loom`,
-  `elasticvue.loom`, `s3.loom`, `prometheus.loom` and the Traefik dashboard. Anyone who can see the
-  appliance segment can read what crosses it without having to intercept anything. This buys the captive
-  portal — see [Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is) —
-  and it is a smaller change than it sounds, because the certificate on the https side is self-signed and
-  no visitor's browser can verify it anyway. It is still a real loss, and it matters most with `--wifi`,
-  where "can see the segment" means everyone in radio range holding the passphrase.
-  **`--require-client-cert` changes this** — it drops the plaintext entrypoint and admits only clients
-  holding an issued certificate, which also means no visitor reaches Loom without being handed one. See
+- **The certificate the appliance serves is self-signed, and a visitor has to decide to trust it.**
+  Loom answers over TLS and nothing else — every ingress is on Traefik's `websecure` entrypoint and
+  port 80 carries a redirect to it — but no public authority can issue a certificate for `*.loom`, so
+  the box signed its own. A visitor's browser therefore warns, and clicking through a warning is a
+  decision made without any way to check what is on the other side. The captive portal publishes the
+  anchor and its SHA-256 fingerprint for exactly this, and the fingerprint is also on the box's own
+  console — comparing the two is the step that turns clicking through into trusting a specific box.
+  Anyone who skips it on a segment they do not control is trusting whatever answered. See
+  [Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is).
+  **`--require-client-cert` goes further** — it admits only clients holding an issued certificate,
+  which also means no visitor reaches Loom without being handed one. See
   [Requiring a client certificate](#requiring-a-client-certificate).
 - **Anyone who can reach the appliance segment can use Loom.** There is no login: reaching the frontend is
   the whole of the authorisation, by design — the deployment is meant to be task-specific and short-lived,
@@ -472,7 +473,7 @@ there is no `nixos-rebuild` on an appliance to apply a configuration change with
 
 Off by default. `--wifi` builds an image whose installed appliance also runs an access point on the box's own
 radio, **bridged onto the wired port**, so it does not matter how a visitor arrives: the same DHCP pool, the
-same resolver, the same `http://frontend.loom`, whether they joined over the air or plugged a cable in. The
+same resolver, the same `https://frontend.loom`, whether they joined over the air or plugged a cable in. The
 captive portal reaches them the same way — see
 [Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is), which is mostly
 written for the phone that joins over the air.
@@ -991,8 +992,8 @@ loom-curl --silent https://elasticsearch.loom/_cluster/health | jq .status
 `loom-curl` is on every image, not only this one, and takes curl's own arguments. It supplies the
 anchor for Loom's self-signed serving certificate — which plain `curl` cannot verify on _any_ box —
 and adds a client certificate where one is required. Arguments are otherwise passed through
-untouched — it is curl. Spell the URL `https`: `websecure` exists on every image, so one documented
-command works on both, which matters for the console's assistant pane that is told to use it. The
+untouched — it is curl. Spell the URL `https`: it is all Loom answers on any image, and port 80
+carries a redirect to it. The
 box's own plaintext endpoints — the loopback proxies above, `http://portal.loom/` — stay `http` and
 are passed through as written.
 
@@ -1007,12 +1008,6 @@ withdrawn short of rolling the CA, which invalidates both and every operator cer
 
 Services with no HTTP route of their own are not reachable this way at all — `kubectl port-forward`
 is the way in, since pod addresses are not routable from the box.
-
-### It takes the cleartext entrypoint with it
-
-This is the one image that does **not** pass `up.sh --enable-http`. A plaintext entrypoint beside a
-client-certificate requirement is either a way around it or a route that answers 404, and neither is worth
-shipping.
 
 ### Visitors get their own certificate from the portal
 
@@ -1138,7 +1133,7 @@ of the override layers. Skaffold applies these in order, later winning:
 | `charts/values.yaml` | the chart's defaults |
 | `charts/values-development.yaml` | nothing here — skaffold's dev profile inserts it at this position under `up -d` / `up --integrationtest`, so on a developer's machine `values-user.yaml` wins over it |
 | `charts/values-user.yaml` | `--values` and `--set` |
-| `charts/values-up-flags.yaml` | whatever `up.sh`'s own flags turned on — `--gpus`, `--scaling`, `--enable-http`, `--no-resources` |
+| `charts/values-up-flags.yaml` | whatever `up.sh`'s own flags turned on — `--gpus`, `--scaling`, `--no-resources` |
 | `charts/values-appliance.yaml` | facts about this box: the platform's deployment decisions, and whether the image requires a client certificate |
 | `charts/values-overwrites.yaml` | yours, edited on the box |
 
@@ -1262,16 +1257,17 @@ Plug a laptop into the box's ethernet port. It gets an address by DHCP, and `dns
 under `.loom`, so this just works:
 
 ```text
-http://frontend.loom
+https://frontend.loom
 ```
 
 No hosts file, no configuration on the visitor's side. The other services — `grafana.loom`, `elasticvue.loom`,
 `ollama.loom` and the rest — resolve the same way.
 
-`https://frontend.loom` works too and always has. Plain `http` is written above because the certificate is
-self-signed, so the https spelling costs the visitor a browser warning to click through and gains them
-nothing they can verify. Both are served — see the cleartext bullet in [Threat model](#threat-model) for
-what that costs.
+`https` is the only spelling Loom answers: every ingress is on Traefik's `websecure` entrypoint, and port 80
+carries a redirect to it and nothing else, so `http://frontend.loom` arrives at the same place one round trip
+later. The certificate is self-signed, so the first visit costs a browser warning — the captive portal below
+publishes the anchor that ends it, with a fingerprint to check against the box's own console. See the
+certificate bullet in [Threat model](#threat-model) for what clicking through instead is worth.
 
 ### Finding Loom without being told where it is
 
@@ -1326,7 +1322,9 @@ certificate outright with no way to click through.
 `http://portal.loom` is the page the probe redirect lands on, and typing it is the other way to reach it. It
 has up to three sections.
 
-**Open Loom.** The first thing on it, and the only one most visitors want. One tap and they are in.
+**Open Loom.** The first thing on it, and the only one most visitors want. It points at
+`https://frontend.loom`, which is what Loom answers on — so a visitor who has not installed the certificate
+below meets their browser's warning here, and the page says so rather than letting it arrive unexplained.
 
 **The box's certificate.** `*.loom` is not a real top-level domain, so no public authority can ever issue for
 it and the box signed its own — which is why `https://frontend.loom` costs a warning. The page offers that
@@ -1479,7 +1477,7 @@ which no uniform shift of this art can satisfy.
   Loom: starting -- 12/18 pods ready.
 
   ── Connect ─────────────────────────────────────────────────────────────────
-  Plug a laptop into loom0 and browse http://frontend.loom
+  Plug a laptop into loom0 and browse https://frontend.loom
   DHCP and *.loom are served on 10.13.37.0/24
 
   ── Write these down ────────────────────────────────────────────────────────
@@ -1717,11 +1715,10 @@ nothing on the console could reach it; this is what reaches it. There is no acco
 and no traffic off the box.
 
 It goes in through Traefik because that is the only door from outside the cluster — the workers reach the same
-Ollama by its in-cluster Service instead. `https`, not `http`, and the reason is the pane's own choice rather
-than the absence of a plaintext route: every image but `--require-client-cert` is built with `--enable-http`,
-so `ollama.loom` does answer on port 80. The pane takes the authenticated path, which is the one that stays
-correct on both images — and on the mTLS box `loom.assistant.ollamaBaseUrl` points it at the loopback proxy
-that holds the client certificate instead.
+Ollama by its in-cluster Service instead. `https`, because that is all `ollama.loom` answers: every ingress is
+on Traefik's `websecure` entrypoint and port 80 carries a redirect to it. On the mTLS box
+`loom.assistant.ollamaBaseUrl` points the pane at the loopback proxy that holds the client certificate
+instead.
 
 That certificate is the one the chart generates for itself at install time, and it is self-signed, which an
 HTTP client will not accept on trust the way a human clicks through a browser warning. So `loom-chat` builds a

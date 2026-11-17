@@ -50,16 +50,13 @@ journalctl --unit dnsmasq --no-pager --lines 50
 getent hosts frontend.loom
 ```
 
-The appliance serves **both** `http` and `https` — on every image except one. It is built with
-Loom's `--enable-http`, which widens every ingress to Traefik's `web` entrypoint as well as
-`websecure`, so that the captive portal has a page a visitor's phone can reach without being
-handed a CA.
+The appliance serves `https` and nothing else. Every ingress is on Traefik's `websecure`
+entrypoint, and port 80 carries the cluster's global redirect to https for every `*.loom` host — so
+a `302` there is the whole of what cleartext does on this box.
 
-**`--require-client-cert` changes this.** There `--enable-http` is deliberately dropped, so port 80
-carries only the global redirect to https and nothing is served in cleartext — a plaintext
-entrypoint beside a client-certificate requirement would be a way around it. On that box a refused
-TLS handshake from a client holding no certificate is the *correct* answer, not a fault to debug.
-`loom-appliance/facts.md` says which image this is.
+**`--require-client-cert` asks for more.** There Loom also refuses a client presenting no
+certificate, during the TLS handshake. A refused handshake on that box is the *correct* answer, not
+a fault to debug. `loom-appliance/facts.md` says which image this is.
 
 Probe it with `loom-curl`, which holds the anchor for the self-signed certificate and the client
 certificate where one is required. Plain `curl` needs `--insecure` for the first and cannot do the
@@ -70,9 +67,9 @@ loom-curl --silent --output /dev/null --write-out '%{http_code}\n' https://front
 curl --silent --output /dev/null --write-out '%{http_code}\n' http://frontend.loom
 ```
 
-On a `--require-client-cert` box the second line answering `302` is the global redirect, which is
-all port 80 carries there, rather than a fault. Anywhere else, `http` answering while `https` does
-not is a certificate problem and not a routing one.
+The second line answers `302` on a healthy box — the global redirect. A `404` there means Traefik
+is up but the Loom chart's redirect is not; anything else on port 80 would mean the deployment is
+serving cleartext, which no image does.
 
 ## Publishing Loom
 

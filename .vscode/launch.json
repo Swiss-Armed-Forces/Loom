@@ -5,7 +5,7 @@
       "name": "Launch Frontend",
       "request": "launch",
       "type": "chrome",
-      "url": "http://frontend.loom",
+      "url": "https://frontend.loom",
       "webRoot": "${workspaceFolder}/Frontend"
     },
     {
