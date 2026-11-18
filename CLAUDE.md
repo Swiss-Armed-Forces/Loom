@@ -202,7 +202,7 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `build-appliance-image --wifi` - Additionally run a bridged WiFi access point on the appliance.
   Radios are disabled in every other image. Related flags: `--wifi-ssid`, `--wifi-psk`,
   `--wifi-country`, `--wifi-interface`. Changes the appliance threat model - see
-  `Documentation/appliance.md`
+  `SECURITY.md`
 - `build-appliance-image --debug` - Additionally run an SSH server on the box, keyed to an ed25519
   pair generated for that image and left in a temp directory the build prints, along with two
   ready-made `ssh_config` files. This is the one flag that takes back the appliance's "no remote
@@ -221,11 +221,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   ssh configs; `NIX_SSHOPTS=-F <dir>/ssh_config` is the part that is not guessable. Debug images run
   `nix.gc` daily with a 7-day window, because an appliance disk is sized for Loom and a full one is
   not recoverable from the console.
-  Read the threat-model section in `Documentation/appliance.md` before using it
+  Read the threat-model section in `SECURITY.md` before using it
 - `build-appliance-image --lock-key` - Put the stick's 4096 LUKS key bytes inside a LUKS2 container
   on the same `loom-key` partition, under a generated word passphrase (`diceware`, EFF list) that is
   printed once and stored nowhere else. The stick stops being a bearer token - holding it is no
-  longer enough - which is the one assumption `Documentation/appliance.md`'s threat model otherwise
+  longer enough - which is the one assumption `SECURITY.md`'s threat model otherwise
   has to make. It costs unattended boot: stage 1 stops at a prompt, so the box does not come back on
   its own after a power cut, and the installer refuses to run unattended (`decision.py`'s
   `KEY_LOCKED`). The recovery passphrase is deliberately unchanged and remains a single-factor way

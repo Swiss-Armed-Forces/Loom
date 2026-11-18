@@ -9,7 +9,7 @@ gets an address and reaches Loom exactly as a wired client does. The SSID and pa
 on the login screen — `loom-info` prints them again.
 
 This changes the threat model: the box is no longer reachable only by someone standing at it. See
-`## Threat model` in `/home/loom/loom/Documentation/appliance.md`.
+`## Threat model` in `/home/loom/loom/SECURITY.md`.
 
 ## Checking it
 
@@ -44,4 +44,5 @@ fixable here.
 ## More
 
 `### The WiFi access point` in `/home/loom/loom/Documentation/appliance.md` covers the build flags
-and the credentials; `## Threat model` covers what enabling it changes.
+and the credentials; `## Threat model` in `/home/loom/loom/SECURITY.md` covers what enabling it
+changes.

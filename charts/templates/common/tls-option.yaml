@@ -8,8 +8,8 @@
 # ServiceAccount to a ClusterRole with `secrets: get/list/watch` across the
 # cluster, so every Secret in the namespace is equally readable and scoping
 # that down means patching an upstream chart. Loom's threat model puts the
-# whole cluster inside the trust boundary -- see `Documentation/installation.md`
-# -- and this is a deliberate consequence of it, not an oversight.
+# whole cluster inside the trust boundary -- see the Multi Node section of
+# `SECURITY.md` -- and this is a deliberate consequence of it, not an oversight.
 apiVersion: traefik.io/v1alpha1
 kind: TLSOption
 metadata:

@@ -67,6 +67,15 @@ trade-offs in scope:
   external protection (e.g., VPN, proxy authentication), exposing it publicly carries significant
   security risks.
 
+## 🔒 Security
+
+Those limitations are deliberate, and [`SECURITY.md`](SECURITY.md) is where they are written down
+as a threat model — one per deployment schema, with what each one assumes and what follows from it.
+Read it before deciding whether something you found is a bug or the design.
+
+**Found a vulnerability? Do not open a public issue.** `SECURITY.md` has two private channels, what
+to include in a report, what happens after you send one, and what is in and out of scope.
+
 ## 🛠️ Installation
 
 Full installation instructions for deploying Loom as an end user, covering dependencies, system
@@ -103,6 +112,7 @@ Loom is licensed under the MIT License. See the full text of the license in the 
 - [Performance](Documentation/performance.md)
 - [Frontend debugging](Documentation/frontend-debugging.md)
 - [Architecture Overview](ARCHITECTURE.md)
+- [Security Policy and Threat Model](SECURITY.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Third Party Licenses](THIRD-PARTY.md)

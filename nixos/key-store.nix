@@ -8,7 +8,7 @@
 #
 # What that buys is the one thing an unlocked stick cannot do. Unlocked, it is
 # a bearer token: whoever holds it unlocks the box, which is why the threat model
-# (Documentation/appliance.md) has to assume the stick "is removed, or travels
+# (SECURITY.md) has to assume the stick "is removed, or travels
 # separately, whenever the box is unattended". Locked, the stick is one factor of
 # two -- something you have plus something you know -- so a stick found in a
 # drawer, a stick stolen together with the box, and a leaked `--key-backup` file

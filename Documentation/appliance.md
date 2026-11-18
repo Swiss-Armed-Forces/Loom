@@ -12,95 +12,15 @@ or run somewhere you cannot reach.
 
 ## Threat model
 
-Read this before building anything; the design only makes sense if these hold.
+The appliance's threat model lives in [`SECURITY.md`](../SECURITY.md#threat-model), next to the models for the
+other two deployment schemas and the rest of Loom's security policy. Read
+[the appliance section](../SECURITY.md#appliance) before building anything; nothing below makes sense unless
+those assumptions hold.
 
-- **The USB stick is the key.** The internal disk is LUKS2, and the key is 4096 random bytes on the stick. Pull
-  the stick and the box will not boot. Every stick gets its own key.
-- **The stick has to stay plugged in.** A running box is watched: remove the key and it powers itself off
-  ten seconds later, and a box that booted from a stick it can no longer read powers off after three
-  minutes. See [The USB key guard](#the-usb-key-guard).
-- **Box and stick together are not protected.** If both are seized at once, the encryption buys you nothing.
-  The design assumes the stick is removed, or travels separately, whenever the box is unattended.
-  **`--lock-key` changes this** — it puts a passphrase over the stick's key, so holding the stick stops being
-  enough. It costs unattended boot. See [Locking the stick's key](#locking-the-sticks-key).
-- **Lose the stick and the data is gone**, unless somebody wrote down the recovery passphrase that the
-  installer prints and that the console shows on its login screen at every boot. Use `--key-backup` if you
-  want a second copy.
-- **There is no remote access.** No sshd, no accounts but the local operator. The console is the only way in —
-  and it is not an authentication boundary: it shows the banner, waits for a keypress, and then opens a
-  root-capable session with no password. Neither box is driven over a serial cable, and neither image
-  configures one, so the monitor and keyboard are the whole attack surface.
-  **The one exception is an image built with `--debug`**, which runs an SSH server keyed to a keypair the
-  build generates — see [Debug images](#debug-images). Such an image announces itself in red on its own login
-  screen and is not something to hand to anybody.
-- **The console runs an AI agent that can act on the box, and it does not ask first.** The bottom pane is
-  `opencode` wired to the cluster's own Ollama — it reads and writes files and runs commands as `loom`, which
-  is in `wheel` and `docker`. Its permission ruleset is `allow`, so it edits and executes without stopping
-  for confirmation. It talks to nothing outside the box, so this adds no network exposure; what it adds is a
-  way for anyone already at the keyboard to act through natural language instead of a shell. Given the bullet
-  above, that is not a new boundary being crossed — the console it sits in is already a passwordless root
-  session, and a confirmation prompt answered by the same unauthenticated person who typed the request is
-  not a control. But it is one more reason the box must not be left unattended
-  with the stick in it. The agent also ships knowing how to operate this box — see
-  [Skills](#skills) — which makes it more useful to the operator and equally more useful to anyone
-  else who reaches the keyboard. **Only on a box with a GPU** (`spark`, `evo-x2`): the pane needs
-  Ollama, and Ollama needs a GPU, so `nuc12` ships neither it nor `opencode` — see
-  [AI services follow the GPU](#ai-services-follow-the-gpu).
-- **Any USB medium plugged in is mounted and indexed.** Every image does this — see
-  [Ingesting data from USB](#ingesting-data-from-usb). A USB port is therefore an unauthenticated
-  data-injection path: anyone who can reach the box can put arbitrary content into the index, and kernel
-  and FUSE filesystem drivers parse structures that whoever plugged it in controls. Media is mounted
-  read-only and never executed, and the LUKS key stick is positively excluded — but the parsing itself is
-  the exposure. Given that the console is already a passwordless root session, this crosses no boundary
-  that physical access did not already cross; it does make an unattended box a worse proposition than
-  before.
-- **Booting the stick installs the box.** The installer no longer waits to be told to; it counts down for
-  60 seconds and then provisions the internal disks by itself, because provisioning is the only reason
-  the stick exists. Pressing any key during that countdown puts you in the menu instead. Two things keep
-  this from eating a working box: it refuses when the disks already hold a Loom pool that _this_ stick's
-  key unlocks, and it refuses a second attempt in the same boot. Neither covers a stick pointed at
-  somebody else's hardware — treat a Loom stick as a device that erases whatever it is booted on.
-- **The certificate the appliance serves is self-signed, and a visitor has to decide to trust it.**
-  Loom answers over TLS and nothing else — every ingress is on Traefik's `websecure` entrypoint and
-  port 80 carries a redirect to it — but no public authority can issue a certificate for `*.loom`, so
-  the box signed its own. A visitor's browser therefore warns, and clicking through a warning is a
-  decision made without any way to check what is on the other side. The captive portal publishes the
-  anchor and its SHA-256 fingerprint for exactly this, and the fingerprint is also on the box's own
-  console — comparing the two is the step that turns clicking through into trusting a specific box.
-  Anyone who skips it on a segment they do not control is trusting whatever answered. See
-  [Finding Loom without being told where it is](#finding-loom-without-being-told-where-it-is).
-  **`--require-client-cert` goes further** — it admits only clients holding an issued certificate,
-  which also means no visitor reaches Loom without being handed one. See
-  [Requiring a client certificate](#requiring-a-client-certificate).
-- **Anyone who can reach the appliance segment can use Loom.** There is no login: reaching the frontend is
-  the whole of the authorisation, by design — the deployment is meant to be task-specific and short-lived,
-  and every user of it is trusted. On a cabled box that means whoever is on the wire; with `--wifi` it
-  means whoever holds the passphrase. `--require-client-cert` is the one build where this is not true.
-- **The captive portal page is served by the box, not by the cluster**, so it answers on `http://portal.loom`
-  from the moment the machine is up — before Loom exists and whatever else is or is not running. It hands out
-  the certificate the box serves `*.loom` with, which is public: it is what Traefik presents to anyone who
-  opens a TLS connection, and the page is only saving a visitor the trouble of extracting it. See
-  [What the portal page offers](#what-the-portal-page-offers).
-  **`--require-client-cert` adds a second thing to that page**, and it is not public: anyone who can read the
-  password off the box's login screen can mint themselves a client certificate, and so can anyone they read
-  it out to. That is the trade — the alternative is an operator handing files to every visitor by hand — but
-  it makes the console screen as sensitive as the keyboard in front of it, and it means a box left unattended
-  with its screen visible is a box anybody can get into. The private key behind it never leaves the cluster:
-  the process a visitor talks to is unprivileged, has no kubeconfig and asks a root unit through a spool
-  directory. That image also copies the cluster's serving certificate **and its private key** onto the box,
-  so it can offer the download over TLS rather than in the clear; it is on the same encrypted disk the
-  cluster already keeps it on. See
-  [Visitors get their own certificate from the portal](#visitors-get-their-own-certificate-from-the-portal).
-- **Bluetooth is disabled** in every image, on the installer stick as well as on the box it installs.
-  **WiFi is disabled the same way unless the image was built with `--wifi`**, which turns the box into an
-  access point — read [The WiFi access point](#the-wifi-access-point) before using it, because it changes
-  most of the bullets above. The mechanism is three things in `nixos/radios.nix`: the driver cannot load,
-  because `cfg80211` and `bluetooth` are refused by a modprobe `install` directive and every WiFi and
-  Bluetooth driver depends on one of them; every rfkill switch registers soft-blocked, from kernel
-  initialisation rather than from the end of boot, so there is no window and a radio plugged in later is
-  covered too; and `rfkill block` runs as well, for a switch that belongs to neither stack. This is still a
-  software guarantee — `insmod` names a module by path and never consults modprobe, so a root shell on the
-  box can undo it — so disable the radios in the box's own firmware as well if the site requires it.
+In short: the stick is the key and has to stay plugged in, box and stick together are not protected, there is
+no remote access, the console is a passwordless root session running an agent that does not ask first, any USB
+medium plugged in is mounted and indexed, and booting the stick installs whatever it is booted on. What
+`--debug`, `--lock-key` and `--require-client-cert` each change is covered in this document.
 
 ## Supported platforms
 
@@ -238,7 +158,9 @@ On the EVO-X2 specifically, check two more firmware settings before installing:
   leaving the host the 25 GiB `LOOM_MIN_MEMORY` that `up.sh` guarantees the rest of the stack, since
   GTT is host memory the GPU pins rather than memory of its own. So the carve-out is not merely
   useless to Ollama; it is subtracted from the pool Ollama actually plans against.
-- **Disable the radios** in the AMI BIOS, for the same reason the threat model gives above.
+- **Disable the radios** in the AMI BIOS. Every image already disables them in software, but that is
+  a software guarantee a root shell can undo — see the radio bullet in
+  [the appliance threat model](../SECURITY.md#appliance).
 
 On the DGX Spark specifically, there is one step that has to happen **before** the box is disconnected
 from the internet, and it cannot be undone later:
@@ -549,7 +471,7 @@ for pointing an AI agent at such a box. It is the only build where `services.ope
 
 ### Read this before building one
 
-`--debug` takes back the first line of the [threat model](#threat-model). Specifically:
+`--debug` takes back the first line of the [threat model](../SECURITY.md#threat-model). Specifically:
 
 - **The generated key is root on the box.** It logs in as the operator account, which is in `wheel` with
   passwordless `sudo`, because up.sh needs that. There is nothing behind it: Loom has no user management and
@@ -822,8 +744,8 @@ reachable on boxes whose display wakes up late.
 ## Locking the stick's key
 
 By default the stick is a **bearer token**: its `loom-key` partition holds 4096 random bytes, and whoever
-holds the stick unlocks the box. That is why the threat model above has to assume the stick travels
-separately from the box.
+holds the stick unlocks the box. That is why [the threat model](../SECURITY.md#appliance) has to assume
+the stick travels separately from the box.
 
 `--lock-key` removes that assumption. The same 4096 bytes go inside a LUKS2 container on the same partition,
 and opening it costs a generated word passphrase that exists nowhere on the stick:
@@ -1289,7 +1211,7 @@ No hosts file, no configuration on the visitor's side. The other services — `g
 carries a redirect to it and nothing else, so `http://frontend.loom` arrives at the same place one round trip
 later. The certificate is self-signed, so the first visit costs a browser warning — the captive portal below
 publishes the anchor that ends it, with a fingerprint to check against the box's own console. See the
-certificate bullet in [Threat model](#threat-model) for what clicking through instead is worth.
+certificate bullet in [Threat model](../SECURITY.md#threat-model) for what clicking through instead is worth.
 
 ### Finding Loom without being told where it is
 
@@ -1417,7 +1339,7 @@ Milestones are also announced in the tmux status bar — ingest started, each vo
 on disk, and every failure with its reason — and to `wall`, which reaches any console somebody has logged
 into. Those lines scroll away; the pane is what persists.
 
-Read the [threat model](#threat-model) bullet about this before deploying a box where strangers can reach a
+Read the [threat model](../SECURITY.md#threat-model) bullet about this before deploying a box where strangers can reach a
 port.
 
 **The LUKS key stick is never touched.** It is identified by asking the key guard which device it armed on —
@@ -1775,8 +1697,8 @@ changed in a session survives it.
 **It does not ask for permission.** `permission` is `allow`, which is opencode's whole ruleset in one word.
 Left at the default the agent still stops at three things — a long tool loop, touching a path outside its
 working directory, and reading a `.env` — and each of those is a modal prompt in a tmux pane behind a
-splash, answered by the same person who asked the question. See the threat-model bullet above; this is a
-deliberate choice, not an oversight.
+splash, answered by the same person who asked the question. See the console bullet in the
+[threat model](../SECURITY.md#appliance); this is a deliberate choice, not an oversight.
 
 **It cannot share a session.** `share` is `disabled` rather than left at its `manual` default, which would
 leave `/share` on the command list. That command uploads the transcript to opencode's servers; there is no
@@ -1820,7 +1742,7 @@ Two things worth knowing before leaning on it:
 
 - **It is an agent, not a chat box.** It can read and write files and run commands as `loom`, which is in
   `wheel` and `docker`. On a box whose trust boundary is physical possession that changes little — but it is a
-  different proposition once `--wifi` is on, and worth re-reading [the threat model](#threat-model) in that
+  different proposition once `--wifi` is on, and worth re-reading [the threat model](../SECURITY.md#threat-model) in that
   case.
 - **The model is the one the chart names.** A built stick pins it from the _embedded tag's_ chart, not from
   a Nix default: `vars.sh` reads `._llmDefaults.model` out of `charts/values.yaml` -- `qwen3.8:27b` -- and
@@ -1907,7 +1829,7 @@ handling. `Alt-F1` returns to the session.
 
 None of that is a security boundary, and it is not meant to be one: every console autologins the operator
 account, which holds passwordless root. Physical possession of the box and its USB key is the boundary — see
-[Threat model](#threat-model).
+[Threat model](../SECURITY.md#threat-model).
 
 `loom-up` and `loom-down` wrap `up.sh` with the flags the appliance needs:
 

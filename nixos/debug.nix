@@ -7,7 +7,7 @@
 # password anywhere, and still no second account.
 #
 # This is the one flag that takes the appliance's central promise back. The
-# threat model (Documentation/appliance.md) says "there is no remote access",
+# threat model (SECURITY.md) says "there is no remote access",
 # box.nix says `services.openssh.enable = lib.mkDefault false` and
 # loom_tests/appliance/banner.py asserts it on every VM test run. So an image
 # built this way is not an appliance anybody may be handed, and it says so in
@@ -255,7 +255,7 @@ in
       # available anyway and this only removes the detour. What it does do is
       # turn an ssh port that is already open in this mode into a build
       # endpoint, which is why it lives here rather than in box.nix and why it
-      # is named in the threat model in Documentation/appliance.md.
+      # is named in the threat model in SECURITY.md.
       nix.settings.trusted-users = [
         "root"
         loomUser
