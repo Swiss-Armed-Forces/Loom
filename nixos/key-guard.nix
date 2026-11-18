@@ -10,7 +10,7 @@
 # mapping with no key present.
 #
 # That is the gap this module closes, and it is the gap the threat model in
-# Documentation/appliance.md assumes is closed: "the design assumes the stick is
+# SECURITY.md assumes is closed: "the design assumes the stick is
 # removed, or travels separately, whenever the box is unattended".
 #
 # The guard polls rather than binding to the key's .device unit. A device unit

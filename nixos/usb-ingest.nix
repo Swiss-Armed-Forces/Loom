@@ -19,7 +19,7 @@
 #
 # THIS CHANGES THE BOX'S THREAT MODEL and is on in every image. A USB port becomes
 # an unauthenticated data-injection path, and filesystem drivers parse media
-# supplied by whoever is standing at the box. See Documentation/appliance.md.
+# supplied by whoever is standing at the box. See SECURITY.md.
 {
   config,
   lib,
