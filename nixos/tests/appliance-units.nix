@@ -433,6 +433,11 @@ let
       );
 
       portalListeners = lib.filterAttrs (name: _: lib.hasPrefix "loom-portal" name) vhosts;
+
+      # Read off the checkout rather than off the unit: the issuer is a
+      # `writeShellApplication` whose ExecStart is a store path, and the body is
+      # this file.
+      issuerText = builtins.readFile "${loomSrc}/nixos/scripts/loom_portal_issue.sh";
     in
     [
       # ---- the probe contract ----
@@ -521,6 +526,17 @@ let
       ))
       (check "portal: the issuer can be triggered again" (
         !(issue.serviceConfig.RemainAfterExit or false)
+      ))
+      # And the half of the split that is not a unit edge. The issuer runs as
+      # root in a spool the page may create entries in by name, so a work
+      # directory named after the token is a path the page can plant as a
+      # symlink -- after which the issuer's `chmod` and `chgrp --recursive`
+      # follow it and hand the portal group read access to any tree on the box,
+      # the LUKS recovery passphrase included. The name has to come from
+      # `mktemp`, as the refusal path's already does.
+      (check "portal: the issuer's work directory is not a name the page can take" (
+        lib.hasInfix "mktemp --directory --tmpdir=" issuerText
+        && !(lib.hasInfix ".\${token}.work" issuerText)
       ))
 
       # ---- rate limiting ----

@@ -28,8 +28,10 @@ Three properties are worth stating, because each of them is a choice:
     the obvious implementation is the one the permissions forbid.
 
   * **Files are written to a temporary name and renamed.** The issuer globs `*.req`, so a
-    half-written request can never match; it builds its answer in `.<token>.work` and
-    renames the finished directory into place, so this side can never read half a bundle.
+    half-written request can never match; it builds its answer in a `mktemp` directory
+    beside the bundle and renames the finished directory into place, so this side can
+    never read half a bundle. `mktemp` rather than a name derived from the token, so the
+    root half never works on a path this one could have created first.
 """
 
 import io
