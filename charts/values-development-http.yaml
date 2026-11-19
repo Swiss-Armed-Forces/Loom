@@ -29,8 +29,9 @@
 # `traefik.ingress.kubernetes.io/router.tls.options`, which constrains the TLS
 # handshake and nothing else. The routes widened below answer in cleartext, where
 # no client certificate is asked for at all -- so this file does not weaken that
-# requirement, it goes around it. up.sh's `validate_environment` refuses the
-# combination.
+# requirement, it goes around it. templates/common/assertions.yaml fails the
+# render on the combination -- this file switches `globalHttpRedirect` off -- so
+# it is refused however the chart is deployed.
 #
 # Both halves below are required. Widening the entrypoints alone changes
 # nothing a client can see, because templates/global-http-redirect/ingress.yaml

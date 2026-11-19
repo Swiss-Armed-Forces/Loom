@@ -456,9 +456,12 @@ not a weaker requirement, no requirement.
 
 No deployment can reach that state: every ingress is on `websecure` alone and port 80 carries the
 global redirect, with `cicd/check_https_only.sh` asserting both. The one layer that does widen the
-routes is `charts/values-development-http.yaml`, which only the `dev` Skaffold profile applies, and
-`up.sh` refuses `--development` and `--integrationtest` outright beside
-`certificate.requireClientCert`.
+routes is `charts/values-development-http.yaml`, which only the `dev` Skaffold profile applies.
+
+The chart refuses the combination outright: `templates/common/assertions.yaml` fails the render when
+`certificate.requireClientCert` is set while `globalHttpRedirect.enabled` is off, so it is caught
+whether the deploy comes from `up.sh --development`, from Skaffold, from
+`build-appliance-image --values` or from `helm` by hand.
 
 #### The CA rotates, and takes every certificate with it
 
