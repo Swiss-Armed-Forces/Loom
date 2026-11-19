@@ -23,9 +23,9 @@ pytestmark = pytest.mark.usefixtures("disable_periodic_tasks")
 
 _ASSET_NAME = "empty_file.txt"
 _BACKLOG_FILE_COUNT = 20
-# The management API serves queue depths from its stats database, which RabbitMQ refreshes
-# only every collect_statistics_interval (10s, see charts/templates/rabbit/configMap.yaml).
-# A just-published backlog is therefore invisible for up to that long.
+# A queue depth is never an answer about right now. The queues are quorum queues, and the
+# depths the management API reports for those come from each queue's periodic tick rather
+# than from the publish itself — a just-published backlog stays invisible for seconds.
 _BACKLOG_VISIBLE_TIMEOUT_S = 60
 
 
@@ -39,11 +39,16 @@ def dispatch_state():
     otherwise leave the registry empty and make throttling a silent no-op.
 
     After: components=celery does not run wipe_redis(), so a throttle set here persists.
-    Integration tests run --exitfirst, so this must survive a hard failure.
+    Integration tests run --exitfirst, so this must survive a hard failure. The registry
+    is re-registered first for the same reason it is registered up front: set_throttled()
+    resumes exactly the tasks the registry names, so after a full wipe emptied it,
+    unthrottling against the empty registry would silently leave DISPATCH paused for
+    every test that follows.
     """
     inspect = get_celery_inspect_service()
     inspect.register_task_groups()
     yield
+    inspect.register_task_groups()
     inspect.set_throttled(False)
 
 
@@ -60,15 +65,23 @@ def _wipe(components: list[str] | None = None) -> requests.Response:
     return requests.post(WIPE_DATA_ENDPOINT, params=params, timeout=REQUEST_TIMEOUT)
 
 
-def test_wipe_celery_purges_per_task_queues_no_worker_is_draining():
-    """wipe_celery() must purge the per-task queues local Celery state cannot see.
+def _build_undrainable_backlog() -> None:
+    """Fill the queues with a backlog the workers cannot touch, and wait until the
+    broker reports it.
 
-    "Queues are empty afterwards" alone does not discriminate — a wipe that purges only
-    from local Celery state also ends up empty, by waiting for the workers to drain the
-    backlog. So consumption is stopped first: with DISPATCH throttled the messages sit
-    in loom:worker.index_file.dispatch_tasks.* — per-task queues, outside the API's four
-    — with no consumer. A wipe that cannot purge them can never reach idle either, so it
-    exhausts its timeout and returns 504 instead of 200.
+    Both halves are load-bearing for any assertion about queue depths around a wipe.
+
+    Stopping consumption removes the only other producer. With DISPATCH throttled the
+    uploads sit in loom:worker.index_file.dispatch_tasks.* with no consumer, so no
+    pipeline starts and no completing task publishes a successor. Left running, the
+    workers prefetch the backlog into their own buffers and keep publishing for seconds
+    after the wipe returned — messages that are neither what the wipe failed to purge
+    nor anything the wipe could have purged.
+
+    Polling until the depth is non-zero pins the other end. The reported depth lags the
+    publish (see _BACKLOG_VISIBLE_TIMEOUT_S), so a wipe issued inside that window reads
+    an empty broker, declares the system idle after its first purge and returns while
+    the backlog is still there.
     """
     inspect = get_celery_inspect_service()
     inspect.set_throttled(True)
@@ -84,6 +97,19 @@ def test_wipe_celery_purges_per_task_queues_no_worker_is_draining():
         description="an undrainable backlog",
     )
 
+
+def test_wipe_celery_purges_per_task_queues_no_worker_is_draining():
+    """wipe_celery() must purge the per-task queues local Celery state cannot see.
+
+    "Queues are empty afterwards" alone does not discriminate — a wipe that purges only
+    from local Celery state also ends up empty, by waiting for the workers to drain the
+    backlog. So consumption is stopped first: with DISPATCH throttled the messages sit
+    in loom:worker.index_file.dispatch_tasks.* — per-task queues, outside the API's four
+    — with no consumer. A wipe that cannot purge them can never reach idle either, so it
+    exhausts its timeout and returns 504 instead of 200.
+    """
+    _build_undrainable_backlog()
+
     response = _wipe(components=["celery"])
 
     assert response.status_code == 200, response.text
@@ -91,7 +117,12 @@ def test_wipe_celery_purges_per_task_queues_no_worker_is_draining():
 
 
 def test_wipe_all_components_leaves_queues_empty():
-    upload_many_assets(asset_names=[_ASSET_NAME] * _BACKLOG_FILE_COUNT)
+    """The celery wipe still lands when every other component is wiped alongside it.
+
+    Same backlog as above, so the depth read afterwards describes the wipe rather than
+    whatever the workers happened to be doing to it.
+    """
+    _build_undrainable_backlog()
 
     response = _wipe()
 
