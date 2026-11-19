@@ -1,4 +1,4 @@
-import { Close, PushPin } from "@mui/icons-material";
+import { ClearAll, Close, PushPin } from "@mui/icons-material";
 import { Divider, IconButton, Tab, Tabs, useMediaQuery } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +11,7 @@ import {
 import { SearchFileEntry } from "@app/slices/searchFileEntry";
 import {
     OpenFileTab,
+    closeAllFileTabsThunk,
     closeFileTabThunk,
     focusFileTab,
     focusFollowTab,
@@ -28,6 +29,9 @@ const CLOSE_BUTTON_SX = {
     transition: "opacity 0.2s ease",
     "&:hover": { opacity: 0.7 },
 } as const;
+// Outside the scrollable `Tabs`, so it keeps its place at the trailing end of
+// the strip however far the tabs have scrolled.
+const CLOSE_ALL_BUTTON_SX = { alignSelf: "center", mx: 0.5 } as const;
 
 /** Everything the strip draws about one file. */
 interface TabLabel {
@@ -205,6 +209,15 @@ export const FileDetailTabStrip = ({
                             />
                         ))}
                     </Tabs>
+                    <IconButton
+                        size={isMobile ? "medium" : "small"}
+                        onClick={() => dispatch(closeAllFileTabsThunk())}
+                        title={t("toolbar.views.fileDetailCloseAll")}
+                        aria-label={t("toolbar.views.fileDetailCloseAll")}
+                        sx={CLOSE_ALL_BUTTON_SX}
+                    >
+                        <ClearAll sx={{ fontSize: isMobile ? 20 : 16 }} />
+                    </IconButton>
                 </>
             )}
         </div>

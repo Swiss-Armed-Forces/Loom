@@ -1337,6 +1337,24 @@ export const searchSlice = createSlice({
                 state.fileDetailSelection = FOLLOW_TAB;
             }
         },
+        closeAllFileTabs: (state) => {
+            if (state.openFileTabs.length === 0) return;
+            const closed = new Set(state.openFileTabs.map((t) => t.fileId));
+            state.openFileTabs = [];
+            if (
+                state.pendingFullscreenFileId !== null &&
+                closed.has(state.pendingFullscreenFileId)
+            ) {
+                state.pendingFullscreenFileId = null;
+            }
+            // No file tab is left to be in front, so any file selection -
+            // including one naming a file that was never open, which is a
+            // real state on boot from a #fileId - falls back to the
+            // following tab.
+            if (state.fileDetailSelection.kind === "file") {
+                state.fileDetailSelection = FOLLOW_TAB;
+            }
+        },
         focusFollowTab: (state) => {
             state.fileDetailSelection = FOLLOW_TAB;
         },
@@ -2090,6 +2108,7 @@ export const {
     setHighlightedQueryId,
     openFileTab,
     closeFileTab,
+    closeAllFileTabs,
     focusFollowTab,
     focusFileTab,
     setDetailTab,
@@ -2187,6 +2206,15 @@ export const closeFileTabThunk = createAsyncThunk(
     "closeFileTabThunk",
     (fileId: string, thunkAPI) => {
         thunkAPI.dispatch(closeFileTab(fileId));
+    },
+);
+
+export const closeAllFileTabsThunk = createAsyncThunk(
+    "closeAllFileTabsThunk",
+    (_: void, thunkAPI) => {
+        thunkAPI.dispatch(closeAllFileTabs());
+        // The channels stay in `useOpenFileTabSubscriptions`' hands, as they
+        // do for a single close: it releases one per tab that left the list.
     },
 );
 

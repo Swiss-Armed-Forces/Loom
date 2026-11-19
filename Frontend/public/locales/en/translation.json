@@ -639,7 +639,8 @@
             "chatbot": "Chatbot",
             "fileDetail": "File Detail",
             "fileDetailEmpty": "Select a file to view its details.",
-            "fileDetailFollow": "Highlighted"
+            "fileDetailFollow": "Highlighted",
+            "fileDetailCloseAll": "Close all tabs"
         },
         "cardSettings": "Card Display Settings",
         "cardPreset": {
