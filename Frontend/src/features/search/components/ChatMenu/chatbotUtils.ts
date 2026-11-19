@@ -27,6 +27,52 @@ export const createErrorMessage = (text: string): ChatMessage => ({
     isError: true,
 });
 
+/** An answer still being streamed, split at the last complete block. */
+export interface StreamedMarkdown {
+    /** The blocks that are already in their final shape. */
+    stable: string;
+    /** The block still being written. */
+    tail: string;
+}
+
+/** The opening or closing line of a fenced code block. */
+const FENCE = /^ {0,3}(`{3,}|~{3,})/;
+
+/**
+ * Splits a partially streamed answer at the last block boundary.
+ *
+ * Markdown is parsed block by block, so everything up to the last blank line
+ * is settled and can be parsed once and kept; the block still being written is
+ * rendered as plain text until the next blank line completes it. That makes
+ * the parsing cost of an answer linear in its length instead of quadratic.
+ *
+ * A blank line inside a fenced code block is not a boundary: splitting there
+ * leaves the fence unterminated, which flips the tail between a paragraph and
+ * a code block on every token and re-lexes the block each time.
+ */
+export const splitStreamedMarkdown = (text: string): StreamedMarkdown => {
+    let fence: string | null = null;
+    let offset = 0;
+    let boundary = 0;
+    for (const line of text.split("\n")) {
+        offset += line.length + 1;
+        const marker = FENCE.exec(line)?.[1];
+        if (fence === null && marker !== undefined) {
+            fence = marker;
+        } else if (
+            fence !== null &&
+            marker !== undefined &&
+            marker[0] === fence[0] &&
+            marker.length >= fence.length
+        ) {
+            fence = null;
+        } else if (fence === null && line.trim() === "") {
+            boundary = offset;
+        }
+    }
+    return { stable: text.slice(0, boundary), tail: text.slice(boundary) };
+};
+
 export const extractText = (m: Readonly<Message>): string =>
     typeof m.content === "string"
         ? m.content
@@ -91,7 +137,8 @@ const isUnchanged = (
     previous.text === next.text &&
     previous.isUser === next.isUser &&
     previous.citations === next.citations &&
-    previous.activity === next.activity;
+    previous.activity === next.activity &&
+    previous.isStreaming === next.isStreaming;
 
 /**
  * Rebuilds the rendered message list, reusing the object from `previous`
@@ -109,6 +156,7 @@ export const mapToChatMessages = (
     activity: Record<string, ActivityRecord[]>,
     finalMsgIds: Set<string>,
     previous: ReadonlyArray<ChatMessage> = [],
+    streamingMsgId: string | null = null,
 ): ChatMessage[] => {
     const previousById = new Map<string, ChatMessage>();
     for (const m of previous) {
@@ -152,6 +200,7 @@ export const mapToChatMessages = (
             citations: citations[m.id] ?? EMPTY_CITATIONS,
             activity:
                 msgActivity && msgActivity.length > 0 ? msgActivity : undefined,
+            isStreaming: m.id === streamingMsgId,
         });
     }
 

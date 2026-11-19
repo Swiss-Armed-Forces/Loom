@@ -26,6 +26,8 @@ export interface ChatMessage {
     citations: ChatCitation[];
     isError?: boolean;
     activity?: ActivityRecord[];
+    /** True while the agent is still writing this message's text. */
+    isStreaming?: boolean;
 }
 
 export interface PendingQuestionPrompt {

@@ -80,7 +80,10 @@ export const useChatbotAgent = (
         reason: string;
     } | null>(null);
     const agentRef = useRef<HttpAgent | null>(null);
+    // The message of the turn being run. Its id outlives the end of its text,
+    // because the citations that belong to it arrive after it.
     const streamingMsgIdRef = useRef<string | null>(null);
+    const isTextStreamingRef = useRef(false);
     const finalMsgIdsRef = useRef<Set<string>>(new Set());
 
     // Citations and per-message activity are the inputs mapToChatMessages
@@ -138,6 +141,7 @@ export const useChatbotAgent = (
                 activityRef.current,
                 finalMsgIdsRef.current,
                 prev,
+                isTextStreamingRef.current ? streamingMsgIdRef.current : null,
             ),
         );
     }, []);
@@ -258,6 +262,7 @@ export const useChatbotAgent = (
                 setIsTurnActive(true);
                 runToolCallsRef.current = {};
                 streamingMsgIdRef.current = null;
+                isTextStreamingRef.current = false;
             },
             onToolCallStartEvent: ({ event }) => {
                 const record: ToolCallRecord = {
@@ -323,6 +328,7 @@ export const useChatbotAgent = (
             },
             onTextMessageStartEvent: ({ event }) => {
                 streamingMsgIdRef.current = event.messageId;
+                isTextStreamingRef.current = true;
                 finalMsgIdsRef.current.add(event.messageId);
                 setReasoningPhase("idle");
                 // Hand the turn's activity over to the message it belongs to.
@@ -334,6 +340,11 @@ export const useChatbotAgent = (
                     };
                     setTurnActivity(NO_ACTIVITY);
                 }
+            },
+            onTextMessageEndEvent: () => {
+                // The answer is complete, so it is parsed as markdown whole.
+                isTextStreamingRef.current = false;
+                refreshChatMessages();
             },
             onCustomEvent: ({ event }) => {
                 if (event.name !== "citation" || !streamingMsgIdRef.current) {
@@ -355,7 +366,14 @@ export const useChatbotAgent = (
                 refreshChatMessages();
             },
             onRunFinalized: () => {
-                if (!errorHandledRef.current) refreshChatMessages();
+                // A run that ends mid-answer — aborted, interrupted or
+                // failed — sends no TEXT_MESSAGE_END, so what arrived of it
+                // is settled here instead.
+                const wasStreaming = isTextStreamingRef.current;
+                isTextStreamingRef.current = false;
+                if (wasStreaming || !errorHandledRef.current) {
+                    refreshChatMessages();
+                }
                 errorHandledRef.current = false;
                 // Without this the live turn keeps spinning after a run that
                 // ended without an answer — an error, an interrupt, ask_user
@@ -475,6 +493,7 @@ export const useChatbotAgent = (
         setIsInterrupted(false);
         setTurnActivity(NO_ACTIVITY);
         streamingMsgIdRef.current = null;
+        isTextStreamingRef.current = false;
         errorHandledRef.current = false;
 
         agent.addMessage({
