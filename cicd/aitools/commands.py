@@ -50,7 +50,8 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     parser.add_argument(
         "--auto",
         action="store_true",
-        help="Non-interactive mode: skip all prompts and run AI with auto-accept",
+        help="Non-interactive mode: skip aitools' own prompts and run opencode "
+        "with auto-accept (claude always runs in auto permission mode)",
     )
     subparsers = parser.add_subparsers(dest="subcommand")
     subparsers.required = True

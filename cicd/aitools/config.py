@@ -1,7 +1,7 @@
 import os
 
-# Set to True by the --auto flag to skip all interactive prompts and run
-# AI in non-interactive (auto-accept) mode.
+# Set to True by the --auto flag to skip aitools' own interactive prompts. The claude
+# backend runs in auto permission mode either way; the opencode backend takes --auto.
 AUTO_MODE: bool = False
 BACKEND: str = "claude"
 MODEL: str = "none"
