@@ -340,7 +340,8 @@ class Settings(BaseSettings):
     # Depth at which attachment extraction stops. 0 extracts no attachments.
     indexing_max_recursion_depth: int = 0
 
-    # Maximum number of times a lost file is reindexed before giving up.
+    # Maximum number of times a lost file is reindexed before the sweep gives up on it
+    # and marks it failed.
     max_reindex_count: int = 2
 
     # Memory watermark for memory pressure detection

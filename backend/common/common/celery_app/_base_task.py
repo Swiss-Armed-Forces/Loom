@@ -65,6 +65,15 @@ class BaseTask(ABC, Task):
         if m := _NDL_ROUTING_KEY_RE.match(delivery_info.get("routing_key", "")):
             delivery_info["routing_key"] = m.group(1)
 
+        # Stamped before the dead-letter check below, because that check raises and the
+        # failure handlers read this attribute: ProcessingTask.on_failure builds a
+        # TaskRun out of it, and unset it makes that handler raise AttributeError
+        # instead. Celery reports an internal error for that and acks the message, so
+        # the file a dead task belonged to is never moved to "failed": it keeps a
+        # non-terminal state no worker will resolve, and holds its place in the
+        # completion estimate's pending count until the reindex sweep gives up on it.
+        self._start_time = datetime.now(timezone.utc)
+
         # Raise DeadTask only when the message has previously been dead-lettered out of
         # the graveyard queue — i.e. it already went through graveyard processing.
         graveyard_queue = (
@@ -72,7 +81,5 @@ class BaseTask(ABC, Task):
         )
         if any(d.queue == graveyard_queue for d in x_death.root):
             raise DeadTask(f"Task died: {x_death}")
-
-        self._start_time = datetime.now(timezone.utc)
 
         return self.run(*args, **kwargs)

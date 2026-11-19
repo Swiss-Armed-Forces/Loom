@@ -5,6 +5,7 @@ import requests
 from redis import StrictRedis
 from requests import Response
 
+from common.celery_app._queues import get_terminal_queues
 from common.settings import settings
 
 RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
@@ -83,9 +84,28 @@ class QueuesService:
         self,
         queue_name: str | None = None,
     ) -> int:
+        """Depth of one queue, or of every queue a worker will drain.
+
+        Without a queue name the terminal queues are left out, which is the line
+        ``CeleryInspectService.is_idle()`` draws too: no worker consumes ``abyss`` or
+        ``unroutable``, so their contents are not work in progress but work that has
+        stopped, and they empty only on their TTL — seven days for abyss. This figure
+        gates the frontend's processing spinner, so counting them turns a single stopped
+        message into a week of spinning over a drained system. ``graveyard`` and
+        ``dead`` stay in: the reaper consumes both, so their depth is work that is still
+        about to happen.
+
+        Name a queue to read that one regardless; ``get_all_queue_message_counts()``
+        reports every queue, terminal ones included.
+        """
         if queue_name is None:
+            terminal_queues = {queue.name for queue in get_terminal_queues()}
             return (
-                sum(self.get_all_queue_message_counts().values())
+                sum(
+                    count
+                    for name, count in self.get_all_queue_message_counts().items()
+                    if name not in terminal_queues
+                )
                 + self.get_delayed_queue_message_count()
             )
         api_endpoint = f"api/queues/{quote('/', safe='')}/{quote(queue_name, safe='')}"
