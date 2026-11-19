@@ -15,6 +15,7 @@ from enum import Enum
 from pathlib import Path
 from typing import (
     Callable,
+    Dict,
     Generic,
     Iterator,
     List,
@@ -45,14 +46,23 @@ class CommandResult(NamedTuple):
         return self.stdout.strip()
 
 
-def run_command(args: Sequence[str], cwd: Optional[Path] = None) -> CommandResult:
-    """Run a command, capturing its output and never raising on failure."""
+def run_command(
+    args: Sequence[str],
+    cwd: Optional[Path] = None,
+    env: Optional[Dict[str, str]] = None,
+) -> CommandResult:
+    """Run a command, capturing its output and never raising on failure.
+
+    `env`, when given, replaces the environment rather than extending it, so a caller
+    that means "this environment but for one variable" has to merge it itself.
+    """
     completed = subprocess.run(
         list(args),
         cwd=str(cwd) if cwd is not None else None,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     return CommandResult(completed.returncode, completed.stdout, completed.stderr)
 

@@ -480,7 +480,7 @@ let
   # This is the second of the two ways a cache reaches nix, and the one that
   # needs no privilege on the machine: a client may name a substituter when
   # either it is in `trusted-users` or the daemon's own nix.conf already names
-  # the cache. `cicd/setup_devenv.py` writes the latter, which is what a
+  # the cache. `cicd/setup-devenv` writes the latter, which is what a
   # developer should have; these lines are what makes the caches work for
   # somebody who is trusted instead, and what keeps the list versioned with the
   # code rather than only in each machine's /etc.

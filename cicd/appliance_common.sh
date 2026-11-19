@@ -165,8 +165,8 @@ common_nix_args(){
 #
 # The warning is deliberately tied to the *outcome* rather than to the dropped
 # flag. A machine that sets min-free in /etc/nix/nix.conf -- which is where it
-# belongs, and what cicd/setup_devenv.py offers -- is already protected, and
-# warning there would be noise nobody can act on. What matters is the case
+# belongs -- is already protected, and warning there would be noise nobody can
+# act on. What matters is the case
 # where nothing collects garbage at all: nix defaults min-free to 0, and a
 # build that fills the disk takes the whole run with it.
 warn_if_disk_budget_inert(){

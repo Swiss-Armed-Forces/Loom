@@ -635,7 +635,7 @@ ignoring untrusted substituter 'https://loom.cachix.org', you are not a trusted 
 ```
 
 the cache is unreachable whatever the shell exports. There are two cures and you need either one:
-name the caches in the daemon's own `/etc/nix/nix.conf`, which is what `./cicd/setup_devenv.py`
+name the caches in the daemon's own `/etc/nix/nix.conf`, which is what `./cicd/setup-devenv`
 writes and what `Documentation/devenv-setup.md` documents, or put yourself in `trusted-users`. The
 first is preferred — it grants no privilege to anybody and covers every account on the machine.
 

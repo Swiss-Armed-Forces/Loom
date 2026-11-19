@@ -23,102 +23,69 @@ have not read. A bare Enter declines.
 ```sh
 git clone --recursive $repository
 cd loom/
-./cicd/setup_devenv.py
+./cicd/setup-devenv
 ```
 
 It is safe to re-run: anything already in place is reported as done rather than asked about again,
-which also makes it a way to check a machine. `--dry-run` shows every step and runs nothing.
+which also makes it a way to check a machine.
 
-Two things it leaves to you, because guessing would be worse than asking:
+**The steps are not listed here.** Each one prints what it is for and the exact thing it will do
+before asking, `--help` names them all in order along with every flag, and `--dry-run` walks the
+whole run without touching anything — it writes nothing, asks for nothing and contacts nothing.
+A list in this file would be a second copy of that, drifting from the first.
+
+Three things it leaves to you, because guessing would be worse than asking:
 
 - **Installing docker**, which differs per distribution. It points you at the official instructions.
 - **On NixOS**, editing `/etc/nix/nix.conf` — that file is generated, so the script prints the
   `configuration.nix` snippet to paste instead.
+- **A `devenv.local.nix` that already holds other settings.** The token step will not rewrite one,
+  because that file is also where `cicd-mode-enter` and CI put `{ env.cicd = true; }`. It prints
+  the line to add instead.
 
-The rest of this section is the same setup done by hand.
+### Doing it by hand
 
-1. Set up git:
-    - Set username (must match your displayed name on gitlab):
-      `git config --global user.name "USERNAME"`
-    - Set email (must match your email on gitlab):
-      `git config --global user.email "EMAIL"`
-2. Clone git repository:
-    - Clone repo: `git clone --recursive $repository`
-    - Development uses the `main` branch. For stable/production deployments, check out the latest release tag instead (see the [installation instructions](../README.md#installation)).
-3. Install docker:
-    - Install docker-engine (do not install the alternative called docker-desktop) using the [official instructions](https://docs.docker.com/engine/install/)
-    - Add user to docker group: `sudo gpasswd -a $USER docker`
-    - Reboot your system
-4. Configure docker:
-    - Create a [personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token)
-      - Check all boxes when selecting the scopes
-    - Use the Access token instead of the password in the next steps
-    - Login to the docker registry: `docker login registry.gitlab.com`
-    - Login to the docker cache: `docker login gitlab.com`
-5. Install devenv
-    - In /etc/selinux/config, set `SELINUX=disabled` and reboot
-    - Install [Nix](https://nixos.org/)
+`./cicd/setup-devenv --dry-run` prints every command it would run, so it doubles as the
+instructions — including the two things it leaves to you. What follows is only what a command
+cannot tell you about itself.
 
-      ```sh
-      sh <(curl -L https://nixos.org/nix/install) --daemon
-      ```
+**Docker.** Install docker-engine, _not_ docker-desktop, by the
+[official instructions](https://docs.docker.com/engine/install/). The group change needs a
+re-login before it takes effect. To pull from the registry you also need a
+[personal access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token)
+with the `read_registry` scope, used as the password for `docker login registry.gitlab.com` and
+`docker login gitlab.com`.
 
-    - Install [devenv](https://devenv.sh/getting-started/) with `nix-env` from stable channel
+**The binary caches.** The `nix-caches` step writes two settings into `/etc/nix/nix.conf`;
+`--only nix-caches --dry-run` prints the exact block, and on NixOS prints a `configuration.nix`
+snippet instead, because that file is generated there and a direct edit is undone by the next
+`nixos-rebuild`. Four things about them are worth knowing and are not visible in the block:
 
-      ```sh
-      nix-env --install --attr devenv -f https://github.com/NixOS/nixpkgs/tarball/nixos-26.05
-      ```
+- **Why the daemon's config and not `trusted-users`.** Nix uses a substituter when **either** the
+  caller is in `trusted-users` **or** the daemon's own configuration names it. Writing the
+  daemon's configuration makes the caches work for every account on the machine while nobody has
+  to be trusted — which matters, because the nix manual describes adding a user to
+  `trusted-users` as "essentially equivalent to giving that user root access to the system". If
+  you are already in `trusted-users` nothing breaks; it is simply no longer needed.
+- **Every cache has to be named.** `devenv.cachix.org` because the first `devenv shell` fetches
+  devenv itself, before anything in this repository can apply; the other two are what `devenv.nix`
+  pulls from. One left out is one the daemon does not know, which prints
+  `ignoring untrusted substituter '<url>'` on every nix command. Without `loom.cachix.org`, an
+  appliance build compiles its whole closure from source — for `spark`, a qemu-emulated aarch64
+  kernel, hours against a 32 MB download.
+- **`extra-` matters.** The plain spelling _replaces_ the list, so a block that forgot
+  `cache.nixos.org` would quietly remove it.
+- **Writing them by hand and then running the script gives you two copies.** The script owns what
+  lies between its `# >>> loom devenv setup >>>` markers and cannot recognise a block you typed
+  yourself. Let it write them, or delete yours first.
 
-    > ⚠️ **Workaround for Fedora:** After installing Nix, open
-    > `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh`
-    > and comment out the first two lines.
+Keep personal nix settings in `~/.config/nix/nix.conf` rather than in a `NIX_CONFIG` of your own —
+the shell sets that variable.
 
-6. Install direnv
-    - Install direnv using the [official instructions](https://direnv.net/docs/installation.html)
-    - Don't forget to hook direnv into your shell [instructions](https://direnv.net/docs/hook.html)
-    - Open file `/etc/nix/nix.conf` and add the following lines, exactly as they are —
-      there is nothing in them to fill in
+> ⚠️ **On Fedora**, after installing Nix, open
+> `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh` and comment out the first two lines.
 
-    ```bash
-    extra-substituters = https://devenv.cachix.org https://loom.cachix.org https://nixpkgs-python.cachix.org
-    extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw= loom.cachix.org-1:qK4ugmN5g4Pvhv45OLcXTwG53ZnSauwrHLVA0A7Y0rs= nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU=
-    ```
-
-    > **On NixOS**, `/etc/nix/nix.conf` is generated and editing it is undone by the next
-    > `nixos-rebuild`. Put the same two settings in `configuration.nix` as
-    > `nix.settings.extra-substituters` and `nix.settings.extra-trusted-public-keys`, each a
-    > list of strings, and rebuild. `./cicd/setup_devenv.py` prints the snippet ready to paste.
-    >
-    > **Why this, and not `trusted-users`.** Nix uses a substituter when **either** the caller
-    > is in `trusted-users` **or** the daemon's own configuration names it. The lines above are
-    > the daemon's own configuration, so the caches work for every account on the machine and
-    > nobody has to be trusted — which matters, because the nix manual describes adding a user
-    > to `trusted-users` as "essentially equivalent to giving that user root access to the
-    > system". If you already have yourself in `trusted-users`, nothing here breaks; it is
-    > simply no longer needed.
-    >
-    > **Name every cache.** `devenv.cachix.org` has to be there because the first
-    > `devenv shell` fetches devenv itself, before anything in this repository can apply. The
-    > other two are what `devenv.nix` pulls from, and a cache left out of this list is one the
-    > daemon does not know — producing `ignoring untrusted substituter '<url>'` on every nix
-    > command. Without `loom.cachix.org` in particular, an appliance build compiles its whole
-    > closure from source: for `spark`, a qemu-emulated aarch64 kernel, hours against a 32 MB
-    > download.
-    >
-    > **`extra-` matters.** The plain spelling _replaces_ the list, so a block that forgot
-    > `cache.nixos.org` would quietly remove it.
-    >
-    > Keep personal nix settings in `~/.config/nix/nix.conf` rather than in a `NIX_CONFIG` of
-    > your own — the shell sets that variable.
-
-    - Run `sudo systemctl restart nix-daemon.service` to restart the Nix daemon
-    - Allow direnv to run in the loom directory: `cd loom/ && direnv allow`
-    - Check it worked: `./cicd/setup_devenv.py --only verify` reports any cache the daemon
-      is still missing
-
-7. Start the development environment:
-    - Loom: `cd loom/ && up --development`
-    - VS Code: `cd loom/ && code .`
+Then start the development environment: `cd loom/ && up --development`, and `code .` for VS Code.
 
 ## Setup verification
 
@@ -134,31 +101,15 @@ Start a shell with `devenv shell` and run `devenv-help` to get an overview.
 
 ## Optimizing Development Deployment
 
-If you don't need certain features during development, you can significantly
-speed up deployment time and reduce resource usage by passing flags to `up`.
+`up --help` lists every flag. Two are worth knowing about before you need them, because what
+they cost is not obvious from their names:
 
-### Disable AI Features (optional)
-
-If you're not working on AI-related functionality
-(summarization, translation, embeddings), disable these services:
-
-```sh
-up --development --disable-ai
-```
-
-> ⚠️ When services are disabled, any tasks that depend on them will fail.
-
-### Remove Resource Requests and Limits (optional)
-
-By default, Loom deployments include CPU and memory requests and limits for all containers.
-On low-memory machines, these limits can cause pods to be OOMKilled or fail to schedule.
-Pass `--no-resources` to `up` to deploy without any resource requests or limits:
-
-```sh
-up --development --no-resources
-```
-
-This flag can be combined with any other `up` flags.
+- **`--disable-ai`** skips summarization, translation and embeddings, which is most of a
+  deployment's time and memory. Any task that depends on those services then _fails_ rather than
+  degrading, so it is only for work that does not touch them.
+- **`--no-resources`** drops every CPU and memory request and limit. On a low-memory machine the
+  defaults are what make pods OOMKilled or unschedulable, so this is usually the fix for a
+  deployment that will not come up at all.
 
 ## Tailscale (optional)
 
@@ -174,31 +125,29 @@ you're authenticated using a **personal access token**—OAuth-based authenticat
 using the access token as the password. Once authenticated, GitLab Duo will be able to
 provide contextual code suggestions directly within your development environment.
 
-## Setting up GITLAB_TOKEN (optional)
+## Setting up GITLAB_TOKEN by hand
 
-Some development tools (like `ai-mr-update`) require a GitLab personal access token. You can
-configure this using `devenv.local.nix`, which is automatically loaded by devenv and excluded
-from git.
+`aitools`, `up.sh`'s online probe and the setup script's own `ssh-key` step all need a GitLab
+personal access token, in `devenv.local.nix` — a file devenv loads automatically and git ignores.
 
-1. Create a [personal access token][pat-docs] with `api` scope
+The `gitlab-token` step writes it for you, so this section is for the two cases where it does
+not: when you passed `--skip-gitlab-token`, and when `devenv.local.nix` already holds other
+settings — `cicd-mode-enter` and CI both put `{ env.cicd = true; }` there, and the step will not
+overwrite that.
 
-2. Create the file `devenv.local.nix` in the repository root:
+Create a [personal access token][pat-docs] with the `api` scope, put it in `devenv.local.nix` in
+the repository root, and add the binding to whatever is already in the file rather than replacing
+it:
 
-    ```nix
-    { ... }:
-    {
-      env.GITLAB_TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx";
-    }
-    ```
+```nix
+{ ... }:
+{
+  env.GITLAB_TOKEN = "glpat-xxxxxxxxxxxxxxxxxxxx";
+}
+```
 
-3. Reload the devenv environment:
-
-    ```sh
-    direnv reload
-    ```
-
-The `devenv.local.nix` file is gitignored, so your token stays local and won't be committed.
-See the [devenv documentation](https://devenv.sh/files-and-variables/) for more options.
+It holds a credential, so `chmod 600 devenv.local.nix`, then `direnv reload`. See the
+[devenv documentation](https://devenv.sh/files-and-variables/) for more options.
 
 [pat-docs]: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token
 
