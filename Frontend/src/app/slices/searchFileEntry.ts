@@ -17,6 +17,25 @@ export interface SearchFileEntry {
     previewFields?: string[];
     /** When `preview` was fetched, as epoch milliseconds. */
     previewFetchedAt?: number;
+    /**
+     * When the request that returned `preview` went out, as epoch
+     * milliseconds.
+     *
+     * Previews are fetched by several independent callers and their responses
+     * land in whatever order the API produces them. What a response is able to
+     * describe is fixed when it is issued rather than when it arrives, so this
+     * is what orders them.
+     */
+    previewIssuedAt?: number;
+    /**
+     * Local writes the server has not acknowledged yet, by preview field.
+     *
+     * The update API answers `202` and only schedules the write, so a preview
+     * fetched between that answer and the worker's write still describes the
+     * file as it was. These values are kept over such a response and dropped
+     * once one that can have seen them arrives.
+     */
+    pendingWrites?: Partial<GetFilePreviewResponse>;
 }
 
 /**

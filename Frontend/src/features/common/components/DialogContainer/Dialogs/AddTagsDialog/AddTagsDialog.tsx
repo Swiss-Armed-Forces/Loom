@@ -17,9 +17,9 @@ import {
     setBackgroundTaskSpinnerActive,
 } from "@app/slices/commonSlice";
 import {
+    patchFilePreview,
     selectQuery,
     selectTags,
-    setFilePreview,
     setTags,
 } from "@app/slices/searchSlice";
 
@@ -74,16 +74,20 @@ export const AddTagsDialog = ({
             if (filePreview && filePreview.fileId) {
                 await addTagsToFile(filePreview?.fileId, selectedTagsToAdd);
 
-                // Save tags locally
+                // Only the tags, through the patch: writing back a whole
+                // preview read when the dialog opened would also put back
+                // whatever the card's own buttons changed in the meantime.
                 dispatch(
-                    setFilePreview({
-                        ...filePreview,
-                        tags: [
-                            ...new Set([
-                                ...(filePreview?.tags ?? []),
-                                ...selectedTagsToAdd,
-                            ]),
-                        ],
+                    patchFilePreview({
+                        fileId: filePreview.fileId,
+                        changes: {
+                            tags: [
+                                ...new Set([
+                                    ...(filePreview.tags ?? []),
+                                    ...selectedTagsToAdd,
+                                ]),
+                            ],
+                        },
                     }),
                 );
             } else {

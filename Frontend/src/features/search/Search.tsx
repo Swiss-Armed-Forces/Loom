@@ -296,7 +296,10 @@ export const Search = () => {
                 // subscribed by the folder tree view.
                 const { fileId } = message as MessageFileUpdate;
                 if (fileId in store.getState().search.files) {
-                    dispatch(fetchPreview({ fileId }));
+                    // The message is published only once the write has been
+                    // refreshed into Elasticsearch, so this is the refetch
+                    // that settles the file's pending local writes.
+                    dispatch(fetchPreview({ fileId, authoritative: true }));
                 }
                 break;
             }
