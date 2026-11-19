@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -107,6 +107,34 @@ describe("FileDetailView", () => {
         expect(activePanels(container)[0].getAttribute("data-file-panel")).toBe(
             "b",
         );
+    });
+
+    it("empties the strip and falls back to the following tab", () => {
+        const { store } = renderView((dispatch) => {
+            dispatch(openFileTab({ fileId: "a", background: true }));
+            dispatch(openFileTab({ fileId: "b" }));
+        });
+
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: "toolbar.views.fileDetailCloseAll",
+            }),
+        );
+
+        expect(store.getState().search.openFileTabs).toHaveLength(0);
+        expect(store.getState().search.fileDetailSelection.kind).toBe("follow");
+    });
+
+    it("offers no close-all button with no file tab open", () => {
+        renderView((dispatch) => {
+            dispatch(setHighlightedFileId("a"));
+        });
+
+        expect(
+            screen.queryByRole("button", {
+                name: "toolbar.views.fileDetailCloseAll",
+            }),
+        ).toBeNull();
     });
 
     it("draws the placeholder with nothing highlighted", () => {
