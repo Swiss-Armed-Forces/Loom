@@ -178,6 +178,7 @@ const SEARCH_PERSIST_FIELDS = [
     "fieldColumnCount",
     "fieldColumnOf",
     "fieldColumnWidths",
+    "compactColumnWidths",
     "thumbnailColumnWidth",
     "thumbnailWidthRem",
     "showHighlights",

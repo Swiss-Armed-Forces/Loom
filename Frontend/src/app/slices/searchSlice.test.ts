@@ -31,6 +31,8 @@ import {
     setPreviewFieldColumn,
     addFieldColumn,
     removeFieldColumn,
+    setCompactColumnWidths,
+    selectCompactColumnWidths,
     selectBoldPreviewFields,
     selectCardElementVisibility,
     selectFilesInView,
@@ -1530,6 +1532,19 @@ describe("the card's field columns", () => {
 
         expect(selectFieldColumnCount(searchState(state))).toBe(1);
         expect(selectFieldColumnOf(searchState(state))).toEqual({ path: 0 });
+    });
+
+    it("drops the width of a removed column instead of passing it on", () => {
+        // The compact widths are kept by position, so one left behind would
+        // belong to whatever column is added in that place next.
+        let state = twoColumns(["content", "path"]);
+        state = searchSlice.reducer(state, setCompactColumnWidths([2, 0.5]));
+
+        state = searchSlice.reducer(state, removeFieldColumn());
+        expect(selectCompactColumnWidths(searchState(state))).toEqual([2]);
+
+        state = searchSlice.reducer(state, addFieldColumn());
+        expect(selectCompactColumnWidths(searchState(state))).toEqual([2]);
     });
 
     it("never goes below one column or above the cap", () => {

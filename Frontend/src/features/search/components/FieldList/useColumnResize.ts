@@ -6,21 +6,27 @@ import {
 } from "react";
 
 import { useAppDispatch } from "@app/hooks";
-import {
-    setFieldColumnWidths,
-    setThumbnailColumnWidth,
-} from "@app/slices/searchSlice";
+import { setThumbnailColumnWidth } from "@app/slices/searchSlice";
 
 import {
     COLUMN_HOST_ATTR,
-    FIELD_COLUMNS_VAR,
     MIN_COLUMN_PX,
     THUMB_INSET_VAR,
     THUMB_SIZE_VAR,
-    columnWidthsOf,
     fieldColumnTemplate,
     resizeColumns,
 } from "./fieldColumns";
+
+/** The columns a header drags, and where they are kept. */
+export interface ColumnTracks {
+    /** Width of each column, in `fr`, in the order they are drawn. */
+    widths: number[];
+    /** Custom property the template is published on, which a drag paints the
+     *  new tracks onto. */
+    variable: string;
+    /** Takes the widths a drag settled on, once the pointer is released. */
+    commit: (widths: number[]) => void;
+}
 
 export interface ColumnResize {
     /** Ref for the grid whose tracks are being dragged. */
@@ -31,56 +37,39 @@ export interface ColumnResize {
     /** Double-click handler for the same border: splits the width of the two
      *  columns it separates evenly between them. */
     resetBorder: (index: number) => () => void;
-    /** Pointer-down handler for the handle on the thumbnail column's border.
-     *  That column is a fixed width rather than a share of the row, so it is
-     *  dragged in pixels and the field columns absorb what it takes. */
-    startThumbnailResize: (event: ReactPointerEvent) => void;
-    /** Double-click handler for the same border: hands the column's width
-     *  back to the density preset. */
-    resetThumbnail: () => void;
 }
 
 /**
  * Dragging the border between two column headers.
  *
+ * Knows a list of `fr` tracks, the custom property they are published on and
+ * what to do with the widths a drag settles on - and nothing about what the
+ * columns hold. One header keys them per field and another by position; the
+ * arithmetic is the same either way.
+ *
  * The drag paints the new template straight onto the element that publishes
- * it and only dispatches once the pointer is released. Every card inherits
- * that variable, so going through the store on each pointer event would
- * re-render the whole result list to move one border.
+ * it and only calls `commit` once the pointer is released. Every card
+ * inherits that variable, so going through the store on each pointer event
+ * would re-render the whole result list to move one border.
  */
-export const useColumnResize = (
-    fields: string[],
-    widths: Record<string, number>,
-): ColumnResize => {
-    const dispatch = useAppDispatch();
+export const useColumnResize = (tracks: ColumnTracks): ColumnResize => {
+    const { widths, variable, commit } = tracks;
     const gridRef = useRef<HTMLDivElement>(null);
-
-    const commit = useCallback(
-        (next: number[]) => {
-            dispatch(
-                setFieldColumnWidths(
-                    Object.fromEntries(
-                        fields.map((id, i) => [id, next[i]] as const),
-                    ),
-                ),
-            );
-        },
-        [dispatch, fields],
-    );
 
     const startResize = useCallback(
         (index: number) => (event: ReactPointerEvent) => {
             const grid = gridRef.current;
             if (!grid || event.button !== 0) return;
-            // The handle lies over the label, which sorts by its field.
+            // The handle lies over the header cell, which may have a click of
+            // its own.
             event.preventDefault();
             event.stopPropagation();
 
-            const tracks = getComputedStyle(grid)
+            const trackPx = getComputedStyle(grid)
                 .gridTemplateColumns.split(" ")
                 .map(parseFloat);
-            const totalPx = tracks.reduce((sum, px) => sum + px, 0);
-            const start = columnWidthsOf(fields, widths);
+            const totalPx = trackPx.reduce((sum, px) => sum + px, 0);
+            const start = widths;
             const totalFr = start.reduce((sum, fr) => sum + fr, 0);
             if (!totalPx || !totalFr) return;
             // The tracks are fr, the pointer moves in px, and the list may be
@@ -101,10 +90,7 @@ export const useColumnResize = (
                     (clientX - startX) * frPerPx,
                     MIN_COLUMN_PX * frPerPx,
                 );
-                host?.style.setProperty(
-                    FIELD_COLUMNS_VAR,
-                    fieldColumnTemplate(latest),
-                );
+                host?.style.setProperty(variable, fieldColumnTemplate(latest));
             };
             // Pointer events outrun layout; coalescing to a frame keeps a fast
             // drag from re-laying out the list several times per paint.
@@ -124,21 +110,46 @@ export const useColumnResize = (
             handle.addEventListener("pointerup", onEnd);
             handle.addEventListener("pointercancel", onEnd);
         },
-        [commit, fields, widths],
+        [commit, variable, widths],
     );
 
     const resetBorder = useCallback(
         (index: number) => () => {
-            const start = columnWidthsOf(fields, widths);
-            if (start[index] == null || start[index + 1] == null) return;
-            const even = (start[index] + start[index + 1]) / 2;
-            const next = [...start];
+            if (widths[index] == null || widths[index + 1] == null) return;
+            const even = (widths[index] + widths[index + 1]) / 2;
+            const next = [...widths];
             next[index] = even;
             next[index + 1] = even;
             commit(next);
         },
-        [commit, fields, widths],
+        [commit, widths],
     );
+
+    return { gridRef, startResize, resetBorder };
+};
+
+export interface ThumbnailResize {
+    /** Pointer-down handler for the handle on the thumbnail column's border.
+     *  That column is a fixed width rather than a share of the row, so it is
+     *  dragged in pixels and the field columns absorb what it takes. */
+    startThumbnailResize: (event: ReactPointerEvent) => void;
+    /** Double-click handler for the same border: hands the column's width
+     *  back to the density preset. */
+    resetThumbnail: () => void;
+}
+
+/**
+ * Dragging the border of the slot the line layout keeps for a thumbnail.
+ *
+ * Beside `useColumnResize` rather than inside it: that column is not one of
+ * the tracks but an absolute length the tracks share the row with, and the
+ * line layout is the only header that reserves one. `gridRef` is the field
+ * grid it stands next to, which is what bounds the drag.
+ */
+export const useThumbnailResize = (
+    gridRef: RefObject<HTMLDivElement | null>,
+): ThumbnailResize => {
+    const dispatch = useAppDispatch();
 
     const startThumbnailResize = useCallback(
         (event: ReactPointerEvent) => {
@@ -198,18 +209,12 @@ export const useColumnResize = (
             handle.addEventListener("pointerup", onEnd);
             handle.addEventListener("pointercancel", onEnd);
         },
-        [dispatch],
+        [dispatch, gridRef],
     );
 
     const resetThumbnail = useCallback(() => {
         dispatch(setThumbnailColumnWidth(null));
     }, [dispatch]);
 
-    return {
-        gridRef,
-        startResize,
-        resetBorder,
-        startThumbnailResize,
-        resetThumbnail,
-    };
+    return { startThumbnailResize, resetThumbnail };
 };

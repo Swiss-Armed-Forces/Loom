@@ -1,0 +1,70 @@
+/*
+ * The strip above the list that carries the compact layout's drag handles.
+ *
+ * Deliberately not built like `FieldColumnHeader`, which it sits in the same
+ * place as. A compact column holds several fields, so it has no name to print
+ * and nothing to sort by, and a strip that looked like a row of column labels
+ * would be promising a click that does nothing. It is a fraction of the
+ * height, carries no text at all, and shows its dividers at rest rather than
+ * on hover - they are the only thing in it to find.
+ *
+ * The padding reproduces the inset of a card's field area: the unread bar plus
+ * the content padding on the left, and the content padding plus the width the
+ * list reserves for a side thumbnail on the right.
+ */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: stretch;
+    height: 0.875rem;
+    padding: 0 calc(1rem + var(--loom-card-thumb-width, 0rem)) 0
+        calc(1rem + 3px);
+    background-color: var(--mui-palette-background-default);
+    border-bottom: 1px solid var(--mui-palette-divider);
+}
+
+.cells {
+    composes: compactGrid from "./columnLayout.module.css";
+    flex: 1;
+}
+
+.cell {
+    composes: compactColumn from "./columnLayout.module.css";
+    position: relative;
+}
+
+/*
+ * Sits astride the gap between two columns, wider than the divider it draws so
+ * it can be caught with a pointer. The cell starts at its track's left edge and
+ * the gap lies to its left, so the border is half a gap back from it.
+ */
+.resizeHandle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-0.5rem - 5px);
+    width: 10px;
+    display: flex;
+    justify-content: center;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+/* Drawn at rest, unlike the line header's, which has labels to say where its
+columns break. This strip has nothing else in it, so the divider is both the
+column boundary and the only sign that it can be dragged. */
+.resizeHandle::after {
+    content: "";
+    width: 2px;
+    align-self: stretch;
+    border-radius: 1px;
+    background-color: var(--mui-palette-divider);
+    transition: background-color 0.15s;
+}
+
+.resizeHandle:hover::after,
+.resizeHandle:active::after {
+    background-color: var(--mui-palette-primary-main);
+}

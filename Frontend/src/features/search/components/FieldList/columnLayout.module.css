@@ -1,5 +1,5 @@
-/* Geometry shared by the column header and every card's line, composed into
-both rather than written twice: the header's labels and the cards' values are
+/* Geometry shared by a column header and the cards under it, composed into
+both rather than written twice: a header cell and the values beneath it are
 one column only for as long as the two agree to the pixel. */
 
 /* The field tracks. Identical declaration on both sides, fed by the template
@@ -8,6 +8,25 @@ and the gap the list publishes. */
     display: grid;
     grid-template-columns: var(--loom-field-columns, 1fr);
     gap: var(--loom-row-gap, 0.5rem);
+    min-width: 0;
+}
+
+/* The compact layout's column buckets, on the card and in the strip above the
+list. Its own template, because these tracks are one per column while the ones
+above are one per selected field. The gap is the card's, not the line layout's
+row gap: these columns are read down rather than across, and they are set
+apart by space alone rather than by a divider. */
+.compactGrid {
+    display: grid;
+    grid-template-columns: var(--loom-compact-columns, 1fr);
+    gap: 1rem;
+    min-width: 0;
+}
+
+/* A grid item sizes to its content unless told otherwise, so a long value
+would widen its own column past the track and push the card's later columns
+out of line with every other card's. */
+.compactColumn {
     min-width: 0;
 }
 

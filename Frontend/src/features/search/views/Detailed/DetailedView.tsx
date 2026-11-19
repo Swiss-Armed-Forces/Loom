@@ -14,6 +14,8 @@ import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { selectIsLoading } from "@app/slices/commonSlice";
 import {
     selectCardElementVisibility,
+    selectCompactColumnWidths,
+    selectFieldColumnCount,
     selectFieldColumnWidths,
     selectFieldLayout,
     selectPreviewFields,
@@ -36,12 +38,15 @@ import {
     LoadMoreButton,
     ResultCard,
 } from "@features/search/components";
+import { CompactColumnHeader } from "@features/search/components/FieldList/CompactColumnHeader";
 import { FieldColumnHeader } from "@features/search/components/FieldList/FieldColumnHeader";
 import {
     COLUMN_HOST_ATTR,
+    COMPACT_COLUMNS_VAR,
     FIELD_COLUMNS_VAR,
     cardThumbnailStyle,
     columnWidthsOf,
+    compactColumnWidths,
     fieldColumnTemplate,
     reservesThumbnailSlot,
     thumbnailSlotStyle,
@@ -173,6 +178,8 @@ export const DetailedView: React.FC = React.memo(() => {
     const fieldLayout = useAppSelector(selectFieldLayout);
     const previewFields = useAppSelector(selectPreviewFields);
     const columnWidths = useAppSelector(selectFieldColumnWidths);
+    const columnCount = useAppSelector(selectFieldColumnCount);
+    const compactWidths = useAppSelector(selectCompactColumnWidths);
     const thumbnailWidth = useAppSelector(selectThumbnailColumnWidth);
     const visibility = useAppSelector(selectCardElementVisibility);
     const orderedFileIds = useAppSelector(selectOrderedFileIds);
@@ -226,11 +233,21 @@ export const DetailedView: React.FC = React.memo(() => {
     // for the whole list, so the header and every card resolve to the same
     // tracks, the same spacing and the same width kept free on the right.
     const showColumns = fieldLayout === "line";
+    // A single column has no border to drag and is drawn flat anyway, and a
+    // card with no field selected has nothing under the strip to line up
+    // with.
+    const showCompactColumns =
+        fieldLayout === "compact" &&
+        columnCount > 1 &&
+        previewFields.length > 0;
     const listStyle = useMemo(
         () =>
             ({
                 [FIELD_COLUMNS_VAR]: fieldColumnTemplate(
                     columnWidthsOf(previewFields, columnWidths),
+                ),
+                [COMPACT_COLUMNS_VAR]: fieldColumnTemplate(
+                    compactColumnWidths(columnCount, compactWidths),
                 ),
                 ...rowRhythmStyle(),
                 ...thumbnailSlotStyle(
@@ -240,7 +257,15 @@ export const DetailedView: React.FC = React.memo(() => {
                 ),
                 ...cardThumbnailStyle(visibility.thumbnailWidthRem),
             }) as CSSProperties,
-        [previewFields, columnWidths, fieldLayout, visibility, thumbnailWidth],
+        [
+            previewFields,
+            columnWidths,
+            columnCount,
+            compactWidths,
+            fieldLayout,
+            visibility,
+            thumbnailWidth,
+        ],
     );
 
     // Everything that decides how tall a card is, in one string. The
@@ -255,10 +280,18 @@ export const DetailedView: React.FC = React.memo(() => {
                 fieldLayout,
                 previewFields,
                 columnWidths,
+                compactWidths,
                 thumbnailWidth,
                 visibility,
             ]),
-        [fieldLayout, previewFields, columnWidths, thumbnailWidth, visibility],
+        [
+            fieldLayout,
+            previewFields,
+            columnWidths,
+            compactWidths,
+            thumbnailWidth,
+            visibility,
+        ],
     );
 
     // Called above the empty-list early return: hooks cannot be conditional,
@@ -554,6 +587,7 @@ export const DetailedView: React.FC = React.memo(() => {
             style={listStyle}
         >
             {showColumns && <FieldColumnHeader />}
+            {showCompactColumns && <CompactColumnHeader />}
             <div
                 className={styles.virtualList}
                 data-testid="virtual-list"

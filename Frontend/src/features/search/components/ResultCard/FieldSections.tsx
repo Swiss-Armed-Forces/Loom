@@ -19,6 +19,7 @@ import {
     nextSortSelection,
     updateFieldOfQuery,
 } from "@features/common/utils/helpers";
+import columnLayout from "@features/search/components/FieldList/columnLayout.module.css";
 import { FieldIndicator } from "@features/search/components/FieldList/FieldIndicator";
 import { FieldItem } from "@features/search/components/FieldList/FieldItem";
 import { FieldLine } from "@features/search/components/FieldList/FieldLine";
@@ -33,16 +34,6 @@ export interface FieldSectionsProps {
     filePreview: GetFilePreviewResponse;
     fullDetails?: boolean;
 }
-
-/* Equal shares rather than content-sized columns: the columns are read
-across, so a value has to start where the value above it did however long its
-neighbour to the left runs. */
-const COLUMNS_SX = {
-    display: "flex",
-    gap: 2,
-    alignItems: "flex-start",
-} as const;
-const COLUMN_SX = { flex: "1 1 0", minWidth: 0 } as const;
 
 export const FieldSections = memo(
     ({ filePreview, fullDetails }: FieldSectionsProps) => {
@@ -251,14 +242,21 @@ export const FieldSections = memo(
         };
 
         // One column is the card as it always was, so it is drawn flat rather
-        // than as a single-column flex row. The detail panel reads top to
+        // than as a single-column grid. The detail panel reads top to
         // bottom and is never split.
+        //
+        // The tracks come from the list rather than from the card: the widths
+        // the reader dragged in the strip above apply to every card, and a
+        // card left to split itself evenly would ignore them.
         if (columnCount > 1 && !fullDetails) {
             return (
                 <>
-                    <Box sx={COLUMNS_SX}>
+                    <Box className={columnLayout.compactGrid}>
                         {Array.from({ length: columnCount }, (_, column) => (
-                            <Box key={column} sx={COLUMN_SX}>
+                            <Box
+                                key={column}
+                                className={columnLayout.compactColumn}
+                            >
                                 {selectedEntries
                                     .filter((e) => e.column === column)
                                     .map(renderEntry)}

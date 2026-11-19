@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { columnWidthsOf, resizeColumns } from "./fieldColumns";
+import {
+    columnWidthsOf,
+    compactColumnWidths,
+    resizeColumns,
+} from "./fieldColumns";
 
 const total = (widths: number[]) => widths.reduce((sum, w) => sum + w, 0);
 
@@ -70,5 +74,20 @@ describe("columnWidthsOf", () => {
         expect(columnWidthsOf(["size", "subject", "from"], widths)).toEqual([
             1, 0.5, 2,
         ]);
+    });
+});
+
+describe("compactColumnWidths", () => {
+    it("gives a column nobody has dragged the default width", () => {
+        // The column count decides how many tracks there are; the stored
+        // array only reaches as far as the borders that have been moved.
+        expect(compactColumnWidths(3, [1.5])).toEqual([1.5, 1, 1]);
+    });
+
+    it("falls back to the default for a width that cannot be a track", () => {
+        // Same guard as the line layout's, and for the same reason: one of
+        // these reaching the template invalidates all of it, and the browser
+        // resolves that by laying every column out as one.
+        expect(compactColumnWidths(3, [Number.NaN, 0, 2])).toEqual([1, 1, 2]);
     });
 });

@@ -433,6 +433,17 @@ export interface SearchState {
      */
     showFieldNames: boolean;
     fieldColumnWidths: Record<string, number>;
+    /**
+     * Width in `fr` of each column of the compact layout, by position.
+     *
+     * By position and not per field, which is the opposite of
+     * `fieldColumnWidths` and for the same reason: a compact column is a
+     * bucket the reader moves fields in and out of, so the column a width
+     * belongs to is the one in that place. Empty until a border is dragged,
+     * and never longer than `fieldColumnCount`; a position past its end is a
+     * column that has never been dragged.
+     */
+    compactColumnWidths: number[];
     thumbnailColumnWidth: number | null;
     availablePreviewFields: PreviewField[];
     fieldExpansion: Record<string, boolean>;
@@ -521,6 +532,8 @@ export const SEARCH_STATE_DOCS = {
         "Record<fieldId, number> — zero-based card column per selected field",
     fieldColumnWidths:
         "Record<fieldName, number> — width in fr of each column in the line field layout, as left by dragging the column borders; a field absent from the map is one that was never dragged",
+    compactColumnWidths:
+        "number[] — width in fr of each column of the compact field layout, by position, as left by dragging the column borders; a position past the end of the array is a column that was never dragged",
     thumbnailColumnWidth:
         "number | null — edge length in px of the thumbnail column in the line field layout, as left by dragging its border; null means the density decides",
     availablePreviewFields:
@@ -674,6 +687,7 @@ const initialState: SearchState = {
     fieldColumnOf: {},
     showFieldNames: true,
     fieldColumnWidths: {},
+    compactColumnWidths: [],
     thumbnailColumnWidth: null,
     availablePreviewFields: [],
     // The element switches, always authoritative; they start from standard.
@@ -1647,6 +1661,9 @@ export const searchSlice = createSlice({
                 Math.min(column, state.fieldColumnCount - 1),
             );
         },
+        // `compactColumnWidths` needs nothing here: a column added is one
+        // nobody has dragged, and a position past the end of that array is
+        // read as the default width.
         addFieldColumn: (state) => {
             state.fieldColumnCount = Math.min(
                 state.fieldColumnCount + 1,
@@ -1663,6 +1680,13 @@ export const searchSlice = createSlice({
             for (const [id, column] of Object.entries(state.fieldColumnOf)) {
                 if (column > last) state.fieldColumnOf[id] = last;
             }
+            // Its width goes with it. Kept by position, a width left behind
+            // would be handed to the next column added rather than to the
+            // one it was dragged for.
+            state.compactColumnWidths = state.compactColumnWidths.slice(
+                0,
+                state.fieldColumnCount,
+            );
         },
         toggleBoldPreviewField: (state, action: PayloadAction<string>) => {
             const fieldId = action.payload;
@@ -1677,6 +1701,12 @@ export const searchSlice = createSlice({
             action: PayloadAction<Record<string, number>>,
         ) => {
             state.fieldColumnWidths = action.payload;
+        },
+        // Replaces the whole array for the same reason. A drag hands over one
+        // entry per column, which is what keeps the array at the column
+        // count.
+        setCompactColumnWidths: (state, action: PayloadAction<number[]>) => {
+            state.compactColumnWidths = action.payload;
         },
         // null hands the column back to the density preset.
         setThumbnailColumnWidth: (
@@ -2198,6 +2228,7 @@ export const {
     addFieldColumn,
     removeFieldColumn,
     setFieldColumnWidths,
+    setCompactColumnWidths,
     setThumbnailColumnWidth,
     setAvailablePreviewFields,
     setFieldExpansion,
@@ -2690,6 +2721,11 @@ export const selectBoldPreviewFields = createSelector(
 export const selectFieldColumnWidths = createSelector(
     selectSearch,
     (search) => search.fieldColumnWidths,
+);
+
+export const selectCompactColumnWidths = createSelector(
+    selectSearch,
+    (search) => search.compactColumnWidths,
 );
 
 export const selectThumbnailColumnWidth = createSelector(
