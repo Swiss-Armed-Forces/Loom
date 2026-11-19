@@ -74,9 +74,9 @@
     }
 }
 
-/* Dense list chrome: the rows meet, and what separates them is a hairline and
-alternating backgrounds rather than a gap, the way a mail client separates
-messages. Declared last so it also overrides the narrow-screen rule above. */
+/* Dense list chrome: the rows meet, and what separates them is a hairline
+rather than a gap, the way a mail client separates messages. Declared last so
+it also overrides the narrow-screen rule above. */
 .cardContainer[data-row-chrome="flat"] {
     padding: 0;
 }
@@ -88,17 +88,6 @@ messages. Declared last so it also overrides the narrow-screen rule above. */
 .cardContainer[data-row-chrome="flat"] :global(.MuiCard-root) {
     border-radius: 0;
     border-bottom: 1px solid var(--mui-palette-divider);
-}
-
-/* The stripe is keyed on an attribute carrying the row's index in the result
-list, not on `nth-child`: only a window of rows is in the DOM, so a row's
-position among its siblings is where the window happens to start rather than
-where the result is, and the stripes would invert as the list scrolls.
-The cursor paints the whole card, so it keeps the stripe off its own row. */
-.cardContainer[data-row-chrome="flat"]
-    .resultRow[data-stripe="true"]
-    :global(.MuiCard-root:not([data-cursor])) {
-    background-color: var(--mui-palette-action-hover);
 }
 
 /* Stands in for the page being fetched: a move past the last card lands here.

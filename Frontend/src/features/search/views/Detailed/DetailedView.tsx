@@ -145,10 +145,6 @@ const ResultRow = ({
             }
             data-index={index}
             data-pinned={pinnedOffset === null ? undefined : "true"}
-            // The zebra stripe of the flat chrome is keyed on this rather than
-            // on nth-child: only a window of rows is rendered, so sibling
-            // position says where the window starts, not where the result is.
-            data-stripe={index % 2 === 1 ? "true" : undefined}
             ref={setRefs}
             style={
                 pinnedOffset === null
