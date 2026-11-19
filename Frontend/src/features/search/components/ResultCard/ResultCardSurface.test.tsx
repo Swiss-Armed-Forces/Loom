@@ -100,6 +100,9 @@ describe("ResultCardSurface", () => {
 });
 
 describe("resultCardSurfaceStyle", () => {
+    /** The dark scheme's block, as `theme.applyStyles` renders it. */
+    const DARK_SCHEME = "@media (prefers-color-scheme: dark)";
+
     const styleOf = (isHighlighted: boolean, unread: boolean) =>
         resultCardSurfaceStyle({ isHighlighted, unread }, globalTheme);
 
@@ -111,7 +114,7 @@ describe("resultCardSurfaceStyle", () => {
         expect(read.borderColor).toBe("transparent");
         // Read state applies to every file in the list, so it may not claim
         // the surface - that belongs to the one highlighted card.
-        expect(unread.bgcolor).toBeUndefined();
+        expect(unread.tint).toEqual({});
     });
 
     it("tints the highlighted card and nothing else", () => {
@@ -119,16 +122,32 @@ describe("resultCardSurfaceStyle", () => {
         // border - reads as a different kind of card rather than the same
         // card under the cursor, and it changes the shape of the one row the
         // reader is looking at.
-        expect(styleOf(true, false).bgcolor).toBeTruthy();
-        expect(styleOf(false, false).bgcolor).toBeUndefined();
+        expect(styleOf(true, false).tint.backgroundColor).toBeTruthy();
+        expect(styleOf(false, false).tint).toEqual({});
         expect(Object.keys(styleOf(true, false))).toEqual([
             "borderColor",
-            "bgcolor",
+            "tint",
         ]);
     });
 
     it("tints in the shared amber", () => {
-        expect(styleOf(true, false).bgcolor).toContain("palette-primary");
+        expect(JSON.stringify(styleOf(true, false).tint)).toContain(
+            "palette-primary",
+        );
+    });
+
+    it("washes each colour scheme at its own strength", () => {
+        // Both schemes share one primary and differ only in `background`, so
+        // a single alpha is not the same wash over a light card as it is over
+        // the dark card's paper.
+        const { tint } = styleOf(true, false);
+
+        expect(tint[DARK_SCHEME]).toEqual({
+            backgroundColor: expect.any(String),
+        });
+        expect(tint[DARK_SCHEME]).not.toEqual({
+            backgroundColor: tint.backgroundColor,
+        });
     });
 
     it("sits every card at the same height", () => {
@@ -139,9 +158,11 @@ describe("resultCardSurfaceStyle", () => {
     });
 
     it("resolves the tint to a real theme token", () => {
-        // `rgba(undefined / 0.08)` is a silently invisible cue, so assert the
-        // channel token it interpolates actually exists.
-        expect(styleOf(true, true).bgcolor).not.toContain("undefined");
+        // `rgba(undefined / 0.2)` is a silently invisible cue, so assert the
+        // channel token every scheme interpolates actually exists.
+        expect(JSON.stringify(styleOf(true, true).tint)).not.toContain(
+            "undefined",
+        );
     });
 
     it("keeps the bar independent of the highlight", () => {
@@ -155,6 +176,6 @@ describe("resultCardSurfaceStyle", () => {
     });
 
     it("keeps the cursor cue independent of the read state", () => {
-        expect(styleOf(true, true).bgcolor).toBe(styleOf(true, false).bgcolor);
+        expect(styleOf(true, true).tint).toEqual(styleOf(true, false).tint);
     });
 });

@@ -68,7 +68,7 @@ export const ResultCardSurface = ({
 }: ResultCardSurfaceProps) => {
     const theme = useTheme();
     const { t } = useTranslation();
-    const { borderColor, bgcolor } = resultCardSurfaceStyle(
+    const { borderColor, tint } = resultCardSurfaceStyle(
         { isHighlighted, unread: !seen },
         theme,
     );
@@ -86,14 +86,19 @@ export const ResultCardSurface = ({
             elevation={resultCardElevation(flat)}
             data-read-state={seen ? "read" : "unread"}
             data-cursor={isHighlighted ? "true" : undefined}
-            sx={{
-                position: "relative",
-                // The gutter the bar is positioned over, so that the strip
-                // takes its room from the layout instead of from the card's
-                // own content.
-                pl: `${READ_STATE_BAR_HIT_WIDTH_PX}px`,
-                bgcolor,
-            }}
+            sx={[
+                {
+                    position: "relative",
+                    // The gutter the bar is positioned over, so that the strip
+                    // takes its room from the layout instead of from the card's
+                    // own content.
+                    pl: `${READ_STATE_BAR_HIT_WIDTH_PX}px`,
+                },
+                // The tint carries a colour-scheme block of its own, so it goes
+                // last and as its own entry rather than spread into the object
+                // above.
+                tint,
+            ]}
         >
             {children}
             <LazyTooltip

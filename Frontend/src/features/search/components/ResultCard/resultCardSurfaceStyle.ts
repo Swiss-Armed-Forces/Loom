@@ -1,4 +1,4 @@
-import { alpha, Theme } from "@mui/material/styles";
+import { alpha, CSSObject, Theme } from "@mui/material/styles";
 
 /**
  * State a result card's surface is painted from.
@@ -15,12 +15,40 @@ export interface ResultCardSurfaceInput {
 }
 
 export interface ResultCardSurfaceStyle {
+    /** Colour of the read-state bar on the card's left edge. */
     borderColor: string;
-    bgcolor: string | undefined;
+    /**
+     * Background wash that marks the highlighted card, empty on every other
+     * card. A style fragment rather than a single colour because the two
+     * colour schemes wash at different strengths.
+     */
+    tint: CSSObject;
 }
 
-/** Opacity of the background tint that marks the highlighted card. */
-const CURSOR_TINT_OPACITY = 0.08;
+/** Strength of the highlight wash in each colour scheme. */
+interface CursorTintOpacity {
+    light: number;
+    dark: number;
+}
+
+/**
+ * Opacity of the background tint that marks the highlighted card, per colour
+ * scheme.
+ *
+ * Two numbers rather than one. `theme.ts` gives both schemes the same primary
+ * and differs only in `background`, so a single alpha is not the same wash
+ * over a light card as it is over the dark card's `#282825`. The pair is set
+ * so that the washed card sits roughly the same CIEDE2000 distance from an
+ * untinted neighbour in either scheme - about 14 units - which is what makes
+ * the highlight read the same whichever scheme the reader is in.
+ *
+ * The light value is the larger of the two because `#FFBF00` is nearly as
+ * light as a light-mode card: that wash is almost pure chroma and carries
+ * very little luminance difference, which is the part of it a sunlit or
+ * washed-out panel keeps. Both values stay far below the point where the
+ * card's own body text loses contrast against the wash it sits on.
+ */
+const CURSOR_TINT_OPACITY: CursorTintOpacity = { light: 0.2, dark: 0.14 };
 
 /**
  * Width of the coloured band that carries the read state, in pixels.
@@ -45,11 +73,27 @@ export const READ_STATE_BAR_HIT_WIDTH_PX = 16;
 /** Elevation of a result card. Every card sits at the same height. */
 const BASE_ELEVATION = 1;
 
-/** Background tint of the highlighted card, in the primary hue. */
-const cursorTint = (theme: Theme): string =>
+/** The primary hue at one opacity, as a colour the surface can be painted in. */
+const washedPrimary = (theme: Theme, opacity: number): string =>
     theme.vars
-        ? `rgba(${theme.vars.palette.primary.mainChannel} / ${CURSOR_TINT_OPACITY})`
-        : alpha(theme.palette.primary.main, CURSOR_TINT_OPACITY);
+        ? `rgba(${theme.vars.palette.primary.mainChannel} / ${opacity})`
+        : alpha(theme.palette.primary.main, opacity);
+
+/**
+ * Background tint of the highlighted card, in the primary hue.
+ *
+ * The light strength is the base and the dark one overrides it, because
+ * `theme.ts` builds its variables with `colorSchemeSelector: "media"`:
+ * `applyStyles` then renders the override as a `prefers-color-scheme` block
+ * nested in the card's own styles, so the scheme is resolved by the browser
+ * and the card needs no render to follow the reader switching schemes.
+ */
+const cursorTint = (theme: Theme): CSSObject => ({
+    backgroundColor: washedPrimary(theme, CURSOR_TINT_OPACITY.light),
+    ...theme.applyStyles("dark", {
+        backgroundColor: washedPrimary(theme, CURSOR_TINT_OPACITY.dark),
+    }),
+});
 
 /**
  * Elevation of a result card.
@@ -91,6 +135,6 @@ export const resultCardSurfaceStyle = (
 ): ResultCardSurfaceStyle => {
     return {
         borderColor: unread ? "primary.main" : "transparent",
-        bgcolor: isHighlighted ? cursorTint(theme) : undefined,
+        tint: isHighlighted ? cursorTint(theme) : {},
     };
 };
