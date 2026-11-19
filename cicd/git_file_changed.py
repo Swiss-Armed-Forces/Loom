@@ -7,7 +7,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 import git
 import gitlab
@@ -52,6 +52,23 @@ class CiContext:  # pylint: disable=too-many-instance-attributes
     ci_commit_prefix: str = "chore(ci):"
 
 
+@dataclass(frozen=True)
+class PushTarget:
+    """The repository a push goes to, and the credential that authenticates it."""
+
+    project_path: str
+    auth_user: str
+    token: str
+
+
+@dataclass(frozen=True)
+class PushDecision:
+    """Where the regenerated files can be pushed, and why not when they cannot."""
+
+    target: Optional[PushTarget]
+    blocked_reason: str = ""
+
+
 def _req_env(name: str) -> str:
     v = os.getenv(name)
     if not v:
@@ -68,8 +85,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description=(
             "In MR pipelines, stage ALL unstaged changes, commit & push to the MR "
             "source branch (with safeguards), then exit 1 if changes were detected. "
-            "Uses CI_JOB_TOKEN for authentication. Optionally triggers new MR pipeline "
-            "after successful push using PROJECT_ACCESS_TOKEN. "
+            "Uses CI_JOB_TOKEN for authentication, or PROJECT_ACCESS_TOKEN for a fork "
+            "whose merge request allows commits from upstream members; a fork that "
+            "does not gets a patch in the artifacts instead. Optionally triggers new "
+            "MR pipeline after successful push using PROJECT_ACCESS_TOKEN. "
             "In non-MR pipelines (or with --no-update), only verify cleanliness and "
             "fail if there are changes. Also copies changed files to a mirror folder."
         )
@@ -199,7 +218,7 @@ def setup_logging(level: str) -> None:
 # ----------------------------
 
 
-def init_git_repo(ctx: CiContext) -> git.Repo:
+def init_git_repo(ctx: CiContext, target: PushTarget) -> git.Repo:
     """Prepare the repo safely for MR pushes.
 
     * set identity + safe.directory
@@ -212,7 +231,11 @@ def init_git_repo(ctx: CiContext) -> git.Repo:
 
     if ctx.dry_run:
         logging.info("[DRY RUN] Would configure user/email and mark repo as safe.")
-        logging.info("[DRY RUN] Would set remote 'origin' to CI_JOB_TOKEN auth URL.")
+        logging.info(
+            "[DRY RUN] Would set remote 'origin' to %s with %s auth.",
+            target.project_path,
+            target.auth_user,
+        )
         logging.info("[DRY RUN] Would fetch origin/%s.", ctx.source_branch)
         logging.info("[DRY RUN] Would `checkout -B %s`.", ctx.source_branch)
         logging.info(
@@ -226,15 +249,15 @@ def init_git_repo(ctx: CiContext) -> git.Repo:
         cw.set_value("user", "email", ctx.author_email)
         cw.set_value("safe", "directory", str(Path.cwd()))
 
-    if ctx.job_token is not None:
-        # Use CI job token for git operations
-        https_url = (
-            "https://gitlab-ci-token:"
-            f"{ctx.job_token}@{ctx.server_host}/{ctx.project_path}.git"
-        )
-        logging.info("Using CI job token authentication")
-    else:
-        raise RuntimeError("No authentication provided: CI_JOB_TOKEN is required.")
+    https_url = (
+        f"https://{target.auth_user}:"
+        f"{target.token}@{ctx.server_host}/{target.project_path}.git"
+    )
+    logging.info(
+        "Pushing to %s as %s",
+        target.project_path,
+        target.auth_user,
+    )
 
     try:
         _ = repo.remotes.origin
@@ -479,13 +502,107 @@ def generate_patch(repo: git.Repo, ctx: CiContext) -> Path:
         return patch_path
 
     repo.git.add("--all")
-    patch_content = repo.git.diff("--cached", "--binary")
+    # GitPython strips a trailing newline from stdout by default, and git apply
+    # rejects a patch whose last line has no terminator as a corrupt patch.
+    patch_content = repo.git.diff("--cached", "--binary", strip_newline_in_stdout=False)
     repo.git.reset("HEAD")
 
     patch_path.parent.mkdir(parents=True, exist_ok=True)
     patch_path.write_text(patch_content, encoding="utf-8")
     logging.info("Patch written to: %s", patch_path)
     return patch_path
+
+
+def fork_allows_collaboration(ctx: CiContext) -> bool:
+    """True when the MR author lets upstream members commit to the fork's branch.
+
+    GitLab calls the setting "Allow commits from upstream members" and reports it on the
+    merge request as `allow_collaboration`. An API that cannot answer is read as a
+    refusal, so the patch is written rather than a push attempted blindly.
+    """
+    if not ctx.mr_iid:
+        return False
+
+    try:
+        gl = gitlab.Gitlab(
+            f"https://{ctx.server_host}", private_token=ctx.project_access_token
+        )
+        project = gl.projects.get(ctx.project_id, lazy=True)
+        mr = project.mergerequests.get(ctx.mr_iid)
+        return bool(mr.allow_collaboration)
+    except gitlab.GitlabError as exc:
+        logging.warning(
+            "Could not read allow_collaboration for MR !%s: %s", ctx.mr_iid, exc
+        )
+        return False
+
+
+def resolve_push_target(
+    ctx: CiContext, allows_collaboration: Callable[[CiContext], bool]
+) -> PushDecision:
+    """Decide where the regenerated files go, if anywhere.
+
+    A same-project MR pushes to its own project with the job token, and a CI that
+    provides none is misconfigured rather than blocked.
+
+    A fork is pushed to only when its author allows upstream members to commit, and
+    then only with the project access token: a job token's push rights are a setting on
+    the receiving project, so a fork would have to allowlist this project for
+    cross-project job-token pushes, which a contributor has no reason to have done. The
+    access token's bot is a member of this project, which is who the fork admits.
+    """
+    if not is_cross_project_mr(ctx):
+        if not ctx.job_token:
+            raise RuntimeError("No authentication provided: CI_JOB_TOKEN is required.")
+        return PushDecision(
+            PushTarget(ctx.project_path, "gitlab-ci-token", ctx.job_token)
+        )
+
+    if not ctx.source_project_path:
+        return PushDecision(None, "CI_MERGE_REQUEST_SOURCE_PROJECT_PATH is not set")
+
+    if not ctx.project_access_token:
+        return PushDecision(None, "PROJECT_ACCESS_TOKEN is not set")
+
+    if not allows_collaboration(ctx):
+        return PushDecision(
+            None, "the fork does not allow commits from upstream members"
+        )
+
+    return PushDecision(
+        PushTarget(ctx.source_project_path, "oauth2", ctx.project_access_token)
+    )
+
+
+def report_patch_fallback(repo: git.Repo, ctx: CiContext, reason: str) -> int:
+    """Write the patch the author has to apply by hand, and fail the job."""
+    patch_path = generate_patch(repo, ctx)
+
+    advice = ""
+    if is_cross_project_mr(ctx):
+        advice = (
+            "  Enabling 'Allow commits from upstream members' on the merge request "
+            "lets this pipeline push them itself:\n"
+            "  https://docs.gitlab.com/user/project/merge_requests/"
+            "allow_collaboration/\n\n"
+        )
+
+    logging.error(
+        "Cannot push generated files to branch '%s' (project: %s): %s.\n\n"
+        "%s"
+        "  Download the patch from the job artifacts and apply it:\n\n"
+        "    git apply %s\n"
+        "    git add -A && git commit -m 'chore: update generated files'\n"
+        "    git push\n\n"
+        "  Artifact path: %s",
+        ctx.source_branch,
+        ctx.source_project_path or ctx.project_path,
+        reason,
+        advice,
+        patch_path,
+        patch_path,
+    )
+    return 1
 
 
 # ----------------------------
@@ -654,6 +771,52 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
 # ----------------------------
 
 
+def update_merge_request(
+    repo: git.Repo, ctx: CiContext, unstaged_before: Iterable[Path]
+) -> int:
+    """Push the regenerated files to the MR's branch, or leave a patch to apply.
+
+    Returns the script's exit status, which is non-zero either way: the files were
+    regenerated, so the commit the pipeline ran against is not the one that passes.
+    """
+    unstaged_before = list(unstaged_before)
+
+    # A fork is pushed to only when its author allows it; otherwise emit a patch
+    decision = resolve_push_target(ctx, fork_allows_collaboration)
+    if decision.target is None:
+        return report_patch_fallback(repo, ctx, decision.blocked_reason)
+
+    if is_regeneration_loop(repo, ctx, unstaged_before):
+        return 1
+
+    # Prepare repo (fetch/checkout/pull with autostash)
+    repo = init_git_repo(ctx, decision.target)
+
+    # Stage, list, commit, push
+    stage_all_unstaged(repo, ctx)
+    staged_now = (
+        get_staged_names(repo) if not ctx.dry_run else [str(p) for p in unstaged_before]
+    )
+    print_paths("Files to push", [Path(p) for p in staged_now])
+
+    try:
+        commit_and_push(repo, ctx)
+    except git.GitCommandError as exc:
+        # The fork permits collaboration, but a protected branch or a bot without the
+        # Developer role still refuses the push. Undo the commit so the patch is a diff
+        # against the branch again.
+        logging.warning("Push to %s was refused: %s", decision.target.project_path, exc)
+        repo.git.reset("--mixed", "HEAD~1")
+        return report_patch_fallback(repo, ctx, "the push was refused")
+
+    # Trigger new pipeline after successful push
+    trigger_pipeline(ctx)
+
+    # Changes were present -> fail the job (even after push)
+    logging.error("Changes were present and have been pushed. Failing the job.")
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     ns = parse_args(argv)
     ctx = build_context(ns)
@@ -695,45 +858,7 @@ def main(argv: list[str] | None = None) -> int:
         logging.info("No changes detected. Nothing to do.")
         return 0
 
-    # Cross-project fork MR: cannot push to the fork; emit patch instead
-    if is_cross_project_mr(ctx):
-        patch_path = generate_patch(repo, ctx)
-        logging.error(
-            "Cannot push generated files to fork branch '%s' (project: %s) "
-            "because this pipeline runs in the upstream project context.\n\n"
-            "  To fix this, download the patch from the job artifacts and apply it:\n\n"
-            "    git apply %s\n"
-            "    git add -A && git commit -m 'chore: update generated files'\n"
-            "    git push\n\n"
-            "  Artifact path: %s",
-            ctx.source_branch,
-            ctx.source_project_path,
-            patch_path,
-            patch_path,
-        )
-        return 1
-
-    if is_regeneration_loop(repo, ctx, unstaged_before):
-        return 1
-
-    # Prepare repo (fetch/checkout/pull with autostash)
-    repo = init_git_repo(ctx)
-
-    # Stage, list, commit, push
-    stage_all_unstaged(repo, ctx)
-    staged_now = (
-        get_staged_names(repo) if not ctx.dry_run else [str(p) for p in unstaged_before]
-    )
-    print_paths("Files to push", [Path(p) for p in staged_now])
-
-    commit_and_push(repo, ctx)
-
-    # Trigger new pipeline after successful push
-    trigger_pipeline(ctx)
-
-    # Changes were present -> fail the job (even after push)
-    logging.error("Changes were present and have been pushed. Failing the job.")
-    return 1
+    return update_merge_request(repo, ctx, unstaged_before)
 
 
 if __name__ == "__main__":
