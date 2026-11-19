@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""Interactive first-time setup for the Loom development environment.
+
+The entry point, and deliberately nothing else: the setup itself lives in the
+`setup_devenv` package beside this file.
+
+Named with a dash rather than `setup_devenv.py`, so that it cannot be imported as a
+module. A file and a package of the same name resolve to the package at runtime but
+to the file in pylint, which then rejects every `from setup_devenv.x import ...` in
+the repository. Dash for the command, underscores for the package, the way a console
+script is normally spelled.
+
+Because the interpreter puts this file's directory on `sys.path`, the import below
+resolves with a bare `python3` and no virtualenv. That is the whole requirement: this
+runs *before* Nix, devenv and the project venv exist, so the package is standard
+library only, and Python 3.9 is its floor.
+"""
+
+from __future__ import annotations
+
+import sys
+
+from setup_devenv.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -93,7 +93,7 @@ an aarch64 kernel under qemu.
 
 That `NIX_CONFIG` only takes effect for a caller in nix's `trusted-users`. The supported setup
 instead names the caches in the machine's own `/etc/nix/nix.conf`, where the daemon reads them and
-no account needs privilege — `./cicd/setup_devenv.py` writes it, and
+no account needs privilege — `./cicd/setup-devenv` writes it, and
 `Documentation/devenv-setup.md` has the block. On a machine with neither, nix prints
 `ignoring untrusted substituter 'https://loom.cachix.org'` and builds from source.
 
@@ -399,19 +399,36 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Utilities:**
 
-- `./cicd/setup_devenv.py` - Interactive first-time setup of a development machine: Nix, the binary
-  caches, devenv, direnv, docker, and `direnv allow` on the checkout. Run directly, not through
-  devenv — it is what installs devenv, so it is stdlib-only Python with no Nix dependency. Each
-  step prints what it is for and the literal command before asking, and a bare Enter declines;
-  anything already in place is reported as done rather than asked about again, so re-running it
-  doubles as a way to check a machine. `--dry-run`, `--yes`, `--only STEP`, `--skip STEP`.
-  The `caches` step is the one that matters: it writes `extra-substituters` and
-  `extra-trusted-public-keys` into `/etc/nix/nix.conf` between managed markers, which is what
-  makes the Loom cache reachable **without anyone being in `trusted-users`** — a client may name a
-  substituter when either it is trusted or the daemon already names the cache, and only the second
-  avoids handing out what the nix manual calls the equivalent of root. On NixOS that file is
-  generated, so the step turns into a `configuration.nix` snippet to paste instead of a write.
-  `--only verify` on its own answers "does this machine actually have the caches?"
+- `./cicd/setup-devenv` - Interactive first-time setup of a development machine. **Do not
+  enumerate its steps or flags here or in `Documentation/devenv-setup.md`** — `--help` lists them
+  in order, each step prints what it is for and the exact thing it will do before asking, and
+  `--dry-run` walks the whole run touching nothing. A copy in prose is a copy that drifts, and
+  nothing checks it. Run it directly, not through devenv: it is what installs devenv, so it is
+  **stdlib-only Python with no Nix dependency**, and for the same reason Python 3.9 is its floor
+  (Debian 11, RHEL 9). The entry point is dash-named because `cicd/setup_devenv/` is a package and
+  a module of the same name would shadow it for pylint. The `nix-caches` step is the one that
+  matters: it writes `extra-substituters` and `extra-trusted-public-keys` into `/etc/nix/nix.conf`
+  between managed markers, which makes the Loom cache reachable **without anyone being in
+  `trusted-users`** — a client may name a substituter when either it is trusted or the daemon
+  already names the cache, and only the second avoids handing out what the nix manual calls the
+  equivalent of root. On NixOS that file is generated, so the step prints a `configuration.nix`
+  snippet instead of writing. `--only verify` answers "does this machine actually have the
+  caches?"
+
+  **A step splits into `assess` and an `Action`, and that split is the design.** `assess` reads
+  local state only — the filesystem, `git config`, PATH — and never prompts, writes or opens a
+  socket; everything that changes the machine is a frozen `Action` value
+  (`cicd/setup_devenv/actions.py`) that can `describe()` itself before it is consented to and
+  `perform()` itself after. That is what keeps the promise that the operator reads the real thing
+  first, and it is why effects that are *not* commands — writing a file at a mode, appending to a
+  dotfile, registering a key — are typed values rather than generated `bash -c` strings.
+  **Adding a new kind of effect means adding an `Action`, never a shell string**; the one
+  `bash -c` in the package is the Nix installer's process substitution. The single carve-out to
+  the purity rule: a step may make a read-only GitLab call while assessing when a token is already
+  stored, since "what is this account called" has no local answer — and it is skipped under
+  `--dry-run`, so a dry run still opens no socket. GitLab is reached through
+  `cicd/setup_devenv/gitlab.py`, a typed stdlib client, so a token is never an argument vector and
+  a 401 is never mistaken for a network failure
 - `poetry-lock` - Regenerate all Poetry lockfiles (run after adding dependencies to `common`).
   Discovers projects by walking every tracked `pyproject.toml`, so a newly added package is locked
   without editing a list — `backend/common` first, the root project last, the rest in between.
