@@ -1035,9 +1035,21 @@ export const fetchPreview = createAsyncThunk(
         {
             fileId,
             query,
+            authoritative = false,
         }: {
             fileId: string;
             query?: SearchQuery;
+            /**
+             * Whether this response settles the entry's pending writes.
+             *
+             * True for the refetch a `fileUpdate` message triggers — the
+             * worker publishes that only after a `wait_for` refresh, so the
+             * response is bound to carry the write — and for one that takes a
+             * file's real state back after an update request failed. Every
+             * other refetch may have been issued before the server knew about
+             * a local write, and does not get to undo it.
+             */
+            authoritative?: boolean;
         },
         thunkAPI: GetThunkAPI<AsyncThunkConfig>,
     ) => {
@@ -1071,6 +1083,9 @@ export const fetchPreview = createAsyncThunk(
         const fields = apiPreviewFields(
             (thunkAPI.getState() as RootState).search.previewFields,
         );
+        // Taken before the request goes out: it is the point in time the
+        // response describes the file at, which its arrival order does not.
+        const issuedAt = Date.now();
         try {
             return {
                 query: searchQuery,
@@ -1078,6 +1093,8 @@ export const fetchPreview = createAsyncThunk(
                 // Carried back so the entry records which field set it holds;
                 // isPreviewFresh compares against it.
                 fields: fields,
+                issuedAt: issuedAt,
+                authoritative: authoritative,
             };
         } catch (err: any) {
             return thunkAPI.rejectWithValue({
@@ -1757,6 +1774,14 @@ export const searchSlice = createSlice({
          * a few milliseconds later each rebuild the preview from the state they
          * read, so whichever request finishes last wins and the card can be
          * left showing the opposite of what the server holds.
+         *
+         * The changes are recorded as pending as well, because the update API
+         * answers `202` and only schedules the write: a preview fetched before
+         * the worker runs describes the file as it was and would take the
+         * change back off the card. Restamping the freshness timestamp is the
+         * other half of that — without it a card re-entering the viewport
+         * refetches whatever is left of the revalidation window after the
+         * change was made, which can be nothing.
          */
         patchFilePreview: (
             state,
@@ -1768,6 +1793,11 @@ export const searchSlice = createSlice({
             const entry = state.files[action.payload.fileId];
             if (entry?.preview) {
                 Object.assign(entry.preview, action.payload.changes);
+                entry.pendingWrites = {
+                    ...entry.pendingWrites,
+                    ...action.payload.changes,
+                };
+                entry.previewFetchedAt = Date.now();
             }
         },
         setBinding: (
@@ -2049,22 +2079,33 @@ export const searchSlice = createSlice({
             })
             .addCase(fetchPreview.fulfilled, (state, action) => {
                 if (!action.payload) return;
-                const { query, preview, fields } = action.payload;
+                const { query, preview, fields, issuedAt, authoritative } =
+                    action.payload;
                 const file = state.files[preview.fileId];
-                if (file) {
-                    file.preview = preview;
-                    file.query = query;
-                    file.previewFields = fields;
-                    file.previewFetchedAt = Date.now();
-                } else {
+                if (!file) {
                     state.files[preview.fileId] = {
                         meta: null,
                         preview: preview,
                         query: query,
                         previewFields: fields,
                         previewFetchedAt: Date.now(),
+                        previewIssuedAt: issuedAt,
                     };
+                    return;
                 }
+                // A response issued before the one the entry already holds
+                // describes the file further in the past, however late it
+                // arrives, so there is nothing in it to take.
+                if (issuedAt < (file.previewIssuedAt ?? 0)) return;
+                // An authoritative response was issued knowing about the
+                // pending writes, so it settles them; anything else gets the
+                // local values laid back over it.
+                if (authoritative) delete file.pendingWrites;
+                file.preview = { ...preview, ...file.pendingWrites };
+                file.query = query;
+                file.previewFields = fields;
+                file.previewFetchedAt = Date.now();
+                file.previewIssuedAt = issuedAt;
             })
             .addCase(fetchPreview.rejected, (state, action) => {
                 const { fileId } = action.payload as {

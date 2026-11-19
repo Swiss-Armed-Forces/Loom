@@ -248,6 +248,10 @@ export const FileDetailPanel = ({
                     fetchPreview({
                         fileId,
                         query: queryRef.current ?? undefined,
+                        // Published only once the write has been refreshed
+                        // into Elasticsearch, so this refetch settles the
+                        // file's pending local writes.
+                        authoritative: true,
                     }),
                 );
                 fetchFileContentRef.current();

@@ -1,10 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { GetFilePreviewResponse } from "@app/api/index";
 import { SearchQuery } from "@features/common/utils/model";
 
 import { RootState } from "../store";
 
+import { PREVIEW_REVALIDATE_MS } from "./searchFileEntry";
 import {
     CustomQuery,
     addCustomQuery,
@@ -17,6 +19,7 @@ import {
     loadPersistedSearchState,
     normalizeCustomQueries,
     openFileTab,
+    patchFilePreview,
     prefetchNextPage,
     queueResultAdvance,
     revealFileThunk,
@@ -310,9 +313,21 @@ const nextPageReported = (files: ReturnType<typeof hits>, cursor: any[]) => ({
     payload: { files, cursorKey: cursorKey(cursor), fromStaged: false },
 });
 
-const previewReported = (fileId: string) => ({
+// `issuedAt` is when the request went out, which is what orders two responses
+// against each other; `authoritative` marks the one a fileUpdate message
+// triggered, which is the only kind that may settle a pending local write.
+const previewReported = (
+    fileId: string,
+    preview: Partial<GetFilePreviewResponse> = {},
+    { issuedAt = 0, authoritative = false } = {},
+) => ({
     type: fetchPreview.fulfilled.type,
-    payload: { query: SAVED_QUERY, preview: { fileId } },
+    payload: {
+        query: SAVED_QUERY,
+        preview: { fileId, ...preview },
+        issuedAt,
+        authoritative,
+    },
 });
 
 // A search being asked for, and the answer to one, as the thunk reports them.
@@ -1593,5 +1608,75 @@ describe("which File Detail tab is in front", () => {
             kind: "file",
             fileId: "b",
         });
+    });
+});
+
+describe("an optimistic change racing a preview refetch", () => {
+    // The update API answers 202 and only schedules the write, so every
+    // preview fetched before the worker has run reports the old value.
+    const seenToggledOn = () =>
+        [
+            resultsReported("q1", "foo", hits(1, "a")),
+            previewReported("a-0", { seen: false }),
+            patchFilePreview({ fileId: "a-0", changes: { seen: true } }),
+        ].reduce(searchSlice.reducer, emptySearchState());
+
+    it("keeps the change when a refetch that cannot have seen it lands", () => {
+        const refetched = searchSlice.reducer(
+            seenToggledOn(),
+            previewReported("a-0", { seen: false }, { issuedAt: 1 }),
+        );
+
+        expect(refetched.files["a-0"].preview?.seen).toBe(true);
+    });
+
+    it("takes the server's word again once a fileUpdate settles the change", () => {
+        // Nothing may be pinned to the card for good: with the write
+        // acknowledged, a later refetch has to be able to report it undone.
+        const settled = [
+            previewReported(
+                "a-0",
+                { seen: true },
+                { issuedAt: 1, authoritative: true },
+            ),
+            previewReported("a-0", { seen: false }, { issuedAt: 2 }),
+        ].reduce(searchSlice.reducer, seenToggledOn());
+
+        expect(settled.files["a-0"].preview?.seen).toBe(false);
+    });
+
+    it("ignores a refetch issued before the one the entry already holds", () => {
+        const outOfOrder = [
+            previewReported(
+                "a-0",
+                { seen: true },
+                { issuedAt: 2, authoritative: true },
+            ),
+            previewReported("a-0", { seen: false }, { issuedAt: 1 }),
+        ].reduce(searchSlice.reducer, seenToggledOn());
+
+        expect(outOfOrder.files["a-0"].preview?.seen).toBe(true);
+    });
+
+    it("leaves the patched entry fresh enough not to be revalidated", () => {
+        const fetched = seenToggledOn();
+        const expired = {
+            ...fetched,
+            files: {
+                "a-0": {
+                    ...fetched.files["a-0"],
+                    previewFetchedAt: Date.now() - PREVIEW_REVALIDATE_MS,
+                },
+            },
+        };
+
+        const patched = searchSlice.reducer(
+            expired,
+            patchFilePreview({ fileId: "a-0", changes: { flagged: true } }),
+        );
+
+        expect(
+            Date.now() - (patched.files["a-0"].previewFetchedAt ?? 0),
+        ).toBeLessThan(PREVIEW_REVALIDATE_MS);
     });
 });

@@ -105,10 +105,15 @@ export const UpdateFileButton = ({
                 t(`updateFileState.${property}.scheduledErrorToast`, { err }),
             );
             // The optimistic patch above described an update that did not
-            // happen, so take the file's real state back from the server.
+            // happen, so take the file's real state back from the server and
+            // let it settle the patch rather than being merged with it.
             if (fileId) {
                 dispatch(
-                    fetchPreview({ fileId, query: searchQuery ?? undefined }),
+                    fetchPreview({
+                        fileId,
+                        query: searchQuery ?? undefined,
+                        authoritative: true,
+                    }),
                 );
             }
         } finally {
