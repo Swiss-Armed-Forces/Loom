@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { render, screen } from "@testing-library/react";
+import { render, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -82,8 +82,12 @@ describe("ResultCard under the highlight", () => {
         // click a button inside it, so the buttons have to be there — but
         // taking up room would change the card's height.
         const container = renderCard(true);
-        expect(screen.getByLabelText("seen")).toBeTruthy();
         const actions = container.querySelector(".MuiCardHeader-action");
+        // Scoped to the action row: the read-state bar carries the same label
+        // and is a card-level control rather than one of these.
+        expect(
+            actions && within(actions as HTMLElement).getByLabelText("seen"),
+        ).toBeTruthy();
         expect(actions && getComputedStyle(actions).display).toBe("none");
     });
 });

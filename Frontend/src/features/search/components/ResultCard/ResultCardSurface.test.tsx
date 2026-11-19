@@ -1,5 +1,5 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { globalTheme } from "@app/theme";
 
@@ -22,6 +22,7 @@ const surfaceOf = (props: {
         <ResultCardSurface
             seen={props.seen}
             isHighlighted={props.isHighlighted ?? false}
+            onToggleSeen={vi.fn()}
         >
             <span>card body</span>
         </ResultCardSurface>,
@@ -58,9 +59,37 @@ describe("ResultCardSurface", () => {
         });
     });
 
+    it("toggles the read state from the bar without disturbing the card", () => {
+        // The card's own click highlights the file, and highlighting it marks
+        // it seen under the `markAsSeen` auto-action, so a bar click that
+        // bubbled would mark a file seen in the gesture that marked it unseen.
+        const onToggleSeen = vi.fn();
+        const onCardClick = vi.fn();
+        render(
+            <div onClick={onCardClick}>
+                <ResultCardSurface
+                    seen={false}
+                    isHighlighted={false}
+                    onToggleSeen={onToggleSeen}
+                >
+                    <span>card body</span>
+                </ResultCardSurface>
+            </div>,
+        );
+
+        fireEvent.click(screen.getByLabelText("seen"));
+
+        expect(onToggleSeen).toHaveBeenCalledTimes(1);
+        expect(onCardClick).not.toHaveBeenCalled();
+    });
+
     it("does not publish the highlight as data-highlighted", () => {
         const { container } = render(
-            <ResultCardSurface seen={false} isHighlighted>
+            <ResultCardSurface
+                seen={false}
+                isHighlighted
+                onToggleSeen={vi.fn()}
+            >
                 <span>card body</span>
             </ResultCardSurface>,
         );
