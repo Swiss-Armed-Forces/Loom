@@ -8,7 +8,7 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -17,6 +17,8 @@ import {
     setFieldExpansion,
 } from "@app/slices/searchSlice";
 import { LazyTooltip } from "@features/common/components";
+
+import { FileStateStyle } from "../ResultCard/fileStateStyle";
 
 import styles from "./FieldItem.module.css";
 import { HighlightContent } from "./HighlightContent";
@@ -39,8 +41,9 @@ interface FieldItemProps {
     /** Drops the separating top border, so an accordion can sit among the
      *  divider-free rows of the compact field layout. */
     disableDivider?: boolean;
-    /** Draw the label chip and the value bold; see `boldPreviewFields`. */
-    bold?: boolean;
+    /** Draw the label chip and the value from the file's own state; see
+     *  `fileStateStyle`. */
+    stateStyle?: FileStateStyle;
     /** Show the chip naming the field. The expand, query and sort controls
      *  stay either way - they are the row's handles, not its label. */
     showName?: boolean;
@@ -65,19 +68,16 @@ const ACCORDION_NO_DIVIDER_SX = {
 and both forms of the value - the one-line preview and the expanded text - set
 a weight of their own, and the expanded text comes from a component shared with
 the highlight list, which has no business knowing about this. */
-const BOLD_FIELD_SX = {
-    "& .MuiChip-label, & .MuiTypography-root": { fontWeight: "bold" },
-} as const;
-const ACCORDION_BOLD_SX = { ...ACCORDION_SX, ...BOLD_FIELD_SX } as const;
-const ACCORDION_NO_DIVIDER_BOLD_SX = {
-    ...ACCORDION_NO_DIVIDER_SX,
-    ...BOLD_FIELD_SX,
-} as const;
-
-const accordionSxFor = (disableDivider: boolean, bold: boolean) => {
-    if (disableDivider)
-        return bold ? ACCORDION_NO_DIVIDER_BOLD_SX : ACCORDION_NO_DIVIDER_SX;
-    return bold ? ACCORDION_BOLD_SX : ACCORDION_SX;
+const accordionSxFor = (
+    disableDivider: boolean,
+    stateStyle: FileStateStyle | undefined,
+) => {
+    const base = disableDivider ? ACCORDION_NO_DIVIDER_SX : ACCORDION_SX;
+    if (!stateStyle) return base;
+    return {
+        ...base,
+        "& .MuiChip-label, & .MuiTypography-root": stateStyle,
+    };
 };
 /* One row tall whatever is in it, matching FieldRow: a value the backend cut
 short is still one field on the card, and an accordion that stood taller than
@@ -125,7 +125,7 @@ export const FieldItem = memo(
         onRemove,
         fullDetails,
         disableDivider,
-        bold = false,
+        stateStyle,
         showName = true,
     }: FieldItemProps) => {
         const dispatch = useAppDispatch();
@@ -133,6 +133,12 @@ export const FieldItem = memo(
         const isMobile = useMediaQuery("(max-width:600px)");
         const storeKey = fieldKey ?? field;
         const fieldExpansion = useAppSelector(selectFieldExpansion);
+        // Held across renders: an item is drawn once per field on every card
+        // in the list, and emotion re-hashes a fresh object each time.
+        const accordionSx = useMemo(
+            () => accordionSxFor(Boolean(disableDivider), stateStyle),
+            [disableDivider, stateStyle],
+        );
 
         // fullDetails → always expanded, no global state side-effects.
         // Otherwise → read from global state, default collapsed.
@@ -155,7 +161,7 @@ export const FieldItem = memo(
                 square
                 slotProps={{ transition: { timeout: 0 } }}
                 expanded={expanded}
-                sx={accordionSxFor(Boolean(disableDivider), bold)}
+                sx={accordionSx}
             >
                 <AccordionSummary sx={SUMMARY_SX}>
                     {showName && (

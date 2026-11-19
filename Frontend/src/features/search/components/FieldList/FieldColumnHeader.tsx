@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectAvailablePreviewFields,
-    selectBoldPreviewFields,
+    selectStatePreviewFields,
     selectCardElementVisibility,
     selectFieldColumnWidths,
     selectFieldLayout,
@@ -46,7 +46,7 @@ export const FieldColumnHeader = () => {
     const dispatch = useAppDispatch();
     const { t } = useTranslation();
     const previewFields = useAppSelector(selectPreviewFields);
-    const boldFields = useAppSelector(selectBoldPreviewFields);
+    const markedFields = useAppSelector(selectStatePreviewFields);
     const availableFields = useAppSelector(selectAvailablePreviewFields);
     const columnWidths = useAppSelector(selectFieldColumnWidths);
     const fieldLayout = useAppSelector(selectFieldLayout);
@@ -125,7 +125,7 @@ export const FieldColumnHeader = () => {
                                         color="text.secondary"
                                         noWrap
                                         sx={
-                                            boldFields.includes(id)
+                                            markedFields.includes(id)
                                                 ? BOLD_LABEL_SX
                                                 : undefined
                                         }
@@ -156,12 +156,13 @@ export const FieldColumnHeader = () => {
                                                     : "text.secondary"
                                             }
                                             noWrap
-                                            // The line layout keeps the label up
-                                            // here rather than on the card, so
-                                            // this is the descriptor half of a
-                                            // bold field.
+                                            // A header belongs to the list
+                                            // rather than to a file, so it has
+                                            // no state of its own to carry.
+                                            // The weight says the column is
+                                            // one that does.
                                             sx={
-                                                boldFields.includes(id)
+                                                markedFields.includes(id)
                                                     ? BOLD_LABEL_SX
                                                     : undefined
                                             }

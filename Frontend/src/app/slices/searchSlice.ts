@@ -404,14 +404,17 @@ export interface SearchState {
     fieldLayout: FieldLayout;
     previewFields: string[];
     /**
-     * Selected fields the reader has picked out, drawn bold on every card.
+     * Selected fields the reader has marked as carriers of the file's state.
+     *
+     * Each one is drawn per card from that file's own `seen` and `flagged`,
+     * the way the header path is; see `fileStateStyle`.
      *
      * A subset of `previewFields` and kept one by `setPreviewFields`: a field
-     * that is no longer on the card has nothing to be bold about, and leaving
-     * it here would bring the emphasis back unannounced the next time the
-     * field was selected.
+     * that is no longer on the card has nothing to carry, and leaving it here
+     * would bring the styling back unannounced the next time the field was
+     * selected.
      */
-    boldPreviewFields: string[];
+    statePreviewFields: string[];
     /** How many columns a card lays its fields out in, at least one. */
     fieldColumnCount: number;
     /**
@@ -525,8 +528,8 @@ export const SEARCH_STATE_DOCS = {
     fieldLayout:
         "FieldLayout — how card metadata fields are rendered (compact|line)",
     previewFields: "string[] — field names shown as preview on cards",
-    boldPreviewFields:
-        "string[] — subset of previewFields the reader picked out, drawn bold",
+    statePreviewFields:
+        "string[] — subset of previewFields drawn from each file's own seen and flagged state: bold when unseen, red when flagged",
     fieldColumnCount: "number — how many columns a card lays its fields out in",
     fieldColumnOf:
         "Record<fieldId, number> — zero-based card column per selected field",
@@ -614,13 +617,26 @@ export const QUERY_ATTACHMENTS_SKIPPED_FILES = "attachments_skipped:true";
 
 export const SEARCH_STATE_LOCAL_STORAGE_KEY = "SEARCH_STATE";
 
+/** Stored search state, which may name the marked fields under either key. */
+interface PersistedSearchState extends Partial<SearchState> {
+    /** Alternative name for `statePreviewFields` in stored state. */
+    boldPreviewFields?: string[];
+}
+
 export const loadPersistedSearchState = (): Partial<SearchState> => {
     const data = window.localStorage.getItem(SEARCH_STATE_LOCAL_STORAGE_KEY);
     if (!data) return {};
     try {
-        const parsed = JSON.parse(data) as Partial<SearchState>;
+        const { boldPreviewFields, ...parsed } = JSON.parse(
+            data,
+        ) as PersistedSearchState;
         return {
             ...parsed,
+            // The alternative name is read only where the current one is
+            // absent, so a selection made under either arrives once.
+            ...(boldPreviewFields && !parsed.statePreviewFields
+                ? { statePreviewFields: boldPreviewFields }
+                : {}),
             ...("customQueries" in parsed
                 ? {
                       customQueries: normalizeCustomQueries(
@@ -682,7 +698,7 @@ const initialState: SearchState = {
     expandFilePaths: false,
     fieldLayout: "compact",
     previewFields: ["content"],
-    boldPreviewFields: [],
+    statePreviewFields: [],
     fieldColumnCount: 1,
     fieldColumnOf: {},
     showFieldNames: true,
@@ -1641,7 +1657,7 @@ export const searchSlice = createSlice({
         },
         setPreviewFields: (state, action: PayloadAction<string[]>) => {
             state.previewFields = action.payload;
-            state.boldPreviewFields = state.boldPreviewFields.filter((id) =>
+            state.statePreviewFields = state.statePreviewFields.filter((id) =>
                 action.payload.includes(id),
             );
             state.fieldColumnOf = Object.fromEntries(
@@ -1688,11 +1704,13 @@ export const searchSlice = createSlice({
                 state.fieldColumnCount,
             );
         },
-        toggleBoldPreviewField: (state, action: PayloadAction<string>) => {
+        toggleStatePreviewField: (state, action: PayloadAction<string>) => {
             const fieldId = action.payload;
-            state.boldPreviewFields = state.boldPreviewFields.includes(fieldId)
-                ? state.boldPreviewFields.filter((id) => id !== fieldId)
-                : [...state.boldPreviewFields, fieldId];
+            state.statePreviewFields = state.statePreviewFields.includes(
+                fieldId,
+            )
+                ? state.statePreviewFields.filter((id) => id !== fieldId)
+                : [...state.statePreviewFields, fieldId];
         },
         // Replaces the whole map rather than one column: a drag moves the
         // border between two columns, so it always settles two of them.
@@ -2223,7 +2241,7 @@ export const {
     setFieldLayout,
 
     setPreviewFields,
-    toggleBoldPreviewField,
+    toggleStatePreviewField,
     setPreviewFieldColumn,
     addFieldColumn,
     removeFieldColumn,
@@ -2713,9 +2731,9 @@ export const selectShowFieldNames = createSelector(
     (search) => search.showFieldNames,
 );
 
-export const selectBoldPreviewFields = createSelector(
+export const selectStatePreviewFields = createSelector(
     selectSearch,
-    (search) => search.boldPreviewFields,
+    (search) => search.statePreviewFields,
 );
 
 export const selectFieldColumnWidths = createSelector(

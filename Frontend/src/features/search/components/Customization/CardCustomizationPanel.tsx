@@ -42,7 +42,7 @@ import {
     addFieldColumn,
     MAX_FIELD_COLUMNS,
     removeFieldColumn,
-    selectBoldPreviewFields,
+    selectStatePreviewFields,
     selectFieldColumnCount,
     selectFieldColumnOf,
     selectPreviewFields,
@@ -51,7 +51,7 @@ import {
     setAvailablePreviewFields,
     setFieldLayout,
     setPreviewFields,
-    toggleBoldPreviewField,
+    toggleStatePreviewField,
     setShowActions,
     setShowAttachments,
     setShowFieldNames,
@@ -190,7 +190,7 @@ export const CardCustomizationPanel = () => {
     const { t } = useTranslation();
     const availableFields = useAppSelector(selectAvailablePreviewFields);
     const previewFields = useAppSelector(selectPreviewFields);
-    const boldFields = useAppSelector(selectBoldPreviewFields);
+    const markedFields = useAppSelector(selectStatePreviewFields);
     const columnCount = useAppSelector(selectFieldColumnCount);
     const columnOf = useAppSelector(selectFieldColumnOf);
     const showFieldNames = useAppSelector(selectShowFieldNames);
@@ -337,15 +337,17 @@ export const CardCustomizationPanel = () => {
                 <Chip
                     label={field.label}
                     size="small"
-                    onClick={() => dispatch(toggleBoldPreviewField(field.id))}
+                    onClick={() => dispatch(toggleStatePreviewField(field.id))}
                     onDelete={() => handlePreviewFieldToggle(field.id)}
                     {...dragProps(index, column)}
                     sx={{
                         cursor: "grab",
                         opacity: isDragging(index) ? 0.4 : 1,
-                        // The chip says on itself what it does to the card,
-                        // so the two cannot disagree.
-                        fontWeight: boldFields.includes(field.id)
+                        // The chip says on itself that the field is marked,
+                        // so the panel and the cards cannot disagree. The
+                        // weight is the mark, not the file's state: a panel
+                        // has no one file to read it from.
+                        fontWeight: markedFields.includes(field.id)
                             ? "bold"
                             : undefined,
                         boxShadow: isDropTarget(index)

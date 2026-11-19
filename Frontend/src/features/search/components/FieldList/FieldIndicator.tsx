@@ -13,6 +13,8 @@ import { useTranslation } from "react-i18next";
 
 import { GetFilePreviewResponse } from "@app/api";
 
+import { FileStateStyle } from "../ResultCard/fileStateStyle";
+
 import {
     INDICATOR_FIELD_LABEL_KEYS,
     IndicatorFieldId,
@@ -67,7 +69,6 @@ const ROW_SX = {
     lineHeight: "var(--loom-row-line-height, 1.4)",
 } as const;
 const LABEL_SX = { flexShrink: 0 } as const;
-const BOLD_LABEL_SX = { flexShrink: 0, fontWeight: "bold" } as const;
 const MARKS_SX = { display: "flex", alignItems: "center", gap: 0.5 } as const;
 const ICON_SX = { fontSize: "1rem" } as const;
 const STATE_CHIP_SX = { height: "1.25rem", fontSize: "0.7rem" } as const;
@@ -75,7 +76,8 @@ const STATE_CHIP_SX = { height: "1.25rem", fontSize: "0.7rem" } as const;
 export interface FieldIndicatorProps {
     fieldId: IndicatorFieldId;
     filePreview: GetFilePreviewResponse;
-    bold?: boolean;
+    /** Draw the label from the file's own state; see `fileStateStyle`. */
+    stateStyle?: FileStateStyle;
     showName?: boolean;
 }
 
@@ -94,7 +96,7 @@ export interface FieldIndicatorProps {
 export const FieldIndicator = ({
     fieldId,
     filePreview,
-    bold,
+    stateStyle,
     showName = true,
 }: FieldIndicatorProps) => {
     const { t } = useTranslation();
@@ -117,7 +119,7 @@ export const FieldIndicator = ({
                     variant="caption"
                     component="span"
                     color="text.secondary"
-                    sx={bold ? BOLD_LABEL_SX : LABEL_SX}
+                    sx={stateStyle ? { ...LABEL_SX, ...stateStyle } : LABEL_SX}
                 >
                     {`${field}:`}
                 </Typography>

@@ -2,6 +2,8 @@ import { ManageSearch, Sort } from "@mui/icons-material";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
+import { FileStateStyle } from "../ResultCard/fileStateStyle";
+
 import styles from "./FieldRow.module.css";
 import { renderHighlight, stripHighlightTags } from "./renderHighlight";
 
@@ -16,8 +18,9 @@ export interface FieldRowProps {
     value: string;
     onQuery?: (negate: boolean, accumulate: boolean) => void;
     onSort?: () => void;
-    /** Draw the label and the value bold; see `boldPreviewFields`. */
-    bold?: boolean;
+    /** Draw the label and the value from the file's own state; see
+     *  `fileStateStyle`. */
+    stateStyle?: FileStateStyle;
     /** Print the field's name ahead of its value. */
     showName?: boolean;
 }
@@ -33,7 +36,7 @@ export const FieldRow = ({
     value,
     onQuery,
     onSort,
-    bold,
+    stateStyle,
     showName = true,
 }: FieldRowProps) => {
     const { t } = useTranslation();
@@ -70,10 +73,7 @@ export const FieldRow = ({
                     variant="caption"
                     component="span"
                     color="text.secondary"
-                    sx={{
-                        flexShrink: 0,
-                        fontWeight: bold ? "bold" : undefined,
-                    }}
+                    sx={{ flexShrink: 0, ...stateStyle }}
                 >
                     {`${field}:`}
                 </Typography>
@@ -88,11 +88,7 @@ export const FieldRow = ({
                         : `${field}: ${stripHighlightTags(value)}`
                 }
                 noWrap
-                sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontWeight: bold ? "bold" : undefined,
-                }}
+                sx={{ flex: 1, minWidth: 0, ...stateStyle }}
             >
                 {renderHighlight(value)}
             </Typography>

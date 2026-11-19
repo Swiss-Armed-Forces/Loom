@@ -5,7 +5,7 @@ import { GetFilePreviewResponse } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     selectAvailablePreviewFields,
-    selectBoldPreviewFields,
+    selectStatePreviewFields,
     selectCardElementVisibility,
     selectFieldColumnCount,
     selectFieldColumnOf,
@@ -30,6 +30,8 @@ import {
     useFieldLabels,
 } from "@features/search/components/FieldList/indicatorFields";
 
+import { fileStateStyle } from "./fileStateStyle";
+
 export interface FieldSectionsProps {
     filePreview: GetFilePreviewResponse;
     fullDetails?: boolean;
@@ -40,7 +42,7 @@ export const FieldSections = memo(
         const dispatch = useAppDispatch();
         const query = useAppSelector(selectQuery);
         const previewFields = useAppSelector(selectPreviewFields);
-        const boldFields = useAppSelector(selectBoldPreviewFields);
+        const markedFields = useAppSelector(selectStatePreviewFields);
         const columnCount = useAppSelector(selectFieldColumnCount);
         const columnOf = useAppSelector(selectFieldColumnOf);
         const availableFields = useAppSelector(selectAvailablePreviewFields);
@@ -64,6 +66,15 @@ export const FieldSections = memo(
 
         const labelFor = useFieldLabels(availableFields);
 
+        // What a marked field is drawn as on this card. One object for the
+        // whole card, so the memoised FieldItem sees the same prop on every
+        // pass; see `fileStateStyle`.
+        const { flagged, seen } = filePreview;
+        const markedStyle = useMemo(
+            () => fileStateStyle({ flagged, seen }),
+            [flagged, seen],
+        );
+
         // `value` is an array prop, so it is built here and memoised with the
         // response rather than rebuilt per render, which would defeat FieldItem's
         // memo on every pass.
@@ -78,7 +89,9 @@ export const FieldSections = memo(
                     const common = {
                         id,
                         label: labelFor[id] ?? id,
-                        bold: boldFields.includes(id),
+                        stateStyle: markedFields.includes(id)
+                            ? markedStyle
+                            : undefined,
                         column: Math.min(columnOf[id] ?? 0, columnCount - 1),
                     };
                     if (isIndicatorField(id)) {
@@ -104,7 +117,8 @@ export const FieldSections = memo(
                 previewFields,
                 responseFields,
                 labelFor,
-                boldFields,
+                markedFields,
+                markedStyle,
                 columnOf,
                 columnCount,
             ],
@@ -119,11 +133,20 @@ export const FieldSections = memo(
                     id,
                     label: labelFor[id] ?? id,
                     value: responseFields[id]?.value ?? "",
-                    bold: boldFields.includes(id),
+                    stateStyle: markedFields.includes(id)
+                        ? markedStyle
+                        : undefined,
                     indicator: isIndicatorField(id) ? id : null,
                     preview: filePreview,
                 })),
-            [previewFields, responseFields, labelFor, boldFields, filePreview],
+            [
+                previewFields,
+                responseFields,
+                labelFor,
+                markedFields,
+                markedStyle,
+                filePreview,
+            ],
         );
 
         // One handler for the whole list rather than a closure per field, so the
@@ -184,7 +207,7 @@ export const FieldSections = memo(
         const renderEntry = ({
             id,
             label,
-            bold,
+            stateStyle,
             indicator,
             isTruncated,
             text,
@@ -196,7 +219,7 @@ export const FieldSections = memo(
                         key={id}
                         fieldId={indicator}
                         filePreview={filePreview}
-                        bold={bold}
+                        stateStyle={stateStyle}
                         showName={showNames}
                     />
                 );
@@ -213,7 +236,7 @@ export const FieldSections = memo(
                         key={id}
                         field={label}
                         value={text}
-                        bold={bold}
+                        stateStyle={stateStyle}
                         showName={showNames}
                         onQuery={
                             actionsShown
@@ -231,7 +254,7 @@ export const FieldSections = memo(
                     field={label}
                     fieldKey={id}
                     value={value}
-                    bold={bold}
+                    stateStyle={stateStyle}
                     showName={showNames}
                     onQuery={actionsShown ? handleQuery : undefined}
                     onSort={actionsShown ? handleSort : undefined}
