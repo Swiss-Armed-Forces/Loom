@@ -228,14 +228,19 @@ COPY --chown=${NIX_USER_NAME} \
 # the package set is already realised and rooted by then - we run it for the
 # evaluation.
 #
-# That second entry has to be `devenv shell -- true`, the same command as the
-# first, and not `devenv build shell`.  The job user is not in trusted-users
-# (see above), so nix refuses the restricted `system` option that devenv
-# passes on every invocation and warns about it.  `devenv build` reads an
-# attribute back out of that output, and gets the warning instead of the
-# attribute whenever the evaluation is instantaneous - which is exactly the
-# case this step exists to handle, the one where the collection left the
-# sources in place and there is nothing to rebuild.
+# `--refresh-eval-cache` is what makes that second entry evaluate anything.
+# devenv caches the evaluation, and the collection leaves that entry usable -
+# the shell's own derivation and output stay rooted - so a plain `devenv shell`
+# reports the evaluation as cached, restores nothing, and the image ships a
+# store the fetcher cache lies about.  A job entering such a shell has to fetch
+# and build the devenv-nixpkgs tree before its shell exists, which puts a
+# network round trip in front of every `before_script`.
+#
+# It also cannot be `devenv build shell`, which evaluates unconditionally but
+# reads an attribute back out of nix's output.  The job user is not in
+# trusted-users (see above), so nix refuses the restricted `system` option that
+# devenv passes on every invocation and warns about it, and `devenv build`
+# takes that warning for the attribute.
 # hadolint ignore=DL3004
 RUN set -exu \
     && fork() { (setsid "$@" &); } && fork nix-daemon ${NIX_DAEMON_ARGS} \
@@ -247,6 +252,7 @@ RUN set -exu \
     && nix-collect-garbage --quiet --delete-old \
     && sudo -i -u "${NIX_USER_NAME}" \
     devenv shell \
+    --refresh-eval-cache \
     --option languages.python.poetry.install.enable:bool false \
     --option languages.javascript.pnpm.install.enable:bool false \
     -- true \

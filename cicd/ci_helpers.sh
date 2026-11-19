@@ -50,8 +50,8 @@ with_retry() {
   done
 }
 
-# Enter the devenv shell, dropping a nix fetcher cache that has outlived the
-# store paths it names.
+# Enter the devenv shell, retrying once with the nix fetcher cache dropped,
+# which is how a cache that has outlived the store paths it names is cleared.
 #
 # nix records in ~/.cache/nix/fetcher-cache-v*.sqlite the NAR hash of every
 # file it copies out of a fetched source tree, and on the next evaluation it
@@ -67,25 +67,18 @@ with_retry() {
 # can rebuild or fetch it.  Only re-copying it from the tree helps, which is
 # what nix does again once the cache no longer claims to have done it.
 #
-# The retry is deliberately narrow: any other evaluation failure - a broken
-# devenv.nix, a missing package - is reported as it is, without a second run.
+# The retry cannot be narrowed to that error, because devenv does not print it:
+# it renders whatever `warning:` line nix logged last - the restricted `system`
+# option, a download being retried - in place of the error the evaluation
+# failed with.  A second attempt is cheap next to a red pipeline, and it also
+# covers the other way an evaluation fails here, a source it has to fetch over
+# the network.
 devenv_shell_ready() {
-  devenv_shell_log=$(mktemp)
-
-  if devenv shell -- echo "[*] devenv shell ready" >"${devenv_shell_log}" 2>&1; then
-    cat "${devenv_shell_log}"
-    rm -f "${devenv_shell_log}"
+  if devenv shell -- echo "[*] devenv shell ready"; then
     return 0
   fi
 
-  cat "${devenv_shell_log}" >&2
-  if ! grep -q "is not valid" "${devenv_shell_log}"; then
-    rm -f "${devenv_shell_log}"
-    return 1
-  fi
-  rm -f "${devenv_shell_log}"
-
-  echo "[*] The nix fetcher cache names store paths that are gone - dropping it and evaluating again" >&2
+  echo "[*] Entering the devenv shell failed - dropping the nix fetcher cache and evaluating again" >&2
   rm -f "${XDG_CACHE_HOME:-${HOME}/.cache}"/nix/fetcher-cache-v*.sqlite*
 
   devenv shell -- echo "[*] devenv shell ready (after dropping the fetcher cache)"
