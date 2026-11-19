@@ -1,8 +1,9 @@
-"""Unit tests for the safeguards that stop a regeneration loop.
+"""Unit tests for the regeneration-loop safeguards, the push target and the patch.
 
-These build real git repositories rather than faking git's output: both
-safeguards read history - what the previous commit touched, and what the file
-looked like before it - which no test double reproduces faithfully.
+The safeguard and patch tests build real git repositories rather than faking
+git's output: the safeguards read history - what the previous commit touched,
+and what the file looked like before it - and the patch is only correct if git
+itself accepts it. Neither is reproduced faithfully by a test double.
 """
 
 import os
@@ -11,7 +12,13 @@ from types import SimpleNamespace
 import pytest
 from git import Repo
 
-from git_file_changed import count_consecutive_ci_commits, get_oscillating_paths
+from git_file_changed import (
+    PushTarget,
+    count_consecutive_ci_commits,
+    generate_patch,
+    get_oscillating_paths,
+    resolve_push_target,
+)
 
 CI_MESSAGE = "chore(ci): update generated files from merge_request_event 1 (abc1234)"
 GENERATED = "THIRD-PARTY.md"
@@ -110,3 +117,76 @@ def test_consecutive_ci_commits_are_counted_across_authors(repo, ctx):
     _commit(repo, GENERATED, "D\n", CI_MESSAGE, "bot@noreply.example.com")
 
     assert count_consecutive_ci_commits(repo, ctx) == 3
+
+
+def test_the_fork_patch_applies(repo, tmp_path):
+    """A fork MR has no other way to pick up the regenerated files.
+
+    The job prints `git apply <patch>` as the fix, so the patch has to survive a round
+    trip through git rather than merely be written.
+    """
+    _write(repo, GENERATED, "C\n")
+    ctx = SimpleNamespace(changed_out_dir=tmp_path / "artifacts", dry_run=False)
+
+    patch_path = generate_patch(repo, ctx)
+
+    repo.git.checkout("--", GENERATED)
+    repo.git.apply(str(patch_path))
+    with open(os.path.join(str(repo.working_dir), GENERATED), encoding="utf-8") as f:
+        assert f.read() == "C\n"
+
+
+def _mr_ctx(**overrides):
+    """A fork MR context; override source_project_path to make it same-project."""
+    fields = {
+        "is_mr": True,
+        "project_path": "upstream/loom",
+        "source_project_path": "contributor/loom",
+        "job_token": "job-token",
+        "project_access_token": "access-token",
+    }
+    fields.update(overrides)
+    return SimpleNamespace(**fields)
+
+
+def _refuse(_ctx):
+    return False
+
+
+def test_a_same_project_mr_pushes_with_the_job_token():
+    """The job token's push rights are a setting on this project, which has them."""
+    decision = resolve_push_target(
+        _mr_ctx(source_project_path="upstream/loom"), _refuse
+    )
+
+    assert decision.target == PushTarget(
+        project_path="upstream/loom", auth_user="gitlab-ci-token", token="job-token"
+    )
+
+
+def test_a_fork_allowing_collaboration_is_pushed_to_with_the_access_token():
+    """Upstream members are who the fork admits, and the bot is one of them."""
+    decision = resolve_push_target(_mr_ctx(), lambda _ctx: True)
+
+    assert decision.target == PushTarget(
+        project_path="contributor/loom", auth_user="oauth2", token="access-token"
+    )
+
+
+def test_a_fork_forbidding_collaboration_gets_a_patch():
+    """The reason reaches the log the contributor reads, so it must name the setting."""
+    decision = resolve_push_target(_mr_ctx(), _refuse)
+
+    assert decision.target is None
+    assert "upstream members" in decision.blocked_reason
+
+
+def test_a_fork_is_not_asked_about_without_an_access_token():
+    """Nothing can push without it, so the API call is waste."""
+
+    def _explode(_ctx):
+        raise AssertionError("allow_collaboration must not be read")
+
+    decision = resolve_push_target(_mr_ctx(project_access_token=None), _explode)
+
+    assert decision.target is None
