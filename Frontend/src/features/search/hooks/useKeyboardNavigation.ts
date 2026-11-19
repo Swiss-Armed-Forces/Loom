@@ -778,6 +778,20 @@ export const useKeyboardNavigation = () => {
                     case "scrollUp":
                         handleDialogScroll("up", SCROLL_STEP_PX);
                         break;
+                    // Bring the highlighted card back into view and change
+                    // nothing else: the highlight stays put, so no card is
+                    // marked seen and no document is opened.
+                    //
+                    // `top` rather than `smart`, because the key is pressed to
+                    // put the card somewhere known. `smart`'s dead band leaves
+                    // a card that is already comfortably in view exactly where
+                    // it is, which is the one case where a reader presses the
+                    // key a second time to check it worked.
+                    case "scrollToHighlight":
+                        if (highlightedFileId !== null) {
+                            dispatch(bumpHighlightScroll("top"));
+                        }
+                        break;
                     default:
                         break;
                 }

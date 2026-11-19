@@ -775,7 +775,8 @@
             "prevFileTab": "Previous file tab",
             "nextFileTab": "Next file tab",
             "scrollDown": "Scroll the open document down",
-            "scrollUp": "Scroll the open document up"
+            "scrollUp": "Scroll the open document up",
+            "scrollToHighlight": "Scroll to the highlighted result"
         }
     },
     "statisticsView": {
