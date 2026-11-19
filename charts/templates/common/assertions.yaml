@@ -1,0 +1,19 @@
+{{/*
+Cross-value assertions.
+
+This template renders no object. It exists so that a combination of values no
+deployment should carry stops the render, wherever the render is driven from --
+skaffold, `up.sh`, `build-appliance-image --values`, or helm by hand. A check
+in any one of those callers covers that caller alone, and has to predict Helm's
+own values merge to do it.
+*/}}
+
+{{- if and .Values.certificate.requireClientCert (not .Values.globalHttpRedirect.enabled) }}
+{{- fail (printf "%s\n\n%s\n%s\n%s\n%s\n%s"
+    "certificate.requireClientCert is set while globalHttpRedirect.enabled is false."
+    "The `-mtls` TLSOption is attached as traefik.ingress.kubernetes.io/router.tls.options,"
+    "which constrains the TLS handshake and nothing else. With the global redirect off, the"
+    "routes on Traefik's `web` entrypoint answer in cleartext, where no client certificate is"
+    "asked for at all -- so plain http does not weaken the requirement, it goes around it:"
+    "every host would be served to anyone who can reach port 80. Drop one of the two.") }}
+{{- end }}

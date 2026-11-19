@@ -122,8 +122,8 @@ STEPS_SETUP_SYSTEM=(
     set_skaffold_profile
     set_skaffold_command
     set_skaffold_args
+    build_trusted_ca_values
     write_up_flags_values
-    write_trusted_ca_values
     validate_environment
     compute_minikube_cpu_resources
     compute_minikube_memory_resources
@@ -167,7 +167,6 @@ ALL_STEPS=(
 #
 
 SKIP=()
-VERBOSE=false
 DEVELOPMENT=false
 INTEGRATIONTEST=false
 SETUP=false
@@ -182,7 +181,6 @@ RESUME_IF_DEPLOYED=false
 OFFLINE_MODE=false
 NO_RESOURCES=false
 SCALING=false
-PLAIN_HTTP=false
 DELETE=false
 DOWN=false
 SKAFFOLD_PROFILE="prod"
@@ -192,13 +190,17 @@ UP_FLAG_VALUES=()
 SKAFFOLD_COMMAND="run"
 SKAFFOLD_CACHE_FILE="${SKAFFOLD_HOME}/cache"
 SKAFFOLD_REMOTE_CACHE_DIR="${SKAFFOLD_HOME}/remote-cache"
-CERTIFICATE=false
+CERTIFICATE_CERT_FILE=""
+CERTIFICATE_KEY_FILE=""
 # Host architecture in Docker/Go naming ("amd64", "arm64"). Set by
 # set_docker_platform(); initialised here so that --skip-set_docker_platform
 # does not leave it unbound for run_skaffold().
 TARGETARCH="amd64"
 MINIKUBE_MOUNT_STRING=""
 TRUSTED_CA_BUNDLE=""
+# Values file rendered from TRUSTED_CA_BUNDLE by build_trusted_ca_values(),
+# removed again by atexit().
+TRUSTED_CA_VALUES_FILE=""
 ARCHIVE_ENC_KEY=""
 
 # Computed Minikube resources
@@ -235,6 +237,25 @@ die_usage() {
     usage >&2
     trap - EXIT
     exit 1
+}
+
+# Assert that a flag taking arguments was given them, with "${1}" still the flag.
+#
+# A flag must not read its argument as ${1?...} or as a bare "${1}" under
+# `set -u`. Both abort the shell on their own, past die_usage() and so past the
+# trap disarm, and the trap tears a running deployment down once --development
+# or --delete has been parsed. For the same reason this runs in the current
+# shell: inside a command substitution the disarm would cover the subshell alone.
+require_args() {
+    local flag count needed description
+    flag="${1}" && shift
+    count="${1}" && shift
+    needed="${1}" && shift
+    description="${1}" && shift
+
+    if [[ $((count - 1)) -lt "${needed}" ]]; then
+        die_usage "${flag} requires ${description}"
+    fi
 }
 
 # Exact match against ALL_STEPS. A substring test would let a step name that is
@@ -438,13 +459,11 @@ set_skaffold_profile(){
         # because the profile is what decides it: both --development and
         # --integrationtest arrive here and neither is a deployment.
         #
-        # PLAIN_HTTP is set with it, not just the values file. This step runs before
-        # validate_environment, which refuses plain http beside
-        # certificate.requireClientCert -- and that guard reads PLAIN_HTTP, so
-        # widening every route to the `web` entrypoint while leaving the flag false
-        # would accept `up -d` on a deployment requiring a client certificate and
-        # serve every host in cleartext: the exact bypass the guard exists for.
-        PLAIN_HTTP=true
+        # The file switches globalHttpRedirect off, so a deployment that also sets
+        # certificate.requireClientCert is refused by
+        # charts/templates/common/assertions.yaml when the chart renders: cleartext
+        # routes ask for no client certificate at all, which goes around the
+        # requirement rather than weakening it.
         UP_FLAG_VALUES+=("${DEV_HTTP_VALUES_FILE}")
     fi
     if [[ "${OFFLINE_MODE}" = true ]]; then
@@ -505,7 +524,14 @@ set_skaffold_args(){
     )
 }
 
-write_trusted_ca_values() {
+# Render the --trusted-ca-bundle PEM into a values file of its own, for
+# write_up_flags_values() to merge like any other flag's.
+#
+# A file in UP_FLAG_VALUES rather than text appended to the merged result: an
+# append leaves a document carrying two `trustedCertificates` keys, which only
+# Helm's Go parser resolves the way this intends, and leaves a half-written file
+# behind when the awk below fails.
+build_trusted_ca_values() {
     if [[ -z "${TRUSTED_CA_BUNDLE}" ]]; then
         return
     fi
@@ -513,8 +539,8 @@ write_trusted_ca_values() {
         echo >&2 "[!] Error: --trusted-ca-bundle: file not found: ${TRUSTED_CA_BUNDLE}"
         exit 1
     fi
-    # Parse the PEM bundle and append trustedCertificates YAML to the shared
-    # up-flags values file (last-occurrence wins in Helm's Go YAML parser).
+
+    TRUSTED_CA_VALUES_FILE="$(mktemp --tmpdir --suffix=.yaml loom-trusted-ca.XXXXXX)"
     awk '
         /-----BEGIN CERTIFICATE-----/ { in_cert=1; cert=""; idx++ }
         in_cert { cert = cert $0 "\n" }
@@ -537,7 +563,9 @@ write_trusted_ca_values() {
                 exit 1
             }
         }
-    ' "${TRUSTED_CA_BUNDLE}" >> "${UP_FLAGS_VALUES_FILE}"
+    ' "${TRUSTED_CA_BUNDLE}" > "${TRUSTED_CA_VALUES_FILE}"
+
+    UP_FLAG_VALUES+=("${TRUSTED_CA_VALUES_FILE}")
 }
 
 write_up_flags_values() {
@@ -545,41 +573,14 @@ write_up_flags_values() {
     # Skaffold always includes this file (listed in skaffold.yaml before values-overwrites.yaml).
     # Uses yq to deep-merge so that overlapping top-level keys are combined rather than
     # one file silently overwriting another (e.g. --disable-ai + --no-resources both touch ollama).
-    # UP_FLAG_VALUES is populated during argument parsing — add new flags there.
+    # UP_FLAG_VALUES is populated during argument parsing and by
+    # build_trusted_ca_values() — add new flags there.
     if [[ ${#UP_FLAG_VALUES[@]} -eq 0 ]]; then
         true > "${UP_FLAGS_VALUES_FILE}"
     else
         # Single quotes are intentional: this is a jq expression, not shell.
         # shellcheck disable=SC2016
         yq -y -s 'reduce .[] as $item ({}; . * $item)' "${UP_FLAG_VALUES[@]}" > "${UP_FLAGS_VALUES_FILE}"
-    fi
-}
-
-# Whether the values this deployment will render with require a client certificate.
-#
-# The same deep merge, in the same order, that skaffold performs -- see the
-# `valuesFiles` list in skaffold.yaml. charts/values-up-flags.yaml is deliberately left
-# out: no up.sh flag sets this key, and the file has not been written yet when this runs.
-# Files that parse to null (absent, or comments only) are skipped rather than merged,
-# since `{} * null` is an error rather than a no-op.
-client_certificate_required() {
-    # Prints `true` or `false` rather than answering through its exit status: a
-    # function in an `if` condition switches `set -e` off for everything it runs, and
-    # this one runs yq over four files.
-    local merged
-    # Single quotes are intentional: this is a jq expression, not shell.
-    # shellcheck disable=SC2016
-    merged="$(
-        yq -s 'reduce (.[] | select(. != null)) as $item ({}; . * $item) | .certificate.requireClientCert' \
-            "${SCRIPT_DIR}/charts/values.yaml" \
-            "${SCRIPT_DIR}/charts/values-user.yaml" \
-            "${SCRIPT_DIR}/charts/values-appliance.yaml" \
-            "${SCRIPT_DIR}/charts/values-overwrites.yaml" 2> /dev/null || true
-    )"
-    if [[ "${merged}" = "true" ]]; then
-        printf 'true'
-    else
-        printf 'false'
     fi
 }
 
@@ -593,44 +594,11 @@ validate_environment() {
         exit 1
     fi
 
-    # The dev profile's plain http does not weaken certificate.requireClientCert,
-    # it bypasses it.
-    #
-    # The `-mtls` TLSOption is attached as `router.tls.options`, which constrains the
-    # TLS handshake and nothing else. Widening every router onto the `web` entrypoint
-    # and switching the global redirect off means the same routes answer in cleartext,
-    # where no client certificate is asked for at all -- so a deployment that believes
-    # it requires one serves every host to anyone who can reach port 80.
-    #
-    # Only --development and --integrationtest can reach this state; no deployment
-    # serves cleartext at all.
-    local requires_client_cert
-    requires_client_cert="$(client_certificate_required)"
-    if [[ "${PLAIN_HTTP}" = true ]] && [[ "${requires_client_cert}" = true ]]; then
-        echo >&2 "[!] Error: --development/--integrationtest and certificate.requireClientCert"
-        echo >&2 "[!] are incompatible. The development profile serves every route over plain"
-        echo >&2 "[!] http, and the client-certificate requirement only applies to the TLS"
-        echo >&2 "[!] handshake -- so cleartext bypasses it entirely rather than weakening it."
-        echo >&2 "[!] Drop one of the two."
-        exit 1
-    fi
-
     # Check if not run as root
     if [[ "${EUID}" -eq 0 ]]; then
         echo >&2 "[!] Error: Script must not be run as root!"
         exit 1
     fi
-
-    # Check submodules
-    submodules=$(git submodule | awk '{ print $2 }')
-    for submodule in ${submodules}; do
-        if [[ ! -f "${submodule}/.git" ]]; then
-            echo >&2 "[!] Error: Git submodule '${submodule}' missing!"
-            echo >&2 "[!] You need to clone the git repository with '--recursive' in order to clone submodules."
-            echo >&2 "[!] You can fix that by running 'git submodule update --init --recursive'"
-            exit 1
-        fi
-    done
 
     # Check git lfs. Objects live under the common git dir, which is shared by all
     # worktrees — resolve it instead of assuming '.git' is a directory, since in a
@@ -887,6 +855,16 @@ create_docker_secret_from_config() {
 setup_system(){
     local sysctl_changed
     sysctl_changed=false
+
+    local VM_MAX_MAP_COUNT vm_max_map_count
+    local VM_OVERCOMMIT_MEMORY vm_overcommit_memory
+    local FS_INOTIFY_MAX_WATCHES fs_inotify_max_watches
+    local FS_INOTIFY_MAX_INSTANCES fs_inotify_max_instances
+    local FS_FILE_MAX fs_file_max
+    local VM_SWAPPINESS vm_swappiness
+    local VM_DIRTY_BACKGROUND_RATIO vm_dirty_background_ratio
+    local VM_DIRTY_RATIO vm_dirty_ratio
+    local SYSCTL_CONF_FILE
 
     VM_MAX_MAP_COUNT=1677720
     vm_max_map_count="$(sysctl -n vm.max_map_count)"
@@ -1450,7 +1428,7 @@ install_third_party(){
 }
 
 install_certificate(){
-    if [[ "${CERTIFICATE}" = false ]]; then
+    if [[ -z "${CERTIFICATE_CERT_FILE}" ]]; then
         return
     fi
     kubectl \
@@ -1462,8 +1440,8 @@ install_certificate(){
         create \
             secret tls \
                 "${CERTIFICATE_SECRET_NAME}" \
-                --cert "${CERTIFICATE[0]}" \
-                --key "${CERTIFICATE[1]}"
+                --cert "${CERTIFICATE_CERT_FILE}" \
+                --key "${CERTIFICATE_KEY_FILE}"
 }
 
 stop_expose_minikube(){
@@ -1547,6 +1525,7 @@ install_host_entries(){
     new_hosts_file+=$'\n'
     new_hosts_file+="# Hosts for '${LOOM_DOMAIN}' domain"
     new_hosts_file+=$'\n'
+    local host
     for host in "${LOOM_HOSTS_FQDN[@]}"; do
         new_hosts_file+=$"${minikube_ip} ${host}"
         new_hosts_file+=$'\n'
@@ -1619,6 +1598,24 @@ teardown(){
 
     wait_all "${pids[@]}"
 
+    # The third-party releases for the profile this run is not on. install_traefik
+    # and install_keda each delete them on the way in -- traefik binds the host's
+    # ports 80 and 443, and two KEDA operators fight over the same ScaledObjects --
+    # so leaving them here is what lets `up -d` followed by `down` keep a traefik
+    # running. prod and offline deploy under the same release name, so this pair
+    # covers all three profiles.
+    #
+    # Tolerated rather than checked, as on the way in: usually there is nothing
+    # there to delete.
+    local other_profile
+    if [[ "${SKAFFOLD_PROFILE}" = "dev" ]]; then
+        other_profile="prod"
+    else
+        other_profile="dev"
+    fi
+    "${CICD_SKAFFOLD}" traefik delete --profile "${other_profile}" || true
+    "${CICD_SKAFFOLD}" keda delete --profile "${other_profile}" || true
+
     minikube ssh \
         -- \
         docker \
@@ -1632,6 +1629,10 @@ teardown(){
 
 atexit(){
     echo "[*] Exiting.."
+
+    if [[ -n "${TRUSTED_CA_VALUES_FILE}" ]]; then
+        rm --force "${TRUSTED_CA_VALUES_FILE}"
+    fi
 
     if [[ "${SETUP}" = true ]]; then
         return
@@ -1701,7 +1702,9 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         -v|--verbose)
-            VERBOSE=true
+            # Armed here rather than after the loop, so that -v also traces the
+            # parse of whatever follows it.
+            set -x
             shift
         ;;
         -s|--setup)
@@ -1713,12 +1716,14 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         -e|--expose)
+            require_args "${1}" "$#" 1 "an IP address to bind to"
             EXPOSE=true
             shift
             EXPOSE_IP="${1}"
             shift
         ;;
         -g|--gpus)
+            require_args "${1}" "$#" 1 "a GPU type: amd or nvidia"
             shift
             GPUS="${1}"
             case "${GPUS}" in
@@ -1739,34 +1744,41 @@ while [[ $# -gt 0 ]]; do
             OFFLINE_MODE=true
         ;;
         -c|--certificate)
+            require_args "${1}" "$#" 2 "a certificate file and a key file"
             shift
-            CERTIFICATE=("${1?Missing CERT}" "${2?Missing KEY}")
+            CERTIFICATE_CERT_FILE="${1}"
+            CERTIFICATE_KEY_FILE="${2}"
             shift
             shift
         ;;
         --minikube-host-cpu-reserve)
+            require_args "${1}" "$#" 1 "a number of cores (e.g. 0.5)"
             shift
-            MINIKUBE_HOST_CPU_RESERVE_CORES="${1?Missing reserve cores value (e.g. 0.5)}"
+            MINIKUBE_HOST_CPU_RESERVE_CORES="${1}"
             shift
         ;;
         --minikube-host-mem-reserve-kib)
+            require_args "${1}" "$#" 1 "an amount of memory in KiB (e.g. 512000)"
             shift
-            MINIKUBE_HOST_MEM_RESERVE_KIB="${1?Missing reserve memory KiB value (e.g. 512000)}"
+            MINIKUBE_HOST_MEM_RESERVE_KIB="${1}"
             shift
         ;;
         --mount-string)
+            require_args "${1}" "$#" 1 "a host path (e.g. /mnt/loom-data)"
             shift
-            MINIKUBE_MOUNT_STRING="${1?Missing host path for --mount-string (e.g. /mnt/loom-data)}"
+            MINIKUBE_MOUNT_STRING="${1}"
             shift
         ;;
         --trusted-ca-bundle)
+            require_args "${1}" "$#" 1 "a path to a CA bundle PEM file"
             shift
-            TRUSTED_CA_BUNDLE="${1?Missing path to CA bundle PEM file for --trusted-ca-bundle}"
+            TRUSTED_CA_BUNDLE="${1}"
             shift
         ;;
         --archive-enc-key)
+            require_args "${1}" "$#" 1 "a key of exactly 32 characters"
             shift
-            ARCHIVE_ENC_KEY="${1?Missing key value for --archive-enc-key}"
+            ARCHIVE_ENC_KEY="${1}"
             if [[ "${#ARCHIVE_ENC_KEY}" -ne 32 ]]; then
                 die_usage "--archive-enc-key must be exactly 32 characters"
             fi
@@ -1822,10 +1834,6 @@ done
 #
 # Main
 #
-
-if [[ "${VERBOSE}" = true ]]; then
-    set -x
-fi
 
 if [[ "${DOWN}" = true ]]; then
     set_skaffold_profile
