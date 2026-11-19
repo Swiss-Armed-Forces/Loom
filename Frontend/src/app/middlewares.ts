@@ -174,7 +174,7 @@ const SEARCH_PERSIST_FIELDS = [
     "expandFilePaths",
     "fieldLayout",
     "previewFields",
-    "boldPreviewFields",
+    "statePreviewFields",
     "fieldColumnCount",
     "fieldColumnOf",
     "fieldColumnWidths",

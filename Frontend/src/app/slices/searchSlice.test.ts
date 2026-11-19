@@ -31,9 +31,9 @@ import {
     setPreviewFieldColumn,
     addFieldColumn,
     removeFieldColumn,
+    selectStatePreviewFields,
     setCompactColumnWidths,
     selectCompactColumnWidths,
-    selectBoldPreviewFields,
     selectCardElementVisibility,
     selectFilesInView,
     selectFilesInViewOrdered,
@@ -43,7 +43,7 @@ import {
     selectLeftSidebarWidth,
     selectFieldColumnCount,
     selectFieldColumnOf,
-    toggleBoldPreviewField,
+    toggleStatePreviewField,
     selectRightSidebarWidth,
     selectLoadedFiles,
     selectOrderedFileIds,
@@ -270,6 +270,27 @@ describe("normalizeCustomQueries", () => {
 
         expect(persisted.expandFilePaths).toBe(true);
         expect(persisted.customQueries?.[0].lastSeenCount).toBe(10);
+    });
+
+    it("reads marked fields stored under either name", () => {
+        window.localStorage.setItem(
+            "SEARCH_STATE",
+            JSON.stringify({ boldPreviewFields: ["from"] }),
+        );
+
+        expect(loadPersistedSearchState().statePreviewFields).toEqual(["from"]);
+
+        window.localStorage.setItem(
+            "SEARCH_STATE",
+            JSON.stringify({
+                boldPreviewFields: ["from"],
+                statePreviewFields: ["subject"],
+            }),
+        );
+
+        expect(loadPersistedSearchState().statePreviewFields).toEqual([
+            "subject",
+        ]);
     });
 });
 
@@ -1437,29 +1458,29 @@ describe("sidebar widths", () => {
     });
 });
 
-describe("fields the reader picked out", () => {
+describe("fields the reader marked as state carriers", () => {
     const withSelection = (fields: string[]) =>
         searchSlice.reducer(emptySearchState(), setPreviewFields(fields));
 
-    it("turns the emphasis on and off again", () => {
+    it("turns the mark on and off again", () => {
         let state = withSelection(["content", "path"]);
 
-        state = searchSlice.reducer(state, toggleBoldPreviewField("path"));
-        expect(selectBoldPreviewFields(searchState(state))).toEqual(["path"]);
+        state = searchSlice.reducer(state, toggleStatePreviewField("path"));
+        expect(selectStatePreviewFields(searchState(state))).toEqual(["path"]);
 
-        state = searchSlice.reducer(state, toggleBoldPreviewField("path"));
-        expect(selectBoldPreviewFields(searchState(state))).toEqual([]);
+        state = searchSlice.reducer(state, toggleStatePreviewField("path"));
+        expect(selectStatePreviewFields(searchState(state))).toEqual([]);
     });
 
-    it("drops the emphasis when the field leaves the selection", () => {
+    it("drops the mark when the field leaves the selection", () => {
         // Otherwise deselecting a field and selecting it again brings back a
-        // bold the reader has no way of seeing they still have.
+        // mark the reader has no way of seeing they still have.
         let state = withSelection(["content", "path"]);
-        state = searchSlice.reducer(state, toggleBoldPreviewField("path"));
+        state = searchSlice.reducer(state, toggleStatePreviewField("path"));
 
         state = searchSlice.reducer(state, setPreviewFields(["content"]));
 
-        expect(selectBoldPreviewFields(searchState(state))).toEqual([]);
+        expect(selectStatePreviewFields(searchState(state))).toEqual([]);
     });
 });
 

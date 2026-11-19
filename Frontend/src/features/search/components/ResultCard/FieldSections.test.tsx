@@ -7,6 +7,7 @@ import {
     setFieldLayout,
     setPreviewFields,
     setShowFieldNames,
+    toggleStatePreviewField,
 } from "@app/slices/searchSlice";
 import { store } from "@app/store";
 
@@ -33,10 +34,10 @@ const FILE_PREVIEW: GetFilePreviewResponse = {
     },
 };
 
-const renderSections = () =>
+const renderSections = (filePreview: GetFilePreviewResponse = FILE_PREVIEW) =>
     render(
         <Provider store={store}>
-            <FieldSections filePreview={FILE_PREVIEW} />
+            <FieldSections filePreview={filePreview} />
         </Provider>,
     );
 
@@ -61,6 +62,46 @@ describe("FieldSections", () => {
         expect(accordions(container)).toHaveLength(1);
         expect(container.textContent).toContain("from:alice@example.org");
         expect(container.textContent).toContain("subject:Re: invoice");
+    });
+
+    it("draws a marked field from the file's own state", () => {
+        store.dispatch(setPreviewFields(["from", "subject"]));
+        store.dispatch(toggleStatePreviewField("from"));
+
+        // Unseen and flagged at once: the two channels compose rather than
+        // one winning.
+        const { getByText } = renderSections({
+            ...FILE_PREVIEW,
+            flagged: true,
+            seen: false,
+        });
+
+        const marked = getComputedStyle(getByText("alice@example.org"));
+        expect(marked.fontWeight).toBe("700");
+        expect(marked.color).toBe("rgb(255, 0, 0)");
+
+        // subject is selected but not marked, so it is untouched.
+        const plain = getComputedStyle(getByText("Re: invoice"));
+        expect(plain.fontWeight).not.toBe("700");
+        expect(plain.color).not.toBe("rgb(255, 0, 0)");
+    });
+
+    it("leaves a marked field quiet on a seen, unflagged file", () => {
+        store.dispatch(setPreviewFields(["from", "subject"]));
+        store.dispatch(toggleStatePreviewField("from"));
+
+        const { getByText } = renderSections({
+            ...FILE_PREVIEW,
+            flagged: false,
+            seen: true,
+        });
+
+        // The mark is the file's state and nothing of its own, so a file
+        // with neither attribute draws it exactly like its neighbour.
+        const marked = getComputedStyle(getByText("alice@example.org"));
+        const plain = getComputedStyle(getByText("Re: invoice"));
+        expect(marked.fontWeight).toBe(plain.fontWeight);
+        expect(marked.color).toBe(plain.color);
     });
 
     it("drops the field names and keeps the values", () => {

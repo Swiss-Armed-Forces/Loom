@@ -509,7 +509,7 @@
             "elements": "Elements",
             "cardFields": "Card Fields",
             "addField": "Add field",
-            "chipHint": "Click to bold this field on the cards, drag to reorder the columns",
+            "chipHint": "Click to draw this field from each file's own state — bold when unseen, red when flagged; drag to reorder the columns",
             "fieldLayoutCompact": "Compact — one line per field",
             "indicator": {
                 "icons": "Icons",

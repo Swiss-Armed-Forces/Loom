@@ -2,6 +2,8 @@ import { Box, Typography } from "@mui/material";
 
 import { GetFilePreviewResponse } from "@app/api";
 
+import { FileStateStyle } from "../ResultCard/fileStateStyle";
+
 import { FieldIndicator } from "./FieldIndicator";
 import styles from "./FieldLine.module.css";
 import { IndicatorFieldId } from "./indicatorFields";
@@ -15,9 +17,10 @@ export interface FieldLineCell {
     label: string;
     /** Field value, possibly carrying `<highlight>` markers. */
     value: string;
-    /** Draw the cell bold; see `boldPreviewFields`. The label is not drawn in
-     *  this layout, so the column header carries the other half. */
-    bold: boolean;
+    /** Draw the cell from the file's own state; see `fileStateStyle`. The
+     *  label is not drawn in this layout, so the column header carries the
+     *  other half. */
+    stateStyle: FileStateStyle | undefined;
     /** Set when the cell is a row of marks rather than a value. */
     indicator: IndicatorFieldId | null;
     /** The file, which an indicator cell reads its marks from. */
@@ -27,8 +30,6 @@ export interface FieldLineCell {
 export interface FieldLineProps {
     cells: FieldLineCell[];
 }
-
-const BOLD_CELL_SX = { fontWeight: "bold" } as const;
 
 /**
  * Every selected metadata field on a single line, one column each.
@@ -41,7 +42,7 @@ const BOLD_CELL_SX = { fontWeight: "bold" } as const;
  */
 export const FieldLine = ({ cells }: FieldLineProps) => (
     <Box className={styles.line}>
-        {cells.map(({ id, label, value, bold, indicator, preview }) =>
+        {cells.map(({ id, label, value, stateStyle, indicator, preview }) =>
             indicator ? (
                 // The label stays in the column header here as it does for
                 // every other cell, so the icon is the whole cell.
@@ -62,7 +63,7 @@ export const FieldLine = ({ cells }: FieldLineProps) => (
                         value ? `${label}: ${stripHighlightTags(value)}` : label
                     }
                     noWrap
-                    sx={bold ? BOLD_CELL_SX : undefined}
+                    sx={stateStyle}
                 >
                     {renderHighlight(value)}
                 </Typography>

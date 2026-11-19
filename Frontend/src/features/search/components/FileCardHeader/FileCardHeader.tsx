@@ -11,6 +11,7 @@ import { SearchQueryField } from "@features/common/utils/enums";
 import { updateFieldOfQuery } from "@features/common/utils/helpers";
 import { FileActions } from "@features/search/components";
 
+import { fileStateStyle } from "../ResultCard/fileStateStyle";
 import { TagsList } from "../TagsList/TagsList";
 
 import { ClickableFilePath } from "./ClickableFilePath";
@@ -207,12 +208,10 @@ export const FileCardHeader = memo(
         bodyFollows = false,
         singleLineRow = false,
     }: FileCardHeaderProps) => {
+        const { flagged, seen } = filePreview;
         const pathStyle = useMemo(
-            () => ({
-                color: filePreview.flagged ? "red" : undefined,
-                fontWeight: filePreview.seen ? undefined : ("bold" as const),
-            }),
-            [filePreview.flagged, filePreview.seen],
+            () => fileStateStyle({ flagged, seen }),
+            [flagged, seen],
         );
         const dispatch = useAppDispatch();
         const { t } = useTranslation();
