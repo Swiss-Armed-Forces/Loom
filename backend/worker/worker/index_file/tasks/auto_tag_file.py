@@ -115,19 +115,13 @@ def fetch_embeddings_batch(
     file: File,
 ) -> list[FileTagInfo]:
     """Search for a batch of embeddings via a single KNN query."""
-    embeddings_batch: list[list[float]] = []
-    for embedding_bytes_lazy in batch:
-        embedding = get_lazybytes_service().load_object(embedding_bytes_lazy)
-
-        if embedding.vector is None:
-            logger.warning(
-                "Embedding is missing dense embedding vector - this should not happen."
-                " File: %s",
-                file.short_name,
-            )
-            continue
-
-        embeddings_batch.append(embedding.vector)
+    # These come from lazybytes, never from Elasticsearch: the chord computed them
+    # moments ago. `Embedding.vector` is required, so an absent one is a
+    # ValidationError at load time rather than a chunk silently dropped here.
+    embeddings_batch = [
+        get_lazybytes_service().load_object(embedding_bytes_lazy).vector
+        for embedding_bytes_lazy in batch
+    ]
 
     if not embeddings_batch:
         return []
