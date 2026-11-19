@@ -67,7 +67,10 @@ refuse() {
   # between here and the rename is better served by the page's own deadline
   # than by an answer that contradicts this one.
   current=""
-  mv "${temporary}" "${bundles}/$1.error"
+  # --no-target-directory for the same reason the bundle's rename below has
+  # it: the page can take the answer's name first, and a symlink naming a
+  # directory would turn this rename into a move into that directory.
+  mv --no-target-directory "${temporary}" "${bundles}/$1.error"
 }
 
 # TERM as well as EXIT, because TimeoutStartSec kills with SIGTERM and the
@@ -127,9 +130,17 @@ for request in "${requests}"/*.req; do
     continue
   fi
 
-  work="${bundles}/.${token}.work"
-  rm --recursive --force "${work}"
-  mkdir --parents "${work}"
+  # `mktemp`, not a name derived from the token, for exactly the reason
+  # `refuse` above gives: `bundlesDir` is 0730 root:loom-portal and the portal
+  # generates the token, so `bundles/.<token>.work` is a name the unprivileged
+  # page can take before this line runs. Creating a directory over a symlink
+  # that names one succeeds and says nothing, and the `chmod 750` here, the
+  # `chgrp --recursive` and the `chmod --recursive g+rX` below all follow it --
+  # root handing the portal group read access to whatever tree the link points
+  # at, `/var/lib/loom/recovery-passphrase` and the box's own
+  # `mtls/client.key` included. The `mv` at the end renames the link alone, so
+  # the bundle path an operator would inspect shows nothing of it.
+  work="$(mktemp --directory --tmpdir="${bundles}" ".tmp.XXXXXXXX")"
   chmod 750 "${work}"
 
   # The name is built here and never taken verbatim, so the worst a label
@@ -139,7 +150,10 @@ for request in "${requests}"/*.req; do
     --days "${days}" \
     --namespace "${namespace}" \
     --out-dir "${work}"; then
-    chgrp --recursive "${PORTAL_USER}" "${work}"
+    # --no-dereference, belt to mktemp's braces exactly as in `refuse`. The
+    # issuer writes regular files and nothing else, so on a healthy run this
+    # changes nothing.
+    chgrp --recursive --no-dereference "${PORTAL_USER}" "${work}"
     chmod --recursive g+rX "${work}"
     # The directory itself also g+w, which is what lets the page shred the
     # bundle the moment it has handed it over: removing an entry needs
@@ -153,7 +167,12 @@ for request in "${requests}"/*.req; do
     chmod g+w "${work}"
     # A rename within one directory, so the page can never see a partial
     # bundle: either the directory is there and complete, or it is not.
-    mv "${work}" "${bundles}/${token}"
+    #
+    # --no-target-directory so it stays a rename. The page may create
+    # `bundles/<token>` by name too, and `mv` onto a symlink that names a
+    # directory moves the source *inside* it -- depositing a bundle, which
+    # carries an unencrypted private key, wherever the link points.
+    mv --no-target-directory "${work}" "${bundles}/${token}"
     current=""
     echo "Issued a visitor certificate for ${label:-visitor}."
   else
