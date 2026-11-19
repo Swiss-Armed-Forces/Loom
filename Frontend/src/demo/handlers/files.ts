@@ -399,6 +399,7 @@ const previewFieldsHandler = http.get(/\/api\/v1\/files\/preview-fields$/, () =>
     json(
         [
             { id: "content", label: "Content" },
+            { id: "full_path", label: "File Path" },
             { id: "short_name", label: "File Name" },
             { id: "extension", label: "Extension" },
             { id: "summary", label: "Summary" },

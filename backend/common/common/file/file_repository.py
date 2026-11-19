@@ -432,7 +432,7 @@ class File(RepositoryTaskObject):
         " e.g. '//api-upload/docs/report.pdf'"
     )
     @property
-    def full_path(self) -> FilePurePath:
+    def full_path(self) -> Annotated[FilePurePath, PreviewableField(label="File Path")]:
         if isinstance(self.full_name, str):
             return FilePurePath(f"//{self.source}/{self.full_name}")
         full_name_str = str(self.full_name)
