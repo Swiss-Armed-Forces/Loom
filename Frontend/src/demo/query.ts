@@ -311,6 +311,9 @@ class QueryParser {
 const valuesByField = (document: DemoDocument): Record<string, string[]> => {
     const authorValues = document.authors;
     const secretValues = document.secrets;
+    // Demo documents carry their path as /path, while every path the API hands
+    // out - and so every path a crumb or a tree node filters on - is //path.
+    const apiPath = `/${document.path}`;
     return {
         id: [document.id],
         extension: [document.extension],
@@ -330,8 +333,8 @@ const valuesByField = (document: DemoDocument): Record<string, string[]> => {
             : [],
         full_name: [document.path],
         "full_name.keyword": [document.path],
-        full_path: [document.path],
-        "full_path.keyword": [document.path],
+        full_path: [apiPath],
+        "full_path.keyword": [apiPath],
         short_name: [document.name],
         "short_name.keyword": [document.name],
         filename: [document.name],

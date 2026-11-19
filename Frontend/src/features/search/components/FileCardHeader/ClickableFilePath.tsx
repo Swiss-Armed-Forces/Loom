@@ -116,6 +116,9 @@ export const ClickableFilePath = ({
     const fileExtension = dotIdx > 0 ? lastName.slice(dotIdx) : null;
     const fileBaseName = dotIdx > 0 ? lastName.slice(0, dotIdx) : lastName;
 
+    // A crumb narrows the search to the path up to that point, so the two path
+    // fields are alternatives: a query carrying both can only match nothing or
+    // repeat itself. Each handler drops the other's field.
     const handleQueryFilterParentPath = (
         newFilepath: string,
         negate: boolean,
@@ -128,6 +131,7 @@ export const ClickableFilePath = ({
             false,
             negate,
             accumulate,
+            [SearchQueryField.FullPathKeyword],
         );
         dispatch(
             updateQuery({
@@ -152,18 +156,21 @@ export const ClickableFilePath = ({
         dispatch(updateQuery({ query: newQuery }));
     };
 
-    const handleQueryFilterFilename = (
-        name: string,
+    // The last crumb is the file itself, so it filters the exact path it sits
+    // at - extension included, even though the clicked text stops short of it.
+    const handleQueryFilterFullPath = (
+        filePath: string,
         negate: boolean,
         accumulate: boolean,
     ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
-            SearchQueryField.Filename,
-            name,
+            SearchQueryField.FullPathKeyword,
+            filePath,
             false,
             negate,
             accumulate,
+            [SearchQueryField.ParentPath],
         );
         dispatch(updateQuery({ query: newQuery }));
     };
@@ -224,7 +231,9 @@ export const ClickableFilePath = ({
                             <LazyTooltip
                                 title={
                                     isLast
-                                        ? t("resultCard.filterByFilename")
+                                        ? t("resultCard.filterByFullPath", {
+                                              fullPath: part.pathToPart,
+                                          })
                                         : t("resultCard.filterByParentPath")
                                 }
                                 placement="top"
@@ -234,8 +243,8 @@ export const ClickableFilePath = ({
                                     color="inherit"
                                     onClick={(e) => {
                                         if (isLast) {
-                                            handleQueryFilterFilename(
-                                                fileBaseName,
+                                            handleQueryFilterFullPath(
+                                                part.pathToPart,
                                                 e.shiftKey,
                                                 e.ctrlKey,
                                             );

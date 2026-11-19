@@ -1,11 +1,24 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { configureStore, Middleware } from "@reduxjs/toolkit";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setExpandFilePaths } from "@app/slices/searchSlice";
+import commonReducer from "@app/slices/commonSlice";
+import searchReducer, {
+    setExpandFilePaths,
+    updateQuery,
+} from "@app/slices/searchSlice";
 import { store } from "@app/store";
 
 import { ClickableFilePath } from "./ClickableFilePath";
+
+// The search thunk opens a point in time over the network before it looks at
+// the query it was handed. With nothing to open it returns straight away, so
+// the query a click asks for is readable off the pending action alone.
+vi.mock("@app/api/index", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@app/api/index")>()),
+    getLongRunningQuery: vi.fn(),
+}));
 
 const DEEP_PATH = "/Crawler/Imports/archive.zip/testarchive/testfile01.txt";
 const SHALLOW_PATH = "/Mail/Inbox/basic_email.eml";
@@ -18,6 +31,44 @@ const renderPath = (fullPath: string) =>
             <ClickableFilePath fullPath={fullPath} />
         </Provider>,
     );
+
+/** A store holding `query`, rendering `SHALLOW_PATH`, and recording every
+ *  query a crumb click asks for. */
+const queriesAskedFrom = (query: string) => {
+    const asked: string[] = [];
+    const record: Middleware = () => (next) => (action) => {
+        if (updateQuery.pending.match(action)) {
+            asked.push(action.meta.arg.query ?? "");
+        }
+        return next(action);
+    };
+    const queryStore = configureStore({
+        reducer: { search: searchReducer, common: commonReducer },
+        middleware: (getDefault) => getDefault().concat(record),
+    });
+    queryStore.dispatch({
+        type: "updateQueryThunk/fulfilled",
+        payload: {
+            query: {
+                id: "pit-1",
+                query,
+                keepAlive: null,
+                sortField: null,
+                sortDirection: null,
+                sortId: null,
+                pageSize: null,
+            },
+            files: [],
+            totalFiles: 0,
+        },
+    });
+    render(
+        <Provider store={queryStore}>
+            <ClickableFilePath fullPath={SHALLOW_PATH} />
+        </Provider>,
+    );
+    return asked;
+};
 
 const trail = () => screen.getByRole("list").textContent;
 // The breadcrumb segments render as links, so the toggle is the only button
@@ -98,6 +149,32 @@ describe("ClickableFilePath", () => {
 
         expect(getComputedStyle(row).minWidth).toBe("0px");
         expect(getComputedStyle(trailRoot).minWidth).toBe("0px");
+    });
+
+    it("filters the file's own path, extension and all", async () => {
+        const asked = queriesAskedFrom('parent_path:"//Mail/Inbox"');
+
+        await act(async () => {
+            fireEvent.click(screen.getByText("basic_email"));
+        });
+
+        // The crumb reads "basic_email", the filter is the whole path - and
+        // the directory filter it supersedes is gone.
+        expect(asked).toEqual([
+            'full_path.keyword:"//Mail/Inbox/basic_email.eml"',
+        ]);
+    });
+
+    it("drops the file filter when a parent crumb is clicked", async () => {
+        const asked = queriesAskedFrom(
+            'full_path.keyword:"//Mail/Inbox/basic_email.eml"',
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByText("Inbox"));
+        });
+
+        expect(asked).toEqual(['parent_path:"//Mail/Inbox"']);
     });
 
     it("reaches no ancestor handler, by click or by focus", () => {

@@ -109,6 +109,20 @@ describe("demo query evaluator", () => {
         ).toBe(true);
     });
 
+    it("matches an exact full path in the //path form the API hands out", () => {
+        const fixture = document(1);
+        fixture.path = "/Mail/Inbox/basic_email.eml";
+
+        expect(
+            parseDemoQuery(
+                'full_path.keyword:"//Mail/Inbox/basic_email.eml"',
+            ).matches(fixture),
+        ).toBe(true);
+        expect(
+            parseDemoQuery('full_path.keyword:"//Mail/Inbox"').matches(fixture),
+        ).toBe(false);
+    });
+
     it("omits match-all, negated, existence, range, and comparison filters", () => {
         const fixture = document(2_000_000);
         fixture.tags = ["interesting"];
