@@ -25,6 +25,11 @@ logger = logging.getLogger(__name__)
 _DEFAULT_MR_CONTEXT = MRContext()
 _DIFF_TRUNCATED_MARKER = "[Diff truncated at"
 
+# Invoking an aitools subcommand is the authorisation for the edits and commands its
+# prompt describes, so Claude approves them itself rather than asking per operation.
+# Auto mode keeps the checks on dangerous operations that "bypassPermissions" drops.
+CLAUDE_PERMISSION_MODE = "auto"
+
 
 def _chunk_file_diffs(file_map: FileDiffMap) -> list[DiffChunk]:
     chunks: list[DiffChunk] = []
@@ -67,6 +72,8 @@ def run_prompt(prompt: str, repo: Repo) -> str | None:
             "--output-format",
             "text",
             "--no-session-persistence",
+            "--permission-mode",
+            CLAUDE_PERMISSION_MODE,
         ]
     else:
         cmd = [
@@ -271,12 +278,11 @@ def run_ai_agentic(prompt: str, repo: Repo) -> None:
         sys.exit(1)
 
     cmd = [config.BACKEND]
-    if config.AUTO_MODE:
-        if config.BACKEND == "claude":
-            cmd += ["--dangerously-skip-permissions"]
-        else:
+    if config.BACKEND == "claude":
+        cmd += ["--permission-mode", CLAUDE_PERMISSION_MODE]
+    else:
+        if config.AUTO_MODE:
             cmd += ["--auto"]
-    if config.BACKEND == "opencode":
         cmd += ["--prompt"]
 
     cmd.append(prompt)
