@@ -10,6 +10,7 @@ import {
     SubdirectoryArrowLeft,
     SummarizeOutlined,
     Translate,
+    VerticalAlignTop,
     YoutubeSearchedForOutlined,
     ZoomIn,
 } from "@mui/icons-material";
@@ -120,6 +121,13 @@ export const shortcutRegistry: ShortcutAction[] = [
         id: "scrollUp",
         defaultKeys: ["Ctrl + k"],
         labelKey: "emptySearch.hotkeys.scrollUp",
+        context: "results",
+    },
+    {
+        id: "scrollToHighlight",
+        defaultKeys: ["z"],
+        icon: <VerticalAlignTop fontSize="inherit" />,
+        labelKey: "emptySearch.hotkeys.scrollToHighlight",
         context: "results",
     },
     {
