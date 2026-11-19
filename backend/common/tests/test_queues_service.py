@@ -11,6 +11,9 @@ from common.services.queues_service import PAUSED_QUEUES_SET_KEY, QueuesService
 _QUEUE = "test-queue"
 _LOOM_QUEUE = "loom:worker.index_file.dispatch_tasks.dispatch_index_file"
 _DELAYED_QUEUE = "celery_delayed_27"
+_GRAVEYARD_QUEUE = "loom:graveyard"
+_ABYSS_QUEUE = "loom:abyss"
+_UNROUTABLE_QUEUE = "loom:unroutable"
 
 
 @pytest.fixture()
@@ -142,6 +145,27 @@ def test_queue_listing_separates_loom_and_delayed_queues(
 
     assert queues_service.get_all_queue_message_counts() == {_LOOM_QUEUE: 3}
     assert queues_service.get_delayed_queue_message_counts() == {_DELAYED_QUEUE: 1}
+
+
+def test_total_count_leaves_out_the_queues_no_worker_consumes(
+    queues_service: QueuesService,
+    session: Any,
+):
+    """Nothing drains abyss or unroutable, so what sits there is not work in progress.
+
+    This total gates the frontend's processing spinner, and abyss holds a message for
+    seven days — long enough for one stopped message to show a drained system as busy
+    for a week. Graveyard and dead are the reaper's, so they still count.
+    """
+    session.get.return_value.json.return_value = [
+        {"name": _LOOM_QUEUE, "messages": 2},
+        {"name": _GRAVEYARD_QUEUE, "messages": 3},
+        {"name": _ABYSS_QUEUE, "messages": 5},
+        {"name": _UNROUTABLE_QUEUE, "messages": 7},
+        {"name": _DELAYED_QUEUE, "messages": 1},
+    ]
+
+    assert queues_service.get_message_count() == 2 + 3 + 1
 
 
 def test_queue_samples_still_read_the_statistics_database(
