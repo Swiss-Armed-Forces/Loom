@@ -1,5 +1,6 @@
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks";
@@ -11,15 +12,20 @@ import {
     selectFieldLayout,
     selectPreviewFields,
     selectQuery,
+    setFieldColumnWidths,
     updateQuery,
 } from "@app/slices/searchSlice";
 import { nextSortSelection } from "@features/common/utils/helpers";
 import { useFieldReorder } from "@features/search/hooks/useFieldReorder";
 
 import styles from "./FieldColumnHeader.module.css";
-import { reservesThumbnailSlot } from "./fieldColumns";
+import {
+    FIELD_COLUMNS_VAR,
+    columnWidthsOf,
+    reservesThumbnailSlot,
+} from "./fieldColumns";
 import { isIndicatorField, useFieldLabels } from "./indicatorFields";
-import { useColumnResize } from "./useColumnResize";
+import { useColumnResize, useThumbnailResize } from "./useColumnResize";
 
 const BOLD_LABEL_SX = { fontWeight: "bold" } as const;
 
@@ -46,13 +52,31 @@ export const FieldColumnHeader = () => {
     const fieldLayout = useAppSelector(selectFieldLayout);
     const visibility = useAppSelector(selectCardElementVisibility);
     const query = useAppSelector(selectQuery);
-    const {
-        gridRef,
-        startResize,
-        resetBorder,
-        startThumbnailResize,
-        resetThumbnail,
-    } = useColumnResize(previewFields, columnWidths);
+    const widths = useMemo(
+        () => columnWidthsOf(previewFields, columnWidths),
+        [previewFields, columnWidths],
+    );
+    // Back to field ids on the way out: a width belongs to the field whose
+    // column it was dragged for, so it survives a reorder or a deselection.
+    const commit = useCallback(
+        (next: number[]) => {
+            dispatch(
+                setFieldColumnWidths(
+                    Object.fromEntries(
+                        previewFields.map((id, i) => [id, next[i]] as const),
+                    ),
+                ),
+            );
+        },
+        [dispatch, previewFields],
+    );
+    const { gridRef, startResize, resetBorder } = useColumnResize({
+        widths,
+        variable: FIELD_COLUMNS_VAR,
+        commit,
+    });
+    const { startThumbnailResize, resetThumbnail } =
+        useThumbnailResize(gridRef);
     const { dragProps, isDragging, isDropTarget } = useFieldReorder();
 
     const labelFor = useFieldLabels(availableFields);

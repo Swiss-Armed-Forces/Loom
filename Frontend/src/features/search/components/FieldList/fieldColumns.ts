@@ -12,6 +12,17 @@ import { FieldLayout } from "@app/slices/searchSlice";
 export const FIELD_COLUMNS_VAR = "--loom-field-columns";
 
 /**
+ * Custom property the result list publishes the compact layout's columns on.
+ *
+ * A name of its own rather than a second meaning for `FIELD_COLUMNS_VAR`.
+ * Only one layout is drawn at a time, but the two templates count different
+ * things - one track per selected field there, one per column bucket here -
+ * and a card resolving the wrong one would lay its fields out in tracks that
+ * describe somebody else's columns.
+ */
+export const COMPACT_COLUMNS_VAR = "--loom-compact-columns";
+
+/**
  * Attribute marking the element that carries the template.
  *
  * A column drag paints the new tracks straight onto that element instead of
@@ -147,6 +158,24 @@ export const columnWidthsOf = (
 ): number[] =>
     fields.map((id) =>
         isUsableWidth(widths[id]) ? widths[id] : DEFAULT_COLUMN_WIDTH,
+    );
+
+/**
+ * The width of each of `count` compact columns, in `fr`.
+ *
+ * Kept by position rather than per field, which is the opposite of
+ * `columnWidthsOf` and for the same reason: a compact column is a bucket the
+ * reader moves fields in and out of, so the column a width belongs to is the
+ * one in that place rather than whatever is in it. A position never dragged
+ * comes out at the default, including every position past the end of a
+ * shorter stored array.
+ */
+export const compactColumnWidths = (
+    count: number,
+    widths: number[],
+): number[] =>
+    Array.from({ length: count }, (_, index) =>
+        isUsableWidth(widths[index]) ? widths[index] : DEFAULT_COLUMN_WIDTH,
     );
 
 /**

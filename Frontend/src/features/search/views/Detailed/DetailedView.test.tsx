@@ -20,6 +20,10 @@ vi.mock("@features/search/components", () => ({
     EmptySearchResults: () => <div data-testid="empty" />,
 }));
 
+vi.mock("react-i18next", () => ({
+    useTranslation: () => ({ t: (key: string) => key }),
+}));
+
 const VIEWPORT_HEIGHT = 800;
 const ROW_HEIGHT = 200;
 
@@ -157,5 +161,34 @@ describe("DetailedView", () => {
         render(<Harness store={storeWith(0)} />);
 
         expect(screen.getByTestId("empty")).toBeInTheDocument();
+    });
+});
+
+describe("the compact layout's column strip", () => {
+    const strip = () => screen.queryByTestId("compact-column-header");
+
+    it("carries the borders of a card laid out in columns", () => {
+        const store = storeWith(10);
+        store.dispatch(searchSlice.actions.addFieldColumn());
+
+        render(<Harness store={store} />);
+
+        expect(strip()).toBeInTheDocument();
+    });
+
+    it("stays away from a single-column card, which has no border to drag", () => {
+        render(<Harness store={storeWith(10)} />);
+
+        expect(strip()).toBeNull();
+    });
+
+    it("stays away from the line layout, which has a header of its own", () => {
+        const store = storeWith(10);
+        store.dispatch(searchSlice.actions.addFieldColumn());
+        store.dispatch(searchSlice.actions.setFieldLayout("line"));
+
+        render(<Harness store={store} />);
+
+        expect(strip()).toBeNull();
     });
 });
