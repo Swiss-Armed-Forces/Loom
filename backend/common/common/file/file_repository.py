@@ -103,15 +103,15 @@ class FileWithoutStorageDataException(FileRepositoryException):
 
 
 class Embedding(BaseModel):
-    # ES 9.2+ excludes dense_vector fields from _source by default
-    # (exclude_vectors feature). The elasticsearch-dsl library sets
-    # exclude_vectors=False for top-level searches, but this does
-    # not propagate to nested InnerDoc DenseVector fields, so vector
-    # may be absent on read. Vectors are only needed in the write
-    # path and KNN queries (passed directly),never for display.
-    # see:
-    # https://www.elastic.co/search-labs/blog/elasticsearch-exclude-vectors-from-source
-    vector: list[float] | None = None
+    """One embedded text fragment.
+
+    Every producer computes the vector and the text together, so a vectorless embedding
+    is not a degraded embedding but a bug. `vector` is therefore required: a read that
+    does not carry one raises a `ValidationError` instead of validating into a document
+    the persister can write back with the vector erased.
+    """
+
+    vector: list[float]
     text: str
 
 

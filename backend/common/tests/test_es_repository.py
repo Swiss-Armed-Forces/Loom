@@ -2384,3 +2384,13 @@ def test_es_repository_flush():
     search_mock.query.assert_called_once_with("match_all")
     query_mock.params.assert_called_once_with(refresh=True)
     query_mock.params.return_value.delete.assert_called_once()
+
+
+def test_an_embedding_without_a_vector_does_not_validate():
+    """A vectorless embedding must raise rather than validate.
+
+    An `Embedding` that validates without a vector is one the persister can write back
+    out, erasing the vector in the index it was read from.
+    """
+    with pytest.raises(ValidationError):
+        Embedding(text="a chunk")  # type: ignore[call-arg]
