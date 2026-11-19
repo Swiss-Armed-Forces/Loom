@@ -1,7 +1,7 @@
 import type { Message } from "@ag-ui/client";
 import { describe, expect, it } from "vitest";
 
-import { mapToChatMessages } from "./chatbotUtils";
+import { mapToChatMessages, splitStreamedMarkdown } from "./chatbotUtils";
 import type {
     ActivityRecord,
     ChatCitation,
@@ -131,5 +131,83 @@ describe("mapToChatMessages", () => {
         );
 
         expect(result.map((m) => m.id)).toEqual(["u1", "a1", "u2", "u3"]);
+    });
+
+    it("marks only the message whose text is still streaming", () => {
+        const result = mapToChatMessages(
+            conversation("a partial"),
+            {},
+            {},
+            finalIds,
+            [],
+            "a3",
+        );
+
+        expect(result.map((m) => m.isStreaming)).toEqual([
+            undefined,
+            false,
+            undefined,
+            false,
+            undefined,
+            true,
+        ]);
+    });
+
+    it("rebuilds the message when its stream ends", () => {
+        const messages = conversation("the answer");
+        const streaming = mapToChatMessages(
+            messages,
+            {},
+            {},
+            finalIds,
+            [],
+            "a3",
+        );
+        const settled = mapToChatMessages(
+            messages,
+            {},
+            {},
+            finalIds,
+            streaming,
+            null,
+        );
+
+        const index = streaming.length - 1;
+        expect(settled[index]).not.toBe(streaming[index]);
+        expect(settled[index].isStreaming).toBe(false);
+    });
+});
+
+describe("splitStreamedMarkdown", () => {
+    it("splits at the last blank line", () => {
+        expect(splitStreamedMarkdown("done\n\nstill being wri")).toEqual({
+            stable: "done\n\n",
+            tail: "still being wri",
+        });
+    });
+
+    it("keeps an answer with no complete block in the tail", () => {
+        expect(splitStreamedMarkdown("a single parag")).toEqual({
+            stable: "",
+            tail: "a single parag",
+        });
+    });
+
+    it("does not split inside a fenced code block", () => {
+        const text = "intro\n\n```python\ndef f():\n\n    return 1\n";
+
+        expect(splitStreamedMarkdown(text)).toEqual({
+            stable: "intro\n\n",
+            tail: "```python\ndef f():\n\n    return 1\n",
+        });
+    });
+
+    it("splits again once the fence closes", () => {
+        const text = "```\ncode\n```\n\nnext";
+
+        expect(splitStreamedMarkdown(text)).toEqual({
+            stable: "```\ncode\n```\n\n",
+            tail: "next",
+        });
     });
 });

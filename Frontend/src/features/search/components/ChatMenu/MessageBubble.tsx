@@ -247,7 +247,10 @@ export const MessageBubble = React.memo(
                             </Box>
                         )}
                         {message.text && (
-                            <MessageMarkdown text={message.text} />
+                            <MessageMarkdown
+                                text={message.text}
+                                isStreaming={message.isStreaming}
+                            />
                         )}
                         {!message.isUser && (
                             <CitationList citations={message.citations} />
