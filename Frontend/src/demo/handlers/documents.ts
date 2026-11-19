@@ -213,6 +213,7 @@ export const documentPreview = (
             value: document.content.slice(0, 220),
             isTruncated: document.content.length > 220,
         },
+        full_path: { value: document.path },
         short_name: { value: document.name },
         extension: { value: document.extension },
         ...(document.summary ? { summary: { value: document.summary } } : {}),

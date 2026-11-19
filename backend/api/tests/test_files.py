@@ -459,6 +459,30 @@ def test_get_preview_content_fields_mixed(client: TestClient):
     assert "unknown_field" not in preview_model.fields
 
 
+def test_get_preview_full_path_field(client: TestClient):
+    """full_path is a FilePurePath, not a str, so it has to render as the full path."""
+    file = File(
+        full_name=FilePurePath("/path/to/file.txt"),
+        storage_data=LazyBytes(service_id=str(uuid4())),
+        source="test",
+        sha256="",
+        size=0,
+        thumbnail_data=LazyBytes(service_id=str(uuid4())),
+    )
+    get_file_repository().get_by_id_with_query.return_value = file
+
+    response = client.get(
+        f"/v1/files/{file.id_}/preview",
+        params={"query_id": "0123456789", "fields": ["full_path"]},
+    )
+
+    assert response.status_code == 200
+    preview_model = GetFilePreviewResponse.model_validate(response.json())
+    full_path_field = preview_model.fields.get("full_path")
+    assert full_path_field is not None
+    assert full_path_field.value == "//test/path/to/file.txt"
+
+
 def test_get_preview_fields(client: TestClient):
     response = client.get("/v1/files/preview-fields")
     assert response.status_code == 200
