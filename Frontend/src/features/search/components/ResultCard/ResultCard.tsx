@@ -3,12 +3,18 @@ import { Badge, Box, CardContent, Chip, Typography } from "@mui/material";
 import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
+import { toast } from "react-toastify";
 
+import { updateFile } from "@app/api";
 import {
     subscribeChannel,
     unsubscribeChannel,
 } from "@app/channelSubscriptions";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
+import {
+    startLoadingIndicator,
+    stopLoadingIndicator,
+} from "@app/slices/commonSlice";
 import { FOLLOW_TAB } from "@app/slices/fileDetailSelection";
 import {
     RightSidebarTab,
@@ -18,7 +24,9 @@ import {
     selectFieldLayout,
     selectPreviewFields,
     ensureViewPreview,
+    fetchPreview,
     fileInViewChanged,
+    patchFilePreview,
     setDetailTab,
     setHighlightedFileId,
     setRightSidebarTab,
@@ -238,6 +246,34 @@ export const ResultCard = React.memo(
             dispatch(setRightSidebarTab(RightSidebarTab.FILE_DETAIL));
         };
 
+        // The read-state bar's action, and the same single-file update the
+        // `seen` button in the action row performs.
+        const handleToggleSeen = async () => {
+            if (!filePreview) return;
+            const request = { seen: !filePreview.seen };
+            try {
+                dispatch(startLoadingIndicator());
+                // Applied before the request, not after it. Two updates to the
+                // same file can overlap - selecting a card marks it seen while
+                // the bar toggles it - and applying each one when its own
+                // request happens to finish lets the older of the two land
+                // last and win. A failure below resyncs from the server.
+                dispatch(patchFilePreview({ fileId, changes: request }));
+                await updateFile(fileId, request);
+            } catch (err) {
+                toast.error(
+                    t("updateFileState.seen.scheduledErrorToast", { err }),
+                );
+                // The optimistic patch above described an update that did not
+                // happen, so take the file's real state back from the server.
+                dispatch(
+                    fetchPreview({ fileId, query: searchQuery ?? undefined }),
+                );
+            } finally {
+                dispatch(stopLoadingIndicator());
+            }
+        };
+
         /*
          * Stop the browser selecting a word on the second click.
          *
@@ -345,6 +381,9 @@ export const ResultCard = React.memo(
                         isHighlighted={isHighlighted}
                         seen={filePreview.seen}
                         flat
+                        onToggleSeen={() => {
+                            void handleToggleSeen();
+                        }}
                     >
                         <Box
                             sx={

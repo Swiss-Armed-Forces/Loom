@@ -22,6 +22,26 @@ export interface ResultCardSurfaceStyle {
 /** Opacity of the background tint that marks the highlighted card. */
 const CURSOR_TINT_OPACITY = 0.08;
 
+/**
+ * Width of the coloured band that carries the read state, in pixels.
+ *
+ * It stays an edge mark: a band wide enough to read as a column of the card
+ * competes with the card's own content for the eye, and read state applies to
+ * nearly every row of a freshly opened list.
+ */
+export const READ_STATE_BAR_WIDTH_PX = 5;
+
+/**
+ * Width of the strip that toggles the read state, in pixels.
+ *
+ * Deliberately wider than the band it draws. The strip sits on the card's
+ * outer edge, where the pointer arrives from outside the card and lands beside
+ * the band as readily as on it, so the target is the whole gutter the card
+ * reserves rather than the paint inside it. The strip runs the full height of
+ * the row, which leaves width the only dimension a click can miss in.
+ */
+export const READ_STATE_BAR_HIT_WIDTH_PX = 16;
+
 /** Elevation of a result card. Every card sits at the same height. */
 const BASE_ELEVATION = 1;
 
@@ -52,7 +72,9 @@ export const resultCardElevation = (flat: boolean): number =>
  * - unread -> the left bar, and nothing else. Read state is a property of
  *   every file in the list, so it stays the quietest mark that still reads:
  *   a bar in the primary hue, the same hue the avatar's unread dot and the
- *   folder tree's unseen chip already use.
+ *   folder tree's unseen chip already use. The bar is also the control that
+ *   changes the state, which is why it is drawn inside a strip of its own -
+ *   see `READ_STATE_BAR_HIT_WIDTH_PX`.
  * - highlighted -> the surface tint, and nothing else. It marks the single
  *   card the keyboard and the detail panel are on, and it is the whole mark:
  *   an edge around the card - a ring, a halo, a border - reads as a card of a

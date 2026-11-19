@@ -13,6 +13,11 @@ vi.mock("@features/common/urls", () => ({
     webApiGetFileThumbnail: () => "about:blank",
 }));
 
+vi.mock("@app/api", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@app/api")>()),
+    updateFile: vi.fn().mockResolvedValue(undefined),
+}));
+
 const FILE_ID = "f-1";
 
 const searchDefaults = searchReducer(undefined, { type: "@@INIT" });
@@ -59,6 +64,10 @@ const state = (store: ReturnType<typeof renderCard>) => store.getState().search;
 /** The card's own body — the element its click and double-click are on. */
 const card = () => document.querySelector(".resultCardParent") as HTMLElement;
 
+/** The read-state bar, the one `seen` control the card itself renders. */
+const readStateBar = () =>
+    document.querySelector("[data-read-state] > button") as HTMLElement;
+
 describe("opening a file from a result card", () => {
     it("opens a tab and reveals the sidebar on double click", () => {
         // The headline gesture. The tabs live in the File Detail sidebar, so
@@ -83,6 +92,18 @@ describe("opening a file from a result card", () => {
         expect(state(store).highlightedFileId).toBe(FILE_ID);
         expect(state(store).openFileTabs).toEqual([]);
         expect(state(store).rightSidebarTab).toBeNull();
+    });
+
+    it("does not select the file when the read-state bar is clicked", () => {
+        // Selecting it is what marks it seen under the `markAsSeen` auto
+        // action, so a bar click that reached the card would mark the file
+        // seen in the same gesture that marked it unseen.
+        const store = renderCard();
+
+        fireEvent.click(readStateBar());
+
+        expect(state(store).highlightedFileId).toBeNull();
+        expect(state(store).files[FILE_ID]?.preview?.seen).toBe(false);
     });
 
     it("leaves the selection alone on a Ctrl-click", () => {
