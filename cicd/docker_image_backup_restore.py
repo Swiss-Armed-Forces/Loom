@@ -171,8 +171,10 @@ def docker_backup_image(meta: ImageMetadata, backup_dir: Path) -> None:
     metadata_path.write_text(meta.model_dump_json(indent=2))
 
 
-def docker_restore_image(image_id: str, backup_dir: Path) -> None:
-    client = get_docker_client()
+def docker_restore_image(
+    image_id: str, backup_dir: Path, client: docker.DockerClient | None = None
+) -> None:
+    client = client or get_docker_client()
 
     image_dir = backup_dir / image_id
     archive_path = image_dir / "image.tar.zst"
@@ -200,7 +202,7 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
         dctx = zstd.ZstdDecompressor()
         with dctx.stream_reader(raw) as reader:
             try:
-                client.images.load(reader)  # type: ignore
+                loaded = client.images.load(reader)  # type: ignore
             except ImageLoadError as e:
                 if os.strerror(errno.ENOSPC).lower() in str(e).lower():
                     logger.warning(
@@ -212,10 +214,27 @@ def docker_restore_image(image_id: str, backup_dir: Path) -> None:
                     return
                 raise
 
-    image = client.images.get(image_id)
+    # The daemon names what it loaded, and that name is the only one the image
+    # answers to: the containerd image store derives an ID from the image
+    # manifest, which an archive written by another store does not carry, so
+    # such an archive loads under an ID no directory here is named after. An
+    # archive holds a single image, so anything else is an archive we cannot
+    # attribute - leave it untagged rather than guess, and the next backup
+    # re-keys the entry.
+    if len(loaded) != 1:
+        logger.warning(
+            "Archive for image ID '%s' holds %d images. Not tagging.",
+            image_id,
+            len(loaded),
+        )
+        return
+
+    image = loaded[0]
+    if image.id != image_id:
+        logger.info("Image ID '%s' loaded as '%s'.", image_id, image.id)
     for tag in meta.tags:
         image.tag(str(tag))
-        logger.info("Tagged image ID '%s' as '%s'.", image_id, tag)
+        logger.info("Tagged image ID '%s' as '%s'.", image.id, tag)
 
 
 # -------------------------------
