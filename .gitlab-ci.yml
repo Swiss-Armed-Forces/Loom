@@ -116,6 +116,8 @@ default:
     - cp "nix-dind/devenv.local.nix" "devenv.local.nix"
     # building shell
     - devenv_shell_ready
+    # rebuild the virtualenv if the cache restored it short of files
+    - devenv_venv_ready
     # verify that the source tree is clean
     - devenv shell -- git-file-changed --no-update
     #

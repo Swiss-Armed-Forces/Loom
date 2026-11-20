@@ -83,3 +83,34 @@ devenv_shell_ready() {
 
   devenv shell -- echo "[*] devenv shell ready (after dropping the fetcher cache)"
 }
+
+# Rebuild .venv when the cache restored it short of files.
+#
+# The job's virtualenv comes out of a GitLab cache, and a restore can lose files
+# while the runner still reports `Successfully extracted cache`.  Nothing
+# downstream notices on its own: devenv decides whether to run `poetry install`
+# from `.venv/poetry.lock.checksum`, which lives inside the restored payload, so
+# a virtualenv missing half a package certifies itself as current and the job
+# fails much later on an import.
+#
+# cicd/verify_venv.py asks each installed distribution's RECORD whether the
+# files it wrote are still there, which is the only check that catches this:
+# poetry reads what is installed from `.dist-info` metadata, so a distribution
+# that keeps its metadata and loses its files is "installed" as far as
+# `poetry install` is concerned.
+#
+# Deleting the virtualenv is what repairs it - devenv builds it again from
+# poetry.lock on the next entry.  The second verification is not belt and
+# braces: a freshly built virtualenv that is still short is a different fault,
+# and the job should stop on it rather than carry on and fail on an import.
+devenv_venv_ready() {
+  if devenv shell -- python cicd/verify_venv.py; then
+    return 0
+  fi
+
+  echo "[*] The virtualenv is incomplete - rebuilding it from poetry.lock" >&2
+  rm -rf .venv
+
+  devenv shell -- echo "[*] devenv shell ready (after rebuilding the virtualenv)" \
+    && devenv shell -- python cicd/verify_venv.py
+}
