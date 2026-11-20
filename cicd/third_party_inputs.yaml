@@ -44,11 +44,11 @@ images:
       - api/README.md
 
   registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/worker:
-    # Besides the venv, this image apt-installs seven packages pinned by ARGs in
-    # its Dockerfile and downloads three release binaries through a script whose
-    # versions and checksums arrive as ARGs. The script is keyed because it
-    # decides what is fetched and how it is named; email.magic ships as data
-    # under /usr/share/misc.
+    # Besides the venv, this image apt-installs packages pinned by ARGs in its
+    # Dockerfile and downloads release binaries through a script whose versions
+    # and checksums arrive as ARGs. The script is keyed because it decides what
+    # is fetched and how it is named; email.magic ships as data under
+    # /usr/share/misc.
     files:
       - backend/worker/pyproject.toml
       - backend/worker/poetry.lock

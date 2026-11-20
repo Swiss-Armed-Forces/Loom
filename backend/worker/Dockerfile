@@ -54,6 +54,12 @@ ARG IMAGEMAGICK_VERSION="8:6.9.*"
 ARG GHOSTSCRIPT_VERSION="10.0.*"
 ARG LIBLEPTONICA_DEV_VERSION="1.82.*"
 ARG PST_UTILS_VERSION="0.6.*"
+# Reads the archive formats the fallback chain has no extractor for - RAR5,
+# encrypted 7z, ISO 9660, CFBF. `unar` rather than `unrar`: unrar is non-free and
+# its licence forbids reimplementing the RAR compression algorithm, and this image
+# ships on the appliance USB stick. `unrar-free` does not read RAR5; libarchive
+# does, but reads neither solid nor password-protected archives.
+ARG UNAR_VERSION="1.10.*"
 ARG TSHARK_VERSION="4.0.*"
 ARG RIPSECRETS_VERSION="0.1.11"
 ARG CURL_VERSION="7.88.*"
@@ -85,6 +91,7 @@ RUN set -exu \
     ghostscript=${GHOSTSCRIPT_VERSION} \
     libleptonica-dev=${LIBLEPTONICA_DEV_VERSION} \
     pst-utils=${PST_UTILS_VERSION} \
+    unar=${UNAR_VERSION} \
     tshark=${TSHARK_VERSION} \
     curl=${CURL_VERSION} \
     binutils=${BINUTILS_VERSION} \

@@ -7,9 +7,12 @@ from common.file.file_repository import File, FilePurePath
 from common.services.lazybytes_service import InMemoryTempLazyBytesService
 
 from worker.dependencies import get_tika_service
+from worker.index_file.extractor.unar_extractor import UnarExtractor
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks.tika_processing import (
+    FALLBACKS,
     TIKA_RETRY_EXCEPTIONS,
+    TikaExtractorFallback,
     TikaProcessingResult,
     choose_tika_processing_result_task,
     tika_processor_task,
@@ -164,6 +167,13 @@ def test_only_transient_failures_are_declared_retryable():
     quietly."""
     assert TikaTransientError in TIKA_RETRY_EXCEPTIONS
     assert TikaPermanentError not in TIKA_RETRY_EXCEPTIONS
+
+
+def test_unar_is_the_last_fallback():
+    """`unar` also reads zip, tar, gzip and xz, so its position is what stops it taking
+    files the format-specific extractors above it already handle."""
+    assert isinstance(FALLBACKS[-1], TikaExtractorFallback)
+    assert isinstance(FALLBACKS[-1].extractor, UnarExtractor)
 
 
 def test_last_resort_fallback_is_announced(
