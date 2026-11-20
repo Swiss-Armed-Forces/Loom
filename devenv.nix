@@ -651,7 +651,8 @@ in
       trufflehog
       ripsecrets
 
-      cabextract
+      # What UnarExtractor shells out to, matching the worker image.
+      unar
       imagemagick
       file
     ]

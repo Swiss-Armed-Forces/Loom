@@ -29,6 +29,7 @@ from worker.index_file.extractor.pst_extractor import (
     PstExtractor,
 )
 from worker.index_file.extractor.tar_extractor import TarExtractor
+from worker.index_file.extractor.unar_extractor import UnarExtractor
 from worker.index_file.extractor.xz_extractor import (
     XZ_EXTRACTOR_READ_CHUNK_SIZE_BYTES,
     XZExtractor,
@@ -91,6 +92,8 @@ def count_files(directory: str) -> int:
         (TarExtractor, "testarchive.zip", "application/zip"),
         (TarExtractor, "testiso.iso", "application/x-iso9660-image"),
         (ZipExtractor, "empty_file.tar.gz", "application/x-tar"),
+        (UnarExtractor, "pdf-annotated.pdf", "application/pdf"),
+        (UnarExtractor, "basic_email.eml", "message/rfc822"),
     ],
 )
 def test_extractor_unsupported(
@@ -162,6 +165,77 @@ def test_extractor_unsupported(
             ),
         ),
         (TarExtractor, "sub_sub_folder.tar.gz", "application/x-tar", 3, False, None),
+        # RAR4 and RAR5 are different container formats; tika parses the first
+        # and refuses the second, so both have to be read here.
+        (
+            UnarExtractor,
+            "testarchive_rar4.rar",
+            "application/vnd.rar",
+            3,
+            False,
+            ExpectedDirectoryStructure(
+                files=[
+                    Path("testarchive/emptyfile.ignore"),
+                    Path("testarchive/testfile01.txt"),
+                    Path("testarchive/testfile02.txt"),
+                ],
+                dirs=[Path("testarchive")],
+            ),
+        ),
+        (
+            UnarExtractor,
+            "testarchive_rar5.rar",
+            "application/vnd.rar",
+            3,
+            False,
+            ExpectedDirectoryStructure(
+                files=[
+                    Path("testarchive/emptyfile.ignore"),
+                    Path("testarchive/testfile01.txt"),
+                    Path("testarchive/testfile02.txt"),
+                ],
+                dirs=[Path("testarchive")],
+            ),
+        ),
+        (
+            UnarExtractor,
+            "testarchive_larger.rar",
+            "application/vnd.rar",
+            6,
+            False,
+            ExpectedDirectoryStructure(
+                files=[
+                    Path("morestuff/onemore/pdf-annotated.tex"),
+                    Path("morestuff/onemore/python.png"),
+                    Path("morestuff/home.pdf"),
+                    Path("testarchive/emptyfile.ignore"),
+                    Path("testarchive/testfile01.txt"),
+                    Path("testarchive/testfile02.txt"),
+                ],
+                dirs=[
+                    Path("morestuff"),
+                    Path("morestuff/onemore"),
+                    Path("testarchive"),
+                ],
+            ),
+        ),
+        # tika reads most 7z through commons-compress, but answers 422 for a
+        # PPMd-compressed one, so that is the 7z that reaches this extractor.
+        (
+            UnarExtractor,
+            "testarchive_ppmd.7z",
+            "application/x-7z-compressed",
+            3,
+            False,
+            ExpectedDirectoryStructure(
+                files=[
+                    Path("testarchive/emptyfile.ignore"),
+                    Path("testarchive/testfile01.txt"),
+                    Path("testarchive/testfile02.txt"),
+                ],
+                dirs=[Path("testarchive")],
+            ),
+        ),
         (ZipExtractor, "archive.zip", "application/zip", 1, False, None),
         (ZipExtractor, "testarchive.zip", "application/zip", 3, False, None),
         (

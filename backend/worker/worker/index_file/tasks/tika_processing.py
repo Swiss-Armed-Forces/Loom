@@ -27,6 +27,7 @@ from worker.index_file.extractor.pst_extractor import (
 )
 from worker.index_file.extractor.strings_extractor import StringsExtractor
 from worker.index_file.extractor.tar_extractor import TarExtractor
+from worker.index_file.extractor.unar_extractor import UnarExtractor
 from worker.index_file.extractor.xz_extractor import XZExtractor
 from worker.index_file.extractor.zip_extractor import ZipExtractor
 from worker.index_file.extractor.zstd_extractor import ZstdExtractor
@@ -177,6 +178,9 @@ FALLBACKS: list[TikaFallback] = [
     TikaExtractorFallback(ZipExtractor()),
     TikaExtractorFallback(PstExtractor()),
     TikaExtractorFallback(PcapExtractor()),
+    # Last: `unar` reads several of the formats above, so every extractor that
+    # names one keeps first claim and this one only sees what they all declined.
+    TikaExtractorFallback(UnarExtractor()),
 ]
 
 FALLBACKS_LEVEL2: list[TikaFallback] = [
