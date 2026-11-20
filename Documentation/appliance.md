@@ -1041,9 +1041,11 @@ pipeline:
 ```
 
 `--values` is repeatable and the files are merged in order, last wins; `--set` is applied after all of
-them. A `--set` value is read as JSON when it parses as JSON — `5` is a number, `true` a boolean,
-`["deu","fra"]` a list — and as a string when it does not. Quote it as JSON (`'"123"'`) when you want
-a number-looking string.
+them. A `--set` value is read as JSON when it parses as JSON — `5` is a number, `true` and `false`
+booleans, `["deu","fra"]` a list — and as a string when it does not. Quote it as JSON (`'"123"'`)
+when you want a number-looking string. Do not quote `false`: the chart's switches are
+`{{- if .Values.X.enabled }}` and every non-empty string is true in a Go template, so
+`--set kubeStateMetrics.enabled=false` switches the component off while `'"false"'` ships it on.
 
 ### Attachment extraction depth
 

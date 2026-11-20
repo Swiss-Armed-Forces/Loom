@@ -1144,14 +1144,22 @@ resolve_user_values(){
             exit 1
         fi
         # Typed as JSON where it parses as JSON, as a string where it does not:
-        # `5` is a number, `true` a boolean, `["deu","eng"]` a list, `deu` a
-        # string. A string that happens to look like a number arrives as one --
-        # quote it as JSON (`'"123"'`) when that matters.
+        # `5` is a number, `true` and `false` are booleans, `null` is null,
+        # `["deu","eng"]` is a list, `deu` is a string. A string that happens to
+        # look like a number arrives as one -- quote it as JSON (`'"123"'`) when
+        # that matters.
+        #
+        # `try ... catch` and not jq's `//`: the alternative operator discards
+        # `false` and `null` along with "no output", so it stores those two as
+        # the strings `"false"` and `"null"`. Both are truthy in a Go template,
+        # and the chart's switches are `{{- if .Values.X.enabled }}` -- which
+        # makes `--set x.enabled=false` a box running the component the operator
+        # switched off, on a stick nobody can correct after flashing.
         #
         # shellcheck disable=SC2016
         merged="$(printf '%s' "${merged}" | jq --compact-output \
             --arg path "${path}" --arg raw "${value}" \
-            'setpath($path | split("."); ($raw | fromjson? // $raw))')"
+            'setpath($path | split("."); (try ($raw | fromjson) catch $raw))')"
     done
 
     local leaves
