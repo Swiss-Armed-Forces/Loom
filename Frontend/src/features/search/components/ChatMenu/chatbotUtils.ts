@@ -1,20 +1,104 @@
-import type { Message } from "@ag-ui/client";
+import type { Interrupt, Message, ResumeEntry } from "@ag-ui/client";
 
 import type {
     ActivityRecord,
     ChatCitation,
     ChatMessage,
+    PendingApproval,
     ToolCallRecord,
 } from "./ChatWindow.types";
+
+/**
+ * Looks a name up in a translation block, falling back to the name itself.
+ *
+ * Both blocks are keyed on names the backend owns — tool names and bulk action
+ * ids — so a name arriving without a translation is expected rather than a bug,
+ * and showing it raw is better than showing the key.
+ */
+export const translateWithFallback = (
+    t: (key: string) => string,
+    namespace: string,
+    name: string,
+): string => {
+    const key = `chatbot.${namespace}.${name}`;
+    const label = t(key);
+    return label === key ? name : label;
+};
 
 export const getToolLabel = (
     t: (key: string) => string,
     toolName: string,
-): string => {
-    const key = `chatbot.toolLabels.${toolName}`;
-    const label = t(key);
-    return label === key ? toolName : label;
+): string => translateWithFallback(t, "toolLabels", toolName);
+
+export const getBulkActionLabel = (
+    t: (key: string) => string,
+    action: string,
+): string => translateWithFallback(t, "bulkActions", action);
+
+/**
+ * Reads a bulk action out of an interrupt's metadata, which the backend fills
+ * with what the call covers rather than with the arguments the agent passed.
+ */
+export const toPendingApproval = (interrupt: Interrupt): PendingApproval => {
+    const metadata: Record<string, unknown> = interrupt.metadata ?? {};
+    return {
+        id: interrupt.id,
+        approvalId:
+            typeof metadata.approval_id === "string"
+                ? metadata.approval_id
+                : "",
+        action: typeof metadata.action === "string" ? metadata.action : "",
+        queryString:
+            typeof metadata.query_string === "string"
+                ? metadata.query_string
+                : "",
+        matchedFiles:
+            typeof metadata.matched_files === "number"
+                ? metadata.matched_files
+                : 0,
+        message: interrupt.message ?? "",
+    };
 };
+
+/**
+ * Encodes one decision per interrupt for `buildResumeArray`.
+ *
+ * A decision the panel never took is a denial: the backend turns that into a
+ * ToolDenied and the tool is never invoked, which is the safe answer for a write
+ * with no undo.
+ */
+export const buildApprovalResponses = (
+    interrupts: Interrupt[],
+    decisions: Record<string, boolean>,
+): Record<string, { status: "resolved"; payload: { approved: boolean } }> =>
+    Object.fromEntries(
+        interrupts.map((interrupt) => [
+            interrupt.id,
+            {
+                status: "resolved" as const,
+                payload: { approved: decisions[interrupt.id] === true },
+            },
+        ]),
+    );
+
+/**
+ * Names the approval each answer is answering.
+ *
+ * The backend mints an id per question and will only dispatch an action whose
+ * id comes back with the answer, so an approval is spent by the panel that was
+ * shown it rather than by a request that merely addresses the same call. The
+ * id is routing, not an answer, so it rides in `metadata` beside the payload.
+ */
+export const withApprovalIds = (
+    entries: ResumeEntry[],
+    approvalIds: Record<string, string>,
+): ResumeEntry[] =>
+    entries.map((entry) => {
+        const approvalId = approvalIds[entry.interruptId];
+        return approvalId === undefined
+            ? entry
+            : { ...entry, metadata: { ...entry.metadata, approvalId } };
+    });
 
 export const createErrorMessage = (text: string): ChatMessage => ({
     // Errors are the only messages not minted by the agent, and without an id

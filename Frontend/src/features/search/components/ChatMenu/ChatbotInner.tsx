@@ -2,6 +2,7 @@ import { Box, Chip, Divider, Tooltip, Typography } from "@mui/material";
 import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import { getBulkActionLabel } from "./chatbotUtils";
 import { ChatWindow } from "./ChatWindow";
 import { MessageInput } from "./MessageInput";
 import { useChatbotAgent } from "./useChatbotAgent";
@@ -19,17 +20,18 @@ export const ChatbotInner = ({
     const {
         chatMessages,
         isLoading,
-        isInterrupted,
         reasoningPhase,
         reasoningText,
         pendingQuestion,
         pendingModeRequest,
+        pendingApprovals,
         activeMode,
         turnActivity,
         isTurnActive,
         handleSendMessage,
         handleQuestionAnswer,
         handleModeAnswer,
+        handleApprovalAnswer,
         toggleMode,
         abortRun,
     } = useChatbotAgent(contextId, onRunComplete);
@@ -59,7 +61,6 @@ export const ChatbotInner = ({
                     isLoading={isLoading}
                     query={null}
                     onSuggestedQuestion={handleSendMessage}
-                    isInterrupted={isInterrupted}
                     scrollContainerRef={scrollContainerRef}
                     pendingQuestion={questionPrompt}
                     onQuestionAnswer={handleQuestionAnswer}
@@ -69,6 +70,67 @@ export const ChatbotInner = ({
                     reasoningPhase={reasoningPhase}
                 />
             </Box>
+            {pendingApprovals.length > 0 && (
+                <Box
+                    sx={{
+                        px: 1.5,
+                        py: 1,
+                        borderTop: 1,
+                        borderColor: "divider",
+                        bgcolor: "action.hover",
+                        // A query is as long as the model made it, and the panel
+                        // must not push the chips or the input off the bottom of
+                        // a sidebar that is only MIN_SIDEBAR_WIDTH wide.
+                        flexShrink: 0,
+                        maxHeight: "40%",
+                        overflowY: "auto",
+                    }}
+                >
+                    <Typography variant="caption" color="text.secondary">
+                        {t("chatbot.approvalTitle")}
+                    </Typography>
+                    {/* One decision per action: two writes in one response are
+                        two separate things to agree to. */}
+                    {pendingApprovals.map((approval) => (
+                        <Box key={approval.id} sx={{ mb: 1 }}>
+                            <Typography
+                                variant="body2"
+                                sx={{ overflowWrap: "anywhere" }}
+                            >
+                                {approval.action
+                                    ? t("chatbot.approvalAction", {
+                                          action: getBulkActionLabel(
+                                              t,
+                                              approval.action,
+                                          ),
+                                          count: approval.matchedFiles,
+                                          query: approval.queryString,
+                                      })
+                                    : approval.message}
+                            </Typography>
+                            <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                                <Chip
+                                    label={t("chatbot.approvalApprove")}
+                                    size="small"
+                                    color="primary"
+                                    clickable
+                                    onClick={() =>
+                                        handleApprovalAnswer(approval.id, true)
+                                    }
+                                />
+                                <Chip
+                                    label={t("chatbot.approvalDeny")}
+                                    size="small"
+                                    clickable
+                                    onClick={() =>
+                                        handleApprovalAnswer(approval.id, false)
+                                    }
+                                />
+                            </Box>
+                        </Box>
+                    ))}
+                </Box>
+            )}
             {pendingModeRequest && (
                 <Box
                     sx={{
@@ -162,7 +224,8 @@ export const ChatbotInner = ({
                     disabled={
                         isLoading ||
                         pendingQuestion !== null ||
-                        pendingModeRequest !== null
+                        pendingModeRequest !== null ||
+                        pendingApprovals.length > 0
                     }
                     onSendMessage={handleSendMessage}
                     onStop={abortRun}

@@ -6,6 +6,7 @@ from common.dependencies import DependencyException
 
 from api.services.agent_service import AgentService
 from api.services.ai_service import AiService
+from api.services.bulk_tool_service import BulkToolService
 from api.services.task_call_service import TaskCallService
 from api.services.tool_service import ToolService
 from api.services.websocket_service import WebsocketService
@@ -13,6 +14,7 @@ from api.services.websocket_service import WebsocketService
 # Note, "= None" assignments are needed here to make flake8 happy
 _websocket_service: WebsocketService | None = None
 _task_call_service: TaskCallService | None = None
+_bulk_tool_service: BulkToolService | None = None
 _tool_service: ToolService | None = None
 _agent_service: AgentService | None = None
 _ai_service: AiService | None = None
@@ -40,9 +42,18 @@ def init():
         common_dependencies.get_task_scheduling_service(),
     )
 
+    global _bulk_tool_service
+    _bulk_tool_service = BulkToolService(
+        common_dependencies.get_task_scheduling_service(),
+        common_dependencies.get_file_repository(),
+        common_dependencies.get_redis_cache_client(),
+    )
+
     global _tool_service
     _tool_service = ToolService(
-        _task_call_service, common_dependencies.get_redis_cache_client()
+        _task_call_service,
+        common_dependencies.get_redis_cache_client(),
+        _bulk_tool_service,
     )
 
     global _agent_service
@@ -59,6 +70,9 @@ def mock_init():
     global _task_call_service
     _task_call_service = MagicMock(spec=TaskCallService)
 
+    global _bulk_tool_service
+    _bulk_tool_service = MagicMock(spec=BulkToolService)
+
     global _tool_service
     _tool_service = MagicMock(spec=ToolService)
 
@@ -73,6 +87,12 @@ def get_websocket_service() -> WebsocketService:
     if _websocket_service is None:
         raise DependencyException("Connection manager is missing")
     return _websocket_service
+
+
+def get_bulk_tool_service() -> BulkToolService:
+    if _bulk_tool_service is None:
+        raise DependencyException("Bulk tool service is missing")
+    return _bulk_tool_service
 
 
 def get_tool_service() -> ToolService:

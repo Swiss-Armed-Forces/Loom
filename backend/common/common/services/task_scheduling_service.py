@@ -31,6 +31,15 @@ class UpdateFileRequest(BaseModel):
     flagged: bool | None = None
     seen: bool | None = None
 
+    @property
+    def sets_nothing(self) -> bool:
+        """Whether the request names no flag at all, and so writes nothing.
+
+        A flag left out keeps its current value, so a request with every flag left out
+        is a write with no effect.
+        """
+        return not self.model_dump(exclude_none=True)
+
 
 class UpdateArchiveRequest(BaseModel):
     hidden: bool | None = None

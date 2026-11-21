@@ -19,6 +19,9 @@ class CapabilityId(StrEnum):
     AI_PROCESSING = "ai_processing"
     UI_INTERACTION = "ui_interaction"
     RESEARCH = "research"
+    FILE_CURATION = "file_curation"
+    BULK_ENRICHMENT = "bulk_enrichment"
+    BULK_METADATA = "bulk_metadata"
 
 
 class ModeId(StrEnum):

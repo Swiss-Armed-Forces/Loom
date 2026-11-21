@@ -3,6 +3,7 @@
 We have to include here all modules containing top-level tasks.
 """
 
+from worker.ai.tasks.add_tags_to_file_tool import add_tags_to_file_tool_task
 from worker.ai.tasks.describe_image_tool import describe_image_tool_task
 from worker.ai.tasks.execute_query_tool import execute_query_tool_task
 from worker.ai.tasks.get_file_tool import (
@@ -18,6 +19,7 @@ from worker.ai.tasks.search_by_filename_tool import search_by_filename_tool_task
 from worker.ai.tasks.suggest_queries_tool import suggest_queries_task
 from worker.ai.tasks.summarize_file_tool import summarize_file_tool_task
 from worker.ai.tasks.translate_file_tool import translate_file_tool_task
+from worker.ai.tasks.update_file_tool import update_file_tool_task
 from worker.create_archive import (
     create_archive_task,
     delete_archive_task,
@@ -86,6 +88,8 @@ tasks = [
     summarize_file_tool_task,
     translate_file_tool_task,
     describe_image_tool_task,
+    add_tags_to_file_tool_task,
+    update_file_tool_task,
     list_folder_contents_tool_task,
     search_by_filename_tool_task,
     autoretry_test_task,

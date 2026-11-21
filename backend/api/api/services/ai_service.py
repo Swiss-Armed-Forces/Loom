@@ -42,7 +42,7 @@ from pydantic_ai.capabilities import Capability
 from pydantic_ai.tools import DeferredToolRequests
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
-from api.services.tool_service import AgentDeps
+from api.services.agent_deps import AgentDeps
 
 logger = logging.getLogger(__name__)
 

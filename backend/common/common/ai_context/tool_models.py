@@ -1,10 +1,12 @@
 """Shared result types for AI tool calls."""
 
-from typing import NewType, Self
+from enum import StrEnum
+from typing import Literal, NewType, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from common.file.file_repository import Tag
 from common.models.cursor_pagination import SearchAfterCursor
 
 CursorHandle = NewType("CursorHandle", str)
@@ -188,3 +190,72 @@ class SearchByFilenameResult(_SearchByFilenameFields, PaginatedToolResult):
 
 class SearchByFilenameAgentResult(_SearchByFilenameFields, PaginatedAgentResult):
     """What the search_by_filename tool returns to the agent."""
+
+
+class AddTagsToFileResult(ToolResult):
+    file_id: str
+    tags_added: list[Tag]
+
+
+class UpdateFileResult(ToolResult):
+    """The flags one file now carries, limited to those the call set.
+
+    A flag the call left alone is reported as None rather than as its current value:
+    the write is a partial update and only names what it changed.
+    """
+
+    file_id: str
+    seen: bool | None = None
+    flagged: bool | None = None
+    hidden: bool | None = None
+
+
+class BulkEnrichmentAction(StrEnum):
+    """A query-scoped action that spends an LLM call per matched file."""
+
+    SUMMARIZE = "summarize"
+    TRANSLATE = "translate"
+    DESCRIBE_IMAGES = "describe_images"
+
+
+class BulkMetadataAction(StrEnum):
+    """A query-scoped action that writes metadata on every matched file."""
+
+    ADD_TAGS = "add_tags"
+    UPDATE_FILES = "update_files"
+
+
+BulkAction = BulkEnrichmentAction | BulkMetadataAction
+
+
+class BulkApprovalRequest(BaseModel):
+    """What the user is asked to approve before a bulk action is dispatched.
+
+    This travels as the metadata of a pydantic-ai approval request, which the AG-UI
+    adapter hands to the frontend as the interrupt that pauses the run. It carries the
+    impact of the call rather than its arguments, because the number of files a query
+    turns out to match is the only part the user cannot work out for themselves.
+
+    ``approval_id`` names the one dispatch this answer buys. The backend mints it per
+    request and spends it when the approved call dispatches, so an answer covers that
+    request and nothing else; it is of no interest to the person answering and the
+    frontend does not show it.
+    """
+
+    approval_id: UUID
+    action: BulkAction
+    query_string: str
+    matched_files: int
+
+
+class BulkDispatchResult(ToolResult):
+    """A bulk action that has been queued.
+
+    ``matched_files`` is what the preview counted, not a number of finished files: the
+    work runs in the background and outlives the agent run that started it.
+    """
+
+    action: BulkAction
+    query_string: str
+    matched_files: int
+    state: Literal["queued"] = "queued"

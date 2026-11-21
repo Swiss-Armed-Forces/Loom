@@ -35,12 +35,37 @@ export interface PendingQuestionPrompt {
     options: string[];
 }
 
+/**
+ * One backend action the agent run is paused on until the user answers.
+ *
+ * The backend raises the approval from inside the tool, so the pause is a
+ * property of the action rather than something the agent chose to ask about.
+ */
+export interface PendingApproval {
+    /** AG-UI interrupt id — what a resume entry is addressed to. */
+    id: string;
+    /**
+     * The backend's id for this approval, sent back with the answer.
+     *
+     * It names the one dispatch the answer buys, and the backend will not act
+     * on an answer that leaves it out. Never shown to the user.
+     */
+    approvalId: string;
+    /** The action being approved, e.g. `add_tags`. */
+    action: string;
+    /** The Lucene query the action covers. */
+    queryString: string;
+    /** How many files that query matches. */
+    matchedFiles: number;
+    /** What to show for an interrupt carrying no bulk action details. */
+    message: string;
+}
+
 export interface ChatWindowProps {
     messages: ChatMessage[];
     isLoading: boolean;
     query: string | null;
     onSuggestedQuestion: (q: string) => void;
-    isInterrupted: boolean;
     pendingQuestion?: PendingQuestionPrompt | null;
     onQuestionAnswer?: (answer: string) => void;
     scrollContainerRef?: React.RefObject<HTMLDivElement | null>;

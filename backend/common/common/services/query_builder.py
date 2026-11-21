@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import List, Literal
 
+from elasticsearch import BadRequestError
 from luqum.check import LuceneCheck
 from luqum.exceptions import ParseError
 from luqum.thread import parse
@@ -20,7 +21,7 @@ from luqum.tree import (
     Word,
 )
 from luqum.visitor import TreeTransformer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,25 @@ def convert_keepalive_to_seconds(value: KeepAlive) -> int:
 
 class QueryBuilderException(Exception):
     """Base class for QueryBuilder exceptions."""
+
+
+# The three ways a query string an agent composed fails: the local Lucene parser
+# rejects it, Elasticsearch rejects one that parses, or it is empty and
+# QueryParameters refuses it. Every caller that hands a model-composed query to the
+# index has to catch the whole set, so the set is defined once.
+INVALID_QUERY_ERRORS: tuple[type[Exception], ...] = (
+    QueryBuilderException,
+    BadRequestError,
+    ValidationError,
+)
+
+
+def invalid_query_message(query_string: str, exc: Exception) -> str:
+    """The message a tool hands back for a query string the model has to fix."""
+    return (
+        f"Invalid Lucene query '{query_string}': {exc}. "
+        "Use suggest_queries to generate a valid query string."
+    )
 
 
 class RFTransformer(TreeTransformer):

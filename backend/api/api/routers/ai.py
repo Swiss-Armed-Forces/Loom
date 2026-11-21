@@ -16,9 +16,10 @@ from pydantic_ai.ui import SSE_CONTENT_TYPE
 from pydantic_ai.ui.ag_ui import AGUIAdapter
 
 from api.dependencies import get_agent_service, get_ai_service, get_tool_service
+from api.services.agent_deps import AgentDeps, collect_approved_bulk_ids
 from api.services.agent_service import AgentService
 from api.services.ai_service import AiService
-from api.services.tool_service import AgentDeps, ToolService
+from api.services.tool_service import ToolService
 
 router = APIRouter()
 
@@ -133,7 +134,9 @@ async def run_agent(
     accept = request.headers.get("accept", SSE_CONTENT_TYPE)
     run_input = AGUIAdapter.build_run_input(await request.body())
 
-    prepared = agent_service.build_prepared_agent(context)
+    prepared = agent_service.build_prepared_agent(
+        context, collect_approved_bulk_ids(run_input.resume)
+    )
     routed = tool_service.route_frontend_tools(run_input.tools, prepared.capabilities)
     run_input.tools = routed.always_on
 

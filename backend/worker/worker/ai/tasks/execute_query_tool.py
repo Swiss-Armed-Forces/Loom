@@ -18,9 +18,8 @@ from common.models.es_repository import (
     PointInTimeExpiredError,
     SortingParameters,
 )
-from common.services.query_builder import QueryBuilderException
+from common.services.query_builder import INVALID_QUERY_ERRORS, invalid_query_message
 from common.utils.lucene import escape_lucene_phrase
-from elasticsearch import BadRequestError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.infra.snapshot_query import build_snapshot_bound_query
@@ -122,11 +121,10 @@ def execute_query_work_task(
     except PointInTimeExpiredError as exc:
         logger.warning("execute_query: point-in-time expired: %s", exc)
         raise InvalidPaginationCursorError() from exc
-    # A malformed query string fails in the local Lucene parser
-    # (QueryBuilderException); one that parses but that Elasticsearch rejects fails
-    # as BadRequestError. Both are the agent's mistake, so both must reach it as a
-    # ValueError it can recover from rather than as an opaque backend error.
-    except (QueryBuilderException, BadRequestError) as exc:
+    # A query string the agent composed is the agent's mistake, so every way of
+    # rejecting one must reach it as a ValueError it can recover from rather than as
+    # an opaque backend error.
+    except INVALID_QUERY_ERRORS as exc:
         if "search_after" in str(exc):
             logger.warning("execute_query: invalid cursor '%s': %s", after_cursor, exc)
             raise InvalidPaginationCursorError() from exc
@@ -138,10 +136,7 @@ def execute_query_work_task(
             logger.warning("execute_query: unusable cursor point-in-time: %s", exc)
             raise InvalidPaginationCursorError() from exc
         logger.warning("execute_query: invalid query '%s': %s", query_string, exc)
-        raise ValueError(
-            f"Invalid Lucene query '{query_string}': {exc}. "
-            "Use suggest_queries to generate a valid query string."
-        ) from exc
+        raise ValueError(invalid_query_message(query_string, exc)) from exc
 
     files = [_to_result_file(file) for file in result.objs]
 

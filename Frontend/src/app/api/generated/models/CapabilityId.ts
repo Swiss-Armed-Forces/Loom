@@ -23,6 +23,9 @@ export const CapabilityId = {
     AiProcessing: "ai_processing",
     UiInteraction: "ui_interaction",
     Research: "research",
+    FileCuration: "file_curation",
+    BulkEnrichment: "bulk_enrichment",
+    BulkMetadata: "bulk_metadata",
 } as const;
 export type CapabilityId = (typeof CapabilityId)[keyof typeof CapabilityId];
 

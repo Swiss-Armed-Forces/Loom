@@ -221,6 +221,10 @@ class _EsRenderedFile(InnerDoc):
 TAG_LEN_MIN = 1
 TAG_LEN_MAX = 25
 Tag = Annotated[str, StringConstraints(min_length=TAG_LEN_MIN, max_length=TAG_LEN_MAX)]
+# For a caller that has to name at least one tag. A tool declaring this rejects an
+# empty list while validating its arguments, so neither the single-file nor the bulk
+# tagging tool carries a guard of its own.
+Tags = Annotated[list[Tag], Field(min_length=1)]
 
 
 class TikaMeta(BaseModel):

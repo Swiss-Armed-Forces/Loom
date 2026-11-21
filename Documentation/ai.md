@@ -5,10 +5,12 @@ writing Lucene query strings by hand, users ask questions and the agent translat
 actions, reads documents, manipulates the search UI, and synthesizes answers grounded in the corpus.
 
 Tools are organised into **capabilities** — groups of related tools that the agent loads together.
-Three capabilities are always active (`search_and_browse`, `file_access`, `ai_processing`), while
-**Research Mode** (`research_mode`) is a dynamic capability that is activated on user opt-in. When
-active, it adds full Elasticsearch queries and the RAG pipeline, and its system-prompt instructions
-steer the agent toward thorough, multi-faceted research.
+Which capabilities a conversation has is decided by its mode. `chat` gets none; `work` gets
+`search_and_browse`, `file_access`, `ai_processing` and `ui_interaction` plus the three that act on
+the corpus (`file_curation`, `bulk_enrichment`, `bulk_metadata`); `research` trades those for
+`research`, which adds the RAG pipeline and whose instructions steer the agent toward thorough,
+multi-faceted research. Curation and the bulk actions are work-mode only because research composes
+its own queries across the whole corpus with no user in the loop.
 
 ---
 
@@ -69,8 +71,9 @@ Elasticsearch index and holds:
   question text, the agent's answer, `citations` (referenced file IDs with text snippets), and an
   `activity` list — an ordered record of `ToolCallActivityEntry` (name, inputs, output for each
   backend tool invocation) and `ReasoningActivityEntry` (LLM thinking traces) items.
-- **`active_capabilities`** (`list[str]`) — opt-in flags that alter agent behaviour. Currently the
-  only defined capability is `"research_mode"`.
+- **`active_mode`** (`ModeId`) — the conversation's mode, one of `chat`, `work` and `research`. It
+  is what decides which capabilities the agent is offered; see
+  [Agent and Tools](#agent-and-tools).
 
 A new context is created per conversation via `POST /v1/ai`. The frontend fetches its history on
 load via `GET /v1/ai/{context_id}/history`.
@@ -80,14 +83,18 @@ load via `GET /v1/ai/{context_id}/history`.
 `AgentService` wraps a single pydantic-ai `Agent` configured with an OpenAI-compatible LLM (served
 by Ollama or a compatible endpoint). It is the only client whose prompt carries more than one system
 message, so it is the only one affected by the merging the self-hosted providers ask for (see
-[System message merging](#system-message-merging)). The agent is initialised with `capabilities=tool_service.capabilities`, which
-provides four `Capability` groups. Three are always active; `research_mode` is a dynamic capability
-whose activation callback checks `AgentDeps.active_capabilities` at runtime.
+[System message merging](#system-message-merging)). `AgentService.build_prepared_agent` asks
+`ToolService.capabilities_for_mode(context.active_mode)` which of the seven `Capability` groups the
+run is offered: `_WORK_CAPABILITIES` for `work`, `_RESEARCH_CAPABILITIES` for `research`, and
+nothing at all for `chat`. Every group but `research` is declared `defer_loading=True`, so the
+agent loads the ones it needs rather than carrying all of their tools in every prompt.
 
 Tools are split into two tiers:
 
 - **Backend tools** — Python functions in `ToolService` that call `TaskCallService`, which
-  dispatches a Celery task synchronously (`.get(timeout=…)`) and returns a typed result model.
+  dispatches a Celery task synchronously and returns a typed result model. The call is bounded by
+  `settings.llm.agent.tool_timeout` (600s), which pydantic-ai applies to the tool; Celery's
+  `.get()` is not given a timeout of its own.
 - **Frontend tools** — TypeScript functions registered in the React frontend. The agent declares
   them as deferred tools; the frontend executes them after each agent run and re-submits results.
 
@@ -343,7 +350,7 @@ LLM -> Adapter : ToolCallArgs delta
 Adapter -> FE : ToolCallArgsEvent (SSE)
 Adapter -> ToolSvc : suggest_queries(ctx, query_description)
 ToolSvc -> TCS : call_suggest_queries_tool(context_id, …)
-TCS -> Worker : dispatch Celery task + .get(timeout=120)
+TCS -> Worker : dispatch Celery task + .get()
 Worker -> ES : Lucene query + count candidates
 Worker -> TCS : SuggestQueriesResult
 TCS -> ToolSvc : return result
@@ -407,6 +414,99 @@ where they did. The tools report it as an unusable cursor and the agent starts t
 set again; the REST endpoints answer `409`, and the frontend opens a new point-in-time and
 reloads from the first page.
 
+### Writes and bulk actions
+
+`file_curation` writes one file at a time — `add_tags_to_file` and `update_file` —
+along the same `ToolService` → `TaskCallService` → Celery path as every other backend
+tool, so the call blocks until the write has been handed to the persister and the agent
+sees the outcome in the same turn. Handed over is not yet applied: the persister flushes
+its queue after `settings.persister_debounce_window`, so a field read straight back can
+still carry the pre-write value — which is why the capability's instructions call the
+change accepted rather than applied. These two are deliberately not part of `ai_processing`:
+each of that capability's three tools spends an LLM call and its instructions say so,
+while a tag write is free, and mixing the two makes both harder for the model to select
+correctly.
+
+`bulk_enrichment` and `bulk_metadata` act on everything a Lucene query matches, through
+the same `TaskSchedulingService` dispatches the `202` REST routes use. They are split by
+cost: an enrichment spends one model call per matched file against the same inference
+server the conversation itself runs on, a metadata write is an index update. Neither can
+block — every one of those dispatches is fire-and-forget — so a bulk tool reports work as
+queued and nothing more. How far the cluster has got with it is a question for the UI,
+which shows the progress of everything the deployment is processing; the agent has no
+tool for it, because that estimate cannot be attributed to one action.
+
+A sweep acts on the point-in-time its query carries (`build_scan_query`), which is the
+one the files were counted against — the count in the approval panel for a bulk action,
+the result count above the search UI for a `202` route. That is what makes the number
+somebody agreed to an answer rather than an estimate: the set swept is the set counted,
+however much is indexed while the message waits in the queue. `keep_alive` is raised to
+a sweep's five minutes regardless, because the snapshot now has to outlive publishing
+one Celery message per matched file rather than one page read. A query that carries no
+point-in-time gets one opened for it.
+
+The sweeping tasks carry `autoretry_for=SCAN_RETRY_FOR`. A snapshot the sweep opened
+itself and then lapsed under broker backpressure is retried against a fresh one, which
+restarts the scan rather than tagging the first N files and stopping. A snapshot that
+came in with the query has no fresh one to fall back on, so its retries fail the same
+way and the task ends unfinished — the correct outcome, since widening the set behind
+the user's back is exactly what the snapshot is there to prevent.
+
+#### The confirmation is enforced in the tool, not asked for by the agent
+
+A bulk action is one tool call, and the user's confirmation sits inside it:
+
+1. The tool opens a point-in-time and counts what the query matches against it
+    (`count_by_query`). That snapshot is what the dispatch will later run on, so the
+    number put to the user and the set acted on are the same thing.
+2. It mints a `BulkApproval` — a fresh `approval_id` (uuid4), the action, the query
+    string, that point-in-time and the count — and stores it in the Redis cache under
+    the call it is about, for as long as the snapshot lives. Then it raises
+    pydantic-ai's `ApprovalRequired` with `BulkApprovalRequest` as metadata. Nothing
+    has been dispatched at this point.
+3. The AG-UI adapter turns the pending approval into an interrupt — metadata and all —
+    and ends the SSE stream with `RUN_FINISHED` carrying `outcome.type: "interrupt"`.
+    The frontend renders the count and the query, and POSTs the next run with a
+    `resume[]` entry per interrupt: the decision in `payload`, and the `approval_id` it
+    came with in `metadata.approvalId`.
+4. `run_agent` reads those entries with `collect_approved_bulk_ids` before handing the
+    request to the adapter, and the ids an entry approves travel into the run as
+    `AgentDeps.approved_bulk_ids`.
+5. An approved call re-enters the same tool with `tool_call_approved` set. It takes the
+    stored approval with `GETDEL`, requires its `approval_id` to be one the request
+    named, checks that the action and query string are the ones that were approved, and
+    dispatches against the snapshot the count came from. A denial comes back to the
+    model as a tool result.
+
+**Every dispatch spends one approval and no approval is spent twice.** The record is
+keyed on the `tool_call_id` the approval was raised from, which pydantic-ai keeps across
+the round trip, and on the conversation; reading it with `GETDEL` removes it before
+anything is queued; and the id has to come back with the answer. So a model response
+holding two bulk actions mints two `approval_id`s under two keys, the panel offers an
+Approve/Deny pair for each, and the run resumes only once every one of them has an
+answer — and an approved call that names no id, arrives with edited arguments, arrives a
+second time, or arrives after the snapshot it names is gone, dispatches nothing. The id
+is transparent to the person answering: the panel never shows it.
+
+The id has to travel in `ResumeEntry.metadata` because that is the only part of an
+answer that survives: the adapter maps a resume entry to `ToolApproved`/`ToolDenied`,
+`_ResumePayload` ignores payload keys it does not know, and `DeferredToolResults` is
+built without metadata, so `RunContext.tool_call_metadata` is empty on the AG-UI path.
+Reading `run_input.resume` in the route is what gets it to the tool.
+
+An approval whose record is no longer held comes back as a `ModelRetry` rather than a
+`ToolFailed`: the only way forward is to ask the user again, which a fresh call with a
+fresh id does.
+
+The point of raising from inside the tool is that no ordering of the agent's calls can
+reach a dispatch without that round trip, and the model is not relied on to remember a
+protocol. Its instructions say the approval happens on its own and that it should not ask
+for agreement itself first.
+
+There is no ceiling on how many files a bulk action may cover. The number the user is
+shown is the guard, and refusing a large query would only push the work back to the
+`202` REST routes, which have no such limit either.
+
 ---
 
 ## Frontend Tool Architecture
@@ -433,8 +533,6 @@ re-runs immediately.
 | `close_file` | Closes a file in the detail pane |
 | `highlight_file` | Highlights a file card in the search results |
 | `navigate_sidebar` | Opens a specific panel in the right sidebar (summary, translate, …) |
-| `update_file_flags` | Sets or clears a flag on a file |
-| `add_tags_to_file` | Adds one or more tags to a file |
 | `save_custom_query` | Saves the current query as a named custom query |
 | `set_statistics_view` | Switches the statistics panel to a given view |
 | `open_file_dialogs` | Opens a file action dialog (e.g. share, delete) |
@@ -446,7 +544,7 @@ Pause execution and show UI; the agent re-runs only after the user responds.
 | Tool | Purpose |
 | --- | --- |
 | `ask_user` | Presents a question and a set of chip options to the user for selection |
-| `request_capability` | Asks the user to grant (or deny) a capability such as `research_mode` |
+| `request_mode` | Asks the user to switch the conversation to another mode (e.g. `research`) |
 
 ---
 
@@ -464,25 +562,29 @@ repeat
   :Collect pending frontend tool calls;
 repeat while (RunFinishedEvent received?) is (no)
 
-if (pending tool calls?) then (yes)
-  :Separate passive vs interactive;
+:Separate passive vs interactive;
 
-  :Execute all passive tools;
-  note right: handler() runs synchronously;\nresult injected as tool message
+:Execute all passive tools;
+note right: handler() runs synchronously;\nresult injected as tool message
 
-  if (request_capability present?) then (yes)
-    :Show "Enable Research Mode?" UI;
-    :Wait for user Allow / Deny;
-    :Inject tool result;
-    :HttpAgent.runAgent() with research mode tools;
-  elseif (ask_user present?) then (yes)
-    :Show chip-selection question UI;
-    :Wait for user selection;
-    :Inject tool result;
-    :HttpAgent.runAgent() with frontend tools;
-  else (passive only)
-    :HttpAgent.runAgent() with frontend tools;
-  endif
+if (RUN_FINISHED carried interrupts?) then (yes)
+  :Render one Approve/Deny row per bulk action;
+endif
+
+if (request_mode present?) then (yes)
+  :Show "Switch to <mode> mode?" UI;
+elseif (ask_user present?) then (yes)
+  :Show chip-selection question UI;
+endif
+
+if (anything still unanswered?) then (yes)
+  :Wait for the user;
+  note right: the approval panel and an\ninteractive tool's panel are both\nopen at once when the turn raised both
+  :Inject interactive tool results;
+  :HttpAgent.runAgent({resume}) with the\napproval decisions;
+  stop
+elseif (pending tool calls?) then (yes)
+  :HttpAgent.runAgent() with frontend tools;
 else (no)
   :Run complete — update chat messages;
   stop
@@ -511,6 +613,13 @@ toolset) so the agent focuses on research rather than UI control.
 | `describe_image` | `ai_processing` | Triggers AI image description for an image file |
 | `execute_query` | `search_and_browse` | Executes a Lucene query and returns matching files with snippets, best matches first. Optional `folder_path` parameter restricts results to a subtree. Paginated: optional `after_cursor`; the response carries `total_count`, `has_more` and `next_cursor`. |
 | `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer |
+| `add_tags_to_file` | `file_curation` | Adds one or more tags to a single file |
+| `update_file` | `file_curation` | Sets the `seen`, `flagged` or `hidden` state of a single file |
+| `bulk_summarize` | `bulk_enrichment` | Queues AI summarization for every file a query matches |
+| `bulk_translate` | `bulk_enrichment` | Queues AI translation for every file a query matches |
+| `bulk_describe_images` | `bulk_enrichment` | Queues AI image description for every file a query matches |
+| `bulk_add_tags` | `bulk_metadata` | Adds tags to every file a query matches |
+| `bulk_update_files` | `bulk_metadata` | Sets `seen`, `flagged` or `hidden` on every file a query matches |
 
 ### Frontend tools
 
@@ -525,13 +634,11 @@ toolset) so the agent focuses on research rather than UI control.
 | `close_file` | passive / action | Closes a file in the detail pane |
 | `highlight_file` | passive / action | Highlights a file card in the results list |
 | `navigate_sidebar` | passive / action | Switches to a specific right-sidebar panel |
-| `update_file_flags` | passive / action | Sets or clears a flag on a file |
-| `add_tags_to_file` | passive / action | Applies tags to a file |
 | `save_custom_query` | passive / action | Saves the current search as a named custom query |
 | `set_statistics_view` | passive / action | Switches the active statistics chart |
 | `open_file_dialogs` | passive / action | Opens file action dialogs |
 | `ask_user` | interactive | Pauses execution and prompts the user with a multiple-choice question |
-| `request_capability` | interactive | Asks the user to grant a capability (e.g. `research_mode`) |
+| `request_mode` | interactive | Asks the user to switch the conversation to another mode |
 
 ---
 
@@ -619,7 +726,7 @@ is still called directly and retries on `APIError`. The same degradation applies
 
 `AiContext` is stored in the Elasticsearch index `ai_context`. The document structure mirrors the
 Pydantic model: a nested `questions` array (each an `AiQuestion` with `citations` and `activity`),
-and an `active_capabilities` keyword list.
+and an `active_mode` keyword.
 
 Persistence is non-blocking: after the SSE stream finishes, `AiService` dispatches two background
 Celery tasks:

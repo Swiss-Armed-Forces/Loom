@@ -8,8 +8,7 @@ from common.models.cursor_pagination import (
     SearchAfterCursor,
 )
 from common.models.es_repository import PointInTimeExpiredError
-from common.services.query_builder import QueryBuilderException
-from elasticsearch import BadRequestError
+from common.services.query_builder import INVALID_QUERY_ERRORS, invalid_query_message
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.infra.snapshot_query import build_snapshot_bound_query
@@ -49,9 +48,8 @@ def search_by_filename_work_task(
         logger.warning("search_by_filename: point-in-time expired: %s", exc)
         raise InvalidPaginationCursorError() from exc
     # search_string reaches here from the model, so a malformed query is the agent's
-    # mistake and has to come back as a ValueError it can act on. The local Lucene
-    # parser reports it as QueryBuilderException, Elasticsearch as BadRequestError.
-    except (QueryBuilderException, BadRequestError) as exc:
+    # mistake and has to come back as a ValueError it can act on.
+    except INVALID_QUERY_ERRORS as exc:
         # ES answers a malformed point-in-time id and an unusable search_after tuple
         # with the same illegal_argument_exception as a malformed query, so without
         # these two checks a corrupted cursor would send the agent off to fix a query
@@ -60,10 +58,7 @@ def search_by_filename_work_task(
             logger.warning("search_by_filename: unusable cursor: %s", exc)
             raise InvalidPaginationCursorError() from exc
         logger.warning("search_by_filename: invalid query '%s': %s", search_string, exc)
-        raise ValueError(
-            f"Invalid Lucene query '{search_string}': {exc}. "
-            "Use suggest_queries to generate a valid query string."
-        ) from exc
+        raise ValueError(invalid_query_message(search_string, exc)) from exc
     files = [
         FilenameSearchEntry(full_path=str(n.full_path), file_id=n.file_id)
         for n in result.nodes

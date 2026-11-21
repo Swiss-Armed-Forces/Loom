@@ -12,6 +12,7 @@ from common.ai_context.ai_context_repository import (
     ModeId,
 )
 from common.ai_context.tool_models import (
+    AddTagsToFileResult,
     CursorHandle,
     ExecuteQueryResult,
     ExecuteQueryResultFile,
@@ -22,17 +23,29 @@ from common.ai_context.tool_models import (
     SearchByFilenameResult,
     SuggestQueriesResult,
     ToolSource,
+    UpdateFileResult,
+)
+from common.dependencies import (
+    get_file_repository,
+    get_redis_cache_client,
+    get_task_scheduling_service,
 )
 from common.models.cursor_pagination import CursorSource, SearchAfterCursor
+from common.services.task_scheduling_service import UpdateFileRequest
 from pydantic_ai import ModelRetry
 from pydantic_ai.exceptions import ToolFailed
 from redis import StrictRedis
 
+from api.services.agent_deps import AgentDeps
+from api.services.bulk_tool_service import BulkToolService
 from api.services.task_call_service import TaskCallService
-from api.services.tool_service import (
-    AgentDeps,
-    ToolService,
-)
+from api.services.tool_service import ToolService
+
+_WRITING_CAPABILITIES = {
+    CapabilityId.FILE_CURATION,
+    CapabilityId.BULK_ENRICHMENT,
+    CapabilityId.BULK_METADATA,
+}
 
 
 def _make_ctx(deps: AgentDeps) -> MagicMock:
@@ -73,9 +86,18 @@ def redis_cache_client_mock() -> MagicMock:
 
 @pytest.fixture
 def tool_service(
-    task_call_service_mock: MagicMock, redis_cache_client_mock: MagicMock
+    task_call_service_mock: MagicMock,
+    redis_cache_client_mock: MagicMock,
 ) -> ToolService:
-    return ToolService(task_call_service_mock, redis_cache_client_mock)
+    return ToolService(
+        task_call_service_mock,
+        redis_cache_client_mock,
+        BulkToolService(
+            get_task_scheduling_service(),
+            get_file_repository(),
+            get_redis_cache_client(),
+        ),
+    )
 
 
 @pytest.fixture
@@ -392,10 +414,17 @@ def test_work_mode_exposes_deferred_capabilities(
     tool_service: ToolService,
 ):
     caps = tool_service.capabilities_for_mode(ModeId.WORK)
-    assert len(caps) == 4
-    ui_cap = caps[3]
-    assert ui_cap.id == CapabilityId.UI_INTERACTION
-    assert ui_cap.defer_loading is True
+    assert _WRITING_CAPABILITIES <= {c.id for c in caps}
+    assert all(c.defer_loading for c in caps)
+
+
+def test_research_mode_cannot_write(
+    tool_service: ToolService,
+):
+    """Research composes its own queries over the whole corpus with no user in the loop,
+    so the capabilities that write are work-mode only."""
+    cap_ids = {c.id for c in tool_service.capabilities_for_mode(ModeId.RESEARCH)}
+    assert cap_ids.isdisjoint(_WRITING_CAPABILITIES)
 
 
 def test_chat_mode_returns_no_capabilities(
@@ -477,17 +506,12 @@ def test_route_frontend_tools_capability_ids(
         ),
     ]
 
-    routed = tool_service.route_frontend_tools(
-        tools, tool_service.capabilities_for_mode(ModeId.WORK)
-    )
+    base_capabilities = tool_service.capabilities_for_mode(ModeId.WORK)
+    routed = tool_service.route_frontend_tools(tools, base_capabilities)
 
-    cap_ids = {c.id for c in routed.capabilities}
-    assert cap_ids == {
-        CapabilityId.SEARCH_AND_BROWSE,
-        CapabilityId.FILE_ACCESS,
-        CapabilityId.AI_PROCESSING,
-        CapabilityId.UI_INTERACTION,
-    }
+    # Routing rebuilds the capabilities a frontend tool belongs to and passes the rest
+    # through, so the mode's set comes out of it unchanged.
+    assert {c.id for c in routed.capabilities} == {c.id for c in base_capabilities}
 
 
 def test_route_frontend_tools_rebuilds_capabilities_with_frontend_tools(
@@ -656,3 +680,74 @@ def test_execute_query_without_a_further_page_hands_out_no_handle(
     result = tool_service.execute_query(ctx, "content:hello")
 
     assert result.next_cursor is None
+
+
+# ---------------------------------------------------------------------------
+# file_curation
+# ---------------------------------------------------------------------------
+
+
+def test_add_tags_to_file_dispatches_and_cites_the_file(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    file_id = uuid4()
+    task_call_service_mock.call_add_tags_to_file_tool.return_value = (
+        AddTagsToFileResult(file_id=str(file_id), tags_added=["rhine-2024"])
+    )
+
+    result = tool_service.add_tags_to_file(
+        _make_ctx(deps), str(file_id), ["rhine-2024"]
+    )
+
+    assert result.tags_added == ["rhine-2024"]
+    task_call_service_mock.call_add_tags_to_file_tool.assert_called_once_with(
+        deps.context.id_, str(file_id), ["rhine-2024"]
+    )
+    assert deps.source_collector == [ToolSource(file_id=file_id)]
+
+
+def test_add_tags_to_file_reports_a_missing_file_as_a_tool_failure(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    task_call_service_mock.call_add_tags_to_file_tool.side_effect = LookupError(
+        "File not found"
+    )
+
+    with pytest.raises(ToolFailed, match="File not found"):
+        tool_service.add_tags_to_file(_make_ctx(deps), str(uuid4()), ["a"])
+
+
+def test_update_file_passes_only_the_flags_it_was_given(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """A flag left out keeps its current value, so it must not reach the write as
+    False."""
+    file_id = uuid4()
+    task_call_service_mock.call_update_file_tool.return_value = UpdateFileResult(
+        file_id=str(file_id), flagged=True
+    )
+
+    tool_service.update_file(
+        _make_ctx(deps), str(file_id), UpdateFileRequest(flagged=True)
+    )
+
+    task_call_service_mock.call_update_file_tool.assert_called_once_with(
+        deps.context.id_, str(file_id), UpdateFileRequest(flagged=True)
+    )
+
+
+def test_update_file_without_a_flag_writes_nothing(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    with pytest.raises(ModelRetry):
+        tool_service.update_file(_make_ctx(deps), str(uuid4()), UpdateFileRequest())
+
+    task_call_service_mock.call_update_file_tool.assert_not_called()
