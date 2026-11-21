@@ -7,8 +7,8 @@ actually raises.
 
 from pydantic import ValidationError
 from pydantic_ai.exceptions import (
+    ContentFilterError,
     ModelHTTPError,
-    UnexpectedModelBehavior,
     UsageLimitExceeded,
     UserError,
 )
@@ -17,11 +17,12 @@ from pydantic_ai.exceptions import (
 # wrong". 429 is a rate limit and 408 a server-side timeout; both clear on their own.
 LLM_TRANSIENT_STATUS_CODES = frozenset({408, 429})
 
-# Exceptions that describe a property of the request rather than of the provider: a
-# model that answered with unparsable output, a misconfigured provider, a usage cap.
-# Every attempt reproduces them exactly.
+# Exceptions that describe a property of the request rather than of the answer it drew:
+# content the provider refuses to process, a misconfigured provider, a usage cap. Every
+# attempt reproduces them exactly. ContentFilterError is a refusal rather than a sample,
+# which is what separates it from the UnexpectedModelBehavior it subclasses.
 LLM_PERMANENT_EXCEPTIONS: tuple[type[Exception], ...] = (
-    UnexpectedModelBehavior,
+    ContentFilterError,
     UsageLimitExceeded,
     UserError,
     ValidationError,
@@ -61,5 +62,7 @@ def classify_llm_error(exc: Exception, message: str = "LLM call failed") -> LLME
         return LLMPermanentError(f"{message}: HTTP {exc.status_code}")
     if isinstance(exc, LLM_PERMANENT_EXCEPTIONS):
         return LLMPermanentError(f"{message}: {type(exc).__name__}")
-    # Everything left over, ModelAPIError's connection failures included.
+    # Everything left over, ModelAPIError's connection failures and
+    # UnexpectedModelBehavior included: an answer that did not parse is a sample rather
+    # than a property of the request, so a fresh attempt re-rolls it.
     return LLMTransientError(f"{message}: {type(exc).__name__}")
