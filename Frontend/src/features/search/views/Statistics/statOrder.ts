@@ -28,6 +28,7 @@ export const TERMS_STAT_ORDER = [
     "seen",
     "is_spam",
     "tika_handled_by",
+    "tika_degradation_reasons",
     "archives",
     "content_truncated",
     "attachments_skipped",

@@ -534,6 +534,15 @@ class File(RepositoryTaskObject):
     archives: Annotated[list[str], TermsStat()] = []
     tika_meta: TikaMeta = Field(default_factory=TikaMeta)
     tika_handled_by: Annotated[str | None, TermsStat()] = None
+    tika_degradation_reasons: Annotated[
+        list[str], TermsStat(label="Tika Degradation Reason")
+    ] = Field(
+        default_factory=list,
+        description=(
+            "Why tika did not parse this file: one summary line per failure collected "
+            "while the pipeline degraded to the fallback extractors"
+        ),
+    )
     attachments: list[Attachment] = []
     recursion_depth: Annotated[int, NumberHistogramStat(label="Recursion Depth")] = 0
     summary: Annotated[str | None, PreviewableField(label="Summary")] = Field(
@@ -624,6 +633,7 @@ class _EsFile(_EsTaskDocument):
     archives = Keyword(multi=True)
     tika_meta = Object(_EsTikaMeta)
     tika_handled_by = Keyword()
+    tika_degradation_reasons = Keyword(multi=True)
     attachments = Object(_EsAttachment, multi=True)
     recursion_depth = Long()
     path_depth = Long()

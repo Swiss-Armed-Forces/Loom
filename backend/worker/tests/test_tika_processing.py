@@ -70,6 +70,7 @@ def test_parsed_document_is_handled_by_tika(
     assert result.handled_by == "tika_processor"
     assert result.result is not None
     assert not result.exceptions
+    assert not result.degradation_reasons
 
 
 def test_forced_fallback_content_type_never_reaches_tika(
@@ -124,6 +125,9 @@ def test_transient_failure_degrades_once_the_budget_is_spent(
     assert result.result is None
     assert result.handled_by is None
     assert len(result.exceptions) == 1
+    assert result.degradation_reasons == [
+        "tika_processor (retries exhausted): TikaTransientError: HTTP 503"
+    ]
     assert "degrading to the fallback extractors" in caplog.text
 
 
@@ -191,5 +195,36 @@ def test_last_resort_fallback_is_announced(
     with caplog.at_level(logging.WARNING):
         chosen = choose_tika_processing_result_task([strings_result])
 
-    assert chosen is strings_result
+    assert chosen.handled_by == "stringsextractor"
+    assert chosen.result is strings_result.result
     assert "degraded to a last-resort fallback" in caplog.text
+
+
+def test_chosen_result_carries_the_reasons_the_other_branches_collected(
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
+):
+    """Only the winning branch reaches the document, so the reasons move onto it.
+
+    Dropping them leaves a file whose content came from `strings` and whose record of
+    why says nothing at all.
+    """
+    tika_reason = "tika_processor (retries exhausted): TikaTransientError: HTTP 503"
+    zip_fallback_result = TikaProcessingResult(
+        file_type=PDF_CONTENT_TYPE,
+        degradation_reasons=[tika_reason, "zipextractor: BadZipFile: not a zip file"],
+    )
+    strings_result = TikaProcessingResult(
+        file_type=PDF_CONTENT_TYPE,
+        result=lazybytes_service_inmemory.from_object(TikaResult()),
+        handled_by="stringsextractor",
+        degradation_reasons=[tika_reason],
+    )
+
+    chosen = choose_tika_processing_result_task([zip_fallback_result, strings_result])
+
+    assert chosen.handled_by == "stringsextractor"
+    # Tika's own reason comes back on every branch of the chord, and is listed once.
+    assert chosen.degradation_reasons == [
+        tika_reason,
+        "zipextractor: BadZipFile: not a zip file",
+    ]
