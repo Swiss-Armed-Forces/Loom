@@ -802,6 +802,7 @@
         "tika_file_typeTitle": "Filetype (Tika)",
         "archivesTitle": "Archives",
         "tika_handled_byTitle": "Tika Handler",
+        "tika_degradation_reasonsTitle": "Tika Degradation Reason",
         "is_spamTitle": "Spam Detected",
         "flaggedTitle": "Flagged",
         "seenTitle": "Seen",

@@ -309,6 +309,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     content_type=TestValueDefaults.test_str,
                 ),
                 tika_handled_by=TestValueDefaults.test_str,
+                tika_degradation_reasons=TestValueDefaults.test_str_list,
                 attachments=[
                     Attachment(
                         id=TestValueDefaults.test_uuid,
@@ -511,6 +512,7 @@ ES_REPOSITORY_TEST_INSTANCES: dict[type[BaseEsRepository], list[_TestInstances]]
                     content_type=TestValueDefaults.test_str,
                 ),
                 tika_handled_by=TestValueDefaults.test_str,
+                tika_degradation_reasons=TestValueDefaults.test_str_list,
                 attachments=[
                     _EsAttachment(
                         id=str(TestValueDefaults.test_uuid),

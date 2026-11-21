@@ -124,6 +124,10 @@ def _set_tika_handled_by(obj: File, handled_by: str) -> None:
     obj.tika_handled_by = handled_by
 
 
+def _set_tika_degradation_reasons(obj: File, reasons: list[str]) -> None:
+    obj.tika_degradation_reasons = reasons
+
+
 def _set_is_spam(obj: File, is_spam: bool) -> None:
     obj.is_spam = is_spam
 
@@ -213,6 +217,7 @@ class IndexingPersister(PersisterBase[File]):
     add_or_replace_translated_language = mutation(_add_or_replace_translated_language)
     set_tika_meta = mutation(_set_tika_meta)
     set_tika_handled_by = mutation(_set_tika_handled_by)
+    set_tika_degradation_reasons = mutation(_set_tika_degradation_reasons)
     set_is_spam = mutation(_set_is_spam)
     set_imap_info = mutation(_set_imap_info)
     add_or_replace_attachment = mutation(_add_or_replace_attachment)

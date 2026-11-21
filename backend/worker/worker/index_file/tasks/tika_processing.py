@@ -60,6 +60,8 @@ TIKA_MAX_RETRIES = 15
 # same way on every attempt, so retrying it buys nothing and occupies a worker for the
 # whole backoff budget.
 TIKA_RETRY_EXCEPTIONS = (TikaTransientError,)
+# Elasticsearch's own cut-off for a keyword it will still index.
+DEGRADATION_REASON_MAX_LENGTH = 256
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +70,33 @@ app = get_celery_app()
 
 def _exception_as_str(ex: Exception) -> str:
     return "".join(format_exception(type(ex), ex, ex.__traceback__))
+
+
+def _degradation_reason(ex: Exception) -> str:
+    """Summarise a failure in one line, for the field a degraded document carries.
+
+    The traceback goes to the log; what is persisted has to stay an aggregatable
+    keyword, so it is the exception type and its message, capped at the length
+    Elasticsearch stops indexing a keyword at.
+    """
+    return f"{type(ex).__name__}: {ex}".strip()[:DEGRADATION_REASON_MAX_LENGTH]
+
+
+def _merge_degradation_reasons(
+    tika_processing_results: list[TikaProcessingResult],
+) -> list[str]:
+    """Collect every reason the chord's branches saw, in order and without repeats.
+
+    Each fallback is handed its own copy of what tika returned, so tika's own reason
+    comes back once per branch.
+    """
+    return list(
+        dict.fromkeys(
+            reason
+            for tika_processing_result in tika_processing_results
+            for reason in tika_processing_result.degradation_reasons
+        )
+    )
 
 
 def _degraded_tika_facet(file: File, facet: str) -> str:
@@ -92,9 +121,8 @@ def _log_degradation(
 ) -> None:
     """Announce that tika will not parse this document and the fallbacks take over.
 
-    Without this the degradation is invisible: the exceptions collected here are
-    dropped as soon as any fallback produces a result, so the only trace left on a
-    document is its tika_handled_by.
+    This is where the traceback lives. The document itself keeps only the one-line
+    reason, in tika_degradation_reasons.
     """
     logger.warning(
         "Tika parsing failed, degrading to the fallback extractors "
@@ -113,6 +141,10 @@ class TikaProcessingResult(BaseModel):
     file_type: str
     result: TempTypedLazyBytes[TikaResult] | None = None
     exceptions: list[str] = []
+    # The same failures as `exceptions`, one summary line each. `exceptions` carries
+    # tracebacks and is only ever read when nothing produced a result at all; this is
+    # what survives onto a document that a fallback did index.
+    degradation_reasons: list[str] = []
     handled_by: str | None = None
 
 
@@ -246,11 +278,15 @@ def _create_fallback_task(fallback: TikaFallback) -> Task:
             # tika processing pipeline.
             logger.exception("Tika fallback failed: %s", fallback_name)
             tika_processing_result.exceptions.append(_exception_as_str(ex))
+            tika_processing_result.degradation_reasons.append(
+                f"{fallback_name}: {_degradation_reason(ex)}"
+            )
         if result is None:
             return tika_processing_result
         return TikaProcessingResult(
             file_type=tika_processing_result.file_type,
             result=get_lazybytes_service().from_object(result),
+            degradation_reasons=tika_processing_result.degradation_reasons,
             handled_by=fallback_name,
         )
 
@@ -288,6 +324,7 @@ def signature(
                     ),
                     group(
                         persist_tika_handled_by.s(file.id_),
+                        persist_tika_degradation_reasons.s(file.id_),
                         chain(
                             extract_tika_result_from_tika_processing_result_task.s(),
                             group(
@@ -348,14 +385,20 @@ def tika_processor_task(
             raise
         _log_degradation(file, file_type, ex, retries_exhausted=True)
         return TikaProcessingResult(
-            file_type=file_type, exceptions=[_exception_as_str(ex)]
+            file_type=file_type,
+            exceptions=[_exception_as_str(ex)],
+            degradation_reasons=[
+                f"tika_processor (retries exhausted): {_degradation_reason(ex)}"
+            ],
         )
     except Exception as ex:  # pylint: disable=broad-exception-caught
         # A permanent tika refusal, or anything unforeseen: a retry ends in the same
         # place, so degrade to the fallback extractors now.
         _log_degradation(file, file_type, ex, retries_exhausted=False)
         return TikaProcessingResult(
-            file_type=file_type, exceptions=[_exception_as_str(ex)]
+            file_type=file_type,
+            exceptions=[_exception_as_str(ex)],
+            degradation_reasons=[f"tika_processor: {_degradation_reason(ex)}"],
         )
 
     return TikaProcessingResult(
@@ -378,6 +421,7 @@ def choose_tika_processing_result_task(
     #   - in case of an uncuccessful parse, the fallback tasks have all
     #     run and will generate maybe-None results, in which case we
     #     just want to pick the first non-None result.
+    degradation_reasons = _merge_degradation_reasons(tika_processing_results)
     for tika_processing_result in tika_processing_results:
         if tika_processing_result.result is not None:
             if tika_processing_result.handled_by in LEVEL2_FALLBACK_NAMES:
@@ -387,7 +431,12 @@ def choose_tika_processing_result_task(
                     "Tika processing degraded to a last-resort fallback: %s",
                     tika_processing_result.handled_by,
                 )
-            return tika_processing_result
+            # The winner saw only its own branch of the chord, so the reasons the
+            # others collected are grafted on here: whoever produced the content is
+            # the only result that reaches the document.
+            return tika_processing_result.model_copy(
+                update={"degradation_reasons": degradation_reasons}
+            )
     # if all invalid, merge results
     merged_tika_processing_result = TikaProcessingResult(
         file_type=tika_processing_results[0].file_type,
@@ -396,6 +445,7 @@ def choose_tika_processing_result_task(
             for tika_processing_result in tika_processing_results
             for exception in tika_processing_result.exceptions
         ],
+        degradation_reasons=degradation_reasons,
     )
     return merged_tika_processing_result
 
@@ -416,6 +466,21 @@ def persist_tika_handled_by(
     if tika_processing_result.handled_by is None:
         return
     persister.set_tika_handled_by(tika_processing_result.handled_by)
+
+
+@persisting_task(app, IndexingPersister)
+def persist_tika_degradation_reasons(
+    persister: IndexingPersister, tika_processing_result: TikaProcessingResult
+):
+    """Record why a fallback indexed this file instead of tika.
+
+    The document is otherwise indistinguishable from one tika parsed, apart from its
+    tika_handled_by: the text a fallback produced looks like extracted content, and for
+    an email the strings extractor's output reads like the message itself.
+    """
+    if not tika_processing_result.degradation_reasons:
+        return
+    persister.set_tika_degradation_reasons(tika_processing_result.degradation_reasons)
 
 
 @persisting_task(app, IndexingPersister)
