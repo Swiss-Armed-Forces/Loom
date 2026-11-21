@@ -1,5 +1,10 @@
-import { HttpAgent } from "@ag-ui/client";
-import type { AgentSubscriber, Tool } from "@ag-ui/client";
+import { buildResumeArray, HttpAgent } from "@ag-ui/client";
+import type {
+    AgentSubscriber,
+    Interrupt,
+    ResumeEntry,
+    Tool,
+} from "@ag-ui/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,16 +13,20 @@ import { apiConfiguration } from "@app/api/apiConfiguration";
 import { store } from "@app/store";
 
 import {
+    buildApprovalResponses,
     createErrorMessage,
     getToolLabel,
     mapToChatMessages,
     replaceToolCall,
     replaceToolCallInActivityMap,
+    toPendingApproval,
+    withApprovalIds,
 } from "./chatbotUtils";
 import type {
     ActivityRecord,
     ChatCitation,
     ChatMessage,
+    PendingApproval,
     ToolCallRecord,
 } from "./ChatWindow.types";
 import { createFrontendTools } from "./tools";
@@ -25,31 +34,36 @@ import { createFrontendTools } from "./tools";
 export interface UseChatbotAgentResult {
     chatMessages: ChatMessage[];
     isLoading: boolean;
-    isInterrupted: boolean;
     reasoningPhase: "idle" | "thinking" | "done";
     reasoningText: string;
-    pendingQuestion: {
-        toolCallId: string;
-        question: string;
-        options: string[];
-    } | null;
-    pendingModeRequest: {
-        toolCallId: string;
-        mode: string;
-        reason: string;
-    } | null;
+    pendingQuestion: PendingQuestion;
+    pendingModeRequest: PendingModeRequest;
+    pendingApprovals: PendingApproval[];
     activeMode: string;
     turnActivity: ActivityRecord[];
     isTurnActive: boolean;
     handleSendMessage: (text: string) => Promise<void>;
     handleQuestionAnswer: (answer: string) => void;
     handleModeAnswer: (allow: boolean) => Promise<void>;
+    handleApprovalAnswer: (interruptId: string, approved: boolean) => void;
     toggleMode: (mode: string) => void;
     abortRun: () => void;
     contextId: string;
 }
 
 const NO_ACTIVITY: ActivityRecord[] = [];
+
+type PendingQuestion = {
+    toolCallId: string;
+    question: string;
+    options: string[];
+} | null;
+
+type PendingModeRequest = {
+    toolCallId: string;
+    mode: string;
+    reason: string;
+} | null;
 
 export const useChatbotAgent = (
     contextId: string,
@@ -66,19 +80,41 @@ export const useChatbotAgent = (
         "idle" | "thinking" | "done"
     >("idle");
     const reasoningTextRef = useRef("");
-    const [isInterrupted, setIsInterrupted] = useState(false);
-    const [pendingQuestion, setPendingQuestion] = useState<{
-        toolCallId: string;
-        question: string;
-        options: string[];
-    } | null>(null);
+    const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(
+        [],
+    );
+    // The interrupts the panel's decisions are addressed to. buildResumeArray demands
+    // a response for every one of them, so the run only resumes once each has one.
+    const openInterruptsRef = useRef<Interrupt[]>([]);
+    const approvalDecisionsRef = useRef<Record<string, boolean>>({});
+    const [pendingQuestion, setPendingQuestionState] =
+        useState<PendingQuestion>(null);
+    const pendingQuestionRef = useRef<PendingQuestion>(null);
     const [activeMode, setActiveMode] = useState<string>("work");
     const activeModeRef = useRef<string>("work");
-    const [pendingModeRequest, setPendingModeRequest] = useState<{
-        toolCallId: string;
-        mode: string;
-        reason: string;
-    } | null>(null);
+    const [pendingModeRequest, setPendingModeRequestState] =
+        useState<PendingModeRequest>(null);
+    const pendingModeRequestRef = useRef<PendingModeRequest>(null);
+
+    // Each prompt is mirrored into a ref because the run can only continue once every
+    // open one has been answered, and the handler that answers the last one has to see
+    // the others as they are now rather than as they were when it was rendered.
+    const setPendingQuestion = (next: PendingQuestion) => {
+        pendingQuestionRef.current = next;
+        setPendingQuestionState(next);
+    };
+    const setPendingModeRequest = (next: PendingModeRequest) => {
+        pendingModeRequestRef.current = next;
+        setPendingModeRequestState(next);
+    };
+
+    /** Whether the run is still waiting on an answer the user has not given. */
+    const hasOpenPrompt = () =>
+        pendingQuestionRef.current !== null ||
+        pendingModeRequestRef.current !== null ||
+        openInterruptsRef.current.some(
+            (interrupt) => !(interrupt.id in approvalDecisionsRef.current),
+        );
     const agentRef = useRef<HttpAgent | null>(null);
     // The message of the turn being run. Its id outlives the end of its text,
     // because the citations that belong to it arrive after it.
@@ -260,6 +296,9 @@ export const useChatbotAgent = (
             onRunInitialized: () => {
                 setIsLoading(true);
                 setIsTurnActive(true);
+                openInterruptsRef.current = [];
+                approvalDecisionsRef.current = {};
+                setPendingApprovals([]);
                 runToolCallsRef.current = {};
                 streamingMsgIdRef.current = null;
                 isTextStreamingRef.current = false;
@@ -319,8 +358,9 @@ export const useChatbotAgent = (
                 }
                 setReasoningPhase("done");
             },
-            onRunFinishedEvent: ({ outcome }) => {
-                if (outcome === "interrupt") setIsInterrupted(true);
+            onRunFinishedEvent: (params) => {
+                if (params.outcome !== "interrupt") return;
+                openInterruptsRef.current = params.interrupts;
             },
             onRunErrorEvent: ({ event }) => {
                 errorHandledRef.current = true;
@@ -402,13 +442,31 @@ export const useChatbotAgent = (
         updateToolCall,
     ]);
 
-    const runAgentLoop = async (agent: HttpAgent) => {
+    /**
+     * Drives the run until it either finishes or stops on something the user has
+     * to answer.
+     *
+     * `answered` names the interrupts `resume` responds to. They are restored when
+     * the request carrying it never reaches the backend, because an approval the
+     * panel has forgotten is one the run can never be given again.
+     */
+    const runAgentLoop = async (
+        agent: HttpAgent,
+        resume?: ResumeEntry[],
+        answered?: Interrupt[],
+    ) => {
+        let resumeDelivered = resume === undefined;
         try {
+            let nextResume = resume;
             while (true) {
-                await agent.runAgent({ tools: getToolDefs() });
+                await agent.runAgent({
+                    tools: getToolDefs(),
+                    resume: nextResume,
+                });
+                resumeDelivered = true;
+                nextResume = undefined;
 
                 const pending = pendingFrontendToolsRef.current;
-                if (pending.length === 0) break;
                 pendingFrontendToolsRef.current = [];
 
                 const passiveItems = pending.filter((item) => {
@@ -440,6 +498,15 @@ export const useChatbotAgent = (
                     });
                 }
 
+                // The approvals and the interactive tools of the same turn are
+                // raised together: one model response can hold a bulk action and
+                // an ask_user, and both panels have to be offered before the
+                // resumed request can carry the answers to either.
+                const interrupts = openInterruptsRef.current;
+                if (interrupts.length > 0) {
+                    setPendingApprovals(interrupts.map(toPendingApproval));
+                }
+
                 if (requestModeItem) {
                     const requestedMode = String(
                         requestModeItem.args.mode ?? "",
@@ -457,8 +524,6 @@ export const useChatbotAgent = (
                             mode: requestedMode,
                             reason: String(requestModeItem.args.reason ?? ""),
                         });
-                        setIsLoading(false);
-                        return;
                     }
                 } else if (askUserItem) {
                     setPendingQuestion({
@@ -468,11 +533,21 @@ export const useChatbotAgent = (
                             ? (askUserItem.args.options as string[])
                             : [],
                     });
+                }
+
+                if (hasOpenPrompt()) {
                     setIsLoading(false);
                     return;
                 }
+
+                if (pending.length === 0) break;
             }
         } catch {
+            if (!resumeDelivered && answered !== undefined) {
+                openInterruptsRef.current = answered;
+                approvalDecisionsRef.current = {};
+                setPendingApprovals(answered.map(toPendingApproval));
+            }
             if (!errorHandledRef.current) {
                 appendError("Agent error");
             }
@@ -483,6 +558,43 @@ export const useChatbotAgent = (
         onRunCompleteRef.current();
     };
 
+    /**
+     * Carries the run on once nothing is left for the user to answer, handing
+     * the backend the decisions taken on the interrupts it stopped at.
+     */
+    const continueRun = async (agent: HttpAgent) => {
+        if (hasOpenPrompt()) return;
+
+        const answered = openInterruptsRef.current;
+        const resume =
+            answered.length > 0
+                ? withApprovalIds(
+                      buildResumeArray(
+                          answered,
+                          buildApprovalResponses(
+                              answered,
+                              approvalDecisionsRef.current,
+                          ),
+                      ),
+                      Object.fromEntries(
+                          answered.map((interrupt) => [
+                              interrupt.id,
+                              toPendingApproval(interrupt).approvalId,
+                          ]),
+                      ),
+                  )
+                : undefined;
+
+        openInterruptsRef.current = [];
+        approvalDecisionsRef.current = {};
+        setIsLoading(true);
+        await runAgentLoop(
+            agent,
+            resume,
+            answered.length > 0 ? answered : undefined,
+        );
+    };
+
     const handleSendMessage = async (text: string) => {
         const agent = agentRef.current;
         if (!agent) return;
@@ -490,7 +602,6 @@ export const useChatbotAgent = (
         reasoningTextRef.current = "";
         setReasoningText("");
         setReasoningPhase("idle");
-        setIsInterrupted(false);
         setTurnActivity(NO_ACTIVITY);
         streamingMsgIdRef.current = null;
         isTextStreamingRef.current = false;
@@ -544,10 +655,9 @@ export const useChatbotAgent = (
             setIsLoading(false);
             setReasoningPhase("idle");
             setIsTurnActive(false);
-        } else {
-            setIsLoading(true);
-            await runAgentLoop(agent);
+            return;
         }
+        await continueRun(agent);
     };
 
     const handleModeAnswer = async (allow: boolean) => {
@@ -577,8 +687,27 @@ export const useChatbotAgent = (
         });
 
         setPendingModeRequest(null);
-        setIsLoading(true);
-        await runAgentLoop(agent);
+        await continueRun(agent);
+    };
+
+    /**
+     * Records one bulk action's decision and resumes the run once every prompt
+     * the turn raised has been answered.
+     *
+     * Each action is decided on its own: a response holding two of them is two
+     * writes the user has to agree to separately, and buildResumeArray needs an
+     * answer for every interrupt before the run can be given any of them.
+     */
+    const handleApprovalAnswer = (interruptId: string, approved: boolean) => {
+        const agent = agentRef.current;
+        if (!agent || interruptId in approvalDecisionsRef.current) return;
+
+        approvalDecisionsRef.current[interruptId] = approved;
+        setPendingApprovals((prev) =>
+            prev.filter((approval) => approval.id !== interruptId),
+        );
+
+        void continueRun(agent);
     };
 
     const toggleMode = (mode: string) => {
@@ -599,17 +728,18 @@ export const useChatbotAgent = (
     return {
         chatMessages,
         isLoading,
-        isInterrupted,
         reasoningPhase,
         reasoningText,
         pendingQuestion,
         pendingModeRequest,
+        pendingApprovals,
         activeMode,
         turnActivity,
         isTurnActive,
         handleSendMessage,
         handleQuestionAnswer,
         handleModeAnswer,
+        handleApprovalAnswer,
         toggleMode,
         abortRun,
         contextId,

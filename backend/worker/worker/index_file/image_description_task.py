@@ -16,16 +16,23 @@ from common.file.file_repository import (
 from common.services.query_builder import QueryParameters
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
+from worker.index_file.infra.scan_query import (
+    SCAN_RETRY_FOR,
+    build_scan_query,
+)
 from worker.index_file.tasks import image_description
 
 logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-@app.task()
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_describe_images(query: QueryParameters, system_prompt: str | None = None):
     logger.info("Dispatching tasks to describe images with query '%s'", query)
-    for file in get_file_repository().get_id_generator_by_query(query=query):
+    file_repository = get_file_repository()
+    for file in file_repository.get_id_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_describe_image.s(
             file_id=file.id_, system_prompt=system_prompt
         ).delay().forget()

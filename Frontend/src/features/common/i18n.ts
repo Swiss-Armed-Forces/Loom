@@ -13,4 +13,7 @@ i18n.use(initReactI18next)
         backend: {
             loadPath: `${basePath}locales/{{lng}}/{{ns}}.json`,
         },
+        // React escapes everything it renders, so i18next escaping on top of it
+        // turns the quotes of an interpolated Lucene query into entities on screen.
+        interpolation: { escapeValue: false },
     });

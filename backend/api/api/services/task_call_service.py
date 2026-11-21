@@ -3,6 +3,7 @@
 from uuid import UUID, uuid4
 
 from common.ai_context.tool_models import (
+    AddTagsToFileResult,
     DescribeImageResult,
     ExecuteQueryResult,
     GetFileFieldResult,
@@ -13,9 +14,11 @@ from common.ai_context.tool_models import (
     SuggestQueriesResult,
     SummarizeFileResult,
     TranslateFileResult,
+    UpdateFileResult,
 )
-from common.file.file_repository import TranslatedLanguage
+from common.file.file_repository import Tag, TranslatedLanguage
 from common.models.cursor_pagination import SearchAfterCursor
+from common.services.task_scheduling_service import UpdateFileRequest
 from common.services.task_service import TaskService
 
 
@@ -136,3 +139,24 @@ class TaskCallService(TaskService):
             root_id=str(uuid4()),
         ).get()
         return DescribeImageResult(file_id=file_id, description=result or "")
+
+    def call_add_tags_to_file_tool(
+        self, context_id: UUID, file_id: str, tags: list[Tag]
+    ) -> AddTagsToFileResult:
+        result = self._send_task(
+            "worker.ai.tasks.add_tags_to_file_tool.add_tags_to_file_tool_task",
+            args=[file_id, tags, context_id],
+            root_id=str(uuid4()),
+        ).get()
+        return AddTagsToFileResult(file_id=file_id, tags_added=list(result or []))
+
+    def call_update_file_tool(
+        self, context_id: UUID, file_id: str, request: UpdateFileRequest
+    ) -> UpdateFileResult:
+        result = self._send_task(
+            "worker.ai.tasks.update_file_tool.update_file_tool_task",
+            args=[file_id, request, context_id],
+            root_id=str(uuid4()),
+        ).get()
+        applied = UpdateFileRequest.model_validate(result or {})
+        return UpdateFileResult(file_id=file_id, **applied.model_dump())

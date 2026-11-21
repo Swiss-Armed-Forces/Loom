@@ -1,6 +1,5 @@
 import type { AppDispatch } from "@app/store";
 
-import { createAddTagsToFileTool } from "./addTagsToFile";
 import { createAskUserTool } from "./askUser";
 import { createCloseFileTool } from "./closeFileTab";
 import { createDiscoverStateTool } from "./discoverState";
@@ -16,7 +15,6 @@ import { createSaveCustomQueryTool } from "./saveCustomQuery";
 import { createSetSearchQueryTool } from "./setSearchQuery";
 import { createSetStatisticsViewTool } from "./setStatisticsView";
 import type { FrontendToolRegistry, StateAccessor } from "./types";
-import { createUpdateFileFlagsTool } from "./updateFileFlags";
 
 export type {
     FrontendTool,
@@ -41,8 +39,6 @@ export const createFrontendTools = (
         ...createRightSidebarTools(dispatch),
         createSaveCustomQueryTool(getState, dispatch),
         ...createOpenFileDialogTools(getState, dispatch),
-        createUpdateFileFlagsTool(getState, dispatch),
-        createAddTagsToFileTool(getState, dispatch),
         createSetStatisticsViewTool(dispatch),
         createCloseFileTool(dispatch),
     ];

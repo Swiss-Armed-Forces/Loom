@@ -1,7 +1,13 @@
-import type { Message } from "@ag-ui/client";
+import type { Interrupt, Message, ResumeEntry } from "@ag-ui/client";
 import { describe, expect, it } from "vitest";
 
-import { mapToChatMessages, splitStreamedMarkdown } from "./chatbotUtils";
+import {
+    buildApprovalResponses,
+    mapToChatMessages,
+    splitStreamedMarkdown,
+    toPendingApproval,
+    withApprovalIds,
+} from "./chatbotUtils";
 import type {
     ActivityRecord,
     ChatCitation,
@@ -209,5 +215,94 @@ describe("splitStreamedMarkdown", () => {
             stable: "```\ncode\n```\n\n",
             tail: "next",
         });
+    });
+});
+
+describe("toPendingApproval", () => {
+    // Copied verbatim from BulkApprovalRequest.model_dump(mode="json"). Interrupt
+    // metadata never passes through the OpenAPI schema, so nothing but this test
+    // links these key names to the model that writes them.
+    const metadata = {
+        approval_id: "0b5f2c6e-6c5a-4a3b-9f2e-1d3c4b5a6978",
+        action: "add_tags",
+        query_string: 'content:"invoice" AND tags:x',
+        matched_files: 412,
+    };
+
+    it("reads the action, the query and the count the backend sent", () => {
+        const approval = toPendingApproval({
+            id: "int-1",
+            metadata,
+        } as unknown as Interrupt);
+
+        expect(approval).toEqual({
+            id: "int-1",
+            approvalId: "0b5f2c6e-6c5a-4a3b-9f2e-1d3c4b5a6978",
+            action: "add_tags",
+            queryString: 'content:"invoice" AND tags:x',
+            matchedFiles: 412,
+            message: "",
+        });
+    });
+
+    it("falls back to the interrupt's message when it carries no bulk action", () => {
+        const approval = toPendingApproval({
+            id: "int-2",
+            message: "Confirm?",
+        } as unknown as Interrupt);
+
+        expect(approval.action).toBe("");
+        expect(approval.matchedFiles).toBe(0);
+        expect(approval.message).toBe("Confirm?");
+    });
+});
+
+describe("buildApprovalResponses", () => {
+    const interrupts = [{ id: "a" }, { id: "b" }] as unknown as Interrupt[];
+
+    it("answers each interrupt with its own decision", () => {
+        expect(
+            buildApprovalResponses(interrupts, { a: true, b: false }),
+        ).toEqual({
+            a: { status: "resolved", payload: { approved: true } },
+            b: { status: "resolved", payload: { approved: false } },
+        });
+    });
+
+    it("denies an interrupt no decision was taken on", () => {
+        expect(buildApprovalResponses(interrupts, { a: true }).b).toEqual({
+            status: "resolved",
+            payload: { approved: false },
+        });
+    });
+});
+
+describe("withApprovalIds", () => {
+    // The backend dispatches nothing for an answer that does not name the
+    // approval it is answering, so these two key names are a contract: the
+    // `metadata.approvalId` written here is what `collect_approved_bulk_ids`
+    // reads.
+    const entries = [
+        { interruptId: "a", status: "resolved" as const },
+        { interruptId: "b", status: "resolved" as const },
+    ] as unknown as ResumeEntry[];
+
+    it("names the approval each answer is answering", () => {
+        expect(withApprovalIds(entries, { a: "id-a", b: "id-b" })).toEqual([
+            {
+                interruptId: "a",
+                status: "resolved",
+                metadata: { approvalId: "id-a" },
+            },
+            {
+                interruptId: "b",
+                status: "resolved",
+                metadata: { approvalId: "id-b" },
+            },
+        ]);
+    });
+
+    it("leaves an entry alone when there is no id for it", () => {
+        expect(withApprovalIds(entries, {})).toEqual(entries);
     });
 });

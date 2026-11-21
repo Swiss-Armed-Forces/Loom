@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from typing import NamedTuple
+from uuid import UUID
 
 from common.ai_context.ai_context_repository import AiContext
 from common.llm.agent import build_agent
@@ -10,7 +11,8 @@ from pydantic_ai import Agent
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.tools import DeferredToolRequests
 
-from api.services.tool_service import AgentDeps, ToolService
+from api.services.agent_deps import AgentDeps
+from api.services.tool_service import ToolService
 
 
 def _build_instructions() -> str:
@@ -43,12 +45,13 @@ class AgentService:
             _build_instructions,
         )
 
-    def build_prepared_agent(self, context: AiContext) -> PreparedAgent:
+    def build_prepared_agent(
+        self,
+        context: AiContext,
+        approved_bulk_ids: frozenset[UUID] = frozenset(),
+    ) -> PreparedAgent:
         return PreparedAgent(
             agent=self._agent,
-            deps=AgentDeps(
-                context=context,
-                active_mode=context.active_mode,
-            ),
+            deps=AgentDeps(context=context, approved_bulk_ids=approved_bulk_ids),
             capabilities=self._tool_service.capabilities_for_mode(context.active_mode),
         )

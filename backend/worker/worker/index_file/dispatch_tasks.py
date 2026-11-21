@@ -9,12 +9,16 @@ from common.dependencies import (
     get_file_scheduling_service,
 )
 from common.file.file_repository import File, Tag
-from common.models.es_repository import PointInTimeExpiredError
 from common.services.lazybytes_service import FileStorageLazyBytes
-from common.services.query_builder import SCAN_PIT_KEEPALIVE, QueryParameters
+from common.services.query_builder import QueryParameters
 from common.services.task_scheduling_service import IndexingPriority, UpdateFileRequest
 from common.settings import settings
 from common.utils.lucene import escape_lucene_phrase
+
+from worker.index_file.infra.scan_query import (
+    SCAN_RETRY_FOR,
+    build_scan_query,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +51,7 @@ def dispatch_index_file(
     )
 
 
-# A lapsed point-in-time is transient: the sweep succeeds against a fresh snapshot.
-# Retrying restarts the scan from the beginning, which is the only correct way to
-# finish it — resuming across snapshots would skip or duplicate files.
-@app.task(autoretry_for=(PointInTimeExpiredError,), retry_backoff=True)
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_reindex_files(
     query: QueryParameters,
     additional_recursion_depth: int,
@@ -63,16 +64,9 @@ def dispatch_reindex_files(
         str(additional_recursion_depth),
     )
     file_repository = get_file_repository()
-    # The caller's snapshot is sized for a page of search results, and this sweep walks
-    # the whole result set one synchronous publish at a time. Both halves of the
-    # snapshot's lifetime are set here: open_point_in_time gives it its initial one,
-    # and keep_alive is what every page extends it by.
-    scan_query = QueryParameters(
-        query_id=file_repository.open_point_in_time(keep_alive=SCAN_PIT_KEEPALIVE),
-        keep_alive=SCAN_PIT_KEEPALIVE,
-        search_string=query.search_string,
-    )
-    for file in file_repository.get_id_generator_by_query(query=scan_query):
+    for file in file_repository.get_id_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_reindex_file.s(
             file_id=file.id_,
             additional_recursion_depth=additional_recursion_depth,
@@ -100,10 +94,13 @@ def dispatch_reindex_file(
     )
 
 
-@app.task()
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_translate_files(query: QueryParameters, lang: str):
     logger.info("Dispatching tasks to translate files with query '%s'", query)
-    for file in get_file_repository().get_id_generator_by_query(query=query):
+    file_repository = get_file_repository()
+    for file in file_repository.get_id_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_translate_file.s(
             file_id=file.id_,
             lang=lang,
@@ -119,10 +116,15 @@ def dispatch_translate_file(file_id: UUID, lang: str):
     )
 
 
-@app.task()
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_update_for_files(query: QueryParameters, request: UpdateFileRequest):
     logger.info("dispatch request : '%s' for query: '%s'", request, query)
-    for file in get_file_repository().get_generator_by_query(query=query):
+    # Only the id of each match is read, and the id generator is the one that asks
+    # Elasticsearch for no more than that.
+    file_repository = get_file_repository()
+    for file in file_repository.get_id_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_update_for_file.s(file_id=file.id_, request=request).delay().forget()
 
 
@@ -132,10 +134,13 @@ def dispatch_update_for_file(file_id: UUID, request: UpdateFileRequest):
     get_file_scheduling_service().update_file(file_id, request)
 
 
-@app.task()
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_summarize_files(query: QueryParameters, system_prompt: str | None = None):
     logger.info("Dispatching tasks to summarize files with query '%s'", query)
-    for file in get_file_repository().get_id_generator_by_query(query=query):
+    file_repository = get_file_repository()
+    for file in file_repository.get_id_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_summarize_file.s(
             file_id=file.id_, system_prompt=system_prompt
         ).delay().forget()
@@ -149,13 +154,16 @@ def dispatch_summarize_file(file_id: UUID, system_prompt: str | None = None):
     )
 
 
-@app.task()
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_add_tags_to_files(
     query: QueryParameters,
     tags: list[Tag],
 ):
     logger.info("dispatch add tags tasks for tags %s and query: '%s'", tags, query)
-    for file in get_file_repository().get_id_generator_by_query(query=query):
+    file_repository = get_file_repository()
+    for file in file_repository.get_id_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_add_tags_to_file.s(file_id=file.id_, tags=tags).delay().forget()
 
 
@@ -168,25 +176,18 @@ def dispatch_add_tags_to_file(
     get_file_scheduling_service().add_tags(file_id=file_id, tags=tags)
 
 
-# A lapsed point-in-time is transient: the sweep succeeds against a fresh snapshot.
-# Retrying restarts the scan from the beginning, which is the only correct way to
-# finish it — resuming across snapshots would skip or duplicate files.
-@app.task(autoretry_for=(PointInTimeExpiredError,), retry_backoff=True)
+@app.task(autoretry_for=SCAN_RETRY_FOR, retry_backoff=True)
 def dispatch_remove_tag(
     tag: Tag,
 ):
     logger.info("dispatch remove tag: '%s' ", tag)
+    # A tag is only length-constrained, so a quote or a backslash in one would
+    # otherwise end the phrase and leave the sweep unable to find its files.
+    query = QueryParameters(search_string=f'tags: "{escape_lucene_phrase(tag)}"')
     file_repository = get_file_repository()
-    # Both halves of the snapshot's lifetime are set here: open_point_in_time gives it
-    # its initial one, and keep_alive is what every page extends it by.
-    query = QueryParameters(
-        query_id=file_repository.open_point_in_time(keep_alive=SCAN_PIT_KEEPALIVE),
-        keep_alive=SCAN_PIT_KEEPALIVE,
-        # A tag is only length-constrained, so a quote or a backslash in one would
-        # otherwise end the phrase and leave the sweep unable to find its files.
-        search_string=f'tags: "{escape_lucene_phrase(tag)}"',
-    )
-    for file in file_repository.get_generator_by_query(query=query):
+    for file in file_repository.get_generator_by_query(
+        query=build_scan_query(file_repository, query)
+    ):
         dispatch_remove_tag_from_file.s(file_id=file.id_, tag=tag).delay().forget()
 
 

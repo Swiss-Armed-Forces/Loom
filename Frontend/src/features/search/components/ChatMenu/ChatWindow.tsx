@@ -1,5 +1,5 @@
 import { KeyboardArrowDown } from "@mui/icons-material";
-import { Box, Button, Fab, List, ListItem, Typography } from "@mui/material";
+import { Box, Button, Fab, List, ListItem } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import type { Theme } from "@mui/material/styles";
 import { useRef, useEffect, useState, useCallback } from "react";
@@ -35,15 +35,6 @@ const TYPING_BUBBLE_SX = (theme: Theme) => ({
     py: 0.5,
 });
 
-const INTERRUPTED_SX = (theme: Theme) => ({
-    px: 1.5,
-    py: 0.75,
-    borderRadius: 2,
-    bgcolor: alpha(theme.palette.warning.main, 0.08),
-    border: "1px solid",
-    borderColor: alpha(theme.palette.warning.main, 0.3),
-});
-
 const SCROLL_FAB_SX = {
     position: "sticky",
     bottom: 8,
@@ -61,7 +52,6 @@ export const ChatWindow = ({
     isLoading,
     query,
     onSuggestedQuestion,
-    isInterrupted,
     pendingQuestion,
     onQuestionAnswer,
     scrollContainerRef,
@@ -111,13 +101,7 @@ export const ChatWindow = ({
     // the flag honest in between.
     useEffect(() => {
         setShowScrollButton(!checkAtBottom());
-    }, [
-        messages.length,
-        isLoading,
-        pendingQuestion,
-        isInterrupted,
-        checkAtBottom,
-    ]);
+    }, [messages.length, isLoading, pendingQuestion, checkAtBottom]);
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,15 +151,6 @@ export const ChatWindow = ({
                         <AssistantAvatar />
                         <Box sx={TYPING_BUBBLE_SX}>
                             <TypingIndicator />
-                        </Box>
-                    </ListItem>
-                )}
-                {isInterrupted && (
-                    <ListItem sx={ROW_SX}>
-                        <Box sx={INTERRUPTED_SX}>
-                            <Typography variant="caption" color="warning.main">
-                                Agent paused — waiting for confirmation
-                            </Typography>
                         </Box>
                     </ListItem>
                 )}

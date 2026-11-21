@@ -1,18 +1,16 @@
 """Tool functions that dispatch work to Celery tasks."""
 
 import secrets
-from dataclasses import dataclass
-from dataclasses import field as dataclass_field
 from typing import NamedTuple
 from uuid import UUID
 
 from ag_ui.core import Tool as AGUITool
 from common.ai_context.ai_context_repository import (
-    AiContext,
     CapabilityId,
     ModeId,
 )
 from common.ai_context.tool_models import (
+    AddTagsToFileResult,
     CursorHandle,
     DescribeImageResult,
     ExecuteQueryAgentResult,
@@ -25,9 +23,12 @@ from common.ai_context.tool_models import (
     SummarizeFileResult,
     ToolSource,
     TranslateFileResult,
+    UpdateFileResult,
 )
+from common.file.file_repository import Tags
 from common.models.cursor_pagination import CursorSource, SearchAfterCursor
 from common.services.query_builder import AI_PIT_KEEPALIVE, convert_keepalive_to_seconds
+from common.services.task_scheduling_service import UpdateFileRequest
 from common.settings import settings
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
@@ -37,18 +38,31 @@ from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets import ExternalToolset
 from redis import StrictRedis
 
+from api.services.agent_deps import AgentDeps
+from api.services.bulk_tool_service import BulkToolService
 from api.services.task_call_service import TaskCallService
 
 _MAX_CITATION_CHARS = 300
 
-
-@dataclass
-class AgentDeps:
-    """State one agent run carries alongside its context."""
-
-    context: AiContext
-    source_collector: list[ToolSource] = dataclass_field(default_factory=list)
-    active_mode: ModeId = ModeId.WORK
+# What each mode may load, in the order the agent is offered them. Research reaches
+# the whole corpus and composes its own queries with no user in the loop, which is
+# why the capabilities that curate and the ones that act on a whole query are
+# work-mode only.
+_RESEARCH_CAPABILITIES = (
+    CapabilityId.SEARCH_AND_BROWSE,
+    CapabilityId.FILE_ACCESS,
+    CapabilityId.AI_PROCESSING,
+    CapabilityId.RESEARCH,
+)
+_WORK_CAPABILITIES = (
+    CapabilityId.SEARCH_AND_BROWSE,
+    CapabilityId.FILE_ACCESS,
+    CapabilityId.AI_PROCESSING,
+    CapabilityId.UI_INTERACTION,
+    CapabilityId.FILE_CURATION,
+    CapabilityId.BULK_ENRICHMENT,
+    CapabilityId.BULK_METADATA,
+)
 
 
 class RoutedTools(NamedTuple):
@@ -63,13 +77,14 @@ class ToolService:
         self,
         task_call_service: TaskCallService,
         redis_cache_client: StrictRedis,
+        bulk_tool_service: BulkToolService,
     ) -> None:
         self._task_call_service = task_call_service
         self._redis_client = redis_cache_client
 
         t = settings.llm.agent.tool_timeout
 
-        self._search_and_browse = Capability[AgentDeps](
+        search_and_browse = Capability[AgentDeps](
             id=CapabilityId.SEARCH_AND_BROWSE,
             description=(
                 "Search the document corpus by content or filename "
@@ -89,7 +104,7 @@ class ToolService:
             defer_loading=True,
         )
 
-        self._file_access = Capability[AgentDeps](
+        file_access = Capability[AgentDeps](
             id=CapabilityId.FILE_ACCESS,
             description=(
                 "Access individual files — identify which files the user "
@@ -107,7 +122,7 @@ class ToolService:
             defer_loading=True,
         )
 
-        self._ai_processing = Capability[AgentDeps](
+        ai_processing = Capability[AgentDeps](
             id=CapabilityId.AI_PROCESSING,
             description=(
                 "AI-powered file processing — generate summaries, "
@@ -125,7 +140,7 @@ class ToolService:
             defer_loading=True,
         )
 
-        self._ui_interaction = Capability[AgentDeps](
+        ui_interaction = Capability[AgentDeps](
             id=CapabilityId.UI_INTERACTION,
             description=(
                 "See and control the user's UI. Load this whenever the user "
@@ -142,7 +157,29 @@ class ToolService:
             defer_loading=True,
         )
 
-        self._research = Capability[AgentDeps](
+        file_curation = Capability[AgentDeps](
+            id=CapabilityId.FILE_CURATION,
+            description=(
+                "Curate individual files — add tags to a file and set its "
+                "seen, flagged and hidden state."
+            ),
+            instructions=(
+                "A call returns once the write has been accepted, which is a moment "
+                "before it is visible: reading the field straight back can still "
+                "give you the old value, and is not a reason to write again. Loom "
+                "has no undo, so say which file you are about to change and what you "
+                "are setting on it. They cost no inference time, so curating a "
+                "handful of files one call at a time is normal; to cover everything "
+                "a query matches, use a bulk action instead."
+            ),
+            tools=[
+                PydanticTool(self.add_tags_to_file, timeout=t),
+                PydanticTool(self.update_file, timeout=t),
+            ],
+            defer_loading=True,
+        )
+
+        research = Capability[AgentDeps](
             id=CapabilityId.RESEARCH,
             description=(
                 "Deep document research — query the corpus directly "
@@ -156,6 +193,16 @@ class ToolService:
             ),
             tools=[PydanticTool(self.rag_search, timeout=t)],
         )
+
+        self._capabilities: dict[CapabilityId, Capability[AgentDeps]] = {
+            CapabilityId.SEARCH_AND_BROWSE: search_and_browse,
+            CapabilityId.FILE_ACCESS: file_access,
+            CapabilityId.AI_PROCESSING: ai_processing,
+            CapabilityId.UI_INTERACTION: ui_interaction,
+            CapabilityId.FILE_CURATION: file_curation,
+            CapabilityId.RESEARCH: research,
+            **bulk_tool_service.capabilities,
+        }
 
     def _store_cursor(self, cursor: SearchAfterCursor | None) -> CursorHandle | None:
         """Keep a cursor in the run's state and return the handle that names it.
@@ -212,21 +259,15 @@ class ToolService:
         """Return the capabilities available for the given mode."""
         match mode:
             case ModeId.CHAT:
-                return []
+                capability_ids: tuple[CapabilityId, ...] = ()
             case ModeId.RESEARCH:
-                return [
-                    self._search_and_browse,
-                    self._file_access,
-                    self._ai_processing,
-                    self._research,
-                ]
-            case _:
-                return [
-                    self._search_and_browse,
-                    self._file_access,
-                    self._ai_processing,
-                    self._ui_interaction,
-                ]
+                capability_ids = _RESEARCH_CAPABILITIES
+            # Spelled out rather than caught by a fallthrough: these capabilities
+            # write across a whole query with no undo, and a mode added to the enum
+            # must not inherit them by default.
+            case ModeId.WORK:
+                capability_ids = _WORK_CAPABILITIES
+        return [self._capabilities[capability_id] for capability_id in capability_ids]
 
     def route_frontend_tools(
         self,
@@ -616,4 +657,60 @@ class ToolService:
             )
             for chunk in result.chunks
         )
+        return result
+
+    def add_tags_to_file(
+        self, ctx: RunContext[AgentDeps], file_id: str, tags: Tags
+    ) -> AddTagsToFileResult:
+        """Add one or more tags to a single file.
+
+        The tags are added to whatever the file already carries; nothing is removed.
+        Use this when the user asks you to tag or label a document. To tag every file
+        a query matches, use the bulk metadata action instead.
+
+        Args:
+            file_id: UUID string of the file to tag.
+            tags: Tag names to add to the file. At least one.
+        """
+        try:
+            result = self._task_call_service.call_add_tags_to_file_tool(
+                ctx.deps.context.id_, file_id, tags
+            )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
+        except LookupError as exc:
+            raise ToolFailed(str(exc)) from exc
+        ctx.deps.source_collector.append(ToolSource(file_id=UUID(result.file_id)))
+        return result
+
+    def update_file(
+        self,
+        ctx: RunContext[AgentDeps],
+        file_id: str,
+        request: UpdateFileRequest,
+    ) -> UpdateFileResult:
+        """Set the seen, flagged or hidden state of a single file.
+
+        At least one flag has to be given; a flag left out of request keeps its
+        current value. Use this when the user asks you to mark a file as seen or
+        unseen, flag or unflag it, or hide or unhide it. To change every file a query
+        matches, use the bulk metadata action instead.
+
+        Args:
+            file_id: UUID string of the file to update.
+            request: The flags to set: seen marks the file as seen (True) or unseen
+                (False), flagged flags (True) or unflags (False) it, and hidden hides
+                (True) or unhides (False) it.
+        """
+        if request.sets_nothing:
+            raise ModelRetry("Give at least one of seen, flagged or hidden to update.")
+        try:
+            result = self._task_call_service.call_update_file_tool(
+                ctx.deps.context.id_, file_id, request
+            )
+        except ValueError as exc:
+            raise ModelRetry(str(exc)) from exc
+        except LookupError as exc:
+            raise ToolFailed(str(exc)) from exc
+        ctx.deps.source_collector.append(ToolSource(file_id=UUID(result.file_id)))
         return result
