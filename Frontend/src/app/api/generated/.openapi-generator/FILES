@@ -38,6 +38,7 @@ models/CacheStatisticsEntryModel.ts
 models/CapabilityId.ts
 models/CompleteEstimateResult.ts
 models/ContextCreateResponse.ts
+models/ContextHiddenResponse.ts
 models/ContextHistoryResponse.ts
 models/ContextSummary.ts
 models/EncryptionKeyResponse.ts
@@ -52,6 +53,7 @@ models/GetQueryResponse.ts
 models/GroupedHistogramStatisticsModel.ts
 models/GroupedHitsPerGroupEntryModel.ts
 models/HTTPValidationError.ts
+models/HiddenUpdate.ts
 models/HitsPerGroupEntryModel.ts
 models/ImageDescriptionFileRequest.ts
 models/ImageDescriptionRequest.ts

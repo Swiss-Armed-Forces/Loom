@@ -2,13 +2,34 @@ from typing import Dict, Union
 from urllib.parse import quote
 
 import requests
+import urllib3
 from redis import StrictRedis
 from requests import Response
+from requests.adapters import HTTPAdapter
 
 from common.celery_app._queues import get_terminal_queues
 from common.settings import settings
 
 RABBITMQ_MANAGEMENT_REQUEST_TIMEOUT = 30  # in seconds
+
+# Upper bound on concurrent requests against the management API. WipeService purges
+# every queue this many at a time, so it is also the connection pool size below: a
+# smaller pool makes every surplus connection be opened, used once and discarded on
+# return, which costs a handshake per purge and widens the window in which a reused
+# connection is closed under the request.
+MANAGEMENT_API_MAX_CONCURRENCY = 16
+
+# The management API closes idle keep-alive connections, so a pooled connection can be
+# gone by the time the next request is written to it. urllib3 reports that as a
+# RemoteDisconnected before any of the request reached the broker, which makes a retry
+# safe for every method the service uses here — and necessary, because requests retries
+# nothing by default and a single such read turns a whole wipe into a 500.
+_MANAGEMENT_API_RETRIES = urllib3.Retry(
+    total=3,
+    backoff_factor=0.2,
+    status_forcelist=[502, 503, 504],
+    allowed_methods={"DELETE", "GET", "HEAD", "OPTIONS", "PUT", "TRACE"},
+)
 
 # All application relevant queues must start with: celery_queue_name_prefix
 QUEUES_NAME_REGEX = rf"^{settings.celery_queue_name_prefix}.*$"
@@ -39,6 +60,20 @@ LIVE_QUEUE_TOTALS_PARAMS: Dict[str, Union[int, str]] = {
 }
 
 
+def build_management_session() -> requests.Session:
+    """Session for the RabbitMQ management API, pooled and retried for concurrent
+    use."""
+    session = requests.Session()
+    adapter = HTTPAdapter(
+        pool_connections=1,
+        pool_maxsize=MANAGEMENT_API_MAX_CONCURRENCY,
+        max_retries=_MANAGEMENT_API_RETRIES,
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
 class QueuesService:
     """Queue depths and pause state.
 
@@ -59,8 +94,8 @@ class QueuesService:
         self._redis_client = redis_client
         # Injected so tests can assert on the requests without patching the module.
         # Also pools connections, which wipe_celery() leans on: it purges every queue on
-        # every iteration, 16 requests at a time.
-        self._session = session if session is not None else requests.Session()
+        # every iteration, MANAGEMENT_API_MAX_CONCURRENCY requests at a time.
+        self._session = session if session is not None else build_management_session()
 
     def set_queue_paused(self, queue_name: str, paused: bool) -> None:
         """Persist queue pause state in Redis."""

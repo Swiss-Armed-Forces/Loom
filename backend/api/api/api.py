@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any
 
+from common.ai_context.ai_context_repository import AiContextNotFoundException
 from common.models.cursor_pagination import InvalidPaginationCursorError
 from common.models.es_repository import PointInTimeExpiredError
 from common.services.query_builder import QueryBuilderException
@@ -79,6 +80,12 @@ def init_api(collect_metrics=True) -> FastAPI:
     api.add_exception_handler(
         PointInTimeExpiredError,
         lambda _, ex: JSONResponse(status_code=409, content={"detail": str(ex)}),
+    )
+    # A context id a client still holds after the context was evicted is an
+    # ordinary outcome, not a server fault.
+    api.add_exception_handler(
+        AiContextNotFoundException,
+        lambda _, ex: JSONResponse(status_code=404, content={"detail": str(ex)}),
     )
 
     # static assets

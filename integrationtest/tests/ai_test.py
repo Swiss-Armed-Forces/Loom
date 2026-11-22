@@ -1,10 +1,12 @@
-import json
-
 import pytest
 import requests
 from api.routers.ai import ContextHistoryResponse
 
-from utils.ai_helpers import create_ai_context, run_agent
+from utils.ai_helpers import (
+    collect_sse_event_types,
+    create_ai_context,
+    run_agent,
+)
 from utils.consts import AI_ENDPOINT, REQUEST_TIMEOUT
 from utils.fetch_from_api import (
     DEFAULT_MAX_WAIT_TIME_PER_FILE,
@@ -49,13 +51,7 @@ class TestChatbot:
             question="What is network security?",
         )
 
-        event_types: list[str] = []
-        for line in response.iter_lines(decode_unicode=True):
-            if not line or not line.startswith("data:"):
-                continue
-            data = json.loads(line[len("data:") :].strip())
-            if "type" in data:
-                event_types.append(data["type"])
+        event_types = collect_sse_event_types(response)
 
         assert "TEXT_MESSAGE_START" in event_types
         assert "TEXT_MESSAGE_END" in event_types

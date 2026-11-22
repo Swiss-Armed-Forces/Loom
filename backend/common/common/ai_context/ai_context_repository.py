@@ -117,6 +117,9 @@ class AiContextRepository(BaseEsRepository[_EsAiContext, AiContext]):
 
     def list_all(self) -> list[AiContext]:
         search = (
-            self._document_type.search().sort("-created_at").extra(size=_MAX_CONTEXTS)
+            self._document_type.search()
+            .exclude("term", hidden=True)
+            .sort("-created_at")
+            .extra(size=_MAX_CONTEXTS)
         )
         return [self._document_to_object(hit) for hit in search.execute()]

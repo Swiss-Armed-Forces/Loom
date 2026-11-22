@@ -20,6 +20,7 @@ import {
     GetFilePreviewResponse,
     ArchiveCreatedResponse,
     ContextCreateResponse,
+    ContextHiddenResponse,
     ContextHistoryResponse,
     ListContextsResponse,
     GetQueryResponse,
@@ -478,8 +479,14 @@ export const getContextHistory = async (
         pageSize: options?.pageSize,
     });
 
-export const deleteAiContext = async (contextId: string): Promise<void> =>
-    aiApi.deleteContextV1AiContextIdDelete({ contextId });
+export const setAiContextHidden = async (
+    contextId: string,
+    hidden: boolean,
+): Promise<ContextHiddenResponse> =>
+    aiApi.setHiddenV1AiContextIdHiddenPatch({
+        contextId,
+        hiddenUpdate: { hidden },
+    });
 
 export const setAiContextMode = async (
     contextId: string,

@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw";
 
 import { getDocuments, searchDocuments } from "../repository";
 
-import { empty, error, json, parseBody } from "./shared";
+import { error, json, parseBody } from "./shared";
 
 interface DemoQuestion {
     question: string;
@@ -22,6 +22,7 @@ interface DemoConversation {
     createdAt: string;
     questions: DemoQuestion[];
     activeMode: string;
+    hidden: boolean;
 }
 
 const conversations = new Map<string, DemoConversation>();
@@ -98,17 +99,20 @@ const createContextHandler = http.post(/\/api\/v1\/ai$/, () => {
         createdAt: new Date().toISOString(),
         questions: [],
         activeMode: "work",
+        hidden: false,
     });
     return json({ context_id: contextId });
 });
 
 const listContextsHandler = http.get(/\/api\/v1\/ai$/, () => {
-    const contexts = [...conversations.values()].map((c) => ({
-        context_id: c.contextId,
-        created_at: c.createdAt,
-        first_question: c.questions[0]?.question,
-        question_count: c.questions.length,
-    }));
+    const contexts = [...conversations.values()]
+        .filter((c) => !c.hidden)
+        .map((c) => ({
+            context_id: c.contextId,
+            created_at: c.createdAt,
+            first_question: c.questions[0]?.question,
+            question_count: c.questions.length,
+        }));
     return json({ contexts });
 });
 
@@ -127,16 +131,28 @@ const historyHandler = http.get(
                 activity: q.activity,
             })),
             active_mode: conv.activeMode,
+            hidden: conv.hidden,
         });
     },
 );
 
-const deleteContextHandler = http.delete(
-    /\/api\/v1\/ai\/([^/]+)$/,
-    ({ request }) => {
+const setHiddenHandler = http.patch(
+    /\/api\/v1\/ai\/([^/]+)\/hidden$/,
+    async ({ request }) => {
         const contextId = extractContextId(request.url);
-        conversations.delete(contextId);
-        return empty(204);
+        const conv = conversations.get(contextId);
+        if (!conv) return error("AI context not found", 404);
+        const parsed = await parseBody(request);
+        if (!parsed.ok) return parsed.response;
+        const hidden = parsed.value.hidden;
+        if (typeof hidden !== "boolean")
+            return error("hidden must be a boolean", 422);
+
+        // The conversation stays in the Map either way; listContextsHandler
+        // filters on the flag.
+        conv.hidden = hidden;
+
+        return json({ hidden: conv.hidden });
     },
 );
 
@@ -455,7 +471,7 @@ export const aiHandlers = [
     createContextHandler,
     listContextsHandler,
     historyHandler,
-    deleteContextHandler,
+    setHiddenHandler,
     modesHandler,
     runHandler,
 ];

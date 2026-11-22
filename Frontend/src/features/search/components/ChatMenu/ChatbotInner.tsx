@@ -1,4 +1,4 @@
-import { Box, Chip, Divider, Tooltip, Typography } from "@mui/material";
+import { alpha, Box, Chip, Divider, Tooltip, Typography } from "@mui/material";
 import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,11 +10,13 @@ import { useChatbotAgent } from "./useChatbotAgent";
 interface ChatbotInnerProps {
     contextId: string;
     onRunComplete: () => void;
+    isHidden: boolean;
 }
 
 export const ChatbotInner = ({
     contextId,
     onRunComplete,
+    isHidden,
 }: ChatbotInnerProps) => {
     const { t } = useTranslation();
     const {
@@ -70,6 +72,22 @@ export const ChatbotInner = ({
                     reasoningPhase={reasoningPhase}
                 />
             </Box>
+            {isHidden && (
+                <Box
+                    sx={{
+                        px: 1.5,
+                        py: 1,
+                        borderTop: 1,
+                        borderColor: "warning.light",
+                        bgcolor: (theme) =>
+                            alpha(theme.palette.warning.main, 0.12),
+                    }}
+                >
+                    <Typography variant="caption" color="warning.main">
+                        Hidden from the conversation list — still stored
+                    </Typography>
+                </Box>
+            )}
             {pendingApprovals.length > 0 && (
                 <Box
                     sx={{

@@ -25,6 +25,11 @@ import {
     ContextCreateResponseToJSON,
 } from "../models/ContextCreateResponse";
 import {
+    type ContextHiddenResponse,
+    ContextHiddenResponseFromJSON,
+    ContextHiddenResponseToJSON,
+} from "../models/ContextHiddenResponse";
+import {
     type ContextHistoryResponse,
     ContextHistoryResponseFromJSON,
     ContextHistoryResponseToJSON,
@@ -34,6 +39,11 @@ import {
     HTTPValidationErrorFromJSON,
     HTTPValidationErrorToJSON,
 } from "../models/HTTPValidationError";
+import {
+    type HiddenUpdate,
+    HiddenUpdateFromJSON,
+    HiddenUpdateToJSON,
+} from "../models/HiddenUpdate";
 import {
     type ListContextsResponse,
     ListContextsResponseFromJSON,
@@ -45,10 +55,6 @@ import {
     ModeUpdateToJSON,
 } from "../models/ModeUpdate";
 
-export interface DeleteContextV1AiContextIdDeleteRequest {
-    contextId: string;
-}
-
 export interface GetContextHistoryV1AiContextIdHistoryGetRequest {
     contextId: string;
     after?: number;
@@ -57,6 +63,11 @@ export interface GetContextHistoryV1AiContextIdHistoryGetRequest {
 
 export interface RunAgentV1AiContextIdRunPostRequest {
     contextId: string;
+}
+
+export interface SetHiddenV1AiContextIdHiddenPatchRequest {
+    contextId: string;
+    hiddenUpdate: HiddenUpdate;
 }
 
 export interface UpdateModesV1AiContextIdModesPatchRequest {
@@ -107,73 +118,6 @@ export class AiApi extends runtime.BaseAPI {
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<ContextCreateResponse> {
         const response = await this.createContextV1AiPostRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for deleteContextV1AiContextIdDelete without sending the request
-     */
-    async deleteContextV1AiContextIdDeleteRequestOpts(
-        requestParameters: DeleteContextV1AiContextIdDeleteRequest,
-    ): Promise<runtime.RequestOpts> {
-        if (requestParameters["contextId"] == null) {
-            throw new runtime.RequiredError(
-                "contextId",
-                'Required parameter "contextId" was null or undefined when calling deleteContextV1AiContextIdDelete().',
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        let urlPath = `/v1/ai/{context_id}`;
-        urlPath = urlPath.replace(
-            "{context_id}",
-            encodeURIComponent(String(requestParameters["contextId"])),
-        );
-
-        return {
-            path: urlPath,
-            method: "DELETE",
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     * Delete an AI context and its conversation history.
-     * Delete Context
-     */
-    async deleteContextV1AiContextIdDeleteRaw(
-        requestParameters: DeleteContextV1AiContextIdDeleteRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<runtime.ApiResponse<any>> {
-        const requestOptions =
-            await this.deleteContextV1AiContextIdDeleteRequestOpts(
-                requestParameters,
-            );
-        const response = await this.request(requestOptions, initOverrides);
-
-        if (this.isJsonMime(response.headers.get("content-type"))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Delete an AI context and its conversation history.
-     * Delete Context
-     */
-    async deleteContextV1AiContextIdDelete(
-        requestParameters: DeleteContextV1AiContextIdDeleteRequest,
-        initOverrides?: RequestInit | runtime.InitOverrideFunction,
-    ): Promise<any> {
-        const response = await this.deleteContextV1AiContextIdDeleteRaw(
-            requestParameters,
-            initOverrides,
-        );
         return await response.value();
     }
 
@@ -395,6 +339,81 @@ export class AiApi extends runtime.BaseAPI {
         initOverrides?: RequestInit | runtime.InitOverrideFunction,
     ): Promise<any> {
         const response = await this.runAgentV1AiContextIdRunPostRaw(
+            requestParameters,
+            initOverrides,
+        );
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for setHiddenV1AiContextIdHiddenPatch without sending the request
+     */
+    async setHiddenV1AiContextIdHiddenPatchRequestOpts(
+        requestParameters: SetHiddenV1AiContextIdHiddenPatchRequest,
+    ): Promise<runtime.RequestOpts> {
+        if (requestParameters["contextId"] == null) {
+            throw new runtime.RequiredError(
+                "contextId",
+                'Required parameter "contextId" was null or undefined when calling setHiddenV1AiContextIdHiddenPatch().',
+            );
+        }
+
+        if (requestParameters["hiddenUpdate"] == null) {
+            throw new runtime.RequiredError(
+                "hiddenUpdate",
+                'Required parameter "hiddenUpdate" was null or undefined when calling setHiddenV1AiContextIdHiddenPatch().',
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters["Content-Type"] = "application/json";
+
+        let urlPath = `/v1/ai/{context_id}/hidden`;
+        urlPath = urlPath.replace(
+            "{context_id}",
+            encodeURIComponent(String(requestParameters["contextId"])),
+        );
+
+        return {
+            path: urlPath,
+            method: "PATCH",
+            headers: headerParameters,
+            query: queryParameters,
+            body: HiddenUpdateToJSON(requestParameters["hiddenUpdate"]),
+        };
+    }
+
+    /**
+     * Keep or drop an AI context from the conversation list.
+     * Set Hidden
+     */
+    async setHiddenV1AiContextIdHiddenPatchRaw(
+        requestParameters: SetHiddenV1AiContextIdHiddenPatchRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<runtime.ApiResponse<ContextHiddenResponse>> {
+        const requestOptions =
+            await this.setHiddenV1AiContextIdHiddenPatchRequestOpts(
+                requestParameters,
+            );
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) =>
+            ContextHiddenResponseFromJSON(jsonValue),
+        );
+    }
+
+    /**
+     * Keep or drop an AI context from the conversation list.
+     * Set Hidden
+     */
+    async setHiddenV1AiContextIdHiddenPatch(
+        requestParameters: SetHiddenV1AiContextIdHiddenPatchRequest,
+        initOverrides?: RequestInit | runtime.InitOverrideFunction,
+    ): Promise<ContextHiddenResponse> {
+        const response = await this.setHiddenV1AiContextIdHiddenPatchRaw(
             requestParameters,
             initOverrides,
         );

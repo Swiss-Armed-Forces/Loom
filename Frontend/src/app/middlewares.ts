@@ -203,6 +203,7 @@ const SEARCH_PERSIST_FIELDS = [
     "folderViewOptions",
     "filteredFolderViewOptions",
     "bindings",
+    "activeContextId",
 ];
 
 export const localStorageSearchStateMiddleware =
