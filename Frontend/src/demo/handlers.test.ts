@@ -534,6 +534,34 @@ describe("demo API handlers", () => {
         expect(r2.status).toBe(200);
     });
 
+    it("keeps a hidden AI context out of the conversation list", async () => {
+        const context = await fetch("http://loom.test/api/v1/ai", {
+            method: "POST",
+        }).then((response) => responseJson<{ context_id: string }>(response));
+        const listedIds = async () =>
+            fetch("http://loom.test/api/v1/ai")
+                .then((response) =>
+                    responseJson<{ contexts: Array<{ context_id: string }> }>(
+                        response,
+                    ),
+                )
+                .then(({ contexts }) => contexts.map((c) => c.context_id));
+        const setHidden = (hidden: boolean) =>
+            fetch(`http://loom.test/api/v1/ai/${context.context_id}/hidden`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hidden }),
+            }).then((response) => responseJson<{ hidden: boolean }>(response));
+
+        expect(await listedIds()).toContain(context.context_id);
+
+        expect(await setHidden(true)).toEqual({ hidden: true });
+        expect(await listedIds()).not.toContain(context.context_id);
+
+        expect(await setHidden(false)).toEqual({ hidden: false });
+        expect(await listedIds()).toContain(context.context_id);
+    });
+
     it("rejects ingestion actions without mutating demo data", async () => {
         const form = new FormData();
         form.set("file", new File(["test"], "test.txt"));

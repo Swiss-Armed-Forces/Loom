@@ -483,6 +483,7 @@ export interface SearchState {
     filteredFolderViewOptions: FolderViewOptions;
     pendingFullscreenFileId: string | null;
     showChatReasoning: boolean;
+    activeContextId: string | null;
 }
 
 export const SEARCH_STATE_DOCS = {
@@ -598,6 +599,8 @@ export const SEARCH_STATE_DOCS = {
         "string | null — file ID queued to open in fullscreen",
     showChatReasoning:
         "boolean — whether AI chat reasoning/thinking output is expanded",
+    activeContextId:
+        "string | null — ID of the AI chat context the user last selected, so a reload comes back to it. The only handle on a hidden context, which the context list never returns",
     bindings:
         "Record<string, string[]> — custom keyboard shortcut bindings (actionId → keys)",
 } satisfies Record<keyof SearchState, string>;
@@ -739,6 +742,7 @@ const initialState: SearchState = {
     filteredFolderViewOptions: NO_FOLDER_VIEW_LIMITS,
     pendingFullscreenFileId: null,
     showChatReasoning: false,
+    activeContextId: null,
     bindings: {},
     ...persistedState,
     // Restore the last query (text + sort) so the search fields come back
@@ -1880,6 +1884,9 @@ export const searchSlice = createSlice({
         resetAllBindings: (state) => {
             state.bindings = {};
         },
+        setActiveContextId: (state, action: PayloadAction<string | null>) => {
+            state.activeContextId = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -2266,6 +2273,7 @@ export const {
     setBinding,
     resetBinding,
     resetAllBindings,
+    setActiveContextId,
 } = searchSlice.actions;
 
 export const openFileTabThunk = createAsyncThunk(

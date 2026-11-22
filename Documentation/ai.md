@@ -726,7 +726,10 @@ is still called directly and retries on `APIError`. The same degradation applies
 
 `AiContext` is stored in the Elasticsearch index `ai_context`. The document structure mirrors the
 Pydantic model: a nested `questions` array (each an `AiQuestion` with `citations` and `activity`),
-and an `active_mode` keyword.
+and an `active_mode` keyword. The `hidden` boolean that `list_all()` queries is not
+declared there — it comes from `EsRepositoryObject` and `_EsRepositoryDocument`, which every
+repository object and document inherits, so it is mapped and searchable without `_EsAiContext`
+naming it.
 
 Persistence is non-blocking: after the SSE stream finishes, `AiService` dispatches two background
 Celery tasks:
@@ -742,3 +745,18 @@ Frontend tool call results and reasoning traces that arrive in a re-run request 
 extracted by `_extract_activity_from_history()` and prepended to the `AiQuestion.activity` list
 alongside the current run's backend activity, giving a complete interleaved audit trail regardless
 of where the tool executed.
+
+### Hidden contexts
+
+`AiContext.hidden` keeps a conversation out of `GET /v1/ai`, because
+`AiContextRepository.list_all()` excludes it from the query. The flag reaches nothing else —
+questions are persisted as usual and every other route answers as it does for any context — so a
+hidden chat is reachable by its ID alone. **Hiding is not privacy**: the question, the answer, the
+citations and the reasoning traces all land in Elasticsearch exactly as they do for a visible chat,
+and the frontend labels the state accordingly.
+
+`PATCH /v1/ai/{id}/hidden` takes `{"hidden": <bool>}` and writes that field and no other, so the
+caller's intent survives a retry or a second tab. `GET /v1/ai/{id}/history` reports the flag back,
+which is how the frontend recognises the chat it restores from `activeContextId`: a context missing
+from the list is either hidden or evicted, and only its history tells the two apart — a context id
+nothing answers for yields `404`, through the `AiContextNotFoundException` handler in `api.py`.

@@ -1,9 +1,11 @@
-"""Unit tests for the pure helper functions in api/services/ai_service.py."""
+"""Unit tests for api/services/ai_service.py."""
 
 import asyncio
 import json
+from unittest.mock import MagicMock
 from uuid import uuid4
 
+import pytest
 from ag_ui.core import (
     AssistantMessage,
     BaseEvent,
@@ -26,13 +28,17 @@ from ag_ui.core import (
     UserMessage,
 )
 from common.ai_context.ai_context_repository import (
+    AiContext,
+    AiContextRepository,
     AiQuestionCitation,
     ReasoningActivityEntry,
     ToolCallActivityEntry,
 )
 from common.ai_context.tool_models import ToolSource
+from common.services.task_scheduling_service import TaskSchedulingService
 
 from api.services.ai_service import (
+    AiService,
     _ActivityTracker,
     _collect_citations,
     _extract_activity_from_history,
@@ -381,3 +387,45 @@ def test_sanitiser_handles_full_orphan_scenario():
     assert types.count("TEXT_MESSAGE_START") == 2
     assert types.count("TEXT_MESSAGE_END") == 2
     assert types[-1] == "RUN_FINISHED"
+
+
+# ---------------------------------------------------------------------------
+# AiService class
+# ---------------------------------------------------------------------------
+
+
+def test_set_hidden_writes_only_the_flag():
+    repo = MagicMock(spec=AiContextRepository)
+    context = AiContext(hidden=False)
+    repo.get_by_id.return_value = context
+    service = AiService(repo, MagicMock(spec=TaskSchedulingService))
+
+    result = service.set_hidden(context.id_, True)
+
+    assert result.hidden is True
+    repo.update.assert_called_once_with(context, include={"hidden"})
+
+
+@pytest.mark.asyncio
+async def test_run_agent_stream_dispatches_persist_tasks():
+    """A completed run hands the question and the done marker to the scheduler."""
+    scheduler = MagicMock(spec=TaskSchedulingService)
+    service = AiService(MagicMock(spec=AiContextRepository), scheduler)
+
+    adapter = MagicMock()
+    adapter.run_input.messages = [UserMessage(id="u1", content="hello")]
+    adapter.run_stream.return_value = _from_list(
+        [
+            TextMessageContentEvent(message_id="m1", delta="hi"),
+            RunFinishedEvent(thread_id="t1", run_id="r1"),
+        ]
+    )
+
+    deps = MagicMock()
+    deps.source_collector = []
+
+    async for _ in service.run_agent_stream(AiContext(), uuid4(), adapter, deps):
+        pass
+
+    scheduler.dispatch_persist_question.assert_called_once()
+    scheduler.dispatch_persist_processing_done.assert_called_once()

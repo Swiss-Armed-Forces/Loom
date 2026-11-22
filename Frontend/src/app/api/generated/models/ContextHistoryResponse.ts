@@ -53,6 +53,12 @@ export interface ContextHistoryResponse {
      * @memberof ContextHistoryResponse
      */
     activeMode: ModeId;
+    /**
+     *
+     * @type {boolean}
+     * @memberof ContextHistoryResponse
+     */
+    hidden: boolean;
 }
 
 /**
@@ -77,6 +83,7 @@ export function instanceOfContextHistoryResponse(
             (value as Record<string, any>)["active_mode"] === undefined)
     )
         return false;
+    if (!("hidden" in value) || value["hidden"] === undefined) return false;
     return true;
 }
 
@@ -97,6 +104,7 @@ export function ContextHistoryResponseFromJSONTyped(
         createdAt: new Date(json["created_at"]),
         questions: (json["questions"] as Array<any>).map(AiQuestionFromJSON),
         activeMode: ModeIdFromJSON(json["active_mode"]),
+        hidden: json["hidden"],
     };
 }
 
@@ -118,5 +126,6 @@ export function ContextHistoryResponseToJSONTyped(
         created_at: value["createdAt"].toISOString(),
         questions: (value["questions"] as Array<any>).map(AiQuestionToJSON),
         active_mode: ModeIdToJSON(value["activeMode"]),
+        hidden: value["hidden"],
     };
 }

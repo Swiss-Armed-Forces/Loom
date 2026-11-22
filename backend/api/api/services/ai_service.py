@@ -281,13 +281,17 @@ class AiService:
     def list_contexts(self) -> list[AiContext]:
         return self._ai_context_repository.list_all()
 
-    def delete_context(self, context_id: UUID) -> bool:
-        return self._ai_context_repository.delete_by_id(context_id)
-
     def get_context(self, context_id: UUID) -> AiContext:
         context = self._ai_context_repository.get_by_id(context_id)
         if context is None:
             raise AiContextNotFoundException(f"Context not found: {context_id}")
+        return context
+
+    def set_hidden(self, context_id: UUID, hidden: bool) -> AiContext:
+        """Set the hidden flag without touching any other field."""
+        context = self.get_context(context_id)
+        context.hidden = hidden
+        self._ai_context_repository.update(context, include={"hidden"})
         return context
 
     def set_mode(self, context_id: UUID, mode: ModeId) -> None:

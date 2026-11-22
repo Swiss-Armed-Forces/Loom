@@ -49,10 +49,19 @@ class ContextHistoryResponse(BaseModel):
     created_at: datetime
     questions: list[AiQuestion]
     active_mode: ModeId
+    hidden: bool
 
 
 class ModeUpdate(BaseModel):
     mode: ModeId
+
+
+class HiddenUpdate(BaseModel):
+    hidden: bool
+
+
+class ContextHiddenResponse(BaseModel):
+    hidden: bool
 
 
 @router.get("/capabilities")
@@ -92,6 +101,7 @@ def get_context_history(
         created_at=context.created_at,
         questions=questions,
         active_mode=context.active_mode,
+        hidden=context.hidden,
     )
 
 
@@ -105,13 +115,15 @@ def update_modes(
     ai_service.set_mode(context_id, update.mode)
 
 
-@router.delete("/{context_id}")
-def delete_context(
+@router.patch("/{context_id}/hidden")
+def set_hidden(
     context_id: UUID,
+    update: HiddenUpdate,
     ai_service: AiService = default_ai_service,
-) -> None:
-    """Delete an AI context and its conversation history."""
-    ai_service.delete_context(context_id)
+) -> ContextHiddenResponse:
+    """Keep or drop an AI context from the conversation list."""
+    context = ai_service.set_hidden(context_id, update.hidden)
+    return ContextHiddenResponse(hidden=context.hidden)
 
 
 @router.post("")

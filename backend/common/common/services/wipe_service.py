@@ -15,7 +15,10 @@ from common.services.celery_inspect_service import CeleryInspectService
 from common.services.imap_service import IMAPService
 from common.services.lazybytes_service import LazyBytesService
 from common.services.query_builder import QueryBuilder
-from common.services.queues_service import QueuesService
+from common.services.queues_service import (
+    MANAGEMENT_API_MAX_CONCURRENCY,
+    QueuesService,
+)
 from common.settings import settings
 from common.utils.flush_s3_bucket import flush_s3_bucket
 
@@ -35,8 +38,10 @@ WIPE_CELERY_TIMEOUT__S = 300.0
 # publishing after the check. No amount of re-reading fixes that; it needs consumption
 # stopped at the source before the purge.
 # Upper bound on concurrent queue purges. wipe_celery() re-purges every 0.1s, so this
-# caps how many requests a single wipe can have in flight against the broker.
-PURGE_MAX_WORKERS = 16
+# caps how many requests a single wipe can have in flight against the broker. It is the
+# management session's connection pool size, so the pool holds every purge in flight
+# instead of discarding the surplus connections.
+PURGE_MAX_WORKERS = MANAGEMENT_API_MAX_CONCURRENCY
 
 
 class WipeTimeoutError(RuntimeError):

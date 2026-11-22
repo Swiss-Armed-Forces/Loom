@@ -1,4 +1,4 @@
-import { DeleteOutlined, Forum } from "@mui/icons-material";
+import { Forum, VisibilityOff } from "@mui/icons-material";
 import {
     Box,
     CircularProgress,
@@ -28,8 +28,9 @@ export const Chatbot = ({ chatbot }: ChatbotProps) => {
         filteredContexts,
         setHistorySearch,
         handleSelectContext,
-        handleDeleteContext,
+        handleHideContext,
         refreshContexts,
+        isHidden,
     } = chatbot;
 
     return (
@@ -77,18 +78,18 @@ export const Chatbot = ({ chatbot }: ChatbotProps) => {
                                 key={ctx.contextId}
                                 disablePadding
                                 secondaryAction={
-                                    <Tooltip title="Delete">
+                                    <Tooltip title="Hide from this list (the conversation stays stored)">
                                         <IconButton
                                             size="small"
                                             edge="end"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleDeleteContext(
+                                                handleHideContext(
                                                     ctx.contextId,
                                                 );
                                             }}
                                         >
-                                            <DeleteOutlined fontSize="small" />
+                                            <VisibilityOff fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
                                 }
@@ -141,6 +142,7 @@ export const Chatbot = ({ chatbot }: ChatbotProps) => {
                     key={activeContext.contextId}
                     contextId={activeContext.contextId}
                     onRunComplete={refreshContexts}
+                    isHidden={isHidden}
                 />
             ) : (
                 <Box

@@ -23,6 +23,17 @@ def test_create_context(client: TestClient):
     assert create_context_response == ContextCreateResponse(context_id=ai_context.id_)
 
 
+def test_set_hidden_passes_path_and_body_through(client: TestClient):
+    context_id = uuid4()
+    get_ai_service().set_hidden.return_value = AiContext(hidden=True)
+
+    response = client.patch(f"{ENDPOINT}/{context_id}/hidden", json={"hidden": True})
+
+    assert response.status_code == 200
+    assert response.json() == {"hidden": True}
+    get_ai_service().set_hidden.assert_called_once_with(context_id, True)
+
+
 def test_run_agent_streams_sse(client: TestClient):
 
     context_id = uuid4()

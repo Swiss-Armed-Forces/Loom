@@ -1,4 +1,10 @@
-import { AddComment, Close, Forum, Search } from "@mui/icons-material";
+import {
+    AddComment,
+    Close,
+    Forum,
+    Search,
+    VisibilityOff,
+} from "@mui/icons-material";
 import {
     Drawer,
     IconButton,
@@ -242,12 +248,37 @@ export const LeftSidebar = memo(() => {
                     )}
                     {isChatPanel && (
                         <>
+                            <Tooltip
+                                title={
+                                    chatbot.showHistory
+                                        ? "Hide from the conversation list (not available in list view)"
+                                        : chatbot.isHidden
+                                          ? "Show in the conversation list"
+                                          : "Hide from the conversation list (the conversation stays stored)"
+                                }
+                            >
+                                <IconButton
+                                    size="small"
+                                    disabled={
+                                        chatbot.showHistory ||
+                                        chatbot.isHiddenPending
+                                    }
+                                    onClick={
+                                        chatbot.isHidden
+                                            ? chatbot.handleUnhideActiveContext
+                                            : chatbot.handleHideActiveContext
+                                    }
+                                    color={
+                                        chatbot.isHidden ? "warning" : "default"
+                                    }
+                                >
+                                    <VisibilityOff fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
                             <Tooltip title="All conversations">
                                 <IconButton
                                     size="small"
-                                    onClick={() =>
-                                        chatbot.setShowHistory((s) => !s)
-                                    }
+                                    onClick={chatbot.handleToggleHistory}
                                     color={
                                         chatbot.showHistory
                                             ? "primary"
