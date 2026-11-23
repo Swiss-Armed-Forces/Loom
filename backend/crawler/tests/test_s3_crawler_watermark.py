@@ -29,6 +29,7 @@ def _crawler() -> S3Crawler:
         bucket_alias=None,
         file_storage_service=MagicMock(),
         task_scheduling_service=MagicMock(),
+        index_prioritization_agent=MagicMock(),
     )
 
 

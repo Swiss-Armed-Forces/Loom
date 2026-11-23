@@ -55,19 +55,31 @@ llm:
     model: qwen2.5:0.5b
     num_documents: 1
 
-  rag_rerank:
-    model: qwen2.5:0.5b
-    temperature: 0
-
   rag_synthesize:
     model: qwen2.5:0.5b
     thinking: false
+
+  language_detection:
+    model: qwen2.5:0.5b
 
   translation:
     model: qwen2.5:0.5b
 
   vision:
     model: moondream:1.8b
+
+llm_system_one:
+  rag_rerank:
+    model: tev1:0.8b
+
+  translation_language_detection:
+    model: tev1:0.8b
+
+  ocr_language_detection:
+    model: tev1:0.8b
+
+  index_prioritization:
+    model: tev1:0.8b
 
 api:
   # yamllint disable rule:indentation

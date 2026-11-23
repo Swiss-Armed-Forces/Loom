@@ -16,6 +16,7 @@ requests = "^2.31.0"
 requests-toolbelt = "^1.0.0"
 websockets = "^13.0"
 kubernetes = "^36.0.0"
+pydantic-ai = { version = "2.69.0", extras = ["ag-ui"] }
 
 [tool.poetry.group.dev.dependencies]
 debugpy = "^1.8.1"

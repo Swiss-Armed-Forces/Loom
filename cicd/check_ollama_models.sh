@@ -5,7 +5,8 @@
 #
 # `ollama/Dockerfile.models` hardcodes its production set as an `ARG
 # LLM_MODELS`, and the chart names its own in `charts/values.yaml` --
-# `_llmDefaults.model` for chat and `llm.embedding.model` for embeddings. They
+# `_llmDefaults.model` for chat, `llm.embedding.model` for embeddings and
+# `llm_system_one.<client>.model` for each decision model. They
 # agree today and nothing made them.
 #
 # A drift is invisible until an air-gapped box is in front of somebody: the
@@ -58,6 +59,13 @@ for path in '._llmDefaults.model' '.llm.embedding.model'; do
     fi
     declared+=("${value}")
 done
+
+# The decision models, discovered rather than listed: every `model` under
+# `llm_system_one.<client>`, whichever clients those turn out to be. A null client is a
+# use case switched off and names no model, so it is skipped rather than failed.
+while read -r value; do
+    [[ -n "${value}" ]] && declared+=("${value}")
+done < <(yq --raw-output '[.llm_system_one[] | select(. != null) | .model | select(. != null)] | .[]' "${VALUES_FILE}")
 
 # One model name per line, so each can be compared whole.
 #

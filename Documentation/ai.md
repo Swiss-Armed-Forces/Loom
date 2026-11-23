@@ -101,8 +101,9 @@ Tools are split into two tiers:
 ### Provider
 
 > ℹ️ This section is why each provider differs. For pointing a deployment at one — which
-> values to set, and on which of the twelve clients — see
+> values to set, and on which client — see
 > [External services](external-services.md#inference-endpoints-outside-the-cluster).
+> It does not apply to the system-one clients; see [System one models](#system-one-models).
 
 Pointing a client at an endpoint takes one setting beyond the endpoint and the model name:
 
@@ -186,7 +187,7 @@ service, not something an operator chooses.
 #### Structured output
 
 Clients whose agent returns a model rather than a string — summarization, translation, vision,
-`suggest_queries`, `rag_rerank`, `language_detection` — need the answer to arrive in a shape that can
+`suggest_queries`, `language_detection` — need the answer to arrive in a shape that can
 be validated. pydantic-ai offers two channels for that, and `common/llm/provider.py` picks between
 them from the model name:
 
@@ -266,21 +267,13 @@ Three things to know:
 
 Defaults are set per client in `LLMClientSettings` subclasses: on for `summarization`,
 `summarization_refine`, `rag_synthesize` and `agent`; off for `summarization_key_points`,
-`rag_hyde`, `rag_rerank`, `suggest_queries`, `vision`, `language_detection` and `translation`.
-Clients that reason spend part of `max_tokens` on reasoning tokens — see #287.
+`rag_hyde`, `suggest_queries`, `vision`, `language_detection` and `translation`. The system-one
+clients have no `thinking` at all — nothing they do generates text. Clients that reason spend part
+of `max_tokens` on reasoning tokens — see #287.
 
-`rag_rerank` and `suggest_queries` are the two defaults that are off for a cost reason rather than a
-quality one. Both fan out many calls per invocation against an inference server that answers them
-one at a time, and both spend that fan-out on a tiny answer.
-
-`rerank_and_synthesize` fans out one call per chunk, capped at
-`MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING` (50), and the inference server answers them one at a
-time — so a question's rerank wall-clock is the sum of all 50 generations, while the whole useful
-output is a single integer score. It also carries `max_tokens = 512` for the same reason: the
-inherited 128000 caps nothing that matters there, but lets one runaway generation consume the
-5-minute `timeout`, which `rerank` then retries up to `RAG_MAX_RETRIES` times on an already saturated
-queue. Turning thinking back on for ranking quality means keeping that cap, and lowering the
-fan-out.
+`suggest_queries` is the default that is off for a cost reason rather than a quality one. It fans
+out many calls per invocation against an inference server that answers them one at a time, and
+spends that fan-out on a tiny answer.
 
 **Raising `OLLAMA_NUM_PARALLEL` is not the other option, on the production models.** Ollama's
 scheduler forces a single slot in two cases, whatever the variable says: a model without the
@@ -292,14 +285,117 @@ knob, and the real options are a chat model whose architecture supports batching
 replicas, or a smaller fan-out. The dev models (`qwen2.5:0.5b`, `moondream`) are not on the list, so
 anything measured about concurrency in a dev cluster will not reproduce in production.
 
+`rerank_and_synthesize` has the same shape, which is why reranking runs a system-one model rather
+than a chat one: it fans out one call per chunk, capped at
+`MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING` (50), against an inference server that answers them one
+at a time, and the whole useful output per call is a single integer score.
+
 `suggest_queries` is the same shape one level down: one invocation fans out
 `tool.suggest_queries.num_candidates` (10) generations, so a suggestion's wall-clock is the sum of
-all ten, and each one's whole useful output is a short Lucene query string. Unlike `rag_rerank` it
-keeps the inherited `max_tokens`, so turning thinking back on there — for a model that needs the
-budget to get Lucene syntax right — costs latency but nothing else.
+all ten, and each one's whole useful output is a short Lucene query string. It keeps the inherited
+`max_tokens`, so turning thinking back on there — for a model that needs the budget to get Lucene
+syntax right — costs latency but nothing else.
 
 `embedding` has no `thinking` setting: the embeddings API has no reasoning to switch off, and
 `build_embedder` reads only `extra_headers`/`extra_body`.
+
+### System one models
+
+Some decisions do not need a chat model at all: how relevant a chunk is to a question, which
+language a text is in, and how soon an intake object should be indexed. Each is a choice among a
+fixed set of answers, so each runs a **system-one** model through
+`common/llm/agent.py`'s `build_system_one_agent` instead of `build_agent`.
+
+They live under their own top-level key, `llm_system_one`, with one entry per use case and one
+agent built from it — so each question can be pointed at a different service and tuned apart,
+rather than sharing a block because they happen to share a kind of model:
+
+| Client | Answers | Agent | Output type |
+| ------ | ------- | ----- | ----------- |
+| `rag_rerank` | How relevant is this chunk to the question? | worker | `RerankResult`, carrying `Relevance`, a 0–5 `IntEnum` |
+| `translation_language_detection` | Which language is this text in? | worker | `DetectedLanguageChoice`, carrying `LanguagesToDetect` |
+| `ocr_language_detection` | Which language is this file likely in? | worker | `TikaCommonOcrLanguage` |
+| `index_prioritization` | How soon should this be indexed? | crawler | `IndexingUrgency`, mapped to the broker's `IndexingPriority` |
+
+A system-one model returns a probability distribution over the members of that type and generates
+no text. Two consequences run through the whole configuration:
+
+- **The output type is the prompt.** There is no 0–5 rubric written out anywhere: pydantic-ai's
+  `UseEnumMemberDocstrings` turns `Relevance`'s member docstrings into the schema the service is
+  given, so those docstrings *are* the scale. Editing one changes reranking.
+
+  **The class docstring is sent too**, and this is the half that reads like documentation and is
+  not: a bare enum's docstring becomes the question itself, and a model's becomes the goal the
+  question is asked for. So an output type's docstring holds what the model should read and
+  nothing else — a note about wrapper keys or a pointer to the test that pins a list is noise
+  wrapped around the question, reaching a classifier that has a few hundred million parameters to
+  tell it apart from the question with. Implementation notes about these types go in a comment
+  above the class, where no request carries them.
+
+  Two properties of the type decide what question is even asked, and getting either wrong is
+  silent. Levels must run contiguously from zero and every one must carry a docstring, or the
+  question is demoted from a scored rubric to a pick-one of bare labels with no descriptions —
+  which is why `index_prioritization` has its own `IndexingUrgency` rather than reusing the
+  broker's `IndexingPriority`, whose values are `0`, `4` and `5`. And a type wrapped in a model
+  reports its distribution under the *field* name, while a bare one reports it under a wrapper key
+  pydantic-ai chooses — so `translation_language_detection`, which reads that distribution back,
+  wraps `LanguagesToDetect` in `DetectedLanguageChoice` and derives the key from the model.
+- **A system-one client takes the keys `POST /v1/systemone` takes, and no others.**
+  `endpoint`, `api_key`, `model` and `timeout` say where the service is and what to ask;
+  `temperature`, `extra_headers` and `extra_body` ride on the request as model settings. There is
+  no `thinking`, `max_tokens`, `max_sentences`, `system_prompt` or `tool_timeout`, which all
+  describe how text is generated. A decision model writes none, so none of them has anything to
+  describe and pydantic-ai does not send them — a key the chart accepted and discarded would be
+  worse than one it does not accept. There is no
+  `provider` either, and that is a property of the protocol rather than an omission: each
+  `LLMProvider` value picks the class that shapes a *chat completion* for one OpenAI-compatible
+  service, while system one has one wire format, one pydantic-ai provider and one model profile.
+  `LLMSystemOneSettings` is a model of its own rather than an `LLMClientSettings` subclass, so the
+  keys that do not apply do not exist to be set, and the chart renders only the ones that do.
+
+The prompt-injection guardrail (`_GENERAL_GUARDRAILS`) is not applied either, and that is deliberate
+rather than an omission: a model whose entire output is a choice among an enum's members has no
+instruction-following surface for a document to hijack. `sanitize_document_text` still runs on the
+text these clients are given.
+
+**Every entry names a model, and nulling one is refused while the chart renders.** Pointing a client
+at a service and asking its question are separate decisions, and one key cannot mean both: a client
+that is reachable but never asked and a client that is asked but unreachable need to be told apart.
+
+So a use case is switched off under `pipeline`, where the rest of the indexing switches are.
+`pipeline.skip_ocr_language_detection_while_indexing` stops asking the OCR question and OCRs with
+`pipeline.tika_ocr_languages` alone — `charts/values-disable-ai-services.yaml` sets it, for the
+reason below. The translation question is behind `pipeline.skip_translate_while_indexing`, which
+switches translation off wholesale and defaults to on. `rag_rerank` and `index_prioritization` have
+no such switch: nothing but `rag_rerank` can rank a chunk against a question, and nothing but
+`index_prioritization` ranks an intake object.
+
+Being asked is not the same as being answered, and each has different stakes when the service is not
+there. None of them fails the thing it is part of:
+
+- `rag_rerank` catches the failure and ranks the chunk `COMPLETELY_IRRELEVANT`, which
+  `apply_rerank_threshold` then filters out. Raising would abort the chord and discard every chunk
+  that *was* ranked, so the turn survives a rerank outage — but it survives it by silently dropping
+  chunks, and with the service down for all of
+  `MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING` it synthesises from nothing at all. The warning in
+  the worker log is the only sign.
+- `index_prioritization` catches the failure, warns and leaves the object at `dispatch_index_file`'s
+  own `MEDIUM` — a priority hint is advisory, and failing a download would mean re-fetching the
+  object's whole body on the next poll, forever. A *permanent* failure is reported once and then
+  stops being asked, because it reproduces on every object and a mirrored stick is hundreds of
+  thousands of them.
+- `ocr_language_detection` heads the tika chain, so it retries on a transient failure and then
+  indexes the file with `pipeline.tika_ocr_languages` alone rather than costing it its extraction.
+  An `"other"` answer takes the same path: it says the name carries no language signal.
+
+A deployment with no inference service behind it should set the skip flag rather than rely on that
+last degradation — the retry budget is `TIKA_MAX_RETRIES` with exponential backoff, paid per image
+and PDF, to reach the answer the flag gives immediately.
+
+> ⚠️ Whatever tag you set has to be one the Ollama image pulls. `cicd/check_ollama_models.sh`
+> asserts that for every `llm_system_one.<client>.model` in `charts/values.yaml`, because an
+> air-gapped box carries only what was baked in and a missing model is a permanent error on every
+> call.
 
 ### AG-UI Streaming Protocol
 

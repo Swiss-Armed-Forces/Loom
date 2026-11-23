@@ -25,7 +25,10 @@ pycryptodome = "3.23.0"
 requests = "2.34.2"
 pydantic = "2.13.5"
 pydantic-settings = "2.14.2"
-pydantic-ai = { version = "^2.22.0", extras = ["ag-ui"] }
+pydantic-ai = { version = "2.69.0", extras = ["ag-ui"] }
+# Direct, because `common.llm.provider` builds the system-one provider's own
+# `AsyncClient` to give it the client's timeout.
+httpx2 = "2.13.0"
 types-requests = "2.33.0.20260906"
 fastapi = "0.141.1"
 redis = "5.2.1"
@@ -33,7 +36,7 @@ redis = "5.2.1"
 # we should keep this for now as the redis type hints are really bad
 # see: https://www.reddit.com/r/Python/comments/1ksicim/comment/mtnlayg/
 types-redis = "4.6.0.20241004"
-openai = "2.52.1"
+openai = "3.31.0"
 imapclient = "4.0.1"
 
 [tool.poetry.group.test.dependencies]

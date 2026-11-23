@@ -12,6 +12,7 @@ from common.dependencies import (
     get_lazybytes_service,
 )
 from common.services.lazybytes_service import TempLazyBytes
+from common.utils.file_size import file_size_to_string
 from pydantic import BaseModel
 
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
@@ -301,24 +302,6 @@ def generate_email(data: EmailTemplateData) -> str:
     return email_html_template
 
 
-def size_to_string(size: int) -> str:
-    text = "("
-    if size < 1024:
-        text += str(size) + "B"
-    elif size < 1024**2:
-        text += "~" + str(int(size / 1024)) + "KB"
-    elif size < 1024**3:
-        text += "~" + str(int(size / 1024**2)) + "MB"
-    elif size < 1024**4:
-        text += "~" + str(int(size / 1024**3)) + "GB"
-    elif size < 1024**5:
-        text += "~" + str(int(size / 1024**4)) + "TB"
-    else:
-        text += ":-O"
-
-    return text + ")"
-
-
 @app.task(base=FileIndexingTask)
 def parse_and_render_email_task(
     is_email_detected: bool, file_content: TempLazyBytes | None
@@ -338,7 +321,7 @@ def parse_and_render_email_task(
     email_data: ParsedEmail = _parse_email_body(msg)
 
     attachments = [
-        attachment.name + " " + size_to_string(attachment.size)
+        f"{attachment.name} ({file_size_to_string(attachment.size)})"
         for attachment in email_data.attachments
     ]
 

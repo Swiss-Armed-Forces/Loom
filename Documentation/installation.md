@@ -276,9 +276,19 @@ Under `up -d` and `up --integrationtest` there is a sixth: skaffold's dev profil
   and service redundancy across nodes: Elasticsearch shard replicas, SeaweedFS volume replication,
   and Prometheus cluster-metrics handoff to central monitoring infrastructure.
 - **[`values-disable-ai-services.yaml`](../charts/values-disable-ai-services.yaml)** — Use this when
-  you want to skip AI features entirely. It stops deploying Ollama **and** skips the AI-powered
-  indexing steps (embedding, auto-tagging), so nothing retries against an Ollama that is not
-  deployed. **It is not how you point Loom at an external endpoint**: with embedding skipped, RAG
+  you want to skip AI features entirely. It stops deploying Ollama **and** switches off the
+  indexing steps that would otherwise call it — embedding, auto-tagging and OCR language
+  detection — so nothing retries against an inference service that is not there. That last one
+  matters most: `infer_language_via_llm_task` heads the tika chain and retries on a transient
+  failure, and a refused connection is one, so without
+  `pipeline.skip_ocr_language_detection_while_indexing` every image and PDF would wait out
+  `TIKA_MAX_RETRIES` backed-off calls before being OCR'd with `pipeline.tika_ocr_languages`
+  alone — which is what it would have been OCR'd with anyway.
+  The remaining decision models are not reached while indexing: `translation_language_detection`
+  sits behind `skip_translate_while_indexing`, which already defaults to on, and `rag_rerank`
+  runs in the chatbot. `index_prioritization` runs in the **crawler**, which asks once per intake
+  object, catches the failure and dispatches at the default priority.
+  **It is not how you point Loom at an external endpoint**: with embedding skipped, RAG
   retrieves from an empty set and nothing says so. That case wants `ollama.enabled: false` on its
   own — see
   [External services](external-services.md#inference-endpoints-outside-the-cluster).
@@ -648,11 +658,26 @@ when the pod starts, so switching between CPU, NVIDIA and AMD never re-downloads
 `ollama.pvc.enabled: true` (the default) and that copy happens once — with it off, every pod
 restart repeats it.
 
-The production model is ~18 GB of weights, so that image is correspondingly large and
+The production chat model is ~18 GB of weights, so that image is correspondingly large and
 `ollama.pvc.storage` (default `50Gi`) is sized to hold it beside the blobs of a model it
 supersedes — the copy takes whatever the volume does not already carry at the source's size, and
-never prunes. Inference wants a GPU with at least 20 GB of VRAM; with less, Ollama offloads layers
-to the CPU and generation slows down sharply.
+never prunes.
+
+The models the production target of `ollama/Dockerfile.models` pulls are listed in its
+`ARG LLM_MODELS`, and they are not all the same size: the chat model dominates, the embedding
+model is small, and the decision model (`llm_system_one`) is small too. **Size the GPU for the
+chat model and the decision model resident at once.** The chat model alone wants a card with at
+least 20 GB of VRAM; with less, Ollama offloads layers to the CPU and generation slows down
+sharply. The indexing path then alternates between the two within a single document —
+`ocr_language_detection` → tika → summarize → `translation_language_detection` → translate — so on
+a card that cannot hold both, every alternation evicts one and reloads the other off the models
+volume. `keepAlive` does not prevent that: it governs idle unloading, not eviction under memory
+pressure.
+
+`OLLAMA_MAX_LOADED_MODELS` is the knob for how many may be resident at once, and it goes in
+`ollama.extraEnv` (see below). Ollama's own default already allows more than one; naming it is how
+you _cap_ residency on a card that cannot afford the chat model beside anything else, at the cost
+of the eviction churn above.
 
 ### Tuning the Ollama server
 

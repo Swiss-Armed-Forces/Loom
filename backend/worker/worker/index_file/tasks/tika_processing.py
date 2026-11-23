@@ -5,17 +5,22 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from traceback import format_exception
+from typing import NamedTuple
 
 from celery import Task, chain, chord, group
 from celery.canvas import Signature
 from common.dependencies import get_celery_app, get_lazybytes_service
-from common.file.file_repository import File
+from common.file.file_repository import File, FilePurePath
+from common.llm.exceptions import LLMError, LLMTransientError, classify_llm_error
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.task_scheduling_service import IndexingPriority
 from common.utils.cache import cache
 from pydantic import BaseModel, ConfigDict
 
-from worker.dependencies import get_tika_service
+from worker.dependencies import (
+    get_llm_ocr_language_detection_so_agent,
+    get_tika_service,
+)
 from worker.index_file.extractor.base import (
     ExtractNotSupported,
     ExtractorBase,
@@ -52,7 +57,7 @@ from worker.services.tika_service import (
     TikaResult,
     TikaTransientError,
 )
-from worker.settings import settings
+from worker.settings import TikaCommonOcrLanguage, settings
 from worker.utils.persisting_task import persisting_task
 
 TIKA_MAX_RETRIES = 15
@@ -62,6 +67,12 @@ TIKA_MAX_RETRIES = 15
 TIKA_RETRY_EXCEPTIONS = (TikaTransientError,)
 # Elasticsearch's own cut-off for a keyword it will still index.
 DEGRADATION_REASON_MAX_LENGTH = 256
+
+# The content types whose OCR language tika is ever told about. `X-Tika-OCRLanguage`
+# reaches tesseract for images and for the PDFs tika decides to OCR, and for nothing
+# else -- so asking a decision model about a .docx is one inference per file for an
+# answer that is then discarded.
+OCR_CANDIDATE_CONTENT_TYPES = ("image/", "application/pdf")
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +144,17 @@ def _log_degradation(
         retries_exhausted,
         exc_info=ex,
     )
+
+
+class InferredOcrLanguage(NamedTuple):
+    """What `infer_language_via_llm_task` hands to `tika_processor_task`.
+
+    One value rather than two, because celery passes a task's return value to the next
+    link in a chain as a single positional argument whatever its shape.
+    """
+
+    file_type: str
+    language: TikaCommonOcrLanguage | None
 
 
 class TikaProcessingResult(BaseModel):
@@ -313,6 +335,7 @@ def signature(
                 email_processing.signature(file_content, file),
                 image_description.signature(file_content, file),
                 chain(
+                    infer_language_via_llm_task.s(file.full_name),
                     tika_processor_task.s(file_content, file),
                     chord(
                         (task.s(file_content, file) for task in FALLBACK_TASKS),
@@ -366,10 +389,17 @@ def signature(
     max_retries=TIKA_MAX_RETRIES,
     retry_backoff=True,
 )
-@cache(key_function=lambda _, __, ___, file: file.sha256)
+# Keyed on the inferred language as well as the bytes: the language is derived from
+# the file's name, so two copies of one scanned document filed under different names
+# are OCR'd differently and must not share an entry.
+@cache(key_function=lambda _, inferred, __, file: (file.sha256, inferred.language))
 def tika_processor_task(
-    self: FileIndexingTask, file_type: str, file_content: TempLazyBytes, file: File
+    self: FileIndexingTask,
+    inferred: InferredOcrLanguage,
+    file_content: TempLazyBytes,
+    file: File,
 ) -> TikaProcessingResult:
+    file_type, inferred_language = inferred
     lazybytes_service = get_lazybytes_service()
 
     if file_type in FALLBACK_CONTENT_TYPES:
@@ -378,7 +408,7 @@ def tika_processor_task(
 
     generator = lazybytes_service.load_generator(file_content)
     try:
-        result = get_tika_service().parse_from_generator(generator)
+        result = get_tika_service().parse_from_generator(generator, inferred_language)
     except TikaTransientError as ex:
         if not self.is_last_attempt:
             # Re-raise the same object: autoretry_for matches on what leaves here.
@@ -507,6 +537,82 @@ def persist_tika_meta_task(
     lazybytes_service = get_lazybytes_service()
     tika_result = lazybytes_service.load_object(lazy_tika_result)
     persister.set_tika_meta(tika_result.meta)
+
+
+def infer_ocr_language(full_name: FilePurePath) -> TikaCommonOcrLanguage | None:
+    """Guess the OCR language from a path, or None when there is no usable guess.
+
+    None when the model answers "other", which says the name carries no language
+    signal: tesseract is then left with `settings.tika_ocr_languages` alone.
+
+    Raises LLMTransientError or LLMPermanentError when the decision model fails.
+    """
+    try:
+        system_one_return = get_llm_ocr_language_detection_so_agent().run_sync(
+            f"Fullpath: {full_name}"
+        )
+    except Exception as ex:
+        raise classify_llm_error(ex, "OCR language detection failed") from ex
+
+    if system_one_return.output is TikaCommonOcrLanguage.OTHER:
+        return None
+
+    return system_one_return.output
+
+
+@app.task(  # type: ignore[call-overload]
+    base=FileIndexingTask,
+    bind=True,
+    autoretry_for=(LLMTransientError,),
+    max_retries=TIKA_MAX_RETRIES,
+    retry_backoff=True,
+)
+def infer_language_via_llm_task(
+    self: FileIndexingTask,
+    file_type: str,
+    full_name: FilePurePath,
+) -> InferredOcrLanguage:
+    """Guess the OCR language of a file from its name.
+
+    Heads the tika chain, so anything raised here costs the file its extraction, its
+    fallbacks and everything downstream. A language hint is worth none of that: once the
+    retry budget is spent the file goes to tika without one.
+
+    The failure is caught out here rather than inside `_infer_ocr_language`, so that the
+    cache below holds inferences alone. Cached, the "no hint" a ten-minute outage
+    produces would be served for `CACHE_DEFAULT_TTL_SECONDS` to every file name seen
+    during it, long after the service came back.
+    """
+    if settings.skip_ocr_language_detection_while_indexing:
+        return InferredOcrLanguage(file_type, None)
+
+    if not file_type.startswith(OCR_CANDIDATE_CONTENT_TYPES):
+        return InferredOcrLanguage(file_type, None)
+
+    try:
+        return _infer_ocr_language(file_type, full_name)
+    except LLMError as ex:
+        if isinstance(ex, LLMTransientError) and not self.is_last_attempt:
+            raise
+        logger.warning(
+            "OCR language detection failed, indexing without a language hint "
+            "(file=%s)",
+            full_name,
+            exc_info=True,
+        )
+        return InferredOcrLanguage(file_type, None)
+
+
+# The cache sits on the inference rather than on the task, because its key is the
+# file's name: a content type nobody asks the model about would otherwise take one
+# redis entry per name indexed, for an answer that is a comparison away.
+@cache(key_function=lambda file_type, full_name: (file_type, full_name))
+def _infer_ocr_language(
+    file_type: str,
+    full_name: FilePurePath,
+) -> InferredOcrLanguage:
+    logger.info("Getting language for %s with LLM call", full_name)
+    return InferredOcrLanguage(file_type, infer_ocr_language(full_name))
 
 
 @app.task(  # type: ignore[call-overload]

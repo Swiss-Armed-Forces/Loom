@@ -56,8 +56,10 @@
   # The model the console's chat pane pins itself to -- `LOOM_CHAT_MODEL` in
   # vars.sh, passed through the same way the namespace is. vars.sh reads it out
   # of `_llmDefaults.model` in charts/values.yaml, which is the authority: an
-  # air-gapped box has no way to fetch another model, and the production target
-  # of ollama/Dockerfile.models bakes in exactly that one.
+  # air-gapped box has no way to fetch another model, and that is the one chat
+  # model the production target of ollama/Dockerfile.models bakes in. The other
+  # models in that image -- the embedding model and the `llm_system_one`
+  # decision model -- answer no chat.
   #
   # No default, like `loomHostsJson` and `repoSrc`. A default here is a model
   # name nothing holds to the image: `check_ollama_models.sh` holds

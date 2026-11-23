@@ -89,7 +89,11 @@ black = true
 # of docformatter was released.
 # see:
 # https://github.com/PyCQA/docformatter/issues/344
-exclude = ["tests/test_secret_scan.py"]
+#
+# `common/llm/return_types.py` hits the same open bug from the other side: a class
+# whose last statement is a bare string -- an enum member docstring -- loses one of
+# the two blank lines before whatever follows it, which flake8 then rejects as E302.
+exclude = ["tests/test_secret_scan.py", "common/llm/return_types.py"]
 
 [tool.black]
 quiet = true

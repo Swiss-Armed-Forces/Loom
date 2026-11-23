@@ -16,8 +16,10 @@ from unittest.mock import MagicMock
 
 from common.archive.archive_detection import MANIFEST_FILENAME
 from common.archive.archive_repository import Archive
+from common.llm.return_types import IndexingUrgency
 from common.services.lazybytes_service import InMemoryFileStorageLazyBytesService
 from common.services.query_builder import QueryParameters
+from common.services.task_scheduling_service import IndexingPriority
 from minio.datatypes import Object
 
 from crawler.s3_crawler import S3Crawler
@@ -109,13 +111,20 @@ class _Subject:
 
 def _subject(bucket: _FakeBucket) -> _Subject:
     tasks = MagicMock()
+    # Answering rather than a bare MagicMock: what the model says has to travel all the
+    # way to the dispatch, and a MagicMock priority satisfies every assertion below
+    # while being nothing the broker can read.
+    agent = MagicMock()
+    agent.run_sync.return_value = MagicMock(output=IndexingUrgency.HIGH)
     crawler = S3Crawler(
         s3_client=bucket,  # type: ignore[arg-type]
         bucket_name=BUCKET,
         bucket_alias="stick",
         file_storage_service=InMemoryFileStorageLazyBytesService(threshold_bytes=64),
         task_scheduling_service=tasks,
+        index_prioritization_agent=agent,
     )
+
     return _Subject(crawler=crawler, bucket=bucket, tasks=tasks)
 
 
@@ -138,6 +147,10 @@ def test_one_poll_dispatches_a_plain_file_and_remembers_it():
     assert subject.tasks.dispatch_index_archive.call_count == 0
     assert subject.crawler.processed.names == frozenset({"report.pdf"})
 
+    # The deduced priority reaches the dispatch rather than being computed and dropped.
+    dispatched = subject.tasks.dispatch_index_file.call_args.kwargs
+    assert dispatched["priority"] is IndexingPriority.HIGH
+
     # And the second poll finds nothing left to do.
     assert not subject.crawler.poll_once().found_anything
 
@@ -151,6 +164,11 @@ def test_one_poll_routes_a_loom_archive_to_the_archive_task():
     assert outcome.dispatched == 1
     assert subject.tasks.dispatch_index_archive.call_count == 1
     assert subject.tasks.dispatch_index_file.call_count == 0
+
+    # Carried on the request too: a blob that turns out not to be an importable
+    # archive is indexed as a plain file, which is the run the object was ranked for.
+    request = subject.tasks.dispatch_index_archive.call_args.args[0]
+    assert request.priority is IndexingPriority.HIGH
 
 
 def test_a_poll_takes_at_most_its_batch_and_leaves_the_rest_for_the_next_one():

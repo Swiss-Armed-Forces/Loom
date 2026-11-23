@@ -153,26 +153,13 @@ class LLMRagHydeSettings(LLMClientSettings):
     thinking: bool | None = False
 
 
-class LLMRagRerankSettings(LLMClientSettings):
-    system_prompt: str | None = "You are an expert reranking machine called Loom."
-    # Off deliberately. `rerank_and_synthesize` fans out one call per chunk, capped at
-    # MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING (50), against an inference server that
-    # serves them one at a time -- so a question's rerank wall-clock is the sum of all
-    # 50 generations, and the whole useful output is a single integer score.
-    thinking: bool | None = False
-    # The answer is one number, so the inherited 128000 caps nothing that matters while
-    # letting a single runaway generation eat the 5-minute `timeout` -- which `rerank`
-    # then retries up to RAG_MAX_RETRIES times, on an already saturated queue.
-    max_tokens: int | None = 512
-
-
 class LLMRagSynthesizeSettings(LLMClientSettings):
     system_prompt: str | None = "You are an expert english chatbot called Loom."
     thinking: bool | None = True
 
 
 class LLMSuggestQueriesSettings(LLMClientSettings):
-    # Off for the same cost reason as `rag_rerank`. One invocation fans out
+    # Off for a cost reason rather than a quality one. One invocation fans out
     # `tool.suggest_queries.num_candidates` (10) generations against an inference server
     # that answers them one at a time, so a suggestion's wall-clock is the sum of all
     # ten -- and each one's whole useful output is a short Lucene query string.
@@ -203,6 +190,62 @@ Output only the translated text.
 No explanations, no preamble, no commentary.
 """
     thinking: bool | None = False
+
+
+class LLMSystemOneSettings(BaseModel):
+    """One decision model: a client that chooses rather than writes.
+
+    Not an `LLMClientSettings`. A system-one model answers with a probability
+    distribution over the members of its agent's output type and generates no text, so
+    the keys below are the whole of what can reach it -- `model` through
+    `common.llm.agent.build_system_one_agent`, `endpoint`/`api_key`/`timeout` through
+    `common.llm.provider.build_system_one_provider`, and the last three as the model
+    settings of one `POST /v1/systemone` request.
+
+    There is no `provider`, and that is a property of the protocol rather than an
+    omission: each `LLMProvider` value picks the class that shapes a *chat completion*
+    for one OpenAI-compatible service, while system one has one wire format, one
+    pydantic-ai provider and one model profile. Nothing is left to select between.
+
+    What a chat client carries beyond these keys describes how text is generated
+    (`thinking`, `max_tokens`, `max_sentences`, `system_prompt`, `tool_timeout`), and
+    nothing here generates text. A setting that is accepted and then discarded is worse
+    than one that does not exist, so they are absent rather than inherited and
+    neutralised.
+    """
+
+    endpoint: AnyHttpUrl = AnyHttpUrl(f"http://ollama.{DOMAIN}/v1/")
+    api_key: str = "ollama"
+    model: str = "tev1:4b"
+    timeout: int = 5 * 60
+    # Scales the distribution the model answers with; the API takes it on the request
+    # body. None sends none, leaving the service its own default.
+    temperature: float | None = None
+    extra_headers: LLMExtraHeaders | None = None
+    extra_body: LLMExtraBody | None = None
+
+
+class LLMSystemOneClientsSettings(BaseModel):
+    """The decision models, one entry per question a system-one model answers.
+
+    Its own group rather than entries in `LLMSettings`, because a decision model takes
+    a different set of keys from a chat client; one entry per use case rather than one
+    shared block, because the questions are asked of different texts and are worth
+    pointing and tuning apart.
+
+    Every entry always names a model. Switching a use case off is a separate decision
+    from pointing it at a service, and it is made where the rest of the pipeline's
+    switches are -- `pipeline.skip_ocr_language_detection_while_indexing` for the OCR
+    question, and `pipeline.skip_translate_while_indexing` for the translation one,
+    which switches translation off wholesale. A client that is reachable but never
+    asked and a client that is asked but unreachable are different states, and one key
+    cannot mean both.
+    """
+
+    rag_rerank: LLMSystemOneSettings = LLMSystemOneSettings()
+    translation_language_detection: LLMSystemOneSettings = LLMSystemOneSettings()
+    ocr_language_detection: LLMSystemOneSettings = LLMSystemOneSettings()
+    index_prioritization: LLMSystemOneSettings = LLMSystemOneSettings()
 
 
 class SuggestQueriesToolSettings(BaseModel):
@@ -252,7 +295,6 @@ class LLMSettings(BaseModel):
         LLMSummarizationRefineSettings()
     )
     rag_hyde: LLMRagHydeSettings = LLMRagHydeSettings()
-    rag_rerank: LLMRagRerankSettings = LLMRagRerankSettings()
     rag_synthesize: LLMRagSynthesizeSettings = LLMRagSynthesizeSettings()
     vision: LLMVisionSettings = LLMVisionSettings()
     language_detection: LLMLanguageDetectionSettings = LLMLanguageDetectionSettings()
@@ -391,6 +433,7 @@ class Settings(BaseSettings):
 
     tool: ToolSettings = ToolSettings()
     llm: LLMSettings = LLMSettings()
+    llm_system_one: LLMSystemOneClientsSettings = LLMSystemOneClientsSettings()
 
 
 settings = Settings()

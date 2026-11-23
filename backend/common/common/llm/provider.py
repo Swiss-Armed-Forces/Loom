@@ -20,6 +20,7 @@ declares it as.
 import re
 from typing import Callable, assert_never
 
+from httpx2 import AsyncClient
 from openai import AsyncOpenAI
 from pydantic_ai.profiles import ModelProfile, merge_profile
 from pydantic_ai.profiles.cohere import cohere_model_profile
@@ -34,8 +35,9 @@ from pydantic_ai.providers import Provider
 from pydantic_ai.providers.litellm import LiteLLMProvider
 from pydantic_ai.providers.ollama import OllamaProvider
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.providers.system_one import SystemOneProvider
 
-from common.settings import LLMClientSettings, LLMProvider
+from common.settings import LLMClientSettings, LLMProvider, LLMSystemOneSettings
 
 # Request-construction rules per model family, keyed by the prefix the weights' own name
 # carries. The same eight prefixes `OllamaProvider` matches on, applied to every service
@@ -302,3 +304,29 @@ def build_provider(client_settings: LLMClientSettings) -> Provider[AsyncOpenAI]:
             return OpenAIProvider(openai_client=client)
         case _:
             assert_never(client_settings.provider)
+
+
+def build_system_one_provider(
+    client_settings: LLMSystemOneSettings,
+) -> SystemOneProvider:
+    """Build the pydantic-ai provider for one system-one client setting.
+
+    There is no `LLMProvider` match to make here, and nothing like the four classes
+    above to match it against. Each of those exists because an OpenAI-compatible chat
+    service has quirks in how a *chat completion* must be shaped for it; system one is
+    its own service with its own wire format -- one `POST` to `/v1/systemone` -- for
+    which pydantic-ai ships one provider and one model profile, built from the two
+    facts the protocol has. `endpoint`, `api_key` and `timeout` are the whole of what a
+    system-one client can be pointed at, and the endpoint has to be a host that serves
+    decision models; Ollama does.
+
+    The client is built here rather than left to the provider's own default, because
+    that default carries no deadline: `rerank` fans out one call per chunk, and a
+    generation that never answers would otherwise hold a worker for the whole task
+    time limit.
+    """
+    return SystemOneProvider(
+        base_url=str(client_settings.endpoint),
+        api_key=client_settings.api_key,
+        http_client=AsyncClient(timeout=client_settings.timeout),
+    )

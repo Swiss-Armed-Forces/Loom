@@ -4,17 +4,24 @@ from unittest.mock import MagicMock
 
 import pytest
 from common.file.file_repository import File, FilePurePath
+from common.llm.exceptions import LLMTransientError
 from common.services.lazybytes_service import InMemoryTempLazyBytesService
+from pydantic_ai.exceptions import ModelHTTPError
 
-from worker.dependencies import get_tika_service
+from worker.dependencies import (
+    get_llm_ocr_language_detection_so_agent,
+    get_tika_service,
+)
 from worker.index_file.extractor.unar_extractor import UnarExtractor
 from worker.index_file.infra.file_indexing_task import FileIndexingTask
 from worker.index_file.tasks.tika_processing import (
     FALLBACKS,
     TIKA_RETRY_EXCEPTIONS,
+    InferredOcrLanguage,
     TikaExtractorFallback,
     TikaProcessingResult,
     choose_tika_processing_result_task,
+    infer_language_via_llm_task,
     tika_processor_task,
 )
 from worker.services.tika_service import (
@@ -22,6 +29,7 @@ from worker.services.tika_service import (
     TikaResult,
     TikaTransientError,
 )
+from worker.settings import TikaCommonOcrLanguage
 
 PDF_CONTENT_TYPE = "application/pdf"
 FORCED_FALLBACK_CONTENT_TYPE = "application/vnd.ms-outlook"
@@ -41,6 +49,13 @@ def _bound_task(*, is_last_attempt: bool) -> FileIndexingTask:
     return cast(FileIndexingTask, task)
 
 
+def _inferred(
+    file_type: str = PDF_CONTENT_TYPE,
+    language: TikaCommonOcrLanguage | None = None,
+) -> InferredOcrLanguage:
+    return InferredOcrLanguage(file_type, language)
+
+
 def _file() -> File:
     return File(
         full_name=FilePurePath("report.pdf"),
@@ -56,6 +71,14 @@ def tika_service() -> MagicMock:
     return cast(MagicMock, get_tika_service())
 
 
+@pytest.fixture()
+def ocr_language_agent() -> MagicMock:
+    """The MagicMock(spec=Agent) that mock_init installed as the OCR language agent."""
+    agent = cast(MagicMock, get_llm_ocr_language_detection_so_agent())
+    agent.run_sync.return_value = MagicMock(output=TikaCommonOcrLanguage.DEU)
+    return agent
+
+
 def test_parsed_document_is_handled_by_tika(
     tika_service: MagicMock,
     lazybytes_service_inmemory: InMemoryTempLazyBytesService,
@@ -64,7 +87,7 @@ def test_parsed_document_is_handled_by_tika(
     content = lazybytes_service_inmemory.from_bytes(data=b"%PDF-1.7")
 
     result = tika_processor_task(
-        _bound_task(is_last_attempt=False), PDF_CONTENT_TYPE, content, _file()
+        _bound_task(is_last_attempt=False), _inferred(), content, _file()
     )
 
     assert result.handled_by == "tika_processor"
@@ -82,7 +105,7 @@ def test_forced_fallback_content_type_never_reaches_tika(
 
     result = tika_processor_task(
         _bound_task(is_last_attempt=False),
-        FORCED_FALLBACK_CONTENT_TYPE,
+        _inferred(FORCED_FALLBACK_CONTENT_TYPE),
         content,
         _file(),
     )
@@ -105,7 +128,7 @@ def test_transient_failure_is_raised_while_retries_remain(
 
     with pytest.raises(TikaTransientError):
         tika_processor_task(
-            _bound_task(is_last_attempt=False), PDF_CONTENT_TYPE, content, _file()
+            _bound_task(is_last_attempt=False), _inferred(), content, _file()
         )
 
 
@@ -119,7 +142,7 @@ def test_transient_failure_degrades_once_the_budget_is_spent(
 
     with caplog.at_level(logging.WARNING):
         result = tika_processor_task(
-            _bound_task(is_last_attempt=True), PDF_CONTENT_TYPE, content, _file()
+            _bound_task(is_last_attempt=True), _inferred(), content, _file()
         )
 
     assert result.result is None
@@ -144,7 +167,7 @@ def test_permanent_failure_degrades_on_the_first_attempt(
     content = lazybytes_service_inmemory.from_bytes(data=b"%PDF-1.7")
 
     result = tika_processor_task(
-        _bound_task(is_last_attempt=False), PDF_CONTENT_TYPE, content, _file()
+        _bound_task(is_last_attempt=False), _inferred(), content, _file()
     )
 
     assert result.result is None
@@ -159,7 +182,7 @@ def test_unforeseen_exception_degrades_rather_than_failing_the_file(
     content = lazybytes_service_inmemory.from_bytes(data=b"%PDF-1.7")
 
     result = tika_processor_task(
-        _bound_task(is_last_attempt=False), PDF_CONTENT_TYPE, content, _file()
+        _bound_task(is_last_attempt=False), _inferred(), content, _file()
     )
 
     assert result.result is None
@@ -228,3 +251,76 @@ def test_chosen_result_carries_the_reasons_the_other_branches_collected(
         tika_reason,
         "zipextractor: BadZipFile: not a zip file",
     ]
+
+
+@pytest.mark.parametrize(
+    "file_type, asks_the_model",
+    [
+        ("image/jpeg", True),
+        ("application/pdf", True),
+        (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            False,
+        ),
+        ("text/plain", False),
+    ],
+)
+def test_only_ocr_candidates_reach_the_decision_model(
+    ocr_language_agent: MagicMock, file_type: str, asks_the_model: bool
+):
+    """`X-Tika-OCRLanguage` reaches tesseract for images and PDFs alone, so asking about
+    anything else is one inference per file for an answer nothing reads."""
+    inferred = infer_language_via_llm_task(
+        _bound_task(is_last_attempt=False), file_type, FilePurePath("report")
+    )
+
+    assert inferred.file_type == file_type
+    assert inferred.language == (TikaCommonOcrLanguage.DEU if asks_the_model else None)
+    assert ocr_language_agent.run_sync.called is asks_the_model
+
+
+def test_other_is_reported_as_no_language(ocr_language_agent: MagicMock):
+    """An "other" answer says the name carries no language signal, which is not a
+    tesseract language."""
+    ocr_language_agent.run_sync.return_value = MagicMock(
+        output=TikaCommonOcrLanguage.OTHER
+    )
+
+    inferred = infer_language_via_llm_task(
+        _bound_task(is_last_attempt=False), "image/jpeg", FilePurePath("report.jpg")
+    )
+
+    assert inferred == InferredOcrLanguage("image/jpeg", None)
+
+
+def test_a_transient_failure_is_raised_while_retries_remain(
+    ocr_language_agent: MagicMock,
+):
+    """An inference service that is restarting is worth asking again before the file is
+    indexed with no hint at all."""
+    ocr_language_agent.run_sync.side_effect = ModelHTTPError(
+        status_code=503, model_name="tev1"
+    )
+
+    with pytest.raises(LLMTransientError):
+        infer_language_via_llm_task(
+            _bound_task(is_last_attempt=False), "image/jpeg", FilePurePath("report.jpg")
+        )
+
+
+def test_a_failed_language_guess_does_not_cost_the_file_its_extraction(
+    ocr_language_agent: MagicMock, caplog: pytest.LogCaptureFixture
+):
+    """This task heads the tika chain, so anything it raises abandons extraction, the
+    fallback chord and everything downstream for that file."""
+    ocr_language_agent.run_sync.side_effect = ModelHTTPError(
+        status_code=404, model_name="typo"
+    )
+
+    with caplog.at_level(logging.WARNING):
+        inferred = infer_language_via_llm_task(
+            _bound_task(is_last_attempt=False), "image/jpeg", FilePurePath("report.jpg")
+        )
+
+    assert inferred == InferredOcrLanguage("image/jpeg", None)
+    assert "indexing without a language hint" in caplog.text

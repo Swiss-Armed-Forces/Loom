@@ -264,6 +264,7 @@ def _index_as_ordinary_file(request: ArchiveImportRequest, reason: str) -> None:
         source_id=request.source_id,
         parent_id=None,
         uploaded_datetime=request.uploaded_datetime,
+        priority=request.priority,
     )
 
 

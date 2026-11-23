@@ -31,7 +31,7 @@ FROM ${DOCKER_REGISTRY}/alpine:${ALPINE_IMAGE_VERSION}@${ALPINE_IMAGE_DIGEST} AS
 
 # Shared model pull logic - LLM_MODELS is the only difference between dev and production
 FROM puller AS pull-dev
-ARG LLM_MODELS="qwen2.5:0.5b moondream:1.8b nomic-embed-text-v2-moe"
+ARG LLM_MODELS="qwen2.5:0.5b moondream:1.8b nomic-embed-text-v2-moe tev1:0.8b"
 ENV LLM_MODELS=${LLM_MODELS}
 RUN set -exu; \
   pull_models.sh
@@ -41,7 +41,7 @@ COPY --from=pull-dev /root/.ollama/models /root/.ollama/models
 
 # Production models - full models for production use
 FROM puller AS pull-production
-ARG LLM_MODELS="qwen3.8:27b nomic-embed-text-v2-moe"
+ARG LLM_MODELS="qwen3.8:27b nomic-embed-text-v2-moe tev1:4b"
 ENV LLM_MODELS=${LLM_MODELS}
 RUN set -exu; \
   pull_models.sh

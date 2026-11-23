@@ -6,7 +6,7 @@ from common.dependencies import (
     get_task_scheduling_service,
 )
 
-from crawler.dependencies import init
+from crawler.dependencies import get_llm_index_prioritization_so_agent, init
 from crawler.s3_crawler import S3Crawler
 from crawler.settings import CrawlerType, settings
 
@@ -28,5 +28,6 @@ match settings.crawler_type:
             settings.s3_bucket_alias,
             get_file_storage_service(),
             get_task_scheduling_service(),
+            get_llm_index_prioritization_so_agent(),
         )
         s3_crawler.crawl()

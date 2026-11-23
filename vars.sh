@@ -48,12 +48,17 @@ LOOM_DOMAIN="$(yq --raw-output '.domain' "${LOOM_VALUES_FILE}")"
 # same reason the hostnames above are: it is not a free choice, and a second
 # literal is a second thing to keep in step with nothing checking it.
 #
-# It has to be the model the workers use. An air-gapped box only ever has the
-# models baked into the ollama image, and the production target of
-# ollama/Dockerfile.models pulls exactly `_llmDefaults.model` plus the embedding
-# model -- so pointing the console anywhere else gives a pane that cannot
-# answer, and naming a second model that *is* present would be worse: ollama
-# would load it and evict the workers' one mid-index.
+# It has to be the chat model the workers use. An air-gapped box only ever has
+# the models baked into the ollama image -- the production target of
+# ollama/Dockerfile.models pulls `_llmDefaults.model`, the embedding model and
+# the `llm_system_one` decision model -- so pointing the console anywhere else
+# gives a pane that cannot answer.
+#
+# Naming one of the others that *is* present would be worse than useless: the
+# decision model answers no chat, and asking for it would put a second chat-sized
+# load against a card already holding the workers' one. The chat model and the
+# decision model are co-resident by design during indexing (see the Ollama
+# section of Documentation/installation.md); a third load is not.
 #
 # That Dockerfile states its model list as a literal `ARG LLM_MODELS`, so the
 # agreement is not structural. cicd/check_ollama_models.sh asserts it, as a git
