@@ -220,12 +220,6 @@ externalSecrets:
       remoteRef:
         key: ""
         property: ""
-    llm__rag_rerank__api_key:
-      enabled: false
-      name: loom-llm-rerank-api-key
-      remoteRef:
-        key: ""
-        property: ""
     llm__rag_synthesize__api_key:
       enabled: false
       name: loom-llm-synthesize-api-key
@@ -247,6 +241,30 @@ externalSecrets:
     llm__translation__api_key:
       enabled: false
       name: loom-llm-translation-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm_system_one__rag_rerank__api_key:
+      enabled: false
+      name: loom-llm-system-one-rag-rerank-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm_system_one__translation_language_detection__api_key:
+      enabled: false
+      name: loom-llm-system-one-translation-language-detection-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm_system_one__ocr_language_detection__api_key:
+      enabled: false
+      name: loom-llm-system-one-ocr-language-detection-api-key
+      remoteRef:
+        key: ""
+        property: ""
+    llm_system_one__index_prioritization__api_key:
+      enabled: false
+      name: loom-llm-system-one-index-prioritization-api-key
       remoteRef:
         key: ""
         property: ""
@@ -352,9 +370,11 @@ pipeline:
   skip_image_description_while_indexing: null
   skip_embedding_while_indexing: null
   skip_auto_tag_file_while_indexing: null
+  skip_ocr_language_detection_while_indexing: null
   persist_success_tasks: null
   persist_retry_tasks: null
   min_language_detection_confidence: null
+  min_language_detection_system_one_confidence: null
   max_no_of_persisted_succeeded_tasks: null
   max_no_of_persisted_retried_tasks: null
   max_no_of_persisted_failed_tasks: null
@@ -441,9 +461,6 @@ llm:
     num_documents: null
     max_tokens: null          # should match embedding.text_chunk_size (default: 400)
 
-  rag_rerank:
-    <<: *llm-defaults
-
   rag_synthesize:
     <<: *llm-defaults
 
@@ -457,6 +474,46 @@ llm:
 
   translation:
     <<: *llm-defaults
+
+
+# Shared defaults for the decision models — override per use case below.
+# These keys and no more: they are what POST /v1/systemone takes. A system-one model
+# answers with a distribution over a fixed set of members and generates no text, so
+# thinking and the token caps have nothing to describe, and there is no provider —
+# one wire format, one pydantic-ai provider, nothing to choose between. A key the
+# chart accepts and discards is worse than one it does not accept.
+# See Documentation/ai.md#system-one-models.
+_llmSystemOneDefaults: &llm-system-one-defaults
+  # null -> the in-cluster Ollama Service, as for the chat clients above.
+  endpoint: null
+  api_key: null
+  model: tev1:4b
+  timeout: null
+  temperature: null
+  extra_headers: null
+  extra_body: null
+
+# The decision models, one entry per question a system-one model answers, so that each
+# can be pointed and tuned on its own.
+#
+# Every entry names a model, and nulling one is refused while the chart renders.
+# Switching a use case off is a separate decision from pointing it at a service, and it
+# is made under `pipeline`: skip_ocr_language_detection_while_indexing for the OCR
+# question, and skip_translate_while_indexing for the translation one, which switches
+# translation off wholesale. A client that is reachable but never asked and a client
+# that is asked but unreachable are different states, and one key cannot mean both.
+llm_system_one:
+  rag_rerank:
+    <<: *llm-system-one-defaults
+
+  translation_language_detection:
+    <<: *llm-system-one-defaults
+
+  ocr_language_detection:
+    <<: *llm-system-one-defaults
+
+  index_prioritization:
+    <<: *llm-system-one-defaults
 
 tool:
   suggest_queries:

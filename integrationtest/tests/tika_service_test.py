@@ -1,12 +1,21 @@
 from pathlib import Path
 from typing import Generator
+from uuid import uuid4
 
 import pytest
-from common.dependencies import get_lazybytes_service
+from common.dependencies import get_celery_app, get_lazybytes_service
+from common.file.file_repository import File, FilePurePath
 from worker.dependencies import get_tika_service
+from worker.index_file.tasks.tika_processing import (
+    InferredOcrLanguage,
+    tika_processor_task,
+)
 from worker.services.tika_service import TikaResult
+from worker.settings import TikaCommonOcrLanguage
 
 from utils.consts import ASSETS_DIR
+
+GET_TIMEOUT = 720
 
 
 def yield_bytes(path: Path) -> Generator[bytes, None, None]:
@@ -170,3 +179,43 @@ class TestTikaService:
             result_text = memview.tobytes().decode()
             for expected in expected_identified:
                 assert expected in result_text
+
+
+def test_ocr_via_task_honours_the_inferred_language():
+    """OCR through the chain, with a language the configured set does not carry.
+
+    `spa` rather than one of `pipeline.tika_ocr_languages`: `ocr_languages_for` only
+    appends a guess that is not already configured, so a configured one would send a
+    header byte-identical to the no-guess case and assert nothing about this path.
+
+    A module-level function rather than a method of `TestTikaService`: this is the one
+    test there that goes through the broker, and `wipe_data` is class-scoped, so inside
+    the class it would share one cleanup with the in-process `get_tika_service()` tests
+    that depend on an idle worker.
+    """
+    file = File(
+        full_name=FilePurePath("ocr.jpg"),
+        source="",
+        sha256=str(uuid4()),
+        size=0,
+    )
+    content = get_lazybytes_service().from_bytes((ASSETS_DIR / "ocr.jpg").read_bytes())
+
+    result = (
+        get_celery_app()
+        .send_task(
+            tika_processor_task.name,
+            args=[
+                InferredOcrLanguage("image/jpeg", TikaCommonOcrLanguage.SPA),
+                content,
+                file,
+            ],
+        )
+        .get(timeout=GET_TIMEOUT)
+    )
+
+    assert not result.exceptions
+    assert result.result is not None
+    tika_result = get_lazybytes_service().load_object(result.result)
+    with get_lazybytes_service().load_memoryview(tika_result.text) as memview:
+        assert "Red Cat" in memview.tobytes().decode()

@@ -7,14 +7,19 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from time import sleep
 
+from common.llm.exceptions import LLMPermanentError, classify_llm_error
+from common.llm.return_types import IndexingUrgency
 from common.services.lazybytes_service import FileStorageTag, LazyBytesService
 from common.services.task_scheduling_service import (
     ArchiveImportRequest,
+    IndexingPriority,
     TaskSchedulingService,
 )
+from common.utils.file_size import file_size_to_string
 from common.utils.retry import retry
 from minio import Minio
 from minio.datatypes import Object
+from pydantic_ai import Agent
 
 from crawler.archive_prescreen import IntakeObjectKind, classify_intake_object
 from crawler.settings import settings
@@ -213,15 +218,29 @@ class PollOutcome:
         return bool(self.dispatched or self.failed or self.deferred)
 
 
+# The rubric the decision model scores against, as the broker's own priorities. The
+# two are separate types because they answer to different things: the levels have to be
+# contiguous from zero and described for a decision model to read them as a rubric,
+# while `TaskPriority`'s values are the RabbitMQ bands.
+_URGENCY_TO_PRIORITY: dict[IndexingUrgency, IndexingPriority] = {
+    IndexingUrgency.LOW: IndexingPriority.LOW,
+    IndexingUrgency.MEDIUM: IndexingPriority.MEDIUM,
+    IndexingUrgency.HIGH: IndexingPriority.HIGH,
+}
+
+
 class S3Crawler:
-    def __init__(
+    # Each poll keeps its own ledger, executor, watermark state and decision agent.
+    # pylint: disable=too-many-instance-attributes
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         s3_client: Minio,
         bucket_name: str,
         bucket_alias: str | None,
         file_storage_service: LazyBytesService[FileStorageTag],
         task_scheduling_service: TaskSchedulingService,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        index_prioritization_agent: Agent[None, IndexingUrgency],
+    ):
         self.client = s3_client
         self.bucket_name = bucket_name
         self.display_name = bucket_alias if bucket_alias else bucket_name
@@ -229,10 +248,59 @@ class S3Crawler:
         self.task_scheduling_service = task_scheduling_service
         self.processed = ProcessedLedger()
         self._executor = ThreadPoolExecutor(max_workers=S3_MAX_CONCURRENT_DOWNLOADS)
+        self.index_prioritization_agent = index_prioritization_agent
+        self._index_prioritization_unavailable = False
 
-    def _download_object(self, object_name: str, size: int) -> None:
+    def _full_name(self, object_name: str) -> str:
+        return str(Path(f"//{self.display_name}/{object_name}"))
+
+    def _deduce_priority(self, full_name: str, size: int) -> IndexingPriority:
+        """Ask the decision model how soon this object should be indexed.
+
+        Every object the crawler takes is ranked, and the answer rides on the
+        `ArchiveImportRequest` as well as on `dispatch_index_file`, so a blob that turns
+        out not to be an importable archive keeps it. A priority hint is advisory, so
+        nothing here may fail a download: an unanswerable question falls back to
+        `MEDIUM`, which is `dispatch_index_file`'s own default. Note `TaskPriority` puts
+        LOW and MEDIUM in one RabbitMQ quorum band, so of the three answers only HIGH
+        changes anything at the broker.
+
+        A permanent failure -- a model name the service answers 404 for, a model that is
+        not a decision model -- reproduces on every object, and a mirrored stick is
+        hundreds of thousands of them. It is reported once and then stops being asked,
+        rather than buying the same warning and the same round trip per object.
+        """
+        if self._index_prioritization_unavailable:
+            return IndexingPriority.MEDIUM
+
+        try:
+            result = self.index_prioritization_agent.run_sync(
+                f"Path/filename: {full_name}. Size: {file_size_to_string(size)}"
+            )
+        except Exception as ex:  # pylint: disable=broad-exception-caught
+            classified = classify_llm_error(ex, "Priority inference failed")
+            if isinstance(classified, LLMPermanentError):
+                self._index_prioritization_unavailable = True
+                logger.warning(
+                    "Priority inference is unusable; every object of this poll loop "
+                    "is indexed at the default priority from here on",
+                    exc_info=classified,
+                )
+            else:
+                logger.warning(
+                    "Priority inference failed for %s; using the default",
+                    full_name,
+                    exc_info=classified,
+                )
+            return IndexingPriority.MEDIUM
+
+        return _URGENCY_TO_PRIORITY[result.output]
+
+    def _download_object(
+        self, object_name: str, size: int, priority: IndexingPriority
+    ) -> None:
         logger.info("Downloading object %s", object_name)
-        full_name = Path(f"//{self.display_name}/{object_name}")
+        full_name = self._full_name(object_name)
         source = f"{settings.crawler_source_id}/{self.bucket_name}"
 
         # Classified before the body is fetched. The crawler is the only part of
@@ -261,11 +329,12 @@ class S3Crawler:
 
         if kind is IntakeObjectKind.PLAIN_FILE:
             self.task_scheduling_service.dispatch_index_file(
-                full_name=str(full_name),
+                full_name=full_name,
                 file_content=file_content,
                 source_id=source,
                 parent_id=None,
                 uploaded_datetime=uploaded_at,
+                priority=priority,
             )
             return
 
@@ -273,9 +342,10 @@ class S3Crawler:
         self.task_scheduling_service.dispatch_index_archive(
             ArchiveImportRequest(
                 file_content=file_content,
-                full_name=str(full_name),
+                full_name=full_name,
                 source_id=source,
                 uploaded_datetime=uploaded_at,
+                priority=priority,
                 # Nobody asked for this one: it was found in the intake bucket, which
                 # on an appliance means it came off a stick. The router declines to
                 # unpack an archive that would not fit on the disk three times over.
@@ -339,11 +409,20 @@ class S3Crawler:
                 fresh.deferred,
             )
 
+        # The decision model is asked here rather than on a download thread. One
+        # `Agent` is built per process and `run_sync` creates an event loop per thread
+        # it is called from, so driving it from the four download threads would have
+        # four loops sharing the provider's one `AsyncClient` -- and a keep-alive
+        # connection reused across loops hangs rather than fails, holding a download
+        # slot open for good.
         future_to_object = {}
         for obj in fresh.batch:
             logger.info("New object detected via polling: %s", obj.object_name)
+            priority = self._deduce_priority(self._full_name(obj.object_name), obj.size)
             future_to_object[
-                self._executor.submit(self._download_object, obj.object_name, obj.size)
+                self._executor.submit(
+                    self._download_object, obj.object_name, obj.size, priority
+                )
             ] = obj
 
         # `as_completed` rather than iterating the mapping: the ledger is in-process

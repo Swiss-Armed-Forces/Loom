@@ -18,6 +18,19 @@ ollama:
 # Auto-tagging is chained inside the embedding task, but is named explicitly so
 # the coupling is not relied on. Translate, summarize and image description
 # already default to skipped.
+#
+# OCR language detection is on by default too, and it heads the tika chain: it
+# retries on a transient failure, a refused connection is one, and the budget is
+# TIKA_MAX_RETRIES with exponential backoff -- so without this every image and
+# PDF waits out that budget before being OCR'd with tika_ocr_languages alone,
+# which is what it would have been OCR'd with anyway.
+#
+# The other decision models are left on. index_prioritization runs in the
+# crawler, which asks once per intake object, catches the failure and dispatches
+# at the default priority; translation_language_detection sits behind
+# skip_translate_while_indexing, which already defaults to true; rag_rerank runs
+# in the chatbot rather than while indexing.
 pipeline:
   skip_embedding_while_indexing: true
   skip_auto_tag_file_while_indexing: true
+  skip_ocr_language_detection_while_indexing: true

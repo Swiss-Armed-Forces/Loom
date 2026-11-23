@@ -66,6 +66,10 @@ class ArchiveImportRequest(BaseModel):
     # a single-disk box with no operator in front of it, declining to plain-file
     # indexing is the recoverable answer.
     unattended: bool = False
+    # Carried for the plain-file fallback above: `index_archive_task` reaches it for
+    # every blob that is not an importable archive after all, and that is the same
+    # indexing run the crawler ranked the object for.
+    priority: IndexingPriority = IndexingPriority.MEDIUM
 
 
 class TaskSchedulingService(TaskService):

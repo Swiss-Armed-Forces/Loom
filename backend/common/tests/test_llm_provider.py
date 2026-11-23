@@ -2,8 +2,8 @@ import pytest
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.profiles import InlineDefsJsonSchemaTransformer, ModelProfile
 
-from common.llm.provider import build_provider
-from common.settings import LLMClientSettings, LLMProvider
+from common.llm.provider import build_provider, build_system_one_provider
+from common.settings import LLMClientSettings, LLMProvider, LLMSystemOneSettings
 
 # The services that execute an open-weight chat template, as opposed to answering for a
 # vendor whose own lookup table knows the model. Everything Loom asserts about templates,
@@ -248,3 +248,15 @@ def test_hosted_openai_decides_its_own_output_mode() -> None:
     )
 
     assert profile.get("default_structured_output_mode", "tool") == "tool"
+
+
+def test_a_system_one_client_carries_its_own_deadline() -> None:
+    """`SystemOneProvider`'s own default client carries no deadline at all.
+
+    `rerank` fans out one call per chunk, so a generation that never answers would
+    otherwise hold a worker for the whole task time limit rather than failing and
+    letting the chunk degrade.
+    """
+    provider = build_system_one_provider(LLMSystemOneSettings(timeout=42))
+
+    assert provider.client.timeout.read == 42

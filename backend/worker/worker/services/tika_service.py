@@ -13,7 +13,7 @@ import logging
 from contextlib import contextmanager
 from itertools import chain
 from tempfile import TemporaryFile
-from typing import Generator, Iterable, Mapping
+from typing import Generator, Iterable, Mapping, cast
 from zipfile import BadZipFile
 from zipfile import Path as ZipPath
 from zipfile import ZipFile
@@ -24,7 +24,7 @@ from common.services.lazybytes_service import TempLazyBytes, TempLazyBytesServic
 from pydantic import BaseModel, ConfigDict, Field
 from requests import HTTPError, RequestException
 
-from worker.settings import settings
+from worker.settings import TikaAllowedOcrLanguage, TikaCommonOcrLanguage, settings
 
 TIKA_METADATA_JOIN_CHAR = ","
 TIKA_SPOOLED_MAX_SIZE = int(1 * (1024**2))  # 1 MiB
@@ -90,6 +90,29 @@ def classify_tika_http_error(exc: HTTPError) -> TikaError:
     return TikaTransientError(f"tika call failed: HTTP {status_code}")
 
 
+def ocr_languages_for(
+    inferred_language: TikaCommonOcrLanguage | None,
+) -> list[TikaAllowedOcrLanguage]:
+    """The OCR languages for one document: the configured set plus the guess.
+
+    Appended rather than substituted, because the guess comes from the file's name and
+    is wrong often enough that dropping the configured languages would cost more OCR
+    than it gains. Listed once: tesseract reads a repeated code as a second pass over
+    the same traineddata.
+
+    The cast holds because every `TikaCommonOcrLanguage` but `other` is a
+    `TikaAllowedOcrLanguage`, which `test_tika_service.py` asserts; `other` never
+    reaches here, since it means there is no guess.
+    """
+    ocr_languages = list(settings.tika_ocr_languages)
+    if inferred_language is None:
+        return ocr_languages
+    guess = cast(TikaAllowedOcrLanguage, inferred_language.value)
+    if guess not in ocr_languages:
+        ocr_languages.append(guess)
+    return ocr_languages
+
+
 @contextmanager
 def _as_tika_error() -> Generator[None, None, None]:
     """Translate everything the transport can raise into the TikaError hierarchy."""
@@ -132,14 +155,18 @@ class TikaService:
         return chain([first_chunk], data_generator)
 
     @contextmanager
-    def _unpack(self, data_iterable: Iterable[bytes]) -> Generator[ZipFile, None, None]:
+    def _unpack(
+        self,
+        data_iterable: Iterable[bytes],
+        tika_ocr_languages: list[TikaAllowedOcrLanguage],
+    ) -> Generator[ZipFile, None, None]:
         """Returns the tika unpack result."""
         uri = f"{str(settings.tika_server_host).rstrip('/')}/unpack/all"
         headers: Mapping[str, str] = {
             # See comment below why this is commented here
             # 'Accept': 'application/x-tar',
             "X-Tika-Timeout-Millis": str(self.timeout * 1000**1),
-            "X-Tika-OCRLanguage": "+".join(settings.tika_ocr_languages),
+            "X-Tika-OCRLanguage": "+".join(tika_ocr_languages),
             # requests sends chunked bodies without a Content-Type, which makes
             # tika (CXF) fall back to application/x-www-form-urlencoded and pick
             # the EmptyParser: no OCR, empty content for scanned documents.
@@ -215,7 +242,9 @@ class TikaService:
         return result
 
     def parse_from_generator(
-        self, data_generator: Generator[bytes, None, None]
+        self,
+        data_generator: Generator[bytes, None, None],
+        inferred_language: TikaCommonOcrLanguage | None = None,
     ) -> TikaResult:
         """Parse file using tika.
 
@@ -226,7 +255,9 @@ class TikaService:
             return TikaResult()
 
         with _as_tika_error():
-            with self._unpack(data_iterable) as zipfile:
+            with self._unpack(
+                data_iterable, ocr_languages_for(inferred_language)
+            ) as zipfile:
                 return self._parse(zipfile)
 
     def get_language_from_generator(

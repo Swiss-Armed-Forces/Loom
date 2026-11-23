@@ -8,6 +8,7 @@ import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
 from common.llm.exceptions import LLMError
+from common.llm.return_types import Relevance, RerankResult
 from common.services.lazybytes_service import InMemoryTempLazyBytesService, LazyBytes
 from openai import APIConnectionError
 from pydantic_ai.embeddings.result import EmbeddingResult, EmbedInputType
@@ -15,11 +16,8 @@ from pydantic_ai.exceptions import ModelAPIError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.tasks.rag_tool import (
-    RERANK_MAX_RANK,
-    RERANK_MIN_RANK,
     RankedSearchEmbedding,
     ScoredSearchEmbedding,
-    _RerankResult,
     aggregate_embeddings,
     apply_rerank_threshold,
     embed_document,
@@ -31,7 +29,7 @@ from worker.ai.tasks.rag_tool import (
 from worker.dependencies import (
     get_llm_embedder,
     get_llm_hyde_agent,
-    get_llm_rag_rerank_agent,
+    get_llm_rag_rerank_so_agent,
 )
 
 # pylint: disable=redefined-outer-name
@@ -98,8 +96,10 @@ def embedder() -> MagicMock:
 @pytest.fixture
 def rerank_agent() -> MagicMock:
     """The rerank LLM agent, mocked and pre-set with a top-of-scale rank."""
-    agent = cast(MagicMock, get_llm_rag_rerank_agent())
-    agent.run_sync.return_value = _agent_result(_RerankResult(rank=RERANK_MAX_RANK))
+    agent = cast(MagicMock, get_llm_rag_rerank_so_agent())
+    agent.run_sync.return_value = _agent_result(
+        RerankResult(rank=Relevance.VERY_RELEVANT)
+    )
     return agent
 
 
@@ -258,7 +258,7 @@ def test_aggregate_embeddings_survives_every_document_dropped(
 def test_rerank_returns_rank(rerank_agent: MagicMock):
     ranked = rerank(_first_attempt(), _scored_search_embedding(), QUESTION)
 
-    assert ranked.rank == RERANK_MAX_RANK
+    assert ranked.rank == Relevance.VERY_RELEVANT
     rerank_agent.run_sync.assert_called_once()
 
 
@@ -280,5 +280,27 @@ def test_rerank_drops_chunk_when_exhausted(rerank_agent: MagicMock):
 
     ranked = rerank(_final_attempt(), _scored_search_embedding(), QUESTION)
 
-    assert ranked.rank == RERANK_MIN_RANK
+    assert ranked.rank == Relevance.COMPLETELY_IRRELEVANT
     assert apply_rerank_threshold([ranked]) == []
+
+
+@pytest.mark.parametrize(
+    "rank, kept",
+    [
+        (Relevance.SOMEWHAT_RELEVANT, False),
+        (Relevance.RELEVANT, True),
+    ],
+)
+def test_the_rerank_threshold_keeps_relevant_and_above(rank: Relevance, kept: bool):
+    """The cut sits between SOMEWHAT_RELEVANT and RELEVANT, and the scale is discrete,
+    so nothing in between can land on it."""
+    ranked = _scored_search_embedding()
+    embedding = RankedSearchEmbedding(
+        file_id=ranked.file_id,
+        file_score=ranked.file_score,
+        text_score=ranked.text_score,
+        text_lazy=ranked.text_lazy,
+        rank=rank,
+    )
+
+    assert apply_rerank_threshold([embedding]) == ([embedding] if kept else [])

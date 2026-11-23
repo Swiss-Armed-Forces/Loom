@@ -117,7 +117,7 @@ inference are covered.
 
 ## Inference endpoints outside the cluster
 
-Loom deploys Ollama and wires twelve LLM clients to it. Pointing those clients at a GPU host you
+Loom deploys Ollama and wires every LLM client to it. Pointing those clients at a GPU host you
 already run, or at a hosted service, is done per client — there is no global switch.
 
 Two things that look like that switch and are not: `values-disable-ai-services.yaml` turns AI
@@ -125,7 +125,7 @@ Two things that look like that switch and are not: `values-disable-ai-services.y
 configuration. Both are covered under
 [Things that look like the knob and are not](#things-that-look-like-the-knob-and-are-not).
 
-### There are twelve clients and no global switch
+### The clients, and why there is no global switch
 
 | Client | Dialled by | What it does |
 | ------ | ---------- | ------------ |
@@ -136,7 +136,6 @@ configuration. Both are covered under
 | `summarization` | worker | The summary |
 | `summarization_refine` | worker | Refine stage |
 | `rag_hyde` | worker | Hypothetical-document generation |
-| `rag_rerank` | worker | Per-chunk relevance scoring |
 | `rag_synthesize` | worker | The final grounded answer |
 | `vision` | worker | Image description |
 | `language_detection` | worker | Language detection |
@@ -145,12 +144,35 @@ configuration. Both are covered under
 `agent` is the only one built in the api pod. The rest are constructed in the worker image, which
 reaper, persister and beat also run.
 
+A second, smaller set sits under its own top-level key, `llm_system_one`, and runs **system-one**
+models rather than chat ones. A system-one model is a classifier: it answers with a distribution
+over a fixed set of members and generates no text, so `thinking`, `max_tokens` and `system_prompt`
+do not reach it, and its keys are the ones `POST /v1/systemone` takes — `endpoint`, `api_key`,
+`model`, `timeout`, `temperature`, `extra_headers` and `extra_body`, those and nothing else.
+**`provider` is absent because there is nothing to choose:** these clients speak
+`POST /v1/systemone` rather than the OpenAI chat API, which is one wire format with one pydantic-ai
+provider behind it, so moving one outside the cluster needs a host that serves decision models, not
+the gateway the chat clients moved to. Ollama serves them, which is why the in-cluster default
+works.
+
+| Client | Dialled by | What it does |
+| ------ | ---------- | ------------ |
+| `rag_rerank` | worker | Per-chunk relevance scoring |
+| `translation_language_detection` | worker | Language detection, as a first pass before `language_detection` |
+| `ocr_language_detection` | worker | The OCR language guessed from a path |
+| `index_prioritization` | **crawler** | Intake indexing-priority scoring |
+
+`index_prioritization` is the only client built in the crawler. Every entry names a model, and
+nulling one is refused while the chart renders — a use case is switched off under `pipeline`
+instead. See [AI configuration](ai.md#system-one-models) for why, and for what happens when one of
+them cannot reach its service.
+
 > ⚠️ **A client whose `endpoint` you leave unset is not unconfigured — it is pointed at the
-> in-cluster Ollama.** `charts/templates/common/settings-configMap.yaml` renders every one of the
-> twelve as `.endpoint | default $ollamaEndpoint`, where `$ollamaEndpoint` is the in-cluster
+> in-cluster Ollama.** `charts/templates/common/settings-configMap.yaml` renders every one of them
+> as `.endpoint | default $ollamaEndpoint`, where `$ollamaEndpoint` is the in-cluster
 > Ollama Service — `http://loom-loom-ollama:11434/v1/` for a release named `loom`. There is no "not set" state, and overriding the
 > `_llmDefaults` anchor in your own values file changes nothing — YAML anchors are resolved within
-> the file that defines them. All twelve have to be named individually, under exactly the keys in
+> the file that defines them. Every one has to be named individually, under exactly the keys in
 > the table above. The chart has no values schema, so a key that is not one of these is accepted in
 > silence.
 
@@ -234,8 +256,6 @@ llm:
   rag_hyde:
     <<: *external-llm
     max_tokens: 400          # a passage to embed, not an answer
-  rag_rerank:
-    <<: *external-llm
   rag_synthesize:
     <<: *external-llm
   vision:
@@ -244,14 +264,34 @@ llm:
     <<: *external-llm
   translation:
     <<: *external-llm
+
+# The anchor above is no use here, and neither is the endpoint it names: a system-one
+# client speaks `POST /v1/systemone`, not the OpenAI chat API, so it can only be moved
+# to a host that serves decision models. Leaving these pointed at the in-cluster Ollama
+# while every chat client is external is a supported combination.
+_externalSystemOne: &external-system-one
+  endpoint: https://decisions.example.com/v1/
+  api_key: REPLACE-ME
+  model: tev1:4b
+
+llm_system_one:
+  rag_rerank:
+    <<: *external-system-one
+  translation_language_detection:
+    <<: *external-system-one
+  ocr_language_detection:
+    <<: *external-system-one
+  index_prioritization:
+    <<: *external-system-one
 ```
 
 `rag_hyde` overriding `max_tokens` is the merge key working as intended: `<<:` supplies a key only
 where the block does not set it itself.
 
-To keep the API key out of the values file, drop `api_key` from the anchor and enable the matching
+To keep the API key out of the values file, drop `api_key` from the anchors and enable the matching
 `externalSecrets.secrets` entries instead — there is one per client,
-`llm__<client>__api_key`, all twelve already present in `charts/values.yaml`. See
+`llm__<client>__api_key` and `llm_system_one__<client>__api_key`, one for every client in the two
+tables above, all already present in `charts/values.yaml`. See
 [External Secrets Operator](installation.md#external-secrets-operator-eso). An enabled ESO entry
 wins: the settings ConfigMap omits the plaintext key entirely.
 
@@ -294,12 +334,15 @@ there. Those capabilities stay reachable on demand through the API and the agent
 
 ```bash
 kubectl get configmap -n loom <release>-loom-settings -o jsonpath='{.data}' \
-  | tr ',' '\n' | grep 'llm__.*__endpoint'
+  | tr ',' '\n' | grep -E 'llm(_system_one)?__.*__endpoint'
 ```
 
-Twelve lines, and none of them should still name the in-cluster Ollama Service. Any that does is a
-client you missed, pointed at an Ollama you are about to remove. Run the same check for `llm__.*__provider`: twelve
-again, and a missing one is a client silently on `ollama`.
+One line per client in the two tables above, and none of them should still name the in-cluster
+Ollama Service. Any that does is a client you missed, pointed at an Ollama you are about to remove.
+
+Run the same check for `llm__.*__provider`, which covers the chat clients alone — a system-one
+client has no provider to set. A chat client missing from that listing and present in the first is
+on `ollama` silently.
 
 ### Things that look like the knob and are not
 

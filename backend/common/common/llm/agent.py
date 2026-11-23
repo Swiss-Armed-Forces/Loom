@@ -2,11 +2,12 @@ from typing import Callable
 
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.models.system_one import SystemOneModel
 from pydantic_ai.output import OutputSpec
 from pydantic_ai.settings import ModelSettings
 
-from common.llm.provider import build_provider
-from common.settings import LLMClientSettings, settings
+from common.llm.provider import build_provider, build_system_one_provider
+from common.settings import LLMClientSettings, LLMSystemOneSettings, settings
 
 _GENERAL_GUARDRAILS = f"""
 You will be given document content enclosed in <document>...</document> tags.
@@ -44,7 +45,14 @@ def _resolve_instructions(
     return resolve
 
 
-def _build_model_settings(agent_settings: LLMClientSettings) -> ModelSettings:
+def _build_shared_model_settings(
+    agent_settings: LLMClientSettings | LLMSystemOneSettings,
+) -> ModelSettings:
+    """The per-request settings every client carries, whatever kind of model it runs.
+
+    They describe the request rather than the generation, which is why a decision model
+    takes exactly these and a chat client takes them plus the ones below.
+    """
     result = ModelSettings()
 
     if agent_settings.temperature is not None:
@@ -55,6 +63,12 @@ def _build_model_settings(agent_settings: LLMClientSettings) -> ModelSettings:
 
     if agent_settings.extra_body is not None:
         result["extra_body"] = agent_settings.extra_body
+
+    return result
+
+
+def _build_model_settings(agent_settings: LLMClientSettings) -> ModelSettings:
+    result = _build_shared_model_settings(agent_settings)
 
     if agent_settings.max_tokens is not None:
         result["max_tokens"] = agent_settings.max_tokens
@@ -95,4 +109,45 @@ def build_agent[T, U](
         instructions=_resolve_instructions(agent_settings, instructions),
         model_settings=_build_model_settings(agent_settings),
         tool_timeout=agent_settings.tool_timeout,
+    )
+
+
+def _build_system_one_model_settings(
+    agent_settings: LLMSystemOneSettings,
+) -> ModelSettings:
+    """The per-request settings a `POST /v1/systemone` call carries.
+
+    The shared ones and nothing else: `max_tokens` and `thinking` describe generated
+    text, and a decision model writes none, so neither has anything to describe and
+    pydantic-ai does not send them. Offering the keys would mean accepting two settings
+    that reach no request.
+    """
+    return _build_shared_model_settings(agent_settings)
+
+
+def build_system_one_agent[T](
+    output_format: OutputSpec[T],
+    agent_settings: LLMSystemOneSettings,
+    instructions: str,
+) -> Agent[None, T]:
+    """Build a decision agent for one system-one client setting.
+
+    A system-one model is a classifier: it answers with a distribution over the members
+    of `output_format` and generates no text. That is why two of the things
+    `build_agent` applies are not applied here.
+
+    - No `_GENERAL_GUARDRAILS`. The guardrail tells a generative model to ignore
+      instructions found in the document; a model whose entire output is a choice among
+      the enum's members has no instruction-following surface to hijack.
+    - No `tool_timeout`. A system-one agent calls no tools. The deadline that does
+      apply rides on the provider's client -- see `build_system_one_provider`.
+    """
+    return Agent[None, T](
+        model=SystemOneModel(
+            agent_settings.model,
+            provider=build_system_one_provider(agent_settings),
+        ),
+        output_type=output_format,
+        instructions=instructions,
+        model_settings=_build_system_one_model_settings(agent_settings),
     )

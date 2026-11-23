@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Sequence
+from typing import Sequence
 from uuid import UUID
 
 from celery import chain, chord, group
@@ -15,18 +15,19 @@ from common.llm.exceptions import (
     classify_llm_error,
 )
 from common.llm.prompt_sanitizer import sanitize_document_text
+from common.llm.return_types import Relevance
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from minio.error import MinioException
 from numpy import array, mean
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, computed_field
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.dependencies import (
     get_llm_embedder,
     get_llm_hyde_agent,
-    get_llm_rag_rerank_agent,
+    get_llm_rag_rerank_so_agent,
     get_llm_rag_synthesize_agent,
 )
 from worker.settings import settings
@@ -42,10 +43,9 @@ MAX_TEXT_LENGTH = int(2 * (1024**2))  # 2 MiB
 
 MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING = 50
 
-RERANK_MIN_RANK = 0
-RERANK_RANK_RANGE = 5
-RERANK_MAX_RANK = RERANK_MIN_RANK + RERANK_RANK_RANGE
-RERANK_THRESHOLD = RERANK_MIN_RANK + RERANK_RANK_RANGE * 0.6
+# A chunk reaches the synthesiser from RELEVANT upwards: the filter is `>`, and the
+# scale is discrete, so this names the highest grade that is still dropped.
+RERANK_THRESHOLD = Relevance.SOMEWHAT_RELEVANT
 SCORED_RANK_SCALING_FACTOR = 10
 
 MAX_RANKED_SEARCH_EMBEDDINGS = 10
@@ -62,15 +62,6 @@ RAG_STORAGE_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = RAG_RETRY_EXCEPTIONS
     MinioException,
     Urllib3HTTPError,
 )
-
-Rank = Annotated[
-    float,
-    Field(ge=RERANK_MIN_RANK, le=RERANK_MAX_RANK),
-]
-
-
-class _RerankResult(BaseModel):
-    rank: Rank
 
 
 # Contains the chunks of a files text with a scored the knn score of the .
@@ -89,7 +80,7 @@ class ScoredSearchEmbedding(BaseModel):
 # Contains the chunks of a files text with a rank based on the user question and
 # the knn score of the file.
 class RankedSearchEmbedding(ScoredSearchEmbedding):
-    rank: float
+    rank: Relevance
 
     @computed_field  # type: ignore[misc]
     @property
@@ -298,37 +289,19 @@ def sort_and_limit_scored_search_embeddings(
     return limited_scored_search_embeddings
 
 
-def send_rerank_chatbot_query(text: str, question: str) -> float:
+def send_rerank_chatbot_query(text: str, question: str) -> Relevance:
     sanitized_text = sanitize_document_text(text)
-    rerank_prompt = f"""Rank the relevance of the following document based on the QUESTION
-on a scale from {RERANK_MIN_RANK} to {RERANK_MAX_RANK}.
 
-Where the rankings mean the following:
-
-0: The document is completely unrelevant to the QUESTION.
-1: The document is unrelevant to the QUESTION.
-2: The document is little relevant to the QUESTION.
-3: The document is somewhat relevant to the QUESTION.
-4: The document is relevant to the QUESTION.
-5: The document is extremely relevant to the QUESTION.
-
-Do NOT use any previous knowledge.
-Only answer with one number and no additional text.
-<document>
-{sanitized_text}
-</document>
-QUESTION: {question}
-RANK:"""
-
-    agent = get_llm_rag_rerank_agent()
+    system_one_agent = get_llm_rag_rerank_so_agent()
 
     try:
-        result_agent = agent.run_sync(rerank_prompt, output_type=_RerankResult)
-
+        system_one_return = system_one_agent.run_sync(
+            f"Question: {question}. Text: {sanitized_text}"
+        )
     except Exception as ex:
         raise classify_llm_error(ex, "Reranking document failed") from ex
 
-    return result_agent.output.rank
+    return system_one_return.output.rank
 
 
 @app.task(
@@ -364,7 +337,7 @@ def rerank(
             scored_search_embedding.file_id,
             exc_info=True,
         )
-        rank = RERANK_MIN_RANK
+        rank = Relevance.COMPLETELY_IRRELEVANT
 
     return RankedSearchEmbedding(
         file_id=scored_search_embedding.file_id,

@@ -729,6 +729,15 @@ configuration, or deployment — and if so, update the relevant documentation:
   relevant `Documentation/` page
 - **Changed defaults or behaviour** → update any doc that describes the old behaviour
 
+**Do not write a count of something the repository can grow.** "the twelve `llm.<client>`
+clients", "nine values files", "three platforms" — each is correct on the day it is written and
+wrong the first time someone adds one, and nothing checks it. The thirteenth client then arrives
+with six paragraphs to find and renumber, and the one that gets missed reads as a bug report
+against working code. Name the set and point at where it is defined ("every `llm.<client>` in
+`charts/values.yaml`"), or describe the shape ("one line per client"). A number is fine when it is
+a constant the code actually fixes — a port, a retry limit, a cap with a name — and when the doc
+says which constant it is.
+
 If none of the documentation files need updating, proceed directly to the commit.
 
 ### Implementing Plans in a Git Worktree
@@ -1032,7 +1041,7 @@ function, **stop and ask the user first** — there is almost certainly a better
 
 - `Documentation/devenv-setup.md` - Development environment setup
 - `Documentation/external-services.md` - Running Loom against an S3 bucket or an inference
-  endpoint it did not deploy. The twelve `llm.<client>` clients and the fact that an unset
+  endpoint it did not deploy. The `llm.<client>` clients and the fact that an unset
   `endpoint` means the in-cluster Ollama rather than "unset", so a client nobody named stays
   pointed at an Ollama that is about to be removed; `extraS3Sources`, where objects are copied
   into SeaweedFS rather than read in place; and the two mechanisms both halves need -

@@ -1,11 +1,13 @@
 import json
 import logging
+from enum import StrEnum
 from typing import Annotated, Any, Literal
 
 from common.settings import DOMAIN
 from common.settings import Settings as CommonSettings
 from gotenberg_client.options import Measurement, MeasurementUnitType, PageSize
 from pydantic import AnyHttpUrl, field_validator
+from pydantic_ai import UseEnumMemberDocstrings
 from pydantic_settings import NoDecode
 
 logger = logging.getLogger(__name__)
@@ -142,6 +144,85 @@ TikaAllowedOcrLanguage = Literal[
 ]
 
 
+# The widely written languages tesseract has traineddata for, as the options a decision
+# model picks between. A subset of `TikaAllowedOcrLanguage`, because the answer is
+# appended straight into the `X-Tika-OCRLanguage` header -- the one exception being
+# `other`, which means no header entry at all. `test_tika_service.py` holds the two
+# lists to that relation.
+#
+# The class docstring is the question the service is asked, and the member docstrings
+# are the descriptions of its options, so both hold what the model should read and
+# nothing else.
+class TikaCommonOcrLanguage(UseEnumMemberDocstrings, StrEnum):
+    """Which language is the content of this file likely written in?"""
+
+    # spellchecker:off
+    ENG = "eng"
+    """The content is written in English."""
+
+    CHI_SIM = "chi_sim"
+    """The content is written in Simplified Chinese."""
+
+    HIN = "hin"
+    """The content is written in Hindi."""
+
+    SPA = "spa"
+    """The content is written in Spanish."""
+
+    ARA = "ara"
+    """The content is written in Arabic."""
+
+    FRA = "fra"
+    """The content is written in French."""
+
+    BEN = "ben"
+    """The content is written in Bengali."""
+
+    POR = "por"
+    """The content is written in Portuguese."""
+
+    IND = "ind"
+    """The content is written in Indonesian."""
+
+    URD = "urd"
+    """The content is written in Urdu."""
+
+    RUS = "rus"
+    """The content is written in Russian."""
+
+    DEU = "deu"
+    """The content is written in German."""
+
+    JPN = "jpn"
+    """The content is written in Japanese."""
+
+    MAR = "mar"
+    """The content is written in Marathi."""
+
+    VIE = "vie"
+    """The content is written in Vietnamese."""
+
+    TEL = "tel"
+    """The content is written in Telugu."""
+
+    SWA = "swa"
+    """The content is written in Swahili."""
+
+    TUR = "tur"
+    """The content is written in Turkish."""
+
+    PAN = "pan"
+    """The content is written in Punjabi."""
+
+    TGL = "tgl"
+    """The content is written in Tagalog."""
+
+    OTHER = "other"
+    """The name carries no language signal, or names a language not listed above."""
+
+    # spellchecker:on
+
+
 class Settings(CommonSettings):
     """All settings for the worker service."""
 
@@ -157,7 +238,21 @@ class Settings(CommonSettings):
     skip_image_description_while_indexing: bool = True
     skip_embedding_while_indexing: bool = False
     skip_auto_tag_file_while_indexing: bool = False
+    # Heads the tika chain, retries on a transient failure and degrades only once the
+    # budget is spent, so a deployment with no inference service behind it pays
+    # TIKA_MAX_RETRIES backed-off calls per image and PDF for a hint it cannot get.
+    # This is how such a deployment declines to ask; the OCR itself still runs, with
+    # `tika_ocr_languages` alone.
+    skip_ocr_language_detection_while_indexing: bool = False
     min_language_detection_confidence: float = 95.0
+    # Lower than its generative sibling because the two numbers are not comparable: a
+    # decision model reports a calibrated distribution over the members of
+    # `LanguagesToDetect`, so 75% of the mass on one language is a firm answer, while a
+    # generated confidence is a number the model wrote down. What is behind the gate is
+    # the same either way -- a
+    # detected language puts the file through `translate_task`, which is one LLM call
+    # per 2000 characters, per language -- so raise this rather than lower it.
+    min_language_detection_system_one_confidence: float = 75.0
     persist_success_tasks: bool = True
     persist_retry_tasks: bool = True
     max_no_of_persisted_succeeded_tasks: int = 2

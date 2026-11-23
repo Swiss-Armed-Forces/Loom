@@ -318,9 +318,7 @@ class ToolService:
                     Capability[AgentDeps](
                         id=cap.id,
                         description=cap.description,
-                        instructions=(  # pylint: disable=protected-access
-                            cap._instructions[0] if cap._instructions else None
-                        ),
+                        instructions=cap.get_instructions(),
                         tools=list(cap.tools),
                         toolsets=[ExternalToolset(tool_defs=frontend_defs)],
                         defer_loading=cap.defer_loading,

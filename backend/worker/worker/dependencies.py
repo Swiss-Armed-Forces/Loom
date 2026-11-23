@@ -10,12 +10,14 @@ from common.dependencies import (
     get_celery_inspect_service,
     get_lazybytes_service,
 )
-from common.llm.agent import build_agent
+from common.llm.agent import build_agent, build_system_one_agent
 from common.llm.embedder import build_embedder
 from common.llm.return_types import (
     DetectedLanguage,
+    DetectedLanguageChoice,
     ElasticsearchQuery,
     ImageDescriptionResult,
+    RerankResult,
     SummarizationResult,
     TranslationResult,
 )
@@ -26,7 +28,7 @@ from pydantic_ai import Agent, Embedder
 from worker.services.rspamd_service import RspamdService
 from worker.services.seaweedfs_shell_service import SeaweedFSShellService
 from worker.services.tika_service import TikaService
-from worker.settings import settings
+from worker.settings import TikaCommonOcrLanguage, settings
 from worker.utils.task_info_persister import TaskInfoPersister
 
 # Note, "= None" assignments are needed here to make flake8 happy
@@ -41,12 +43,16 @@ _tasks_registered: bool = False
 
 # Agents
 _llm_hyde_agent: Agent[None, str] | None = None
-_llm_rag_rerank_agent: Agent[None, float] | None = None
+_llm_rag_rerank_so_agent: Agent[None, RerankResult] | None = None
 _llm_rag_synthesize_agent: Agent[None, str] | None = None
 _llm_vision_agent: Agent[None, ImageDescriptionResult] | None = None
 _llm_suggest_queries_agent: Agent[None, ElasticsearchQuery] | None = None
 _llm_translation_agent: Agent[None, TranslationResult] | None = None
 _llm_language_detection_agent: Agent[None, list[DetectedLanguage]] | None = None
+_llm_translation_language_detection_so_agent: (
+    Agent[None, DetectedLanguageChoice] | None
+) = None
+_llm_ocr_language_detection_so_agent: Agent[None, TikaCommonOcrLanguage] | None = None
 _llm_summarization_key_points_agent: Agent[None, SummarizationResult] | None = None
 _llm_summarization_agent: Agent[None, SummarizationResult] | None = None
 _llm_summarization_refine_agent: Agent[None, SummarizationResult] | None = None
@@ -70,6 +76,25 @@ def init():
     # pylint: disable=global-statement
     common_dependencies.init()
     logger.info("Initialize worker dependencies")
+
+    # System-One agents, one per use case -- each pointed and tuned by its own
+    # `llm_system_one.<use case>` block.
+    global _llm_translation_language_detection_so_agent
+    _llm_translation_language_detection_so_agent = build_system_one_agent(
+        DetectedLanguageChoice,
+        settings.llm_system_one.translation_language_detection,
+        "In which language is this text written ?",
+    )
+
+    global _llm_ocr_language_detection_so_agent
+    _llm_ocr_language_detection_so_agent = build_system_one_agent(
+        TikaCommonOcrLanguage,
+        settings.llm_system_one.ocr_language_detection,
+        (
+            "Given the following path and filename, in which language is the "
+            "content of the file likely written ?"
+        ),
+    )
 
     global _tasks_registered
     if not _tasks_registered:
@@ -105,8 +130,12 @@ def init():
     global _llm_hyde_agent
     _llm_hyde_agent = build_agent(NoneType, str, settings.llm.rag_hyde)
 
-    global _llm_rag_rerank_agent
-    _llm_rag_rerank_agent = build_agent(NoneType, float, settings.llm.rag_rerank)
+    global _llm_rag_rerank_so_agent
+    _llm_rag_rerank_so_agent = build_system_one_agent(
+        RerankResult,
+        settings.llm_system_one.rag_rerank,
+        "How relevant is the given text for the given question?",
+    )
 
     global _llm_rag_synthesize_agent
     _llm_rag_synthesize_agent = build_agent(NoneType, str, settings.llm.rag_synthesize)
@@ -173,8 +202,8 @@ def mock_init():
     global _llm_hyde_agent
     _llm_hyde_agent = MagicMock(spec=Agent[NoneType, str])
 
-    global _llm_rag_rerank_agent
-    _llm_rag_rerank_agent = MagicMock(spec=Agent[NoneType, float])
+    global _llm_rag_rerank_so_agent
+    _llm_rag_rerank_so_agent = MagicMock(spec=Agent[NoneType, RerankResult])
 
     global _llm_rag_synthesize_agent
     _llm_rag_synthesize_agent = MagicMock(spec=Agent[NoneType, str])
@@ -191,6 +220,16 @@ def mock_init():
     global _llm_language_detection_agent
     _llm_language_detection_agent = MagicMock(
         spec=Agent[NoneType, list[DetectedLanguage]]
+    )
+
+    global _llm_translation_language_detection_so_agent
+    _llm_translation_language_detection_so_agent = MagicMock(
+        spec=Agent[NoneType, DetectedLanguageChoice]
+    )
+
+    global _llm_ocr_language_detection_so_agent
+    _llm_ocr_language_detection_so_agent = MagicMock(
+        spec=Agent[NoneType, TikaCommonOcrLanguage]
     )
 
     global _llm_summarization_key_points_agent
@@ -249,10 +288,10 @@ def get_llm_hyde_agent() -> Agent[None, str]:
     return _llm_hyde_agent
 
 
-def get_llm_rag_rerank_agent() -> Agent[None, float]:
-    if _llm_rag_rerank_agent is None:
-        raise DependencyException("LLM rerank agent missing")
-    return _llm_rag_rerank_agent
+def get_llm_rag_rerank_so_agent() -> Agent[None, RerankResult]:
+    if _llm_rag_rerank_so_agent is None:
+        raise DependencyException("LLM rag rerank system one agent missing")
+    return _llm_rag_rerank_so_agent
 
 
 def get_llm_rag_synthesize_agent() -> Agent[None, str]:
@@ -283,6 +322,20 @@ def get_llm_language_detection_agent() -> Agent[None, list[DetectedLanguage]]:
     if _llm_language_detection_agent is None:
         raise DependencyException("LLM language detection agent missing")
     return _llm_language_detection_agent
+
+
+def get_llm_translation_language_detection_so_agent() -> (
+    Agent[None, DetectedLanguageChoice]
+):
+    if _llm_translation_language_detection_so_agent is None:
+        raise DependencyException("LLM translation language detection agent missing")
+    return _llm_translation_language_detection_so_agent
+
+
+def get_llm_ocr_language_detection_so_agent() -> Agent[None, TikaCommonOcrLanguage]:
+    if _llm_ocr_language_detection_so_agent is None:
+        raise DependencyException("LLM OCR language detection agent missing")
+    return _llm_ocr_language_detection_so_agent
 
 
 def get_llm_summarization_key_points_agent() -> Agent[None, SummarizationResult]:
