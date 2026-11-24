@@ -16,19 +16,32 @@ const ASSISTANT_ITEM_SX = { ...ITEM_SX, justifyContent: "flex-start" } as const;
 /**
  * The conversation so far.
  *
- * Memoised on `messages` alone, and `mapToChatMessages` preserves the object
- * of every message it did not change, so a streamed token re-renders one
- * bubble instead of re-parsing the markdown of the whole thread.
+ * `mapToChatMessages` preserves the object of every message it did not change,
+ * so a streamed token re-renders one bubble instead of re-parsing the markdown
+ * of the whole thread. `activeMessageId` names the bubble still being written
+ * and changes twice a turn.
  */
 export const MessageList = React.memo(
-    ({ messages }: { messages: ChatMessage[] }) => (
+    ({
+        messages,
+        activeMessageId,
+    }: {
+        messages: ChatMessage[];
+        activeMessageId?: string;
+    }) => (
         <>
             {messages.map((message, index) => (
                 <ListItem
                     key={message.id ?? `fallback-${index}`}
                     sx={message.isUser ? USER_ITEM_SX : ASSISTANT_ITEM_SX}
                 >
-                    <MessageBubble message={message} />
+                    <MessageBubble
+                        message={message}
+                        isActive={
+                            message.id !== undefined &&
+                            message.id === activeMessageId
+                        }
+                    />
                 </ListItem>
             ))}
         </>

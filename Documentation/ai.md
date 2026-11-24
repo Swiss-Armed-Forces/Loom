@@ -410,9 +410,25 @@ Key event types emitted downstream:
 | `ToolCallStartEvent` | Agent started calling a tool |
 | `ToolCallArgsEvent` | Incremental tool argument delta |
 | `ToolCallResultEvent` | Tool returned a result |
+| `TextMessageStartEvent` | A new assistant message opens |
 | `TextMessageContentEvent` | Incremental text delta for the assistant reply |
 | `CustomEvent` (`"citation"`) | A source file referenced in the answer |
 | `RunFinishedEvent` | The agent run completed (or was interrupted for frontend tools) |
+
+**One answer is spread over several assistant messages, and a `TEXT_MESSAGE_START` does not mean an
+answer is starting.** The adapter opens a message per model response, so a question that takes two
+tool calls to answer arrives as three of them. A response that opens with a tool call rather than
+with text still gets a `TEXT_MESSAGE_START` immediately followed by a `TEXT_MESSAGE_END` and no
+content at all, because a `ToolCallStartEvent` names a parent message and that message has to be one
+the stream carries.
+
+Both ends therefore take everything up to the next user message as one answer:
+`_ActivityTracker.answer_text` concatenates the deltas of every message, separating the messages
+with a blank line, and the frontend's `mapToChatMessages` folds the assistant messages into one
+bubble keyed on the first of them, which is also the key the turn's activity and citations are
+gathered under. Anything keyed on a single message id instead fragments an answer into as many
+bubbles as the question took rounds, and the ones holding no text have no way of knowing they are
+finished.
 
 ---
 

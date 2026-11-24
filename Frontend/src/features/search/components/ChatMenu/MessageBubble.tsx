@@ -168,7 +168,7 @@ const ACTIVITY_WITH_ANSWER_SX = { mb: 0.75 } as const;
 const ACTIVITY_ONLY_SX = { mb: 0 } as const;
 
 export const MessageBubble = React.memo(
-    ({ message }: { message: ChatMessage }) => {
+    ({ message, isActive }: { message: ChatMessage; isActive: boolean }) => {
         const { t } = useTranslation();
         const dispatch = useAppDispatch();
 
@@ -242,7 +242,7 @@ export const MessageBubble = React.memo(
                             >
                                 <ActivityTimeline
                                     activity={message.activity ?? []}
-                                    hasAnswer={!!message.text}
+                                    isActive={isActive}
                                 />
                             </Box>
                         )}

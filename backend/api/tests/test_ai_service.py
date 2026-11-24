@@ -131,6 +131,17 @@ def test_tracker_empty_reasoning_produces_no_entry():
     assert tracker.activity == []
 
 
+def test_tracker_separates_the_answer_segments_of_one_run():
+    """A response per tool round means one answer arrives as several messages."""
+    tracker = _ActivityTracker()
+
+    tracker.track(TextMessageContentEvent(message_id="m1", delta="Let me "))
+    tracker.track(TextMessageContentEvent(message_id="m1", delta="search."))
+    tracker.track(TextMessageContentEvent(message_id="m2", delta="Here are three."))
+
+    assert tracker.answer_text == "Let me search.\n\nHere are three."
+
+
 def test_tracker_mixed_tool_and_reasoning():
     tracker = _ActivityTracker()
 

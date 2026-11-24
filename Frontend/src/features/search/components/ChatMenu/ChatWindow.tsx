@@ -116,6 +116,14 @@ export const ChatWindow = ({
         );
     }
 
+    // Only the answer at the end of the thread can still be in progress, and
+    // only while its turn runs. Every bubble above it has settled.
+    const lastMessage = visibleMessages[visibleMessages.length - 1];
+    const activeMessageId =
+        isTurnActive && lastMessage && !lastMessage.isUser
+            ? lastMessage.id
+            : undefined;
+
     return (
         <>
             {!showAll && hiddenCount > 0 && (
@@ -127,7 +135,10 @@ export const ChatWindow = ({
                 </Box>
             )}
             <List disablePadding>
-                <MessageList messages={visibleMessages} />
+                <MessageList
+                    messages={visibleMessages}
+                    activeMessageId={activeMessageId}
+                />
                 {isTurnActive && (
                     <ListItem sx={ASSISTANT_ROW_SX}>
                         <LiveTurn

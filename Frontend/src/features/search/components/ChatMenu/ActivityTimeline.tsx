@@ -73,19 +73,24 @@ const ActivityTimelineContent = ({
     );
 };
 
+/**
+ * What the agent did on the way to an answer.
+ *
+ * `isActive` says whether the turn this belongs to is still running, and it is
+ * the only thing that chooses between the spinner and the settled label. It
+ * cannot be read off the activity: an answer the model never wrote and a tool
+ * call whose result arrives in a later request both look unfinished for good,
+ * and a timeline judging by them spins for the rest of the session.
+ */
 export const ActivityTimeline = ({
     activity,
-    hasAnswer,
+    isActive,
 }: {
     activity: ActivityRecord[];
-    hasAnswer: boolean;
+    isActive: boolean;
 }) => {
     const dispatch = useDispatch();
     const showLiveThinking = useSelector(selectShowChatReasoning);
-    const anyRunning = activity.some(
-        (a) => a.type === "tool_call" && a.toolCall?.status === "running",
-    );
-    const isActive = anyRunning || !hasAnswer;
     // While active: expand based on global preference.
     // Once done: always start collapsed, toggle per-instance.
     const [localExpanded, setLocalExpanded] = useState(false);
