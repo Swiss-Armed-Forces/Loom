@@ -1,0 +1,2515 @@
+{
+  "components": [
+    {
+      "bom-ref": "pkg:generic/busybox@1.37.0?package-id=4dae5ca86ee16ec7",
+      "cpe": "cpe:2.3:a:busybox:busybox:1.37.0:*:*:*:*:*:*:*",
+      "name": "busybox",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/busybox"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "binary-classifier-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "binary-signature"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "binary"
+        }
+      ],
+      "purl": "pkg:generic/busybox@1.37.0",
+      "type": "application",
+      "version": "1.37.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/alecthomas/kingpin/v2@v2.4.0?package-id=2e5e43b7fd00e22b",
+      "cpe": "cpe:2.3:a:alecthomas:kingpin\\/v2:v2.4.0:*:*:*:*:*:*:*",
+      "name": "github.com/alecthomas/kingpin/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:f48lwail6p8zpO1bC4TxtqACaGqHYA22qkHjHpqDjYY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/alecthomas/kingpin/v2@v2.4.0",
+      "type": "library",
+      "version": "v2.4.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/alecthomas/units@v0.0.0-20240927000941-0f3dac36c52b?package-id=8d91ef85df4acf1e",
+      "cpe": "cpe:2.3:a:alecthomas:units:v0.0.0-20240927000941-0f3dac36c52b:*:*:*:*:*:*:*",
+      "name": "github.com/alecthomas/units",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:mimo19zliBX/vSQ6PWWSL9lK8qwHozUj03+zLoEB8O0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/alecthomas/units@v0.0.0-20240927000941-0f3dac36c52b",
+      "type": "library",
+      "version": "v0.0.0-20240927000941-0f3dac36c52b"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.40.0?package-id=23fc3ceaa85d17bd",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2:v1.40.0:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2:v1.40.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:/WMUA0kjhZExjOQN2z3oLALDREea1A7TobfuiBrKlwc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.40.0",
+      "type": "library",
+      "version": "v1.40.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/config@v1.32.2?package-id=86343d1e5b52ff0a",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/config:v1.32.2:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/config",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/config:v1.32.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:4liUsdEpUUPZs5WVapsJLx5NPmQhQdez7nYFcovrytk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/config@v1.32.2",
+      "type": "library",
+      "version": "v1.32.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/credentials@v1.19.2?package-id=0b1c4a96acdc4f02",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/credentials:v1.19.2:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/credentials",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/credentials:v1.19.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:qZry8VUyTK4VIo5aEdUcBjPZHL2v4FyQ3QEOaWcFLu4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/credentials@v1.19.2",
+      "type": "library",
+      "version": "v1.19.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/feature/ec2/imds@v1.18.14?package-id=3b542e255abc064d",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/feature\\/ec2\\/imds:v1.18.14:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/feature/ec2/imds",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/feature\\/ec2\\/imds:v1.18.14:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:WZVR5DbDgxzA0BJeudId89Kmgy6DIU4ORpxwsVHz0qA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/feature/ec2/imds@v1.18.14",
+      "type": "library",
+      "version": "v1.18.14"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/configsources@v1.4.14?package-id=b98e99698f8c3823",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/internal\\/configsources:v1.4.14:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/internal/configsources",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/internal\\/configsources:v1.4.14:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:PZHqQACxYb8mYgms4RZbhZG0a7dPW06xOjmaH0EJC/I="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/configsources@v1.4.14",
+      "type": "library",
+      "version": "v1.4.14"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2@v2.7.14?package-id=70710367848f2a77",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/internal\\/endpoints\\/v2:v2.7.14:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/internal\\/endpoints\\/v2:v2.7.14:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:bOS19y6zlJwagBfHxs0ESzr1XCOU2KXJCWcq3E2vfjY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2@v2.7.14",
+      "type": "library",
+      "version": "v2.7.14"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/ini@v1.8.4?package-id=45d32811813ecc4b",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/internal\\/ini:v1.8.4:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/internal/ini",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/internal\\/ini:v1.8.4:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:WKuaxf++XKWlHWu9ECbMlha8WOEGm0OUEZqm4K/Gcfk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/ini@v1.8.4",
+      "type": "library",
+      "version": "v1.8.4"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding@v1.13.3?package-id=dc0208be8e371657",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/service\\/internal\\/accept-encoding:v1.13.3:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/service\\/internal\\/accept_encoding:v1.13.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:x2Ibm/Af8Fi+BH+Hsn9TXGdT+hKbDd5XOTZxTMxDk7o="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding@v1.13.3",
+      "type": "library",
+      "version": "v1.13.3"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url@v1.13.14?package-id=9d425f066aff2f4a",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/service\\/internal\\/presigned-url:v1.13.14:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/service\\/internal\\/presigned_url:v1.13.14:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:FIouAnCE46kyYqyhs0XEBDFFSREtdnr8HQuLPQPLCrY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url@v1.13.14",
+      "type": "library",
+      "version": "v1.13.14"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/signin@v1.0.2?package-id=aef72bea9d977c65",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/service\\/signin:v1.0.2:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/service/signin",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/service\\/signin:v1.0.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:MxMBdKTYBjPQChlJhi4qlEueqB1p1KcbTEa7tD5aqPs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/signin@v1.0.2",
+      "type": "library",
+      "version": "v1.0.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sso@v1.30.5?package-id=3af1214eec27f694",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/service\\/sso:v1.30.5:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/service/sso",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/service\\/sso:v1.30.5:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:ksUT5KtgpZd3SAiFJNJ0AFEJVva3gjBmN7eXUZjzUwQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sso@v1.30.5",
+      "type": "library",
+      "version": "v1.30.5"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/ssooidc@v1.35.10?package-id=ce3c4f6323776c32",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/service\\/ssooidc:v1.35.10:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/service/ssooidc",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/service\\/ssooidc:v1.35.10:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:GtsxyiF3Nd3JahRBJbxLCCdYW9ltGQYrFWg8XdkGDd8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/ssooidc@v1.35.10",
+      "type": "library",
+      "version": "v1.35.10"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sts@v1.41.2?package-id=752a75c611fd0bbb",
+      "cpe": "cpe:2.3:a:aws:aws-sdk-go-v2\\/service\\/sts:v1.41.2:*:*:*:*:*:*:*",
+      "name": "github.com/aws/aws-sdk-go-v2/service/sts",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:aws_sdk_go_v2\\/service\\/sts:v1.41.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:a5UTtD4mHBU3t0o6aHQZFJTNKVfxFWfPX7J0Lr7G+uY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sts@v1.41.2",
+      "type": "library",
+      "version": "v1.41.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/aws/smithy-go@v1.23.2?package-id=648bee06ae517406",
+      "cpe": "cpe:2.3:a:aws:smithy-go:v1.23.2:*:*:*:*:*:*:*",
+      "name": "github.com/aws/smithy-go",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:aws:smithy_go:v1.23.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Crv0eatJUQhaManss33hS5r40CG3ZFH+21XSkqMrIUM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/aws/smithy-go@v1.23.2",
+      "type": "library",
+      "version": "v1.23.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=c332380e7b77c953",
+      "cpe": "cpe:2.3:a:beorn7:perks:v1.0.1:*:*:*:*:*:*:*",
+      "name": "github.com/beorn7/perks",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/beorn7/perks@v1.0.1",
+      "type": "library",
+      "version": "v1.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=11b204d2e83fe606",
+      "cpe": "cpe:2.3:a:blang:semver\\/v4:v4.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/blang/semver/v4",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/blang/semver/v4@v4.0.0",
+      "type": "library",
+      "version": "v4.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=f7021a976db3f10c",
+      "cpe": "cpe:2.3:a:cespare:xxhash\\/v2:v2.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/cespare/xxhash/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+      "type": "library",
+      "version": "v2.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0?package-id=5c61c5c24344c45a",
+      "cpe": "cpe:2.3:a:coreos:go-systemd\\/v22:v22.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/coreos/go-systemd/v22",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:coreos:go_systemd\\/v22:v22.6.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:aGVa/v8B7hpb0TKl0MWoAavPDmHvobFe5R5zn0bCJWo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0",
+      "type": "library",
+      "version": "v22.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0?package-id=5fc6eb7f63e9f543",
+      "cpe": "cpe:2.3:a:golang-jwt:jwt\\/v5:v5.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/golang-jwt/jwt/v5",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:jwt\\/v5:v5.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang_jwt:jwt\\/v5:v5.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:pv4AsKCKKZuqlgs5sUmn4x8UlGa0kEVt/puTpKx9vvo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0",
+      "type": "library",
+      "version": "v5.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/uuid@v1.6.0?package-id=35c98ebd893993ab",
+      "cpe": "cpe:2.3:a:google:uuid:v1.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/uuid",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/uuid@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/imdario/mergo@v0.3.13?package-id=14303cae1531273e",
+      "cpe": "cpe:2.3:a:imdario:mergo:v0.3.13:*:*:*:*:*:*:*",
+      "name": "github.com/imdario/mergo",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:lFzP57bqS/wsqKssCGmtLAb8A0wKjLGrve2q3PPVcBk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/imdario/mergo@v0.3.13",
+      "type": "library",
+      "version": "v0.3.13"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/jpillora/backoff@v1.0.0?package-id=ffeb1f2b3c1de3aa",
+      "cpe": "cpe:2.3:a:jpillora:backoff:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/jpillora/backoff",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:uvFg412JmmHBHw7iwprIxkPMI+sGQ4kzOWsMeHnm2EA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/jpillora/backoff@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mdlayher/socket@v0.4.1?package-id=f27f13f4c5e36484",
+      "cpe": "cpe:2.3:a:mdlayher:socket:v0.4.1:*:*:*:*:*:*:*",
+      "name": "github.com/mdlayher/socket",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:eM9y2/jlbs1M615oshPQOHZzj6R6wMT7bX5NPiQvn2U="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mdlayher/socket@v0.4.1",
+      "type": "library",
+      "version": "v0.4.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mdlayher/vsock@v1.2.1?package-id=7dc26499435340e7",
+      "cpe": "cpe:2.3:a:mdlayher:vsock:v1.2.1:*:*:*:*:*:*:*",
+      "name": "github.com/mdlayher/vsock",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:pC1mTJTvjo1r9n9fbm7S1j04rCgCzhCOS5DY0zqHlnQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mdlayher/vsock@v1.2.1",
+      "type": "library",
+      "version": "v1.2.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=bd0284af364a7e90",
+      "cpe": "cpe:2.3:a:munnerz:goautoneg:v0.0.0-20191010083416-a7dc8b61c822:*:*:*:*:*:*:*",
+      "name": "github.com/munnerz/goautoneg",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+      "type": "library",
+      "version": "v0.0.0-20191010083416-a7dc8b61c822"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f?package-id=215cbf40febd10de",
+      "cpe": "cpe:2.3:a:mwitkow:go-conntrack:v0.0.0-20190716064945-2f068394615f:*:*:*:*:*:*:*",
+      "name": "github.com/mwitkow/go-conntrack",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mwitkow:go_conntrack:v0.0.0-20190716064945-2f068394615f:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:KUppIJq7/+SVif2QVs3tOP0zanoHgBEVAwHxUSIzRqU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f",
+      "type": "library",
+      "version": "v0.0.0-20190716064945-2f068394615f"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus-community/elasticsearch_exporter@v1.10.0%2Bdirty?package-id=4aa9e36dd7d4b247",
+      "cpe": "cpe:2.3:a:prometheus-community:elasticsearch-exporter:v1.10.0\\+dirty:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus-community/elasticsearch_exporter",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus-community:elasticsearch_exporter:v1.10.0\\+dirty:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:elasticsearch-exporter:v1.10.0\\+dirty:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:elasticsearch_exporter:v1.10.0\\+dirty:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus_community:elasticsearch-exporter:v1.10.0\\+dirty:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus_community:elasticsearch_exporter:v1.10.0\\+dirty:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus-community/elasticsearch_exporter@v1.10.0%2Bdirty",
+      "type": "library",
+      "version": "v1.10.0+dirty"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_golang@v1.23.2?package-id=0318f668b457afbf",
+      "cpe": "cpe:2.3:a:prometheus:client-golang:v1.23.2:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_golang",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_golang:v1.23.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Je96obch5RDVy3FDMndoUsjAhG5Edi49h0RJWRi/o0o="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_golang@v1.23.2",
+      "type": "library",
+      "version": "v1.23.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=9c07a0233d5bd6c6",
+      "cpe": "cpe:2.3:a:prometheus:client-model:v0.6.2:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_model",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_model:v0.6.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_model@v0.6.2",
+      "type": "library",
+      "version": "v0.6.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/common@v0.67.4?package-id=bbb1b988401c4ff3",
+      "cpe": "cpe:2.3:a:prometheus:common:v0.67.4:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/common",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:yR3NqWO1/UyO1w2PhUvXlGQs/PtFmoveVO0KZ4+Lvsc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/common@v0.67.4",
+      "type": "library",
+      "version": "v0.67.4"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.0?package-id=11c562d8f0cfa5cf",
+      "cpe": "cpe:2.3:a:prometheus:exporter-toolkit:v0.15.0:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/exporter-toolkit",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:exporter_toolkit:v0.15.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Pcle5sSViwR1x0gdPd0wtYrPQENBieQAM7TmT0qtb2U="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.0",
+      "type": "library",
+      "version": "v0.15.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/procfs@v0.16.1?package-id=ecc19ef40d176bb5",
+      "cpe": "cpe:2.3:a:prometheus:procfs:v0.16.1:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/procfs",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzMyRg="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/procfs@v0.16.1",
+      "type": "library",
+      "version": "v0.16.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/xhit/go-str2duration/v2@v2.1.0?package-id=b158fa0d9392184f",
+      "cpe": "cpe:2.3:a:xhit:go-str2duration\\/v2:v2.1.0:*:*:*:*:*:*:*",
+      "name": "github.com/xhit/go-str2duration/v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:xhit:go_str2duration\\/v2:v2.1.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:lxklc02Drh6ynqX+DdPyp5pCKLUQpRT8bp8Ydu2Bstc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/xhit/go-str2duration/v2@v2.1.0",
+      "type": "library",
+      "version": "v2.1.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.3?package-id=c0d2d90336be8522",
+      "cpe": "cpe:2.3:a:yaml:v2:v2.4.3:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:6gvOSjQoTB3vt1l+CU+tSyi/HOjfOjRLJ4YwYZGwRO0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v2@v2.4.3",
+      "type": "library",
+      "version": "v2.4.3"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=d7757e5e68c6f0d8",
+      "cpe": "cpe:2.3:a:yaml:v3:v3.0.4:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:tfq32ie2Jv2UxXFdLJdh3jXuOzWiL1fo0bu/FbuKpbc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4",
+      "type": "library",
+      "version": "v3.0.4"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/crypto@v0.45.0?package-id=d876152a9eec7214",
+      "cpe": "cpe:2.3:a:golang:crypto:v0.45.0:*:*:*:*:go:*:*",
+      "name": "golang.org/x/crypto",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:ssh:v0.45.0:*:*:*:*:go:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:jMBrvKuj23MTlT0bQEOBcAE0mjg8mK9RXFhRH6nyF3Q="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/crypto@v0.45.0",
+      "type": "library",
+      "version": "v0.45.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/net@v0.47.0?package-id=768c14b13bcbe9f8",
+      "cpe": "cpe:2.3:a:golang:networking:v0.47.0:*:*:*:*:go:*:*",
+      "name": "golang.org/x/net",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:net:v0.47.0:*:*:*:*:go:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Mx+4dIFzqraBXUugkia1OOvlD6LemFo1ALMHjrXDOhY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/net@v0.47.0",
+      "type": "library",
+      "version": "v0.47.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/oauth2@v0.32.0?package-id=439dec20eac1640b",
+      "cpe": "cpe:2.3:a:golang:x\\/oauth2:v0.32.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/oauth2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:jsCblLleRMDrxMN29H3z/k1KliIvpLgCkE6R8FXXNgY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/oauth2@v0.32.0",
+      "type": "library",
+      "version": "v0.32.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sync@v0.18.0?package-id=94f2b26cc5a15768",
+      "cpe": "cpe:2.3:a:golang:x\\/sync:v0.18.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sync",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:kr88TuHDroi+UVf+0hZnirlk8o8T+4MrK6mr60WkH/I="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sync@v0.18.0",
+      "type": "library",
+      "version": "v0.18.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sys@v0.38.0?package-id=d5b2339d40faf615",
+      "cpe": "cpe:2.3:a:golang:x\\/sys:v0.38.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sys",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:3yZWxaJjBmCWXqhN1qh02AkOnCQ1poK6oF+a7xWL6Gc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sys@v0.38.0",
+      "type": "library",
+      "version": "v0.38.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/text@v0.31.0?package-id=26f00659245a5f9a",
+      "cpe": "cpe:2.3:a:golang:text:v0.31.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/text",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:aC8ghyu4JhP8VojJ2lEHBnochRno1sgL6nEi9WGFGMM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/text@v0.31.0",
+      "type": "library",
+      "version": "v0.31.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/time@v0.13.0?package-id=4520984872b59ee5",
+      "cpe": "cpe:2.3:a:golang:x\\/time:v0.13.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/time",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:eUlYslOIt32DgYD6utsuUeHs4d7AsEYLuIAdg7FlYgI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/time@v0.13.0",
+      "type": "library",
+      "version": "v0.13.0"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/protobuf@v1.36.10?package-id=e9929d64fdf1f8aa",
+      "cpe": "cpe:2.3:a:google:protobuf:v1.36.10:*:*:*:*:*:*:*",
+      "name": "google.golang.org/protobuf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:AYd7cD/uASjIL6Q9LiTjz8JLcrh/88q5UObnmY3aOOE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/prometheus-community/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/protobuf@v1.36.10",
+      "type": "library",
+      "version": "v1.36.10"
+    },
+    {
+      "bom-ref": "pkg:golang/stdlib@1.25.5?package-id=c0f6d8d07d6e52be",
+      "cpe": "cpe:2.3:a:golang:go:1.25.5:-:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "stdlib",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/bin/elasticsearch_exporter"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/stdlib@1.25.5",
+      "type": "library",
+      "version": "go1.25.5"
+    },
+    {
+      "bom-ref": "os:busybox@1.37.0",
+      "description": "BusyBox v1.37.0",
+      "name": "busybox",
+      "properties": [
+        {
+          "name": "syft:distro:extendedSupport",
+          "value": "false"
+        },
+        {
+          "name": "syft:distro:id",
+          "value": "busybox"
+        },
+        {
+          "name": "syft:distro:idLike:0",
+          "value": "busybox"
+        },
+        {
+          "name": "syft:distro:prettyName",
+          "value": "BusyBox v1.37.0"
+        },
+        {
+          "name": "syft:distro:versionID",
+          "value": "1.37.0"
+        }
+      ],
+      "swid": {
+        "name": "busybox",
+        "tagId": "busybox",
+        "version": "1.37.0"
+      },
+      "type": "operating-system",
+      "version": "1.37.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "os:busybox@1.37.0"
+    },
+    {
+      "ref": "pkg:generic/busybox@1.37.0?package-id=4dae5ca86ee16ec7"
+    },
+    {
+      "ref": "pkg:golang/github.com/alecthomas/kingpin/v2@v2.4.0?package-id=2e5e43b7fd00e22b"
+    },
+    {
+      "ref": "pkg:golang/github.com/alecthomas/units@v0.0.0-20240927000941-0f3dac36c52b?package-id=8d91ef85df4acf1e"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/config@v1.32.2?package-id=86343d1e5b52ff0a"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/credentials@v1.19.2?package-id=0b1c4a96acdc4f02"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/feature/ec2/imds@v1.18.14?package-id=3b542e255abc064d"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/configsources@v1.4.14?package-id=b98e99698f8c3823"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2@v2.7.14?package-id=70710367848f2a77"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/ini@v1.8.4?package-id=45d32811813ecc4b"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding@v1.13.3?package-id=dc0208be8e371657"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url@v1.13.14?package-id=9d425f066aff2f4a"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/signin@v1.0.2?package-id=aef72bea9d977c65"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sso@v1.30.5?package-id=3af1214eec27f694"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/ssooidc@v1.35.10?package-id=ce3c4f6323776c32"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sts@v1.41.2?package-id=752a75c611fd0bbb"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.40.0?package-id=23fc3ceaa85d17bd"
+    },
+    {
+      "ref": "pkg:golang/github.com/aws/smithy-go@v1.23.2?package-id=648bee06ae517406"
+    },
+    {
+      "ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=c332380e7b77c953"
+    },
+    {
+      "ref": "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=11b204d2e83fe606"
+    },
+    {
+      "ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=f7021a976db3f10c"
+    },
+    {
+      "ref": "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0?package-id=5c61c5c24344c45a"
+    },
+    {
+      "ref": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0?package-id=5fc6eb7f63e9f543"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/uuid@v1.6.0?package-id=35c98ebd893993ab"
+    },
+    {
+      "ref": "pkg:golang/github.com/imdario/mergo@v0.3.13?package-id=14303cae1531273e"
+    },
+    {
+      "ref": "pkg:golang/github.com/jpillora/backoff@v1.0.0?package-id=ffeb1f2b3c1de3aa"
+    },
+    {
+      "ref": "pkg:golang/github.com/mdlayher/socket@v0.4.1?package-id=f27f13f4c5e36484"
+    },
+    {
+      "ref": "pkg:golang/github.com/mdlayher/vsock@v1.2.1?package-id=7dc26499435340e7"
+    },
+    {
+      "ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=bd0284af364a7e90"
+    },
+    {
+      "ref": "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f?package-id=215cbf40febd10de"
+    },
+    {
+      "dependsOn": [
+        "pkg:golang/github.com/alecthomas/kingpin/v2@v2.4.0?package-id=2e5e43b7fd00e22b",
+        "pkg:golang/github.com/alecthomas/units@v0.0.0-20240927000941-0f3dac36c52b?package-id=8d91ef85df4acf1e",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/config@v1.32.2?package-id=86343d1e5b52ff0a",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/credentials@v1.19.2?package-id=0b1c4a96acdc4f02",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/feature/ec2/imds@v1.18.14?package-id=3b542e255abc064d",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/configsources@v1.4.14?package-id=b98e99698f8c3823",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2@v2.7.14?package-id=70710367848f2a77",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/internal/ini@v1.8.4?package-id=45d32811813ecc4b",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding@v1.13.3?package-id=dc0208be8e371657",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url@v1.13.14?package-id=9d425f066aff2f4a",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/service/signin@v1.0.2?package-id=aef72bea9d977c65",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sso@v1.30.5?package-id=3af1214eec27f694",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/service/ssooidc@v1.35.10?package-id=ce3c4f6323776c32",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2/service/sts@v1.41.2?package-id=752a75c611fd0bbb",
+        "pkg:golang/github.com/aws/aws-sdk-go-v2@v1.40.0?package-id=23fc3ceaa85d17bd",
+        "pkg:golang/github.com/aws/smithy-go@v1.23.2?package-id=648bee06ae517406",
+        "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=c332380e7b77c953",
+        "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=11b204d2e83fe606",
+        "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=f7021a976db3f10c",
+        "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0?package-id=5c61c5c24344c45a",
+        "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0?package-id=5fc6eb7f63e9f543",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=35c98ebd893993ab",
+        "pkg:golang/github.com/imdario/mergo@v0.3.13?package-id=14303cae1531273e",
+        "pkg:golang/github.com/jpillora/backoff@v1.0.0?package-id=ffeb1f2b3c1de3aa",
+        "pkg:golang/github.com/mdlayher/socket@v0.4.1?package-id=f27f13f4c5e36484",
+        "pkg:golang/github.com/mdlayher/vsock@v1.2.1?package-id=7dc26499435340e7",
+        "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=bd0284af364a7e90",
+        "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f?package-id=215cbf40febd10de",
+        "pkg:golang/github.com/prometheus/client_golang@v1.23.2?package-id=0318f668b457afbf",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=9c07a0233d5bd6c6",
+        "pkg:golang/github.com/prometheus/common@v0.67.4?package-id=bbb1b988401c4ff3",
+        "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.0?package-id=11c562d8f0cfa5cf",
+        "pkg:golang/github.com/prometheus/procfs@v0.16.1?package-id=ecc19ef40d176bb5",
+        "pkg:golang/github.com/xhit/go-str2duration/v2@v2.1.0?package-id=b158fa0d9392184f",
+        "pkg:golang/go.yaml.in/yaml/v2@v2.4.3?package-id=c0d2d90336be8522",
+        "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=d7757e5e68c6f0d8",
+        "pkg:golang/golang.org/x/crypto@v0.45.0?package-id=d876152a9eec7214",
+        "pkg:golang/golang.org/x/net@v0.47.0?package-id=768c14b13bcbe9f8",
+        "pkg:golang/golang.org/x/oauth2@v0.32.0?package-id=439dec20eac1640b",
+        "pkg:golang/golang.org/x/sync@v0.18.0?package-id=94f2b26cc5a15768",
+        "pkg:golang/golang.org/x/sys@v0.38.0?package-id=d5b2339d40faf615",
+        "pkg:golang/golang.org/x/text@v0.31.0?package-id=26f00659245a5f9a",
+        "pkg:golang/golang.org/x/time@v0.13.0?package-id=4520984872b59ee5",
+        "pkg:golang/google.golang.org/protobuf@v1.36.10?package-id=e9929d64fdf1f8aa",
+        "pkg:golang/stdlib@1.25.5?package-id=c0f6d8d07d6e52be"
+      ],
+      "ref": "pkg:golang/github.com/prometheus-community/elasticsearch_exporter@v1.10.0%2Bdirty?package-id=4aa9e36dd7d4b247"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_golang@v1.23.2?package-id=0318f668b457afbf"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=9c07a0233d5bd6c6"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/common@v0.67.4?package-id=bbb1b988401c4ff3"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.0?package-id=11c562d8f0cfa5cf"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/procfs@v0.16.1?package-id=ecc19ef40d176bb5"
+    },
+    {
+      "ref": "pkg:golang/github.com/xhit/go-str2duration/v2@v2.1.0?package-id=b158fa0d9392184f"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.3?package-id=c0d2d90336be8522"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=d7757e5e68c6f0d8"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/crypto@v0.45.0?package-id=d876152a9eec7214"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/net@v0.47.0?package-id=768c14b13bcbe9f8"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/oauth2@v0.32.0?package-id=439dec20eac1640b"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sync@v0.18.0?package-id=94f2b26cc5a15768"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sys@v0.38.0?package-id=d5b2339d40faf615"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/text@v0.31.0?package-id=26f00659245a5f9a"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/time@v0.13.0?package-id=4520984872b59ee5"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/protobuf@v1.36.10?package-id=e9929d64fdf1f8aa"
+    },
+    {
+      "ref": "pkg:golang/stdlib@1.25.5?package-id=c0f6d8d07d6e52be"
+    },
+    {
+      "ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter",
+      "name": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/elasticsearch-exporter",
+      "type": "container"
+    },
+    "properties": [
+      {
+        "name": "loom:lock-key",
+        "value": "lic-1c6046afef9782662ab14b86f6ca34beb88d8d73386ee974eef0b018ae1717fd"
+      },
+      {
+        "name": "syft:image:labels:maintainer",
+        "value": "The Prometheus Authors <prometheus-developers@googlegroups.com>"
+      }
+    ],
+    "tools": {
+      "components": [
+        {
+          "author": "anchore",
+          "name": "syft",
+          "type": "application",
+          "version": "1.51.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:4890da45-28cc-5010-b6b1-4cebca9134b2",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}

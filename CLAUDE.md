@@ -459,8 +459,20 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   `up --integrationtest` apply implicitly and nothing else applies at all) back at the http port,
   where Traefik answers 404 on a perfectly healthy stack. Expect one self-signed certificate
   interstitial
-- `generate-third-party` - Regenerate `THIRD-PARTY.md`, its `Frontend/public/` copy and
-  `THIRD-PARTY.lock`. A section is a syft scan of an image's *package inventory*, so the lock keys
+- `generate-third-party` - Regenerate `THIRD-PARTY.md`, its `Frontend/public/` copy,
+  `THIRD-PARTY.lock` and one CycloneDX SBOM per image under `sbom/`. The same syft scan writes an
+  image's section and its SBOM, so both are reused or rescanned together, and an image with no
+  committed SBOM is rescanned. An SBOM is **read, edited and written as `cyclonedx-python-lib`'s
+  `Bom`**, so what the generator states about a CycloneDX document is checked by that library's
+  model rather than by dictionary lookups of its own, and every file is validated against the
+  schema before it is written - the model represents more than the schema admits, and this file is
+  committed for tools to read. What the serialiser decides rather than syft has to be pinned or the
+  file is rewritten on every run: `normalise_sbom` derives the serial number from the image and the
+  lock key, replaces the image's build-derived bom-ref with the image's own name (the model holds a
+  dependency's ref as the component's `BomRef`, so the rename follows it everywhere), drops the
+  scan timestamp, the image's Skaffold tag and each package's layer digest, and refuses a component
+  carrying no bom-ref, for which the serialiser would mint a random one.
+  A section is a syft scan of an image's *package inventory*, so the lock keys
   it on the inputs that can change that inventory and on nothing else: the image's Dockerfile
   (where every `FROM` pins its base by digest, and the apt, apk, plugin and model versions are
   pinned too), the build arguments its Skaffold configuration declares, and whatever
@@ -479,14 +491,19 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
   - `roundcube` composer-requires its plugins at build time with no lockfile, `alpine` uses `~=`
   apk pins, `worker` and `tika` use apt version wildcards, and `ollama-models` pulls mutable model
   tags.
-  **All three files are merged by keeping the copy of the branch being merged into**, through the
+  **The generated files are merged by keeping the copy of the branch being merged into**, through the
   `keep-ours` driver `.gitattributes` names and `cicd/set_generated_file_merge_driver.sh`
   configures on devenv entry. A pipeline commits them on every branch, so two branches that have
   each run one differ in files nobody edited, and both sides are right for the branch that
   produced them - there is nothing to review in that conflict. The next pipeline recomputes the
   keys, rescans whatever the merge actually changed and commits the correction, which is what
-  resolving by hand was doing anyway. A checkout that has never entered devenv has no such driver
-  and conflicts the way it always did
+  resolving by hand was doing anyway. git runs the driver only for a file both sides changed, so an
+  image's SBOM can come from the other side while the lock stays: each SBOM records the lock key it
+  was written for (the `loom:lock-key` property), and an SBOM recording another key is rescanned
+  like a stale key. A checkout that has never entered devenv has no such driver and conflicts the
+  way it always did. `generate-third-party --check` writes nothing and fails if a run would rescan
+  an image or remove an SBOM; the `check_third_party` job runs it on main and on tags, where the
+  generator itself does not run and a merge made by GitLab uses no driver
 - `cicd/check_chart_hostnames.sh` - Assert that `hostnames.ingress` in `charts/values.yaml` is
   exactly the set of hosts the chart routes by name - `spec.rules[].host` on an Ingress and
   HostSNI(`<name>.<domain>`) on an IngressRouteTCP - and that each Ingress's `spec.tls[].hosts` is a

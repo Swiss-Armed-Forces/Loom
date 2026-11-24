@@ -15,3 +15,8 @@
 THIRD-PARTY.md merge=keep-ours
 THIRD-PARTY.lock merge=keep-ours
 Frontend/public/THIRD-PARTY.md merge=keep-ours
+sbom/*.cdx.json merge=keep-ours
+
+# An SBOM is a scan of an image, with a line per package field: a rescan runs to
+# tens of thousands of lines that nobody reviews. Collapse them in a diff.
+sbom/*.cdx.json gitlab-generated

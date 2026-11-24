@@ -1100,6 +1100,7 @@ in
         "backend/api/static/swagger-ui-bundle.js"
         "THIRD-PARTY.md"
         "Frontend/public/THIRD-PARTY.md"
+        "sbom/.*\\.cdx\\.json"
         "Redis/redis.conf"
         ".test_durations"
         ".*/assets/.*"
@@ -1838,7 +1839,7 @@ in
   };
 
   scripts.generate-third-party = {
-    description = "Generate THIRD-PARTY.md, its Frontend copy and THIRD-PARTY.lock";
+    description = "Generate THIRD-PARTY.md, its Frontend copy, THIRD-PARTY.lock and sbom/";
     exec = ''
       (
         set -euo pipefail

@@ -1,0 +1,6209 @@
+{
+  "components": [
+    {
+      "bom-ref": "pkg:apk/alpine/alpine-baselayout@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=307598d85e573e0f",
+      "cpe": "cpe:2.3:a:alpine-baselayout:alpine-baselayout:3.7.2-r0:*:*:*:*:*:*:*",
+      "description": "Alpine base dir structure and init scripts",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/master/main/alpine-baselayout"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "alpine-baselayout",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine-baselayout:alpine_baselayout:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine-baselayout:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine_baselayout:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_baselayout:alpine-baselayout:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_baselayout:alpine_baselayout:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "15b3b78187b3808104f98f765e9632e0b09281a7"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "6552"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "alpine-baselayout"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1VFqm8pEgmviZMrdh2eQiwneFlsw="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "alpine-baselayout-data=3.7.2-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "/bin/sh"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "8279"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/alpine-baselayout@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "3.7.2-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/alpine-baselayout-data@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=1c56775a8069ec5f&upstream=alpine-baselayout",
+      "cpe": "cpe:2.3:a:alpine-baselayout-data:alpine-baselayout-data:3.7.2-r0:*:*:*:*:*:*:*",
+      "description": "Alpine base dir structure and init scripts",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://gitlab.alpinelinux.org/alpine/aports/-/tree/master/main/alpine-baselayout"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "alpine-baselayout-data",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine-baselayout-data:alpine_baselayout_data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine-baselayout:alpine-baselayout-data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine-baselayout:alpine_baselayout_data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine-baselayout-data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine_baselayout_data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_baselayout:alpine-baselayout-data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_baselayout:alpine_baselayout_data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_baselayout_data:alpine-baselayout-data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_baselayout_data:alpine_baselayout_data:3.7.2-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "15b3b78187b3808104f98f765e9632e0b09281a7"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "19034"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "alpine-baselayout"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1hYFmMtvOB7p+nnpin6We3b0Wh/s="
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "10790"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/alpine-baselayout-data@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6&upstream=alpine-baselayout",
+      "type": "library",
+      "version": "3.7.2-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=alpine-3.23.6&package-id=afad29d3ea43d3cb",
+      "cpe": "cpe:2.3:a:alpine-keys:alpine-keys:2.6-r0:*:*:*:*:*:*:*",
+      "description": "Public keys for Alpine Linux packages",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://alpinelinux.org"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "alpine-keys",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine-keys:alpine_keys:2.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine-keys:2.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine_keys:2.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_keys:alpine-keys:2.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_keys:alpine_keys:2.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "b9f23becced4d7b3ccc0fa0f28530243ccd314a0"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "12961"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "alpine-keys"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1XEWoIc1rhNVDu9f/EqfeGFXFzRM="
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "12199"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "2.6-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/alpine-release@3.23.6-r0?arch=x86_64&distro=alpine-3.23.6&package-id=702da4882c5a40cd&upstream=alpine-base",
+      "cpe": "cpe:2.3:a:alpine-release:alpine-release:3.23.6-r0:*:*:*:*:*:*:*",
+      "description": "Alpine release data",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://alpinelinux.org"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "alpine-release",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine-release:alpine_release:3.23.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine-release:3.23.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine:alpine_release:3.23.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_release:alpine-release:3.23.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:alpine_release:alpine_release:3.23.6-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "8608c79733409c3aa716f7985d1cb45aedba55bd"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "343"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "alpine-base"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1miIu5GtDJ2t+YH9m2rX6+RXROYQ="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "alpine-keys"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "2093"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/alpine-release@3.23.6-r0?arch=x86_64&distro=alpine-3.23.6&upstream=alpine-base",
+      "type": "library",
+      "version": "3.23.6-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/apk-tools@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6&package-id=e4165779e702de93",
+      "cpe": "cpe:2.3:a:apk-tools:apk-tools:3.0.8-r0:*:*:*:*:*:*:*",
+      "description": "Alpine Package Keeper - package manager for alpine",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://gitlab.alpinelinux.org/alpine/apk-tools"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "apk-tools",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apk-tools:apk_tools:3.0.8-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apk:apk-tools:3.0.8-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apk:apk_tools:3.0.8-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apk_tools:apk-tools:3.0.8-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apk_tools:apk_tools:3.0.8-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "286502dc74df00f907f93b0563867630dcc139e5"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "115096"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "apk-tools"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "apk-tools3=3.0.8-r0"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "cmd:apk=3.0.8-r0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1+nqEIqu7teF5AzzuVFUSQAeBeyI="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "musl>=1.2.3_git20230424"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "libcrypto3>=3.5"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "libapk=3.0.8-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:3",
+          "value": "ca-certificates-bundle"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:4",
+          "value": "so:libapk.so.3.0.0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:5",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:6",
+          "value": "so:libz.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "55400"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/apk-tools@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "3.0.8-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/bash@5.3.3-r1?arch=x86_64&distro=alpine-3.23.6&package-id=5ab0c93c9daec37e",
+      "cpe": "cpe:2.3:a:bash:bash:5.3.3-r1:*:*:*:*:*:*:*",
+      "description": "The GNU Bourne Again shell",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.gnu.org/software/bash/bash.html"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "bash",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:gnu:bash:5.3.3-r1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "62f5c1ced949bdcec9759c442ff0f8e452d22ddb"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "1377035"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "bash"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "cmd:bash=5.3.3-r1"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1jpqyHU374PqoFRUXvYVbY7TjMBw="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "/bin/sh"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libreadline.so.8"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "480971"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/bash@5.3.3-r1?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "5.3.3-r1"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/busybox@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=5b8a9495e4efe754",
+      "cpe": "cpe:2.3:a:busybox:busybox:1.37.0-r30:*:*:*:*:*:*:*",
+      "description": "Size optimized toolbox of many common UNIX utilities",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://busybox.net/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "busybox",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "1e823a60eb85606954b3a5af5f8e5bbd1ea680cf"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "813480"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "busybox"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "cmd:busybox=1.37.0-r30"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q18TR4AbuWsapA0X+CI3w/T/AqRyU="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "504726"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "S\u00f6ren Tempel <soeren+alpine@soeren-tempel.net>",
+      "purl": "pkg:apk/alpine/busybox@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "1.37.0-r30"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/busybox-binsh@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=3e88c98a595f91bf&upstream=busybox",
+      "cpe": "cpe:2.3:a:busybox-binsh:busybox-binsh:1.37.0-r30:*:*:*:*:*:*:*",
+      "description": "busybox ash /bin/sh",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://busybox.net/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "busybox-binsh",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:busybox-binsh:busybox_binsh:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:busybox:busybox-binsh:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:busybox:busybox_binsh:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:busybox_binsh:busybox-binsh:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:busybox_binsh:busybox_binsh:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "1e823a60eb85606954b3a5af5f8e5bbd1ea680cf"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "1"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "busybox"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "/bin/sh"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "cmd:sh=1.37.0-r30"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1GI0tARCvpY6KPj5f1CSy2Zbfegk="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "busybox=1.37.0-r30"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "1565"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "S\u00f6ren Tempel <soeren+alpine@soeren-tempel.net>",
+      "purl": "pkg:apk/alpine/busybox-binsh@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&upstream=busybox",
+      "type": "library",
+      "version": "1.37.0-r30"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/ca-certificates@20261020-r0?arch=x86_64&distro=alpine-3.23.6&package-id=3dd3da96ae30aded",
+      "cpe": "cpe:2.3:a:ca-certificates:ca-certificates:20261020-r0:*:*:*:*:*:*:*",
+      "description": "Common CA certificates PEM files from Mozilla",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.mozilla.org/en-US/about/governance/policies/security-group/certs/"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MPL-2.0 AND MIT"
+        }
+      ],
+      "name": "ca-certificates",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca-certificates:ca_certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca:ca-certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca:ca_certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca_certificates:ca-certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca_certificates:ca_certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mozilla:ca-certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mozilla:ca_certificates:20261020-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "ac857c298f6fd212498ce76bb87836d940cdba2d"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "212273"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "ca-certificates"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "cmd:c_rehash=20261020-r0"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "cmd:update-ca-certificates=20261020-r0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1NkGIBOtW7uqNiQk/O3d1bd/SYRA="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "/bin/sh"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libcrypto.so.3"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "129340"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/ca-certificates@20261020-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "20261020-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/ca-certificates-bundle@20260909-r0?arch=x86_64&distro=alpine-3.23.6&package-id=a125134b3f88a02c&upstream=ca-certificates",
+      "cpe": "cpe:2.3:a:ca-certificates-bundle:ca-certificates-bundle:20260909-r0:*:*:*:*:*:*:*",
+      "description": "Pre generated bundle of Mozilla certificates",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.mozilla.org/en-US/about/governance/policies/security-group/certs/"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MPL-2.0 AND MIT"
+        }
+      ],
+      "name": "ca-certificates-bundle",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca-certificates-bundle:ca_certificates_bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca-certificates:ca-certificates-bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca-certificates:ca_certificates_bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca:ca-certificates-bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca:ca_certificates_bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca_certificates:ca-certificates-bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca_certificates:ca_certificates_bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca_certificates_bundle:ca-certificates-bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ca_certificates_bundle:ca_certificates_bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mozilla:ca-certificates-bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mozilla:ca_certificates_bundle:20260909-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "c733d58a9d16316e7fb6a49e65f28ecda365c56b"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "181724"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "ca-certificates"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "ca-certificates-cacert=20260909-r0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1C38kuKcTv0u4ad43dQWlBAI5p7w="
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "108530"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/ca-certificates-bundle@20260909-r0?arch=x86_64&distro=alpine-3.23.6&upstream=ca-certificates",
+      "type": "library",
+      "version": "20260909-r0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/makenowjust/heredoc@v1.0.0?package-id=1ceced6a5d1435bc",
+      "cpe": "cpe:2.3:a:MakeNowJust:heredoc:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/MakeNowJust/heredoc",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/MakeNowJust/heredoc@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=49f32d2d133bb616",
+      "cpe": "cpe:2.3:a:beorn7:perks:v1.0.1:*:*:*:*:*:*:*",
+      "name": "github.com/beorn7/perks",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/beorn7/perks@v1.0.1",
+      "type": "library",
+      "version": "v1.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=5ed270856d2e7189",
+      "cpe": "cpe:2.3:a:blang:semver\\/v4:v4.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/blang/semver/v4",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/blang/semver/v4@v4.0.0",
+      "type": "library",
+      "version": "v4.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=3e436e3c5a83c5a7",
+      "cpe": "cpe:2.3:a:cespare:xxhash\\/v2:v2.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/cespare/xxhash/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+      "type": "library",
+      "version": "v2.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/chai2010/gettext-go@v1.0.2?package-id=602149684fa0abf1",
+      "cpe": "cpe:2.3:a:chai2010:gettext-go:v1.0.2:*:*:*:*:*:*:*",
+      "name": "github.com/chai2010/gettext-go",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:chai2010:gettext_go:v1.0.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/chai2010/gettext-go@v1.0.2",
+      "type": "library",
+      "version": "v1.0.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/davecgh/go-spew@v1.1.1?package-id=ca61ff203580ad8c",
+      "cpe": "cpe:2.3:a:davecgh:go-spew:v1.1.1:*:*:*:*:*:*:*",
+      "name": "github.com/davecgh/go-spew",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:davecgh:go_spew:v1.1.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/davecgh/go-spew@v1.1.1",
+      "type": "library",
+      "version": "v1.1.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/distribution/reference@v0.6.0?package-id=74309236e5c1d4a4",
+      "cpe": "cpe:2.3:a:distribution:reference:v0.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/distribution/reference",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/distribution/reference@v0.6.0",
+      "type": "library",
+      "version": "v0.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2?package-id=4d124693d5ba523a",
+      "cpe": "cpe:2.3:a:emicklei:go-restful\\/v3:v3.12.2:*:*:*:*:*:*:*",
+      "name": "github.com/emicklei/go-restful/v3",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:emicklei:go_restful\\/v3:v3.12.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2",
+      "type": "library",
+      "version": "v3.12.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/exponent-io/jsonpath@v0.0.0-20210407135951-1de76d718b3f?package-id=3a743c5e43a3d676",
+      "cpe": "cpe:2.3:a:exponent-io:jsonpath:v0.0.0-20210407135951-1de76d718b3f:*:*:*:*:*:*:*",
+      "name": "github.com/exponent-io/jsonpath",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:exponent:jsonpath:v0.0.0-20210407135951-1de76d718b3f:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:exponent_io:jsonpath:v0.0.0-20210407135951-1de76d718b3f:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/exponent-io/jsonpath@v0.0.0-20210407135951-1de76d718b3f",
+      "type": "library",
+      "version": "v0.0.0-20210407135951-1de76d718b3f"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fatih/camelcase@v1.0.0?package-id=6501502c5dacaea5",
+      "cpe": "cpe:2.3:a:fatih:camelcase:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/fatih/camelcase",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/fatih/camelcase@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0?package-id=45d99754165db7c2",
+      "cpe": "cpe:2.3:a:fxamacker:cbor\\/v2:v2.9.0:*:*:*:*:*:*:*",
+      "name": "github.com/fxamacker/cbor/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0",
+      "type": "library",
+      "version": "v2.9.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-errors/errors@v1.4.2?package-id=3687d820ed18f486",
+      "cpe": "cpe:2.3:a:go-errors:errors:v1.4.2:*:*:*:*:*:*:*",
+      "name": "github.com/go-errors/errors",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:errors:v1.4.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_errors:errors:v1.4.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-errors/errors@v1.4.2",
+      "type": "library",
+      "version": "v1.4.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-logr/logr@v1.4.2?package-id=bfa19dc9348b761f",
+      "cpe": "cpe:2.3:a:go-logr:logr:v1.4.2:*:*:*:*:*:*:*",
+      "name": "github.com/go-logr/logr",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:logr:v1.4.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_logr:logr:v1.4.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-logr/logr@v1.4.2",
+      "type": "library",
+      "version": "v1.4.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=4c48666aca772f70",
+      "cpe": "cpe:2.3:a:go-openapi:jsonpointer:v0.21.0:*:*:*:*:*:*:*",
+      "name": "github.com/go-openapi/jsonpointer",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:jsonpointer:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:jsonpointer:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0",
+      "type": "library",
+      "version": "v0.21.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2?package-id=00bb08dac611b894",
+      "cpe": "cpe:2.3:a:go-openapi:jsonreference:v0.20.2:*:*:*:*:*:*:*",
+      "name": "github.com/go-openapi/jsonreference",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:jsonreference:v0.20.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:jsonreference:v0.20.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2",
+      "type": "library",
+      "version": "v0.20.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=375d5ad9460bdd66",
+      "cpe": "cpe:2.3:a:go-openapi:swag:v0.23.0:*:*:*:*:*:*:*",
+      "name": "github.com/go-openapi/swag",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:swag:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:swag:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-openapi/swag@v0.23.0",
+      "type": "library",
+      "version": "v0.23.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gogo/protobuf@v1.3.2?package-id=59ee8a87ba20e83e",
+      "cpe": "cpe:2.3:a:gogo:protobuf:v1.3.2:*:*:*:*:*:*:*",
+      "name": "github.com/gogo/protobuf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gogo/protobuf@v1.3.2",
+      "type": "library",
+      "version": "v1.3.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/btree@v1.1.3?package-id=fba7837111435d79",
+      "cpe": "cpe:2.3:a:google:btree:v1.1.3:*:*:*:*:*:*:*",
+      "name": "github.com/google/btree",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/btree@v1.1.3",
+      "type": "library",
+      "version": "v1.1.3"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/gnostic-models@v0.7.0?package-id=899ae62ee53b091f",
+      "cpe": "cpe:2.3:a:google:gnostic-models:v0.7.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/gnostic-models",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:google:gnostic_models:v0.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/gnostic-models@v0.7.0",
+      "type": "library",
+      "version": "v0.7.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/uuid@v1.6.0?package-id=6dc6dc0a02d4d505",
+      "cpe": "cpe:2.3:a:google:uuid:v1.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/uuid",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/uuid@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gorilla/websocket@v1.5.4-0.20250319132907-e064f32e3674?package-id=e76c027404347ce6",
+      "cpe": "cpe:2.3:a:gorilla:websocket:v1.5.4-0.20250319132907-e064f32e3674:*:*:*:*:*:*:*",
+      "name": "github.com/gorilla/websocket",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gorilla/websocket@v1.5.4-0.20250319132907-e064f32e3674",
+      "type": "library",
+      "version": "v1.5.4-0.20250319132907-e064f32e3674"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gregjones/httpcache@v0.0.0-20190611155906-901d90724c79?package-id=21785e29cefba1d5",
+      "cpe": "cpe:2.3:a:gregjones:httpcache:v0.0.0-20190611155906-901d90724c79:*:*:*:*:*:*:*",
+      "name": "github.com/gregjones/httpcache",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gregjones/httpcache@v0.0.0-20190611155906-901d90724c79",
+      "type": "library",
+      "version": "v0.0.0-20190611155906-901d90724c79"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/jonboulle/clockwork@v0.5.0?package-id=8503ff998e39908c",
+      "cpe": "cpe:2.3:a:jonboulle:clockwork:v0.5.0:*:*:*:*:*:*:*",
+      "name": "github.com/jonboulle/clockwork",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/jonboulle/clockwork@v0.5.0",
+      "type": "library",
+      "version": "v0.5.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=439d75d51240dfd9",
+      "cpe": "cpe:2.3:a:josharian:intern:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/josharian/intern",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/josharian/intern@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/json-iterator/go@v1.1.12?package-id=ec15759d7e1b59b3",
+      "cpe": "cpe:2.3:a:json-iterator:go:v1.1.12:*:*:*:*:*:*:*",
+      "name": "github.com/json-iterator/go",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:json:go:v1.1.12:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:json_iterator:go:v1.1.12:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/json-iterator/go@v1.1.12",
+      "type": "library",
+      "version": "v1.1.12"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/liggitt/tabwriter@v0.0.0-20181228230101-89fcab3d43de?package-id=b462f8ae3263c6cc",
+      "cpe": "cpe:2.3:a:liggitt:tabwriter:v0.0.0-20181228230101-89fcab3d43de:*:*:*:*:*:*:*",
+      "name": "github.com/liggitt/tabwriter",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/liggitt/tabwriter@v0.0.0-20181228230101-89fcab3d43de",
+      "type": "library",
+      "version": "v0.0.0-20181228230101-89fcab3d43de"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/lithammer/dedent@v1.1.0?package-id=3bad8aa8b3b0a377",
+      "cpe": "cpe:2.3:a:lithammer:dedent:v1.1.0:*:*:*:*:*:*:*",
+      "name": "github.com/lithammer/dedent",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/lithammer/dedent@v1.1.0",
+      "type": "library",
+      "version": "v1.1.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=b4fb12f017641632",
+      "cpe": "cpe:2.3:a:mailru:easyjson:v0.7.7:*:*:*:*:*:*:*",
+      "name": "github.com/mailru/easyjson",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mailru/easyjson@v0.7.7",
+      "type": "library",
+      "version": "v0.7.7"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mitchellh/go-wordwrap@v1.0.1?package-id=d8f027caf34b08bc",
+      "cpe": "cpe:2.3:a:mitchellh:go-wordwrap:v1.0.1:*:*:*:*:*:*:*",
+      "name": "github.com/mitchellh/go-wordwrap",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mitchellh:go_wordwrap:v1.0.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mitchellh/go-wordwrap@v1.0.1",
+      "type": "library",
+      "version": "v1.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/moby/spdystream@v0.5.0?package-id=1bfa7f25e1b046dd",
+      "cpe": "cpe:2.3:a:moby:spdystream:v0.5.0:*:*:*:*:*:*:*",
+      "name": "github.com/moby/spdystream",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/moby/spdystream@v0.5.0",
+      "type": "library",
+      "version": "v0.5.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/moby/term@v0.5.0?package-id=c476807ebbb95729",
+      "cpe": "cpe:2.3:a:moby:term:v0.5.0:*:*:*:*:*:*:*",
+      "name": "github.com/moby/term",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/moby/term@v0.5.0",
+      "type": "library",
+      "version": "v0.5.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd?package-id=2f1f84e5d58d6404",
+      "cpe": "cpe:2.3:a:modern-go:concurrent:v0.0.0-20180306012644-bacd9c7ef1dd:*:*:*:*:*:*:*",
+      "name": "github.com/modern-go/concurrent",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern:concurrent:v0.0.0-20180306012644-bacd9c7ef1dd:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern_go:concurrent:v0.0.0-20180306012644-bacd9c7ef1dd:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd",
+      "type": "library",
+      "version": "v0.0.0-20180306012644-bacd9c7ef1dd"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee?package-id=6091be4af00d6edb",
+      "cpe": "cpe:2.3:a:modern-go:reflect2:v1.0.3-0.20250322232337-35a7c28c31ee:*:*:*:*:*:*:*",
+      "name": "github.com/modern-go/reflect2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern:reflect2:v1.0.3-0.20250322232337-35a7c28c31ee:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern_go:reflect2:v1.0.3-0.20250322232337-35a7c28c31ee:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee",
+      "type": "library",
+      "version": "v1.0.3-0.20250322232337-35a7c28c31ee"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/monochromegane/go-gitignore@v0.0.0-20200626010858-205db1a8cc00?package-id=29f98a06b122bc6a",
+      "cpe": "cpe:2.3:a:monochromegane:go-gitignore:v0.0.0-20200626010858-205db1a8cc00:*:*:*:*:*:*:*",
+      "name": "github.com/monochromegane/go-gitignore",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:monochromegane:go_gitignore:v0.0.0-20200626010858-205db1a8cc00:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/monochromegane/go-gitignore@v0.0.0-20200626010858-205db1a8cc00",
+      "type": "library",
+      "version": "v0.0.0-20200626010858-205db1a8cc00"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=f742ba6f8ca9aaf4",
+      "cpe": "cpe:2.3:a:munnerz:goautoneg:v0.0.0-20191010083416-a7dc8b61c822:*:*:*:*:*:*:*",
+      "name": "github.com/munnerz/goautoneg",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+      "type": "library",
+      "version": "v0.0.0-20191010083416-a7dc8b61c822"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mxk/go-flowrate@v0.0.0-20140419014527-cca7078d478f?package-id=f9c6f136c2b04073",
+      "cpe": "cpe:2.3:a:mxk:go-flowrate:v0.0.0-20140419014527-cca7078d478f:*:*:*:*:*:*:*",
+      "name": "github.com/mxk/go-flowrate",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mxk:go_flowrate:v0.0.0-20140419014527-cca7078d478f:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mxk/go-flowrate@v0.0.0-20140419014527-cca7078d478f",
+      "type": "library",
+      "version": "v0.0.0-20140419014527-cca7078d478f"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/opencontainers/go-digest@v1.0.0?package-id=34c2b1d8b8bcca0e",
+      "cpe": "cpe:2.3:a:opencontainers:go-digest:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/opencontainers/go-digest",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:opencontainers:go_digest:v1.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/opencontainers/go-digest@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/peterbourgon/diskv@v2.0.1%2Bincompatible?package-id=e331640342312bcb",
+      "cpe": "cpe:2.3:a:peterbourgon:diskv:v2.0.1\\+incompatible:*:*:*:*:*:*:*",
+      "name": "github.com/peterbourgon/diskv",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/peterbourgon/diskv@v2.0.1%2Bincompatible",
+      "type": "library",
+      "version": "v2.0.1+incompatible"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=8751d8e9aa7ca0f4",
+      "cpe": "cpe:2.3:a:pkg:errors:v0.9.1:*:*:*:*:*:*:*",
+      "name": "github.com/pkg/errors",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/pkg/errors@v0.9.1",
+      "type": "library",
+      "version": "v0.9.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/pmezard/go-difflib@v1.0.0?package-id=e4e2651a77663373",
+      "cpe": "cpe:2.3:a:pmezard:go-difflib:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/pmezard/go-difflib",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:pmezard:go_difflib:v1.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/pmezard/go-difflib@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_golang@v1.22.0?package-id=af8206e066c47257",
+      "cpe": "cpe:2.3:a:prometheus:client-golang:v1.22.0:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_golang",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_golang:v1.22.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_golang@v1.22.0",
+      "type": "library",
+      "version": "v1.22.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_model@v0.6.1?package-id=ee75845ade9d47c4",
+      "cpe": "cpe:2.3:a:prometheus:client-model:v0.6.1:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_model",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_model:v0.6.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_model@v0.6.1",
+      "type": "library",
+      "version": "v0.6.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/common@v0.62.0?package-id=ad1a01e9693aa598",
+      "cpe": "cpe:2.3:a:prometheus:common:v0.62.0:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/common",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/common@v0.62.0",
+      "type": "library",
+      "version": "v0.62.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/procfs@v0.15.1?package-id=e673c7ba108432df",
+      "cpe": "cpe:2.3:a:prometheus:procfs:v0.15.1:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/procfs",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/procfs@v0.15.1",
+      "type": "library",
+      "version": "v0.15.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/russross/blackfriday/v2@v2.1.0?package-id=bff5285b419d2e7b",
+      "cpe": "cpe:2.3:a:russross:blackfriday\\/v2:v2.1.0:*:*:*:*:*:*:*",
+      "name": "github.com/russross/blackfriday/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/russross/blackfriday/v2@v2.1.0",
+      "type": "library",
+      "version": "v2.1.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/cobra@v1.9.1?package-id=74c446b5fd6e0947",
+      "cpe": "cpe:2.3:a:spf13:cobra:v1.9.1:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/cobra",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/cobra@v1.9.1",
+      "type": "library",
+      "version": "v1.9.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/pflag@v1.0.6?package-id=217bf72e4d383366",
+      "cpe": "cpe:2.3:a:spf13:pflag:v1.0.6:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/pflag",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/pflag@v1.0.6",
+      "type": "library",
+      "version": "v1.0.6"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/x448/float16@v0.8.4?package-id=bd20ec73a6689d92",
+      "cpe": "cpe:2.3:a:x448:float16:v0.8.4:*:*:*:*:*:*:*",
+      "name": "github.com/x448/float16",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/x448/float16@v0.8.4",
+      "type": "library",
+      "version": "v0.8.4"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/xlab/treeprint@v1.2.0?package-id=f7464cb831922f12",
+      "cpe": "cpe:2.3:a:xlab:treeprint:v1.2.0:*:*:*:*:*:*:*",
+      "name": "github.com/xlab/treeprint",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/xlab/treeprint@v1.2.0",
+      "type": "library",
+      "version": "v1.2.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel@v1.35.0?package-id=724800fcd7f41e72",
+      "cpe": "cpe:2.3:a:opentelemetry:opentelemetry:v1.35.0:*:*:*:*:go:*:*",
+      "name": "go.opentelemetry.io/otel",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel@v1.35.0",
+      "type": "library",
+      "version": "v1.35.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel/trace@v1.35.0?package-id=7b3692ff77b3db9c",
+      "cpe": "cpe:2.3:a:otel:trace:v1.35.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/otel/trace",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel/trace@v1.35.0",
+      "type": "library",
+      "version": "v1.35.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.2?package-id=7e7d5df021fe9cec",
+      "cpe": "cpe:2.3:a:yaml:v2:v2.4.2:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v2@v2.4.2",
+      "type": "library",
+      "version": "v2.4.2"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=2bdaf6f4b8161a3c",
+      "cpe": "cpe:2.3:a:yaml:v3:v3.0.4:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4",
+      "type": "library",
+      "version": "v3.0.4"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/net@v0.38.0?package-id=b102aeb449378c42",
+      "cpe": "cpe:2.3:a:golang:networking:v0.38.0:*:*:*:*:go:*:*",
+      "name": "golang.org/x/net",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:net:v0.38.0:*:*:*:*:go:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/net@v0.38.0",
+      "type": "library",
+      "version": "v0.38.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/oauth2@v0.27.0?package-id=9bd4bebde5e32d3f",
+      "cpe": "cpe:2.3:a:golang:x\\/oauth2:v0.27.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/oauth2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/oauth2@v0.27.0",
+      "type": "library",
+      "version": "v0.27.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sync@v0.12.0?package-id=71ac5bd3647df63d",
+      "cpe": "cpe:2.3:a:golang:x\\/sync:v0.12.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sync",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sync@v0.12.0",
+      "type": "library",
+      "version": "v0.12.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sys@v0.31.0?package-id=d2c2fe6d74e3bfbc",
+      "cpe": "cpe:2.3:a:golang:x\\/sys:v0.31.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sys",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sys@v0.31.0",
+      "type": "library",
+      "version": "v0.31.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/term@v0.30.0?package-id=c9e35023e2077d4c",
+      "cpe": "cpe:2.3:a:golang:x\\/term:v0.30.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/term",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/term@v0.30.0",
+      "type": "library",
+      "version": "v0.30.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/text@v0.23.0?package-id=e984cc300edd733d",
+      "cpe": "cpe:2.3:a:golang:text:v0.23.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/text",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/text@v0.23.0",
+      "type": "library",
+      "version": "v0.23.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/time@v0.9.0?package-id=a7ea1bf354dccfb6",
+      "cpe": "cpe:2.3:a:golang:x\\/time:v0.9.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/time",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/time@v0.9.0",
+      "type": "library",
+      "version": "v0.9.0"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/protobuf@v1.36.5?package-id=6bf7b0112c125f8f",
+      "cpe": "cpe:2.3:a:google:protobuf:v1.36.5:*:*:*:*:*:*:*",
+      "name": "google.golang.org/protobuf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/protobuf@v1.36.5",
+      "type": "library",
+      "version": "v1.36.5"
+    },
+    {
+      "bom-ref": "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0?package-id=02ca3f30dadfe81c",
+      "name": "gopkg.in/evanphx/json-patch.v4",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0",
+      "type": "library",
+      "version": "v4.12.0"
+    },
+    {
+      "bom-ref": "pkg:golang/gopkg.in/inf.v0@v0.9.1?package-id=20cf244e672ce99f",
+      "name": "gopkg.in/inf.v0",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/gopkg.in/inf.v0@v0.9.1",
+      "type": "library",
+      "version": "v0.9.1"
+    },
+    {
+      "bom-ref": "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=98b602b72d55d9b9",
+      "cpe": "cpe:2.3:a:yaml_project:yaml:v3.0.1:*:*:*:*:go:*:*",
+      "name": "gopkg.in/yaml.v3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+      "type": "library",
+      "version": "v3.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/api?package-id=9f7af6afc23513b3",
+      "name": "k8s.io/api",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/api",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/apimachinery?package-id=13dfb1356636fff7",
+      "name": "k8s.io/apimachinery",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/apimachinery",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/cli-runtime?package-id=20fa62cae41b0137",
+      "name": "k8s.io/cli-runtime",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/cli-runtime",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/client-go?package-id=9f27a78c02167fe9",
+      "name": "k8s.io/client-go",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/client-go",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/component-base?package-id=b112ee541106fc73",
+      "name": "k8s.io/component-base",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/component-base",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/component-helpers?package-id=e4392e6fcfb1d2d5",
+      "name": "k8s.io/component-helpers",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/component-helpers",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/klog/v2@v2.130.1?package-id=d5bb8f5a523fbaff",
+      "cpe": "cpe:2.3:a:klog:v2:v2.130.1:*:*:*:*:*:*:*",
+      "name": "k8s.io/klog/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/klog/v2@v2.130.1",
+      "type": "library",
+      "version": "v2.130.1"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b?package-id=4ee7bde36a20c31a",
+      "name": "k8s.io/kube-openapi",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b",
+      "type": "library",
+      "version": "v0.0.0-20250710124328-f3f2b991d03b"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/kubectl?package-id=18dd00501f91887b",
+      "name": "k8s.io/kubectl",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/kubectl",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/kubernetes?package-id=a3b21b434ff253e3",
+      "name": "k8s.io/kubernetes",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/kubernetes",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/metrics?package-id=0513eead64e3338a",
+      "name": "k8s.io/metrics",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/metrics",
+      "type": "library",
+      "version": "UNKNOWN"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/utils@v0.0.0-20250604170112-4c0f3b243397?package-id=cbf803a95d53d2ec",
+      "name": "k8s.io/utils",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/utils@v0.0.0-20250604170112-4c0f3b243397",
+      "type": "library",
+      "version": "v0.0.0-20250604170112-4c0f3b243397"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/kubectl@1.34.2-r6?arch=x86_64&distro=alpine-3.23.6&package-id=069dca08ee3a44b9&upstream=kubernetes",
+      "cpe": "cpe:2.3:a:kubectl:kubectl:1.34.2-r6:*:*:*:*:*:*:*",
+      "description": "Kubernetes - kubectl",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://kubernetes.io/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "kubectl",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "cb528479ce7389730baa832e757b0e00914bba19"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "69173888"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "kubernetes"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "cmd:kubectl=1.34.2-r6"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1oOkKjaxfM47NMvFWd4WpkVEVJA4="
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "19628170"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Francesco Colista <fcolista@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/kubectl@1.34.2-r6?arch=x86_64&distro=alpine-3.23.6&upstream=kubernetes",
+      "type": "library",
+      "version": "1.34.2-r6"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/libapk@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6&package-id=4a06b7e8fc698288&upstream=apk-tools",
+      "cpe": "cpe:2.3:a:libapk:libapk:3.0.8-r0:*:*:*:*:*:*:*",
+      "description": "Alpine Package Keeper - package manager for alpine",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://gitlab.alpinelinux.org/alpine/apk-tools"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "libapk",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "286502dc74df00f907f93b0563867630dcc139e5"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "277184"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "apk-tools"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "libapk2=3.0.8-r0"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "so:libapk.so.3.0.0=3.0.0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1KRMobR0CZB05Iom6UlhQvmhW3xE="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libcrypto.so.3"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libssl.so.3"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:3",
+          "value": "so:libz.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "133919"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/libapk@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6&upstream=apk-tools",
+      "type": "library",
+      "version": "3.0.8-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+      "cpe": "cpe:2.3:a:libcrypto3:libcrypto3:3.5.9-r0:*:*:*:*:*:*:*",
+      "description": "Crypto library from openssl",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.openssl.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "libcrypto3",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:libcrypto3:libcrypto:3.5.9-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:libcrypto:libcrypto3:3.5.9-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:libcrypto:libcrypto:3.5.9-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "adcf4978067013c3c0917e54542f3b762d7bfc48"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "5221974"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "openssl"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "so:libcrypto.so.3=3"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1Ubt/ZmhM+YWFhgwtitzD8qoPZ3I="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "1980193"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&upstream=openssl",
+      "type": "library",
+      "version": "3.5.9-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/libncursesw@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&package-id=a03eb9a8494c5da1&upstream=ncurses",
+      "cpe": "cpe:2.3:a:libncursesw:libncursesw:6.5_p20251123-r0:*:*:*:*:*:*:*",
+      "description": "Console display library (libncursesw)",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://invisible-island.net/ncurses/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "X11"
+          }
+        }
+      ],
+      "name": "libncursesw",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "f7479f62dcb52ace52d99650c80de275010ec3ac"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "342888"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "ncurses"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "so:libncursesw.so.6=6.5"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1ZJ0wQcUrgGIPtQqY9ZedJeu+FSM="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "ncurses-terminfo-base=6.5_p20251123-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "158748"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/libncursesw@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&upstream=ncurses",
+      "type": "library",
+      "version": "6.5_p20251123-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/libssl3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=7526ab62ab6eaa3c&upstream=openssl",
+      "cpe": "cpe:2.3:a:libssl3:libssl3:3.5.9-r0:*:*:*:*:*:*:*",
+      "description": "SSL shared libraries",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.openssl.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "libssl3",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:libssl3:libssl:3.5.9-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:libssl:libssl3:3.5.9-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:libssl:libssl:3.5.9-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "adcf4978067013c3c0917e54542f3b762d7bfc48"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "843640"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "openssl"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "so:libssl.so.3=3"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q170vxHAYRS4o+qEErxLLXW0A7BuU="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "libcrypto3=3.5.9-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libcrypto.so.3"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "381864"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/libssl3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&upstream=openssl",
+      "type": "library",
+      "version": "3.5.9-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b",
+      "cpe": "cpe:2.3:a:musl-libc:musl:1.2.5-r23:*:*:*:*:*:*:*",
+      "description": "the musl c library (libc) implementation",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://musl.libc.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "musl",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl:musl:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl_libc:musl:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "8aef0c37b0ad23dc4137f0e4755b97a59dc698b8"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "666216"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "musl"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "so:libc.musl-x86_64.so.1=1"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1G2xQQm08BlbpxaVnpaWWAcf0MHo="
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "414071"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "1.2.5-r23"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/musl-utils@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=98b8f915867ab553&upstream=musl",
+      "cpe": "cpe:2.3:a:musl-utils:musl-utils:1.2.5-r23:*:*:*:*:*:*:*",
+      "description": "the musl c library (libc) implementation",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://musl.libc.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT AND BSD-2-Clause AND GPL-2.0-or-later"
+        }
+      ],
+      "name": "musl-utils",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl-libc:musl-utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl-libc:musl_utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl-utils:musl_utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl:musl-utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl:musl_utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl_utils:musl-utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:musl_utils:musl_utils:1.2.5-r23:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "8aef0c37b0ad23dc4137f0e4755b97a59dc698b8"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "55421"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "musl"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "libc-utils=1.2.5-r23"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "cmd:getconf=1.2.5-r23"
+        },
+        {
+          "name": "syft:metadata:provides:2",
+          "value": "cmd:getent=1.2.5-r23"
+        },
+        {
+          "name": "syft:metadata:provides:3",
+          "value": "cmd:iconv=1.2.5-r23"
+        },
+        {
+          "name": "syft:metadata:provides:4",
+          "value": "cmd:ldconfig=1.2.5-r23"
+        },
+        {
+          "name": "syft:metadata:provides:5",
+          "value": "cmd:ldd=1.2.5-r23"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1kv2+ltJfE/46PSl62lbk+5B6rOw="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "scanelf"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "13598"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/musl-utils@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&upstream=musl",
+      "type": "library",
+      "version": "1.2.5-r23"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/ncurses-terminfo-base@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&package-id=3774e00a611ea8fe&upstream=ncurses",
+      "cpe": "cpe:2.3:a:ncurses-terminfo-base:ncurses-terminfo-base:6.5_p20251123-r0:*:*:*:*:*:*:*",
+      "description": "Descriptions of common terminals",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://invisible-island.net/ncurses/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "X11"
+          }
+        }
+      ],
+      "name": "ncurses-terminfo-base",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses-terminfo-base:ncurses_terminfo_base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses-terminfo:ncurses-terminfo-base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses-terminfo:ncurses_terminfo_base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses:ncurses-terminfo-base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses:ncurses_terminfo_base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses_terminfo:ncurses-terminfo-base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses_terminfo:ncurses_terminfo_base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses_terminfo_base:ncurses-terminfo-base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ncurses_terminfo_base:ncurses_terminfo_base:6.5_p20251123-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "f7479f62dcb52ace52d99650c80de275010ec3ac"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "101351"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "ncurses"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1V70dgSTslX7v6iMUvfRbDtEGjO4="
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "21855"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/ncurses-terminfo-base@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&upstream=ncurses",
+      "type": "library",
+      "version": "6.5_p20251123-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/openssl@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=c7027fc0afb45964",
+      "cpe": "cpe:2.3:a:openssl:openssl:3.5.9-r0:*:*:*:*:*:*:*",
+      "description": "Toolkit for Transport Layer Security (TLS)",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.openssl.org/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "openssl",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "adcf4978067013c3c0917e54542f3b762d7bfc48"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "820288"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "openssl"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "openssl3=3.5.9-r0"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "cmd:openssl=3.5.9-r0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1P9tnBg4kSg6hMrEbqkpdKofS9Ag="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "libssl3=3.5.9-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "libcrypto3=3.5.9-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:3",
+          "value": "so:libcrypto.so.3"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:4",
+          "value": "so:libssl.so.3"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "340121"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/openssl@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "3.5.9-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/readline@8.3.1-r0?arch=x86_64&distro=alpine-3.23.6&package-id=5ca0c022f7df04f5",
+      "cpe": "cpe:2.3:a:readline:readline:8.3.1-r0:*:*:*:*:*:*:*",
+      "description": "GNU readline library",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://tiswww.cwru.edu/php/chet/readline/rltop.html"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0-or-later"
+          }
+        }
+      ],
+      "name": "readline",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "1d76ecdcac4abea004f7946038405cdb8b214522"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "299476"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "readline"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "so:libreadline.so.8=8.3"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1iuuBs6R3+SK5tqUzOBEUxj3ZKP4="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libncursesw.so.6"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "127218"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Celeste <cielesti@protonmail.com>",
+      "purl": "pkg:apk/alpine/readline@8.3.1-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "8.3.1-r0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/scanelf@1.3.8-r2?arch=x86_64&distro=alpine-3.23.6&package-id=0d9a599ad23d3b02&upstream=pax-utils",
+      "cpe": "cpe:2.3:a:scanelf:scanelf:1.3.8-r2:*:*:*:*:*:*:*",
+      "description": "Scan ELF binaries for stuff",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://wiki.gentoo.org/wiki/Hardened/PaX_Utilities"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "scanelf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "3912b4fa83437852312ad3c37a00229ff59fab1c"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "67504"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "pax-utils"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "cmd:scanelf=1.3.8-r2"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1bqNt1E759jZPDN+r4J6hXS/b4ik="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "32368"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/scanelf@1.3.8-r2?arch=x86_64&distro=alpine-3.23.6&upstream=pax-utils",
+      "type": "library",
+      "version": "1.3.8-r2"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8?package-id=9ad1bd3c7bcf4009",
+      "name": "sigs.k8s.io/json",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8",
+      "type": "library",
+      "version": "v0.0.0-20241014173422-cfa47c3a1cc8"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/kustomize/api@v0.20.1?package-id=9070943cefcc570f",
+      "cpe": "cpe:2.3:a:kustomize:api:v0.20.1:*:*:*:*:*:*:*",
+      "name": "sigs.k8s.io/kustomize/api",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/kustomize/api@v0.20.1",
+      "type": "library",
+      "version": "v0.20.1"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/kustomize/kustomize/v5@v5.7.1?package-id=bd7987027205261a",
+      "cpe": "cpe:2.3:a:kustomize:kustomize\\/v5:v5.7.1:*:*:*:*:*:*:*",
+      "name": "sigs.k8s.io/kustomize/kustomize/v5",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/kustomize/kustomize/v5@v5.7.1",
+      "type": "library",
+      "version": "v5.7.1"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/kustomize/kyaml@v0.20.1?package-id=8e1efeab7634bc4d",
+      "cpe": "cpe:2.3:a:kustomize:kyaml:v0.20.1:*:*:*:*:*:*:*",
+      "name": "sigs.k8s.io/kustomize/kyaml",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/kustomize/kyaml@v0.20.1",
+      "type": "library",
+      "version": "v0.20.1"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/randfill@v1.0.0?package-id=ea5ef0b6bcd97385",
+      "name": "sigs.k8s.io/randfill",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/randfill@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0?package-id=027621a3a3b9620a",
+      "cpe": "cpe:2.3:a:structured-merge-diff:v6:v6.3.0:*:*:*:*:*:*:*",
+      "name": "sigs.k8s.io/structured-merge-diff/v6",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured-merge:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured_merge:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured_merge_diff:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0",
+      "type": "library",
+      "version": "v6.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/yaml@v1.6.0?package-id=1ea0a9eb5115af31",
+      "name": "sigs.k8s.io/yaml",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kubernetes"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/yaml@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/ssl_client@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=70e62fc46b7f6a24&upstream=busybox",
+      "cpe": "cpe:2.3:a:ssl-client:ssl-client:1.37.0-r30:*:*:*:*:*:*:*",
+      "description": "External ssl_client for busybox wget",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://busybox.net/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "ssl_client",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ssl-client:ssl_client:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ssl:ssl-client:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ssl:ssl_client:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ssl_client:ssl-client:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:ssl_client:ssl_client:1.37.0-r30:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "1e823a60eb85606954b3a5af5f8e5bbd1ea680cf"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "14384"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "busybox"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "cmd:ssl_client=1.37.0-r30"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1W27Ak5z8m+R9lnejFSxUfMGLXt0="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libcrypto.so.3"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libssl.so.3"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "4681"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "S\u00f6ren Tempel <soeren+alpine@soeren-tempel.net>",
+      "purl": "pkg:apk/alpine/ssl_client@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&upstream=busybox",
+      "type": "library",
+      "version": "1.37.0-r30"
+    },
+    {
+      "bom-ref": "pkg:golang/stdlib@1.25.10?package-id=6f81125616066d99",
+      "cpe": "cpe:2.3:a:golang:go:1.25.10:-:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "stdlib",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/bin/kubectl"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.10"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/stdlib@1.25.10",
+      "type": "library",
+      "version": "go1.25.10"
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/zlib@1.3.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=dff34ba311b00157",
+      "cpe": "cpe:2.3:a:zlib:zlib:1.3.2-r0:*:*:*:*:*:*:*",
+      "description": "A compression/decompression Library",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://zlib.net/"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Zlib"
+          }
+        }
+      ],
+      "name": "zlib",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "f8c94d2e1d318ab29eb4ac5f00225341c877ed65"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "108376"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "zlib"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "so:libz.so.1=1.3.2"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1aLuX6lJV53qpdOZUdtZIMq1WKIo="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libc.musl-x86_64.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "56191"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        }
+      ],
+      "publisher": "Natanael Copa <ncopa@alpinelinux.org>",
+      "purl": "pkg:apk/alpine/zlib@1.3.2-r0?arch=x86_64&distro=alpine-3.23.6",
+      "type": "library",
+      "version": "1.3.2-r0"
+    },
+    {
+      "bom-ref": "os:alpine@3.23.6",
+      "description": "Alpine Linux v3.23",
+      "externalReferences": [
+        {
+          "type": "issue-tracker",
+          "url": "https://gitlab.alpinelinux.org/alpine/aports/-/issues"
+        },
+        {
+          "type": "website",
+          "url": "https://alpinelinux.org/"
+        }
+      ],
+      "name": "alpine",
+      "properties": [
+        {
+          "name": "syft:distro:extendedSupport",
+          "value": "false"
+        },
+        {
+          "name": "syft:distro:id",
+          "value": "alpine"
+        },
+        {
+          "name": "syft:distro:prettyName",
+          "value": "Alpine Linux v3.23"
+        },
+        {
+          "name": "syft:distro:versionID",
+          "value": "3.23.6"
+        }
+      ],
+      "swid": {
+        "name": "alpine",
+        "tagId": "alpine",
+        "version": "3.23.6"
+      },
+      "type": "operating-system",
+      "version": "3.23.6"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "os:alpine@3.23.6"
+    },
+    {
+      "ref": "pkg:apk/alpine/alpine-baselayout-data@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=1c56775a8069ec5f&upstream=alpine-baselayout"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/alpine-baselayout-data@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=1c56775a8069ec5f&upstream=alpine-baselayout",
+        "pkg:apk/alpine/busybox-binsh@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=3e88c98a595f91bf&upstream=busybox"
+      ],
+      "ref": "pkg:apk/alpine/alpine-baselayout@3.7.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=307598d85e573e0f"
+    },
+    {
+      "ref": "pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=alpine-3.23.6&package-id=afad29d3ea43d3cb"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=alpine-3.23.6&package-id=afad29d3ea43d3cb"
+      ],
+      "ref": "pkg:apk/alpine/alpine-release@3.23.6-r0?arch=x86_64&distro=alpine-3.23.6&package-id=702da4882c5a40cd&upstream=alpine-base"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/ca-certificates-bundle@20260909-r0?arch=x86_64&distro=alpine-3.23.6&package-id=a125134b3f88a02c&upstream=ca-certificates",
+        "pkg:apk/alpine/libapk@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6&package-id=4a06b7e8fc698288&upstream=apk-tools",
+        "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b",
+        "pkg:apk/alpine/zlib@1.3.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=dff34ba311b00157"
+      ],
+      "ref": "pkg:apk/alpine/apk-tools@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6&package-id=e4165779e702de93"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/busybox-binsh@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=3e88c98a595f91bf&upstream=busybox",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b",
+        "pkg:apk/alpine/readline@8.3.1-r0?arch=x86_64&distro=alpine-3.23.6&package-id=5ca0c022f7df04f5"
+      ],
+      "ref": "pkg:apk/alpine/bash@5.3.3-r1?arch=x86_64&distro=alpine-3.23.6&package-id=5ab0c93c9daec37e"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/busybox@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=5b8a9495e4efe754"
+      ],
+      "ref": "pkg:apk/alpine/busybox-binsh@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=3e88c98a595f91bf&upstream=busybox"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/busybox@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=5b8a9495e4efe754"
+    },
+    {
+      "ref": "pkg:apk/alpine/ca-certificates-bundle@20260909-r0?arch=x86_64&distro=alpine-3.23.6&package-id=a125134b3f88a02c&upstream=ca-certificates"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/busybox-binsh@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=3e88c98a595f91bf&upstream=busybox",
+        "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/ca-certificates@20261020-r0?arch=x86_64&distro=alpine-3.23.6&package-id=3dd3da96ae30aded"
+    },
+    {
+      "ref": "pkg:apk/alpine/kubectl@1.34.2-r6?arch=x86_64&distro=alpine-3.23.6&package-id=069dca08ee3a44b9&upstream=kubernetes"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+        "pkg:apk/alpine/libssl3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=7526ab62ab6eaa3c&upstream=openssl",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b",
+        "pkg:apk/alpine/zlib@1.3.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=dff34ba311b00157"
+      ],
+      "ref": "pkg:apk/alpine/libapk@3.0.8-r0?arch=x86_64&distro=alpine-3.23.6&package-id=4a06b7e8fc698288&upstream=apk-tools"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b",
+        "pkg:apk/alpine/ncurses-terminfo-base@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&package-id=3774e00a611ea8fe&upstream=ncurses"
+      ],
+      "ref": "pkg:apk/alpine/libncursesw@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&package-id=a03eb9a8494c5da1&upstream=ncurses"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/libssl3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=7526ab62ab6eaa3c&upstream=openssl"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b",
+        "pkg:apk/alpine/scanelf@1.3.8-r2?arch=x86_64&distro=alpine-3.23.6&package-id=0d9a599ad23d3b02&upstream=pax-utils"
+      ],
+      "ref": "pkg:apk/alpine/musl-utils@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=98b8f915867ab553&upstream=musl"
+    },
+    {
+      "ref": "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+    },
+    {
+      "ref": "pkg:apk/alpine/ncurses-terminfo-base@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&package-id=3774e00a611ea8fe&upstream=ncurses"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+        "pkg:apk/alpine/libssl3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=7526ab62ab6eaa3c&upstream=openssl",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/openssl@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=c7027fc0afb45964"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/libncursesw@6.5_p20251123-r0?arch=x86_64&distro=alpine-3.23.6&package-id=a03eb9a8494c5da1&upstream=ncurses",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/readline@8.3.1-r0?arch=x86_64&distro=alpine-3.23.6&package-id=5ca0c022f7df04f5"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/scanelf@1.3.8-r2?arch=x86_64&distro=alpine-3.23.6&package-id=0d9a599ad23d3b02&upstream=pax-utils"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/libcrypto3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=87ca68ae75902b80&upstream=openssl",
+        "pkg:apk/alpine/libssl3@3.5.9-r0?arch=x86_64&distro=alpine-3.23.6&package-id=7526ab62ab6eaa3c&upstream=openssl",
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/ssl_client@1.37.0-r30?arch=x86_64&distro=alpine-3.23.6&package-id=70e62fc46b7f6a24&upstream=busybox"
+    },
+    {
+      "dependsOn": [
+        "pkg:apk/alpine/musl@1.2.5-r23?arch=x86_64&distro=alpine-3.23.6&package-id=7fd51e794b42703b"
+      ],
+      "ref": "pkg:apk/alpine/zlib@1.3.2-r0?arch=x86_64&distro=alpine-3.23.6&package-id=dff34ba311b00157"
+    },
+    {
+      "ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=49f32d2d133bb616"
+    },
+    {
+      "ref": "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=5ed270856d2e7189"
+    },
+    {
+      "ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=3e436e3c5a83c5a7"
+    },
+    {
+      "ref": "pkg:golang/github.com/chai2010/gettext-go@v1.0.2?package-id=602149684fa0abf1"
+    },
+    {
+      "ref": "pkg:golang/github.com/davecgh/go-spew@v1.1.1?package-id=ca61ff203580ad8c"
+    },
+    {
+      "ref": "pkg:golang/github.com/distribution/reference@v0.6.0?package-id=74309236e5c1d4a4"
+    },
+    {
+      "ref": "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2?package-id=4d124693d5ba523a"
+    },
+    {
+      "ref": "pkg:golang/github.com/exponent-io/jsonpath@v0.0.0-20210407135951-1de76d718b3f?package-id=3a743c5e43a3d676"
+    },
+    {
+      "ref": "pkg:golang/github.com/fatih/camelcase@v1.0.0?package-id=6501502c5dacaea5"
+    },
+    {
+      "ref": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0?package-id=45d99754165db7c2"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-errors/errors@v1.4.2?package-id=3687d820ed18f486"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-logr/logr@v1.4.2?package-id=bfa19dc9348b761f"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=4c48666aca772f70"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2?package-id=00bb08dac611b894"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=375d5ad9460bdd66"
+    },
+    {
+      "ref": "pkg:golang/github.com/gogo/protobuf@v1.3.2?package-id=59ee8a87ba20e83e"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/btree@v1.1.3?package-id=fba7837111435d79"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/gnostic-models@v0.7.0?package-id=899ae62ee53b091f"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/uuid@v1.6.0?package-id=6dc6dc0a02d4d505"
+    },
+    {
+      "ref": "pkg:golang/github.com/gorilla/websocket@v1.5.4-0.20250319132907-e064f32e3674?package-id=e76c027404347ce6"
+    },
+    {
+      "ref": "pkg:golang/github.com/gregjones/httpcache@v0.0.0-20190611155906-901d90724c79?package-id=21785e29cefba1d5"
+    },
+    {
+      "ref": "pkg:golang/github.com/jonboulle/clockwork@v0.5.0?package-id=8503ff998e39908c"
+    },
+    {
+      "ref": "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=439d75d51240dfd9"
+    },
+    {
+      "ref": "pkg:golang/github.com/json-iterator/go@v1.1.12?package-id=ec15759d7e1b59b3"
+    },
+    {
+      "ref": "pkg:golang/github.com/liggitt/tabwriter@v0.0.0-20181228230101-89fcab3d43de?package-id=b462f8ae3263c6cc"
+    },
+    {
+      "ref": "pkg:golang/github.com/lithammer/dedent@v1.1.0?package-id=3bad8aa8b3b0a377"
+    },
+    {
+      "ref": "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=b4fb12f017641632"
+    },
+    {
+      "ref": "pkg:golang/github.com/makenowjust/heredoc@v1.0.0?package-id=1ceced6a5d1435bc"
+    },
+    {
+      "ref": "pkg:golang/github.com/mitchellh/go-wordwrap@v1.0.1?package-id=d8f027caf34b08bc"
+    },
+    {
+      "ref": "pkg:golang/github.com/moby/spdystream@v0.5.0?package-id=1bfa7f25e1b046dd"
+    },
+    {
+      "ref": "pkg:golang/github.com/moby/term@v0.5.0?package-id=c476807ebbb95729"
+    },
+    {
+      "ref": "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd?package-id=2f1f84e5d58d6404"
+    },
+    {
+      "ref": "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee?package-id=6091be4af00d6edb"
+    },
+    {
+      "ref": "pkg:golang/github.com/monochromegane/go-gitignore@v0.0.0-20200626010858-205db1a8cc00?package-id=29f98a06b122bc6a"
+    },
+    {
+      "ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=f742ba6f8ca9aaf4"
+    },
+    {
+      "ref": "pkg:golang/github.com/mxk/go-flowrate@v0.0.0-20140419014527-cca7078d478f?package-id=f9c6f136c2b04073"
+    },
+    {
+      "ref": "pkg:golang/github.com/opencontainers/go-digest@v1.0.0?package-id=34c2b1d8b8bcca0e"
+    },
+    {
+      "ref": "pkg:golang/github.com/peterbourgon/diskv@v2.0.1%2Bincompatible?package-id=e331640342312bcb"
+    },
+    {
+      "ref": "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=8751d8e9aa7ca0f4"
+    },
+    {
+      "ref": "pkg:golang/github.com/pmezard/go-difflib@v1.0.0?package-id=e4e2651a77663373"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_golang@v1.22.0?package-id=af8206e066c47257"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_model@v0.6.1?package-id=ee75845ade9d47c4"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/common@v0.62.0?package-id=ad1a01e9693aa598"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/procfs@v0.15.1?package-id=e673c7ba108432df"
+    },
+    {
+      "ref": "pkg:golang/github.com/russross/blackfriday/v2@v2.1.0?package-id=bff5285b419d2e7b"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/cobra@v1.9.1?package-id=74c446b5fd6e0947"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/pflag@v1.0.6?package-id=217bf72e4d383366"
+    },
+    {
+      "ref": "pkg:golang/github.com/x448/float16@v0.8.4?package-id=bd20ec73a6689d92"
+    },
+    {
+      "ref": "pkg:golang/github.com/xlab/treeprint@v1.2.0?package-id=f7464cb831922f12"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel/trace@v1.35.0?package-id=7b3692ff77b3db9c"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel@v1.35.0?package-id=724800fcd7f41e72"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.2?package-id=7e7d5df021fe9cec"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=2bdaf6f4b8161a3c"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/net@v0.38.0?package-id=b102aeb449378c42"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/oauth2@v0.27.0?package-id=9bd4bebde5e32d3f"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sync@v0.12.0?package-id=71ac5bd3647df63d"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sys@v0.31.0?package-id=d2c2fe6d74e3bfbc"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/term@v0.30.0?package-id=c9e35023e2077d4c"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/text@v0.23.0?package-id=e984cc300edd733d"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/time@v0.9.0?package-id=a7ea1bf354dccfb6"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/protobuf@v1.36.5?package-id=6bf7b0112c125f8f"
+    },
+    {
+      "ref": "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0?package-id=02ca3f30dadfe81c"
+    },
+    {
+      "ref": "pkg:golang/gopkg.in/inf.v0@v0.9.1?package-id=20cf244e672ce99f"
+    },
+    {
+      "ref": "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=98b602b72d55d9b9"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/api?package-id=9f7af6afc23513b3"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/apimachinery?package-id=13dfb1356636fff7"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/cli-runtime?package-id=20fa62cae41b0137"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/client-go?package-id=9f27a78c02167fe9"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/component-base?package-id=b112ee541106fc73"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/component-helpers?package-id=e4392e6fcfb1d2d5"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/klog/v2@v2.130.1?package-id=d5bb8f5a523fbaff"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b?package-id=4ee7bde36a20c31a"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/kubectl?package-id=18dd00501f91887b"
+    },
+    {
+      "dependsOn": [
+        "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=49f32d2d133bb616",
+        "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=5ed270856d2e7189",
+        "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=3e436e3c5a83c5a7",
+        "pkg:golang/github.com/chai2010/gettext-go@v1.0.2?package-id=602149684fa0abf1",
+        "pkg:golang/github.com/davecgh/go-spew@v1.1.1?package-id=ca61ff203580ad8c",
+        "pkg:golang/github.com/distribution/reference@v0.6.0?package-id=74309236e5c1d4a4",
+        "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2?package-id=4d124693d5ba523a",
+        "pkg:golang/github.com/exponent-io/jsonpath@v0.0.0-20210407135951-1de76d718b3f?package-id=3a743c5e43a3d676",
+        "pkg:golang/github.com/fatih/camelcase@v1.0.0?package-id=6501502c5dacaea5",
+        "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0?package-id=45d99754165db7c2",
+        "pkg:golang/github.com/go-errors/errors@v1.4.2?package-id=3687d820ed18f486",
+        "pkg:golang/github.com/go-logr/logr@v1.4.2?package-id=bfa19dc9348b761f",
+        "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=4c48666aca772f70",
+        "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2?package-id=00bb08dac611b894",
+        "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=375d5ad9460bdd66",
+        "pkg:golang/github.com/gogo/protobuf@v1.3.2?package-id=59ee8a87ba20e83e",
+        "pkg:golang/github.com/google/btree@v1.1.3?package-id=fba7837111435d79",
+        "pkg:golang/github.com/google/gnostic-models@v0.7.0?package-id=899ae62ee53b091f",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=6dc6dc0a02d4d505",
+        "pkg:golang/github.com/gorilla/websocket@v1.5.4-0.20250319132907-e064f32e3674?package-id=e76c027404347ce6",
+        "pkg:golang/github.com/gregjones/httpcache@v0.0.0-20190611155906-901d90724c79?package-id=21785e29cefba1d5",
+        "pkg:golang/github.com/jonboulle/clockwork@v0.5.0?package-id=8503ff998e39908c",
+        "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=439d75d51240dfd9",
+        "pkg:golang/github.com/json-iterator/go@v1.1.12?package-id=ec15759d7e1b59b3",
+        "pkg:golang/github.com/liggitt/tabwriter@v0.0.0-20181228230101-89fcab3d43de?package-id=b462f8ae3263c6cc",
+        "pkg:golang/github.com/lithammer/dedent@v1.1.0?package-id=3bad8aa8b3b0a377",
+        "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=b4fb12f017641632",
+        "pkg:golang/github.com/makenowjust/heredoc@v1.0.0?package-id=1ceced6a5d1435bc",
+        "pkg:golang/github.com/mitchellh/go-wordwrap@v1.0.1?package-id=d8f027caf34b08bc",
+        "pkg:golang/github.com/moby/spdystream@v0.5.0?package-id=1bfa7f25e1b046dd",
+        "pkg:golang/github.com/moby/term@v0.5.0?package-id=c476807ebbb95729",
+        "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd?package-id=2f1f84e5d58d6404",
+        "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee?package-id=6091be4af00d6edb",
+        "pkg:golang/github.com/monochromegane/go-gitignore@v0.0.0-20200626010858-205db1a8cc00?package-id=29f98a06b122bc6a",
+        "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=f742ba6f8ca9aaf4",
+        "pkg:golang/github.com/mxk/go-flowrate@v0.0.0-20140419014527-cca7078d478f?package-id=f9c6f136c2b04073",
+        "pkg:golang/github.com/opencontainers/go-digest@v1.0.0?package-id=34c2b1d8b8bcca0e",
+        "pkg:golang/github.com/peterbourgon/diskv@v2.0.1%2Bincompatible?package-id=e331640342312bcb",
+        "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=8751d8e9aa7ca0f4",
+        "pkg:golang/github.com/pmezard/go-difflib@v1.0.0?package-id=e4e2651a77663373",
+        "pkg:golang/github.com/prometheus/client_golang@v1.22.0?package-id=af8206e066c47257",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.1?package-id=ee75845ade9d47c4",
+        "pkg:golang/github.com/prometheus/common@v0.62.0?package-id=ad1a01e9693aa598",
+        "pkg:golang/github.com/prometheus/procfs@v0.15.1?package-id=e673c7ba108432df",
+        "pkg:golang/github.com/russross/blackfriday/v2@v2.1.0?package-id=bff5285b419d2e7b",
+        "pkg:golang/github.com/spf13/cobra@v1.9.1?package-id=74c446b5fd6e0947",
+        "pkg:golang/github.com/spf13/pflag@v1.0.6?package-id=217bf72e4d383366",
+        "pkg:golang/github.com/x448/float16@v0.8.4?package-id=bd20ec73a6689d92",
+        "pkg:golang/github.com/xlab/treeprint@v1.2.0?package-id=f7464cb831922f12",
+        "pkg:golang/go.opentelemetry.io/otel/trace@v1.35.0?package-id=7b3692ff77b3db9c",
+        "pkg:golang/go.opentelemetry.io/otel@v1.35.0?package-id=724800fcd7f41e72",
+        "pkg:golang/go.yaml.in/yaml/v2@v2.4.2?package-id=7e7d5df021fe9cec",
+        "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=2bdaf6f4b8161a3c",
+        "pkg:golang/golang.org/x/net@v0.38.0?package-id=b102aeb449378c42",
+        "pkg:golang/golang.org/x/oauth2@v0.27.0?package-id=9bd4bebde5e32d3f",
+        "pkg:golang/golang.org/x/sync@v0.12.0?package-id=71ac5bd3647df63d",
+        "pkg:golang/golang.org/x/sys@v0.31.0?package-id=d2c2fe6d74e3bfbc",
+        "pkg:golang/golang.org/x/term@v0.30.0?package-id=c9e35023e2077d4c",
+        "pkg:golang/golang.org/x/text@v0.23.0?package-id=e984cc300edd733d",
+        "pkg:golang/golang.org/x/time@v0.9.0?package-id=a7ea1bf354dccfb6",
+        "pkg:golang/google.golang.org/protobuf@v1.36.5?package-id=6bf7b0112c125f8f",
+        "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0?package-id=02ca3f30dadfe81c",
+        "pkg:golang/gopkg.in/inf.v0@v0.9.1?package-id=20cf244e672ce99f",
+        "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=98b602b72d55d9b9",
+        "pkg:golang/k8s.io/api?package-id=9f7af6afc23513b3",
+        "pkg:golang/k8s.io/apimachinery?package-id=13dfb1356636fff7",
+        "pkg:golang/k8s.io/cli-runtime?package-id=20fa62cae41b0137",
+        "pkg:golang/k8s.io/client-go?package-id=9f27a78c02167fe9",
+        "pkg:golang/k8s.io/component-base?package-id=b112ee541106fc73",
+        "pkg:golang/k8s.io/component-helpers?package-id=e4392e6fcfb1d2d5",
+        "pkg:golang/k8s.io/klog/v2@v2.130.1?package-id=d5bb8f5a523fbaff",
+        "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b?package-id=4ee7bde36a20c31a",
+        "pkg:golang/k8s.io/kubectl?package-id=18dd00501f91887b",
+        "pkg:golang/k8s.io/metrics?package-id=0513eead64e3338a",
+        "pkg:golang/k8s.io/utils@v0.0.0-20250604170112-4c0f3b243397?package-id=cbf803a95d53d2ec",
+        "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8?package-id=9ad1bd3c7bcf4009",
+        "pkg:golang/sigs.k8s.io/kustomize/api@v0.20.1?package-id=9070943cefcc570f",
+        "pkg:golang/sigs.k8s.io/kustomize/kustomize/v5@v5.7.1?package-id=bd7987027205261a",
+        "pkg:golang/sigs.k8s.io/kustomize/kyaml@v0.20.1?package-id=8e1efeab7634bc4d",
+        "pkg:golang/sigs.k8s.io/randfill@v1.0.0?package-id=ea5ef0b6bcd97385",
+        "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0?package-id=027621a3a3b9620a",
+        "pkg:golang/sigs.k8s.io/yaml@v1.6.0?package-id=1ea0a9eb5115af31",
+        "pkg:golang/stdlib@1.25.10?package-id=6f81125616066d99"
+      ],
+      "ref": "pkg:golang/k8s.io/kubernetes?package-id=a3b21b434ff253e3"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/metrics?package-id=0513eead64e3338a"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/utils@v0.0.0-20250604170112-4c0f3b243397?package-id=cbf803a95d53d2ec"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8?package-id=9ad1bd3c7bcf4009"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/kustomize/api@v0.20.1?package-id=9070943cefcc570f"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/kustomize/kustomize/v5@v5.7.1?package-id=bd7987027205261a"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/kustomize/kyaml@v0.20.1?package-id=8e1efeab7634bc4d"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/randfill@v1.0.0?package-id=ea5ef0b6bcd97385"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0?package-id=027621a3a3b9620a"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/yaml@v1.6.0?package-id=1ea0a9eb5115af31"
+    },
+    {
+      "ref": "pkg:golang/stdlib@1.25.10?package-id=6f81125616066d99"
+    },
+    {
+      "ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine",
+      "name": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/alpine",
+      "type": "container"
+    },
+    "properties": [
+      {
+        "name": "loom:lock-key",
+        "value": "lic-747f8ce491e2cad9dba72f981bfd8c2cc43947624607c87463f7ad6001120ad4"
+      }
+    ],
+    "tools": {
+      "components": [
+        {
+          "author": "anchore",
+          "name": "syft",
+          "type": "application",
+          "version": "1.51.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:8899e417-8409-51ce-8067-60b5b43d6e00",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}

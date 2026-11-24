@@ -1,0 +1,927 @@
+{
+  "components": [
+    {
+      "bom-ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=bb0df7882ed38ff0",
+      "cpe": "cpe:2.3:a:beorn7:perks:v1.0.1:*:*:*:*:*:*:*",
+      "name": "github.com/beorn7/perks",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/beorn7/perks@v1.0.1",
+      "type": "library",
+      "version": "v1.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=1f915eb2dd1863d7",
+      "cpe": "cpe:2.3:a:cespare:xxhash\\/v2:v2.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/cespare/xxhash/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+      "type": "library",
+      "version": "v2.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gomodule/redigo@v1.9.3?package-id=4494c4f01f90b111",
+      "cpe": "cpe:2.3:a:gomodule:redigo:v1.9.3:*:*:*:*:*:*:*",
+      "name": "github.com/gomodule/redigo",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dNPSXeXv6HCq2jdyWfjgmhBdqnR6PRO3m/G05nvpPC8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gomodule/redigo@v1.9.3",
+      "type": "library",
+      "version": "v1.9.3"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/klauspost/compress@v1.18.0?package-id=88cff7547be602b0",
+      "cpe": "cpe:2.3:a:klauspost:compress:v1.18.0:*:*:*:*:*:*:*",
+      "name": "github.com/klauspost/compress",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/klauspost/compress@v1.18.0",
+      "type": "library",
+      "version": "v1.18.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mna/redisc@v1.4.0?package-id=3895fa33aa74b4e6",
+      "cpe": "cpe:2.3:a:mna:redisc:v1.4.0:*:*:*:*:*:*:*",
+      "name": "github.com/mna/redisc",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:rBKXyGO/39SGmYoRKCyzXcBpoMMKqkikg8E1G8YIfSA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mna/redisc@v1.4.0",
+      "type": "library",
+      "version": "v1.4.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=77ec14b3d5a38aae",
+      "cpe": "cpe:2.3:a:munnerz:goautoneg:v0.0.0-20191010083416-a7dc8b61c822:*:*:*:*:*:*:*",
+      "name": "github.com/munnerz/goautoneg",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+      "type": "library",
+      "version": "v0.0.0-20191010083416-a7dc8b61c822"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/oliver006/redis_exporter@v1.82.0?package-id=607c7a2e2a617b1b",
+      "cpe": "cpe:2.3:a:oliver006:redis-exporter:v1.82.0:*:*:*:*:*:*:*",
+      "name": "github.com/oliver006/redis_exporter",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:oliver006:redis_exporter:v1.82.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/oliver006/redis_exporter@v1.82.0",
+      "type": "library",
+      "version": "v1.82.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_golang@v1.23.2?package-id=d5bece7bbe4f16c2",
+      "cpe": "cpe:2.3:a:prometheus:client-golang:v1.23.2:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_golang",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_golang:v1.23.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Je96obch5RDVy3FDMndoUsjAhG5Edi49h0RJWRi/o0o="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_golang@v1.23.2",
+      "type": "library",
+      "version": "v1.23.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=448a0c5e2b9f9c63",
+      "cpe": "cpe:2.3:a:prometheus:client-model:v0.6.2:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_model",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_model:v0.6.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_model@v0.6.2",
+      "type": "library",
+      "version": "v0.6.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/common@v0.66.1?package-id=7befa79c880cee9c",
+      "cpe": "cpe:2.3:a:prometheus:common:v0.66.1:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/common",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:h5E0h5/Y8niHc5DlaLlWLArTQI7tMrsfQjHV+d9ZoGs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/common@v0.66.1",
+      "type": "library",
+      "version": "v0.66.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/procfs@v0.16.1?package-id=0f9968709a06a6d5",
+      "cpe": "cpe:2.3:a:prometheus:procfs:v0.16.1:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/procfs",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzMyRg="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/procfs@v0.16.1",
+      "type": "library",
+      "version": "v0.16.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/sirupsen/logrus@v1.9.4?package-id=7b85bdb47641db8c",
+      "cpe": "cpe:2.3:a:turbopuffer:logrus:v1.9.4:*:*:*:*:go:*:*",
+      "name": "github.com/sirupsen/logrus",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/sirupsen/logrus@v1.9.4",
+      "type": "library",
+      "version": "v1.9.4"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.2?package-id=11b348a7e34e577c",
+      "cpe": "cpe:2.3:a:yaml:v2:v2.4.2:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:DzmwEr2rDGHl7lsFgAHxmNz/1NlQ7xLIrlN2h5d1eGI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v2@v2.4.2",
+      "type": "library",
+      "version": "v2.4.2"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/crypto@v0.48.0?package-id=2192c8824220ed54",
+      "cpe": "cpe:2.3:a:golang:crypto:v0.48.0:*:*:*:*:go:*:*",
+      "name": "golang.org/x/crypto",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:ssh:v0.48.0:*:*:*:*:go:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:/VRzVqiRSggnhY7gNRxPauEQ5Drw9haKdM0jqfcCFts="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/crypto@v0.48.0",
+      "type": "library",
+      "version": "v0.48.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sys@v0.41.0?package-id=f95d7b69cce4128e",
+      "cpe": "cpe:2.3:a:golang:x\\/sys:v0.41.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sys",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Ivj+2Cp/ylzLiEU89QhWblYnOE9zerudt9Ftecq2C6k="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sys@v0.41.0",
+      "type": "library",
+      "version": "v0.41.0"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/protobuf@v1.36.8?package-id=79797ffc64e6505a",
+      "cpe": "cpe:2.3:a:google:protobuf:v1.36.8:*:*:*:*:*:*:*",
+      "name": "google.golang.org/protobuf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:xHScyCOEuuwZEc6UtSOvPbAT4zRh0xcNRYekJwfqyMc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "github.com/oliver006/redis_exporter"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/protobuf@v1.36.8",
+      "type": "library",
+      "version": "v1.36.8"
+    },
+    {
+      "bom-ref": "pkg:golang/stdlib@1.26.1?package-id=65acb996c7a1d9ac",
+      "cpe": "cpe:2.3:a:golang:go:1.26.1:-:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "stdlib",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/redis_exporter"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.26.1"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/stdlib@1.26.1",
+      "type": "library",
+      "version": "go1.26.1"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=bb0df7882ed38ff0"
+    },
+    {
+      "ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=1f915eb2dd1863d7"
+    },
+    {
+      "ref": "pkg:golang/github.com/gomodule/redigo@v1.9.3?package-id=4494c4f01f90b111"
+    },
+    {
+      "ref": "pkg:golang/github.com/klauspost/compress@v1.18.0?package-id=88cff7547be602b0"
+    },
+    {
+      "ref": "pkg:golang/github.com/mna/redisc@v1.4.0?package-id=3895fa33aa74b4e6"
+    },
+    {
+      "ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=77ec14b3d5a38aae"
+    },
+    {
+      "dependsOn": [
+        "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=bb0df7882ed38ff0",
+        "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=1f915eb2dd1863d7",
+        "pkg:golang/github.com/gomodule/redigo@v1.9.3?package-id=4494c4f01f90b111",
+        "pkg:golang/github.com/klauspost/compress@v1.18.0?package-id=88cff7547be602b0",
+        "pkg:golang/github.com/mna/redisc@v1.4.0?package-id=3895fa33aa74b4e6",
+        "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=77ec14b3d5a38aae",
+        "pkg:golang/github.com/prometheus/client_golang@v1.23.2?package-id=d5bece7bbe4f16c2",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=448a0c5e2b9f9c63",
+        "pkg:golang/github.com/prometheus/common@v0.66.1?package-id=7befa79c880cee9c",
+        "pkg:golang/github.com/prometheus/procfs@v0.16.1?package-id=0f9968709a06a6d5",
+        "pkg:golang/github.com/sirupsen/logrus@v1.9.4?package-id=7b85bdb47641db8c",
+        "pkg:golang/go.yaml.in/yaml/v2@v2.4.2?package-id=11b348a7e34e577c",
+        "pkg:golang/golang.org/x/crypto@v0.48.0?package-id=2192c8824220ed54",
+        "pkg:golang/golang.org/x/sys@v0.41.0?package-id=f95d7b69cce4128e",
+        "pkg:golang/google.golang.org/protobuf@v1.36.8?package-id=79797ffc64e6505a",
+        "pkg:golang/stdlib@1.26.1?package-id=65acb996c7a1d9ac"
+      ],
+      "ref": "pkg:golang/github.com/oliver006/redis_exporter@v1.82.0?package-id=607c7a2e2a617b1b"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_golang@v1.23.2?package-id=d5bece7bbe4f16c2"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=448a0c5e2b9f9c63"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/common@v0.66.1?package-id=7befa79c880cee9c"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/procfs@v0.16.1?package-id=0f9968709a06a6d5"
+    },
+    {
+      "ref": "pkg:golang/github.com/sirupsen/logrus@v1.9.4?package-id=7b85bdb47641db8c"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.2?package-id=11b348a7e34e577c"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/crypto@v0.48.0?package-id=2192c8824220ed54"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sys@v0.41.0?package-id=f95d7b69cce4128e"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/protobuf@v1.36.8?package-id=79797ffc64e6505a"
+    },
+    {
+      "ref": "pkg:golang/stdlib@1.26.1?package-id=65acb996c7a1d9ac"
+    },
+    {
+      "ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter",
+      "name": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis-exporter",
+      "type": "container"
+    },
+    "properties": [
+      {
+        "name": "loom:lock-key",
+        "value": "lic-225ce040759dd92e28eaba7233dd003b41f559dcf100b821ae753928d3e18ca0"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.created",
+        "value": "2026-03-08T19:01:51.242Z"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.description",
+        "value": "Prometheus Exporter for Valkey & Redis Metrics. Supports Valkey 9.x, 8.x, 7.x and various Redis versions"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.licenses",
+        "value": "MIT"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.revision",
+        "value": "1f3d89a11af0f0fd10f4f6e56b24a1687ae85776"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.source",
+        "value": "https://github.com/oliver006/redis_exporter"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.title",
+        "value": "redis_exporter"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.url",
+        "value": "https://github.com/oliver006/redis_exporter"
+      },
+      {
+        "name": "syft:image:labels:org.opencontainers.image.version",
+        "value": "v1.82.0"
+      }
+    ],
+    "tools": {
+      "components": [
+        {
+          "author": "anchore",
+          "name": "syft",
+          "type": "application",
+          "version": "1.51.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:adf20cac-cb34-5fab-9ef7-cba349a37fbf",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}
