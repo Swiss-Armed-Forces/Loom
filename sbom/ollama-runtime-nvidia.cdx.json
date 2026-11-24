@@ -9403,8 +9403,8 @@
       "version": "2.39.3-9ubuntu6.6"
     },
     {
-      "bom-ref": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.9?arch=amd64&distro=ubuntu-24.04&package-id=e60e38fa4cfa24a6&upstream=sqlite3",
-      "cpe": "cpe:2.3:a:libsqlite3-0:libsqlite3-0:3.45.1-1ubuntu2.9:*:*:*:*:*:*:*",
+      "bom-ref": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.11?arch=amd64&distro=ubuntu-24.04&package-id=539b09162b218da6&upstream=sqlite3",
+      "cpe": "cpe:2.3:a:libsqlite3-0:libsqlite3-0:3.45.1-1ubuntu2.11:*:*:*:*:*:*:*",
       "licenses": [
         {
           "license": {
@@ -9426,23 +9426,23 @@
       "properties": [
         {
           "name": "syft:cpe23",
-          "value": "cpe:2.3:a:libsqlite3-0:libsqlite3_0:3.45.1-1ubuntu2.9:*:*:*:*:*:*:*"
+          "value": "cpe:2.3:a:libsqlite3-0:libsqlite3_0:3.45.1-1ubuntu2.11:*:*:*:*:*:*:*"
         },
         {
           "name": "syft:cpe23",
-          "value": "cpe:2.3:a:libsqlite3:libsqlite3-0:3.45.1-1ubuntu2.9:*:*:*:*:*:*:*"
+          "value": "cpe:2.3:a:libsqlite3:libsqlite3-0:3.45.1-1ubuntu2.11:*:*:*:*:*:*:*"
         },
         {
           "name": "syft:cpe23",
-          "value": "cpe:2.3:a:libsqlite3:libsqlite3_0:3.45.1-1ubuntu2.9:*:*:*:*:*:*:*"
+          "value": "cpe:2.3:a:libsqlite3:libsqlite3_0:3.45.1-1ubuntu2.11:*:*:*:*:*:*:*"
         },
         {
           "name": "syft:cpe23",
-          "value": "cpe:2.3:a:libsqlite3_0:libsqlite3-0:3.45.1-1ubuntu2.9:*:*:*:*:*:*:*"
+          "value": "cpe:2.3:a:libsqlite3_0:libsqlite3-0:3.45.1-1ubuntu2.11:*:*:*:*:*:*:*"
         },
         {
           "name": "syft:cpe23",
-          "value": "cpe:2.3:a:libsqlite3_0:libsqlite3_0:3.45.1-1ubuntu2.9:*:*:*:*:*:*:*"
+          "value": "cpe:2.3:a:libsqlite3_0:libsqlite3_0:3.45.1-1ubuntu2.11:*:*:*:*:*:*:*"
         },
         {
           "name": "syft:location:0:path",
@@ -9478,9 +9478,9 @@
         }
       ],
       "publisher": "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
-      "purl": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.9?arch=amd64&distro=ubuntu-24.04&upstream=sqlite3",
+      "purl": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.11?arch=amd64&distro=ubuntu-24.04&upstream=sqlite3",
       "type": "library",
-      "version": "3.45.1-1ubuntu2.9"
+      "version": "3.45.1-1ubuntu2.11"
     },
     {
       "bom-ref": "pkg:deb/ubuntu/libss2@1.47.0-2.4~exp1ubuntu4.1?arch=amd64&distro=ubuntu-24.04&package-id=15654eba4be88b15&upstream=e2fsprogs",
@@ -13561,8 +13561,8 @@
       "version": "1.35+dfsg-3ubuntu0.4"
     },
     {
-      "bom-ref": "pkg:deb/ubuntu/tzdata@2026e-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=cb1504f939a214f3",
-      "cpe": "cpe:2.3:a:tzdata:tzdata:2026e-0ubuntu0.24.04.1:*:*:*:*:*:*:*",
+      "bom-ref": "pkg:deb/ubuntu/tzdata@2026f-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=742bddcb5bc06162",
+      "cpe": "cpe:2.3:a:tzdata:tzdata:2026f-0ubuntu0.24.04.1:*:*:*:*:*:*:*",
       "licenses": [
         {
           "license": {
@@ -13611,7 +13611,7 @@
         },
         {
           "name": "syft:metadata:installedSize",
-          "value": "1389"
+          "value": "1391"
         },
         {
           "name": "syft:package:foundBy",
@@ -13627,9 +13627,9 @@
         }
       ],
       "publisher": "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
-      "purl": "pkg:deb/ubuntu/tzdata@2026e-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04",
+      "purl": "pkg:deb/ubuntu/tzdata@2026f-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04",
       "type": "library",
-      "version": "2026e-0ubuntu0.24.04.1"
+      "version": "2026f-0ubuntu0.24.04.1"
     },
     {
       "bom-ref": "pkg:deb/ubuntu/ubuntu-keyring@2023.11.28.1?arch=all&distro=ubuntu-24.04&package-id=b12cd6a83b6851ef",
@@ -14586,11 +14586,11 @@
         "pkg:deb/ubuntu/libncursesw6@6.4%2B20240113-1ubuntu2.2?arch=amd64&distro=ubuntu-24.04&package-id=889f706b45f24dbc&upstream=ncurses",
         "pkg:deb/ubuntu/libpython3.12-minimal@3.12.3-1ubuntu0.17?arch=amd64&distro=ubuntu-24.04&package-id=4b40fd420b47c163&upstream=python3.12",
         "pkg:deb/ubuntu/libreadline8t64@8.2-4build1?arch=amd64&distro=ubuntu-24.04&package-id=6eb286d41d2bfb01&upstream=readline",
-        "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.9?arch=amd64&distro=ubuntu-24.04&package-id=e60e38fa4cfa24a6&upstream=sqlite3",
+        "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.11?arch=amd64&distro=ubuntu-24.04&package-id=539b09162b218da6&upstream=sqlite3",
         "pkg:deb/ubuntu/libtinfo6@6.4%2B20240113-1ubuntu2.2?arch=amd64&distro=ubuntu-24.04&package-id=b74536fb7efb4e95&upstream=ncurses",
         "pkg:deb/ubuntu/media-types@10.1.0?arch=all&distro=ubuntu-24.04&package-id=ad7abed154e625ca",
         "pkg:deb/ubuntu/netbase@6.4?arch=all&distro=ubuntu-24.04&package-id=9a2cb4e577b22b15",
-        "pkg:deb/ubuntu/tzdata@2026e-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=cb1504f939a214f3"
+        "pkg:deb/ubuntu/tzdata@2026f-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=742bddcb5bc06162"
       ],
       "ref": "pkg:deb/ubuntu/libpython3.12-stdlib@3.12.3-1ubuntu0.17?arch=amd64&distro=ubuntu-24.04&package-id=dbe12549c4bf670f&upstream=python3.12"
     },
@@ -14645,7 +14645,7 @@
       "dependsOn": [
         "pkg:deb/ubuntu/libc6@2.39-0ubuntu8.9?arch=amd64&distro=ubuntu-24.04&package-id=a2811c097c883c6c&upstream=glibc"
       ],
-      "ref": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.9?arch=amd64&distro=ubuntu-24.04&package-id=e60e38fa4cfa24a6&upstream=sqlite3"
+      "ref": "pkg:deb/ubuntu/libsqlite3-0@3.45.1-1ubuntu2.11?arch=amd64&distro=ubuntu-24.04&package-id=539b09162b218da6&upstream=sqlite3"
     },
     {
       "dependsOn": [
@@ -14964,7 +14964,7 @@
         "pkg:deb/ubuntu/libpython3.12-stdlib@3.12.3-1ubuntu0.17?arch=amd64&distro=ubuntu-24.04&package-id=dbe12549c4bf670f&upstream=python3.12",
         "pkg:deb/ubuntu/media-types@10.1.0?arch=all&distro=ubuntu-24.04&package-id=ad7abed154e625ca",
         "pkg:deb/ubuntu/python3.12-minimal@3.12.3-1ubuntu0.17?arch=amd64&distro=ubuntu-24.04&package-id=f13475867b621878&upstream=python3.12",
-        "pkg:deb/ubuntu/tzdata@2026e-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=cb1504f939a214f3"
+        "pkg:deb/ubuntu/tzdata@2026f-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=742bddcb5bc06162"
       ],
       "ref": "pkg:deb/ubuntu/python3.12@3.12.3-1ubuntu0.17?arch=amd64&distro=ubuntu-24.04&package-id=793834de357c34b2"
     },
@@ -15008,7 +15008,7 @@
       "dependsOn": [
         "pkg:deb/ubuntu/debconf@1.5.86ubuntu1?arch=all&distro=ubuntu-24.04&package-id=b8c7bec2088fc738"
       ],
-      "ref": "pkg:deb/ubuntu/tzdata@2026e-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=cb1504f939a214f3"
+      "ref": "pkg:deb/ubuntu/tzdata@2026f-0ubuntu0.24.04.1?arch=all&distro=ubuntu-24.04&package-id=742bddcb5bc06162"
     },
     {
       "ref": "pkg:deb/ubuntu/ubuntu-keyring@2023.11.28.1?arch=all&distro=ubuntu-24.04&package-id=b12cd6a83b6851ef"
@@ -15266,7 +15266,7 @@
     "properties": [
       {
         "name": "loom:lock-key",
-        "value": "lic-97ccdad5ba5e33fd02ef396d4be763c2833e3723c1f01616eefaffae6a21b642"
+        "value": "lic-a64dd3837282eacda3863ba004dcec486529895868a830312ca2369d55974a7b"
       },
       {
         "name": "syft:image:labels:org.opencontainers.image.version",
@@ -15284,7 +15284,7 @@
       ]
     }
   },
-  "serialNumber": "urn:uuid:965be57f-9a04-5ddb-a6fb-ded9319ae199",
+  "serialNumber": "urn:uuid:33f3c1aa-5cd0-5a58-b23a-9b5197fed3f8",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
