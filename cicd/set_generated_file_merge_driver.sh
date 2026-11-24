@@ -2,15 +2,16 @@
 #
 # Teaches this repository how to merge the files CI generates.
 #
-# THIRD-PARTY.md, its Frontend/public/ copy and THIRD-PARTY.lock are written by
-# `generate-third-party` and committed by a pipeline on every branch, so two
-# branches that have each run a pipeline always differ in them -- and a merge of
-# main into a feature branch conflicts on a file nobody edited and whose
-# resolution nobody can review. Both sides are correct for the branch that
-# produced them, which is what makes the conflict unanswerable by hand.
+# THIRD-PARTY.md, its Frontend/public/ copy, THIRD-PARTY.lock and the SBOMs in
+# sbom/ are written by `generate-third-party` and committed by a pipeline on
+# every branch, so two branches that have each run a pipeline always differ in
+# them -- and a merge of main into a feature branch conflicts on a file nobody
+# edited and whose resolution nobody can review. Both sides are correct for the
+# branch that produced them, which is what makes the conflict unanswerable by
+# hand.
 #
-# .gitattributes points those three paths at the `keep-ours` driver configured
-# here, which keeps the copy of the branch being merged into. That is not a
+# .gitattributes points those paths at the `keep-ours` driver configured here,
+# which keeps the copy of the branch being merged into. That is not a
 # judgement that one scan is better than the other: the lock records which
 # inputs produced each section, so the next pipeline recomputes the keys, finds
 # the ones the merge changed, rescans exactly those images and commits the
@@ -18,8 +19,12 @@
 #
 # `true` as the driver leaves git's %A -- our version, already in the working
 # tree -- in place and exits 0, which is how a merge driver says "this is the
-# result". All three paths take it together so that the lock and the document it
-# keys cannot end up from different sides of the merge.
+# result". The lock and the document are single files that every pipeline
+# rewrites, so they end up from the same side. An SBOM is a file per image, and
+# git runs a merge driver only for a file both sides changed: one changed or
+# added on the other side alone is taken from there. Each SBOM therefore records
+# the lock key it was written for, and the generator rescans an image whose SBOM
+# records another (cicd/generate_third_party.py, sbom_mismatch).
 #
 # Written to --local rather than --worktree: unlike core.hooksPath (see
 # set_worktree_hooks_path.sh) this is the same answer in every checkout, and the

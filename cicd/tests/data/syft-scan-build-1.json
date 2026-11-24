@@ -1,0 +1,370 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:86bbad41-d437-4a35-8a64-9252144e9a90",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-23T17:24:44Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "anchore",
+          "name": "syft",
+          "version": "1.51.0"
+        }
+      ]
+    },
+    "component": {
+      "bom-ref": "5d07bf37bbaebd36",
+      "type": "container",
+      "name": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/example",
+      "version": "prod-build1"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:apk/alpine/curl@8.23.0-r0?arch=aarch64&distro=alpine-3.24.4&package-id=fb07d924ffdc7404",
+      "type": "library",
+      "publisher": "Achill Gilgenast <achill@achill.org>",
+      "name": "curl",
+      "version": "8.23.0-r0",
+      "description": "URL retrieval utility and library",
+      "licenses": [
+        {
+          "license": {
+            "id": "curl"
+          }
+        }
+      ],
+      "cpe": "cpe:2.3:a:curl:curl:8.23.0-r0:*:*:*:*:*:*:*",
+      "purl": "pkg:apk/alpine/curl@8.23.0-r0?arch=aarch64&distro=alpine-3.24.4",
+      "externalReferences": [
+        {
+          "url": "https://curl.se/",
+          "type": "distribution"
+        }
+      ],
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:haxx:curl:8.23.0-r0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:4a05115727087b77e2a43d42c2b142fee0e01b93197c36bb9cb79abb7d7bd08f"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:gitCommitOfApkPort",
+          "value": "c65a7b3f6d6bc4b3c0a8a6fff759d8fd05a167ce"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "342598"
+        },
+        {
+          "name": "syft:metadata:originPackage",
+          "value": "curl"
+        },
+        {
+          "name": "syft:metadata:provides:0",
+          "value": "wcurl=8.23.0-r0"
+        },
+        {
+          "name": "syft:metadata:provides:1",
+          "value": "cmd:curl=8.23.0-r0"
+        },
+        {
+          "name": "syft:metadata:provides:2",
+          "value": "cmd:wcurl=8.23.0-r0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q131SeSrIqbYNRLf2Q7p1nlxMw5Oo="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "libcurl=8.23.0-r0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-aarch64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libcurl.so.4"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:3",
+          "value": "so:libz.so.1"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "180122"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/requests@2.32.3?package-id=5cd2d1f8a3c268bf",
+      "type": "library",
+      "author": "Kenneth Reitz <me@kennethreitz.org>",
+      "name": "requests",
+      "version": "2.32.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "cpe": "cpe:2.3:a:python:requests:2.32.3:*:*:*:*:*:*:*",
+      "purl": "pkg:pypi/requests@2.32.3",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "python-installed-package-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "python"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "python"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "python-package"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:0c3b7102da771bfb6cf4331e9c7c4fe689ed81fc04129514ad024e11310396fe"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/local/lib/python3.14/site-packages/requests-2.32.3.dist-info/METADATA"
+        },
+        {
+          "name": "syft:location:1:layerID",
+          "value": "sha256:0c3b7102da771bfb6cf4331e9c7c4fe689ed81fc04129514ad024e11310396fe"
+        },
+        {
+          "name": "syft:location:1:path",
+          "value": "/usr/local/lib/python3.14/site-packages/requests-2.32.3.dist-info/RECORD"
+        },
+        {
+          "name": "syft:location:2:layerID",
+          "value": "sha256:0c3b7102da771bfb6cf4331e9c7c4fe689ed81fc04129514ad024e11310396fe"
+        },
+        {
+          "name": "syft:location:2:path",
+          "value": "/usr/local/lib/python3.14/site-packages/requests-2.32.3.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/urllib3@2.8.0?package-id=d81434b00fa9d894",
+      "type": "library",
+      "author": "Andrey Petrov <andrey.petrov@shazow.net>",
+      "name": "urllib3",
+      "version": "2.8.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "cpe": "cpe:2.3:a:python:urllib3:2.8.0:*:*:*:*:*:*:*",
+      "purl": "pkg:pypi/urllib3@2.8.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "python-installed-package-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "python"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "python"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "python-package"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:0c3b7102da771bfb6cf4331e9c7c4fe689ed81fc04129514ad024e11310396fe"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/usr/local/lib/python3.14/site-packages/urllib3-2.8.0.dist-info/METADATA"
+        },
+        {
+          "name": "syft:location:1:layerID",
+          "value": "sha256:0c3b7102da771bfb6cf4331e9c7c4fe689ed81fc04129514ad024e11310396fe"
+        },
+        {
+          "name": "syft:location:1:path",
+          "value": "/usr/local/lib/python3.14/site-packages/urllib3-2.8.0.dist-info/RECORD"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:apk/alpine/.python-rundeps@20261105.192432?arch=noarch&distro=alpine-3.24.4&package-id=e3baa46cf569a23a",
+      "type": "library",
+      "name": ".python-rundeps",
+      "version": "20261105.192432",
+      "description": "virtual meta package",
+      "cpe": "cpe:2.3:a:.python-rundeps:.python-rundeps:20261105.192432:*:*:*:*:*:*:*",
+      "purl": "pkg:apk/alpine/.python-rundeps@20261105.192432?arch=noarch&distro=alpine-3.24.4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "apk-db-cataloger"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "apk"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "apk-db-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:.python-rundeps:.python_rundeps:20261105.192432:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:.python_rundeps:.python-rundeps:20261105.192432:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:.python_rundeps:.python_rundeps:20261105.192432:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:.python:.python-rundeps:20261105.192432:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:.python:.python_rundeps:20261105.192432:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:layerID",
+          "value": "sha256:4a05115727087b77e2a43d42c2b142fee0e01b93197c36bb9cb79abb7d7bd08f"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/lib/apk/db/installed"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "0"
+        },
+        {
+          "name": "syft:metadata:pullChecksum",
+          "value": "Q1j+jDboPXVXIXNDMdmXZ/IS9S+hg="
+        },
+        {
+          "name": "syft:metadata:pullDependencies:0",
+          "value": "so:libbz2.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:1",
+          "value": "so:libc.musl-aarch64.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:10",
+          "value": "so:libsqlite3.so.0"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:11",
+          "value": "so:libssl.so.3"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:12",
+          "value": "so:libuuid.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:13",
+          "value": "so:libz.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:14",
+          "value": "so:libzstd.so.1"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:2",
+          "value": "so:libcrypto.so.3"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:3",
+          "value": "so:libffi.so.8"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:4",
+          "value": "so:libgdbm.so.6"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:5",
+          "value": "so:libgdbm_compat.so.4"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:6",
+          "value": "so:liblzma.so.5"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:7",
+          "value": "so:libncursesw.so.6"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:8",
+          "value": "so:libpanelw.so.6"
+        },
+        {
+          "name": "syft:metadata:pullDependencies:9",
+          "value": "so:libreadline.so.8"
+        },
+        {
+          "name": "syft:metadata:size",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:apk/alpine/.python-rundeps@20261105.192432?arch=noarch&distro=alpine-3.24.4&package-id=e3baa46cf569a23a"
+    },
+    {
+      "ref": "pkg:apk/alpine/curl@8.23.0-r0?arch=aarch64&distro=alpine-3.24.4&package-id=fb07d924ffdc7404"
+    },
+    {
+      "ref": "pkg:pypi/requests@2.32.3?package-id=5cd2d1f8a3c268bf",
+      "dependsOn": [
+        "pkg:pypi/urllib3@2.8.0?package-id=d81434b00fa9d894"
+      ]
+    }
+  ]
+}

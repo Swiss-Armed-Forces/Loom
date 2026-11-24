@@ -502,6 +502,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | anthropic                                | 2.1.0           | Apache Software License                                                          |
 | argcomplete                              | 3.6.3           | Apache Software License                                                          |
 | argcomplete                              | 3.7.2           | Apache Software License                                                          |
+| arrow                                    | 1.4.0           | Apache Software License                                                          |
+| cyclonedx-python-lib                     | 11.12.0         | Apache Software License                                                          |
 | distro                                   | 1.9.0           | Apache Software License                                                          |
 | elastic-transport                        | 9.4.2           | Apache Software License                                                          |
 | google-auth                              | 2.58.0          | Apache Software License                                                          |
@@ -509,9 +511,11 @@ The complete source code for Traefik is publicly available at https://github.com
 | memray                                   | 1.20.0          | Apache Software License                                                          |
 | minio                                    | 7.2.20          | Apache Software License                                                          |
 | propcache                                | 0.5.2           | Apache Software License                                                          |
+| py-serializable                          | 2.2.0           | Apache Software License                                                          |
 | requests                                 | 2.34.2          | Apache Software License                                                          |
 | requests-toolbelt                        | 1.0.0           | Apache Software License                                                          |
 | requirements-parser                      | 0.13.1          | Apache Software License                                                          |
+| sortedcontainers                         | 2.4.0           | Apache Software License                                                          |
 | tenacity                                 | 9.1.4           | Apache Software License                                                          |
 | trove-classifiers                        | 2026.6.1.19     | Apache Software License                                                          |
 | types-pyOpenSSL                          | 24.1.0.20240722 | Apache Software License                                                          |
@@ -533,6 +537,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | frozenlist                               | 1.8.0           | Apache-2.0                                                                       |
 | google-genai                             | 2.33.0          | Apache-2.0                                                                       |
 | googleapis-common-protos                 | 1.75.3          | Apache-2.0                                                                       |
+| license-expression                       | 30.4.4          | Apache-2.0                                                                       |
 | msgpack                                  | 1.2.1           | Apache-2.0                                                                       |
 | openai                                   | 3.31.0          | Apache-2.0                                                                       |
 | opentelemetry-api                        | 1.44.0          | Apache-2.0                                                                       |
@@ -590,10 +595,12 @@ The complete source code for Traefik is publicly available at https://github.com
 | smmap                                    | 5.0.3           | BSD License                                                                      |
 | threadpoolctl                            | 3.6.0           | BSD License                                                                      |
 | vine                                     | 5.1.0           | BSD License                                                                      |
+| webcolors                                | 25.10.0         | BSD License                                                                      |
 | websockets                               | 13.1            | BSD License                                                                      |
 | wrapt                                    | 1.17.3          | BSD License                                                                      |
 | pycryptodome                             | 3.23.0          | BSD License; Public Domain                                                       |
 | Pygments                                 | 2.21.0          | BSD-2-Clause                                                                     |
+| boolean.py                               | 5.0             | BSD-2-Clause                                                                     |
 | pyasn1                                   | 0.6.4           | BSD-2-Clause                                                                     |
 | xxhash                                   | 4.0.1           | BSD-2-Clause                                                                     |
 | GitPython                                | 3.1.62          | BSD-3-Clause                                                                     |
@@ -628,6 +635,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | pylint-pydantic                          | 0.4.1           | GPLv3                                                                            |
 | griffelib                                | 2.3.0           | ISC                                                                              |
 | dnspython                                | 2.8.0           | ISC License (ISCL)                                                               |
+| isoduration                              | 20.11.0         | ISC License (ISCL)                                                               |
 | shellingham                              | 1.5.4           | ISC License (ISCL)                                                               |
 | astroid                                  | 4.0.4           | LGPL-2.1-or-later                                                                |
 | PyJWT                                    | 2.14.0          | MIT                                                                              |
@@ -704,6 +712,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | pytest                                   | 9.1.1           | MIT                                                                              |
 | pytest-cov                               | 7.1.0           | MIT                                                                              |
 | referencing                              | 0.37.0          | MIT                                                                              |
+| rfc3987-syntax                           | 1.1.0           | MIT                                                                              |
 | rpds-py                                  | 2026.6.3        | MIT                                                                              |
 | tomli                                    | 2.4.1           | MIT                                                                              |
 | truststore                               | 0.10.4          | MIT                                                                              |
@@ -731,6 +740,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | langchain-core                           | 1.6.3           | MIT License                                                                      |
 | langchain-protocol                       | 0.0.19          | MIT License                                                                      |
 | langchain-text-splitters                 | 1.1.2           | MIT License                                                                      |
+| lark                                     | 1.3.1           | MIT License                                                                      |
 | linkify-it-py                            | 2.2.0           | MIT License                                                                      |
 | markdown-it-py                           | 4.2.0           | MIT License                                                                      |
 | mccabe                                   | 0.7.0           | MIT License                                                                      |
@@ -738,6 +748,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | mcp-types                                | 2.2.0           | MIT License                                                                      |
 | mdit-py-plugins                          | 0.6.1           | MIT License                                                                      |
 | mdurl                                    | 0.1.2           | MIT License                                                                      |
+| packageurl-python                        | 0.17.6          | MIT License                                                                      |
 | pkginfo                                  | 1.12.1.2        | MIT License                                                                      |
 | pluggy                                   | 1.6.0           | MIT License                                                                      |
 | pyflakes                                 | 4.0.0           | MIT License                                                                      |
@@ -749,6 +760,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | python-magic                             | 0.4.27          | MIT License                                                                      |
 | pytokens                                 | 0.4.1           | MIT License                                                                      |
 | redis                                    | 5.2.1           | MIT License                                                                      |
+| rfc3339-validator                        | 0.1.4           | MIT License                                                                      |
+| rfc3986-validator                        | 0.1.1           | MIT License                                                                      |
 | rich                                     | 15.0.0          | MIT License                                                                      |
 | ruamel.base                              | 1.0.0           | MIT License                                                                      |
 | ruamel.yaml                              | 0.19.1          | MIT License                                                                      |
@@ -757,6 +770,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | textual                                  | 8.2.8           | MIT License                                                                      |
 | tomlkit                                  | 0.15.0          | MIT License                                                                      |
 | tomlkit                                  | 0.15.1          | MIT License                                                                      |
+| uri-template                             | 1.3.0           | MIT License                                                                      |
 | worker                                   | 0.1.0           | MIT License                                                                      |
 | tiktoken                                 | 0.14.0          | MIT License                                                                      |
 |                                          |                 |                                                                                  |
@@ -783,6 +797,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | docformatter                             | 1.7.8           | MIT License; Other/Proprietary License                                           |
 | cffi                                     | 2.1.0           | MIT-0                                                                            |
 | cffi                                     | 2.1.1           | MIT-0                                                                            |
+| fqdn                                     | 1.6.0           | MPL-2.0                                                                          |
 | gotenberg-client                         | 0.14.0          | MPL-2.0                                                                          |
 | pytest-rerunfailures                     | 15.1            | MPL-2.0                                                                          |
 | orjson                                   | 3.12.0          | MPL-2.0 AND (Apache-2.0 OR MIT)                                                  |
@@ -791,6 +806,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | pathspec                                 | 1.1.1           | Mozilla Public License 2.0 (MPL 2.0)                                             |
 | typing_extensions                        | 4.16.0          | PSF-2.0                                                                          |
 | aiohappyeyeballs                         | 2.7.1           | Python Software Foundation License                                               |
+| defusedxml                               | 0.7.1           | Python Software Foundation License                                               |
 | distlib                                  | 0.4.0           | Python Software Foundation License                                               |
 | email-validator                          | 2.3.0           | The Unlicense (Unlicense)                                                        |
 | IMAPClient                               | 4.0.1           | UNKNOWN                                                                          |
@@ -4599,7 +4615,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libblas3 | 3.12.1-7ubuntu1 | BSD-3-Clause | dpkg-db-cataloger |
 | libblkid1 | 2.41.3-3ubuntu2 | BSD-2-Clause, BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | libblosc1 | 1.21.5+ds-2 | BSD-3-Clause, Zlib | dpkg-db-cataloger |
-| libbrotli1 | 1.2.0-3build1 | MIT | dpkg-db-cataloger |
+| libbrotli1 | 1.2.0-3ubuntu0.1 | MIT | dpkg-db-cataloger |
 | libbsd0 | 0.12.2-2build2 | BSD-2-Clause, BSD-2-Clause, BSD-3-Clause, Beerware, ISC | dpkg-db-cataloger |
 | libbz2-1.0 | 1.0.8-6build2 | GPL-2.0-only | dpkg-db-cataloger |
 | libc-bin | 2.43-2ubuntu2 | BSD-2-Clause, BSL-1.0, FSFAP, GFDL-1.3-only, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, ISC, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, SunPro, Unicode-DFS-2016 | dpkg-db-cataloger |
@@ -4853,7 +4869,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | python3-autocommand | 2.2.2-4 | LGPL-3.0-only, LGPL-3.0-or-later | dpkg-db-cataloger |
 | python3-bcrypt | 5.0.0-3build1 | Apache-2.0, GPL-3.0-only, GPL-3.0-or-later | dpkg-db-cataloger |
 | python3-blinker | 1.9.0-2build1 |  | dpkg-db-cataloger |
-| python3-brotli | 1.2.0-3build1 | MIT | dpkg-db-cataloger |
+| python3-brotli | 1.2.0-3ubuntu0.1 | MIT | dpkg-db-cataloger |
 | python3-cffi-backend | 2.0.0-3build1 |  | dpkg-db-cataloger |
 | python3-contourpy | 1.3.3-1build1 | BSD-3-Clause | dpkg-db-cataloger |
 | python3-cryptography | 46.0.5-1ubuntu2 | Apache-2.0 | dpkg-db-cataloger |
@@ -4892,8 +4908,8 @@ The complete source code for Traefik is publicly available at https://github.com
 | python3-numpy-dev | 1:2.3.5+ds-3ubuntu1 | Apache-2.0, Apache-2.0, BSD-3-Clause, BSD-3-Clause, CC0-1.0, FSFAP, Zlib, Zlib | dpkg-db-cataloger |
 | python3-oauthlib | 3.3.1-1build1 | BSD-3-Clause | dpkg-db-cataloger |
 | python3-packaging | 26.0-1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
-| python3-pil | 12.1.1-2ubuntu1.3 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
-| python3-pil.imagetk | 12.1.1-2ubuntu1.3 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
+| python3-pil | 12.1.1-2ubuntu1.6 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
+| python3-pil.imagetk | 12.1.1-2ubuntu1.6 | Apache-2.0, GPL-3.0-only, HPND | dpkg-db-cataloger |
 | python3-pkg-resources | 78.1.1-0.1build1 | Apache-2.0, BSD-3-Clause, MIT | dpkg-db-cataloger |
 | python3-pyparsing | 3.3.2-2 | BSD-2-Clause, BSD-3-Clause | dpkg-db-cataloger |
 | python3-scipy | 1.16.3-4build1 | Apache-2.0, BSD-2-Clause, BSD-3-Clause, BSD-3-Clause, MIT, PSF-2.0 | dpkg-db-cataloger |
@@ -6746,7 +6762,7 @@ The complete source code for Traefik is publicly available at https://github.com
 | libsemanage2 | 3.5-1build5 | GPL-2.0-only, LGPL-2.1-only, LGPL-2.1-or-later | dpkg-db-cataloger |
 | libsepol2 | 3.5-2build1 | GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, Zlib | dpkg-db-cataloger |
 | libsmartcols1 | 2.39.3-9ubuntu6.6 | BSD-3-Clause, BSD-4-Clause, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, LGPL-2.0-only, LGPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, LGPL-3.0-only, LGPL-3.0-or-later, MIT | dpkg-db-cataloger |
-| libsqlite3-0 | 3.45.1-1ubuntu2.8 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
+| libsqlite3-0 | 3.45.1-1ubuntu2.9 | GPL-2.0-only, GPL-2.0-or-later | dpkg-db-cataloger |
 | libss2 | 1.47.0-2.4~exp1ubuntu4.1 | Apache-2.0, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-2.0-or-later, ISC, Kazlib, LGPL-2.0-only, Latex2e | dpkg-db-cataloger |
 | libssl3t64 | 3.0.13-0ubuntu3.16 | Apache-2.0, GPL-1.0-only, GPL-1.0-or-later | dpkg-db-cataloger |
 | libstdc++6 | 14.2.0-4ubuntu2~24.04.1 |  | dpkg-db-cataloger |

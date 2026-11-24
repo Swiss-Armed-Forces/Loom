@@ -51,6 +51,7 @@ docker = "^7.1.0"
 zstandard = "^0.25.0"
 identify = "^2.6.12"
 pyyaml = "^6.0.3"
+cyclonedx-python-lib = {extras = ["json-validation"], version = "^11.12.0"}
 
 [tool.poetry.group.test.dependencies]
 pytest = "^9.0.0"

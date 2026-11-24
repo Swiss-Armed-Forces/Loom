@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Generate THIRD-PARTY.md, its Frontend copy and THIRD-PARTY.lock.
+"""Generate THIRD-PARTY.md, its Frontend copy, THIRD-PARTY.lock and sbom/.
 
 The document lists every third-party component Loom ships: the licence files
 checked in beside each component, the Python and JavaScript dependency trees,
-and a syft scan of every container image.
+and a syft scan of every container image. The same scan also writes a CycloneDX
+SBOM per image to sbom/, so that tools can read what people read in the
+document.
 
 Scanning an image is the expensive part, so each image's section is pinned to a
 key over the inputs that can change what the scan reports - see
@@ -15,19 +17,39 @@ That pinning is what keeps the output a function of this repository. Scanning
 whatever image a runner happens to hold under a tag does not: two runners hold
 images built at different times, answer differently, and - because CI commits
 this file - each pipeline then pushes the other one's answer back.
+
+An SBOM is read, edited and written as cyclonedx-python-lib's `Bom`, so that
+what this script states about a CycloneDX document is checked by the library's
+model rather than by dictionary lookups spelled out here. The serialiser decides
+two things no input does - the serial number and, once the image's build-derived
+bom-ref is dropped, the image component's bom-ref - and left to it they are
+random, so normalise_sbom pins both. render_sbom then validates what it
+serialised, because the model implements what it implements: a document it
+cannot represent must fail the run rather than be committed as a file no tool
+can read.
 """
 
 import argparse
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
+
+from cyclonedx.model import Property
+from cyclonedx.model.bom import Bom
+from cyclonedx.model.component import Component
+from cyclonedx.output import make_outputter
+from cyclonedx.schema import OutputFormat, SchemaVersion
+from cyclonedx.validation.json import JsonStrictValidator
+from pydantic import BaseModel, Field
 
 from minikube_env import get_minikube_docker_environment
 from third_party_inputs import ImageInputs, load_image_inputs
@@ -42,6 +64,20 @@ CICD_SKAFFOLD = SCRIPT_DIR / "skaffold"
 THIRD_PARTY_LICENCES = Path("THIRD-PARTY.md")
 THIRD_PARTY_LOCK = Path("THIRD-PARTY.lock")
 FRONTEND_STATIC_LICENCES = FRONTEND_DIR / "public" / THIRD_PARTY_LICENCES.name
+SBOM_DIR = Path("sbom")
+SBOM_SUFFIX = ".cdx.json"
+# The lock key an SBOM was written for, as a CycloneDX property in its metadata.
+SBOM_KEY_PROPERTY = "loom:lock-key"
+# The layer syft found a package in. Layer digests are not a function of the
+# repository: a rebuild of the same inputs produces new ones.
+SBOM_LAYER_PROPERTY = re.compile(r"^syft:location:\d+:layerID$")
+# The specification every committed SBOM is written in. The model carries no
+# version of its own, so this is the one place that decides it.
+SBOM_SCHEMA_VERSION = SchemaVersion.V1_7
+# Namespace for the serial number each SBOM is given; see normalise_sbom.
+SBOM_SERIAL_NAMESPACE = uuid.UUID("3f2f4b3c-1b33-5a8f-9c2e-6d5a1f0c7b24")
+
+IMAGE_PREFIX = "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/"
 
 PROFILE = "prod"
 
@@ -133,10 +169,80 @@ class ScanDecision:
 
 
 @dataclass(frozen=True)
+class Checkout:
+    """The working tree the generated files are read from and written to.
+
+    Every path this script reads or writes hangs off `root`, so that what a run acts on
+    is an argument rather than the process's working directory.
+    """
+
+    root: Path
+
+    @property
+    def document(self) -> Path:
+        """THIRD-PARTY.md."""
+        return self.root / THIRD_PARTY_LICENCES
+
+    @property
+    def frontend_document(self) -> Path:
+        """The copy of the document the frontend serves."""
+        return self.root / FRONTEND_STATIC_LICENCES
+
+    @property
+    def lock(self) -> Path:
+        """THIRD-PARTY.lock."""
+        return self.root / THIRD_PARTY_LOCK
+
+    def sbom(self, image_name: str) -> Path:
+        """Where this image's SBOM is committed."""
+        return self.root / sbom_path(image_name)
+
+    def sboms(self) -> list[Path]:
+        """Every committed SBOM, in a stable order."""
+        return sorted((self.root / SBOM_DIR).glob(f"*{SBOM_SUFFIX}"))
+
+    def read_document(self) -> str:
+        """The committed document, or empty when no run has written one."""
+        if not self.document.is_file():
+            return ""
+        return self.document.read_text(encoding="utf-8")
+
+
+@dataclass(frozen=True)
+class ScanContext:
+    """What every image's decision in one run is made against.
+
+    One value per run, beside the one image a decision is about, so that deciding reads
+    nothing a caller did not hand it.
+    """
+
+    checkout: Checkout
+    lock: Lock
+    document: str
+    syft_version: str
+    refresh: bool
+
+
+@dataclass(frozen=True)
 class CommandEnvironment:
     """Environment for the external tools this script drives."""
 
     variables: Mapping[str, str]
+
+
+class SkaffoldBuild(BaseModel):
+    """One image `skaffold build --quiet` reports having built."""
+
+    tag: str
+
+
+class SkaffoldBuildReport(BaseModel):
+    """What `skaffold build --quiet` writes to stdout.
+
+    Only the tags are read; a build that reports none is a build that produced none.
+    """
+
+    builds: list[SkaffoldBuild] = Field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -179,8 +285,8 @@ def get_minikube_environment(environment: CommandEnvironment) -> CommandEnvironm
 
 def get_image_tags(skaffold_output: str) -> list[ImageRef]:
     """Parse the image references out of `skaffold build --quiet` JSON."""
-    builds = json.loads(skaffold_output).get("builds", [])
-    return [ImageRef.parse(build["tag"]) for build in builds]
+    report = SkaffoldBuildReport.model_validate_json(skaffold_output)
+    return [ImageRef.parse(build.tag) for build in report.builds]
 
 
 def get_build_invocation(config: Path) -> SkaffoldInvocation:
@@ -266,8 +372,29 @@ def get_syft_version(environment: CommandEnvironment) -> str:
     return output.replace("syft", "").strip()
 
 
-def scan_image(image: ImageRef, environment: CommandEnvironment) -> str:
-    """Scan an image with syft and render it as this document's section body.
+def sbom_path(image_name: str) -> Path:
+    """Where an image's SBOM is committed: sbom/<name below the registry path>.
+
+    A name outside the project's registry path would need a naming rule of its own, so
+    it is refused rather than given an unreadable file name.
+    """
+    if not image_name.startswith(IMAGE_PREFIX):
+        raise ValueError(f"Image is outside {IMAGE_PREFIX}: '{image_name}'")
+    short_name = image_name.removeprefix(IMAGE_PREFIX).replace("/", "-")
+    return SBOM_DIR / f"{short_name}{SBOM_SUFFIX}"
+
+
+def scan_image(
+    image: ImageRef, sbom: Path, key: str, environment: CommandEnvironment
+) -> str:
+    """Scan an image with syft: write its SBOM, and return this document's section.
+
+    The SBOM records `key`, the lock key of the inputs the image was built from.
+
+    Both outputs come from one scan, so the SBOM costs no second export of the
+    image. Per-file entries are left out of the scan (`file.metadata.selection`
+    none): neither output uses them, and for the larger images they would make
+    the SBOM many times the size of the package list it exists to carry.
 
     syft exports the image to a tar under TMPDIR before reading it, and these
     images run to several gigabytes each. The directory is therefore private to
@@ -276,13 +403,16 @@ def scan_image(image: ImageRef, environment: CommandEnvironment) -> str:
     them at once, and a runner that fills up fails the whole job.
 
     syft does not always report failure through its exit status - on SIGINT it
-    exits 0 with no output - so empty output is treated as the failure it is.
+    exits 0 with no output - so empty output is treated as the failure it is,
+    and so is an SBOM that was not written.
     """
     logging.info("Scanning image: %s", image.reference)
     variables = dict(environment.variables)
     # Not /tmp, which is RAM here, and not the system default for the same reason.
     syft_tmpdir = Path(tempfile.mkdtemp(dir=Path.cwd(), prefix=".syft-tmp."))
     variables["TMPDIR"] = str(syft_tmpdir)
+    variables["SYFT_FILE_METADATA_SELECTION"] = "none"
+    raw_sbom = syft_tmpdir / "sbom.cdx.json"
     try:
         output = run_command(
             [
@@ -292,15 +422,130 @@ def scan_image(image: ImageRef, environment: CommandEnvironment) -> str:
                 "template",
                 "--template",
                 str(SYFT_TEMPLATE),
+                "--output",
+                f"cyclonedx-json={raw_sbom}",
                 f"docker:{image.reference}",
             ],
             CommandEnvironment(variables=variables),
         )
+        if not output.strip():
+            raise RuntimeError(f"No output from syft scan of '{image.reference}'")
+        if not raw_sbom.is_file():
+            raise RuntimeError(f"syft wrote no SBOM for '{image.reference}'")
+        scanned = parse_sbom(raw_sbom)
     finally:
         shutil.rmtree(syft_tmpdir, ignore_errors=True)
-    if not output.strip():
-        raise RuntimeError(f"No output from syft scan of '{image.reference}'")
+
+    write_sbom(sbom, scanned, key)
     return output
+
+
+def parse_sbom(path: Path) -> Bom:
+    """Read a CycloneDX document into the typed model.
+
+    A file the model cannot read raises: something other than this generator wrote it,
+    and rescanning over it would hide that.
+    """
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"{path} is not valid JSON: {error}") from error
+    try:
+        # cyclonedx-python-lib injects from_json through a class decorator, so
+        # mypy sees no such attribute on Bom.
+        parsed = Bom.from_json(document)  # type: ignore[attr-defined]
+    except (AttributeError, KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"{path} is not a CycloneDX document: {error}") from error
+    if parsed is None:
+        raise ValueError(f"{path} is not a CycloneDX document")
+    return parsed
+
+
+def image_component(bom: Bom) -> Component:
+    """The component the SBOM describes, which for a syft image scan is the image."""
+    image = bom.metadata.component
+    if image is None:
+        raise ValueError("The SBOM describes no component")
+    return image
+
+
+def normalise_sbom(bom: Bom, key: str) -> None:
+    """Pin everything a rebuild of the same inputs would otherwise move.
+
+    The SBOM is committed and only rewritten when its lock key changes, so it may state
+    only what follows from the inputs the key covers, and it must come out of the
+    serialiser the same way every time.
+
+    The scan's timestamp and the image's version - its Skaffold tag, a hash of the whole
+    build context - move with changes the key ignores, and the layer a package was found
+    in is a digest the build produces. None of them survive.
+
+    Identity is the half the serialiser decides rather than syft: left alone it mints a
+    random serial number, and a random bom-ref for the image once the build-derived one
+    is gone. Both are derived here instead, from the image and the key - the inputs the
+    file already describes - so two runs over one image agree. The model holds a
+    dependency's ref as the component's own BomRef, so renaming the image's bom-ref
+    renames it everywhere it is referenced.
+
+    `key` is recorded as SBOM_KEY_PROPERTY, so that sbom_mismatch can tell which inputs
+    the file describes; see there for why the lock cannot.
+    """
+    image = image_component(bom)
+    image.version = None
+    image.bom_ref.value = image.name
+    # cyclonedx-python-lib types the property as datetime, but the serialiser
+    # leaves an unset one out, which is what a committed SBOM needs.
+    bom.metadata.timestamp = None  # type: ignore[assignment]
+    bom.serial_number = uuid.uuid5(SBOM_SERIAL_NAMESPACE, f"{image.name}:{key}")
+
+    for component in bom.components:
+        # The serialiser mints a random bom-ref for a component that carries none,
+        # which would rewrite this file on every run.
+        if not component.bom_ref.value:
+            raise ValueError(f"A component carries no bom-ref: '{component.name}'")
+        for prop in list(component.properties):
+            if SBOM_LAYER_PROPERTY.match(prop.name):
+                component.properties.remove(prop)
+
+    for prop in list(bom.metadata.properties):
+        if prop.name == SBOM_KEY_PROPERTY:
+            bom.metadata.properties.remove(prop)
+    bom.metadata.properties.add(Property(name=SBOM_KEY_PROPERTY, value=key))
+
+
+def render_sbom(bom: Bom) -> str:
+    """Serialise an SBOM, and refuse to hand back one the specification rejects.
+
+    The model implements what it implements, and this file is committed for tools to
+    read rather than for people, so a document it serialises into something invalid has
+    to fail the run instead of reaching sbom/.
+    """
+    rendered = make_outputter(
+        bom, OutputFormat.JSON, SBOM_SCHEMA_VERSION
+    ).output_as_string(indent=2)
+    error = JsonStrictValidator(SBOM_SCHEMA_VERSION).validate_str(rendered)
+    if error is not None:
+        raise ValueError(
+            f"The SBOM is not valid CycloneDX {SBOM_SCHEMA_VERSION.to_version()}:"
+            f" {error}"
+        )
+    return rendered if rendered.endswith("\n") else rendered + "\n"
+
+
+def write_sbom(path: Path, bom: Bom, key: str) -> None:
+    """Normalise an SBOM for the inputs `key` covers and commit it."""
+    normalise_sbom(bom, key)
+    rendered = render_sbom(bom)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(rendered, encoding="utf-8")
+
+
+def read_sbom_key(path: Path) -> str | None:
+    """The lock key a committed SBOM was written for; None if it records none."""
+    for prop in parse_sbom(path).metadata.properties:
+        if prop.name == SBOM_KEY_PROPERTY:
+            return prop.value
+    return None
 
 
 def render_section(heading: str, body: str) -> str:
@@ -367,33 +612,49 @@ def render_lock(syft_version: str, inputs: Sequence[ImageInputs]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def decide_scan(
-    inputs: ImageInputs,
-    lock: Lock,
-    document: str,
-    syft_version: str,
-    refresh: bool,
-) -> ScanDecision:
+def sbom_mismatch(inputs: ImageInputs, checkout: Checkout) -> str | None:
+    """Why the committed SBOM cannot be reused for `inputs`; None if it can.
+
+    It has to record the key the lock vouches for: a merge can leave an
+    image's SBOM and the lock from different sides, because git runs the
+    keep-ours driver only for a file both sides changed, and a checkout
+    without the driver merges the lock line by line. Such an SBOM
+    describes an image this branch never built.
+    """
+    path = checkout.sbom(inputs.name)
+    if not path.is_file():
+        return "no SBOM is committed"
+    sbom_key = read_sbom_key(path)
+    if sbom_key != inputs.key:
+        return f"SBOM {sbom_key or 'unkeyed'} -> {inputs.key}"
+    return None
+
+
+def decide_scan(inputs: ImageInputs, context: ScanContext) -> ScanDecision:
     """Decide whether an image must be rescanned, and record why."""
-    if refresh:
+    if context.refresh:
         return ScanDecision(inputs=inputs, scan=True, reason="--refresh was given")
-    if lock.syft_version != syft_version:
+    locked_syft = context.lock.syft_version
+    if locked_syft != context.syft_version:
         return ScanDecision(
             inputs=inputs,
             scan=True,
-            reason=f"syft {lock.syft_version or 'unknown'} -> {syft_version}",
+            reason=f"syft {locked_syft or 'unknown'} -> {context.syft_version}",
         )
-    locked_key = lock.key_for(inputs.name)
+    locked_key = context.lock.key_for(inputs.name)
     if locked_key != inputs.key:
         return ScanDecision(
             inputs=inputs,
             scan=True,
             reason=f"inputs {locked_key or 'unlocked'} -> {inputs.key}",
         )
-    if get_committed_section(document, inputs.name) is None:
+    if get_committed_section(context.document, inputs.name) is None:
         return ScanDecision(
             inputs=inputs, scan=True, reason="the document has no such section"
         )
+    reason = sbom_mismatch(inputs, context.checkout)
+    if reason is not None:
+        return ScanDecision(inputs=inputs, scan=True, reason=reason)
     return ScanDecision(inputs=inputs, scan=False, reason="inputs unchanged")
 
 
@@ -444,6 +705,7 @@ def get_container_licenses(
     references: Mapping[str, ImageRef],
     environment: CommandEnvironment,
     document: str,
+    checkout: Checkout,
 ) -> str:
     """Assemble every image's section, scanning only what the lock cannot vouch for."""
     logging.info("Getting: container_licenses")
@@ -454,7 +716,9 @@ def get_container_licenses(
             reference = references.get(name)
             if reference is None:
                 raise RuntimeError(f"Skaffold reported no tag for '{name}'")
-            body = scan_image(reference, environment).strip("\n")
+            body = scan_image(
+                reference, checkout.sbom(name), decision.inputs.key, environment
+            ).strip("\n")
             sections.append(render_section(name, body + "\n"))
             continue
 
@@ -491,22 +755,71 @@ def render_document(
     )
 
 
-def generate(refresh: bool, environment: CommandEnvironment) -> None:
-    """Regenerate the document, its frontend copy and the lock."""
-    logging.info("Running: generate_third_party_licenses")
-    document = (
-        THIRD_PARTY_LICENCES.read_text(encoding="utf-8")
-        if THIRD_PARTY_LICENCES.is_file()
-        else ""
-    )
-    lock = read_lock(THIRD_PARTY_LOCK)
-    syft_version = get_syft_version(environment)
+def remove_stale_sboms(inputs: Sequence[ImageInputs], checkout: Checkout) -> None:
+    """Delete the SBOM of every image that is no longer declared.
 
-    logging.info("Reading the declared images and their licence inputs")
-    inputs = load_image_inputs()
-    decisions = [
-        decide_scan(image, lock, document, syft_version, refresh) for image in inputs
-    ]
+    The document and the lock are rewritten whole, so a dropped image leaves them on its
+    own; an SBOM is a file of its own and has to be removed.
+    """
+    for path in undeclared_sboms(inputs, checkout):
+        logging.info("Removing SBOM of an image no longer declared: %s", path)
+        path.unlink()
+
+
+def undeclared_sboms(inputs: Sequence[ImageInputs], checkout: Checkout) -> list[Path]:
+    """The committed SBOMs that belong to no declared image."""
+    expected = {sbom_path(image.name).name for image in inputs}
+    return [path for path in checkout.sboms() if path.name not in expected]
+
+
+def check(
+    checkout: Checkout, inputs: Sequence[ImageInputs], syft_version: str
+) -> list[str]:
+    """What a run would rescan or remove, found without building or writing anything.
+
+    Empty when the lock, the document and the SBOMs all describe the
+    images this checkout declares. The pipeline runs this where it does
+    not regenerate: on main and on tags, where a merge made on the
+    server, which uses no merge driver, can leave them from different
+    sides with no later run to correct it.
+    """
+    context = ScanContext(
+        checkout=checkout,
+        lock=read_lock(checkout.lock),
+        document=checkout.read_document(),
+        syft_version=syft_version,
+        refresh=False,
+    )
+    problems = []
+    for image in inputs:
+        decision = decide_scan(image, context)
+        if decision.scan:
+            problems.append(f"{image.name}: {decision.reason}")
+    problems.extend(
+        f"{path}: the SBOM of an image no longer declared"
+        for path in undeclared_sboms(inputs, checkout)
+    )
+    return problems
+
+
+def generate(
+    checkout: Checkout,
+    inputs: Sequence[ImageInputs],
+    syft_version: str,
+    refresh: bool,
+    environment: CommandEnvironment,
+) -> None:
+    """Regenerate the document, its frontend copy, the lock and the SBOMs."""
+    logging.info("Running: generate_third_party_licenses")
+    document = checkout.read_document()
+    context = ScanContext(
+        checkout=checkout,
+        lock=read_lock(checkout.lock),
+        document=document,
+        syft_version=syft_version,
+        refresh=refresh,
+    )
+    decisions = [decide_scan(image, context) for image in inputs]
 
     to_scan = [decision.inputs for decision in decisions if decision.scan]
     for decision in decisions:
@@ -528,22 +841,25 @@ def generate(refresh: bool, environment: CommandEnvironment) -> None:
         get_component_licenses(),
         get_python_licenses(environment),
         get_javascript_licenses(environment),
-        get_container_licenses(decisions, references, environment, document),
+        get_container_licenses(decisions, references, environment, document, checkout),
     )
 
-    THIRD_PARTY_LICENCES.write_text(rendered, encoding="utf-8")
-    THIRD_PARTY_LOCK.write_text(render_lock(syft_version, inputs), encoding="utf-8")
+    checkout.document.write_text(rendered, encoding="utf-8")
+    checkout.lock.write_text(render_lock(syft_version, inputs), encoding="utf-8")
+    remove_stale_sboms(inputs, checkout)
     # The frontend serves its own copy of the file. Writing it here keeps the
     # two in step within a single run; left to generate_frontend_static, which
     # runs beside this script rather than after it, the copy trails a pipeline
     # behind.
-    shutil.copyfile(THIRD_PARTY_LICENCES, FRONTEND_STATIC_LICENCES)
+    shutil.copyfile(checkout.document, checkout.frontend_document)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse the command line."""
     parser = argparse.ArgumentParser(
-        description="Generate THIRD-PARTY.md, its Frontend copy and THIRD-PARTY.lock."
+        description=(
+            "Generate THIRD-PARTY.md, its Frontend copy, THIRD-PARTY.lock and sbom/."
+        )
     )
     parser.add_argument(
         "-m",
@@ -561,12 +877,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "-c",
+        "--check",
+        action="store_true",
+        help=(
+            "write nothing: exit 1 and say why if a run would rescan an image "
+            "or remove an SBOM"
+        ),
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="log every command that is run",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.check and args.refresh:
+        parser.error("--check and --refresh cannot be combined")
+    return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -582,7 +910,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.minikube:
         environment = get_minikube_environment(environment)
 
-    generate(refresh=args.refresh, environment=environment)
+    # What a run acts on is assembled here and passed down, so that everything
+    # below decides from its arguments alone.
+    checkout = Checkout(root=Path.cwd())
+    syft_version = get_syft_version(environment)
+    logging.info("Reading the declared images and their licence inputs")
+    inputs = load_image_inputs()
+
+    if args.check:
+        problems = check(checkout, inputs, syft_version)
+        for problem in problems:
+            logging.error("Out of date: %s", problem)
+        if problems:
+            logging.error("Run generate-third-party on a branch and merge the result")
+            return 1
+        logging.info("The lock, the document and the SBOMs match the declared images")
+        return 0
+
+    generate(checkout, inputs, syft_version, args.refresh, environment)
     return 0
 
 

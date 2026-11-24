@@ -1,0 +1,5738 @@
+{
+  "components": [
+    {
+      "bom-ref": "pkg:deb/debian/base-files@12.4%2Bdeb12u13?arch=amd64&distro=debian-12.13&package-id=fb5f7ee8e71054ea",
+      "cpe": "cpe:2.3:a:base-files:base-files:12.4\\+deb12u13:*:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "name": "sha256:fd7e4aae7e7b05f217bcf2d02322825c360e66c52c4c2f1b28d784d6297a1c23"
+          }
+        }
+      ],
+      "name": "base-files",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:base-files:base_files:12.4\\+deb12u13:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:base:base-files:12.4\\+deb12u13:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:base:base_files:12.4\\+deb12u13:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:base_files:base-files:12.4\\+deb12u13:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:base_files:base_files:12.4\\+deb12u13:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/var/lib/dpkg/status.d/base-files"
+        },
+        {
+          "name": "syft:location:1:path",
+          "value": "/usr/share/doc/base-files/copyright"
+        },
+        {
+          "name": "syft:location:2:path",
+          "value": "/var/lib/dpkg/status.d/base-files.md5sums"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "341"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "dpkg-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "dpkg-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "deb"
+        }
+      ],
+      "publisher": "Santiago Vila <sanvila@debian.org>",
+      "purl": "pkg:deb/debian/base-files@12.4%2Bdeb12u13?arch=amd64&distro=debian-12.13",
+      "type": "library",
+      "version": "12.4+deb12u13"
+    },
+    {
+      "bom-ref": "pkg:golang/cel.dev/expr@v0.24.0?package-id=b1cfb0836d22a518",
+      "name": "cel.dev/expr",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:56OvJKSH3hDGL0ml5uSxZmz3/3Pq4tJ+fb1unVLAFcY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/cel.dev/expr@v0.24.0",
+      "type": "library",
+      "version": "v0.24.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/kimmachinegun/automemlimit@v0.7.5?package-id=e8a71c1df15487ad",
+      "cpe": "cpe:2.3:a:KimMachineGun:automemlimit:v0.7.5:*:*:*:*:*:*:*",
+      "name": "github.com/KimMachineGun/automemlimit",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:RkbaC0MwhjL1ZuBKunGDjE/ggwAX43DwZrJqVwyveTk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/KimMachineGun/automemlimit@v0.7.5",
+      "type": "library",
+      "version": "v0.7.5"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.0?package-id=3cd69f78141eb5b1",
+      "cpe": "cpe:2.3:a:antlr4-go:antlr\\/v4:v4.13.0:*:*:*:*:*:*:*",
+      "name": "github.com/antlr4-go/antlr/v4",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:antlr4:antlr\\/v4:v4.13.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:antlr4_go:antlr\\/v4:v4.13.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.0",
+      "type": "library",
+      "version": "v4.13.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=0ec8255a9e1b2b4e",
+      "cpe": "cpe:2.3:a:beorn7:perks:v1.0.1:*:*:*:*:*:*:*",
+      "name": "github.com/beorn7/perks",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/beorn7/perks@v1.0.1",
+      "type": "library",
+      "version": "v1.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=a0a065ae6920dfba",
+      "cpe": "cpe:2.3:a:blang:semver\\/v4:v4.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/blang/semver/v4",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/blang/semver/v4@v4.0.0",
+      "type": "library",
+      "version": "v4.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/cenkalti/backoff/v5@v5.0.2?package-id=b488528494fb01ea",
+      "cpe": "cpe:2.3:a:cenkalti:backoff\\/v5:v5.0.2:*:*:*:*:*:*:*",
+      "name": "github.com/cenkalti/backoff/v5",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:rIfFVxEf1QsI7E1ZHfp/B4DF/6QBAUhmgkxc0H7Zss8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/cenkalti/backoff/v5@v5.0.2",
+      "type": "library",
+      "version": "v5.0.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=300c936cd9a0fdec",
+      "cpe": "cpe:2.3:a:cespare:xxhash\\/v2:v2.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/cespare/xxhash/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+      "type": "library",
+      "version": "v2.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0?package-id=4a799affd47a0496",
+      "cpe": "cpe:2.3:a:coreos:go-systemd\\/v22:v22.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/coreos/go-systemd/v22",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:coreos:go_systemd\\/v22:v22.6.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:aGVa/v8B7hpb0TKl0MWoAavPDmHvobFe5R5zn0bCJWo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0",
+      "type": "library",
+      "version": "v22.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/davecgh/go-spew@v1.1.2-0.20180830191138-d8f796af33cc?package-id=db963a1e27bf5a36",
+      "cpe": "cpe:2.3:a:davecgh:go-spew:v1.1.2-0.20180830191138-d8f796af33cc:*:*:*:*:*:*:*",
+      "name": "github.com/davecgh/go-spew",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:davecgh:go_spew:v1.1.2-0.20180830191138-d8f796af33cc:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/davecgh/go-spew@v1.1.2-0.20180830191138-d8f796af33cc",
+      "type": "library",
+      "version": "v1.1.2-0.20180830191138-d8f796af33cc"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/dgryski/go-jump@v0.0.0-20211018200510-ba001c3ffce0?package-id=8a171bf818ed41b9",
+      "cpe": "cpe:2.3:a:dgryski:go-jump:v0.0.0-20211018200510-ba001c3ffce0:*:*:*:*:*:*:*",
+      "name": "github.com/dgryski/go-jump",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:dgryski:go_jump:v0.0.0-20211018200510-ba001c3ffce0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:0wH6nO9QEa02Qx8sIQGw6ieKdz+BXjpccSOo9vXNl4U="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/dgryski/go-jump@v0.0.0-20211018200510-ba001c3ffce0",
+      "type": "library",
+      "version": "v0.0.0-20211018200510-ba001c3ffce0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/dlclark/regexp2@v1.11.5?package-id=517661bb99a4d2d1",
+      "cpe": "cpe:2.3:a:dlclark:regexp2:v1.11.5:*:*:*:*:*:*:*",
+      "name": "github.com/dlclark/regexp2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/dlclark/regexp2@v1.11.5",
+      "type": "library",
+      "version": "v1.11.5"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2?package-id=e6ddc8d1e93d0f8a",
+      "cpe": "cpe:2.3:a:emicklei:go-restful\\/v3:v3.12.2:*:*:*:*:*:*:*",
+      "name": "github.com/emicklei/go-restful/v3",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:emicklei:go_restful\\/v3:v3.12.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:DhwDP0vY3k8ZzE0RunuJy8GhNpPL6zqLkDf9B/a0/xU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2",
+      "type": "library",
+      "version": "v3.12.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/felixge/httpsnoop@v1.0.4?package-id=405354628104a1e8",
+      "cpe": "cpe:2.3:a:felixge:httpsnoop:v1.0.4:*:*:*:*:*:*:*",
+      "name": "github.com/felixge/httpsnoop",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/felixge/httpsnoop@v1.0.4",
+      "type": "library",
+      "version": "v1.0.4"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fsnotify/fsnotify@v1.9.0?package-id=29fbb182e868ef94",
+      "cpe": "cpe:2.3:a:fsnotify:fsnotify:v1.9.0:*:*:*:*:*:*:*",
+      "name": "github.com/fsnotify/fsnotify",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/fsnotify/fsnotify@v1.9.0",
+      "type": "library",
+      "version": "v1.9.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0?package-id=c992baa7436fec35",
+      "cpe": "cpe:2.3:a:fxamacker:cbor\\/v2:v2.9.0:*:*:*:*:*:*:*",
+      "name": "github.com/fxamacker/cbor/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:NpKPmjDBgUfBms6tr6JZkTHtfFGcMKsw3eGcmD/sapM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0",
+      "type": "library",
+      "version": "v2.9.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-logr/logr@v1.4.3?package-id=78a9f3af37dc8cc2",
+      "cpe": "cpe:2.3:a:go-logr:logr:v1.4.3:*:*:*:*:*:*:*",
+      "name": "github.com/go-logr/logr",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:logr:v1.4.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_logr:logr:v1.4.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-logr/logr@v1.4.3",
+      "type": "library",
+      "version": "v1.4.3"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-logr/stdr@v1.2.2?package-id=dc6e6d0d27f367e2",
+      "cpe": "cpe:2.3:a:go-logr:stdr:v1.2.2:*:*:*:*:*:*:*",
+      "name": "github.com/go-logr/stdr",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:stdr:v1.2.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_logr:stdr:v1.2.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-logr/stdr@v1.2.2",
+      "type": "library",
+      "version": "v1.2.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=c42c3e9e54149613",
+      "cpe": "cpe:2.3:a:go-openapi:jsonpointer:v0.21.0:*:*:*:*:*:*:*",
+      "name": "github.com/go-openapi/jsonpointer",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:jsonpointer:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:jsonpointer:v0.21.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:YgdVicSA9vH5RiHs9TZW5oyafXZFc6+2Vc1rr/O9oNQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0",
+      "type": "library",
+      "version": "v0.21.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2?package-id=4ab6e70a45685006",
+      "cpe": "cpe:2.3:a:go-openapi:jsonreference:v0.20.2:*:*:*:*:*:*:*",
+      "name": "github.com/go-openapi/jsonreference",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:jsonreference:v0.20.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:jsonreference:v0.20.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:3sVjiK66+uXK/6oQ8xgcRKcFgQ5KXa2KvnJRumpMGbE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2",
+      "type": "library",
+      "version": "v0.20.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=d76be4d7289d541f",
+      "cpe": "cpe:2.3:a:go-openapi:swag:v0.23.0:*:*:*:*:*:*:*",
+      "name": "github.com/go-openapi/swag",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:swag:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_openapi:swag:v0.23.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:vsEVJDUo2hPJ2tu0/Xc+4noaxyEffXNIs3cOULZ+GrE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-openapi/swag@v0.23.0",
+      "type": "library",
+      "version": "v0.23.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/go-viper/mapstructure/v2@v2.4.0?package-id=730840bb3eae9fcd",
+      "cpe": "cpe:2.3:a:go-viper:mapstructure\\/v2:v2.4.0:*:*:*:*:*:*:*",
+      "name": "github.com/go-viper/mapstructure/v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:mapstructure\\/v2:v2.4.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go_viper:mapstructure\\/v2:v2.4.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:EBsztssimR/CONLSZZ04E8qAkxNYq4Qp9LvH92wZUgs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-viper/mapstructure/v2@v2.4.0",
+      "type": "library",
+      "version": "v2.4.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gobuffalo/flect@v1.0.3?package-id=00cf63d7ead3cf8d",
+      "cpe": "cpe:2.3:a:gobuffalo:flect:v1.0.3:*:*:*:*:*:*:*",
+      "name": "github.com/gobuffalo/flect",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:xeWBM2nui+qnVvNM4S3foBhCAL2XgPU+a7FdpelbTq4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gobuffalo/flect@v1.0.3",
+      "type": "library",
+      "version": "v1.0.3"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gogo/protobuf@v1.3.2?package-id=297d9319836598e2",
+      "cpe": "cpe:2.3:a:gogo:protobuf:v1.3.2:*:*:*:*:*:*:*",
+      "name": "github.com/gogo/protobuf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gogo/protobuf@v1.3.2",
+      "type": "library",
+      "version": "v1.3.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0?package-id=8d9c446dcb55e503",
+      "cpe": "cpe:2.3:a:golang-jwt:jwt\\/v5:v5.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/golang-jwt/jwt/v5",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:jwt\\/v5:v5.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang_jwt:jwt\\/v5:v5.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:pv4AsKCKKZuqlgs5sUmn4x8UlGa0kEVt/puTpKx9vvo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0",
+      "type": "library",
+      "version": "v5.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/cel-go@v0.26.0?package-id=7368377f15f58790",
+      "cpe": "cpe:2.3:a:google:cel-go:v0.26.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/cel-go",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:google:cel_go:v0.26.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:DPGjXackMpJWH680oGY4lZhYjIameYmR+/6RBdDGmaI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/cel-go@v0.26.0",
+      "type": "library",
+      "version": "v0.26.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/gnostic-models@v0.7.0?package-id=d6bdbe0ae778a9ac",
+      "cpe": "cpe:2.3:a:google:gnostic-models:v0.7.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/gnostic-models",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:google:gnostic_models:v0.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:qwTtogB15McXDaNqTZdzPJRHvaVJlAl+HVQnLmJEJxo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/gnostic-models@v0.7.0",
+      "type": "library",
+      "version": "v0.7.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/go-cmp@v0.7.0?package-id=c4b2f80dd7c39181",
+      "cpe": "cpe:2.3:a:google:go-cmp:v0.7.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/go-cmp",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:google:go_cmp:v0.7.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/go-cmp@v0.7.0",
+      "type": "library",
+      "version": "v0.7.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/google/uuid@v1.6.0?package-id=8dbf007afbeb45b6",
+      "cpe": "cpe:2.3:a:google:uuid:v1.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/google/uuid",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/uuid@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/grpc-ecosystem/grpc-gateway/v2@v2.26.3?package-id=5b1667a5f92683bc",
+      "cpe": "cpe:2.3:a:grpc-ecosystem:grpc-gateway\\/v2:v2.26.3:*:*:*:*:*:*:*",
+      "name": "github.com/grpc-ecosystem/grpc-gateway/v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:grpc-ecosystem:grpc_gateway\\/v2:v2.26.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:grpc:grpc-gateway\\/v2:v2.26.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:grpc:grpc_gateway\\/v2:v2.26.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:grpc_ecosystem:grpc-gateway\\/v2:v2.26.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:grpc_ecosystem:grpc_gateway\\/v2:v2.26.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:5ZPtiqj0JL5oKWmcsq4VMaAW5ukBEgSGXEN89zeH1Jo="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/grpc-ecosystem/grpc-gateway/v2@v2.26.3",
+      "type": "library",
+      "version": "v2.26.3"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=46d393a7647912c3",
+      "cpe": "cpe:2.3:a:josharian:intern:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/josharian/intern",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/josharian/intern@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/jpillora/backoff@v1.0.0?package-id=217aa472eefc7c6e",
+      "cpe": "cpe:2.3:a:jpillora:backoff:v1.0.0:*:*:*:*:*:*:*",
+      "name": "github.com/jpillora/backoff",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:uvFg412JmmHBHw7iwprIxkPMI+sGQ4kzOWsMeHnm2EA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/jpillora/backoff@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/json-iterator/go@v1.1.12?package-id=7a8e9e76bf8b0384",
+      "cpe": "cpe:2.3:a:json-iterator:go:v1.1.12:*:*:*:*:*:*:*",
+      "name": "github.com/json-iterator/go",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:json:go:v1.1.12:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:json_iterator:go:v1.1.12:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/json-iterator/go@v1.1.12",
+      "type": "library",
+      "version": "v1.1.12"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=68e7bf0832ce3b48",
+      "cpe": "cpe:2.3:a:mailru:easyjson:v0.7.7:*:*:*:*:*:*:*",
+      "name": "github.com/mailru/easyjson",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mailru/easyjson@v0.7.7",
+      "type": "library",
+      "version": "v0.7.7"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mdlayher/socket@v0.4.1?package-id=8cb2af8c10b2e8ee",
+      "cpe": "cpe:2.3:a:mdlayher:socket:v0.4.1:*:*:*:*:*:*:*",
+      "name": "github.com/mdlayher/socket",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:eM9y2/jlbs1M615oshPQOHZzj6R6wMT7bX5NPiQvn2U="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mdlayher/socket@v0.4.1",
+      "type": "library",
+      "version": "v0.4.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mdlayher/vsock@v1.2.1?package-id=a4fb01274dcbc916",
+      "cpe": "cpe:2.3:a:mdlayher:vsock:v1.2.1:*:*:*:*:*:*:*",
+      "name": "github.com/mdlayher/vsock",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:pC1mTJTvjo1r9n9fbm7S1j04rCgCzhCOS5DY0zqHlnQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mdlayher/vsock@v1.2.1",
+      "type": "library",
+      "version": "v1.2.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd?package-id=80825b430261a21b",
+      "cpe": "cpe:2.3:a:modern-go:concurrent:v0.0.0-20180306012644-bacd9c7ef1dd:*:*:*:*:*:*:*",
+      "name": "github.com/modern-go/concurrent",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern:concurrent:v0.0.0-20180306012644-bacd9c7ef1dd:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern_go:concurrent:v0.0.0-20180306012644-bacd9c7ef1dd:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd",
+      "type": "library",
+      "version": "v0.0.0-20180306012644-bacd9c7ef1dd"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee?package-id=2712565c85daaed0",
+      "cpe": "cpe:2.3:a:modern-go:reflect2:v1.0.3-0.20250322232337-35a7c28c31ee:*:*:*:*:*:*:*",
+      "name": "github.com/modern-go/reflect2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern:reflect2:v1.0.3-0.20250322232337-35a7c28c31ee:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:modern_go:reflect2:v1.0.3-0.20250322232337-35a7c28c31ee:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:W5t00kpgFdJifH4BDsTlE89Zl93FEloxaWZfGcifgq8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee",
+      "type": "library",
+      "version": "v1.0.3-0.20250322232337-35a7c28c31ee"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=224968988a47f75e",
+      "cpe": "cpe:2.3:a:munnerz:goautoneg:v0.0.0-20191010083416-a7dc8b61c822:*:*:*:*:*:*:*",
+      "name": "github.com/munnerz/goautoneg",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+      "type": "library",
+      "version": "v0.0.0-20191010083416-a7dc8b61c822"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f?package-id=612eefb93ad043e1",
+      "cpe": "cpe:2.3:a:mwitkow:go-conntrack:v0.0.0-20190716064945-2f068394615f:*:*:*:*:*:*:*",
+      "name": "github.com/mwitkow/go-conntrack",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:mwitkow:go_conntrack:v0.0.0-20190716064945-2f068394615f:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:KUppIJq7/+SVif2QVs3tOP0zanoHgBEVAwHxUSIzRqU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f",
+      "type": "library",
+      "version": "v0.0.0-20190716064945-2f068394615f"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/oklog/run@v1.2.0?package-id=3109de60c4e6a253",
+      "cpe": "cpe:2.3:a:oklog:run:v1.2.0:*:*:*:*:*:*:*",
+      "name": "github.com/oklog/run",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:O8x3yXwah4A73hJdlrwo/2X6J62gE5qTMusH0dvz60E="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/oklog/run@v1.2.0",
+      "type": "library",
+      "version": "v1.2.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/pbnjay/memory@v0.0.0-20210728143218-7b4eea64cf58?package-id=ccb9ee300da48fe2",
+      "cpe": "cpe:2.3:a:pbnjay:memory:v0.0.0-20210728143218-7b4eea64cf58:*:*:*:*:*:*:*",
+      "name": "github.com/pbnjay/memory",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:onHthvaw9LFnH4t2DcNVpwGmV9E1BkGknEliJkfwQj0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/pbnjay/memory@v0.0.0-20210728143218-7b4eea64cf58",
+      "type": "library",
+      "version": "v0.0.0-20210728143218-7b4eea64cf58"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/pelletier/go-toml/v2@v2.2.4?package-id=62b41d6036e150aa",
+      "cpe": "cpe:2.3:a:pelletier:go-toml\\/v2:v2.2.4:*:*:*:*:*:*:*",
+      "name": "github.com/pelletier/go-toml/v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:pelletier:go_toml\\/v2:v2.2.4:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/pelletier/go-toml/v2@v2.2.4",
+      "type": "library",
+      "version": "v2.2.4"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=aa39d994d20ead8a",
+      "cpe": "cpe:2.3:a:pkg:errors:v0.9.1:*:*:*:*:*:*:*",
+      "name": "github.com/pkg/errors",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/pkg/errors@v0.9.1",
+      "type": "library",
+      "version": "v0.9.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/pmezard/go-difflib@v1.0.1-0.20181226105442-5d4384ee4fb2?package-id=ada64a1c312cd621",
+      "cpe": "cpe:2.3:a:pmezard:go-difflib:v1.0.1-0.20181226105442-5d4384ee4fb2:*:*:*:*:*:*:*",
+      "name": "github.com/pmezard/go-difflib",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:pmezard:go_difflib:v1.0.1-0.20181226105442-5d4384ee4fb2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/pmezard/go-difflib@v1.0.1-0.20181226105442-5d4384ee4fb2",
+      "type": "library",
+      "version": "v1.0.1-0.20181226105442-5d4384ee4fb2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_golang@v1.23.3-0.20251103151724-a5ae20370e5e?package-id=85c08b72e672f57a",
+      "cpe": "cpe:2.3:a:prometheus:client-golang:v1.23.3-0.20251103151724-a5ae20370e5e:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_golang",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_golang:v1.23.3-0.20251103151724-a5ae20370e5e:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:VdOG0GiDJykWb5QSEdJzrwd1XVQy6kuBkNhcPmwwQsQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_golang@v1.23.3-0.20251103151724-a5ae20370e5e",
+      "type": "library",
+      "version": "v1.23.3-0.20251103151724-a5ae20370e5e"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=55bb662b147f01ba",
+      "cpe": "cpe:2.3:a:prometheus:client-model:v0.6.2:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/client_model",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:client_model:v0.6.2:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_model@v0.6.2",
+      "type": "library",
+      "version": "v0.6.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/common@v0.67.5?package-id=ce4c9bb7a1428a8c",
+      "cpe": "cpe:2.3:a:prometheus:common:v0.67.5:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/common",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:pIgK94WWlQt1WLwAC5j2ynLaBRDiinoAb86HZHTUGI4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/common@v0.67.5",
+      "type": "library",
+      "version": "v0.67.5"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.1?package-id=537ac4494e520d95",
+      "cpe": "cpe:2.3:a:prometheus:exporter-toolkit:v0.15.1:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/exporter-toolkit",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:prometheus:exporter_toolkit:v0.15.1:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:XrGGr/qWl8Gd+pqJqTkNLww9eG8vR/CoRk0FubOKfLE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.1",
+      "type": "library",
+      "version": "v0.15.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/prometheus/procfs@v0.19.2?package-id=f59065eb14d2c02e",
+      "cpe": "cpe:2.3:a:prometheus:procfs:v0.19.2:*:*:*:*:*:*:*",
+      "name": "github.com/prometheus/procfs",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zUMhqEW66Ex7OXIiDkll3tl9a1ZdilUOd/F6ZXw4Vws="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/procfs@v0.19.2",
+      "type": "library",
+      "version": "v0.19.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/robfig/cron/v3@v3.0.1?package-id=64962ad796622d13",
+      "cpe": "cpe:2.3:a:robfig:cron\\/v3:v3.0.1:*:*:*:*:*:*:*",
+      "name": "github.com/robfig/cron/v3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:WdRxkvbJztn8LMz/QEvLN5sBU+xKpSqwwUO1Pjr4qDs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/robfig/cron/v3@v3.0.1",
+      "type": "library",
+      "version": "v3.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/sagikazarmark/locafero@v0.11.0?package-id=518c406e1e7291f9",
+      "cpe": "cpe:2.3:a:sagikazarmark:locafero:v0.11.0:*:*:*:*:*:*:*",
+      "name": "github.com/sagikazarmark/locafero",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:1iurJgmM9G3PA/I+wWYIOw/5SyBtxapeHDcg+AAIFXc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/sagikazarmark/locafero@v0.11.0",
+      "type": "library",
+      "version": "v0.11.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/sourcegraph/conc@v0.3.1-0.20240121214520-5f936abd7ae8?package-id=90b124219d53f3cb",
+      "cpe": "cpe:2.3:a:sourcegraph:conc:v0.3.1-0.20240121214520-5f936abd7ae8:*:*:*:*:*:*:*",
+      "name": "github.com/sourcegraph/conc",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:+jumHNA0Wrelhe64i8F6HNlS8pkoyMv5sreGx2Ry5Rw="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/sourcegraph/conc@v0.3.1-0.20240121214520-5f936abd7ae8",
+      "type": "library",
+      "version": "v0.3.1-0.20240121214520-5f936abd7ae8"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/afero@v1.15.0?package-id=4590f08504d1021b",
+      "cpe": "cpe:2.3:a:spf13:afero:v1.15.0:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/afero",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:b/YBCLWAJdFWJTN9cLhiXXcD7mzKn9Dm86dNnfyQw1I="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/afero@v1.15.0",
+      "type": "library",
+      "version": "v1.15.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/cast@v1.10.0?package-id=a2262b6ee1ac0c5f",
+      "cpe": "cpe:2.3:a:spf13:cast:v1.10.0:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/cast",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:h2x0u2shc1QuLHfxi+cTJvs30+ZAHOGRic8uyGTDWxY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/cast@v1.10.0",
+      "type": "library",
+      "version": "v1.10.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/cobra@v1.10.2?package-id=3de2ca33b07529ef",
+      "cpe": "cpe:2.3:a:spf13:cobra:v1.10.2:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/cobra",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/cobra@v1.10.2",
+      "type": "library",
+      "version": "v1.10.2"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/pflag@v1.0.10?package-id=3a71325eabb359d1",
+      "cpe": "cpe:2.3:a:spf13:pflag:v1.0.10:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/pflag",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:4EBh2KAYBwaONj6b2Ye1GiHfwjqyROoF4RwYO+vPwFk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/pflag@v1.0.10",
+      "type": "library",
+      "version": "v1.0.10"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/spf13/viper@v1.21.0?package-id=44aed123265bd059",
+      "cpe": "cpe:2.3:a:spf13:viper:v1.21.0:*:*:*:*:*:*:*",
+      "name": "github.com/spf13/viper",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:x5S+0EU27Lbphp4UKm1C+1oQO+rKx36vfCoaVebLFSU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/spf13/viper@v1.21.0",
+      "type": "library",
+      "version": "v1.21.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=4f9e7b90acd5142c",
+      "cpe": "cpe:2.3:a:stoewer:go-strcase:v1.3.0:*:*:*:*:*:*:*",
+      "name": "github.com/stoewer/go-strcase",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:stoewer:go_strcase:v1.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:g0eASXYtp+yvN9fK8sH94oCIk0fau9uV1/ZdJ0AVEzs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/stoewer/go-strcase@v1.3.0",
+      "type": "library",
+      "version": "v1.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/subosito/gotenv@v1.6.0?package-id=331d35032e300b85",
+      "cpe": "cpe:2.3:a:subosito:gotenv:v1.6.0:*:*:*:*:*:*:*",
+      "name": "github.com/subosito/gotenv",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/subosito/gotenv@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/x448/float16@v0.8.4?package-id=e53b6815d9c020af",
+      "cpe": "cpe:2.3:a:x448:float16:v0.8.4:*:*:*:*:*:*:*",
+      "name": "github.com/x448/float16",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/github.com/x448/float16@v0.8.4",
+      "type": "library",
+      "version": "v0.8.4"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/auto/sdk@v1.1.0?package-id=644ab5db7fc91870",
+      "cpe": "cpe:2.3:a:auto:sdk:v1.1.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/auto/sdk",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/auto/sdk@v1.1.0",
+      "type": "library",
+      "version": "v1.1.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.60.0?package-id=696a2c4d99e75f28",
+      "cpe": "cpe:2.3:a:contrib:instrumentation\\/net\\/http\\/otelhttp:v0.60.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:sbiXRNDSWJOTobXh5HyQKjq6wUC5tNybqjIqDpAY4CU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.60.0",
+      "type": "library",
+      "version": "v0.60.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel@v1.37.0?package-id=02acce25fede61a5",
+      "cpe": "cpe:2.3:a:opentelemetry:opentelemetry:v1.37.0:*:*:*:*:go:*:*",
+      "name": "go.opentelemetry.io/otel",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:9zhNfelUvx0KBfu/gb+ZgeAfAgtWrfHJZcAqFC228wQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel@v1.37.0",
+      "type": "library",
+      "version": "v1.37.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace@v1.36.0?package-id=747520d716a81efb",
+      "cpe": "cpe:2.3:a:otel:exporters\\/otlp\\/otlptrace:v1.36.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/otel/exporters/otlp/otlptrace",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:dNzwXjZKpMpE2JhmO+9HsPl42NIXFIFSUSSs0fiqra0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace@v1.36.0",
+      "type": "library",
+      "version": "v1.36.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc@v1.36.0?package-id=5cabf888832ba3b2",
+      "cpe": "cpe:2.3:a:otel:exporters\\/otlp\\/otlptrace\\/otlptracegrpc:v1.36.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:JgtbA0xkWHnTmYk7YusopJFX6uleBmAuZ8n05NEh8nQ="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc@v1.36.0",
+      "type": "library",
+      "version": "v1.36.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel/metric@v1.37.0?package-id=3af11f4ef135d12f",
+      "cpe": "cpe:2.3:a:otel:metric:v1.37.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/otel/metric",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:mvwbQS5m0tbmqML4NqK+e3aDiO02vsf/WgbsdpcPoZE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel/metric@v1.37.0",
+      "type": "library",
+      "version": "v1.37.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel/sdk@v1.37.0?package-id=096874e6969cd661",
+      "cpe": "cpe:2.3:a:otel:sdk:v1.37.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/otel/sdk",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:ItB0QUqnjesGRvNcmAcU0LyvkVyGJ2xftD29bWdDvKI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel/sdk@v1.37.0",
+      "type": "library",
+      "version": "v1.37.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/otel/trace@v1.37.0?package-id=24fe3a221f99e7bc",
+      "cpe": "cpe:2.3:a:otel:trace:v1.37.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/otel/trace",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:HLdcFNbRQBE2imdSEgm/kwqmQj1Or1l/7bW6mxVK7z4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/otel/trace@v1.37.0",
+      "type": "library",
+      "version": "v1.37.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.opentelemetry.io/proto/otlp@v1.6.0?package-id=20cce5f9abb26c18",
+      "cpe": "cpe:2.3:a:proto:otlp:v1.6.0:*:*:*:*:*:*:*",
+      "name": "go.opentelemetry.io/proto/otlp",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:jQjP+AQyTf+Fe7OKj/MfkDrmK4MNVtw2NpXsf9fefDI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.opentelemetry.io/proto/otlp@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.3?package-id=42eaa7370f909bdb",
+      "cpe": "cpe:2.3:a:yaml:v2:v2.4.3:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:6gvOSjQoTB3vt1l+CU+tSyi/HOjfOjRLJ4YwYZGwRO0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v2@v2.4.3",
+      "type": "library",
+      "version": "v2.4.3"
+    },
+    {
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=1ab4a05989279585",
+      "cpe": "cpe:2.3:a:yaml:v3:v3.0.4:*:*:*:*:*:*:*",
+      "name": "go.yaml.in/yaml/v3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:tfq32ie2Jv2UxXFdLJdh3jXuOzWiL1fo0bu/FbuKpbc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4",
+      "type": "library",
+      "version": "v3.0.4"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/crypto@v0.46.0?package-id=4d8c5555f7aeb67f",
+      "cpe": "cpe:2.3:a:golang:crypto:v0.46.0:*:*:*:*:go:*:*",
+      "name": "golang.org/x/crypto",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:go:ssh:v0.46.0:*:*:*:*:go:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:cKRW/pmt1pKAfetfu+RCEvjvZkA9RimPbh7bhFjGVBU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/crypto@v0.46.0",
+      "type": "library",
+      "version": "v0.46.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/exp@v0.0.0-20250819193227-8b4c13bb791b?package-id=16308933d2d40f59",
+      "cpe": "cpe:2.3:a:golang:x\\/exp:v0.0.0-20250819193227-8b4c13bb791b:*:*:*:*:*:*:*",
+      "name": "golang.org/x/exp",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:DXr+pvt3nC887026GRP39Ej11UATqWDmWuS99x26cD0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/exp@v0.0.0-20250819193227-8b4c13bb791b",
+      "type": "library",
+      "version": "v0.0.0-20250819193227-8b4c13bb791b"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/net@v0.48.0?package-id=f3e51b13405a4970",
+      "cpe": "cpe:2.3:a:golang:networking:v0.48.0:*:*:*:*:go:*:*",
+      "name": "golang.org/x/net",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:golang:net:v0.48.0:*:*:*:*:go:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zyQRTTrjc33Lhh0fBgT/H3oZq9WuvRR5gPC70xpDiQU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/net@v0.48.0",
+      "type": "library",
+      "version": "v0.48.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/oauth2@v0.34.0?package-id=7ed3e58b7cf305cb",
+      "cpe": "cpe:2.3:a:golang:x\\/oauth2:v0.34.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/oauth2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:hqK/t4AKgbqWkdkcAeI8XLmbK+4m4G5YeQRrmiotGlw="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/oauth2@v0.34.0",
+      "type": "library",
+      "version": "v0.34.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sync@v0.19.0?package-id=ef11ae79d963649d",
+      "cpe": "cpe:2.3:a:golang:x\\/sync:v0.19.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sync",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:vV+1eWNmZ5geRlYjzm2adRgW2/mcpevXNg50YZtPCE4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sync@v0.19.0",
+      "type": "library",
+      "version": "v0.19.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/sys@v0.39.0?package-id=cb123ed8f43da04e",
+      "cpe": "cpe:2.3:a:golang:x\\/sys:v0.39.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/sys",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:CvCKL8MeisomCi6qNZ+wbb0DN9E5AATixKsvNtMoMFk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sys@v0.39.0",
+      "type": "library",
+      "version": "v0.39.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/term@v0.38.0?package-id=87f18b90c9fccaa6",
+      "cpe": "cpe:2.3:a:golang:x\\/term:v0.38.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/term",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:PQ5pkm/rLO6HnxFR7N2lJHOZX6Kez5Y1gDSJla6jo7Q="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/term@v0.38.0",
+      "type": "library",
+      "version": "v0.38.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/text@v0.32.0?package-id=c0c2cef7dad5920b",
+      "cpe": "cpe:2.3:a:golang:text:v0.32.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/text",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:ZD01bjUt1FQ9WJ0ClOL5vxgxOI/sVCNgX1YtKwcY0mU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/text@v0.32.0",
+      "type": "library",
+      "version": "v0.32.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/time@v0.14.0?package-id=c4db46412a8b864a",
+      "cpe": "cpe:2.3:a:golang:x\\/time:v0.14.0:*:*:*:*:*:*:*",
+      "name": "golang.org/x/time",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:MRx4UaLrDotUKUdCIqzPC48t1Y9hANFKIRpNx+Te8PI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/time@v0.14.0",
+      "type": "library",
+      "version": "v0.14.0"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20250707201910-8d1bb00bc6a7?package-id=cac8a45288e0221f",
+      "cpe": "cpe:2.3:a:google:genproto:v0.0.0-20250707201910-8d1bb00bc6a7:*:*:*:*:*:*:*",
+      "name": "google.golang.org/genproto/googleapis/api",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:FiusG7LWj+4byqhbvmB+Q93B/mOxJLN2DTozDuZm4EU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20250707201910-8d1bb00bc6a7",
+      "type": "library",
+      "version": "v0.0.0-20250707201910-8d1bb00bc6a7"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20250707201910-8d1bb00bc6a7?package-id=e7d1a6474eff3425",
+      "cpe": "cpe:2.3:a:google:genproto:v0.0.0-20250707201910-8d1bb00bc6a7:*:*:*:*:*:*:*",
+      "name": "google.golang.org/genproto/googleapis/rpc",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:pFyd6EwwL2TqFf8emdthzeX+gZE1ElRq3iM8pui4KBY="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20250707201910-8d1bb00bc6a7",
+      "type": "library",
+      "version": "v0.0.0-20250707201910-8d1bb00bc6a7"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/grpc@v1.75.1?package-id=7791a62b29b91682",
+      "cpe": "cpe:2.3:a:google:grpc:v1.75.1:*:*:*:*:*:*:*",
+      "name": "google.golang.org/grpc",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:/ODCNEuf9VghjgO3rqLcfg8fiOP0nSluljWFlDxELLI="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/grpc@v1.75.1",
+      "type": "library",
+      "version": "v1.75.1"
+    },
+    {
+      "bom-ref": "pkg:golang/google.golang.org/protobuf@v1.36.11?package-id=ccdec4e825ca0b6a",
+      "cpe": "cpe:2.3:a:google:protobuf:v1.36.11:*:*:*:*:*:*:*",
+      "name": "google.golang.org/protobuf",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/protobuf@v1.36.11",
+      "type": "library",
+      "version": "v1.36.11"
+    },
+    {
+      "bom-ref": "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0?package-id=967848f92203ceb1",
+      "name": "gopkg.in/evanphx/json-patch.v4",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:n6jtcsulIzXPJaxegRbvFNNrZDjbij7ny3gmSPG+6V4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0",
+      "type": "library",
+      "version": "v4.12.0"
+    },
+    {
+      "bom-ref": "pkg:golang/gopkg.in/inf.v0@v0.9.1?package-id=8a13fa837bc97b11",
+      "name": "gopkg.in/inf.v0",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:73M5CoZyi3ZLMOyDlQh031Cx6N9NDJ2Vvfl76EDAgDc="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/gopkg.in/inf.v0@v0.9.1",
+      "type": "library",
+      "version": "v0.9.1"
+    },
+    {
+      "bom-ref": "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=833fc80053f043d6",
+      "cpe": "cpe:2.3:a:yaml_project:yaml:v3.0.1:*:*:*:*:go:*:*",
+      "name": "gopkg.in/yaml.v3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+      "type": "library",
+      "version": "v3.0.1"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/api@v0.34.3?package-id=1730b1fb38811219",
+      "name": "k8s.io/api",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:D12sTP257/jSH2vHV2EDYrb16bS7ULlHpdNdNhEw2S4="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/api@v0.34.3",
+      "type": "library",
+      "version": "v0.34.3"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/apimachinery@v0.34.3?package-id=e9fe29a2e69f65c0",
+      "name": "k8s.io/apimachinery",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:/TB+SFEiQvN9HPldtlWOTp0hWbJ+fjU+wkxysf/aQnE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/apimachinery@v0.34.3",
+      "type": "library",
+      "version": "v0.34.3"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/apiserver@v0.34.1?package-id=1b25417ef645a4ba",
+      "name": "k8s.io/apiserver",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:U3JBGdgANK3dfFcyknWde1G6X1F4bg7PXuvlqt8lITA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/apiserver@v0.34.1",
+      "type": "library",
+      "version": "v0.34.1"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/client-go@v0.34.3?package-id=c4a4bfe1946c2fae",
+      "name": "k8s.io/client-go",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:wtYtpzy/OPNYf7WyNBTj3iUA0XaBHVqhv4Iv3tbrF5A="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/client-go@v0.34.3",
+      "type": "library",
+      "version": "v0.34.3"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/component-base@v0.34.3?package-id=dbc1f9b392aedeb9",
+      "name": "k8s.io/component-base",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:zsEgw6ELqK0XncCQomgO9DpUIzlrYuZYA0Cgo+JWpVk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/component-base@v0.34.3",
+      "type": "library",
+      "version": "v0.34.3"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/klog/v2@v2.130.1?package-id=ad801b9a819ab83d",
+      "cpe": "cpe:2.3:a:klog:v2:v2.130.1:*:*:*:*:*:*:*",
+      "name": "k8s.io/klog/v2",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:n9Xl7H1Xvksem4KFG4PYbdQCQxqc/tTUyrgXaOhHSzk="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/klog/v2@v2.130.1",
+      "type": "library",
+      "version": "v2.130.1"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b?package-id=6fffb26bf69345da",
+      "name": "k8s.io/kube-openapi",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:MloQ9/bdJyIu9lb1PzujOPolHyvO06MXG5TUIj2mNAA="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b",
+      "type": "library",
+      "version": "v0.0.0-20250710124328-f3f2b991d03b"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/kube-state-metrics/v2@v0.34.3?package-id=592c57cc0457b0f1",
+      "cpe": "cpe:2.3:a:kube-state-metrics:v2:v0.34.3:*:*:*:*:*:*:*",
+      "name": "k8s.io/kube-state-metrics/v2",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:kube-state:v2:v0.34.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:kube:v2:v0.34.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:kube_state:v2:v0.34.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:kube_state_metrics:v2:v0.34.3:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/kube-state-metrics/v2@v0.34.3",
+      "type": "library",
+      "version": "v0.34.3"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/sample-controller@v0.34.3?package-id=d86b7632863f73d1",
+      "name": "k8s.io/sample-controller",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:JjbCTiXgD8LchRiam/5a9vOb5hxC3n8nfcwkTFlauV0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/sample-controller@v0.34.3",
+      "type": "library",
+      "version": "v0.34.3"
+    },
+    {
+      "bom-ref": "pkg:golang/k8s.io/utils@v0.0.0-20250820121507-0af2bda4dd1d?package-id=63a3a2c199c01283",
+      "name": "k8s.io/utils",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:wAhiDyZ4Tdtt7e46e9M5ZSAJ/MnPGPs+Ki1gHw4w1R0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/k8s.io/utils@v0.0.0-20250820121507-0af2bda4dd1d",
+      "type": "library",
+      "version": "v0.0.0-20250820121507-0af2bda4dd1d"
+    },
+    {
+      "bom-ref": "pkg:deb/debian/media-types@10.0.0?arch=all&distro=debian-12.13&package-id=81fa76b13d51bb43",
+      "cpe": "cpe:2.3:a:media-types:media-types:10.0.0:*:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "name": "ad-hoc"
+          }
+        }
+      ],
+      "name": "media-types",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:media-types:media_types:10.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:media:media-types:10.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:media:media_types:10.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:media_types:media-types:10.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:media_types:media_types:10.0.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/var/lib/dpkg/status.d/media-types"
+        },
+        {
+          "name": "syft:location:1:path",
+          "value": "/usr/share/doc/media-types/copyright"
+        },
+        {
+          "name": "syft:location:2:path",
+          "value": "/var/lib/dpkg/status.d/media-types.md5sums"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "92"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "dpkg-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "dpkg-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "deb"
+        }
+      ],
+      "publisher": "Mime-Support Packagers <team+debian-mimesupport-packagers@tracker.debian.org>",
+      "purl": "pkg:deb/debian/media-types@10.0.0?arch=all&distro=debian-12.13",
+      "type": "library",
+      "version": "10.0.0"
+    },
+    {
+      "bom-ref": "pkg:deb/debian/netbase@6.4?arch=all&distro=debian-12.13&package-id=f28ae05ddd844b33",
+      "cpe": "cpe:2.3:a:netbase:netbase:6.4:*:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "name": "netbase",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/var/lib/dpkg/status.d/netbase"
+        },
+        {
+          "name": "syft:location:1:path",
+          "value": "/usr/share/doc/netbase/copyright"
+        },
+        {
+          "name": "syft:location:2:path",
+          "value": "/var/lib/dpkg/status.d/netbase.md5sums"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "36"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "dpkg-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "dpkg-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "deb"
+        }
+      ],
+      "publisher": "Marco d'Itri <md@linux.it>",
+      "purl": "pkg:deb/debian/netbase@6.4?arch=all&distro=debian-12.13",
+      "type": "library",
+      "version": "6.4"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/apiserver-network-proxy/konnectivity-client@v0.33.0?package-id=c5c8aada279eae0a",
+      "cpe": "cpe:2.3:a:apiserver-network-proxy:konnectivity-client:v0.33.0:*:*:*:*:*:*:*",
+      "name": "sigs.k8s.io/apiserver-network-proxy/konnectivity-client",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver-network-proxy:konnectivity_client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver-network:konnectivity-client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver-network:konnectivity_client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver:konnectivity-client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver:konnectivity_client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver_network:konnectivity-client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver_network:konnectivity_client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver_network_proxy:konnectivity-client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:apiserver_network_proxy:konnectivity_client:v0.33.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:qPrZsv1cwQiFeieFlRqT627fVZ+tyfou/+S5S0H5ua0="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/apiserver-network-proxy/konnectivity-client@v0.33.0",
+      "type": "library",
+      "version": "v0.33.0"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/controller-runtime@v0.22.4?package-id=689163b6931211b5",
+      "name": "sigs.k8s.io/controller-runtime",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:GEjV7KV3TY8e+tJ2LCTxUTanW4z/FmNB7l327UfMq9A="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/controller-runtime@v0.22.4",
+      "type": "library",
+      "version": "v0.22.4"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8?package-id=f05089f216e650f0",
+      "name": "sigs.k8s.io/json",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:gBQPwqORJ8d8/YNZWEjoZs7npUVDpVXUUOFfW6CgAqE="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8",
+      "type": "library",
+      "version": "v0.0.0-20241014173422-cfa47c3a1cc8"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/randfill@v1.0.0?package-id=7703b6f7c7506d10",
+      "name": "sigs.k8s.io/randfill",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:JfjMILfT8A6RbawdsK2JXGBR5AQVfd+9TbzrlneTyrU="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/randfill@v1.0.0",
+      "type": "library",
+      "version": "v1.0.0"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0?package-id=ed4a512ec4d34092",
+      "cpe": "cpe:2.3:a:structured-merge-diff:v6:v6.3.0:*:*:*:*:*:*:*",
+      "name": "sigs.k8s.io/structured-merge-diff/v6",
+      "properties": [
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured-merge:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured_merge:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:structured_merge_diff:v6:v6.3.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:jTijUJbW353oVOd9oTlifJqOGEkUw2jB/fXCbTiQEco="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0",
+      "type": "library",
+      "version": "v6.3.0"
+    },
+    {
+      "bom-ref": "pkg:golang/sigs.k8s.io/yaml@v1.6.0?package-id=19559ac44a21741a",
+      "name": "sigs.k8s.io/yaml",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:architecture",
+          "value": "amd64"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:metadata:h1Digest",
+          "value": "h1:G8fkbMSAFqgEFgh4b1wmtzDnioxFCUgTZhlbj5P9QYs="
+        },
+        {
+          "name": "syft:metadata:mainModule",
+          "value": "k8s.io/kube-state-metrics/v2"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/sigs.k8s.io/yaml@v1.6.0",
+      "type": "library",
+      "version": "v1.6.0"
+    },
+    {
+      "bom-ref": "pkg:golang/stdlib@1.25.5?package-id=622c8c7e855921a1",
+      "cpe": "cpe:2.3:a:golang:go:1.25.5:-:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "stdlib",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/kube-state-metrics"
+        },
+        {
+          "name": "syft:metadata:goCompiledVersion",
+          "value": "go1.25.5"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "go-module-binary-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "go"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "go-module-buildinfo-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "go-module"
+        }
+      ],
+      "purl": "pkg:golang/stdlib@1.25.5",
+      "type": "library",
+      "version": "go1.25.5"
+    },
+    {
+      "bom-ref": "pkg:deb/debian/tzdata@2025b-0%2Bdeb12u2?arch=all&distro=debian-12.13&package-id=ac6a16c69ab42e04",
+      "cpe": "cpe:2.3:a:tzdata:tzdata:2025b-0\\+deb12u2:*:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "license": {
+            "name": "public-domain"
+          }
+        }
+      ],
+      "name": "tzdata",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "/var/lib/dpkg/status.d/tzdata"
+        },
+        {
+          "name": "syft:location:1:path",
+          "value": "/usr/share/doc/tzdata/copyright"
+        },
+        {
+          "name": "syft:location:2:path",
+          "value": "/var/lib/dpkg/status.d/tzdata.md5sums"
+        },
+        {
+          "name": "syft:metadata:installedSize",
+          "value": "2565"
+        },
+        {
+          "name": "syft:package:foundBy",
+          "value": "dpkg-db-cataloger"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "dpkg-db-entry"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "deb"
+        }
+      ],
+      "publisher": "GNU Libc Maintainers <debian-glibc@lists.debian.org>",
+      "purl": "pkg:deb/debian/tzdata@2025b-0%2Bdeb12u2?arch=all&distro=debian-12.13",
+      "type": "library",
+      "version": "2025b-0+deb12u2"
+    },
+    {
+      "bom-ref": "os:debian@12.13",
+      "description": "Distroless",
+      "externalReferences": [
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/GoogleContainerTools/distroless/issues/new"
+        },
+        {
+          "comment": "support",
+          "type": "other",
+          "url": "https://github.com/GoogleContainerTools/distroless/blob/master/README.md"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/GoogleContainerTools/distroless"
+        }
+      ],
+      "name": "debian",
+      "properties": [
+        {
+          "name": "syft:distro:extendedSupport",
+          "value": "false"
+        },
+        {
+          "name": "syft:distro:id",
+          "value": "debian"
+        },
+        {
+          "name": "syft:distro:prettyName",
+          "value": "Distroless"
+        },
+        {
+          "name": "syft:distro:versionID",
+          "value": "12.13"
+        }
+      ],
+      "swid": {
+        "name": "debian",
+        "tagId": "debian",
+        "version": "12.13"
+      },
+      "type": "operating-system",
+      "version": "12.13"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "os:debian@12.13"
+    },
+    {
+      "ref": "pkg:deb/debian/base-files@12.4%2Bdeb12u13?arch=amd64&distro=debian-12.13&package-id=fb5f7ee8e71054ea"
+    },
+    {
+      "ref": "pkg:deb/debian/media-types@10.0.0?arch=all&distro=debian-12.13&package-id=81fa76b13d51bb43"
+    },
+    {
+      "ref": "pkg:deb/debian/netbase@6.4?arch=all&distro=debian-12.13&package-id=f28ae05ddd844b33"
+    },
+    {
+      "ref": "pkg:deb/debian/tzdata@2025b-0%2Bdeb12u2?arch=all&distro=debian-12.13&package-id=ac6a16c69ab42e04"
+    },
+    {
+      "ref": "pkg:golang/cel.dev/expr@v0.24.0?package-id=b1cfb0836d22a518"
+    },
+    {
+      "ref": "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.0?package-id=3cd69f78141eb5b1"
+    },
+    {
+      "ref": "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=0ec8255a9e1b2b4e"
+    },
+    {
+      "ref": "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=a0a065ae6920dfba"
+    },
+    {
+      "ref": "pkg:golang/github.com/cenkalti/backoff/v5@v5.0.2?package-id=b488528494fb01ea"
+    },
+    {
+      "ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=300c936cd9a0fdec"
+    },
+    {
+      "ref": "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0?package-id=4a799affd47a0496"
+    },
+    {
+      "ref": "pkg:golang/github.com/davecgh/go-spew@v1.1.2-0.20180830191138-d8f796af33cc?package-id=db963a1e27bf5a36"
+    },
+    {
+      "ref": "pkg:golang/github.com/dgryski/go-jump@v0.0.0-20211018200510-ba001c3ffce0?package-id=8a171bf818ed41b9"
+    },
+    {
+      "ref": "pkg:golang/github.com/dlclark/regexp2@v1.11.5?package-id=517661bb99a4d2d1"
+    },
+    {
+      "ref": "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2?package-id=e6ddc8d1e93d0f8a"
+    },
+    {
+      "ref": "pkg:golang/github.com/felixge/httpsnoop@v1.0.4?package-id=405354628104a1e8"
+    },
+    {
+      "ref": "pkg:golang/github.com/fsnotify/fsnotify@v1.9.0?package-id=29fbb182e868ef94"
+    },
+    {
+      "ref": "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0?package-id=c992baa7436fec35"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-logr/logr@v1.4.3?package-id=78a9f3af37dc8cc2"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-logr/stdr@v1.2.2?package-id=dc6e6d0d27f367e2"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=c42c3e9e54149613"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2?package-id=4ab6e70a45685006"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=d76be4d7289d541f"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-viper/mapstructure/v2@v2.4.0?package-id=730840bb3eae9fcd"
+    },
+    {
+      "ref": "pkg:golang/github.com/gobuffalo/flect@v1.0.3?package-id=00cf63d7ead3cf8d"
+    },
+    {
+      "ref": "pkg:golang/github.com/gogo/protobuf@v1.3.2?package-id=297d9319836598e2"
+    },
+    {
+      "ref": "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0?package-id=8d9c446dcb55e503"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/cel-go@v0.26.0?package-id=7368377f15f58790"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/gnostic-models@v0.7.0?package-id=d6bdbe0ae778a9ac"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/go-cmp@v0.7.0?package-id=c4b2f80dd7c39181"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/uuid@v1.6.0?package-id=8dbf007afbeb45b6"
+    },
+    {
+      "ref": "pkg:golang/github.com/grpc-ecosystem/grpc-gateway/v2@v2.26.3?package-id=5b1667a5f92683bc"
+    },
+    {
+      "ref": "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=46d393a7647912c3"
+    },
+    {
+      "ref": "pkg:golang/github.com/jpillora/backoff@v1.0.0?package-id=217aa472eefc7c6e"
+    },
+    {
+      "ref": "pkg:golang/github.com/json-iterator/go@v1.1.12?package-id=7a8e9e76bf8b0384"
+    },
+    {
+      "ref": "pkg:golang/github.com/kimmachinegun/automemlimit@v0.7.5?package-id=e8a71c1df15487ad"
+    },
+    {
+      "ref": "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=68e7bf0832ce3b48"
+    },
+    {
+      "ref": "pkg:golang/github.com/mdlayher/socket@v0.4.1?package-id=8cb2af8c10b2e8ee"
+    },
+    {
+      "ref": "pkg:golang/github.com/mdlayher/vsock@v1.2.1?package-id=a4fb01274dcbc916"
+    },
+    {
+      "ref": "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd?package-id=80825b430261a21b"
+    },
+    {
+      "ref": "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee?package-id=2712565c85daaed0"
+    },
+    {
+      "ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=224968988a47f75e"
+    },
+    {
+      "ref": "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f?package-id=612eefb93ad043e1"
+    },
+    {
+      "ref": "pkg:golang/github.com/oklog/run@v1.2.0?package-id=3109de60c4e6a253"
+    },
+    {
+      "ref": "pkg:golang/github.com/pbnjay/memory@v0.0.0-20210728143218-7b4eea64cf58?package-id=ccb9ee300da48fe2"
+    },
+    {
+      "ref": "pkg:golang/github.com/pelletier/go-toml/v2@v2.2.4?package-id=62b41d6036e150aa"
+    },
+    {
+      "ref": "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=aa39d994d20ead8a"
+    },
+    {
+      "ref": "pkg:golang/github.com/pmezard/go-difflib@v1.0.1-0.20181226105442-5d4384ee4fb2?package-id=ada64a1c312cd621"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_golang@v1.23.3-0.20251103151724-a5ae20370e5e?package-id=85c08b72e672f57a"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=55bb662b147f01ba"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/common@v0.67.5?package-id=ce4c9bb7a1428a8c"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.1?package-id=537ac4494e520d95"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/procfs@v0.19.2?package-id=f59065eb14d2c02e"
+    },
+    {
+      "ref": "pkg:golang/github.com/robfig/cron/v3@v3.0.1?package-id=64962ad796622d13"
+    },
+    {
+      "ref": "pkg:golang/github.com/sagikazarmark/locafero@v0.11.0?package-id=518c406e1e7291f9"
+    },
+    {
+      "ref": "pkg:golang/github.com/sourcegraph/conc@v0.3.1-0.20240121214520-5f936abd7ae8?package-id=90b124219d53f3cb"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/afero@v1.15.0?package-id=4590f08504d1021b"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/cast@v1.10.0?package-id=a2262b6ee1ac0c5f"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/cobra@v1.10.2?package-id=3de2ca33b07529ef"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/pflag@v1.0.10?package-id=3a71325eabb359d1"
+    },
+    {
+      "ref": "pkg:golang/github.com/spf13/viper@v1.21.0?package-id=44aed123265bd059"
+    },
+    {
+      "ref": "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=4f9e7b90acd5142c"
+    },
+    {
+      "ref": "pkg:golang/github.com/subosito/gotenv@v1.6.0?package-id=331d35032e300b85"
+    },
+    {
+      "ref": "pkg:golang/github.com/x448/float16@v0.8.4?package-id=e53b6815d9c020af"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/auto/sdk@v1.1.0?package-id=644ab5db7fc91870"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.60.0?package-id=696a2c4d99e75f28"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc@v1.36.0?package-id=5cabf888832ba3b2"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace@v1.36.0?package-id=747520d716a81efb"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel/metric@v1.37.0?package-id=3af11f4ef135d12f"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel/sdk@v1.37.0?package-id=096874e6969cd661"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel/trace@v1.37.0?package-id=24fe3a221f99e7bc"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/otel@v1.37.0?package-id=02acce25fede61a5"
+    },
+    {
+      "ref": "pkg:golang/go.opentelemetry.io/proto/otlp@v1.6.0?package-id=20cce5f9abb26c18"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v2@v2.4.3?package-id=42eaa7370f909bdb"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=1ab4a05989279585"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/crypto@v0.46.0?package-id=4d8c5555f7aeb67f"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/exp@v0.0.0-20250819193227-8b4c13bb791b?package-id=16308933d2d40f59"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/net@v0.48.0?package-id=f3e51b13405a4970"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/oauth2@v0.34.0?package-id=7ed3e58b7cf305cb"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sync@v0.19.0?package-id=ef11ae79d963649d"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sys@v0.39.0?package-id=cb123ed8f43da04e"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/term@v0.38.0?package-id=87f18b90c9fccaa6"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/text@v0.32.0?package-id=c0c2cef7dad5920b"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/time@v0.14.0?package-id=c4db46412a8b864a"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20250707201910-8d1bb00bc6a7?package-id=cac8a45288e0221f"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20250707201910-8d1bb00bc6a7?package-id=e7d1a6474eff3425"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/grpc@v1.75.1?package-id=7791a62b29b91682"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/protobuf@v1.36.11?package-id=ccdec4e825ca0b6a"
+    },
+    {
+      "ref": "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0?package-id=967848f92203ceb1"
+    },
+    {
+      "ref": "pkg:golang/gopkg.in/inf.v0@v0.9.1?package-id=8a13fa837bc97b11"
+    },
+    {
+      "ref": "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=833fc80053f043d6"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/api@v0.34.3?package-id=1730b1fb38811219"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/apimachinery@v0.34.3?package-id=e9fe29a2e69f65c0"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/apiserver@v0.34.1?package-id=1b25417ef645a4ba"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/client-go@v0.34.3?package-id=c4a4bfe1946c2fae"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/component-base@v0.34.3?package-id=dbc1f9b392aedeb9"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/klog/v2@v2.130.1?package-id=ad801b9a819ab83d"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b?package-id=6fffb26bf69345da"
+    },
+    {
+      "dependsOn": [
+        "pkg:golang/cel.dev/expr@v0.24.0?package-id=b1cfb0836d22a518",
+        "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.0?package-id=3cd69f78141eb5b1",
+        "pkg:golang/github.com/beorn7/perks@v1.0.1?package-id=0ec8255a9e1b2b4e",
+        "pkg:golang/github.com/blang/semver/v4@v4.0.0?package-id=a0a065ae6920dfba",
+        "pkg:golang/github.com/cenkalti/backoff/v5@v5.0.2?package-id=b488528494fb01ea",
+        "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0?package-id=300c936cd9a0fdec",
+        "pkg:golang/github.com/coreos/go-systemd/v22@v22.6.0?package-id=4a799affd47a0496",
+        "pkg:golang/github.com/davecgh/go-spew@v1.1.2-0.20180830191138-d8f796af33cc?package-id=db963a1e27bf5a36",
+        "pkg:golang/github.com/dgryski/go-jump@v0.0.0-20211018200510-ba001c3ffce0?package-id=8a171bf818ed41b9",
+        "pkg:golang/github.com/dlclark/regexp2@v1.11.5?package-id=517661bb99a4d2d1",
+        "pkg:golang/github.com/emicklei/go-restful/v3@v3.12.2?package-id=e6ddc8d1e93d0f8a",
+        "pkg:golang/github.com/felixge/httpsnoop@v1.0.4?package-id=405354628104a1e8",
+        "pkg:golang/github.com/fsnotify/fsnotify@v1.9.0?package-id=29fbb182e868ef94",
+        "pkg:golang/github.com/fxamacker/cbor/v2@v2.9.0?package-id=c992baa7436fec35",
+        "pkg:golang/github.com/go-logr/logr@v1.4.3?package-id=78a9f3af37dc8cc2",
+        "pkg:golang/github.com/go-logr/stdr@v1.2.2?package-id=dc6e6d0d27f367e2",
+        "pkg:golang/github.com/go-openapi/jsonpointer@v0.21.0?package-id=c42c3e9e54149613",
+        "pkg:golang/github.com/go-openapi/jsonreference@v0.20.2?package-id=4ab6e70a45685006",
+        "pkg:golang/github.com/go-openapi/swag@v0.23.0?package-id=d76be4d7289d541f",
+        "pkg:golang/github.com/go-viper/mapstructure/v2@v2.4.0?package-id=730840bb3eae9fcd",
+        "pkg:golang/github.com/gobuffalo/flect@v1.0.3?package-id=00cf63d7ead3cf8d",
+        "pkg:golang/github.com/gogo/protobuf@v1.3.2?package-id=297d9319836598e2",
+        "pkg:golang/github.com/golang-jwt/jwt/v5@v5.3.0?package-id=8d9c446dcb55e503",
+        "pkg:golang/github.com/google/cel-go@v0.26.0?package-id=7368377f15f58790",
+        "pkg:golang/github.com/google/gnostic-models@v0.7.0?package-id=d6bdbe0ae778a9ac",
+        "pkg:golang/github.com/google/go-cmp@v0.7.0?package-id=c4b2f80dd7c39181",
+        "pkg:golang/github.com/google/uuid@v1.6.0?package-id=8dbf007afbeb45b6",
+        "pkg:golang/github.com/grpc-ecosystem/grpc-gateway/v2@v2.26.3?package-id=5b1667a5f92683bc",
+        "pkg:golang/github.com/josharian/intern@v1.0.0?package-id=46d393a7647912c3",
+        "pkg:golang/github.com/jpillora/backoff@v1.0.0?package-id=217aa472eefc7c6e",
+        "pkg:golang/github.com/json-iterator/go@v1.1.12?package-id=7a8e9e76bf8b0384",
+        "pkg:golang/github.com/kimmachinegun/automemlimit@v0.7.5?package-id=e8a71c1df15487ad",
+        "pkg:golang/github.com/mailru/easyjson@v0.7.7?package-id=68e7bf0832ce3b48",
+        "pkg:golang/github.com/mdlayher/socket@v0.4.1?package-id=8cb2af8c10b2e8ee",
+        "pkg:golang/github.com/mdlayher/vsock@v1.2.1?package-id=a4fb01274dcbc916",
+        "pkg:golang/github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd?package-id=80825b430261a21b",
+        "pkg:golang/github.com/modern-go/reflect2@v1.0.3-0.20250322232337-35a7c28c31ee?package-id=2712565c85daaed0",
+        "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822?package-id=224968988a47f75e",
+        "pkg:golang/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f?package-id=612eefb93ad043e1",
+        "pkg:golang/github.com/oklog/run@v1.2.0?package-id=3109de60c4e6a253",
+        "pkg:golang/github.com/pbnjay/memory@v0.0.0-20210728143218-7b4eea64cf58?package-id=ccb9ee300da48fe2",
+        "pkg:golang/github.com/pelletier/go-toml/v2@v2.2.4?package-id=62b41d6036e150aa",
+        "pkg:golang/github.com/pkg/errors@v0.9.1?package-id=aa39d994d20ead8a",
+        "pkg:golang/github.com/pmezard/go-difflib@v1.0.1-0.20181226105442-5d4384ee4fb2?package-id=ada64a1c312cd621",
+        "pkg:golang/github.com/prometheus/client_golang@v1.23.3-0.20251103151724-a5ae20370e5e?package-id=85c08b72e672f57a",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.2?package-id=55bb662b147f01ba",
+        "pkg:golang/github.com/prometheus/common@v0.67.5?package-id=ce4c9bb7a1428a8c",
+        "pkg:golang/github.com/prometheus/exporter-toolkit@v0.15.1?package-id=537ac4494e520d95",
+        "pkg:golang/github.com/prometheus/procfs@v0.19.2?package-id=f59065eb14d2c02e",
+        "pkg:golang/github.com/robfig/cron/v3@v3.0.1?package-id=64962ad796622d13",
+        "pkg:golang/github.com/sagikazarmark/locafero@v0.11.0?package-id=518c406e1e7291f9",
+        "pkg:golang/github.com/sourcegraph/conc@v0.3.1-0.20240121214520-5f936abd7ae8?package-id=90b124219d53f3cb",
+        "pkg:golang/github.com/spf13/afero@v1.15.0?package-id=4590f08504d1021b",
+        "pkg:golang/github.com/spf13/cast@v1.10.0?package-id=a2262b6ee1ac0c5f",
+        "pkg:golang/github.com/spf13/cobra@v1.10.2?package-id=3de2ca33b07529ef",
+        "pkg:golang/github.com/spf13/pflag@v1.0.10?package-id=3a71325eabb359d1",
+        "pkg:golang/github.com/spf13/viper@v1.21.0?package-id=44aed123265bd059",
+        "pkg:golang/github.com/stoewer/go-strcase@v1.3.0?package-id=4f9e7b90acd5142c",
+        "pkg:golang/github.com/subosito/gotenv@v1.6.0?package-id=331d35032e300b85",
+        "pkg:golang/github.com/x448/float16@v0.8.4?package-id=e53b6815d9c020af",
+        "pkg:golang/go.opentelemetry.io/auto/sdk@v1.1.0?package-id=644ab5db7fc91870",
+        "pkg:golang/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.60.0?package-id=696a2c4d99e75f28",
+        "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc@v1.36.0?package-id=5cabf888832ba3b2",
+        "pkg:golang/go.opentelemetry.io/otel/exporters/otlp/otlptrace@v1.36.0?package-id=747520d716a81efb",
+        "pkg:golang/go.opentelemetry.io/otel/metric@v1.37.0?package-id=3af11f4ef135d12f",
+        "pkg:golang/go.opentelemetry.io/otel/sdk@v1.37.0?package-id=096874e6969cd661",
+        "pkg:golang/go.opentelemetry.io/otel/trace@v1.37.0?package-id=24fe3a221f99e7bc",
+        "pkg:golang/go.opentelemetry.io/otel@v1.37.0?package-id=02acce25fede61a5",
+        "pkg:golang/go.opentelemetry.io/proto/otlp@v1.6.0?package-id=20cce5f9abb26c18",
+        "pkg:golang/go.yaml.in/yaml/v2@v2.4.3?package-id=42eaa7370f909bdb",
+        "pkg:golang/go.yaml.in/yaml/v3@v3.0.4?package-id=1ab4a05989279585",
+        "pkg:golang/golang.org/x/crypto@v0.46.0?package-id=4d8c5555f7aeb67f",
+        "pkg:golang/golang.org/x/exp@v0.0.0-20250819193227-8b4c13bb791b?package-id=16308933d2d40f59",
+        "pkg:golang/golang.org/x/net@v0.48.0?package-id=f3e51b13405a4970",
+        "pkg:golang/golang.org/x/oauth2@v0.34.0?package-id=7ed3e58b7cf305cb",
+        "pkg:golang/golang.org/x/sync@v0.19.0?package-id=ef11ae79d963649d",
+        "pkg:golang/golang.org/x/sys@v0.39.0?package-id=cb123ed8f43da04e",
+        "pkg:golang/golang.org/x/term@v0.38.0?package-id=87f18b90c9fccaa6",
+        "pkg:golang/golang.org/x/text@v0.32.0?package-id=c0c2cef7dad5920b",
+        "pkg:golang/golang.org/x/time@v0.14.0?package-id=c4db46412a8b864a",
+        "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20250707201910-8d1bb00bc6a7?package-id=cac8a45288e0221f",
+        "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20250707201910-8d1bb00bc6a7?package-id=e7d1a6474eff3425",
+        "pkg:golang/google.golang.org/grpc@v1.75.1?package-id=7791a62b29b91682",
+        "pkg:golang/google.golang.org/protobuf@v1.36.11?package-id=ccdec4e825ca0b6a",
+        "pkg:golang/gopkg.in/evanphx/json-patch.v4@v4.12.0?package-id=967848f92203ceb1",
+        "pkg:golang/gopkg.in/inf.v0@v0.9.1?package-id=8a13fa837bc97b11",
+        "pkg:golang/gopkg.in/yaml.v3@v3.0.1?package-id=833fc80053f043d6",
+        "pkg:golang/k8s.io/api@v0.34.3?package-id=1730b1fb38811219",
+        "pkg:golang/k8s.io/apimachinery@v0.34.3?package-id=e9fe29a2e69f65c0",
+        "pkg:golang/k8s.io/apiserver@v0.34.1?package-id=1b25417ef645a4ba",
+        "pkg:golang/k8s.io/client-go@v0.34.3?package-id=c4a4bfe1946c2fae",
+        "pkg:golang/k8s.io/component-base@v0.34.3?package-id=dbc1f9b392aedeb9",
+        "pkg:golang/k8s.io/klog/v2@v2.130.1?package-id=ad801b9a819ab83d",
+        "pkg:golang/k8s.io/kube-openapi@v0.0.0-20250710124328-f3f2b991d03b?package-id=6fffb26bf69345da",
+        "pkg:golang/k8s.io/sample-controller@v0.34.3?package-id=d86b7632863f73d1",
+        "pkg:golang/k8s.io/utils@v0.0.0-20250820121507-0af2bda4dd1d?package-id=63a3a2c199c01283",
+        "pkg:golang/sigs.k8s.io/apiserver-network-proxy/konnectivity-client@v0.33.0?package-id=c5c8aada279eae0a",
+        "pkg:golang/sigs.k8s.io/controller-runtime@v0.22.4?package-id=689163b6931211b5",
+        "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8?package-id=f05089f216e650f0",
+        "pkg:golang/sigs.k8s.io/randfill@v1.0.0?package-id=7703b6f7c7506d10",
+        "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0?package-id=ed4a512ec4d34092",
+        "pkg:golang/sigs.k8s.io/yaml@v1.6.0?package-id=19559ac44a21741a",
+        "pkg:golang/stdlib@1.25.5?package-id=622c8c7e855921a1"
+      ],
+      "ref": "pkg:golang/k8s.io/kube-state-metrics/v2@v0.34.3?package-id=592c57cc0457b0f1"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/sample-controller@v0.34.3?package-id=d86b7632863f73d1"
+    },
+    {
+      "ref": "pkg:golang/k8s.io/utils@v0.0.0-20250820121507-0af2bda4dd1d?package-id=63a3a2c199c01283"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/apiserver-network-proxy/konnectivity-client@v0.33.0?package-id=c5c8aada279eae0a"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/controller-runtime@v0.22.4?package-id=689163b6931211b5"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/json@v0.0.0-20241014173422-cfa47c3a1cc8?package-id=f05089f216e650f0"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/randfill@v1.0.0?package-id=7703b6f7c7506d10"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/structured-merge-diff/v6@v6.3.0?package-id=ed4a512ec4d34092"
+    },
+    {
+      "ref": "pkg:golang/sigs.k8s.io/yaml@v1.6.0?package-id=19559ac44a21741a"
+    },
+    {
+      "ref": "pkg:golang/stdlib@1.25.5?package-id=622c8c7e855921a1"
+    },
+    {
+      "ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics",
+      "name": "registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics",
+      "type": "container"
+    },
+    "properties": [
+      {
+        "name": "loom:lock-key",
+        "value": "lic-589ecf178d2057699b972f88fb73095f8228a061d8ad30796f1e17d44ee7fc2a"
+      }
+    ],
+    "tools": {
+      "components": [
+        {
+          "author": "anchore",
+          "name": "syft",
+          "type": "application",
+          "version": "1.51.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:51a4733b-ca69-5f06-b5bd-71f540746c1a",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}
