@@ -653,6 +653,18 @@ the real options are.
 `OLLAMA_CONTEXT_LENGTH` is deliberately left alone: Ollama sizes the context from its own VRAM
 measurement and will walk it back down if a load fails, and setting the variable turns that off.
 
+### CPU threads
+
+The container also sets **`LLAMA_ARG_THREADS`** from the CPU quota its cgroup enforces, less one
+core for the runtime, and holds `OLLAMA_NUM_PARALLEL` to the same budget. llama.cpp otherwise sizes
+its thread pool from the node's core count and ignores the limit, which on a 192-core node under
+`ollama.resources.limits.cpu: "10"` costs roughly thirty times the prompt-processing throughput.
+
+What this asks of you: set `ollama.resources.limits.cpu` to the cores Ollama should actually get.
+Where no quota is enforced nothing is set and llama.cpp keeps its own sizing. Set
+`LLAMA_ARG_THREADS` through `ollama.extraEnv` and it is honoured untouched, as
+`OLLAMA_NUM_PARALLEL` is; verify either with `system_info: n_threads = N` in the pod log.
+
 Models are shipped in a separate image from the Ollama runtime and copied into Ollama's storage
 when the pod starts, so switching between CPU, NVIDIA and AMD never re-downloads them. Keep
 `ollama.pvc.enabled: true` (the default) and that copy happens once — with it off, every pod
