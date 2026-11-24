@@ -1193,7 +1193,12 @@ ollama:
   # Every server-level knob Ollama has is an environment variable, so this is how one
   # is set for a particular box -- OLLAMA_FLASH_ATTENTION, OLLAMA_KV_CACHE_TYPE,
   # OLLAMA_MAX_LOADED_MODELS. A name the chart already sets is replaced rather than
-  # repeated, this map having the last word.
+  # repeated, this map having the last word -- which extends to the two the entrypoint
+  # works out for itself, OLLAMA_NUM_PARALLEL and LLAMA_ARG_THREADS: a value set here
+  # is honoured untouched. LLAMA_ARG_THREADS is the compute thread count, which the
+  # entrypoint derives from this container's CPU quota because llama.cpp reads the
+  # host's core count instead; see the CPU threads section in
+  # Documentation/installation.md.
   #
   # Distinct from the top-level `extraEnv`, which lands in the settings ConfigMap the
   # backend services read and never reaches this container.

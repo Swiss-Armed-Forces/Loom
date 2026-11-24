@@ -25,8 +25,8 @@ registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda lic-
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kedacore/keda-metrics-apiserver lic-c584e369d0161cf4f555b7a03c8f2a7dbae9e0d6290336bc0d3c7afa4d982d3b
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/kube-state-metrics lic-589ecf178d2057699b972f88fb73095f8228a061d8ad30796f1e17d44ee7fc2a
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models lic-0901ab952dcc923af68c1f02ca49570099c83b28ce8de06564a12f3ad47a22f8
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia lic-97ccdad5ba5e33fd02ef396d4be763c2833e3723c1f01616eefaffae6a21b642
-registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm lic-339680b5aa0e85ed7528958107016b001fc904cd06bdeda088833127519b8ef9
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-nvidia lic-a64dd3837282eacda3863ba004dcec486529895868a830312ca2369d55974a7b
+registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm lic-0aa8b8489663bef0922f578af1c470684e6ac5e19a5f4bb8062a3dce8ca34b75
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/prometheus lic-3d4f51f2446d337a4ac880d842c2cf7602fdf8ce565cf2ed75f27e0a14be2597
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/rabbit lic-636bb982b682e3104321b788853929f096182055bebce4cc7976cc570294a517
 registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/redis lic-0d122d5ec394fbf55c24b3da23c75b6da572fa78dbef27514a526214061ba2fd

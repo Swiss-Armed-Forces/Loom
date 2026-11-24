@@ -126,11 +126,15 @@ images:
       # The NVML binding it reads the GPU through, likewise first-party source:
       # it calls libnvidia-ml through ctypes and installs nothing.
       - nvml.py
+      # The cgroup CPU budget it sizes the thread count from, first-party source
+      # that reads nothing but sysfs.
+      - cpu_quota.py
 
   registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-runtime-rocm:
     not_keyed:
       - ollama_wrapper.py
       - nvml.py
+      - cpu_quota.py
 
   registry.gitlab.com/swiss-armed-forces/cyber-command/cea/loom/ollama-models:
     not_keyed:

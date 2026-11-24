@@ -130,18 +130,11 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **Ollama wrapper:**
 
-- `ollama-test` - Run the tests for `ollama/ollama_wrapper.py`, the entrypoint of the Ollama
-  container image (`ollama/tests`). Its own script because `backend-test` cds into `backend/` and
-  cannot reach it, and because `appliance-pytest` is the appliance's suites sharing one pytest
-  session. Also runs as a git hook on any change to `ollama/*.py`, so `devenv test` covers it and
-  there is no CI job of its own. Extra arguments go to pytest.
-  The wrapper decides `OLLAMA_NUM_PARALLEL` from the GPU it can see — NVML through `ctypes` for
-  NVIDIA, amdgpu sysfs for AMD, since the ROCm image ships no `rocm-smi`; NVML rather than
-  `nvidia-smi` because the container toolkit injects a NixOS host's driver executables without the
-  ELF interpreter they need, so they cannot exec in a pod — and **refuses to start** when
-  `LOOM_GPU_VENDOR` (set by `charts/values-{amd,nvidia}-gpu.yaml`) names a vendor whose device node
-  is absent. It deliberately never sets `OLLAMA_CONTEXT_LENGTH`; see the "Ollama GPU Configuration"
-  section in `Documentation/installation.md`
+- `ollama-test` - Run the tests for the entrypoint of the Ollama container image (`ollama/tests`).
+  Its own script because `backend-test` cds into `backend/` and cannot reach it, and because
+  `appliance-pytest` is the appliance's suites sharing one pytest session. Also runs as a git hook
+  on any change to `ollama/*.py`, so `devenv test` covers it and there is no CI job of its own.
+  Extra arguments go to pytest. What the entrypoint decides and why is in `ollama/README.md`
 
 **aitools testing:**
 
@@ -1049,6 +1042,8 @@ function, **stop and ask the user first** — there is almost certainly a better
   rule, and `trustedCertificates`
 - `Documentation/appliance.md` - NixOS appliance image and air-gapped deployment
 - `nixos/README.md` - The appliance Nix code and how to build/test it
+- `ollama/README.md` - The Ollama container images and their entrypoint: what it decides about the
+  GPU, `OLLAMA_NUM_PARALLEL` and `LLAMA_ARG_THREADS`, and what it deliberately leaves alone
 - `Documentation/performance.md` - Finding out what is slow
 - `Documentation/frontend-debugging.md` - Driving the running frontend with Playwright, which is
   a devDependency of `Frontend/` for this purpose. Covers getting past the guided tour, the data

@@ -2,7 +2,8 @@
 """Entrypoint for the Loom Ollama container image.
 
 `setup` runs a one-shot ollama command against a temporary server (`ollama pull` needs
-one). `entry` decides `OLLAMA_NUM_PARALLEL` and then becomes ollama.
+one). `entry` decides `OLLAMA_NUM_PARALLEL` and `LLAMA_ARG_THREADS`, then becomes
+ollama.
 
 Two things this deliberately does NOT do:
 
@@ -29,7 +30,15 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Final
 
-# The ctypes layer, in a module of its own -- see ollama/nvml.py.
+# Both in modules of their own, beside this one: the ctypes layer that reads the GPU,
+# and the CPU budget the cgroup enforces -- see ollama/nvml.py and ollama/cpu_quota.py.
+from cpu_quota import (
+    THREADS_ENV,
+    cap_parallelism_to_quota,
+    plan_thread_environment,
+    read_cpu_quota,
+    read_visible_cpus,
+)
 from nvml import NvmlReading, read_nvml
 
 # --- Sizing constants ---
@@ -888,8 +897,9 @@ def run_setup_command(ollama_args: list[str]) -> None:
 
 
 def run_entry_command(ollama_args: list[str]) -> None:
-    """Set OLLAMA_NUM_PARALLEL if nobody else did, then become ollama."""
+    """Set OLLAMA_NUM_PARALLEL and LLAMA_ARG_THREADS if nobody else did, then exec."""
     env = os.environ.copy()
+    quota = read_cpu_quota()
 
     # Before anything expensive: a container deployed as a GPU workload that cannot
     # reach a GPU should fail in milliseconds, not after a whole server cycle.
@@ -917,8 +927,19 @@ def run_entry_command(ollama_args: list[str]) -> None:
     if plan.num_parallel is None:
         print(f"🔧 {plan.detail}")
     else:
-        env[NUM_PARALLEL_ENV] = str(plan.num_parallel)
-        print(f"✅ {NUM_PARALLEL_ENV}={plan.num_parallel}: {plan.detail}")
+        capped = cap_parallelism_to_quota(plan.num_parallel, quota)
+        env[NUM_PARALLEL_ENV] = str(capped)
+        detail = plan.detail
+        if capped != plan.num_parallel:
+            detail = f"{detail}; held to {quota.detail}"
+        print(f"✅ {NUM_PARALLEL_ENV}={capped}: {detail}")
+
+    thread_plan = plan_thread_environment(env, quota, read_visible_cpus())
+    if thread_plan.threads is None:
+        print(f"🔧 {thread_plan.detail}")
+    else:
+        env[THREADS_ENV] = str(thread_plan.threads)
+        print(f"✅ {THREADS_ENV}={thread_plan.threads}: {thread_plan.detail}")
 
     sys.stdout.flush()
     sys.stderr.flush()
