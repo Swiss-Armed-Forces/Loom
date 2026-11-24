@@ -224,9 +224,26 @@ const isUnchanged = (
     previous.activity === next.activity &&
     previous.isStreaming === next.isStreaming;
 
+/** The assistant messages of one answer, while they are being collected. */
+interface AssistantTurn {
+    /** The first assistant message of the turn, which names the bubble. */
+    id: string;
+    /** The text of each assistant message that carried any. */
+    segments: string[];
+    streaming: boolean;
+}
+
 /**
  * Rebuilds the rendered message list, reusing the object from `previous`
  * whenever a message is unchanged.
+ *
+ * One answer is one bubble. The agent writes an assistant message per model
+ * response, so a question that takes two tool calls to answer arrives as three
+ * of them, and the ones that opened with a tool call carry no text at all — a
+ * tool call names a parent message, so there is one even when the model wrote
+ * nothing. They are all the same answer, so every assistant message up to the
+ * next user message is folded into one bubble, keyed on the first of them.
+ * That key is also what the turn's activity and citations are gathered under.
  *
  * The agent emits one message-changed event per streamed token, each carrying
  * the whole conversation. Allocating a fresh object per message would give
@@ -238,7 +255,6 @@ export const mapToChatMessages = (
     messages: ReadonlyArray<Readonly<Message>>,
     citations: Record<string, ChatCitation[]>,
     activity: Record<string, ActivityRecord[]>,
-    finalMsgIds: Set<string>,
     previous: ReadonlyArray<ChatMessage> = [],
     streamingMsgId: string | null = null,
 ): ChatMessage[] => {
@@ -254,8 +270,27 @@ export const mapToChatMessages = (
         result.push(before && isUnchanged(before, message) ? before : message);
     };
 
+    let turn: AssistantTurn | null = null;
+    const closeTurn = (): void => {
+        if (turn === null) return;
+        const text = turn.segments.join("\n\n");
+        const turnActivity = activity[turn.id];
+        if (text || turnActivity?.length) {
+            push({
+                id: turn.id,
+                text,
+                isUser: false,
+                citations: citations[turn.id] ?? EMPTY_CITATIONS,
+                activity: turnActivity?.length ? turnActivity : undefined,
+                isStreaming: turn.streaming,
+            });
+        }
+        turn = null;
+    };
+
     for (const m of messages) {
         if (m.role === "user") {
+            closeTurn();
             const text = extractText(m);
             if (text) {
                 push({
@@ -267,26 +302,16 @@ export const mapToChatMessages = (
             }
             continue;
         }
+        // A reasoning or tool message sits inside a turn rather than ending
+        // one, and neither is a bubble of its own.
+        if (m.role !== "assistant") continue;
 
-        // Only show assistant messages explicitly marked as "real" final
-        // messages (via TextMessageStartEvent or history restoration).
-        // All intermediate protocol messages (tool-call rounds) are hidden.
-        if (m.role !== "assistant" || !finalMsgIds.has(m.id)) continue;
-
+        turn ??= { id: m.id, segments: [], streaming: false };
         const text = extractText(m);
-        const msgActivity = activity[m.id];
-        if (!text && !msgActivity?.length) continue;
-
-        push({
-            id: m.id,
-            text,
-            isUser: false,
-            citations: citations[m.id] ?? EMPTY_CITATIONS,
-            activity:
-                msgActivity && msgActivity.length > 0 ? msgActivity : undefined,
-            isStreaming: m.id === streamingMsgId,
-        });
+        if (text) turn.segments.push(text);
+        if (m.id === streamingMsgId) turn.streaming = true;
     }
+    closeTurn();
 
     return result;
 };

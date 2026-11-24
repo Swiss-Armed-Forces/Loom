@@ -120,7 +120,11 @@ export const useChatbotAgent = (
     // because the citations that belong to it arrive after it.
     const streamingMsgIdRef = useRef<string | null>(null);
     const isTextStreamingRef = useRef(false);
-    const finalMsgIdsRef = useRef<Set<string>>(new Set());
+    // The bubble the answer being written belongs to: the first assistant
+    // message of the turn, which is the key `mapToChatMessages` folds the rest
+    // of them onto. It spans every request the turn takes, so a frontend tool
+    // or an approval does not start a second bubble.
+    const turnBubbleIdRef = useRef<string | null>(null);
 
     // Citations and per-message activity are the inputs mapToChatMessages
     // compares by reference, so they are always replaced, never mutated. They
@@ -175,12 +179,41 @@ export const useChatbotAgent = (
                 agent.messages,
                 citationsRef.current,
                 activityRef.current,
-                finalMsgIdsRef.current,
                 prev,
                 isTextStreamingRef.current ? streamingMsgIdRef.current : null,
             ),
         );
     }, []);
+
+    /**
+     * Moves the activity gathered so far out of the live turn and into the
+     * bubble it belongs to, leaving what follows to gather afresh.
+     */
+    const commitTurnActivity = useCallback(
+        (bubbleId: string) => {
+            if (turnActivityRef.current.length === 0) return;
+            activityRef.current = {
+                ...activityRef.current,
+                [bubbleId]: [
+                    ...(activityRef.current[bubbleId] ?? []),
+                    ...turnActivityRef.current,
+                ],
+            };
+            setTurnActivity(NO_ACTIVITY);
+        },
+        [setTurnActivity],
+    );
+
+    /**
+     * Ends the answer in progress, so the next assistant message opens a
+     * bubble of its own. Called wherever a user message is added.
+     */
+    const closeTurnBubble = useCallback(() => {
+        if (turnBubbleIdRef.current !== null) {
+            commitTurnActivity(turnBubbleIdRef.current);
+        }
+        turnBubbleIdRef.current = null;
+    }, [commitTurnActivity]);
 
     /**
      * Records a change to a tool call and republishes it everywhere it is
@@ -233,7 +266,6 @@ export const useChatbotAgent = (
                 const restored: Parameters<HttpAgent["addMessage"]>[0][] = [];
                 for (const q of questions) {
                     const assistantMsgId = crypto.randomUUID();
-                    finalMsgIdsRef.current.add(assistantMsgId);
 
                     const activity: ActivityRecord[] = (q.activity ?? []).map(
                         (entry) =>
@@ -299,7 +331,6 @@ export const useChatbotAgent = (
                 openInterruptsRef.current = [];
                 approvalDecisionsRef.current = {};
                 setPendingApprovals([]);
-                runToolCallsRef.current = {};
                 streamingMsgIdRef.current = null;
                 isTextStreamingRef.current = false;
             },
@@ -369,17 +400,13 @@ export const useChatbotAgent = (
             onTextMessageStartEvent: ({ event }) => {
                 streamingMsgIdRef.current = event.messageId;
                 isTextStreamingRef.current = true;
-                finalMsgIdsRef.current.add(event.messageId);
                 setReasoningPhase("idle");
-                // Hand the turn's activity over to the message it belongs to.
+                // The first assistant message of the turn names the bubble the
+                // rest of them fold onto, so the activity goes there and not to
+                // whichever message happens to be opening now.
+                turnBubbleIdRef.current ??= event.messageId;
                 // Tools still running keep updating in place from there.
-                if (turnActivityRef.current.length > 0) {
-                    activityRef.current = {
-                        ...activityRef.current,
-                        [event.messageId]: turnActivityRef.current,
-                    };
-                    setTurnActivity(NO_ACTIVITY);
-                }
+                commitTurnActivity(turnBubbleIdRef.current);
             },
             onTextMessageEndEvent: () => {
                 // The answer is complete, so it is parsed as markdown whole.
@@ -387,10 +414,10 @@ export const useChatbotAgent = (
                 refreshChatMessages();
             },
             onCustomEvent: ({ event }) => {
-                if (event.name !== "citation" || !streamingMsgIdRef.current) {
+                if (event.name !== "citation" || !turnBubbleIdRef.current) {
                     return;
                 }
-                const msgId = streamingMsgIdRef.current;
+                const msgId = turnBubbleIdRef.current;
                 const citation: ChatCitation = {
                     id: event.value.file_id,
                     fileId: event.value.file_id,
@@ -437,6 +464,7 @@ export const useChatbotAgent = (
         contextId,
         t,
         appendError,
+        commitTurnActivity,
         refreshChatMessages,
         setTurnActivity,
         updateToolCall,
@@ -602,10 +630,14 @@ export const useChatbotAgent = (
         reasoningTextRef.current = "";
         setReasoningText("");
         setReasoningPhase("idle");
+        closeTurnBubble();
         setTurnActivity(NO_ACTIVITY);
         streamingMsgIdRef.current = null;
         isTextStreamingRef.current = false;
         errorHandledRef.current = false;
+        // Tool calls are kept for as long as the turn that raised them, so a
+        // result arriving in a later request than the call still finds it.
+        runToolCallsRef.current = {};
 
         agent.addMessage({
             role: "user",
@@ -633,14 +665,13 @@ export const useChatbotAgent = (
         });
 
         // Persist the question and answer as visible chat messages.
-        const questionMsgId = crypto.randomUUID();
-        finalMsgIdsRef.current.add(questionMsgId);
         agent.addMessage({
             role: "assistant",
-            id: questionMsgId,
+            id: crypto.randomUUID(),
             content: question,
         });
         if (answer !== "other") {
+            closeTurnBubble();
             agent.addMessage({
                 role: "user",
                 id: crypto.randomUUID(),

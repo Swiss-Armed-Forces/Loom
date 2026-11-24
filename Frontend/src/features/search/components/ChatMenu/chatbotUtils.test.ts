@@ -42,22 +42,13 @@ const conversation = (streamingText: string): Message[] => [
     assistant("a3", streamingText),
 ];
 
-const finalIds = new Set(["a1", "a2", "a3"]);
-
 describe("mapToChatMessages", () => {
     it("reuses every unchanged message when a token is appended", () => {
-        const first = mapToChatMessages(
-            conversation("a partial"),
-            {},
-            {},
-            finalIds,
-            [],
-        );
+        const first = mapToChatMessages(conversation("a partial"), {}, {}, []);
         const second = mapToChatMessages(
             conversation("a partial answer"),
             {},
             {},
-            finalIds,
             first,
         );
 
@@ -80,14 +71,14 @@ describe("mapToChatMessages", () => {
         const running: Record<string, ActivityRecord[]> = {
             a3: [toolCall("running")],
         };
-        const first = mapToChatMessages(messages, {}, running, finalIds, []);
+        const first = mapToChatMessages(messages, {}, running, []);
 
         // The agent replaces the activity array rather than mutating the
         // record in place, which is what makes the reference check valid.
         const done: Record<string, ActivityRecord[]> = {
             a3: [toolCall("done")],
         };
-        const second = mapToChatMessages(messages, {}, done, finalIds, first);
+        const second = mapToChatMessages(messages, {}, done, first);
 
         const index = first.length - 1;
         expect(second[index]).not.toBe(first[index]);
@@ -100,18 +91,12 @@ describe("mapToChatMessages", () => {
 
     it("rebuilds a message when a citation arrives for it", () => {
         const messages = conversation("answer");
-        const first = mapToChatMessages(messages, {}, {}, finalIds, []);
+        const first = mapToChatMessages(messages, {}, {}, []);
 
         const citations: Record<string, ChatCitation[]> = {
             a3: [{ id: "f1", fileId: "f1", text: "a source" }],
         };
-        const second = mapToChatMessages(
-            messages,
-            citations,
-            {},
-            finalIds,
-            first,
-        );
+        const second = mapToChatMessages(messages, citations, {}, first);
 
         const index = first.length - 1;
         expect(second[index]).not.toBe(first[index]);
@@ -121,22 +106,46 @@ describe("mapToChatMessages", () => {
 
     it("reuses everything when nothing changed at all", () => {
         const messages = conversation("answer");
-        const first = mapToChatMessages(messages, {}, {}, finalIds, []);
-        const second = mapToChatMessages(messages, {}, {}, finalIds, first);
+        const first = mapToChatMessages(messages, {}, {}, []);
+        const second = mapToChatMessages(messages, {}, {}, first);
 
         second.forEach((m, i) => expect(m).toBe(first[i]));
     });
 
-    it("hides assistant messages that are not marked final", () => {
+    it("folds one answer's assistant messages into a single bubble", () => {
+        // What one tool round arrives as: the empty assistant message the tool
+        // call names as its parent, the reasoning and tool messages between,
+        // then the answer.
+        const messages = [
+            user("u1", "find invoices"),
+            { id: "re1", role: "reasoning", content: "search first" },
+            assistant("empty1", ""),
+            { id: "tr1", role: "tool", toolCallId: "tc1", content: "3 hits" },
+            assistant("ans", "Here are the three invoices."),
+        ] as Message[];
+
         const result = mapToChatMessages(
-            conversation("answer"),
+            messages,
             {},
-            {},
-            new Set(["a1"]),
+            { empty1: [toolCall("done")] },
             [],
         );
 
-        expect(result.map((m) => m.id)).toEqual(["u1", "a1", "u2", "u3"]);
+        expect(result.map((m) => m.id)).toEqual(["u1", "empty1"]);
+        expect(result[1].text).toBe("Here are the three invoices.");
+        expect(result[1].activity).toHaveLength(1);
+    });
+
+    it("joins the answer's segments with a blank line", () => {
+        const messages = [
+            user("u1", "find invoices"),
+            assistant("a1", "Let me search."),
+            assistant("a2", "Here are three."),
+        ] as Message[];
+
+        expect(mapToChatMessages(messages, {}, {}, [])[1].text).toBe(
+            "Let me search.\n\nHere are three.",
+        );
     });
 
     it("marks only the message whose text is still streaming", () => {
@@ -144,7 +153,6 @@ describe("mapToChatMessages", () => {
             conversation("a partial"),
             {},
             {},
-            finalIds,
             [],
             "a3",
         );
@@ -161,22 +169,8 @@ describe("mapToChatMessages", () => {
 
     it("rebuilds the message when its stream ends", () => {
         const messages = conversation("the answer");
-        const streaming = mapToChatMessages(
-            messages,
-            {},
-            {},
-            finalIds,
-            [],
-            "a3",
-        );
-        const settled = mapToChatMessages(
-            messages,
-            {},
-            {},
-            finalIds,
-            streaming,
-            null,
-        );
+        const streaming = mapToChatMessages(messages, {}, {}, [], "a3");
+        const settled = mapToChatMessages(messages, {}, {}, streaming, null);
 
         const index = streaming.length - 1;
         expect(settled[index]).not.toBe(streaming[index]);

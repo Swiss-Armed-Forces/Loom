@@ -67,6 +67,7 @@ class _ActivityTracker:
     _pending_names: dict[str, str] = field(default_factory=dict)
     _pending_args: dict[str, str] = field(default_factory=dict)
     _reasoning_buffer: str = ""
+    _answer_message_id: str | None = None
     answer_text: str = ""
     activity: list[ReasoningActivityEntry | ToolCallActivityEntry] = field(
         default_factory=list
@@ -74,6 +75,16 @@ class _ActivityTracker:
 
     def track(self, event: BaseEvent) -> None:
         match event:
+            case TextMessageContentEvent(message_id=message_id, delta=delta):
+                # The model writes one message per response, so an answer that
+                # took tool calls to reach arrives in several.  They are one
+                # answer, and a blank line is what keeps them one answer in
+                # markdown rather than running the last word of a sentence into
+                # the first word of the next.
+                if self._answer_message_id not in (None, message_id):
+                    self.answer_text += "\n\n"
+                self._answer_message_id = message_id
+                self.answer_text += delta
             case ReasoningStartEvent():
                 self._reasoning_buffer = ""
             case ReasoningMessageContentEvent(delta=delta):
@@ -320,9 +331,6 @@ class AiService:
             ):
                 tracker.track(event)
                 match event:
-                    case TextMessageContentEvent(delta=delta):
-                        tracker.answer_text += delta
-                        yield event
                     case RunFinishedEvent():
                         run_finished = event
                     case _:

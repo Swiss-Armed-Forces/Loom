@@ -44,7 +44,8 @@ export const LiveTurn = ({
                     py: 0.75,
                 }}
             >
-                <ActivityTimeline activity={entries} hasAnswer={false} />
+                {/* Only rendered while the turn runs, so always active. */}
+                <ActivityTimeline activity={entries} isActive />
             </Box>
         </>
     );
