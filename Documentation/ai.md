@@ -306,7 +306,7 @@ anything measured about concurrency in a dev cluster will not reproduce in produ
 
 `rerank_and_synthesize` has the same shape, which is why reranking runs a system-one model rather
 than a chat one: it fans out one call per chunk, capped at
-`MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING` (50), against an inference server that answers them one
+`tool.rag_search.max_chunks_for_reranking` (20), against an inference server that answers them one
 at a time, and the whole useful output per call is a single integer score.
 
 `suggest_queries` is the same shape one level down: one invocation fans out
@@ -395,9 +395,8 @@ there. None of them fails the thing it is part of:
 - `rag_rerank` catches the failure and ranks the chunk `COMPLETELY_IRRELEVANT`, which
   `apply_rerank_threshold` then filters out. Raising would abort the chord and discard every chunk
   that *was* ranked, so the turn survives a rerank outage — but it survives it by silently dropping
-  chunks, and with the service down for all of
-  `MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING` it synthesises from nothing at all. The warning in
-  the worker log is the only sign.
+  chunks, and with the service down for every chunk of the reranking budget the pipeline reports an
+  empty retrieval rather than an answer. The warning in the worker log is what names the cause.
 - `index_prioritization` catches the failure, warns and leaves the object at `dispatch_index_file`'s
   own `MEDIUM` — a priority hint is advisory, and failing a download would mean re-fetching the
   object's whole body on the next poll, forever. A *permanent* failure is reported once and then
@@ -516,6 +515,15 @@ context one tool call can consume, which is why an operator running a small-cont
 model can lower them. The browse ceiling is what one tree-path aggregation can carry —
 every bucket brings a top hit and two filter sub-aggregations — so a larger value is
 rejected at startup rather than silently clamped by one of the two tools.
+
+`rag_search` returns no pages, but its retrieval size is a deployment setting for the
+same reason: `tool__rag_search__files_per_probe` (default 7) is how many files one kNN
+probe may reach, and `tool__rag_search__max_chunks_for_reranking` (default 20) is how
+many chunks reach the reranker, which spends one LLM call on each. The chunks fetched
+per file derive from the two together, so raising the reranking budget widens retrieval
+as well. Both sit beside `llm__rag_hyde__num_documents`, which multiplies them: it is
+one kNN clause per hypothetical document, so the files the search may reach is
+`files_per_probe × (1 + num_documents)`.
 
 Cursors are opaque, tool-specific and query-specific: each one records which tool minted
 it and a digest of the arguments that produced the result set, so passing a cursor to a
@@ -738,7 +746,7 @@ rather than by convention.
 | `translate_file` | `enrichment` | Triggers AI translation for a file and returns the translated text |
 | `describe_image` | `enrichment` | Triggers AI image description for an image file |
 | `execute_query` | `search_and_browse` | Executes a Lucene query and returns matching files with snippets, best matches first. Optional `folder_path` parameter restricts results to a subtree. Paginated: optional `after_cursor`; the response carries `total_count`, `has_more` and `next_cursor`. In `work` mode it also emits the event that applies the query to the user's results list. |
-| `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer. The `question` is what the answer has to address; the optional `query` is a Lucene query bounding which files it may be drawn from, defaulting to `*` for the whole index |
+| `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer. The `question` is what the answer has to address; the optional `query` is a Lucene query bounding which files it may be drawn from, defaulting to `*` for the whole index. A query that matches no file, or that the index rejects, comes back as a `ModelRetry` for the agent to widen or fix rather than as an answer |
 | `add_tags_to_file` | `enrichment` | Adds one or more tags to a single file |
 | `update_file` | `enrichment` | Sets the `seen`, `flagged` or `hidden` state of a single file |
 | `bulk_summarize` | `enrichment` | Queues AI summarization for every file a query matches |
@@ -776,8 +784,14 @@ start
 note right: chains the stages below; the question\nbuilds the probes, the Lucene query\nbounds which files they may reach
 
 if (query matches any file?) then (no)
-  :return a RagSearchResult saying so;
-  note right: the query bounds every KNN clause,\nso no chunk is reachable and the\nstages below cannot find one; the\nanswer tells the agent to widen it
+  :raise a ValueError naming the query;
+  note right
+    the query bounds every KNN clause, so no chunk is
+    reachable and the stages below cannot find one.
+    ToolService turns it into a ModelRetry, so the
+    agent that chose the query is the one asked to
+    widen it
+  end note
   stop
 else (yes)
 endif
@@ -793,14 +807,23 @@ fork again
   }
 end fork
 
-:aggregate_embeddings();
+:collect_search_probes();
 note right: collects the question embedding\nand every HyDE embedding as\nseparate search probes
 
 :fetch_scored_search_embeddings();
-note right: opens the point-in-time snapshot,\nthen one KNN clause per embedding\nagainst indexed chunk vectors\n(7 files, 3 chunks each), hits unioned\nand collapsed to one row per chunk
-
-:sort_and_limit_scored_search_embeddings();
-note right: top-20 by combined file+text score
+note right
+  opens the point-in-time snapshot, then one KNN
+  clause per embedding against indexed chunk vectors
+  (tool.rag_search.files_per_probe files, with the
+  chunks per file derived from that and
+  max_chunks_for_reranking).
+  Hits are unioned by Elasticsearch, then collapsed
+  to one row per chunk and cut to
+  max_chunks_for_reranking by combined file+text
+  score. A file several probes agree on carries a
+  higher file score: the hit score sums the
+  contribution of every clause that matched it.
+end note
 
 fork
   :rerank(chunk, question) — per chunk;
@@ -817,7 +840,7 @@ note right: KDE clustering — keeps\nhighest-scored cluster only
 note right: top-10 by scored_rank
 
 :synthesize_rag_answer_task(chunks, question);
-note right: LLM writes a grounded answer\nfrom document context
+note right: LLM writes a grounded answer\nfrom document context. With no chunk\nleft there is nothing to ground one in,\nso the empty retrieval is reported\nrather than prompted for
 
 stop
 @enduml
@@ -874,7 +897,7 @@ exhausted:
 | Task | Behaviour once retries are exhausted |
 | ------ | -------------------------------------- |
 | `generate_hypothetical_document` | Returns no document; recall degrades |
-| `embed_document` | Returns no embedding; `aggregate_embeddings` skips it |
+| `embed_document` | Returns no embedding; `collect_search_probes` skips it |
 | `rerank` | Falls back to the minimum rank, so `apply_rerank_threshold` drops the chunk |
 | `embed_question` | Fails the pipeline — without the question embedding there is nothing to search |
 

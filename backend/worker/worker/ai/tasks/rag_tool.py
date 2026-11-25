@@ -11,7 +11,7 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
-from common.file.file_repository import KnnSearchEmbedding
+from common.file.file_repository import KnnChunkKey
 from common.llm.exceptions import (
     LLMError,
     LLMTransientError,
@@ -19,8 +19,18 @@ from common.llm.exceptions import (
 )
 from common.llm.prompt_sanitizer import sanitize_document_text
 from common.llm.return_types import Relevance
+from common.models.es_repository import (
+    PaginationParameters,
+    PointInTimeExpiredError,
+)
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
-from common.services.query_builder import QueryParameters
+from common.services.query_builder import (
+    AI_PIT_KEEPALIVE,
+    INVALID_QUERY_ERRORS,
+    QueryParameters,
+    invalid_query_message,
+)
+from elasticsearch import TransportError
 from minio.error import MinioException
 from pydantic import BaseModel, computed_field
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
@@ -39,23 +49,7 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
-# How many files one probe may reach. Tuned rather than derived: it trades the breadth
-# of the corpus considered against the Elasticsearch work of one kNN clause, and how
-# many files are worth looking at is a property of the corpus.
-FILES_PER_PROBE_KNN_SEARCH = 7
-
 MAX_TEXT_LENGTH = int(2 * (1024**2))  # 2 MiB
-
-MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING = 20
-
-# The probes are hypothetical documents answering one question, so they are meant to
-# land in the same neighbourhood and the chunks they agree on are the ones that survive
-# deduplication. Where they agree completely, the reranker chooses among the chunks of
-# `FILES_PER_PROBE_KNN_SEARCH` files alone, so taking this many chunks from each keeps
-# the budget above reachable rather than nominal.
-CHUNKS_PER_FILE_KNN_SEARCH = ceil(
-    MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING / FILES_PER_PROBE_KNN_SEARCH
-)
 
 # A chunk reaches the synthesiser from RELEVANT upwards: the filter is `>`, and the
 # scale is discrete, so this names the highest grade that is still dropped.
@@ -64,13 +58,13 @@ SCORED_RANK_SCALING_FACTOR = 10
 
 MAX_RANKED_SEARCH_EMBEDDINGS = 10
 
-# Read by the agent that called the tool rather than by the user, and that agent is the
-# one that chose the query and can widen it. Saying so beats an empty answer, which
-# reads as a pipeline that ran and found nothing.
-NO_MATCHING_FILES_ANSWER = (
-    "No file matches the query, so there is nothing in the corpus to answer from. "
-    "Nothing was searched or read. Ask again with a broader query, or with `*` to "
-    "search the whole index."
+# What the synthesiser would otherwise be asked to narrate. It is the one prompt in this
+# file grounded in no document at all, so it is the call most likely to invent
+# something, and an empty retrieval is a fact the pipeline already knows.
+NO_RELEVANT_CHUNKS_ANSWER = (
+    "Files match the query, but no chunk of them is relevant enough to the question to "
+    "answer from. Nothing was synthesized. Try a more specific question, or a query "
+    "covering different files."
 )
 
 LLM_MAX_TOKENS_RAG = 100
@@ -85,6 +79,16 @@ RAG_STORAGE_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = RAG_RETRY_EXCEPTIONS
     MinioException,
     Urllib3HTTPError,
 )
+# For the tasks that talk to Elasticsearch. `TransportError` is the transient half of
+# the client's hierarchy -- a connection refused or timed out -- while a verdict on a
+# request arrives as an `ApiError`, which `INVALID_QUERY_ERRORS` classifies instead.
+RAG_SEARCH_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = (TransportError,)
+# `fetch_scored_search_embeddings` opens the point-in-time it searches, so a retry
+# opens a fresh one rather than resuming a snapshot the caller still refers to -- which
+# is what makes an expired snapshot recoverable here and a verdict in the paging tools.
+RAG_SNAPSHOT_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = (
+    RAG_SEARCH_RETRY_EXCEPTIONS + (PointInTimeExpiredError,)
+)
 
 
 # Contains the chunks of a files text with a scored the knn score of the .
@@ -97,6 +101,12 @@ class ScoredSearchEmbedding(BaseModel):
     @computed_field  # type: ignore[misc]
     @property
     def score(self) -> float:
+        """How close this chunk is to the probes, file and chunk weighed together.
+
+        The file factor is the top-level hit score, which weighs a file several probes
+        agree on above one a single probe reached; the chunk factor is how close that
+        chunk itself came.
+        """
         return self.file_score * self.text_score
 
 
@@ -108,20 +118,54 @@ class RankedSearchEmbedding(ScoredSearchEmbedding):
     @computed_field  # type: ignore[misc]
     @property
     def scored_rank(self) -> float:
-        return (
-            self.file_score * self.text_score * self.rank * SCORED_RANK_SCALING_FACTOR
-        )
+        return self.score * self.rank * SCORED_RANK_SCALING_FACTOR
 
 
-class ChunkKey(NamedTuple):
-    """What makes two kNN results the same chunk.
+class _ChunkScores(NamedTuple):
+    """The two factors of a chunk's score, kept apart from the hit that carried them.
 
-    A chunk is identified by its text within its file: the nested embedding carries no
-    id of its own, and the same text in two files is two chunks.
+    A ``KnnSearchEmbedding`` carries a whole ``File``; holding one per distinct chunk
+    for the length of the fold would pin every file the search reached in memory, while
+    the key beside this already carries everything else the result needs.
     """
 
-    file_id: UUID
-    text: str
+    file_score: float
+    text_score: float
+
+    @property
+    def score(self) -> float:
+        return self.file_score * self.text_score
+
+
+def _chunks_per_file() -> int:
+    """How many chunks of one file a single kNN clause may return.
+
+    The probes are hypothetical documents answering one question, so they are meant to
+    land in the same neighbourhood and the chunks they agree on are the ones that
+    survive deduplication. Where they agree completely the reranker chooses among the
+    chunks of ``tool.rag_search.files_per_probe`` files alone, so taking this many from
+    each keeps ``tool.rag_search.max_chunks_for_reranking`` reachable rather than
+    nominal.
+    """
+    return ceil(
+        settings.tool.rag_search.max_chunks_for_reranking
+        / settings.tool.rag_search.files_per_probe
+    )
+
+
+def no_matching_files_message(query: str) -> str:
+    """The message the agent gets for a query that bounds the search to nothing.
+
+    The agent is the one that chose the query and can widen it, so this comes back as a
+    ``ValueError`` that ``ToolService.rag_search`` turns into a ``ModelRetry`` -- an
+    answer field saying the same thing would be a successful result nothing makes the
+    agent act on.
+    """
+    return (
+        f"No file matches '{query}', so there is nothing in the corpus to answer from. "
+        "Nothing was searched or read. Ask again with a broader query, or with `*` to "
+        "search the whole index."
+    )
 
 
 def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
@@ -304,7 +348,7 @@ def embed_document(
 
 
 @app.task(base=AiContextProcessingTask)
-def aggregate_embeddings(
+def collect_search_probes(
     lazy_embeddings_generated: tuple[
         TempTypedLazyBytes[Sequence[float]],
         list[TempTypedLazyBytes[Sequence[float]] | None],
@@ -312,9 +356,8 @@ def aggregate_embeddings(
 ) -> TempTypedLazyBytes[Sequence[Sequence[float]]]:
     """Collect the embeddings the search runs against, one probe per vector.
 
-    A mean over vectors pointing in different directions is dominated by what they share
-    and drifts toward the corpus centroid, matching nothing specific. Each embedding is
-    therefore carried through as its own kNN probe, and Elasticsearch unions the hits.
+    A probe keeps its own direction, so each embedding is carried through as its own kNN
+    clause and Elasticsearch unions the hits.
 
     Dropped HyDE members contribute ``None`` and are skipped. The question embedding is
     always present, so the batch is never empty -- and it stays in the set as a probe in
@@ -326,7 +369,7 @@ def aggregate_embeddings(
     )
     if dropped:
         logger.warning(
-            "aggregate_embeddings: %d of %d hypothetical documents were dropped",
+            "%d of %d hypothetical documents were dropped",
             dropped,
             len(lazy_embeddings_hyde),
         )
@@ -341,7 +384,12 @@ def aggregate_embeddings(
     return get_lazybytes_service().from_object(embeddings)
 
 
-@app.task(base=AiContextProcessingTask)
+@app.task(
+    base=AiContextProcessingTask,
+    autoretry_for=RAG_SNAPSHOT_RETRY_EXCEPTIONS,
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def fetch_scored_search_embeddings(
     embeddings_lazy: TempTypedLazyBytes[Sequence[Sequence[float]]],
     query: str,
@@ -349,34 +397,51 @@ def fetch_scored_search_embeddings(
     """Search with every embedding and return the chunks they reach, each once.
 
     One kNN clause is issued per embedding, so a chunk close to several of them is
-    returned by each of those clauses. Collapsing to the best score per chunk happens
-    before the text reaches storage: a duplicate that survives costs one reranking LLM
-    call and skews ``kde_filter_highest_cluster``, which reads the score distribution.
+    returned by each of those clauses. Collapsing to the best score per chunk, and
+    cutting to the reranking budget, both happen before any text reaches storage: a
+    duplicate that survives costs one reranking LLM call and skews
+    ``kde_filter_highest_cluster``, which reads the score distribution, and a chunk cut
+    by the budget costs a storage write for text nothing will read.
+
+    Within one chunk the two score factors cannot disagree: ``file_score`` is the
+    top-level hit score and is the same for every inner hit of a file, and the key is
+    per file, so ``text_score`` alone orders the duplicates. Across chunks the product
+    is what ranks, because it is the one that weighs a file several probes agree on
+    above a file only one reached.
 
     The point-in-time is opened here, where it is first used. Its keep-alive runs from
     the moment it is opened and is extended only by a search against it, and this task
     is the only one that searches: opening it any earlier spends that window on the
     probe-building LLM calls instead.
+
+    The union is bounded in advance -- one clause reaches at most
+    ``tool.rag_search.files_per_probe`` files -- so the page size is set to that bound
+    and the whole result comes back in one request. Left to scan, the search would
+    re-issue every kNN clause once per page of ten.
     """
+    embeddings = get_lazybytes_service().load_object(embeddings_lazy)
+    files_k = settings.tool.rag_search.files_per_probe
     query_params = QueryParameters(
-        query_id=get_file_repository().open_point_in_time(),
+        query_id=get_file_repository().open_point_in_time(keep_alive=AI_PIT_KEEPALIVE),
+        keep_alive=AI_PIT_KEEPALIVE,
         search_string=query,
     )
-    embeddings = get_lazybytes_service().load_object(embeddings_lazy)
 
-    best_by_chunk: dict[ChunkKey, KnnSearchEmbedding] = {}
+    best_by_chunk: dict[KnnChunkKey, _ChunkScores] = {}
     for knn_search_embedding in get_file_repository().get_embedding_generator_by_knn(
         query=query_params,
         embedding_vectors=embeddings,
-        files_k=FILES_PER_PROBE_KNN_SEARCH,
-        chunks_per_file=CHUNKS_PER_FILE_KNN_SEARCH,
+        files_k=files_k,
+        chunks_per_file=_chunks_per_file(),
+        pagination_params=PaginationParameters(page_size=files_k * len(embeddings)),
     ):
-        key = ChunkKey(
-            file_id=knn_search_embedding.file_id, text=knn_search_embedding.text
-        )
+        key = KnnChunkKey.of(knn_search_embedding)
         best = best_by_chunk.get(key)
-        if best is None or knn_search_embedding.score > best.score:
-            best_by_chunk[key] = knn_search_embedding
+        if best is None or knn_search_embedding.text_score > best.text_score:
+            best_by_chunk[key] = _ChunkScores(
+                file_score=knn_search_embedding.file_score,
+                text_score=knn_search_embedding.text_score,
+            )
 
     logger.info(
         "Searched with %d embeddings, reaching %d distinct chunks",
@@ -384,30 +449,21 @@ def fetch_scored_search_embeddings(
         len(best_by_chunk),
     )
 
+    for_reranking = sorted(
+        best_by_chunk.items(),
+        key=lambda item: item[1].score,
+        reverse=True,
+    )[: settings.tool.rag_search.max_chunks_for_reranking]
+
     return [
         ScoredSearchEmbedding(
-            file_id=knn_search_embedding.file_id,
-            file_score=knn_search_embedding.file_score,
-            text_score=knn_search_embedding.text_score,
-            text_lazy=get_lazybytes_service().from_bytes(
-                knn_search_embedding.text.encode()
-            ),
+            file_id=key.file_id,
+            file_score=scores.file_score,
+            text_score=scores.text_score,
+            text_lazy=get_lazybytes_service().from_bytes(key.text.encode()),
         )
-        for knn_search_embedding in best_by_chunk.values()
+        for key, scores in for_reranking
     ]
-
-
-@app.task(base=AiContextProcessingTask)
-def sort_and_limit_scored_search_embeddings(
-    scored_search_embeddings: list[ScoredSearchEmbedding],
-) -> list[ScoredSearchEmbedding]:
-    sorted_scored_search_embeddings = sorted(
-        scored_search_embeddings, key=lambda s: s.score, reverse=True
-    )
-    limited_scored_search_embeddings = sorted_scored_search_embeddings[
-        :MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING
-    ]
-    return limited_scored_search_embeddings
 
 
 def send_rerank_chatbot_query(text: str, question: str) -> Relevance:
@@ -523,7 +579,16 @@ def limit_and_sort_ranked_search_embeddings(
 def synthesize_rag_answer_task(
     ranked_embeddings: list[RankedSearchEmbedding], question: str
 ) -> RagSearchResult:
-    """Synthesize a grounded answer from ranked document chunks."""
+    """Synthesize a grounded answer from ranked document chunks.
+
+    Nothing left to synthesize from is reported rather than prompted for: the answer is
+    the same either way, and this is the one call in the pipeline whose output would be
+    grounded in no document at all.
+    """
+    if not ranked_embeddings:
+        logger.info("No chunk survived reranking for '%s'", question)
+        return RagSearchResult(answer=NO_RELEVANT_CHUNKS_ANSWER, chunks=[])
+
     chunks = [
         RagChunk(
             file_id=e.file_id,
@@ -535,24 +600,15 @@ def synthesize_rag_answer_task(
         f"<document>\n{c.text}\n</document>\n" for c in reversed(chunks)
     )
 
-    if ranked_embeddings:
-        task_prompt = (
-            f"TASK: Your task is to answer the human's QUESTION "
-            f"using the CONTEXT below.\n\n"
-            f"Do NOT use any previous knowledge which is not contained in the CONTEXT.\n\n"
-            f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
-            f"Keep your answer concise and brief.\n\n"
-            f"CONTEXT:\n{answer_context}\n\n"
-            f"QUESTION: {question}"
-        )
-    else:
-        task_prompt = (
-            f"TASK: Tell the user that they should refine their QUERY "
-            f"or QUESTION because you could not find enough information in the data "
-            f"to answer their QUESTION.\n\n"
-            f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
-            f"Keep your answer concise and brief."
-        )
+    task_prompt = (
+        f"TASK: Your task is to answer the human's QUESTION "
+        f"using the CONTEXT below.\n\n"
+        f"Do NOT use any previous knowledge which is not contained in the CONTEXT.\n\n"
+        f"Keep your answer in a paragraph of {LLM_MAX_TOKENS_RAG} tokens or less.\n"
+        f"Keep your answer concise and brief.\n\n"
+        f"CONTEXT:\n{answer_context}\n\n"
+        f"QUESTION: {question}"
+    )
 
     agent = get_llm_rag_synthesize_agent()
 
@@ -590,7 +646,13 @@ def rerank_and_synthesize(
     )
 
 
-@app.task(bind=True, base=AiContextProcessingTask)
+@app.task(
+    bind=True,
+    base=AiContextProcessingTask,
+    autoretry_for=RAG_SEARCH_RETRY_EXCEPTIONS,
+    max_retries=RAG_MAX_RETRIES,
+    retry_backoff=True,
+)
 def rag_pipeline_task(
     self: AiContextProcessingTask, question: str, query: str
 ) -> RagSearchResult:
@@ -609,10 +671,31 @@ def rag_pipeline_task(
     )
     # The query bounds every kNN clause, so a query matching no file cannot reach a
     # chunk and the stages below would spend an LLM call per probe to arrive at an
-    # empty answer. One count answers that before any of them is dispatched.
-    if get_file_repository().count_by_query(QueryParameters(search_string=query)) == 0:
-        logger.info("rag_pipeline_task: no file matches '%s', nothing to answer", query)
-        return RagSearchResult(answer=NO_MATCHING_FILES_ANSWER, chunks=[])
+    # empty answer. One existence check answers that before any of them is dispatched --
+    # the question is whether anything matches, not how much, and the default `*` over
+    # a large index makes an exact total expensive for one bit. It asks about files,
+    # which is the weaker statement: under `pipeline.skip_embedding_while_indexing` a
+    # file matches while none of its chunks carries a vector, and the fan-out is spent
+    # to reach no chunk anyway.
+    #
+    # The check carries no `query_id`, so it reads the live index while the search
+    # opens a point-in-time of its own later. Unlike the bulk tools, which pin the
+    # number put to the user to the set they then act on, this one only decides
+    # whether to dispatch, and a snapshot would be a round trip the search cannot reuse.
+    try:
+        anything_matches = get_file_repository().exists_by_query(
+            QueryParameters(search_string=query)
+        )
+    # A query string the agent composed is the agent's mistake, so every way of
+    # rejecting one must reach it as a ValueError it can recover from rather than as
+    # an opaque backend error.
+    except INVALID_QUERY_ERRORS as exc:
+        logger.warning("Invalid query '%s': %s", query, exc)
+        raise ValueError(invalid_query_message(query, exc)) from exc
+
+    if not anything_matches:
+        logger.info("No file matches '%s', nothing to answer", query)
+        raise ValueError(no_matching_files_message(query))
 
     # Cycling rather than zipping keeps `num_documents` and the variant list from
     # contradicting each other at any operator-chosen value: above the variant count
@@ -636,10 +719,9 @@ def rag_pipeline_task(
                         for i in range(settings.llm.rag_hyde.num_documents)
                     ),
                 ],
-                aggregate_embeddings.s(),
+                collect_search_probes.s(),
             ),
             fetch_scored_search_embeddings.s(query),
-            sort_and_limit_scored_search_embeddings.s(),
             rerank_and_synthesize.s(question),
         )
     )

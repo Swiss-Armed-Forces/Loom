@@ -20,6 +20,7 @@ from common.ai_context.tool_models import (
     GetFileFieldResult,
     GetFileResult,
     ListFolderContentsResult,
+    RagChunk,
     RagSearchResult,
     SearchByFilenameResult,
     SuggestQueriesResult,
@@ -369,35 +370,25 @@ def test_rag_search_reads_the_whole_index_by_default(
     task_call_service_mock: MagicMock,
     deps: AgentDeps,
 ):
-    """The question is what the pipeline answers, never what it searches with."""
+    """The question is what the pipeline answers, never what it searches with -- both
+    are prose to a type checker, so the pair has to be pinned -- and every chunk the
+    answer rests on becomes a citation."""
+    file_id = uuid4()
     task_call_service_mock.call_rag_search_tool.return_value = RagSearchResult(
-        answer="", chunks=[]
+        answer="Mx Baker did.",
+        chunks=[RagChunk(file_id=file_id, text="signed by Mx Baker")],
     )
 
-    tool_service.rag_search(_make_ctx(deps), "who signed the lease?")
+    ctx = _make_ctx(deps)
+    result = tool_service.rag_search(ctx, "who signed the lease?")
 
     task_call_service_mock.call_rag_search_tool.assert_called_once_with(
         deps.context.id_, "who signed the lease?", "*"
     )
-
-
-def test_rag_search_bounds_the_corpus_with_the_query(
-    tool_service: ToolService,
-    task_call_service_mock: MagicMock,
-    deps: AgentDeps,
-):
-    """Both arguments are prose to a type checker, so the pair has to be pinned."""
-    task_call_service_mock.call_rag_search_tool.return_value = RagSearchResult(
-        answer="", chunks=[]
-    )
-
-    tool_service.rag_search(
-        _make_ctx(deps), "who signed the lease?", query="file_type:pdf"
-    )
-
-    task_call_service_mock.call_rag_search_tool.assert_called_once_with(
-        deps.context.id_, "who signed the lease?", "file_type:pdf"
-    )
+    assert result.answer == "Mx Baker did."
+    assert deps.source_collector == [
+        ToolSource(file_id=file_id, text="signed by Mx Baker")
+    ]
 
 
 # ---------------------------------------------------------------------------

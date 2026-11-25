@@ -523,6 +523,11 @@ tool:
     page_size: null
   browse:
     page_size: null
+  rag_search:
+    files_per_probe: null
+    # The chunks fetched per file derive from this and files_per_probe together, so
+    # raising it widens retrieval as well as the reranking budget.
+    max_chunks_for_reranking: null
 
 preInstall:
   image:

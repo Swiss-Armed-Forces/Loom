@@ -10,7 +10,7 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
-from common.file.file_repository import Embedding, File, Tag
+from common.file.file_repository import Embedding, File, KnnChunkKey, Tag
 from common.services.lazybytes_service import TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from pydantic import BaseModel
@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
-MAX_FILES_KNN_SEARCH = 10
-MAX_CHUNKS_PER_FILE_KNN_SEARCH = 10
+# Both bounds are spent per probe, and one search carries `AUTO_TAG_KNN_BATCH_SIZE`
+# probes, so what a single call may reach is these multiplied by the batch size.
+FILES_PER_PROBE_KNN_SEARCH = 10
+CHUNKS_PER_FILE_KNN_SEARCH = 10
 AUTO_TAG_KNN_BATCH_SIZE = 32
 NUM_KNN_QUERY_WORKERS = 4
 AUTO_TAG_PREFIX = "🤖 "
@@ -115,7 +117,14 @@ def fetch_embeddings_batch(
     batch: list[TempTypedLazyBytes[Embedding]],
     file: File,
 ) -> list[FileTagInfo]:
-    """Search for a batch of embeddings via a single KNN query."""
+    """Search for a batch of embeddings via a single KNN query.
+
+    One clause is issued per embedding of the batch, so a chunk near several of them
+    comes back from each. Those repeats are folded to the chunk's best score within the
+    batch: `calculate_tag_score` averages per tag, so a chunk counted once per probe
+    that reached it weights a file's tags by how many probes agree rather than by how
+    similar the file is.
+    """
     # These come from lazybytes, never from Elasticsearch: the chord computed them
     # moments ago. `Embedding.vector` is required, so an absent one is a
     # ValidationError at load time rather than a chunk silently dropped here.
@@ -137,12 +146,12 @@ def fetch_embeddings_batch(
         file.short_name,
     )
 
-    similar_files: list[FileTagInfo] = []
+    best_by_chunk: dict[KnnChunkKey, FileTagInfo] = {}
     for knn_embedding in get_file_repository().get_embedding_generator_by_knn(
         query=query,
         embedding_vectors=embeddings_batch,
-        files_k=MAX_FILES_KNN_SEARCH,
-        chunks_per_file=MAX_CHUNKS_PER_FILE_KNN_SEARCH,
+        files_k=FILES_PER_PROBE_KNN_SEARCH,
+        chunks_per_file=CHUNKS_PER_FILE_KNN_SEARCH,
     ):
         logger.debug("Processing candidate similarity match for %s", file.short_name)
 
@@ -156,9 +165,12 @@ def fetch_embeddings_batch(
                     file.short_name,
                     similarity,
                 )
-                similar_files.append(
-                    FileTagInfo(score=similarity, tags=similar_file.tags)
-                )
+                key = KnnChunkKey.of(knn_embedding)
+                best = best_by_chunk.get(key)
+                if best is None or similarity > best.score:
+                    best_by_chunk[key] = FileTagInfo(
+                        score=similarity, tags=similar_file.tags
+                    )
             else:
                 logger.warning(
                     "Failed to fetch similar file with id '%s'",
@@ -172,7 +184,7 @@ def fetch_embeddings_batch(
                 similarity,
             )
 
-    return similar_files
+    return list(best_by_chunk.values())
 
 
 @app.task(base=FileIndexingTask)
