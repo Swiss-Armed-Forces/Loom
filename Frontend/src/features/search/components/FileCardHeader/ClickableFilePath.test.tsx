@@ -151,23 +151,28 @@ describe("ClickableFilePath", () => {
         expect(getComputedStyle(trailRoot).minWidth).toBe("0px");
     });
 
-    it("filters the file's own path, extension and all", async () => {
-        const asked = queriesAskedFrom('parent_path:"//Mail/Inbox"');
+    it("filters the file and what is indexed below it", async () => {
+        // The folder view's subtree chips leave a file out of their own count
+        // with a negated exact path, which this filter supersedes too.
+        const asked = queriesAskedFrom(
+            'parent_path:"//Mail/Inbox" NOT full_path.keyword:"//Mail/Inbox/basic_email.eml"',
+        );
 
         await act(async () => {
             fireEvent.click(screen.getByText("basic_email"));
         });
 
-        // The crumb reads "basic_email", the filter is the whole path - and
+        // The crumb reads "basic_email", the filter is the whole path on the
+        // path-hierarchy field, so the file's attachments come with it - and
         // the directory filter it supersedes is gone.
         expect(asked).toEqual([
-            'full_path.keyword:"//Mail/Inbox/basic_email.eml"',
+            'full_path.tree:"//Mail/Inbox/basic_email.eml"',
         ]);
     });
 
     it("drops the file filter when a parent crumb is clicked", async () => {
         const asked = queriesAskedFrom(
-            'full_path.keyword:"//Mail/Inbox/basic_email.eml"',
+            'full_path.tree:"//Mail/Inbox/basic_email.eml"',
         );
 
         await act(async () => {

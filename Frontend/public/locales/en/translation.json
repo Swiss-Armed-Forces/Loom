@@ -688,7 +688,7 @@
         "expandContent": "Expand content",
         "collapseContent": "Collapse content",
         "filterByParentPath": "Filter by parent path",
-        "filterByFullPath": "Filter by {{- fullPath}}",
+        "filterByFileSubtree": "Filter by {{- fullPath}} and anything inside it",
         "filterByExtension": "Filter by extension",
         "collapseAllPaths": "Collapse all paths",
         "navigateToParent": "Navigate to parent"
