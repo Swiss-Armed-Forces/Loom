@@ -675,15 +675,27 @@ class ToolService:
             result, self._store_cursor(result.next_cursor)
         )
 
-    def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
+    def rag_search(
+        self,
+        ctx: RunContext[AgentDeps],
+        question: str,
+        query: str = "*",
+    ) -> RagSearchResult:
         """Run the full RAG pipeline: retrieve and synthesize an answer from documents.
 
+        The corpus searched can be narrowed with a Lucene query, so that the answer
+        is drawn only from the files that query matches, e.g. one file type, folder
+        or date range.
+
         Args:
-            query: Natural language question to answer using the document corpus.
+            question: Natural language question to answer using the document corpus.
+            query: Optional Elasticsearch Lucene query bounding which files the
+                answer may be drawn from, as returned by suggest_queries. Defaults
+                to "*", which searches the whole index.
         """
         try:
             result = self._task_call_service.call_rag_search_tool(
-                ctx.deps.context.id_, query
+                ctx.deps.context.id_, question, query
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc

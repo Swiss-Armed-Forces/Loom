@@ -30,6 +30,11 @@ MAX_PAGE_SIZE = 10000
 # filter sub-aggregations. Both repository methods behind the browse tools clamp to it.
 TREE_PATH_MAX_ELEMENT_COUNT = 50
 
+# The widest HyDE fan-out one question may become. Every member is a serialised LLM
+# call and a kNN clause of its own, so the wall-clock of a single `rag_search` is
+# already the sum of them.
+MAX_RAG_HYDE_DOCUMENTS = 20
+
 
 def _get_persister_id_from_hostname() -> int:
     """Extract persister ID from StatefulSet pod hostname.
@@ -146,9 +151,12 @@ class LLMSummarizationRefineSettings(LLMSummarizationBaseSettings):
 
 
 class LLMRagHydeSettings(LLMClientSettings):
-    num_documents: int = (
-        5  # REMARK: No entirely happy with that parameter located here ...
-    )
+    # REMARK: No entirely happy with that parameter located here ...
+    #
+    # Each document is one LLM call and then one kNN clause, and both the files the
+    # search may reach and the round trips it takes are multiples of it, so the cap is
+    # what keeps a mistyped value from turning one question into an unbounded fan-out.
+    num_documents: int = Field(default=5, ge=1, le=MAX_RAG_HYDE_DOCUMENTS)
     temperature: float | None = 0.7
     thinking: bool | None = False
 
@@ -277,10 +285,29 @@ class BrowseToolsSettings(BaseModel):
     )
 
 
+class RagSearchToolSettings(BaseModel):
+    """Settings for the rag_search AI tool.
+
+    Attributes:
+        files_per_probe: How many files one kNN probe may reach, which also sets the
+            depth each shard explores. Tuned rather than derived: it trades the breadth
+            of the corpus considered against the Elasticsearch work of one clause, and
+            how many files are worth looking at is a property of the corpus.
+        max_chunks_for_reranking: How many chunks reach the reranker, which spends one
+            LLM call on each against an inference server that answers them one at a
+            time. The chunks fetched per file derive from this and `files_per_probe`
+            together, so raising it widens retrieval as well as the rerank budget.
+    """
+
+    files_per_probe: int = Field(default=7, ge=1)
+    max_chunks_for_reranking: int = Field(default=20, ge=1)
+
+
 class ToolSettings(BaseModel):
     suggest_queries: SuggestQueriesToolSettings = SuggestQueriesToolSettings()
     execute_query: ExecuteQueryToolSettings = ExecuteQueryToolSettings()
     browse: BrowseToolsSettings = BrowseToolsSettings()
+    rag_search: RagSearchToolSettings = RagSearchToolSettings()
 
 
 class LLMSettings(BaseModel):

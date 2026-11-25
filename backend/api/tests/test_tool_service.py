@@ -20,6 +20,8 @@ from common.ai_context.tool_models import (
     GetFileFieldResult,
     GetFileResult,
     ListFolderContentsResult,
+    RagChunk,
+    RagSearchResult,
     SearchByFilenameResult,
     SuggestQueriesResult,
     ToolSource,
@@ -356,6 +358,37 @@ def test_search_by_filename_reports_an_invalid_query_as_a_retry(
         tool_service.search_by_filename(
             _make_ctx(deps), "report", search_string="content:("
         )
+
+
+# ---------------------------------------------------------------------------
+# rag_search
+# ---------------------------------------------------------------------------
+
+
+def test_rag_search_reads_the_whole_index_by_default(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """The question is what the pipeline answers, never what it searches with -- both
+    are prose to a type checker, so the pair has to be pinned -- and every chunk the
+    answer rests on becomes a citation."""
+    file_id = uuid4()
+    task_call_service_mock.call_rag_search_tool.return_value = RagSearchResult(
+        answer="Mx Baker did.",
+        chunks=[RagChunk(file_id=file_id, text="signed by Mx Baker")],
+    )
+
+    ctx = _make_ctx(deps)
+    result = tool_service.rag_search(ctx, "who signed the lease?")
+
+    task_call_service_mock.call_rag_search_tool.assert_called_once_with(
+        deps.context.id_, "who signed the lease?", "*"
+    )
+    assert result.answer == "Mx Baker did."
+    assert deps.source_collector == [
+        ToolSource(file_id=file_id, text="signed by Mx Baker")
+    ]
 
 
 # ---------------------------------------------------------------------------

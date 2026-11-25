@@ -550,6 +550,14 @@ data:
     tool__browse__page_size: {{ .Values.tool.browse.page_size | quote }}
     {{- end }}
 
+    # tool rag_search
+    {{- if ne .Values.tool.rag_search.files_per_probe nil }}
+    tool__rag_search__files_per_probe: {{ .Values.tool.rag_search.files_per_probe | quote }}
+    {{- end }}
+    {{- if ne .Values.tool.rag_search.max_chunks_for_reranking nil }}
+    tool__rag_search__max_chunks_for_reranking: {{ .Values.tool.rag_search.max_chunks_for_reranking | quote }}
+    {{- end }}
+
     # llm rag synthesize
     {{- if ne .Values.llm.rag_synthesize.provider nil }}
     llm__rag_synthesize__provider: {{ .Values.llm.rag_synthesize.provider | quote }}

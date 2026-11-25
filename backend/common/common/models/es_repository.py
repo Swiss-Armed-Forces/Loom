@@ -812,6 +812,21 @@ class BaseEsRepository(  # pylint: disable=too-many-public-methods
         # Cf. https://github.com/elastic/elasticsearch-dsl-py/issues/1897
         return result.hits.total.value  # type: ignore
 
+    def exists_by_query(self, query: QueryParameters) -> bool:
+        """Whether the query matches anything at all.
+
+        `track_total_hits=1` lets Elasticsearch stop at the first match, where
+        `count_by_query`'s exact total enumerates every matching document. A caller that
+        only compares the count against zero asks for one bit and should pay for one
+        bit.
+        """
+        search = self._get_search_by_query(query=query)
+        search = search[0:0]  # do not fetch hits
+        search = search.extra(track_total_hits=1)
+
+        result = self._execute_search_with_query(search=search, query=query)
+        return result.hits.total.value > 0  # type: ignore
+
     def count_and_score_stats_by_query(self, query: QueryParameters) -> QueryScoreStats:
         """Counts matching files and returns score statistics from the top hits."""
         search = self._get_search_by_query(query=query)
