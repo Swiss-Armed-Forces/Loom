@@ -5,12 +5,26 @@ writing Lucene query strings by hand, users ask questions and the agent translat
 actions, reads documents, manipulates the search UI, and synthesizes answers grounded in the corpus.
 
 Tools are organised into **capabilities** — groups of related tools that the agent loads together.
-Which capabilities a conversation has is decided by its mode. `chat` gets none; `work` gets
-`search_and_browse`, `file_access`, `ai_processing` and `ui_interaction` plus the three that act on
-the corpus (`file_curation`, `bulk_enrichment`, `bulk_metadata`); `research` trades those for
-`research`, which adds the RAG pipeline and whose instructions steer the agent toward thorough,
-multi-faceted research. Curation and the bulk actions are work-mode only because research composes
-its own queries across the whole corpus with no user in the loop.
+Which capabilities a conversation has is decided by its mode:
+
+| Capability | `chat` | `work` | `research` | Carries |
+| ---------- | :----: | :----: | :--------: | ------- |
+| `search_and_browse` | | ✓ | ✓ | Compose a query, run it, search by filename, browse folders, read one file's fields |
+| `enrichment` | | ✓ | | Everything that changes a file, for one file or for every file a query matches |
+| `ui_interaction` | | ✓ | | Read and drive the search UI |
+| `research` | | | ✓ | `rag_search`, which answers a question across the corpus in one call |
+
+`enrichment` is work-mode only because research composes its own queries across the whole corpus
+with no user in the loop, and `research` is research-mode only because `rag_search` returns a
+conclusion rather than a result set — the one read with nothing to show on screen. Everything else
+is shared, so research is `work` with the acting removed.
+
+Three tools in `search_and_browse` behave differently by mode: in `work`, `execute_query` also
+applies its query to the user's results list, and `get_file` and `get_file_field` both highlight the
+file they read, so what the agent reads is what the user is looking at. In `research` all three run
+with no effect on any screen. Because a capability's `description` and `instructions` are the only
+place the agent can be told so, the bundle is built twice — once per mode — with the same tools and
+different instructions.
 
 ---
 
@@ -84,10 +98,15 @@ load via `GET /v1/ai/{context_id}/history`.
 by Ollama or a compatible endpoint). It is the only client whose prompt carries more than one system
 message, so it is the only one affected by the merging the self-hosted providers ask for (see
 [System message merging](#system-message-merging)). `AgentService.build_prepared_agent` asks
-`ToolService.capabilities_for_mode(context.active_mode)` which of the seven `Capability` groups the
-run is offered: `_WORK_CAPABILITIES` for `work`, `_RESEARCH_CAPABILITIES` for `research`, and
-nothing at all for `chat`. Every group but `research` is declared `defer_loading=True`, so the
-agent loads the ones it needs rather than carrying all of their tools in every prompt.
+`ToolService.capabilities_for_mode(context.active_mode)` which `Capability` groups the run is
+offered: `_WORK_CAPABILITIES` for `work`, `_RESEARCH_CAPABILITIES` for `research`, and nothing at
+all for `chat`. Every group is declared `defer_loading=True`, so no run starts with a tool in hand:
+the agent reads the descriptions and loads the bundles it needs rather than carrying every tool in
+every prompt.
+
+`enrichment` is assembled across both tool services. `ToolService` owns the per-file tools and
+`BulkToolService` exposes its five `bulk_*` tools as a plain list, because one bundle needs both
+halves and a `Capability` can only be built where both are in reach.
 
 Tools are split into two tiers:
 
@@ -528,18 +547,17 @@ reloads from the first page.
 
 ### Writes and bulk actions
 
-`file_curation` writes one file at a time — `add_tags_to_file` and `update_file` —
-along the same `ToolService` → `TaskCallService` → Celery path as every other backend
-tool, so the call blocks until the write has been handed to the persister and the agent
-sees the outcome in the same turn. Handed over is not yet applied: the persister flushes
-its queue after `settings.persister_debounce_window`, so a field read straight back can
-still carry the pre-write value — which is why the capability's instructions call the
-change accepted rather than applied. These two are deliberately not part of `ai_processing`:
-each of that capability's three tools spends an LLM call and its instructions say so,
-while a tag write is free, and mixing the two makes both harder for the model to select
-correctly.
+`add_tags_to_file` and `update_file` write one file at a time, along the same
+`ToolService` → `TaskCallService` → Celery path as every other backend tool, so the call
+blocks until the write has been handed to the persister and the agent sees the outcome in
+the same turn. Handed over is not yet applied: the persister flushes its queue after
+`settings.persister_debounce_window`, so a field read straight back can still carry the
+pre-write value — which is why `enrichment`'s instructions call the change accepted rather
+than applied. They share a bundle with the per-file AI tools but not a cost model: a tag
+write is free where a summarization spends an LLM call, and neither is put to the user,
+so the bundle's instructions have to separate them by name.
 
-`bulk_enrichment` and `bulk_metadata` act on everything a Lucene query matches, through
+The `bulk_*` tools act on everything a Lucene query matches, through
 the same `TaskSchedulingService` dispatches the `202` REST routes use. They are split by
 cost: an enrichment spends one model call per matched file against the same inference
 server the conversation itself runs on, a metadata write is an index update. Neither can
@@ -638,16 +656,11 @@ re-runs immediately.
 | --- | --- |
 | `discover_state` | Returns a schema describing the available UI state keys |
 | `read_state` | Reads a specific UI state slice (search query, filters, …) |
-| `get_this_file` | Returns the file currently open in the detail pane |
-| `get_these_files` | Returns the files currently visible in the search results |
-| `set_search_query` | Updates the search bar query string |
-| `navigate_to_file` | Opens a file in the detail pane |
-| `close_file` | Closes a file in the detail pane |
-| `highlight_file` | Highlights a file card in the search results |
-| `navigate_sidebar` | Opens a specific panel in the right sidebar (summary, translate, …) |
+| `get_highlighted_file` | Returns the id of the file currently highlighted in the results |
+| `open_sidebar` | Opens a right-sidebar tab, named by its `tab` argument |
+| `close_sidebar` | Closes the right sidebar |
 | `save_custom_query` | Saves the current query as a named custom query |
 | `set_statistics_view` | Switches the statistics panel to a given view |
-| `open_file_dialogs` | Opens a file action dialog (e.g. share, delete) |
 
 ### Interactive tools (`interactive: true`)
 
@@ -704,8 +717,9 @@ endif
 @enduml
 ```
 
-In Research Mode, the frontend only advertises `get_this_file` (not the full UI manipulation
-toolset) so the agent focuses on research rather than UI control.
+In Research Mode none of the frontend tools reach the agent except the always-on pair: every one of
+them declares `ui_interaction`, which research does not get, so the mode is headless by routing
+rather than by convention.
 
 ---
 
@@ -718,20 +732,20 @@ toolset) so the agent focuses on research rather than UI control.
 | `suggest_queries` | `search_and_browse` | Generates ranked Lucene query candidates from a natural language description. Optional `folder_path` parameter restricts results to a subtree. |
 | `list_folder_contents` | `search_and_browse` | Lists direct children (subfolders and files) of a folder path. Paginated: optional `after_cursor`; the response carries `has_more` and `next_cursor`. |
 | `search_by_filename` | `search_and_browse` | Finds files whose name contains a given substring, best matches first. Optional `search_string` parameter (default `*`) restricts the name match to the files a Lucene query matches. Paginated: optional `after_cursor`; the response carries `has_more` and `next_cursor`. |
-| `get_file` | `file_access` | Returns the full path and available field list for a file by UUID |
-| `get_file_field` | `file_access` | Reads the value of a specific field for a file (e.g. `content`, `summary`). Every field is capped at 8000 characters and the response carries `truncated`; there is no way to page past the cap. |
-| `summarize_file` | `ai_processing` | Triggers AI summarization for a file and returns the summary |
-| `translate_file` | `ai_processing` | Triggers AI translation for a file and returns the translated text |
-| `describe_image` | `ai_processing` | Triggers AI image description for an image file |
-| `execute_query` | `search_and_browse` | Executes a Lucene query and returns matching files with snippets, best matches first. Optional `folder_path` parameter restricts results to a subtree. Paginated: optional `after_cursor`; the response carries `total_count`, `has_more` and `next_cursor`. |
+| `get_file` | `search_and_browse` | Returns the full path and available field list for a file by UUID. In `work` mode it also emits the event that highlights the file in the results list. |
+| `get_file_field` | `search_and_browse` | Reads the value of a specific field for a file (e.g. `content`, `summary`). Every field is capped at 8000 characters and the response carries `truncated`; there is no way to page past the cap. In `work` mode it also emits the event that highlights the file. |
+| `summarize_file` | `enrichment` | Triggers AI summarization for a file and returns the summary |
+| `translate_file` | `enrichment` | Triggers AI translation for a file and returns the translated text |
+| `describe_image` | `enrichment` | Triggers AI image description for an image file |
+| `execute_query` | `search_and_browse` | Executes a Lucene query and returns matching files with snippets, best matches first. Optional `folder_path` parameter restricts results to a subtree. Paginated: optional `after_cursor`; the response carries `total_count`, `has_more` and `next_cursor`. In `work` mode it also emits the event that applies the query to the user's results list. |
 | `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer |
-| `add_tags_to_file` | `file_curation` | Adds one or more tags to a single file |
-| `update_file` | `file_curation` | Sets the `seen`, `flagged` or `hidden` state of a single file |
-| `bulk_summarize` | `bulk_enrichment` | Queues AI summarization for every file a query matches |
-| `bulk_translate` | `bulk_enrichment` | Queues AI translation for every file a query matches |
-| `bulk_describe_images` | `bulk_enrichment` | Queues AI image description for every file a query matches |
-| `bulk_add_tags` | `bulk_metadata` | Adds tags to every file a query matches |
-| `bulk_update_files` | `bulk_metadata` | Sets `seen`, `flagged` or `hidden` on every file a query matches |
+| `add_tags_to_file` | `enrichment` | Adds one or more tags to a single file |
+| `update_file` | `enrichment` | Sets the `seen`, `flagged` or `hidden` state of a single file |
+| `bulk_summarize` | `enrichment` | Queues AI summarization for every file a query matches |
+| `bulk_translate` | `enrichment` | Queues AI translation for every file a query matches |
+| `bulk_describe_images` | `enrichment` | Queues AI image description for every file a query matches |
+| `bulk_add_tags` | `enrichment` | Adds tags to every file a query matches |
+| `bulk_update_files` | `enrichment` | Sets `seen`, `flagged` or `hidden` on every file a query matches |
 
 ### Frontend tools
 
@@ -739,16 +753,11 @@ toolset) so the agent focuses on research rather than UI control.
 | --- | --- | --- |
 | `discover_state` | passive / state reading | Returns a description of the available UI state keys |
 | `read_state` | passive / state reading | Reads a UI state slice by key |
-| `get_this_file` | passive / state reading | Returns the currently open file (available in all modes) |
-| `get_these_files` | passive / state reading | Returns the files currently visible in the search results |
-| `set_search_query` | passive / action | Updates the search bar with a new query string |
-| `navigate_to_file` | passive / action | Opens a file in the detail pane |
-| `close_file` | passive / action | Closes a file in the detail pane |
-| `highlight_file` | passive / action | Highlights a file card in the results list |
-| `navigate_sidebar` | passive / action | Switches to a specific right-sidebar panel |
+| `get_highlighted_file` | passive / state reading | Returns the id of the currently highlighted file |
+| `open_sidebar` | passive / action | Opens a right-sidebar tab, named by its `tab` argument |
+| `close_sidebar` | passive / action | Closes the right sidebar |
 | `save_custom_query` | passive / action | Saves the current search as a named custom query |
 | `set_statistics_view` | passive / action | Switches the active statistics chart |
-| `open_file_dialogs` | passive / action | Opens file action dialogs |
 | `ask_user` | interactive | Pauses execution and prompts the user with a multiple-choice question |
 | `request_mode` | interactive | Asks the user to switch the conversation to another mode |
 

@@ -4,7 +4,6 @@ import logging
 from typing import NoReturn
 from uuid import UUID, uuid4
 
-from common.ai_context.ai_context_repository import CapabilityId
 from common.ai_context.tool_models import (
     BulkAction,
     BulkApprovalRequest,
@@ -27,7 +26,6 @@ from common.services.task_scheduling_service import (
 from common.settings import settings
 from pydantic import BaseModel
 from pydantic_ai import ModelRetry, RunContext
-from pydantic_ai.capabilities import Capability
 from pydantic_ai.exceptions import ApprovalRequired, ToolFailed
 from pydantic_ai.tools import Tool as PydanticTool
 from redis import StrictRedis
@@ -38,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 _APPROVAL_KEY_PREFIX = "aibulkapproval"
 
-_APPROVAL_INSTRUCTIONS = (
+APPROVAL_INSTRUCTIONS = (
     "Every one of these actions is put to the user for approval before anything is "
     "dispatched, together with the number of files it would cover. That happens on "
     "its own, so call the action the user asked for directly and do not ask for "
@@ -97,53 +95,16 @@ class BulkToolService:
 
         t = settings.llm.agent.tool_timeout
 
-        enrichment = Capability[AgentDeps](
-            id=CapabilityId.BULK_ENRICHMENT,
-            description=(
-                "Summarize, translate or describe images across every file a "
-                "query matches, in one action rather than file by file."
-            ),
-            instructions=(
-                _APPROVAL_INSTRUCTIONS
-                + "These calls queue work, they do not perform it. Every matched file "
-                "costs one model call on the same inference server you are running "
-                "on, so a large sweep takes hours and slows this conversation down. "
-                "Report that the work is queued — never that it is done. The user "
-                "watches its progress in the UI, so you cannot answer how far along "
-                "it is."
-            ),
-            tools=[
-                PydanticTool(self.bulk_summarize, timeout=t),
-                PydanticTool(self.bulk_translate, timeout=t),
-                PydanticTool(self.bulk_describe_images, timeout=t),
-            ],
-            defer_loading=True,
-        )
-
-        metadata = Capability[AgentDeps](
-            id=CapabilityId.BULK_METADATA,
-            description=(
-                "Tag, or set the seen, flagged and hidden state of, every file a "
-                "query matches, in one action rather than file by file."
-            ),
-            instructions=(
-                _APPROVAL_INSTRUCTIONS
-                + "These writes land immediately and Loom has no undo for them, so a "
-                "query that matches more than the user meant cannot be taken back. "
-                "Use the narrowest query that covers what they asked for, and check "
-                "it with execute_query when you are unsure what it matches."
-            ),
-            tools=[
-                PydanticTool(self.bulk_add_tags, timeout=t),
-                PydanticTool(self.bulk_update_files, timeout=t),
-            ],
-            defer_loading=True,
-        )
-
-        self.capabilities: dict[CapabilityId, Capability[AgentDeps]] = {
-            CapabilityId.BULK_ENRICHMENT: enrichment,
-            CapabilityId.BULK_METADATA: metadata,
-        }
+        # Handed to ToolService rather than wrapped in a Capability here: the bulk
+        # actions and the per-file ones share the `enrichment` bundle, and a Capability
+        # can only be assembled where both halves are in reach.
+        self.tools: list[PydanticTool[AgentDeps]] = [
+            PydanticTool(self.bulk_summarize, timeout=t),
+            PydanticTool(self.bulk_translate, timeout=t),
+            PydanticTool(self.bulk_describe_images, timeout=t),
+            PydanticTool(self.bulk_add_tags, timeout=t),
+            PydanticTool(self.bulk_update_files, timeout=t),
+        ]
 
     def _approval_key(self, ctx: RunContext[AgentDeps]) -> str:
         """Where the approval for the call in ``ctx`` is kept.

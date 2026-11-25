@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 
 import { getContextHistory, setAiContextMode } from "@app/api";
 import { apiConfiguration } from "@app/api/apiConfiguration";
+import { revealFileThunk, updateQuery } from "@app/slices/searchSlice";
 import { store } from "@app/store";
 
 import {
@@ -414,6 +415,23 @@ export const useChatbotAgent = (
                 refreshChatMessages();
             },
             onCustomEvent: ({ event }) => {
+                // Reads that drive the UI: the backend tool did the reading and rides
+                // the result with an event saying what the screen should now show, so
+                // the user follows along while the agent is still working.
+                if (event.name === "set_search_query") {
+                    store.dispatch(
+                        updateQuery({ query: String(event.value.query ?? "") }),
+                    );
+                    return;
+                }
+                if (event.name === "highlight_file") {
+                    store.dispatch(
+                        revealFileThunk({
+                            fileId: String(event.value.file_id ?? ""),
+                        }),
+                    );
+                    return;
+                }
                 if (event.name !== "citation" || !turnBubbleIdRef.current) {
                     return;
                 }

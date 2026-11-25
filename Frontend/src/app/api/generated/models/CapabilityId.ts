@@ -18,14 +18,10 @@
  * @export
  */
 export const CapabilityId = {
-    SearchAndBrowse: "search_and_browse",
-    FileAccess: "file_access",
-    AiProcessing: "ai_processing",
-    UiInteraction: "ui_interaction",
     Research: "research",
-    FileCuration: "file_curation",
-    BulkEnrichment: "bulk_enrichment",
-    BulkMetadata: "bulk_metadata",
+    SearchAndBrowse: "search_and_browse",
+    Enrichment: "enrichment",
+    UiInteraction: "ui_interaction",
 } as const;
 export type CapabilityId = (typeof CapabilityId)[keyof typeof CapabilityId];
 
