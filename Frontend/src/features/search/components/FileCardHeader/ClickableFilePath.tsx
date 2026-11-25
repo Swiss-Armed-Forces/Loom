@@ -116,9 +116,9 @@ export const ClickableFilePath = ({
     const fileExtension = dotIdx > 0 ? lastName.slice(dotIdx) : null;
     const fileBaseName = dotIdx > 0 ? lastName.slice(0, dotIdx) : lastName;
 
-    // A crumb narrows the search to the path up to that point, so the two path
-    // fields are alternatives: a query carrying both can only match nothing or
-    // repeat itself. Each handler drops the other's field.
+    // A crumb narrows the search to the path up to that point, so the path
+    // fields are alternatives: a query carrying two of them can only match
+    // nothing or repeat itself. Each handler drops the others.
     const handleQueryFilterParentPath = (
         newFilepath: string,
         negate: boolean,
@@ -131,7 +131,7 @@ export const ClickableFilePath = ({
             false,
             negate,
             accumulate,
-            [SearchQueryField.FullPathKeyword],
+            [SearchQueryField.FullPathTree, SearchQueryField.FullPathKeyword],
         );
         dispatch(
             updateQuery({
@@ -156,21 +156,24 @@ export const ClickableFilePath = ({
         dispatch(updateQuery({ query: newQuery }));
     };
 
-    // The last crumb is the file itself, so it filters the exact path it sits
-    // at - extension included, even though the clicked text stops short of it.
-    const handleQueryFilterFullPath = (
+    // The last crumb is the file itself, so it filters the path it sits at -
+    // extension included, even though the clicked text stops short of it.
+    // `full_path.tree` is analysed as a path hierarchy, so the filter holds the
+    // file together with whatever is indexed below it: an archive's members, an
+    // email's attachments.
+    const handleQueryFilterFileSubtree = (
         filePath: string,
         negate: boolean,
         accumulate: boolean,
     ) => {
         const newQuery = updateFieldOfQuery(
             searchQuery?.query ?? "",
-            SearchQueryField.FullPathKeyword,
+            SearchQueryField.FullPathTree,
             filePath,
             false,
             negate,
             accumulate,
-            [SearchQueryField.ParentPath],
+            [SearchQueryField.ParentPath, SearchQueryField.FullPathKeyword],
         );
         dispatch(updateQuery({ query: newQuery }));
     };
@@ -231,7 +234,7 @@ export const ClickableFilePath = ({
                             <LazyTooltip
                                 title={
                                     isLast
-                                        ? t("resultCard.filterByFullPath", {
+                                        ? t("resultCard.filterByFileSubtree", {
                                               fullPath: part.pathToPart,
                                           })
                                         : t("resultCard.filterByParentPath")
@@ -243,7 +246,7 @@ export const ClickableFilePath = ({
                                     color="inherit"
                                     onClick={(e) => {
                                         if (isLast) {
-                                            handleQueryFilterFullPath(
+                                            handleQueryFilterFileSubtree(
                                                 part.pathToPart,
                                                 e.shiftKey,
                                                 e.ctrlKey,
