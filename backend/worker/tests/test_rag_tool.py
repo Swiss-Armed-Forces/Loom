@@ -2,11 +2,14 @@ from random import shuffle
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
 from ai.llm_error_stubs import length_finish_reason_error
+from common.ai_context.tool_models import RagSearchResult
+from common.dependencies import get_file_repository
+from common.file.file_repository import File, FilePurePath, KnnSearchEmbedding
 from common.llm.exceptions import LLMError
 from common.llm.return_types import Relevance, RerankResult
 from common.services.lazybytes_service import InMemoryTempLazyBytesService, LazyBytes
@@ -16,6 +19,7 @@ from pydantic_ai.exceptions import ModelAPIError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.tasks.rag_tool import (
+    NO_MATCHING_FILES_ANSWER,
     HydeVariant,
     RankedSearchEmbedding,
     ScoredSearchEmbedding,
@@ -23,8 +27,10 @@ from worker.ai.tasks.rag_tool import (
     apply_rerank_threshold,
     embed_document,
     embed_question,
+    fetch_scored_search_embeddings,
     filter_ranked_search_embeddings,
     generate_hypothetical_document,
+    rag_pipeline_task,
     rerank,
 )
 from worker.dependencies import (
@@ -92,6 +98,27 @@ def embedder() -> MagicMock:
     embedder.embed_query_sync.return_value = _embedding_result("query")
     embedder.embed_documents_sync.return_value = _embedding_result("document")
     return embedder
+
+
+@pytest.fixture
+def file_repository() -> MagicMock:
+    """The file repository, mocked by ``mock_init`` and returned for stubbing."""
+    return cast(MagicMock, get_file_repository())
+
+
+def _knn_embedding(file_id: UUID, text: str, text_score: float) -> KnnSearchEmbedding:
+    return KnnSearchEmbedding(
+        file_id=file_id,
+        file=File(
+            full_name=FilePurePath("/irrelevant.txt"),
+            source="test",
+            sha256="0" * 64,
+            size=1,
+        ),
+        file_score=1.0,
+        text_score=text_score,
+        text=text,
+    )
 
 
 @pytest.fixture
@@ -277,26 +304,96 @@ def test_embed_question_never_degrades(embedder: MagicMock):
         embed_question(QUESTION)
 
 
-def test_aggregate_embeddings_skips_dropped_documents(
+def test_aggregate_embeddings_searches_with_every_surviving_embedding(
     lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
-    """Dropped HyDE members must not skew -- or abort -- the aggregated mean."""
+    """Every embedding becomes its own probe, and a dropped member contributes none."""
     question_embedding = lazybytes_service_inmemory.from_object([1.0, 1.0, 1.0])
     hyde_embedding = lazybytes_service_inmemory.from_object([3.0, 3.0, 3.0])
 
     aggregated = aggregate_embeddings((question_embedding, [hyde_embedding, None]))
 
-    assert lazybytes_service_inmemory.load_object(aggregated) == [2.0, 2.0, 2.0]
+    assert lazybytes_service_inmemory.load_object(aggregated) == [
+        [1.0, 1.0, 1.0],
+        [3.0, 3.0, 3.0],
+    ]
 
 
 def test_aggregate_embeddings_survives_every_document_dropped(
     lazybytes_service_inmemory: InMemoryTempLazyBytesService,
 ):
+    """The question embedding alone still searches for the question itself."""
     question_embedding = lazybytes_service_inmemory.from_object([1.0, 2.0, 3.0])
 
     aggregated = aggregate_embeddings((question_embedding, [None, None]))
 
-    assert lazybytes_service_inmemory.load_object(aggregated) == [1.0, 2.0, 3.0]
+    assert lazybytes_service_inmemory.load_object(aggregated) == [[1.0, 2.0, 3.0]]
+
+
+def test_fetch_scored_search_embeddings_reaches_each_chunk_once(
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
+    file_repository: MagicMock,
+):
+    """A chunk several probes reach is reranked once, at its best score.
+
+    Every embedding is searched with as its own kNN clause, so Elasticsearch returns the
+    chunks near each of them and the overlap arrives as repeats of one chunk.
+    """
+    file_id = uuid4()
+    file_repository.open_point_in_time.return_value = "pit-id"
+    file_repository.get_embedding_generator_by_knn.return_value = iter(
+        [
+            _knn_embedding(file_id, "shared chunk", text_score=0.2),
+            _knn_embedding(file_id, "shared chunk", text_score=0.9),
+            _knn_embedding(file_id, "other chunk", text_score=0.4),
+        ]
+    )
+    embeddings = lazybytes_service_inmemory.from_object([[1.0], [2.0]])
+
+    scored = fetch_scored_search_embeddings(embeddings, "*")
+
+    assert sorted(s.text_score for s in scored) == [0.4, 0.9]
+    assert file_repository.get_embedding_generator_by_knn.call_args.kwargs[
+        "embedding_vectors"
+    ] == [[1.0], [2.0]]
+
+
+def test_fetch_scored_search_embeddings_opens_the_snapshot_it_searches(
+    lazybytes_service_inmemory: InMemoryTempLazyBytesService,
+    file_repository: MagicMock,
+):
+    """The point-in-time's keep-alive is short and only a search extends it, so it is
+    opened by the task that searches rather than carried in from upstream."""
+    file_repository.open_point_in_time.return_value = "pit-id"
+    file_repository.get_embedding_generator_by_knn.return_value = iter([])
+
+    fetch_scored_search_embeddings(
+        lazybytes_service_inmemory.from_object([[1.0]]), "file_type:pdf"
+    )
+
+    file_repository.open_point_in_time.assert_called_once()
+    query = file_repository.get_embedding_generator_by_knn.call_args.kwargs["query"]
+    assert query.query_id == "pit-id"
+    assert query.search_string == "file_type:pdf"
+
+
+# ---------------------------------------------------------------------------
+# rag_pipeline_task
+# ---------------------------------------------------------------------------
+
+
+def test_rag_pipeline_task_answers_a_query_matching_nothing_without_the_pipeline(
+    file_repository: MagicMock,
+):
+    """A query matching no file bounds every kNN clause to nothing, so the stages below
+    can only spend an LLM call per probe to arrive at the same empty answer."""
+    file_repository.count_by_query.return_value = 0
+    task = _first_attempt()
+
+    result = rag_pipeline_task(task, QUESTION, "file_type:nonsense")
+
+    assert result == RagSearchResult(answer=NO_MATCHING_FILES_ANSWER, chunks=[])
+    cast(MagicMock, task).replace.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

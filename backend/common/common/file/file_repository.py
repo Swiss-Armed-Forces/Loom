@@ -122,6 +122,11 @@ class KnnSearchEmbedding(BaseModel):
     text_score: float
     text: str
 
+    @property
+    def score(self) -> float:
+        """How close this chunk is to the probe, file and chunk weighed together."""
+        return self.file_score * self.text_score
+
 
 class _EsEmbedding(InnerDoc):
     vector = DenseVector(dims=settings.llm.embedding.dimensions, similarity="cosine")
@@ -1318,10 +1323,26 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         self,
         query: QueryParameters,
         embedding_vectors: Sequence[Sequence[float]],
-        k: int,
+        files_k: int,
+        chunks_per_file: int,
         pagination_params: PaginationParameters | None = None,
         sort_params: SortingParameters | None = None,
     ) -> Generator[KnnSearchEmbedding, None, None]:
+        """Search with each embedding as its own kNN clause and yield the chunks
+        reached.
+
+        The two bounds are separate decisions and are spent on different axes, so one
+        clause yields at most ``files_k * chunks_per_file`` embeddings and a caller
+        passing several vectors gets that many times over, overlap included: a file near
+        two vectors is returned by both clauses, carrying one inner-hits group per clause
+        that reached it.
+
+        Args:
+            files_k: How many files one embedding may reach. Also sets
+                ``num_candidates``, the depth each shard explores before narrowing to
+                those files.
+            chunks_per_file: How many chunks of one file a single clause may return.
+        """
         if sort_params is None:
             sort_params = SortingParameters()
 
@@ -1347,14 +1368,14 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         for i, q in enumerate(embedding_vectors):
             search = search.knn(  # pylint: disable=no-member
                 field="embeddings.vector",
-                k=k,
-                num_candidates=k * KNN_CANDIDATES_FACTOR,
+                k=files_k,
+                num_candidates=files_k * KNN_CANDIDATES_FACTOR,
                 query_vector=list(q),
                 filter=filter_query,
                 inner_hits={
                     "_source": True,
                     "fields": ["embeddings.text"],
-                    "size": k,
+                    "size": chunks_per_file,
                     "name": f"query_{i}",
                 },
             )

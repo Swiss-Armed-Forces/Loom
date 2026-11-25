@@ -97,10 +97,12 @@ class TaskCallService(TaskService):
         ).get()
         return GetFileFieldResult.model_validate(result)
 
-    def call_rag_search_tool(self, context_id: UUID, query: str) -> RagSearchResult:
+    def call_rag_search_tool(
+        self, context_id: UUID, question: str, query: str
+    ) -> RagSearchResult:
         result = self._send_task(
             "worker.ai.tasks.rag_tool.rag_search_tool_task",
-            args=[query, context_id],
+            args=[question, query, context_id],
             root_id=str(uuid4()),
         ).get()
         return RagSearchResult.model_validate(result)
