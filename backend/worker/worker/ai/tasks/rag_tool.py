@@ -1,6 +1,7 @@
 import logging
 from enum import StrEnum
-from typing import Sequence
+from math import ceil
+from typing import NamedTuple, Sequence
 from uuid import UUID
 
 from celery import chain, chord, group
@@ -10,6 +11,7 @@ from common.dependencies import (
     get_file_repository,
     get_lazybytes_service,
 )
+from common.file.file_repository import KnnSearchEmbedding
 from common.llm.exceptions import (
     LLMError,
     LLMTransientError,
@@ -20,7 +22,6 @@ from common.llm.return_types import Relevance
 from common.services.lazybytes_service import TempLazyBytes, TempTypedLazyBytes
 from common.services.query_builder import QueryParameters
 from minio.error import MinioException
-from numpy import array, mean
 from pydantic import BaseModel, computed_field
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
@@ -38,11 +39,23 @@ logger = logging.getLogger(__name__)
 
 app = get_celery_app()
 
-MAX_FILES_KNN_SEARCH = 7
+# How many files one probe may reach. Tuned rather than derived: it trades the breadth
+# of the corpus considered against the Elasticsearch work of one kNN clause, and how
+# many files are worth looking at is a property of the corpus.
+FILES_PER_PROBE_KNN_SEARCH = 7
 
 MAX_TEXT_LENGTH = int(2 * (1024**2))  # 2 MiB
 
-MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING = 50
+MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING = 20
+
+# The probes are hypothetical documents answering one question, so they are meant to
+# land in the same neighbourhood and the chunks they agree on are the ones that survive
+# deduplication. Where they agree completely, the reranker chooses among the chunks of
+# `FILES_PER_PROBE_KNN_SEARCH` files alone, so taking this many chunks from each keeps
+# the budget above reachable rather than nominal.
+CHUNKS_PER_FILE_KNN_SEARCH = ceil(
+    MAX_SCORED_SEARCH_EMBEDDINGS_FOR_RERANKING / FILES_PER_PROBE_KNN_SEARCH
+)
 
 # A chunk reaches the synthesiser from RELEVANT upwards: the filter is `>`, and the
 # scale is discrete, so this names the highest grade that is still dropped.
@@ -50,6 +63,15 @@ RERANK_THRESHOLD = Relevance.SOMEWHAT_RELEVANT
 SCORED_RANK_SCALING_FACTOR = 10
 
 MAX_RANKED_SEARCH_EMBEDDINGS = 10
+
+# Read by the agent that called the tool rather than by the user, and that agent is the
+# one that chose the query and can widen it. Saying so beats an empty answer, which
+# reads as a pipeline that ran and found nothing.
+NO_MATCHING_FILES_ANSWER = (
+    "No file matches the query, so there is nothing in the corpus to answer from. "
+    "Nothing was searched or read. Ask again with a broader query, or with `*` to "
+    "search the whole index."
+)
 
 LLM_MAX_TOKENS_RAG = 100
 
@@ -89,6 +111,17 @@ class RankedSearchEmbedding(ScoredSearchEmbedding):
         return (
             self.file_score * self.text_score * self.rank * SCORED_RANK_SCALING_FACTOR
         )
+
+
+class ChunkKey(NamedTuple):
+    """What makes two kNN results the same chunk.
+
+    A chunk is identified by its text within its file: the nested embedding carries no
+    id of its own, and the same text in two files is two chunks.
+    """
+
+    file_id: UUID
+    text: str
 
 
 def load_text_from_text_lazy(text_lazy: TempLazyBytes) -> str:
@@ -247,7 +280,7 @@ def embed_document(
     """Embed a single hypothetical document, or ``None`` if it has to be dropped.
 
     ``None`` also arrives from ``generate_hypothetical_document`` when that step was
-    dropped; embedding nothing would only skew the aggregated mean.
+    dropped; embedding nothing would only add a meaningless probe to the search.
     """
     if not document:
         return None
@@ -276,11 +309,16 @@ def aggregate_embeddings(
         TempTypedLazyBytes[Sequence[float]],
         list[TempTypedLazyBytes[Sequence[float]] | None],
     ],
-) -> TempTypedLazyBytes[Sequence[float]]:
-    """Aggregate embeddings by computing their mean.
+) -> TempTypedLazyBytes[Sequence[Sequence[float]]]:
+    """Collect the embeddings the search runs against, one probe per vector.
+
+    A mean over vectors pointing in different directions is dominated by what they share
+    and drifts toward the corpus centroid, matching nothing specific. Each embedding is
+    therefore carried through as its own kNN probe, and Elasticsearch unions the hits.
 
     Dropped HyDE members contribute ``None`` and are skipped. The question embedding is
-    always present, so the mean is never taken over an empty list.
+    always present, so the batch is never empty -- and it stays in the set as a probe in
+    its own right, matching documents that answer the question literally.
     """
     lazy_embedding_question, lazy_embeddings_hyde = lazy_embeddings_generated
     dropped = sum(
@@ -297,40 +335,66 @@ def aggregate_embeddings(
         for lazy_embedding in [lazy_embedding_question, *lazy_embeddings_hyde]
         if lazy_embedding is not None
     ]
-    embeddings_array = array(embeddings)
-    mean_embedding: list[float] = mean(embeddings_array, axis=0).tolist()
 
-    logger.info(
-        "Aggregated %d embeddings into %d-dim vector",
-        len(embeddings),
-        len(mean_embedding),
-    )
+    logger.info("Searching with %d embeddings", len(embeddings))
 
-    return get_lazybytes_service().from_object(mean_embedding)
+    return get_lazybytes_service().from_object(embeddings)
 
 
 @app.task(base=AiContextProcessingTask)
 def fetch_scored_search_embeddings(
-    embedding_lazy: TempTypedLazyBytes[Sequence[float]], query: QueryParameters
+    embeddings_lazy: TempTypedLazyBytes[Sequence[Sequence[float]]],
+    query: str,
 ) -> list[ScoredSearchEmbedding]:
-    embedding = get_lazybytes_service().load_object(embedding_lazy)
+    """Search with every embedding and return the chunks they reach, each once.
 
-    scored_search_embeddings = []
+    One kNN clause is issued per embedding, so a chunk close to several of them is
+    returned by each of those clauses. Collapsing to the best score per chunk happens
+    before the text reaches storage: a duplicate that survives costs one reranking LLM
+    call and skews ``kde_filter_highest_cluster``, which reads the score distribution.
+
+    The point-in-time is opened here, where it is first used. Its keep-alive runs from
+    the moment it is opened and is extended only by a search against it, and this task
+    is the only one that searches: opening it any earlier spends that window on the
+    probe-building LLM calls instead.
+    """
+    query_params = QueryParameters(
+        query_id=get_file_repository().open_point_in_time(),
+        search_string=query,
+    )
+    embeddings = get_lazybytes_service().load_object(embeddings_lazy)
+
+    best_by_chunk: dict[ChunkKey, KnnSearchEmbedding] = {}
     for knn_search_embedding in get_file_repository().get_embedding_generator_by_knn(
-        query=query, embedding_vectors=[embedding], k=MAX_FILES_KNN_SEARCH
+        query=query_params,
+        embedding_vectors=embeddings,
+        files_k=FILES_PER_PROBE_KNN_SEARCH,
+        chunks_per_file=CHUNKS_PER_FILE_KNN_SEARCH,
     ):
-        text_lazy = get_lazybytes_service().from_bytes(
-            knn_search_embedding.text.encode()
+        key = ChunkKey(
+            file_id=knn_search_embedding.file_id, text=knn_search_embedding.text
         )
-        scored_search_embeddings.append(
-            ScoredSearchEmbedding(
-                file_id=knn_search_embedding.file_id,
-                file_score=knn_search_embedding.file_score,
-                text_score=knn_search_embedding.text_score,
-                text_lazy=text_lazy,
-            )
+        best = best_by_chunk.get(key)
+        if best is None or knn_search_embedding.score > best.score:
+            best_by_chunk[key] = knn_search_embedding
+
+    logger.info(
+        "Searched with %d embeddings, reaching %d distinct chunks",
+        len(embeddings),
+        len(best_by_chunk),
+    )
+
+    return [
+        ScoredSearchEmbedding(
+            file_id=knn_search_embedding.file_id,
+            file_score=knn_search_embedding.file_score,
+            text_score=knn_search_embedding.text_score,
+            text_lazy=get_lazybytes_service().from_bytes(
+                knn_search_embedding.text.encode()
+            ),
         )
-    return scored_search_embeddings
+        for knn_search_embedding in best_by_chunk.values()
+    ]
 
 
 @app.task(base=AiContextProcessingTask)
@@ -527,14 +591,29 @@ def rerank_and_synthesize(
 
 
 @app.task(bind=True, base=AiContextProcessingTask)
-def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchResult:
-    """Orchestrate the full RAG pipeline and return the synthesized answer."""
-    logger.info("rag_pipeline_task: orchestrating RAG pipeline for query '%s'", query)
-    file_repo = get_file_repository()
-    query_params = QueryParameters(
-        query_id=file_repo.open_point_in_time(),
-        search_string=query,
+def rag_pipeline_task(
+    self: AiContextProcessingTask, question: str, query: str
+) -> RagSearchResult:
+    """Orchestrate the full RAG pipeline and return the synthesized answer.
+
+    Args:
+        question: What the answer has to address. Every probe is built from it and
+            the synthesiser is given it verbatim.
+        query: Lucene query string bounding which files the probes may reach. ``*``
+            searches the whole index.
+    """
+    logger.info(
+        "rag_pipeline_task: orchestrating RAG pipeline for question '%s' over '%s'",
+        question,
+        query,
     )
+    # The query bounds every kNN clause, so a query matching no file cannot reach a
+    # chunk and the stages below would spend an LLM call per probe to arrive at an
+    # empty answer. One count answers that before any of them is dispatched.
+    if get_file_repository().count_by_query(QueryParameters(search_string=query)) == 0:
+        logger.info("rag_pipeline_task: no file matches '%s', nothing to answer", query)
+        return RagSearchResult(answer=NO_MATCHING_FILES_ANSWER, chunks=[])
+
     # Cycling rather than zipping keeps `num_documents` and the variant list from
     # contradicting each other at any operator-chosen value: above the variant count
     # the variants repeat, below it the prefix starts at PLAIN. The index doubles as
@@ -546,11 +625,11 @@ def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchRes
         chain(
             chord(
                 [
-                    embed_question.s(query),
+                    embed_question.s(question),
                     group(
                         chain(
                             generate_hypothetical_document.s(
-                                query, variants[i % len(variants)], i
+                                question, variants[i % len(variants)], i
                             ),
                             embed_document.s(),
                         )
@@ -559,15 +638,18 @@ def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchRes
                 ],
                 aggregate_embeddings.s(),
             ),
-            fetch_scored_search_embeddings.s(query_params),
+            fetch_scored_search_embeddings.s(query),
             sort_and_limit_scored_search_embeddings.s(),
-            rerank_and_synthesize.s(query),
+            rerank_and_synthesize.s(question),
         )
     )
 
 
 @app.task(bind=True, base=AiContextProcessingTask)
 def rag_search_tool_task(
-    self: AiContextProcessingTask, query: str, _context_id: UUID
+    self: AiContextProcessingTask,
+    question: str,
+    query: str,
+    _context_id: UUID,
 ) -> RagSearchResult:
-    return self.replace(rag_pipeline_task.s(query))
+    return self.replace(rag_pipeline_task.s(question, query))

@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 MAX_FILES_KNN_SEARCH = 10
+MAX_CHUNKS_PER_FILE_KNN_SEARCH = 10
 AUTO_TAG_KNN_BATCH_SIZE = 32
 NUM_KNN_QUERY_WORKERS = 4
 AUTO_TAG_PREFIX = "🤖 "
@@ -140,7 +141,8 @@ def fetch_embeddings_batch(
     for knn_embedding in get_file_repository().get_embedding_generator_by_knn(
         query=query,
         embedding_vectors=embeddings_batch,
-        k=MAX_FILES_KNN_SEARCH,
+        files_k=MAX_FILES_KNN_SEARCH,
+        chunks_per_file=MAX_CHUNKS_PER_FILE_KNN_SEARCH,
     ):
         logger.debug("Processing candidate similarity match for %s", file.short_name)
 

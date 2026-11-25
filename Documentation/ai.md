@@ -738,7 +738,7 @@ rather than by convention.
 | `translate_file` | `enrichment` | Triggers AI translation for a file and returns the translated text |
 | `describe_image` | `enrichment` | Triggers AI image description for an image file |
 | `execute_query` | `search_and_browse` | Executes a Lucene query and returns matching files with snippets, best matches first. Optional `folder_path` parameter restricts results to a subtree. Paginated: optional `after_cursor`; the response carries `total_count`, `has_more` and `next_cursor`. In `work` mode it also emits the event that applies the query to the user's results list. |
-| `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer |
+| `rag_search` | `research` | Runs the full RAG pipeline and returns a synthesized answer. The `question` is what the answer has to address; the optional `query` is a Lucene query bounding which files it may be drawn from, defaulting to `*` for the whole index |
 | `add_tags_to_file` | `enrichment` | Adds one or more tags to a single file |
 | `update_file` | `enrichment` | Sets the `seen`, `flagged` or `hidden` state of a single file |
 | `bulk_summarize` | `enrichment` | Queues AI summarization for every file a query matches |
@@ -772,28 +772,35 @@ multi-stage retrieval pipeline using `self.replace()` to chain tasks:
 @startuml
 start
 
-:rag_pipeline_task(query);
-note right: opens a point-in-time snapshot\nin Elasticsearch
+:rag_pipeline_task(question, query);
+note right: chains the stages below; the question\nbuilds the probes, the Lucene query\nbounds which files they may reach
+
+if (query matches any file?) then (no)
+  :return a RagSearchResult saying so;
+  note right: the query bounds every KNN clause,\nso no chunk is reachable and the\nstages below cannot find one; the\nanswer tells the agent to widen it
+  stop
+else (yes)
+endif
 
 fork
-  :embed_question(query);
+  :embed_question(question);
   note right: embeds the raw question\nusing the embedding model
 fork again
   group HyDE group (N documents in parallel) {
-    :generate_hypothetical_document(query, variant);
+    :generate_hypothetical_document(question, variant);
     note right: LLM writes a passage that would\nanswer the question, in the document\ngenre the variant names
     :embed_document(hypothetical_doc);
   }
 end fork
 
 :aggregate_embeddings();
-note right: computes mean of question\nembedding + HyDE embeddings
+note right: collects the question embedding\nand every HyDE embedding as\nseparate search probes
 
 :fetch_scored_search_embeddings();
-note right: KNN search against indexed\ndocument chunk vectors (k=7)
+note right: opens the point-in-time snapshot,\nthen one KNN clause per embedding\nagainst indexed chunk vectors\n(7 files, 3 chunks each), hits unioned\nand collapsed to one row per chunk
 
 :sort_and_limit_scored_search_embeddings();
-note right: top-50 by combined file+text score
+note right: top-20 by combined file+text score
 
 fork
   :rerank(chunk, question) — per chunk;
