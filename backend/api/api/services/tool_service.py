@@ -4,6 +4,7 @@ import secrets
 from typing import NamedTuple
 from uuid import UUID
 
+from ag_ui.core import BaseEvent, CustomEvent
 from ag_ui.core import Tool as AGUITool
 from common.ai_context.ai_context_repository import (
     CapabilityId,
@@ -14,8 +15,6 @@ from common.ai_context.tool_models import (
     CursorHandle,
     DescribeImageResult,
     ExecuteQueryAgentResult,
-    GetFileFieldResult,
-    GetFileResult,
     ListFolderContentsAgentResult,
     RagSearchResult,
     SearchByFilenameAgentResult,
@@ -30,7 +29,7 @@ from common.models.cursor_pagination import CursorSource, SearchAfterCursor
 from common.services.query_builder import AI_PIT_KEEPALIVE, convert_keepalive_to_seconds
 from common.services.task_scheduling_service import UpdateFileRequest
 from common.settings import settings
-from pydantic_ai import ModelRetry, RunContext
+from pydantic_ai import ModelRetry, RunContext, ToolReturn
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.exceptions import ToolFailed
 from pydantic_ai.tools import Tool as PydanticTool
@@ -39,30 +38,32 @@ from pydantic_ai.toolsets import ExternalToolset
 from redis import StrictRedis
 
 from api.services.agent_deps import AgentDeps
-from api.services.bulk_tool_service import BulkToolService
+from api.services.bulk_tool_service import (
+    APPROVAL_INSTRUCTIONS,
+    BulkToolService,
+)
 from api.services.task_call_service import TaskCallService
 
 _MAX_CITATION_CHARS = 300
 
 # What each mode may load, in the order the agent is offered them. Research reaches
-# the whole corpus and composes its own queries with no user in the loop, which is
-# why the capabilities that curate and the ones that act on a whole query are
-# work-mode only.
+# the whole corpus and composes its own queries with no user in the loop, which is why
+# the capability that acts on files is work-mode only.
 _RESEARCH_CAPABILITIES = (
     CapabilityId.SEARCH_AND_BROWSE,
-    CapabilityId.FILE_ACCESS,
-    CapabilityId.AI_PROCESSING,
     CapabilityId.RESEARCH,
 )
 _WORK_CAPABILITIES = (
     CapabilityId.SEARCH_AND_BROWSE,
-    CapabilityId.FILE_ACCESS,
-    CapabilityId.AI_PROCESSING,
+    CapabilityId.ENRICHMENT,
     CapabilityId.UI_INTERACTION,
-    CapabilityId.FILE_CURATION,
-    CapabilityId.BULK_ENRICHMENT,
-    CapabilityId.BULK_METADATA,
 )
+
+# Events the frontend applies to the results list and the highlight. They ride on the
+# tool return rather than on a collector drained after the run, so the user's screen
+# moves while the agent is still working.
+_SET_SEARCH_QUERY_EVENT = "set_search_query"
+_HIGHLIGHT_FILE_EVENT = "highlight_file"
 
 
 class RoutedTools(NamedTuple):
@@ -84,101 +85,6 @@ class ToolService:
 
         t = settings.llm.agent.tool_timeout
 
-        search_and_browse = Capability[AgentDeps](
-            id=CapabilityId.SEARCH_AND_BROWSE,
-            description=(
-                "Search the document corpus by content or filename "
-                "and browse the folder structure."
-            ),
-            instructions=(
-                "Start broad, then narrow down. Generate query candidates "
-                "before executing searches, and explore the folder tree "
-                "to orient yourself in the corpus."
-            ),
-            tools=[
-                PydanticTool(self.suggest_queries, timeout=t),
-                PydanticTool(self.execute_query, timeout=t),
-                PydanticTool(self.list_folder_contents, timeout=t),
-                PydanticTool(self.search_by_filename, timeout=t),
-            ],
-            defer_loading=True,
-        )
-
-        file_access = Capability[AgentDeps](
-            id=CapabilityId.FILE_ACCESS,
-            description=(
-                "Access individual files — identify which files the user "
-                "is looking at, retrieve metadata, and read specific fields."
-            ),
-            instructions=(
-                "Always confirm a file exists before reading its fields. "
-                "When the user refers to 'this file' or 'these files', "
-                "resolve the reference through the UI context first."
-            ),
-            tools=[
-                PydanticTool(self.get_file, timeout=t),
-                PydanticTool(self.get_file_field, timeout=t),
-            ],
-            defer_loading=True,
-        )
-
-        ai_processing = Capability[AgentDeps](
-            id=CapabilityId.AI_PROCESSING,
-            description=(
-                "AI-powered file processing — generate summaries, "
-                "translate content, and describe images."
-            ),
-            instructions=(
-                "Use these to enrich documents with AI-generated content "
-                "whenever it would help answer the user's question."
-            ),
-            tools=[
-                PydanticTool(self.summarize_file, timeout=t),
-                PydanticTool(self.translate_file, timeout=t),
-                PydanticTool(self.describe_image, timeout=t),
-            ],
-            defer_loading=True,
-        )
-
-        ui_interaction = Capability[AgentDeps](
-            id=CapabilityId.UI_INTERACTION,
-            description=(
-                "See and control the user's UI. Load this whenever the user "
-                "references what they are currently seeing, or asks you to "
-                "show, open, navigate, search, filter, tag, or change "
-                "anything in the UI."
-            ),
-            instructions=(
-                "The user is interacting with you through a document search UI. "
-                "When they reference their screen, read the UI state to understand "
-                "their context. When they make imperative requests, act on them "
-                "directly through the UI rather than just describing what to do."
-            ),
-            defer_loading=True,
-        )
-
-        file_curation = Capability[AgentDeps](
-            id=CapabilityId.FILE_CURATION,
-            description=(
-                "Curate individual files — add tags to a file and set its "
-                "seen, flagged and hidden state."
-            ),
-            instructions=(
-                "A call returns once the write has been accepted, which is a moment "
-                "before it is visible: reading the field straight back can still "
-                "give you the old value, and is not a reason to write again. Loom "
-                "has no undo, so say which file you are about to change and what you "
-                "are setting on it. They cost no inference time, so curating a "
-                "handful of files one call at a time is normal; to cover everything "
-                "a query matches, use a bulk action instead."
-            ),
-            tools=[
-                PydanticTool(self.add_tags_to_file, timeout=t),
-                PydanticTool(self.update_file, timeout=t),
-            ],
-            defer_loading=True,
-        )
-
         research = Capability[AgentDeps](
             id=CapabilityId.RESEARCH,
             description=(
@@ -192,17 +98,119 @@ class ToolService:
                 "findings across the corpus."
             ),
             tools=[PydanticTool(self.rag_search, timeout=t)],
+            defer_loading=True,
+        )
+
+        enrichment = Capability[AgentDeps](
+            id=CapabilityId.ENRICHMENT,
+            description=(
+                "Change files: generate summaries, translations and image "
+                "descriptions, add tags, and set the seen, flagged and hidden "
+                "state — for one file or for every file a query matches."
+            ),
+            instructions=(
+                APPROVAL_INSTRUCTIONS
+                + "These tools differ enormously in reach, so read the name before "
+                "calling one. The per-file AI tools cost inference time and nothing "
+                "else. add_tags_to_file and update_file land immediately, have no "
+                "undo and are not put to the user, so say which file you are about to "
+                "change and what you are setting on it; curating a handful of files "
+                "one call at a time is normal. A bulk_ call queues work across a whole "
+                "query: bulk_summarize, bulk_translate and bulk_describe_images spend "
+                "one model call per matched file on the same inference server you are "
+                "running on, so a large sweep takes hours — report that the work is "
+                "queued, never that it is done. bulk_add_tags and bulk_update_files "
+                "write immediately and cannot be taken back, so use the narrowest "
+                "query that covers what the user asked for and check it with "
+                "execute_query when you are unsure what it matches."
+            ),
+            tools=[
+                PydanticTool(self.summarize_file, timeout=t),
+                PydanticTool(self.translate_file, timeout=t),
+                PydanticTool(self.describe_image, timeout=t),
+                PydanticTool(self.add_tags_to_file, timeout=t),
+                PydanticTool(self.update_file, timeout=t),
+                *bulk_tool_service.tools,
+            ],
+            defer_loading=True,
+        )
+
+        ui_interaction = Capability[AgentDeps](
+            id=CapabilityId.UI_INTERACTION,
+            description=(
+                "See and control the user's UI. Load this whenever the user "
+                "references what they are currently seeing, or asks you to "
+                "show, open, navigate, filter or change anything in the UI."
+            ),
+            instructions=(
+                "The user is interacting with you through a document search UI. "
+                "When they reference their screen, read the UI state to understand "
+                "their context. When they make imperative requests, act on them "
+                "directly through the UI rather than just describing what to do."
+            ),
+            defer_loading=True,
         )
 
         self._capabilities: dict[CapabilityId, Capability[AgentDeps]] = {
-            CapabilityId.SEARCH_AND_BROWSE: search_and_browse,
-            CapabilityId.FILE_ACCESS: file_access,
-            CapabilityId.AI_PROCESSING: ai_processing,
-            CapabilityId.UI_INTERACTION: ui_interaction,
-            CapabilityId.FILE_CURATION: file_curation,
             CapabilityId.RESEARCH: research,
-            **bulk_tool_service.capabilities,
+            CapabilityId.ENRICHMENT: enrichment,
+            CapabilityId.UI_INTERACTION: ui_interaction,
         }
+        # One bundle, two descriptions: the tools are identical in both modes but two
+        # of them drive the user's screen in work mode, and a capability's description
+        # and instructions are the only place the agent can be told so.
+        self._search_and_browse: dict[ModeId, Capability[AgentDeps]] = {
+            ModeId.RESEARCH: self._build_search_and_browse(t, drives_ui=False),
+            ModeId.WORK: self._build_search_and_browse(t, drives_ui=True),
+        }
+
+    def _build_search_and_browse(
+        self, timeout: int | None, *, drives_ui: bool
+    ) -> Capability[AgentDeps]:
+        """The read bundle, told whether its two UI-driving tools are live."""
+        drives_ui_note = (
+            " execute_query also applies the query to the user's results list, and "
+            "get_file and get_file_field both highlight the file they read, so what "
+            "you read is what the user is looking at. suggest_queries, "
+            "search_by_filename and list_folder_contents leave the screen alone."
+            if drives_ui
+            else ""
+        )
+        return Capability[AgentDeps](
+            id=CapabilityId.SEARCH_AND_BROWSE,
+            description=(
+                "Read the document corpus: turn a description into a query, run it, "
+                "search by filename, browse the folder structure, and read the "
+                "fields of a single file."
+            ),
+            instructions=(
+                "Start broad, then narrow down. Generate query candidates with "
+                "suggest_queries before executing searches, and explore the folder "
+                "tree to orient yourself in the corpus. Results are paginated: "
+                "compare what you have actually read against total_count before "
+                "describing a result set, and never characterise the matches from "
+                "the hits you have seen. A large total_count means the query is too "
+                "broad — partition it into several narrower queries and compare "
+                "their counts rather than paging through one." + drives_ui_note
+            ),
+            tools=[
+                PydanticTool(self.suggest_queries, timeout=timeout),
+                PydanticTool(self.execute_query, timeout=timeout),
+                PydanticTool(self.search_by_filename, timeout=timeout),
+                PydanticTool(self.list_folder_contents, timeout=timeout),
+                PydanticTool(self.get_file, timeout=timeout),
+                PydanticTool(self.get_file_field, timeout=timeout),
+            ],
+            defer_loading=True,
+        )
+
+    def _ui_effect(
+        self, ctx: RunContext[AgentDeps], name: str, value: dict[str, str]
+    ) -> list[BaseEvent]:
+        """The frontend events a read should cause, which is none outside work mode."""
+        if ctx.deps.context.active_mode is not ModeId.WORK:
+            return []
+        return [CustomEvent(name=name, value=value)]
 
     def _store_cursor(self, cursor: SearchAfterCursor | None) -> CursorHandle | None:
         """Keep a cursor in the run's state and return the handle that names it.
@@ -262,12 +270,22 @@ class ToolService:
                 capability_ids: tuple[CapabilityId, ...] = ()
             case ModeId.RESEARCH:
                 capability_ids = _RESEARCH_CAPABILITIES
-            # Spelled out rather than caught by a fallthrough: these capabilities
-            # write across a whole query with no undo, and a mode added to the enum
-            # must not inherit them by default.
+            # Spelled out rather than caught by a fallthrough: enrichment writes across
+            # a whole query with no undo, and a mode added to the enum must not inherit
+            # it by default.
             case ModeId.WORK:
                 capability_ids = _WORK_CAPABILITIES
-        return [self._capabilities[capability_id] for capability_id in capability_ids]
+        return [
+            self._capability_for(capability_id, mode)
+            for capability_id in capability_ids
+        ]
+
+    def _capability_for(
+        self, capability_id: CapabilityId, mode: ModeId
+    ) -> Capability[AgentDeps]:
+        if capability_id is CapabilityId.SEARCH_AND_BROWSE:
+            return self._search_and_browse[mode]
+        return self._capabilities[capability_id]
 
     def route_frontend_tools(
         self,
@@ -358,9 +376,12 @@ class ToolService:
         query_string: str,
         folder_path: str | None = None,
         after_cursor: CursorHandle | None = None,
-    ) -> ExecuteQueryAgentResult:
+    ) -> ToolReturn:
         """Execute a Lucene query string and return matching files with content
         snippets.
+
+        In work mode this also applies the query to the user's results list, so what
+        you read is what they are looking at.
 
         You can use a query string returned by suggest_queries or compose your
         own Lucene query when you already know the right terms.
@@ -400,15 +421,21 @@ class ToolService:
             )
             for f in result.files
         )
-        return ExecuteQueryAgentResult.from_tool_result(
-            result, self._store_cursor(result.next_cursor)
+        return ToolReturn(
+            return_value=ExecuteQueryAgentResult.from_tool_result(
+                result, self._store_cursor(result.next_cursor)
+            ),
+            metadata=self._ui_effect(
+                ctx, _SET_SEARCH_QUERY_EVENT, {"query": query_string}
+            ),
         )
 
-    def get_file(self, ctx: RunContext[AgentDeps], file_id: str) -> GetFileResult:
+    def get_file(self, ctx: RunContext[AgentDeps], file_id: str) -> ToolReturn:
         """Get the full path and available fields for a file by its UUID.
 
         Returns which fields have data so you can decide what to fetch next
-        using get_file_field.
+        using get_file_field. In work mode this also highlights the file in the
+        user's results list.
 
         Args:
             file_id: UUID string of the file to retrieve.
@@ -422,11 +449,16 @@ class ToolService:
         except LookupError as exc:
             raise ToolFailed(str(exc)) from exc
         ctx.deps.source_collector.append(ToolSource(file_id=UUID(result.file_id)))
-        return result
+        return ToolReturn(
+            return_value=result,
+            metadata=self._ui_effect(
+                ctx, _HIGHLIGHT_FILE_EVENT, {"file_id": result.file_id}
+            ),
+        )
 
     def get_file_field(
         self, ctx: RunContext[AgentDeps], file_id: str, field: str
-    ) -> GetFileFieldResult:
+    ) -> ToolReturn:
         """Get the value of a specific field for a file by its UUID.
 
         Long fields are capped. When the response has truncated set to True, value
@@ -434,6 +466,8 @@ class ToolService:
         reached through this tool — use summarize_file to cover the whole document,
         or execute_query to find the passages that matter. Do not answer as though
         a truncated value were the complete field.
+
+        In work mode this also highlights the file in the user's results list.
 
         Args:
             file_id: UUID string of the file to retrieve.
@@ -454,7 +488,12 @@ class ToolService:
                 text=result.value[:_MAX_CITATION_CHARS],
             )
         )
-        return result
+        return ToolReturn(
+            return_value=result,
+            metadata=self._ui_effect(
+                ctx, _HIGHLIGHT_FILE_EVENT, {"file_id": result.file_id}
+            ),
+        )
 
     def summarize_file(
         self, ctx: RunContext[AgentDeps], file_id: str

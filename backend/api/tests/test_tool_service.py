@@ -33,6 +33,7 @@ from common.dependencies import (
 from common.models.cursor_pagination import CursorSource, SearchAfterCursor
 from common.services.task_scheduling_service import UpdateFileRequest
 from pydantic_ai import ModelRetry
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.exceptions import ToolFailed
 from redis import StrictRedis
 
@@ -41,11 +42,7 @@ from api.services.bulk_tool_service import BulkToolService
 from api.services.task_call_service import TaskCallService
 from api.services.tool_service import ToolService
 
-_WRITING_CAPABILITIES = {
-    CapabilityId.FILE_CURATION,
-    CapabilityId.BULK_ENRICHMENT,
-    CapabilityId.BULK_METADATA,
-}
+_WRITING_CAPABILITIES = {CapabilityId.ENRICHMENT}
 
 
 def _make_ctx(deps: AgentDeps) -> MagicMock:
@@ -122,7 +119,7 @@ def test_execute_query_success(
     task_call_service_mock.call_execute_query_tool.return_value = expected
 
     ctx = _make_ctx(deps)
-    result = tool_service.execute_query(ctx, "content:hello")
+    result = tool_service.execute_query(ctx, "content:hello").return_value
 
     assert result.files == expected.files
     assert deps.source_collector == [ToolSource(file_id=file_id, text="snippet")]
@@ -161,7 +158,7 @@ def test_get_file_success(
     task_call_service_mock.call_get_file_tool.return_value = expected
 
     ctx = _make_ctx(deps)
-    result = tool_service.get_file(ctx, str(file_id))
+    result = tool_service.get_file(ctx, str(file_id)).return_value
 
     assert result is expected
     assert deps.source_collector == [ToolSource(file_id=file_id)]
@@ -212,7 +209,7 @@ def test_get_file_field_success(
     task_call_service_mock.call_get_file_field_tool.return_value = expected
 
     ctx = _make_ctx(deps)
-    result = tool_service.get_file_field(ctx, str(file_id), "content")
+    result = tool_service.get_file_field(ctx, str(file_id), "content").return_value
 
     assert result is expected
     assert deps.source_collector == [ToolSource(file_id=file_id, text="full content")]
@@ -397,7 +394,9 @@ def test_execute_query_passes_folder_path(
     task_call_service_mock.call_execute_query_tool.return_value = expected
 
     ctx = _make_ctx(deps)
-    result = tool_service.execute_query(ctx, "content:hello", folder_path="//docs")
+    result = tool_service.execute_query(
+        ctx, "content:hello", folder_path="//docs"
+    ).return_value
 
     assert result.files == expected.files
     task_call_service_mock.call_execute_query_tool.assert_called_once_with(
@@ -442,18 +441,46 @@ def test_research_mode_includes_research_capability(
     assert CapabilityId.RESEARCH in cap_ids
 
 
-def test_research_mode_also_includes_work_capabilities(
+def test_research_mode_shares_the_read_capability_with_work(
     tool_service: ToolService,
 ):
     caps = tool_service.capabilities_for_mode(ModeId.RESEARCH)
-    assert len(caps) == 4
-    cap_ids = {c.id for c in caps}
-    assert {
+    assert {c.id for c in caps} == {
         CapabilityId.SEARCH_AND_BROWSE,
-        CapabilityId.FILE_ACCESS,
-        CapabilityId.AI_PROCESSING,
         CapabilityId.RESEARCH,
-    } == cap_ids
+    }
+
+
+def test_research_mode_defers_every_capability(
+    tool_service: ToolService,
+):
+    """rag_search is no longer handed over up front: nothing is eager any more."""
+    caps = tool_service.capabilities_for_mode(ModeId.RESEARCH)
+    assert all(c.defer_loading for c in caps)
+
+
+def test_search_and_browse_announces_its_ui_effect_in_work_mode_only(
+    tool_service: ToolService,
+):
+    """The tools are the same in both modes; only the instructions differ, because that
+    is the one field a per-mode capability can vary."""
+
+    def read_capability(mode: ModeId) -> Capability[AgentDeps]:
+        return next(
+            c
+            for c in tool_service.capabilities_for_mode(mode)
+            if c.id == CapabilityId.SEARCH_AND_BROWSE
+        )
+
+    work = read_capability(ModeId.WORK)
+    research = read_capability(ModeId.RESEARCH)
+
+    work_instructions = "".join(work.get_instructions() or [])
+    research_instructions = "".join(research.get_instructions() or [])
+
+    assert "highlight" in work_instructions
+    assert "highlight" not in research_instructions
+    assert {t.name for t in work.tools} == {t.name for t in research.tools}
 
 
 # ---------------------------------------------------------------------------
@@ -468,9 +495,9 @@ def test_route_frontend_tools_partitions_tools(
         _make_agui_tool("ask_user", "Ask a question"),
         _make_agui_tool("request_mode", "Request a mode"),
         _make_agui_tool(
-            "set_search_query",
-            "Set search query",
-            capabilities=[CapabilityId.SEARCH_AND_BROWSE],
+            "get_highlighted_file",
+            "Get the highlighted file",
+            capabilities=[CapabilityId.UI_INTERACTION],
         ),
         _make_agui_tool(
             "discover_state",
@@ -495,9 +522,9 @@ def test_route_frontend_tools_capability_ids(
 ):
     tools = [
         _make_agui_tool(
-            "set_search_query",
-            "Set search query",
-            capabilities=[CapabilityId.SEARCH_AND_BROWSE],
+            "get_highlighted_file",
+            "Get the highlighted file",
+            capabilities=[CapabilityId.UI_INTERACTION],
         ),
         _make_agui_tool(
             "discover_state",
@@ -519,9 +546,9 @@ def test_route_frontend_tools_rebuilds_capabilities_with_frontend_tools(
 ):
     tools = [
         _make_agui_tool(
-            "set_search_query",
-            "Set search query",
-            capabilities=[CapabilityId.SEARCH_AND_BROWSE],
+            "get_highlighted_file",
+            "Get the highlighted file",
+            capabilities=[CapabilityId.UI_INTERACTION],
         ),
     ]
 
@@ -529,11 +556,9 @@ def test_route_frontend_tools_rebuilds_capabilities_with_frontend_tools(
         tools, tool_service.capabilities_for_mode(ModeId.WORK)
     )
 
-    search_cap = next(
-        c for c in routed.capabilities if c.id == CapabilityId.SEARCH_AND_BROWSE
-    )
+    ui_cap = next(c for c in routed.capabilities if c.id == CapabilityId.UI_INTERACTION)
     # The rebuilt capability should have toolsets (ExternalToolset with the frontend tool)
-    assert len(search_cap.toolsets) > 0
+    assert len(ui_cap.toolsets) > 0
 
 
 def test_route_frontend_tools_preserves_unaffected_capabilities(
@@ -548,11 +573,9 @@ def test_route_frontend_tools_preserves_unaffected_capabilities(
     )
 
     # No frontend tools mapped to any capability, so all should be original templates
-    search_cap = next(
-        c for c in routed.capabilities if c.id == CapabilityId.SEARCH_AND_BROWSE
-    )
+    ui_cap = next(c for c in routed.capabilities if c.id == CapabilityId.UI_INTERACTION)
     # Without frontend tools to merge, the capability should have no external toolsets
-    assert len(search_cap.toolsets) == 0
+    assert len(ui_cap.toolsets) == 0
 
 
 def test_route_frontend_tools_unknown_tools_are_always_on(
@@ -592,7 +615,7 @@ def test_execute_query_hands_out_a_handle_instead_of_the_cursor(
     )
 
     ctx = _make_ctx(deps)
-    result = tool_service.execute_query(ctx, "content:hello")
+    result = tool_service.execute_query(ctx, "content:hello").return_value
 
     assert result.next_cursor is not None
     assert "a-long-pit-id" not in result.next_cursor
@@ -677,7 +700,7 @@ def test_execute_query_without_a_further_page_hands_out_no_handle(
     )
 
     ctx = _make_ctx(deps)
-    result = tool_service.execute_query(ctx, "content:hello")
+    result = tool_service.execute_query(ctx, "content:hello").return_value
 
     assert result.next_cursor is None
 

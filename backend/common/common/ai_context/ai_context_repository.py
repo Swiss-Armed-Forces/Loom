@@ -14,14 +14,10 @@ _MAX_CONTEXTS = 100
 
 
 class CapabilityId(StrEnum):
-    SEARCH_AND_BROWSE = "search_and_browse"
-    FILE_ACCESS = "file_access"
-    AI_PROCESSING = "ai_processing"
-    UI_INTERACTION = "ui_interaction"
     RESEARCH = "research"
-    FILE_CURATION = "file_curation"
-    BULK_ENRICHMENT = "bulk_enrichment"
-    BULK_METADATA = "bulk_metadata"
+    SEARCH_AND_BROWSE = "search_and_browse"
+    ENRICHMENT = "enrichment"
+    UI_INTERACTION = "ui_interaction"
 
 
 class ModeId(StrEnum):
