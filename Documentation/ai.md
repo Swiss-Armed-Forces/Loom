@@ -780,8 +780,8 @@ fork
   note right: embeds the raw question\nusing the embedding model
 fork again
   group HyDE group (N documents in parallel) {
-    :generate_hypothetical_document(query);
-    note right: LLM writes a short passage\nthat would answer the question
+    :generate_hypothetical_document(query, variant);
+    note right: LLM writes a passage that would\nanswer the question, in the document\ngenre the variant names
     :embed_document(hypothetical_doc);
   }
 end fork
@@ -819,6 +819,43 @@ stop
 Each stage is a discrete Celery task with auto-retry on LLM errors. The pipeline returns a
 `RagSearchResult` containing the synthesized answer and the source `ToolSource` list used to
 populate citations.
+
+### Prompt Variants in the Fan-Outs
+
+The HyDE group and the `suggest_queries` chord both send one task per member, and each member
+carries a *variant* selecting one instruction inside an otherwise shared prompt skeleton. Without
+one, every member of a fan-out would send an identical prompt and the candidates would differ only
+by what the sampler happened to do.
+
+- `HydeVariant` in `worker/ai/tasks/rag_tool.py` varies the **document genre** — a hypothetical
+  document is a retrieval probe that works by resembling a real document in the corpus, so the
+  variants name registers the index holds rather than styles of authorship.
+- `QueryStrategy` in `worker/ai/tasks/suggest_queries_tool.py` varies the **query strategy**, since
+  the output is a Lucene query string and what matters is how the query is built. A candidate
+  commits to one strategy, rather than resolving a prompt that asks for free text and field syntax
+  and fuzzy operators at once.
+
+Each fan-out cycles its variants with modulo against the count setting
+(`llm.rag_hyde.num_documents`, `tool.suggest_queries.num_candidates`), so the count and the variant
+list cannot contradict each other: above the variant count the variants repeat, below it the prefix
+starts at the default. The task parameter is defaulted, so a caller dispatching by name with the
+question alone still gets the default variant's prompt.
+
+Members that share a variant are separated by a **seed**, passed as a per-run `model_settings`
+alongside the prompt. `tool.suggest_queries.num_candidates` is larger than the strategy count, so
+strategies already repeat at the shipped default and the seed is what keeps those candidates from
+being the same request; the same applies to HyDE whenever `num_documents` is raised past the variant
+count. A per-run setting is merged over the agent's rather than replacing it, so the seed arrives
+without disturbing the `temperature`, `max_tokens` and `thinking` configured for the client.
+
+The seed is the fan-out index, not a random value. That makes a fan-out distinct within itself while
+keeping a repeated run of the same question or description reproducible, which is what makes a
+before/after measurement of retrieval quality readable at all — sampling noise across these fan-outs
+is large relative to the differences being measured.
+
+The variant crosses the wire as its enum value, never as the rendered prompt — a Celery signature is
+persisted in RabbitMQ, so a prompt in the message body could not be changed by a redeploy for work
+already queued, and it would be dead weight on a fan-out that multiplies messages by design.
 
 ### Failure Handling in the Fan-Outs
 
