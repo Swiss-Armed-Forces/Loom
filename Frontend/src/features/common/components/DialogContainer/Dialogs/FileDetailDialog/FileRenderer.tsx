@@ -23,6 +23,7 @@ import {
     selectPendingFullscreenFileId,
     setPendingFullscreenFileId,
 } from "@app/slices/searchSlice";
+import { ScrollableToolbar } from "@features/common/components/ScrollableToolbar/ScrollableToolbar";
 import { roundcubeHost, webApiGetFileRendered } from "@features/common/urls";
 import { FileRendererType } from "@features/common/utils/enums";
 
@@ -261,164 +262,179 @@ export const FileRenderer = ({
                     borderColor: "divider",
                     display: "flex",
                     alignItems: "center",
-                    gap: 0.5,
                 }}
             >
-                {/* Left: renderer mode buttons */}
-                <Box sx={{ flex: 1, display: "flex", gap: 0.5 }}>
-                    {MODES.map(({ value, icon, label }) => {
-                        const disabled = !isAvailable(value);
-                        return (
-                            <Tooltip key={value} title={label}>
-                                <span>
-                                    <IconButton
-                                        size="small"
-                                        disabled={disabled}
-                                        onClick={() => setType(value)}
-                                        sx={toolbarButtonSx(type === value)}
-                                    >
-                                        {icon}
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        );
-                    })}
-                </Box>
+                <ScrollableToolbar sx={{ gap: 0.5 }}>
+                    {/* Left: renderer mode buttons */}
+                    <Box sx={{ flex: 1, display: "flex", gap: 0.5 }}>
+                        {MODES.map(({ value, icon, label }) => {
+                            const disabled = !isAvailable(value);
+                            return (
+                                <Tooltip key={value} title={label}>
+                                    <span>
+                                        <IconButton
+                                            size="small"
+                                            disabled={disabled}
+                                            onClick={() => setType(value)}
+                                            sx={toolbarButtonSx(type === value)}
+                                        >
+                                            {icon}
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            );
+                        })}
+                    </Box>
 
-                {/* Center-left: PDF sidebar toggles + page info */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Tooltip title="Toggle outline">
-                        <span>
-                            <IconButton
-                                size="small"
-                                disabled={!isPdfRenderer}
-                                onClick={toggleOutline}
-                                sx={toolbarButtonSx(sidebarMode === "outline")}
-                            >
-                                <FormatListBulleted fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    <Tooltip title="Toggle thumbnails">
-                        <span>
-                            <IconButton
-                                size="small"
-                                disabled={!isPdfRenderer}
-                                onClick={toggleThumbnails}
-                                sx={toolbarButtonSx(
-                                    sidebarMode === "thumbnails",
-                                )}
-                            >
-                                <GridView fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    {pageInfo && (
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: "text.secondary",
-                                minWidth: 50,
-                                textAlign: "center",
-                            }}
-                        >
-                            {pageInfo.current} / {pageInfo.total}
-                        </Typography>
-                    )}
-                </Box>
-
-                {/* Center: zoom controls */}
-                <Box sx={{ display: "flex", gap: 0.5 }}>
-                    <Tooltip title={`Zoom out (${t("toolbar.zoomHint")})`}>
-                        <span>
-                            <IconButton
-                                size="small"
-                                disabled={!canZoomRotate}
-                                onClick={() => rendererRef.current?.zoomOut()}
-                                sx={toolbarButtonSx(false)}
-                            >
-                                <ZoomOut fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    <Tooltip title="Fit to width">
-                        <span>
-                            <IconButton
-                                size="small"
-                                disabled={!canZoomRotate}
-                                onClick={() => rendererRef.current?.zoomReset()}
-                                sx={toolbarButtonSx(false)}
-                            >
-                                <FitScreen fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    <Tooltip title={`Zoom in (${t("toolbar.zoomHint")})`}>
-                        <span>
-                            <IconButton
-                                size="small"
-                                disabled={!canZoomRotate}
-                                onClick={() => rendererRef.current?.zoomIn()}
-                                sx={toolbarButtonSx(false)}
-                            >
-                                <ZoomIn fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    <Tooltip title="Rotate 90°">
-                        <span>
-                            <IconButton
-                                size="small"
-                                disabled={!canZoomRotate}
-                                onClick={() => rendererRef.current?.rotate()}
-                                sx={toolbarButtonSx(false)}
-                            >
-                                <RotateRight fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                </Box>
-
-                {/* Right: download + fullscreen */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        display: "flex",
-                        gap: 0.5,
-                        justifyContent: "flex-end",
-                    }}
-                >
-                    <Tooltip title="Download rendered file">
-                        <span>
-                            <IconButton
-                                size="small"
-                                component="a"
-                                href={downloadUrl ?? undefined}
-                                download
-                                disabled={!downloadUrl}
-                                sx={toolbarButtonSx(false)}
-                            >
-                                <Download fontSize="small" />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                    <Tooltip
-                        title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                    {/* Center-left: PDF sidebar toggles + page info */}
+                    <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
                     >
-                        <IconButton
-                            aria-label="fullscreen"
-                            size="small"
-                            onClick={toggleFullscreen}
-                            sx={toolbarButtonSx(isFullscreen)}
+                        <Tooltip title="Toggle outline">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={!isPdfRenderer}
+                                    onClick={toggleOutline}
+                                    sx={toolbarButtonSx(
+                                        sidebarMode === "outline",
+                                    )}
+                                >
+                                    <FormatListBulleted fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Toggle thumbnails">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={!isPdfRenderer}
+                                    onClick={toggleThumbnails}
+                                    sx={toolbarButtonSx(
+                                        sidebarMode === "thumbnails",
+                                    )}
+                                >
+                                    <GridView fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        {pageInfo && (
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "text.secondary",
+                                    minWidth: 50,
+                                    textAlign: "center",
+                                }}
+                            >
+                                {pageInfo.current} / {pageInfo.total}
+                            </Typography>
+                        )}
+                    </Box>
+
+                    {/* Center: zoom controls */}
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <Tooltip title={`Zoom out (${t("toolbar.zoomHint")})`}>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={!canZoomRotate}
+                                    onClick={() =>
+                                        rendererRef.current?.zoomOut()
+                                    }
+                                    sx={toolbarButtonSx(false)}
+                                >
+                                    <ZoomOut fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Fit to width">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={!canZoomRotate}
+                                    onClick={() =>
+                                        rendererRef.current?.zoomReset()
+                                    }
+                                    sx={toolbarButtonSx(false)}
+                                >
+                                    <FitScreen fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title={`Zoom in (${t("toolbar.zoomHint")})`}>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={!canZoomRotate}
+                                    onClick={() =>
+                                        rendererRef.current?.zoomIn()
+                                    }
+                                    sx={toolbarButtonSx(false)}
+                                >
+                                    <ZoomIn fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Rotate 90°">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    disabled={!canZoomRotate}
+                                    onClick={() =>
+                                        rendererRef.current?.rotate()
+                                    }
+                                    sx={toolbarButtonSx(false)}
+                                >
+                                    <RotateRight fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </Box>
+
+                    {/* Right: download + fullscreen */}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            display: "flex",
+                            gap: 0.5,
+                            justifyContent: "flex-end",
+                        }}
+                    >
+                        <Tooltip title="Download rendered file">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    component="a"
+                                    href={downloadUrl ?? undefined}
+                                    download
+                                    disabled={!downloadUrl}
+                                    sx={toolbarButtonSx(false)}
+                                >
+                                    <Download fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip
+                            title={
+                                isFullscreen ? "Exit fullscreen" : "Fullscreen"
+                            }
                         >
-                            {isFullscreen ? (
-                                <FullscreenExit fontSize="small" />
-                            ) : (
-                                <Fullscreen fontSize="small" />
-                            )}
-                        </IconButton>
-                    </Tooltip>
-                </Box>
+                            <IconButton
+                                aria-label="fullscreen"
+                                size="small"
+                                onClick={toggleFullscreen}
+                                sx={toolbarButtonSx(isFullscreen)}
+                            >
+                                {isFullscreen ? (
+                                    <FullscreenExit fontSize="small" />
+                                ) : (
+                                    <Fullscreen fontSize="small" />
+                                )}
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                </ScrollableToolbar>
             </Box>
             <Box
                 sx={{
