@@ -122,10 +122,23 @@ class KnnSearchEmbedding(BaseModel):
     text_score: float
     text: str
 
-    @property
-    def score(self) -> float:
-        """How close this chunk is to the probe, file and chunk weighed together."""
-        return self.file_score * self.text_score
+
+class KnnChunkKey(NamedTuple):
+    """What makes two kNN results the same chunk.
+
+    A chunk is identified by its text within its file: the nested embedding carries no
+    id of its own, and the same text in two files is two chunks. Every caller that
+    searches with several vectors has to fold the repeats
+    `get_embedding_generator_by_knn` documents, so the key they fold on is defined
+    once here.
+    """
+
+    file_id: UUID
+    text: str
+
+    @staticmethod
+    def of(embedding: KnnSearchEmbedding) -> "KnnChunkKey":
+        return KnnChunkKey(file_id=embedding.file_id, text=embedding.text)
 
 
 class _EsEmbedding(InnerDoc):
@@ -1294,10 +1307,13 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
     ) -> Generator[KnnSearchEmbedding, None, None]:
         """Expand one top-level kNN hit into one embedding per inner hit.
 
-        The kNN response already carries the whole file document in the hit's
-        ``_source``, so the file is restored once here and shared by every embedding
-        yielded for this hit.  Fetching it per inner hit instead would issue one
-        Elasticsearch GET per embedding *per file*.
+        The kNN response already carries the file document in the hit's ``_source``, so
+        the file is restored once here and shared by every embedding yielded for this
+        hit.  Fetching it per inner hit instead would issue one Elasticsearch GET per
+        embedding *per file*.
+
+        The shared file carries neither ``content`` nor ``embeddings``: the search
+        excludes both, so each falls back to its default on ``File``.
         """
         file = self._document_to_object(hit)
         file_score = hit.meta.score if hit.meta.score is not None else 0.0
@@ -1335,7 +1351,20 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         clause yields at most ``files_k * chunks_per_file`` embeddings and a caller
         passing several vectors gets that many times over, overlap included: a file near
         two vectors is returned by both clauses, carrying one inner-hits group per clause
-        that reached it.
+        that reached it. A caller that ranks on the result has to fold those repeats
+        itself -- both callers do, each by the key its own stage is about.
+
+        ``file_score`` is the top-level hit score, which Elasticsearch computes by
+        *summing* the contribution of every kNN clause that matched the file, so a file
+        several vectors agree on carries a proportionally higher one. That consensus
+        weighting is the point of passing several vectors, and it only exists because
+        ``track_scores`` is set below.
+
+        ``content`` and the ``embeddings`` array are excluded from ``_source``: the
+        index keeps the 768-float vectors inside ``_source``
+        (``exclude_source_vectors=false``) so the persister can write documents back
+        intact, and a search that returned them would ship megabytes per file per
+        clause. Both fields have defaults on ``File``, so the hit still validates.
 
         Args:
             files_k: How many files one embedding may reach. Also sets
@@ -1353,6 +1382,13 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
         )
 
         search = search.index()  # Remove index: pit requests run against no index
+
+        # `file_score` is part of this search's result whatever the caller sorts by,
+        # and Elasticsearch computes no `_score` under a sort that does not name it --
+        # which is every scan, since those sort on `sort_unique`.
+        search = search.extra(track_scores=True)
+
+        search = search.source(excludes=["content", "embeddings"])
 
         filter_query = Q(
             "query_string",
@@ -1373,7 +1409,9 @@ class FileRepository(BaseEsRepository[_EsFile, File]):
                 query_vector=list(q),
                 filter=filter_query,
                 inner_hits={
-                    "_source": True,
+                    # `_knn_embeddings_from_hit` reads the nested text and score only,
+                    # and the text arrives through `fields` beside this.
+                    "_source": {"excludes": ["embeddings.vector"]},
                     "fields": ["embeddings.text"],
                     "size": chunks_per_file,
                     "name": f"query_{i}",
