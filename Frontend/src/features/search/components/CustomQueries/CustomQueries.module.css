@@ -29,3 +29,18 @@
     flex-direction: row;
     justify-content: space-between;
 }
+
+/* The panel fills its frame and scrolls its own list, so the filter bar above
+stays put while the queries move under it. */
+.queriesPanel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.queriesPanel .savedQueries {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}

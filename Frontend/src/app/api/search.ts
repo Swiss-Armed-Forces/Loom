@@ -57,6 +57,17 @@ export const getLongRunningQuery = async (): Promise<GetQueryResponse> => {
     return filesApi.getQueryV1FilesQueryPost({ keepAlive: "30m" });
 };
 
+/**
+ * Open the snapshot one filename-search run reads.
+ *
+ * Shorter-lived than the session query above, because it covers one run rather than
+ * a session: the gaps it has to outlive are a person reading a list of matches and
+ * asking for more of it, and every page extends it again.
+ */
+export const openFilenameSearchQuery = async (): Promise<GetQueryResponse> => {
+    return filesApi.getQueryV1FilesQueryPost({ keepAlive: "5m" });
+};
+
 export const searchFiles = async (
     query: PitBoundSearchQuery,
 ): Promise<GetFilesResponse> => {

@@ -476,6 +476,7 @@
     },
     "sideMenu": {
         "actions": "Actions",
+        "tagsFilterPlaceholder": "Filter tags",
         "results": "Results",
         "bulkActions": "Bulk Actions",
         "timeRange": {
@@ -550,6 +551,7 @@
         },
         "savedQueries": {
             "title": "Saved queries",
+            "filterPlaceholder": "Filter saved queries",
             "saveNew": "Save current query",
             "deleteQuery": "Delete this query"
         },
@@ -601,6 +603,7 @@
         "filterPlaceholder": "Filter by filename",
         "filterLoadError": "Cannot load filter results.",
         "filterLoadMoreError": "Cannot load more filter results.",
+        "filterExpired": "Filter results expired – filter again to see more",
         "viewOptions": "View options",
         "pathDepthLabel": "Path depth",
         "pathDepthHelp": "How many path levels to show.",

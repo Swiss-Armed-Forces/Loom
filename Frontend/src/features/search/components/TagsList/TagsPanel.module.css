@@ -1,0 +1,24 @@
+/* The panel fills its frame and scrolls its own body, so the filter bar above
+stays put while the chips move under it. */
+.tagsPanel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.tagListContainer {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    /* Both are needed because this box is now taller than the chips in it. The
+    list inside wraps its rows and would share the slack out between them, and
+    stretching it to full height is what hands it that slack in the first place. */
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 0.3rem;
+    padding: 0.75rem;
+}

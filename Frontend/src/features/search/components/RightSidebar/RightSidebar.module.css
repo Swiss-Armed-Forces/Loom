@@ -66,20 +66,8 @@
     padding: 0.75rem;
 }
 
-.filterBar {
-    display: flex;
-    align-items: center;
-    padding: 0.35rem 0.75rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    flex-shrink: 0;
-}
-
-.filterInput {
-    width: 100%;
-    font-size: 0.8rem;
-}
-
-.filterIcon {
-    opacity: 0.5;
-    font-size: 1rem !important;
+/* The folder panel carries its own filter bar and scrolls its own body, so the
+frame must not scroll underneath it: the bar has to stay put. */
+.contentUnscrolled {
+    overflow: hidden;
 }

@@ -27,6 +27,7 @@ import { toast } from "react-toastify";
 import type { SearchAfterCursor, TreeNodeModel } from "@app/api/index";
 import {
     getTreeSpine,
+    openFilenameSearchQuery,
     ResponseError,
     searchByFilename,
     searchTree,
@@ -56,13 +57,10 @@ import {
 import { AppDispatch, store } from "@app/store";
 import { PitBoundSearchQuery, SearchQuery } from "@features/common/utils/model";
 import { FileAvatar } from "@features/search/components/FileCardHeader/FileAvatar";
+import { FilterBar } from "@features/search/components/FilterBar/FilterBar";
 
 import { isWithinExtractionLimit, shouldLoadChildrenOf } from "./depthLimits";
-import {
-    FolderViewNode,
-    NodeCountBadges,
-    NodeViewDetailsButton,
-} from "./FolderTreeItem";
+import { FolderViewNode } from "./FolderTreeItem";
 import styles from "./FolderView.module.css";
 import { folderViewReducer } from "./folderViewReducer";
 import {
@@ -149,17 +147,41 @@ const loadChildren = async (
     }
 };
 
+/**
+ * The query one filter run's pages are read against.
+ *
+ * `search_by_filename` resumes from literal sort values, which only mean what they
+ * meant inside the snapshot that produced them, so a run holds one point-in-time
+ * across its pages — and across its own pages only.
+ *
+ * Every run opens one of its own, in both panels, the one scoped to the current
+ * search included. A tree is read with no point-in-time at all — `loadChildren`
+ * drops it — so a filter list bound to a snapshot held elsewhere would answer for an
+ * index the tree beside it no longer shows, and would have no way back once that
+ * snapshot expired.
+ */
+const openFilterRun = async (
+    query: SearchQuery,
+): Promise<PitBoundSearchQuery> => {
+    const opened = await openFilenameSearchQuery();
+    // The keep-alive travels with the query because every request resets the
+    // snapshot's remaining life to the one it carries, and the API's default is ten
+    // seconds — a second page sent without it would cut this run's snapshot short.
+    return { ...query, id: opened.queryId, keepAlive: opened.keepAlive };
+};
+
 interface FolderViewProps {
-    filter?: string;
     searchQuery?: SearchQuery;
+    /** Tour anchor for this panel's filter bar, when a tour step points at it. */
+    filterTour?: string;
     persistExpansion?: boolean;
     expansionKey?: FolderViewExpansionKey;
     refreshKey?: string | null;
 }
 
 export const FolderView = ({
-    filter,
     searchQuery: queryOverride,
+    filterTour,
     persistExpansion,
     expansionKey = "global",
     refreshKey,
@@ -660,44 +682,59 @@ export const FolderView = ({
         dispatch,
     ]);
 
+    // The panel owns what it filters by: nothing above it can say what a folder
+    // filter means, and no other panel's filter survives a switch to this one.
+    const [filter, setFilter] = useState("");
     const [filterResults, setFilterResults] = useState<TreeNodeModel[]>([]);
     const [filterLoading, setFilterLoading] = useState(false);
     const [filterLoadingMore, setFilterLoadingMore] = useState(false);
     const [filterNextPageCursor, setFilterNextPageCursor] =
         useState<SearchAfterCursor | null>(null);
 
-    // searchQuery.id is the point-in-time every page of a filter run reads, so there
-    // is nothing to search until one has been opened. It is also what makes this
-    // effect reset the filter to its first page when the snapshot is replaced.
-    const pitBoundQuery = searchQuery?.id
-        ? (searchQuery as PitBoundSearchQuery)
-        : null;
+    // The query the pages of the current filter run are read against, which is not
+    // the one the panel browses: see openFilterRun.
+    const [filterRunQuery, setFilterRunQuery] =
+        useState<PitBoundSearchQuery | null>(null);
 
     useEffect(() => {
-        if (!filter || !pitBoundQuery) {
+        if (!filter || !searchQuery) {
             setFilterResults([]);
             setFilterNextPageCursor(null);
+            setFilterRunQuery(null);
             return;
         }
+        let cancelled = false;
         const timer = setTimeout(() => {
             setFilterLoading(true);
-            searchByFilename(pitBoundQuery, filter)
-                .then((result) => {
+            openFilterRun(searchQuery)
+                .then(async (runQuery) => {
+                    if (cancelled) return;
+                    setFilterRunQuery(runQuery);
+                    const result = await searchByFilename(runQuery, filter);
+                    if (cancelled) return;
                     setFilterNextPageCursor(result.nextCursor ?? null);
                     setFilterResults(
                         result.nodes.filter((n) => n.fileId !== undefined),
                     );
                 })
-                .catch(() => toast.error(t("folderView.filterLoadError")))
-                .finally(() => setFilterLoading(false));
+                .catch(() => {
+                    if (!cancelled)
+                        toast.error(t("folderView.filterLoadError"));
+                })
+                .finally(() => {
+                    if (!cancelled) setFilterLoading(false);
+                });
         }, 300);
-        return () => clearTimeout(timer);
-    }, [filter, pitBoundQuery, t]);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [filter, searchQuery, t]);
 
     const handleFilterLoadMore = useCallback(() => {
-        if (!filterNextPageCursor || !pitBoundQuery || !filter) return;
+        if (!filterNextPageCursor || !filterRunQuery || !filter) return;
         setFilterLoadingMore(true);
-        searchByFilename(pitBoundQuery, filter, filterNextPageCursor)
+        searchByFilename(filterRunQuery, filter, filterNextPageCursor)
             .then((result) => {
                 setFilterNextPageCursor(result.nextCursor ?? null);
                 setFilterResults((prev) => [
@@ -710,198 +747,202 @@ export const FolderView = ({
                 // mint — a cursor held across a deploy, for instance — so keeping it
                 // would make every further click fail the same way.
                 setFilterNextPageCursor(null);
-                // 409 is the point-in-time having expired, which the search slice
-                // answers by opening a new one. That swaps searchQuery.id, which
-                // re-runs the effect above and refills the filter from its first
-                // page, so saying anything here would report a failure that is
-                // already being recovered from.
+                // 409 is the snapshot this run was reading having expired. A fresh
+                // one cannot resume it, because the cursor's sort values mean
+                // nothing inside it, so the remaining pages are reachable only by
+                // running the filter again; the list already on screen stays.
                 if (
                     error instanceof ResponseError &&
                     error.response.status === 409
                 ) {
+                    toast.info(t("folderView.filterExpired"));
                     return;
                 }
                 toast.error(t("folderView.filterLoadMoreError"));
             })
             .finally(() => setFilterLoadingMore(false));
-    }, [filterNextPageCursor, pitBoundQuery, filter, t]);
+    }, [filterNextPageCursor, filterRunQuery, filter, t]);
 
-    if (isLoading && !folderState.tree.children) return <LoadingIndicator />;
-    if (!Object.keys(folderState.tree.children ?? {}).length) return null;
+    const renderBody = () => {
+        if (isLoading && !folderState.tree.children)
+            return <LoadingIndicator />;
+        if (!Object.keys(folderState.tree.children ?? {}).length) return null;
 
-    if (filter) {
-        if (filterLoading) return <LoadingIndicator />;
-        // A flat list has no ancestors to count, so the nesting level travels
-        // with each row from the backend. The folder limit has no meaning here:
-        // this is a list, not a tree.
-        const visibleFilterResults = filterResults.filter((node) =>
-            isWithinExtractionLimit(node.recursionDepth, limits),
-        );
-        // A page whose every row was extracted leaves nothing to show, but the
-        // next page may still hold matches — so keep "Load more" reachable.
-        if (visibleFilterResults.length === 0 && !filterNextPageCursor) {
-            return null;
-        }
-        return (
-            <>
-                <List dense disablePadding>
-                    {visibleFilterResults.map((node) => {
-                        const label =
-                            node.fullPath.split(PATH_SEPARATOR).at(-1) ??
-                            node.fullPath;
-                        const fileId = node.fileId;
-                        return (
-                            <ListItemButton
-                                key={node.fullPath}
-                                onClick={() => {
-                                    if (!fileId) return;
-                                    handleFileClick(fileId);
-                                }}
-                                title={node.fullPath}
-                                selected={fileId === focusedFileId}
-                                sx={{
-                                    pr: 0.5,
-                                    "&.Mui-selected": {
-                                        borderLeft: "2px solid",
-                                        borderColor: "primary.main",
-                                        borderRadius: "0 4px 4px 0",
-                                        bgcolor: "primary.main",
-                                        color: "primary.contrastText",
-                                    },
-                                    "&.Mui-selected:hover": {
-                                        bgcolor: "primary.dark",
-                                    },
-                                }}
-                            >
-                                <ListItemText
-                                    primary={
-                                        <Stack
-                                            direction="row"
-                                            spacing={0.5}
-                                            sx={{ alignItems: "center" }}
-                                        >
-                                            <FileAvatar
-                                                mimeType={node.mimeType}
-                                                mimeTypeGroup={
-                                                    node.mimeTypeGroup
-                                                }
-                                                size={ROW_AVATAR_SIZE_PX}
-                                            />
-                                            <Typography
-                                                noWrap
-                                                variant="body2"
-                                                component="span"
-                                                sx={{
-                                                    ...(node.isUnseen && {
-                                                        fontWeight: "bold",
-                                                    }),
-                                                    ...(node.isFlagged && {
-                                                        color: "error.main",
-                                                    }),
-                                                }}
-                                            >
-                                                {label}
-                                            </Typography>
-                                            <NodeCountBadges
-                                                flaggedCount={node.flaggedCount}
-                                                unseenCount={node.unseenCount}
-                                                fileCount={node.fileCount}
-                                                onFlaggedClick={() => {}}
-                                                onUnseenClick={() => {}}
-                                                onDirectChildrenClick={() => {}}
-                                                onFileCountClick={() => {}}
-                                            />
-                                        </Stack>
-                                    }
-                                    secondary={node.fullPath}
-                                    slotProps={{
-                                        primary: { component: "div" },
-                                        secondary: {
-                                            noWrap: true,
-                                            sx: { fontSize: "0.65rem" },
+        if (filter) {
+            if (filterLoading) return <LoadingIndicator />;
+            // A flat list has no ancestors to count, so the nesting level travels
+            // with each row from the backend. The folder limit has no meaning here:
+            // this is a list, not a tree.
+            const visibleFilterResults = filterResults.filter((node) =>
+                isWithinExtractionLimit(node.recursionDepth, limits),
+            );
+            // A page whose every row was extracted leaves nothing to show, but the
+            // next page may still hold matches — so keep "Load more" reachable.
+            if (visibleFilterResults.length === 0 && !filterNextPageCursor) {
+                return null;
+            }
+            return (
+                <>
+                    <List dense disablePadding>
+                        {visibleFilterResults.map((node) => {
+                            const label =
+                                node.fullPath.split(PATH_SEPARATOR).at(-1) ??
+                                node.fullPath;
+                            const fileId = node.fileId;
+                            return (
+                                <ListItemButton
+                                    key={node.fullPath}
+                                    onClick={() => {
+                                        if (!fileId) return;
+                                        handleFileClick(fileId);
+                                    }}
+                                    title={node.fullPath}
+                                    selected={fileId === focusedFileId}
+                                    sx={{
+                                        "&.Mui-selected": {
+                                            borderLeft: "2px solid",
+                                            borderColor: "primary.main",
+                                            borderRadius: "0 4px 4px 0",
+                                            bgcolor: "primary.main",
+                                            color: "primary.contrastText",
+                                        },
+                                        "&.Mui-selected:hover": {
+                                            bgcolor: "primary.dark",
                                         },
                                     }}
-                                />
-                                <NodeViewDetailsButton fileId={fileId!} />
-                            </ListItemButton>
-                        );
-                    })}
-                </List>
-                {filterNextPageCursor && (
-                    <ListItemButton
-                        onClick={handleFilterLoadMore}
-                        disabled={filterLoadingMore}
-                        dense
-                    >
-                        <Stack
-                            direction="row"
-                            spacing={0.5}
-                            sx={{ alignItems: "center", opacity: 0.7 }}
+                                >
+                                    <ListItemText
+                                        primary={
+                                            <Stack
+                                                direction="row"
+                                                spacing={0.5}
+                                                sx={{ alignItems: "center" }}
+                                            >
+                                                <FileAvatar
+                                                    mimeType={node.mimeType}
+                                                    mimeTypeGroup={
+                                                        node.mimeTypeGroup
+                                                    }
+                                                    size={ROW_AVATAR_SIZE_PX}
+                                                />
+                                                <Typography
+                                                    noWrap
+                                                    variant="body2"
+                                                    component="span"
+                                                    sx={{
+                                                        ...(node.isUnseen && {
+                                                            fontWeight: "bold",
+                                                        }),
+                                                        ...(node.isFlagged && {
+                                                            color: "error.main",
+                                                        }),
+                                                    }}
+                                                >
+                                                    {label}
+                                                </Typography>
+                                            </Stack>
+                                        }
+                                        secondary={node.fullPath}
+                                        slotProps={{
+                                            primary: { component: "div" },
+                                            secondary: {
+                                                noWrap: true,
+                                                sx: { fontSize: "0.65rem" },
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            );
+                        })}
+                    </List>
+                    {filterNextPageCursor && (
+                        <ListItemButton
+                            onClick={handleFilterLoadMore}
+                            disabled={filterLoadingMore}
+                            dense
                         >
-                            {filterLoadingMore ? (
-                                <CircularProgress size="0.9rem" />
-                            ) : (
-                                <MoreHoriz sx={{ fontSize: "0.9rem" }} />
-                            )}
-                            <Typography
-                                variant="caption"
-                                sx={{ fontStyle: "italic" }}
+                            <Stack
+                                direction="row"
+                                spacing={0.5}
+                                sx={{ alignItems: "center", opacity: 0.7 }}
                             >
-                                {t("folderView.loadMore")}
-                            </Typography>
-                        </Stack>
-                    </ListItemButton>
-                )}
-            </>
+                                {filterLoadingMore ? (
+                                    <CircularProgress size="0.9rem" />
+                                ) : (
+                                    <MoreHoriz sx={{ fontSize: "0.9rem" }} />
+                                )}
+                                <Typography
+                                    variant="caption"
+                                    sx={{ fontStyle: "italic" }}
+                                >
+                                    {t("folderView.loadMore")}
+                                </Typography>
+                            </Stack>
+                        </ListItemButton>
+                    )}
+                </>
+            );
+        }
+
+        return (
+            <View>
+                <div className={styles.treeView}>
+                    <SimpleTreeView
+                        apiRef={treeApiRef}
+                        expandedItems={folderState.expandedNodes}
+                        onExpandedItemsChange={handleExpandedItemsChange}
+                        expansionTrigger="content"
+                        onItemClick={(_event, itemId) => {
+                            handleItemClick(itemId);
+                        }}
+                        sx={{
+                            "& .MuiTreeItem-iconContainer": {
+                                borderRadius: "50%",
+                                transition:
+                                    "transform 0.2s ease, opacity 0.2s ease",
+                                "&:hover": {
+                                    bgcolor: "action.hover",
+                                    transform: "scale(1.1)",
+                                    opacity: 0.8,
+                                },
+                            },
+                            "& .MuiTreeItem-groupTransition": {
+                                position: "relative",
+                                "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    left: "calc(8px + var(--TreeView-itemChildrenIndentation, 12px) * var(--TreeView-itemDepth, 0))",
+                                    top: 0,
+                                    bottom: 0,
+                                    borderLeft: "1px solid",
+                                    borderColor: "divider",
+                                    pointerEvents: "none",
+                                    zIndex: 1,
+                                },
+                            },
+                        }}
+                    >
+                        <FolderViewNode
+                            tree={folderState.tree}
+                            focusedFileId={focusedFileId}
+                            onLoadMore={handleLoadMore}
+                            limits={limits}
+                        />
+                    </SimpleTreeView>
+                </div>
+            </View>
         );
-    }
+    };
 
     return (
-        <View>
-            <div className={styles.treeView}>
-                <SimpleTreeView
-                    apiRef={treeApiRef}
-                    expandedItems={folderState.expandedNodes}
-                    onExpandedItemsChange={handleExpandedItemsChange}
-                    expansionTrigger="content"
-                    onItemClick={(_event, itemId) => {
-                        handleItemClick(itemId);
-                    }}
-                    sx={{
-                        "& .MuiTreeItem-iconContainer": {
-                            borderRadius: "50%",
-                            transition:
-                                "transform 0.2s ease, opacity 0.2s ease",
-                            "&:hover": {
-                                bgcolor: "action.hover",
-                                transform: "scale(1.1)",
-                                opacity: 0.8,
-                            },
-                        },
-                        "& .MuiTreeItem-groupTransition": {
-                            position: "relative",
-                            "&::before": {
-                                content: '""',
-                                position: "absolute",
-                                left: "calc(8px + var(--TreeView-itemChildrenIndentation, 12px) * var(--TreeView-itemDepth, 0))",
-                                top: 0,
-                                bottom: 0,
-                                borderLeft: "1px solid",
-                                borderColor: "divider",
-                                pointerEvents: "none",
-                                zIndex: 1,
-                            },
-                        },
-                    }}
-                >
-                    <FolderViewNode
-                        tree={folderState.tree}
-                        focusedFileId={focusedFileId}
-                        onLoadMore={handleLoadMore}
-                        limits={limits}
-                    />
-                </SimpleTreeView>
-            </div>
-        </View>
+        <div className={styles.folderPanel}>
+            <FilterBar
+                value={filter}
+                onChange={setFilter}
+                placeholder={t("folderView.filterPlaceholder")}
+                dataTour={filterTour}
+            />
+            <div className={styles.folderBody}>{renderBody()}</div>
+        </div>
     );
 };

@@ -1,12 +1,5 @@
-import { Clear, Search, Close } from "@mui/icons-material";
-import {
-    Drawer,
-    IconButton,
-    InputAdornment,
-    InputBase,
-    Typography,
-    useMediaQuery,
-} from "@mui/material";
+import { Close } from "@mui/icons-material";
+import { Drawer, IconButton, Typography, useMediaQuery } from "@mui/material";
 import { useEffect, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -60,16 +53,11 @@ export const RightSidebar = memo(() => {
     const [width, setWidth] = useState(() => clampSidebarWidth(storedWidth));
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [folderFilterText, setFolderFilterText] = useState("");
     const widthRef = useRef(width);
     const dragHandlersRef = useRef<{
         onMouseMove: (ev: MouseEvent) => void;
         onMouseUp: () => void;
     } | null>(null);
-
-    useEffect(() => {
-        if (activeTab !== RightSidebarTab.FOLDER) setFolderFilterText("");
-    }, [activeTab]);
 
     // Remove any in-flight drag listeners when the component unmounts
     useEffect(() => {
@@ -153,43 +141,12 @@ export const RightSidebar = memo(() => {
             {effectiveActiveTab === RightSidebarTab.FOLDER && (
                 <PathDepthStatus expansionKey="filtered" />
             )}
-            {effectiveActiveTab === RightSidebarTab.FOLDER && (
-                <div className={styles.filterBar}>
-                    <InputBase
-                        className={styles.filterInput}
-                        value={folderFilterText}
-                        onChange={(e) => setFolderFilterText(e.target.value)}
-                        placeholder={t("folderView.filterPlaceholder")}
-                        inputProps={{ "aria-label": "filter" }}
-                        startAdornment={
-                            <InputAdornment position="start">
-                                <Search
-                                    fontSize="small"
-                                    className={styles.filterIcon}
-                                />
-                            </InputAdornment>
-                        }
-                        endAdornment={
-                            folderFilterText ? (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => setFolderFilterText("")}
-                                        edge="end"
-                                    >
-                                        <Clear
-                                            fontSize="small"
-                                            className={styles.filterIcon}
-                                        />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null
-                        }
-                    />
-                </div>
-            )}
             <div
-                className={styles.content}
+                className={`${styles.content} ${
+                    effectiveActiveTab === RightSidebarTab.FOLDER
+                        ? styles.contentUnscrolled
+                        : ""
+                }`}
                 data-tour={
                     activeTourStepId ? `sidebar-${activeTourStepId}` : undefined
                 }
@@ -197,10 +154,7 @@ export const RightSidebar = memo(() => {
                 {effectiveActiveTab === RightSidebarTab.STATISTICS ? (
                     <StatisticsView />
                 ) : effectiveActiveTab === RightSidebarTab.FOLDER ? (
-                    <FolderView
-                        expansionKey="filtered"
-                        filter={folderFilterText}
-                    />
+                    <FolderView expansionKey="filtered" />
                 ) : effectiveActiveTab === RightSidebarTab.BULK_ACTIONS ? (
                     <div className={styles.bulkActionButtons}>
                         <UpdateFlaggedButton

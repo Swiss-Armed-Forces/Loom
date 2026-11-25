@@ -13,3 +13,27 @@
         padding: 1rem;
     }
 }
+
+/* The panel fills its frame and scrolls its own body, so the filter bar above
+stays put while the tree moves under it. */
+.folderPanel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    /* Ignored where the frame is a plain block, and needed where it is a flex
+    column - the right sidebar's is. */
+    flex: 1;
+}
+
+.folderBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Scrollable sideways, not clipped. A folder tree indents a step per level,
+    so a deep path runs past the panel's edge and clipping it takes the folder
+    names, the file names and the "load more" control with it - with no
+    scrollbar to say there is anything there. */
+    overflow-x: auto;
+    padding-right: 0.5rem;
+}

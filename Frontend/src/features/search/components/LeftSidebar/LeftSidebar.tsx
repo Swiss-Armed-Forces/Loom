@@ -1,24 +1,14 @@
-import {
-    AddComment,
-    Close,
-    Forum,
-    Search,
-    VisibilityOff,
-} from "@mui/icons-material";
+import { AddComment, Close, Forum, VisibilityOff } from "@mui/icons-material";
 import {
     Drawer,
     IconButton,
-    InputAdornment,
-    InputBase,
     Tooltip,
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "react-toastify";
 
-import { loadTags } from "@app/api";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
     LeftSidebarPanel,
@@ -26,16 +16,14 @@ import {
     selectLeftSidebarPanel,
     selectLeftSidebarWidth,
     selectQuery,
-    selectTags,
     setLeftSidebarPanel,
     setLeftSidebarWidth,
-    setTags,
 } from "@app/slices/searchSlice";
 import { getTourLeftPanel } from "@app/tours/tourScene";
 import { useTour } from "@app/tours/useTour";
 import type { SearchQuery } from "@features/common/utils/model";
 import { clampSidebarWidth } from "@features/search/components/sidebarWidth";
-import { TagsList } from "@features/search/components/TagsList/TagsList";
+import { TagsPanel } from "@features/search/components/TagsList/TagsPanel";
 import { FolderView } from "@features/search/views/Folder/FolderView";
 import { FolderViewOptionsButton } from "@features/search/views/Folder/FolderViewOptions";
 import { PathDepthStatus } from "@features/search/views/Folder/PathDepthStatus";
@@ -57,9 +45,9 @@ const GLOBAL_FOLDER_QUERY: SearchQuery = {
     pageSize: null,
 };
 
-const TAGS_REFRESH_MS = 5_000;
-
-const FILTERABLE_PANELS = new Set<LeftSidebarPanel>([
+// Panels that render their own filter bar and scroll their own body. The frame
+// must not scroll underneath them, or the bar would scroll away with the list.
+const SELF_SCROLLING_PANELS = new Set<LeftSidebarPanel>([
     LeftSidebarPanel.FOLDER,
     LeftSidebarPanel.TAGS,
     LeftSidebarPanel.QUERIES,
@@ -84,7 +72,6 @@ export const LeftSidebar = memo(() => {
     const tourPanel = getTourLeftPanel(isTourActive, activeTourStepId);
     const effectiveActivePanel =
         tourPanel !== undefined ? tourPanel : activePanel;
-    const tags = useAppSelector(selectTags);
     const highlightedQueryId = useAppSelector(selectHighlightedQueryId);
     const reduxQuery = useAppSelector(selectQuery);
 
@@ -96,32 +83,11 @@ export const LeftSidebar = memo(() => {
     const [width, setWidth] = useState(() => clampSidebarWidth(storedWidth));
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [filterText, setFilterText] = useState("");
     const widthRef = useRef(width);
     const dragHandlersRef = useRef<{
         onMouseMove: (ev: MouseEvent) => void;
         onMouseUp: () => void;
     } | null>(null);
-
-    // Reset filter whenever the active panel changes
-    useEffect(() => {
-        setFilterText("");
-    }, [effectiveActivePanel]);
-
-    const fetchTags = useCallback(async () => {
-        try {
-            dispatch(setTags(await loadTags()));
-        } catch (error) {
-            toast.error(`Error loading tags: ${error}`);
-        }
-    }, [dispatch]);
-
-    useEffect(() => {
-        if (effectiveActivePanel !== LeftSidebarPanel.TAGS) return;
-        fetchTags();
-        const interval = setInterval(fetchTags, TAGS_REFRESH_MS);
-        return () => clearInterval(interval);
-    }, [effectiveActivePanel, fetchTags]);
 
     // Remove any in-flight drag listeners when the component unmounts
     useEffect(() => {
@@ -173,38 +139,24 @@ export const LeftSidebar = memo(() => {
         document.addEventListener("mouseup", onMouseUp);
     };
 
-    const filteredTags = useMemo(
-        () =>
-            filterText
-                ? tags.filter((tag) =>
-                      tag.toLowerCase().includes(filterText.toLowerCase()),
-                  )
-                : tags,
-        [tags, filterText],
-    );
-
     const renderPanelContent = () => {
         switch (effectiveActivePanel) {
             case LeftSidebarPanel.FOLDER:
                 return (
                     <FolderView
-                        filter={filterText}
                         searchQuery={GLOBAL_FOLDER_QUERY}
+                        filterTour="sidebar-folder-filter"
                         persistExpansion={true}
                         refreshKey={reduxQuery?.id ?? null}
                     />
                 );
             case LeftSidebarPanel.TAGS:
-                return (
-                    <div className={styles.tagListContainer}>
-                        <TagsList tags={filteredTags} />
-                    </div>
-                );
+                return <TagsPanel />;
             case LeftSidebarPanel.QUERIES:
                 return (
                     <CustomQueriesList
                         hideHeader
-                        filter={filterText}
+                        filterable
                         highlightedQueryId={highlightedQueryId}
                     />
                 );
@@ -218,9 +170,9 @@ export const LeftSidebar = memo(() => {
     };
 
     const sidebarWidth = effectiveActivePanel === null ? 0 : width;
-    const showFilter =
+    const panelScrollsItself =
         effectiveActivePanel !== null &&
-        FILTERABLE_PANELS.has(effectiveActivePanel);
+        SELF_SCROLLING_PANELS.has(effectiveActivePanel);
 
     const panelContent =
         effectiveActivePanel !== null ? (
@@ -316,50 +268,12 @@ export const LeftSidebar = memo(() => {
                 {effectiveActivePanel === LeftSidebarPanel.FOLDER && (
                     <PathDepthStatus expansionKey="global" />
                 )}
-                {showFilter && (
-                    <div
-                        className={styles.filterBar}
-                        data-tour="sidebar-folder-filter"
-                    >
-                        <InputBase
-                            className={styles.filterInput}
-                            value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            placeholder="Filter..."
-                            inputProps={{ "aria-label": "filter" }}
-                            startAdornment={
-                                <InputAdornment position="start">
-                                    <Search
-                                        fontSize="small"
-                                        className={styles.filterIcon}
-                                    />
-                                </InputAdornment>
-                            }
-                            endAdornment={
-                                filterText ? (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => setFilterText("")}
-                                            edge="end"
-                                        >
-                                            <Close
-                                                fontSize="small"
-                                                className={styles.filterIcon}
-                                            />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ) : null
-                            }
-                        />
-                    </div>
-                )}
                 {/* The folder tree and the lists in here handle their own arrow
                     keys. Marking the pane keeps the document-level result
                     shortcuts from moving the result highlight at the same
                     time; letter shortcuts still reach the results. */}
                 <div
-                    className={styles.content}
+                    className={`${styles.content} ${panelScrollsItself ? styles.contentUnscrolled : ""}`}
                     data-keynav-ignore
                     style={
                         isChatPanel
