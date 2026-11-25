@@ -1,4 +1,5 @@
 import logging
+from enum import StrEnum
 from uuid import UUID
 
 from celery import chord, group
@@ -21,19 +22,63 @@ logger = logging.getLogger(__name__)
 app = get_celery_app()
 
 
-@app.task(base=AiContextProcessingTask)
-def suggest_queries_generate_task(
-    query_description: str, folder_path: str | None = None
-) -> QuerySuggestion:
+class QueryStrategy(StrEnum):
+    """How one candidate builds its query.
+
+    The output is a Lucene query string, so the axis that separates one candidate from
+    the next is the shape of the query rather than the wording of the request for it.
+    """
+
+    FREE_TEXT = "free_text"
+    FIELD_SCOPED = "field_scoped"
+    FUZZY = "fuzzy"
+    BROAD = "broad"
+    NARROW = "narrow"
+
+
+# One instruction per strategy, rendered into the skeleton `_build_prompt` holds. A
+# candidate commits to a single strategy: asking one prompt for free text *and* field
+# syntax *and* fuzzy operators leaves the model to resolve the conflict arbitrarily.
+_STRATEGY_INSTRUCTIONS: dict[QueryStrategy, str] = {
+    QueryStrategy.FREE_TEXT: (
+        "Favour free text and phrase matching. Avoid field:value syntax unless a "
+        "specific field clearly fits."
+    ),
+    QueryStrategy.FIELD_SCOPED: (
+        "Target AVAILABLE_FIELDS with field:value syntax wherever a field fits the "
+        "description."
+    ),
+    QueryStrategy.FUZZY: (
+        "Use fuzzy and proximity operators, so that OCR errors and spelling variants "
+        "in the indexed text still match."
+    ),
+    QueryStrategy.BROAD: (
+        "Favour recall: combine synonyms and alternative phrasings with OR and keep "
+        "the query permissive."
+    ),
+    QueryStrategy.NARROW: (
+        "Favour precision: combine the essential terms with AND and keep the query "
+        "restrictive."
+    ),
+}
+
+
+def _build_prompt(
+    query_description: str, strategy: QueryStrategy, folder_path: str | None
+) -> str:
+    """Render the prompt for one candidate query.
+
+    The skeleton carries everything the strategies share, so the Lucene syntax rule and
+    the two MUST lines are stated once.
+    """
     available_fields = list(iter_described_fields(File))
     fields_text = "\n".join(f"- {f.name}: {f.description}" for f in available_fields)
 
     prompt = f"""Translate the QUERY_DESCRIPTION to an Elasticsearch query string.
 AVAILABLE_FIELDS (you may use these in field:value syntax):
 {fields_text}
-HINT: Use Lucene features (AND, OR, wildcards, fuzzy, proximity, ranges).
-HINT: Favour free text search over field queries unless a specific field clearly fits.
 HINT: Use Lucene Query syntax.
+STRATEGY: {_STRATEGY_INSTRUCTIONS[strategy]}
 QUERY_DESCRIPTION: {query_description}\n\n
 MUST: Only return the plain Lucerne query.
 MUST: Do not give an explanation.
@@ -46,6 +91,27 @@ MUST: Do not give an explanation.
             f"are applied separately."
         )
 
+    return prompt
+
+
+@app.task(base=AiContextProcessingTask)
+def suggest_queries_generate_task(
+    query_description: str,
+    folder_path: str | None = None,
+    strategy: QueryStrategy = QueryStrategy.FREE_TEXT,
+    seed: int = 0,
+) -> QuerySuggestion:
+    """Generate one candidate query, or an empty suggestion if it has to be dropped.
+
+    ``seed`` separates candidates that share a strategy, which happens whenever
+    ``num_candidates`` exceeds the strategy count.
+    """
+    # Celery delivers the member as the plain string it serialises to, so coerce it
+    # back: an unknown strategy is then a ValueError here rather than a KeyError
+    # during rendering.
+    strategy = QueryStrategy(strategy)
+    prompt = _build_prompt(query_description, strategy, folder_path)
+
     agent = get_llm_suggest_queries_agent()
 
     # This task is one candidate in a chord, and a chord aborts as soon as any
@@ -53,13 +119,16 @@ MUST: Do not give an explanation.
     # suggest_queries_aggregate_task filters out -- so that one bad candidate
     # cannot discard the results of all the others.
     try:
-        result = agent.run_sync(prompt)
+        # A per-run setting is merged over the agent's, so this adds the seed and
+        # leaves the configured generation settings alone.
+        result = agent.run_sync(prompt, model_settings={"seed": seed})
 
     except Exception:  # pylint: disable=broad-except
         logger.warning(
             "suggest_queries: dropping candidate, LLM call failed for "
-            "description '%s'",
+            "description '%s' with strategy %s",
             query_description,
+            strategy,
             exc_info=True,
         )
         return QuerySuggestion(query="", matching_docs=0)
@@ -68,6 +137,7 @@ MUST: Do not give an explanation.
         return QuerySuggestion(query="", matching_docs=0)
 
     query_string = result.output.query_string
+    logger.debug("suggest_queries: strategy %s produced '%s'", strategy, query_string)
 
     try:
         file_repository = get_file_repository()
@@ -121,11 +191,20 @@ def suggest_queries_task(
     folder_path: str | None = None,
 ) -> SuggestQueriesResult:
     num_candidates = settings.tool.suggest_queries.num_candidates
+    # Cycling rather than zipping keeps the count setting and the strategy list from
+    # contradicting each other at any operator-chosen value: above the strategy count
+    # the strategies repeat, below it the prefix starts at FREE_TEXT. The index
+    # doubles as the seed, so candidates sharing a strategy still differ -- which the
+    # default count relies on, being larger than the strategy count -- and a repeated
+    # run of one description produces the same candidates.
+    strategies = list(QueryStrategy)
     return self.replace(
         chord(
             group(
-                suggest_queries_generate_task.s(query_description, folder_path)
-                for _ in range(num_candidates)
+                suggest_queries_generate_task.s(
+                    query_description, folder_path, strategies[i % len(strategies)], i
+                )
+                for i in range(num_candidates)
             ),
             suggest_queries_aggregate_task.s(),
         )

@@ -1,4 +1,5 @@
 import logging
+from enum import StrEnum
 from typing import Sequence
 from uuid import UUID
 
@@ -125,6 +126,54 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
     return get_lazybytes_service().from_object(embedding)
 
 
+class HydeVariant(StrEnum):
+    """Which kind of document a hypothetical passage imitates.
+
+    A hypothetical document is a retrieval probe that works by resembling a real
+    document in the corpus, so the variants name registers the index holds -- OCR'd
+    scans, office documents and mail -- rather than styles of authorship.
+    """
+
+    PLAIN = "plain"
+    REPORT = "report"
+    CORRESPONDENCE = "correspondence"
+    REFERENCE = "reference"
+    RECORD = "record"
+
+
+# One instruction per variant, rendered into the skeleton `_build_hyde_prompt` holds.
+# Each opens a sentence beginning "Given the question below, ...".
+_HYDE_VARIANT_INSTRUCTIONS: dict[HydeVariant, str] = {
+    HydeVariant.PLAIN: "write a short factual passage that would directly answer it.",
+    HydeVariant.REPORT: (
+        "write an excerpt from the findings section of a report that answers it."
+    ),
+    HydeVariant.CORRESPONDENCE: "write the body of a letter or email that answers it.",
+    HydeVariant.REFERENCE: (
+        "write an encyclopedic entry about its subject that answers it."
+    ),
+    HydeVariant.RECORD: (
+        "write a labelled record entry that answers it, one field per line."
+    ),
+}
+
+
+def _build_hyde_prompt(question: str, variant: HydeVariant) -> str:
+    """Render the prompt for one hypothetical document.
+
+    The skeleton carries everything the variants share, so the length limit and the no-
+    preface guardrail are stated once.
+    """
+    return f"""Given the question below, {_HYDE_VARIANT_INSTRUCTIONS[variant]}
+Do not explain or preface your answer. Just write the passage
+as if it were from a document. Keep your answer in a paragraph of
+{settings.llm.embedding.text_chunk_size} tokens or less.
+
+Question: {question}
+
+Passage:"""
+
+
 @app.task(
     bind=True,
     base=AiContextProcessingTask,
@@ -133,7 +182,10 @@ def embed_question(question: str) -> TempTypedLazyBytes[Sequence[float]]:
     retry_backoff=True,
 )
 def generate_hypothetical_document(
-    self: AiContextProcessingTask, question: str
+    self: AiContextProcessingTask,
+    question: str,
+    variant: HydeVariant = HydeVariant.PLAIN,
+    seed: int = 0,
 ) -> str | None:
     """Generate a single hypothetical document, or ``None`` if it has to be dropped.
 
@@ -141,27 +193,30 @@ def generate_hypothetical_document(
     Once the retry budget is spent, raising would abort that chord and lose the
     question embedding and every sibling document along with it, leaving the question
     unanswered -- so drop this document instead and let recall degrade.
+
+    ``seed`` separates members that share a variant, which happens whenever
+    ``num_documents`` exceeds the variant count.
     """
-    prompt = f"""Given the question below, write a short factual passage that would
-directly answer it. Do not explain or preface your answer. Just write the passage
-as if it were from a document. Keep your answer in a paragraph of
-{settings.llm.embedding.text_chunk_size} tokens or less.
-
-Question: {question}
-
-Passage:"""
+    # Celery delivers the member as the plain string it serialises to, so coerce it
+    # back: an unknown variant is then a ValueError here rather than a KeyError during
+    # rendering.
+    variant = HydeVariant(variant)
+    prompt = _build_hyde_prompt(question, variant)
 
     agent = get_llm_hyde_agent()
 
     try:
-        result_agent = agent.run_sync(prompt)
+        # A per-run setting is merged over the agent's, so this adds the seed and
+        # leaves `temperature`, `max_tokens` and `thinking` as configured.
+        result_agent = agent.run_sync(prompt, model_settings={"seed": seed})
 
     except Exception as ex:  # pylint: disable=broad-except
         error = classify_llm_error(ex, "Hypothetical document generation failed")
         if isinstance(error, LLMTransientError) and not self.is_last_attempt:
             raise error from ex
         logger.warning(
-            "generate_hypothetical_document: dropping document, LLM call failed",
+            "generate_hypothetical_document: dropping %s document, LLM call failed",
+            variant,
             exc_info=True,
         )
         return None
@@ -169,11 +224,13 @@ Passage:"""
     doc = (result_agent.output or "").strip()
     if not doc:
         logger.warning(
-            "generate_hypothetical_document: dropping document, LLM returned no text"
+            "generate_hypothetical_document: dropping %s document, "
+            "LLM returned no text",
+            variant,
         )
         return None
 
-    logger.debug("Hypothetical generated document: %.100s...", doc)
+    logger.debug("Hypothetical generated %s document: %.100s...", variant, doc)
     return doc
 
 
@@ -478,6 +535,13 @@ def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchRes
         query_id=file_repo.open_point_in_time(),
         search_string=query,
     )
+    # Cycling rather than zipping keeps `num_documents` and the variant list from
+    # contradicting each other at any operator-chosen value: above the variant count
+    # the variants repeat, below it the prefix starts at PLAIN. The index doubles as
+    # the seed, so members sharing a variant still differ, and a repeated run of one
+    # question samples the same documents -- which is what makes a before/after
+    # measurement of retrieval quality readable.
+    variants = list(HydeVariant)
     return self.replace(
         chain(
             chord(
@@ -485,10 +549,12 @@ def rag_pipeline_task(self: AiContextProcessingTask, query: str) -> RagSearchRes
                     embed_question.s(query),
                     group(
                         chain(
-                            generate_hypothetical_document.s(query),
+                            generate_hypothetical_document.s(
+                                query, variants[i % len(variants)], i
+                            ),
                             embed_document.s(),
                         )
-                        for _ in range(settings.llm.rag_hyde.num_documents)
+                        for i in range(settings.llm.rag_hyde.num_documents)
                     ),
                 ],
                 aggregate_embeddings.s(),

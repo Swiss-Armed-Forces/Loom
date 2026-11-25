@@ -16,6 +16,7 @@ from pydantic_ai.exceptions import ModelAPIError
 
 from worker.ai.infra.ai_context_processing_task import AiContextProcessingTask
 from worker.ai.tasks.rag_tool import (
+    HydeVariant,
     RankedSearchEmbedding,
     ScoredSearchEmbedding,
     aggregate_embeddings,
@@ -202,6 +203,54 @@ def test_generate_hypothetical_document_drops_empty_passage(hyde_agent: MagicMoc
     hyde_agent.run_sync.return_value = _agent_result("   ")
 
     assert generate_hypothetical_document(_first_attempt(), QUESTION) is None
+
+
+def test_hyde_variants_reach_the_model_as_distinct_prompts(hyde_agent: MagicMock):
+    """Every variant has to change the prompt.
+
+    The group sends one task per variant, so a variant that renders the same prompt as
+    another is an LLM call contributing nothing to the fanout.
+    """
+    prompts = set()
+    for variant in HydeVariant:
+        generate_hypothetical_document(_first_attempt(), QUESTION, variant)
+        prompts.add(hyde_agent.run_sync.call_args.args[0])
+
+    assert len(prompts) == len(list(HydeVariant))
+    assert all(QUESTION in prompt for prompt in prompts)
+
+
+def test_hyde_default_variant_is_plain(hyde_agent: MagicMock):
+    """Callers dispatching by name with the question alone must keep working."""
+    generate_hypothetical_document(_first_attempt(), QUESTION)
+    default_prompt = hyde_agent.run_sync.call_args.args[0]
+
+    generate_hypothetical_document(_first_attempt(), QUESTION, HydeVariant.PLAIN)
+
+    assert hyde_agent.run_sync.call_args.args[0] == default_prompt
+
+
+def test_hyde_seed_reaches_the_model(hyde_agent: MagicMock):
+    """Members sharing a variant are separated by the seed alone.
+
+    ``num_documents`` above the variant count makes the variants repeat, so without a
+    distinct seed those members would send an identical request.
+    """
+    for seed in (0, 1):
+        generate_hypothetical_document(
+            _first_attempt(), QUESTION, HydeVariant.PLAIN, seed
+        )
+        assert hyde_agent.run_sync.call_args.kwargs["model_settings"]["seed"] == seed
+
+
+@pytest.mark.usefixtures("hyde_agent")
+def test_hyde_variant_arrives_as_a_plain_string():
+    """Celery delivers the variant as the string the enum serialises to."""
+    result = generate_hypothetical_document(
+        _first_attempt(), QUESTION, cast(HydeVariant, "report")
+    )
+
+    assert result == "a passage"
 
 
 def test_embed_document_skips_dropped_document(embedder: MagicMock):

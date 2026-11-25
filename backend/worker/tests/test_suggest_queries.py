@@ -13,6 +13,7 @@ from openai import APIConnectionError, APITimeoutError, InternalServerError
 from pydantic import ValidationError
 
 from worker.ai.tasks.suggest_queries_tool import (
+    QueryStrategy,
     suggest_queries_aggregate_task,
     suggest_queries_generate_task,
 )
@@ -157,6 +158,60 @@ def test_generate_returns_suggestion_on_success(
     )
     suggest_queries_agent.run_sync.assert_called_once()
     file_repository.count_and_score_stats_by_query.assert_called_once()
+
+
+@pytest.mark.usefixtures("file_repository")
+def test_strategies_reach_the_model_as_distinct_prompts(
+    suggest_queries_agent: MagicMock,
+):
+    """Every strategy has to change the prompt.
+
+    The chord sends one candidate per strategy, so a strategy that renders the same
+    prompt as another is an LLM call contributing nothing to the fanout.
+    """
+    prompts = set()
+    for strategy in QueryStrategy:
+        suggest_queries_generate_task(QUERY_DESCRIPTION, None, strategy)
+        prompts.add(suggest_queries_agent.run_sync.call_args.args[0])
+
+    assert len(prompts) == len(list(QueryStrategy))
+    assert all(QUERY_DESCRIPTION in prompt for prompt in prompts)
+
+
+@pytest.mark.usefixtures("file_repository")
+def test_default_strategy_is_free_text(suggest_queries_agent: MagicMock):
+    """Callers dispatching by name with the description alone must keep working."""
+    suggest_queries_generate_task(QUERY_DESCRIPTION)
+    default_prompt = suggest_queries_agent.run_sync.call_args.args[0]
+
+    suggest_queries_generate_task(QUERY_DESCRIPTION, None, QueryStrategy.FREE_TEXT)
+
+    assert suggest_queries_agent.run_sync.call_args.args[0] == default_prompt
+
+
+@pytest.mark.usefixtures("file_repository")
+def test_seed_reaches_the_model(suggest_queries_agent: MagicMock):
+    """Candidates sharing a strategy are separated by the seed alone.
+
+    The default ``num_candidates`` exceeds the strategy count, so strategies repeat and
+    without a distinct seed those candidates would send an identical request.
+    """
+    for seed in (0, 1):
+        suggest_queries_generate_task(
+            QUERY_DESCRIPTION, None, QueryStrategy.FREE_TEXT, seed
+        )
+        call = suggest_queries_agent.run_sync.call_args
+        assert call.kwargs["model_settings"]["seed"] == seed
+
+
+@pytest.mark.usefixtures("suggest_queries_agent", "file_repository")
+def test_strategy_arrives_as_a_plain_string():
+    """Celery delivers the strategy as the string the enum serialises to."""
+    result = suggest_queries_generate_task(
+        QUERY_DESCRIPTION, None, cast(QueryStrategy, "fuzzy")
+    )
+
+    assert result.query == "size:>1000000"
 
 
 @pytest.mark.parametrize(
