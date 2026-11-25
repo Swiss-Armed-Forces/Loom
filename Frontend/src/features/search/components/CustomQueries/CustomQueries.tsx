@@ -9,7 +9,7 @@ import {
     ListSubheader,
     Tooltip,
 } from "@mui/material";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@app/hooks.ts";
@@ -23,6 +23,7 @@ import {
 } from "@app/slices/searchSlice";
 import { DialogType } from "@features/common/utils/enums";
 import { formatCompactNumber } from "@features/common/utils/helpers";
+import { FilterBar } from "@features/search/components/FilterBar/FilterBar";
 
 import {
     AddCustomQueryDialog,
@@ -177,19 +178,23 @@ const CustomQueryItem = ({
 interface CustomQueriesListProps {
     iconOnly?: boolean;
     hideHeader?: boolean;
-    filter?: string;
+    /** Whether to offer the filter bar: the collapsed rail has no room for one. */
+    filterable?: boolean;
     highlightedQueryId?: string | null;
 }
 
 export const CustomQueriesList = ({
     iconOnly = false,
     hideHeader = false,
-    filter,
+    filterable = false,
     highlightedQueryId,
 }: CustomQueriesListProps) => {
     const { t } = useTranslation();
     const customQueries = useAppSelector(selectCustomQueries);
     const searchQuery = useAppSelector(selectQuery);
+    // Narrowing a list already in hand, so the panel owns the text outright: there
+    // is nothing to request and nothing for anything above it to coordinate.
+    const [filter, setFilter] = useState("");
 
     const visibleQueries = filter
         ? customQueries.filter((q) =>
@@ -198,33 +203,42 @@ export const CustomQueriesList = ({
         : customQueries;
 
     return (
-        <List className={styles.savedQueries}>
-            {!hideHeader &&
-                (iconOnly ? (
-                    <ListSubheader>
-                        <hr />
-                    </ListSubheader>
-                ) : (
-                    <ListSubheader>
-                        {t("sideMenu.savedQueries.title")}
-                    </ListSubheader>
-                ))}
-            {visibleQueries.map((q, i) => (
-                <CustomQueryItem
-                    key={i}
-                    customQuery={q}
-                    iconOnly={iconOnly}
-                    highlighted={
-                        !!highlightedQueryId && q.id === highlightedQueryId
-                    }
-                ></CustomQueryItem>
-            ))}
-            <ListItem sx={iconOnly ? { justifyContent: "center" } : {}}>
-                <AddCustomQueryDialog
-                    iconOnly={iconOnly}
-                    disabled={!searchQuery}
+        <div className={styles.queriesPanel}>
+            {filterable && (
+                <FilterBar
+                    value={filter}
+                    onChange={setFilter}
+                    placeholder={t("sideMenu.savedQueries.filterPlaceholder")}
                 />
-            </ListItem>
-        </List>
+            )}
+            <List className={styles.savedQueries}>
+                {!hideHeader &&
+                    (iconOnly ? (
+                        <ListSubheader>
+                            <hr />
+                        </ListSubheader>
+                    ) : (
+                        <ListSubheader>
+                            {t("sideMenu.savedQueries.title")}
+                        </ListSubheader>
+                    ))}
+                {visibleQueries.map((q, i) => (
+                    <CustomQueryItem
+                        key={i}
+                        customQuery={q}
+                        iconOnly={iconOnly}
+                        highlighted={
+                            !!highlightedQueryId && q.id === highlightedQueryId
+                        }
+                    ></CustomQueryItem>
+                ))}
+                <ListItem sx={iconOnly ? { justifyContent: "center" } : {}}>
+                    <AddCustomQueryDialog
+                        iconOnly={iconOnly}
+                        disabled={!searchQuery}
+                    />
+                </ListItem>
+            </List>
+        </div>
     );
 };
