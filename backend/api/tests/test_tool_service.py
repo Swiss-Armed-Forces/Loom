@@ -20,6 +20,8 @@ from common.ai_context.tool_models import (
     GetFileFieldResult,
     GetFileResult,
     ListFolderContentsResult,
+    RagChunk,
+    RagSearchResult,
     SearchByFilenameResult,
     SuggestQueriesResult,
     ToolSource,
@@ -359,6 +361,37 @@ def test_search_by_filename_reports_an_invalid_query_as_a_retry(
 
 
 # ---------------------------------------------------------------------------
+# rag_search
+# ---------------------------------------------------------------------------
+
+
+def test_rag_search_reads_the_whole_index_by_default(
+    tool_service: ToolService,
+    task_call_service_mock: MagicMock,
+    deps: AgentDeps,
+):
+    """The question is what the pipeline answers, never what it searches with -- both
+    are prose to a type checker, so the pair has to be pinned -- and every chunk the
+    answer rests on becomes a citation."""
+    file_id = uuid4()
+    task_call_service_mock.call_rag_search_tool.return_value = RagSearchResult(
+        answer="Mx Baker did.",
+        chunks=[RagChunk(file_id=file_id, text="signed by Mx Baker")],
+    )
+
+    ctx = _make_ctx(deps)
+    result = tool_service.rag_search(ctx, "who signed the lease?")
+
+    task_call_service_mock.call_rag_search_tool.assert_called_once_with(
+        deps.context.id_, "who signed the lease?", "*"
+    )
+    assert result.answer == "Mx Baker did."
+    assert deps.source_collector == [
+        ToolSource(file_id=file_id, text="signed by Mx Baker")
+    ]
+
+
+# ---------------------------------------------------------------------------
 # suggest_queries with folder_path
 # ---------------------------------------------------------------------------
 
@@ -457,6 +490,25 @@ def test_research_mode_defers_every_capability(
     """rag_search is no longer handed over up front: nothing is eager any more."""
     caps = tool_service.capabilities_for_mode(ModeId.RESEARCH)
     assert all(c.defer_loading for c in caps)
+
+
+# sova: agent tool parameters stay flat
+@pytest.mark.parametrize("mode", [ModeId.WORK, ModeId.RESEARCH])
+def test_no_tool_takes_a_nested_object_parameter(
+    tool_service: ToolService,
+    mode: ModeId,
+):
+    """Models that cannot nest send an object parameter as a JSON string, which fails
+    validation on every retry; a flat parameter list is the only shape they all emit."""
+    for capability in tool_service.capabilities_for_mode(mode):
+        for tool in capability.tools:
+            schema = tool.function_schema.json_schema
+            nested = [
+                name
+                for name, param in schema["properties"].items()
+                if "$ref" in param or param.get("type") == "object"
+            ]
+            assert not nested, f"{tool.name} takes {nested} as object parameters"
 
 
 def test_search_and_browse_announces_its_ui_effect_in_work_mode_only(
@@ -756,9 +808,7 @@ def test_update_file_passes_only_the_flags_it_was_given(
         file_id=str(file_id), flagged=True
     )
 
-    tool_service.update_file(
-        _make_ctx(deps), str(file_id), UpdateFileRequest(flagged=True)
-    )
+    tool_service.update_file(_make_ctx(deps), str(file_id), flagged=True)
 
     task_call_service_mock.call_update_file_tool.assert_called_once_with(
         deps.context.id_, str(file_id), UpdateFileRequest(flagged=True)
@@ -771,6 +821,6 @@ def test_update_file_without_a_flag_writes_nothing(
     deps: AgentDeps,
 ):
     with pytest.raises(ModelRetry):
-        tool_service.update_file(_make_ctx(deps), str(uuid4()), UpdateFileRequest())
+        tool_service.update_file(_make_ctx(deps), str(uuid4()))
 
     task_call_service_mock.call_update_file_tool.assert_not_called()

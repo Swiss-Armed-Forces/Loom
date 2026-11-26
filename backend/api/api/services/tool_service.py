@@ -675,15 +675,27 @@ class ToolService:
             result, self._store_cursor(result.next_cursor)
         )
 
-    def rag_search(self, ctx: RunContext[AgentDeps], query: str) -> RagSearchResult:
+    def rag_search(
+        self,
+        ctx: RunContext[AgentDeps],
+        question: str,
+        query: str = "*",
+    ) -> RagSearchResult:
         """Run the full RAG pipeline: retrieve and synthesize an answer from documents.
 
+        The corpus searched can be narrowed with a Lucene query, so that the answer
+        is drawn only from the files that query matches, e.g. one file type, folder
+        or date range.
+
         Args:
-            query: Natural language question to answer using the document corpus.
+            question: Natural language question to answer using the document corpus.
+            query: Optional Elasticsearch Lucene query bounding which files the
+                answer may be drawn from, as returned by suggest_queries. Defaults
+                to "*", which searches the whole index.
         """
         try:
             result = self._task_call_service.call_rag_search_tool(
-                ctx.deps.context.id_, query
+                ctx.deps.context.id_, question, query
             )
         except ValueError as exc:
             raise ModelRetry(str(exc)) from exc
@@ -724,21 +736,24 @@ class ToolService:
         self,
         ctx: RunContext[AgentDeps],
         file_id: str,
-        request: UpdateFileRequest,
+        seen: bool | None = None,
+        flagged: bool | None = None,
+        hidden: bool | None = None,
     ) -> UpdateFileResult:
         """Set the seen, flagged or hidden state of a single file.
 
-        At least one flag has to be given; a flag left out of request keeps its
-        current value. Use this when the user asks you to mark a file as seen or
-        unseen, flag or unflag it, or hide or unhide it. To change every file a query
-        matches, use the bulk metadata action instead.
+        At least one flag has to be given; a flag left out keeps its current value.
+        Use this when the user asks you to mark a file as seen or unseen, flag or
+        unflag it, or hide or unhide it. To change every file a query matches, use
+        the bulk metadata action instead.
 
         Args:
             file_id: UUID string of the file to update.
-            request: The flags to set: seen marks the file as seen (True) or unseen
-                (False), flagged flags (True) or unflags (False) it, and hidden hides
-                (True) or unhides (False) it.
+            seen: Mark the file as seen (True) or unseen (False).
+            flagged: Flag (True) or unflag (False) the file.
+            hidden: Hide (True) or unhide (False) the file.
         """
+        request = UpdateFileRequest(seen=seen, flagged=flagged, hidden=hidden)
         if request.sets_nothing:
             raise ModelRetry("Give at least one of seen, flagged or hidden to update.")
         try:

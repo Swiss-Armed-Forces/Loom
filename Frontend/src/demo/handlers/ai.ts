@@ -271,7 +271,10 @@ const runHandler = http.post(
                 events.push({
                     type: "TOOL_CALL_ARGS",
                     toolCallId: ragId,
-                    delta: JSON.stringify({ query: question || "*" }),
+                    delta: JSON.stringify({
+                        question: question || "this query",
+                        query: "*",
+                    }),
                 });
                 events.push({
                     type: "TOOL_CALL_END",
@@ -304,7 +307,7 @@ const runHandler = http.post(
                     type: "tool_call",
                     tool_name: "rag_search",
                     text: null,
-                    input: { query: question || "*" },
+                    input: { question: question || "this query", query: "*" },
                     output: ragResult,
                 });
 

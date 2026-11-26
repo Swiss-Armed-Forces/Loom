@@ -8,8 +8,9 @@ Please review them carefully before starting.
 
 1. [Guidelines for Design Discussions](#guidelines-for-design-discussions)
 2. [Development Workflow and Merge Requests](#development-workflow-and-merge-requests)
-3. [Code Comments](#code-comments)
-4. [Acknowledgments](#acknowledgments)
+3. [Contributing from a Fork](#contributing-from-a-fork)
+4. [Code Comments](#code-comments)
+5. [Acknowledgments](#acknowledgments)
 
 ## Guidelines for Design Discussions
 
@@ -85,6 +86,30 @@ To maintain transparency and traceability:
 10. **Code Review Guidelines**
     - Reviewers ensure the code adheres to project standards, is thoroughly tested, and does not introduce regressions.
     - They also verify that the MR title and description are clear and complete for release notes.
+
+## Contributing from a Fork
+
+Loom keeps generated files in the repository — `THIRD-PARTY.md` and its lock, the frontend's
+API types, the frontend's static bundle. The jobs in the pipeline's `generate` stage regenerate
+them and push the result to the merge request's branch, and from a fork they can only do that
+when you tick **"Allow commits from members who can merge to the target branch"** on the merge
+request. Leave it unticked and the pipeline cannot update your branch.
+
+Either way the job that regenerates something **fails**: the commit it tested is not the commit
+that carries the regenerated files. When it pushed, it also starts a pipeline for the commit it
+pushed, and that one is the verdict on your branch.
+
+When it could not push, it leaves the diff in its artifacts. Download
+`changed-files/fork-update.patch` from the failed job and apply it:
+
+```sh
+git apply fork-update.patch
+git add -A && git commit -m 'chore: update generated files'
+git push
+```
+
+Running the generator yourself does the same job: `generate-third-party`,
+`generate-frontend-api` and `generate-frontend-static` are devenv commands.
 
 ## Code Comments
 
