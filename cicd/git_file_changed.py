@@ -39,7 +39,7 @@ class CiContext:  # pylint: disable=too-many-instance-attributes
     source_project_path: Optional[str]  # CI_MERGE_REQUEST_SOURCE_PROJECT_PATH
 
     # User-tunable (CLI-capable)
-    project_access_token: Optional[str]
+    gitlab_token: Optional[str]
     mr_iid: Optional[str]
     author_name: str
     author_email: str
@@ -85,10 +85,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description=(
             "In MR pipelines, stage ALL unstaged changes, commit & push to the MR "
             "source branch (with safeguards), then exit 1 if changes were detected. "
-            "Uses CI_JOB_TOKEN for authentication, or PROJECT_ACCESS_TOKEN for a fork "
+            "Uses CI_JOB_TOKEN for authentication, or GITLAB_TOKEN for a fork "
             "whose merge request allows commits from upstream members; a fork that "
             "does not gets a patch in the artifacts instead. Optionally triggers new "
-            "MR pipeline after successful push using PROJECT_ACCESS_TOKEN. "
+            "MR pipeline after successful push using GITLAB_TOKEN. "
             "In non-MR pipelines (or with --no-update), only verify cleanliness and "
             "fail if there are changes. Also copies changed files to a mirror folder."
         )
@@ -104,11 +104,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Commit author email (default: GITLAB_USER_EMAIL or 'ci-bot@gitlab.local').",
     )
     parser.add_argument(
-        "--project-access-token",
+        "--gitlab-token",
         default=None,
         help=(
-            "Project access token for creating MR pipelines "
-            "(default: PROJECT_ACCESS_TOKEN env var)."
+            "Service account token for pushing to a fork and creating MR pipelines "
+            "(default: GITLAB_TOKEN env var, then PROJECT_ACCESS_TOKEN)."
         ),
     )
     parser.add_argument(
@@ -194,7 +194,9 @@ def build_context(ns: argparse.Namespace) -> CiContext:
         is_mr=is_mr,
         source_branch=source_branch,
         source_project_path=os.getenv("CI_MERGE_REQUEST_SOURCE_PROJECT_PATH"),
-        project_access_token=ns.project_access_token
+        # PROJECT_ACCESS_TOKEN is a second name for the same credential
+        gitlab_token=ns.gitlab_token
+        or os.getenv("GITLAB_TOKEN")
         or os.getenv("PROJECT_ACCESS_TOKEN"),
         mr_iid=mr_iid,
         author_name=author_name,
@@ -524,9 +526,7 @@ def fork_allows_collaboration(ctx: CiContext) -> bool:
         return False
 
     try:
-        gl = gitlab.Gitlab(
-            f"https://{ctx.server_host}", private_token=ctx.project_access_token
-        )
+        gl = gitlab.Gitlab(f"https://{ctx.server_host}", private_token=ctx.gitlab_token)
         project = gl.projects.get(ctx.project_id, lazy=True)
         mr = project.mergerequests.get(ctx.mr_iid)
         return bool(mr.allow_collaboration)
@@ -545,11 +545,15 @@ def resolve_push_target(
     A same-project MR pushes to its own project with the job token, and a CI that
     provides none is misconfigured rather than blocked.
 
-    A fork is pushed to only when its author allows upstream members to commit, and
-    then only with the project access token: a job token's push rights are a setting on
-    the receiving project, so a fork would have to allowlist this project for
-    cross-project job-token pushes, which a contributor has no reason to have done. The
-    access token's bot is a member of this project, which is who the fork admits.
+    A fork is pushed to only when its author allows upstream members to commit, and then
+    only with GITLAB_TOKEN. A job token's push rights are a setting on the receiving
+    project, so a fork would have to allowlist this project for cross-project job-token
+    pushes, which a contributor has no reason to have done. GITLAB_TOKEN has to be the
+    personal access token of a service account that may merge to the MR's target branch,
+    because that is who the fork admits: a project access token is confined to the
+    project that issued it, and GitLab refuses its push to any other project whatever
+    the fork allows. The token section in `cicd/README.md` has the whole set of
+    conditions.
     """
     if not is_cross_project_mr(ctx):
         if not ctx.job_token:
@@ -561,17 +565,15 @@ def resolve_push_target(
     if not ctx.source_project_path:
         return PushDecision(None, "CI_MERGE_REQUEST_SOURCE_PROJECT_PATH is not set")
 
-    if not ctx.project_access_token:
-        return PushDecision(None, "PROJECT_ACCESS_TOKEN is not set")
+    if not ctx.gitlab_token:
+        return PushDecision(None, "GITLAB_TOKEN is not set")
 
     if not allows_collaboration(ctx):
         return PushDecision(
             None, "the fork does not allow commits from upstream members"
         )
 
-    return PushDecision(
-        PushTarget(ctx.source_project_path, "oauth2", ctx.project_access_token)
-    )
+    return PushDecision(PushTarget(ctx.source_project_path, "oauth2", ctx.gitlab_token))
 
 
 def report_patch_fallback(repo: git.Repo, ctx: CiContext, reason: str) -> int:
@@ -680,7 +682,7 @@ def wait_for_mr_commit_sync(
 
 
 def trigger_pipeline(ctx: CiContext) -> None:
-    """Trigger a new merge request pipeline using the project access token.
+    """Trigger a new merge request pipeline with GITLAB_TOKEN.
 
     Waits for GitLab to sync the latest commit before triggering to ensure the pipeline
     runs on the correct commit, not a stale one.
@@ -691,8 +693,8 @@ def trigger_pipeline(ctx: CiContext) -> None:
         logging.info("Not in MR context; skipping pipeline trigger.")
         return
 
-    if not ctx.project_access_token:
-        logging.info("No project access token provided; skipping pipeline trigger.")
+    if not ctx.gitlab_token:
+        logging.info("No GITLAB_TOKEN provided; skipping pipeline trigger.")
         return
 
     if not ctx.mr_iid:
@@ -707,7 +709,7 @@ def trigger_pipeline(ctx: CiContext) -> None:
 
     # Create GitLab client and get merge request
     base_url = f"https://{ctx.server_host}"
-    gl = gitlab.Gitlab(base_url, private_token=ctx.project_access_token)
+    gl = gitlab.Gitlab(base_url, private_token=ctx.gitlab_token)
     project = gl.projects.get(ctx.project_id, lazy=True)
     mr = project.mergerequests.get(ctx.mr_iid, lazy=True)
 
@@ -751,9 +753,7 @@ def commit_and_push(repo: git.Repo, ctx: CiContext) -> None:
     if ctx.dry_run:
         logging.info("[DRY RUN] Would commit with message:\n%s", msg.strip())
         logging.info("[DRY RUN] Would push HEAD:%s", ctx.source_branch)
-        logging.info(
-            "[DRY RUN] Would trigger new MR pipeline if project access token provided"
-        )
+        logging.info("[DRY RUN] Would trigger new MR pipeline if GITLAB_TOKEN provided")
         return
 
     if not has_staged_changes(repo):
