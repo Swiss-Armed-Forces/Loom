@@ -736,21 +736,24 @@ class ToolService:
         self,
         ctx: RunContext[AgentDeps],
         file_id: str,
-        request: UpdateFileRequest,
+        seen: bool | None = None,
+        flagged: bool | None = None,
+        hidden: bool | None = None,
     ) -> UpdateFileResult:
         """Set the seen, flagged or hidden state of a single file.
 
-        At least one flag has to be given; a flag left out of request keeps its
-        current value. Use this when the user asks you to mark a file as seen or
-        unseen, flag or unflag it, or hide or unhide it. To change every file a query
-        matches, use the bulk metadata action instead.
+        At least one flag has to be given; a flag left out keeps its current value.
+        Use this when the user asks you to mark a file as seen or unseen, flag or
+        unflag it, or hide or unhide it. To change every file a query matches, use
+        the bulk metadata action instead.
 
         Args:
             file_id: UUID string of the file to update.
-            request: The flags to set: seen marks the file as seen (True) or unseen
-                (False), flagged flags (True) or unflags (False) it, and hidden hides
-                (True) or unhides (False) it.
+            seen: Mark the file as seen (True) or unseen (False).
+            flagged: Flag (True) or unflag (False) the file.
+            hidden: Hide (True) or unhide (False) the file.
         """
+        request = UpdateFileRequest(seen=seen, flagged=flagged, hidden=hidden)
         if request.sets_nothing:
             raise ModelRetry("Give at least one of seen, flagged or hidden to update.")
         try:
