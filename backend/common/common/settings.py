@@ -168,9 +168,9 @@ class LLMRagSynthesizeSettings(LLMClientSettings):
 
 class LLMSuggestQueriesSettings(LLMClientSettings):
     # Off for a cost reason rather than a quality one. One invocation fans out
-    # `tool.suggest_queries.num_candidates` (10) generations against an inference server
-    # that answers them one at a time, so a suggestion's wall-clock is the sum of all
-    # ten -- and each one's whole useful output is a short Lucene query string.
+    # `tool.suggest_queries.num_candidates` generations against an inference server that
+    # answers them one at a time, so a suggestion's wall-clock is the sum of them all --
+    # and each one's whole useful output is a short Lucene query string.
     thinking: bool | None = False
 
 
@@ -257,7 +257,13 @@ class LLMSystemOneClientsSettings(BaseModel):
 
 
 class SuggestQueriesToolSettings(BaseModel):
-    num_candidates: int = 10
+    # One candidate per `worker.ai.tasks.suggest_queries_tool.QueryStrategy` member.
+    # Every candidate is a chat generation the inference server answers on its own, and
+    # the chord's callback waits for the last of them, so the count is the multiplier on
+    # a suggestion's wall-clock. Raising it past the strategy count buys repeated
+    # strategies separated by their seed alone, which are the candidates likeliest to
+    # produce the same query string and collapse in the aggregation.
+    num_candidates: int = 5
     max_results: int = 3
 
 

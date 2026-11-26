@@ -517,7 +517,9 @@ llm_system_one:
 
 tool:
   suggest_queries:
-    num_candidates: 10
+    # One candidate per query strategy. Each one is a separate generation the inference
+    # server answers on its own, so this is the multiplier on how long a suggestion takes.
+    num_candidates: 5
     max_results: null
   execute_query:
     page_size: null
