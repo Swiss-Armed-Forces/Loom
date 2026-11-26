@@ -18,6 +18,7 @@ from worker.ai.tasks.suggest_queries_tool import (
     suggest_queries_generate_task,
 )
 from worker.dependencies import get_llm_suggest_queries_agent
+from worker.settings import settings
 
 # pylint: disable=redefined-outer-name
 
@@ -178,6 +179,17 @@ def test_strategies_reach_the_model_as_distinct_prompts(
     assert all(QUERY_DESCRIPTION in prompt for prompt in prompts)
 
 
+def test_default_candidate_count_covers_the_strategies_once():
+    """The shipped default is one candidate per strategy.
+
+    The count lives in `common` and the strategies in `worker`, so nothing but this
+    ties them together: a strategy added without raising the count is never asked for,
+    and every candidate past the count is a serialized generation on the critical path
+    of the slowest tool the agent has.
+    """
+    assert settings.tool.suggest_queries.num_candidates == len(list(QueryStrategy))
+
+
 @pytest.mark.usefixtures("file_repository")
 def test_default_strategy_is_free_text(suggest_queries_agent: MagicMock):
     """Callers dispatching by name with the description alone must keep working."""
@@ -193,8 +205,8 @@ def test_default_strategy_is_free_text(suggest_queries_agent: MagicMock):
 def test_seed_reaches_the_model(suggest_queries_agent: MagicMock):
     """Candidates sharing a strategy are separated by the seed alone.
 
-    The default ``num_candidates`` exceeds the strategy count, so strategies repeat and
-    without a distinct seed those candidates would send an identical request.
+    A ``num_candidates`` raised past the strategy count repeats strategies, and without
+    a distinct seed those candidates would send an identical request.
     """
     for seed in (0, 1):
         suggest_queries_generate_task(

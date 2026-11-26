@@ -310,8 +310,9 @@ than a chat one: it fans out one call per chunk, capped at
 at a time, and the whole useful output per call is a single integer score.
 
 `suggest_queries` is the same shape one level down: one invocation fans out
-`tool.suggest_queries.num_candidates` (10) generations, so a suggestion's wall-clock is the sum of
-all ten, and each one's whole useful output is a short Lucene query string. It keeps the inherited
+`tool.suggest_queries.num_candidates` generations — one per `QueryStrategy` at the default — so a
+suggestion's wall-clock is the sum of them all, and each one's whole useful output is a short
+Lucene query string. It keeps the inherited
 `max_tokens`, so turning thinking back on there — for a model that needs the budget to get Lucene
 syntax right — costs latency but nothing else.
 
@@ -872,10 +873,9 @@ starts at the default. The task parameter is defaulted, so a caller dispatching 
 question alone still gets the default variant's prompt.
 
 Members that share a variant are separated by a **seed**, passed as a per-run `model_settings`
-alongside the prompt. `tool.suggest_queries.num_candidates` is larger than the strategy count, so
-strategies already repeat at the shipped default and the seed is what keeps those candidates from
-being the same request; the same applies to HyDE whenever `num_documents` is raised past the variant
-count. A per-run setting is merged over the agent's rather than replacing it, so the seed arrives
+alongside the prompt. Both counts default to one member per variant, so this matters once a count
+is raised past its variant list: without the seed the repeated variants would send an identical
+request. A per-run setting is merged over the agent's rather than replacing it, so the seed arrives
 without disturbing the `temperature`, `max_tokens` and `thinking` configured for the client.
 
 The seed is the fan-out index, not a random value. That makes a fan-out distinct within itself while
