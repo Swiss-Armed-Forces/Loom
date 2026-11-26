@@ -612,13 +612,23 @@ publish_images:
   only:
     - main
     - tags
+  # The project default is 3h30m, which this job cannot live within. The runner
+  # caches are local to each host, so a run lands on a builder holding no
+  # `ollama-models` more often than not, and the cold path for that one artifact
+  # is about an hour: three minutes pulling the models, then a gzip of the
+  # ~22 GB layer, an unpack and a monolithic PUT, each of the three repeated per
+  # architecture. That leaves the `with_retry --max 3` below no room for a
+  # second attempt at all -- the first stalled push spends what is left of the
+  # budget and GitLab kills the job with `server_timeout_running`, mid-push,
+  # with no error in the trace to say so.
+  timeout: 6h
   variables:
     # `ollama-models` alone outweighs every other image in this job's
     # docker-cache, and a complete run carries it twice, once per architecture.
     # The runner's disk cannot hold the resulting archive: the cache write ends
     # with `no space left on device`, so no job here gets a cache at all and
-    # every run rebuilds from scratch. The artifact declares the registry as
-    # its `cacheFrom`, which is where a later build reads it from.
+    # every run rebuilds from scratch. The registry holds what a later build
+    # needs, and `Found Remotely` is what reads it from there.
     DOCKER_CACHE_PATTERN: "(?!.*/ollama-models:).*"
   script:
     - with_retry --max 3 --delay 60 -- devenv shell -- build --profile prod --push
