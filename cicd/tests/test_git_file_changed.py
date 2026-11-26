@@ -143,7 +143,7 @@ def _mr_ctx(**overrides):
         "project_path": "upstream/loom",
         "source_project_path": "contributor/loom",
         "job_token": "job-token",
-        "project_access_token": "access-token",
+        "gitlab_token": "service-account-token",
     }
     fields.update(overrides)
     return SimpleNamespace(**fields)
@@ -164,12 +164,14 @@ def test_a_same_project_mr_pushes_with_the_job_token():
     )
 
 
-def test_a_fork_allowing_collaboration_is_pushed_to_with_the_access_token():
-    """Upstream members are who the fork admits, and the bot is one of them."""
+def test_a_fork_allowing_collaboration_is_pushed_to_with_the_service_account():
+    """The fork admits upstream members, which is what the service account is."""
     decision = resolve_push_target(_mr_ctx(), lambda _ctx: True)
 
     assert decision.target == PushTarget(
-        project_path="contributor/loom", auth_user="oauth2", token="access-token"
+        project_path="contributor/loom",
+        auth_user="oauth2",
+        token="service-account-token",
     )
 
 
@@ -181,12 +183,12 @@ def test_a_fork_forbidding_collaboration_gets_a_patch():
     assert "upstream members" in decision.blocked_reason
 
 
-def test_a_fork_is_not_asked_about_without_an_access_token():
+def test_a_fork_is_not_asked_about_without_a_token():
     """Nothing can push without it, so the API call is waste."""
 
     def _explode(_ctx):
         raise AssertionError("allow_collaboration must not be read")
 
-    decision = resolve_push_target(_mr_ctx(project_access_token=None), _explode)
+    decision = resolve_push_target(_mr_ctx(gitlab_token=None), _explode)
 
     assert decision.target is None
