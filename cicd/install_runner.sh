@@ -80,6 +80,16 @@ EOF
   echo "[*] Installing weekly cleanup cronjob"
   cat << EOF > /etc/cron.weekly/gitlab_runner_clear_cache
 #!/usr/bin/env sh
+# Same guard as the hourly script, and here it protects against more than a
+# racing pull: this one stops every container on the host, so landing on a job
+# takes that job's build container with it. The runner then reports nothing -
+# the trace ends mid-step and GitLab times the job out much later, which reads
+# as a stalled build rather than a kill. Skipping means a week with no deep
+# clean, which the hourly script's own prune covers for everything but unused
+# tagged images; losing a publish run costs more.
+if docker ps --quiet --filter "label=com.gitlab.gitlab-runner.managed=true" | grep -q .; then
+  exit 0
+fi
 docker ps --quiet | xargs --no-run-if-empty docker stop
 docker system prune --volumes --all --force
 docker volume prune --all --force
