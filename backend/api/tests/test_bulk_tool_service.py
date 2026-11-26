@@ -18,7 +18,6 @@ from common.services.query_builder import (
     QueryBuilderException,
     QueryParameters,
 )
-from common.services.task_scheduling_service import UpdateFileRequest
 from pydantic_ai import ModelRetry
 from pydantic_ai.exceptions import ApprovalRequired, ToolFailed
 
@@ -314,9 +313,7 @@ def test_bulk_update_files_without_a_flag_asks_for_nothing(
 ):
     """An approval for a write that sets nothing is a question not worth asking."""
     with pytest.raises(ModelRetry, match="at least one of seen"):
-        bulk_tool_service.bulk_update_files(
-            _make_ctx(deps), "content:rhine", UpdateFileRequest()
-        )
+        bulk_tool_service.bulk_update_files(_make_ctx(deps), "content:rhine")
 
     file_repository_mock.count_by_query.assert_not_called()
     task_scheduling_service_mock.dispatch_update.assert_not_called()

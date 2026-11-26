@@ -370,21 +370,23 @@ class BulkToolService:
         self,
         ctx: RunContext[AgentDeps],
         query_string: str,
-        request: UpdateFileRequest,
+        seen: bool | None = None,
+        flagged: bool | None = None,
+        hidden: bool | None = None,
     ) -> BulkDispatchResult:
         """Set the seen, flagged or hidden state of every file a query matches.
 
-        At least one flag has to be given; a flag left out of request keeps its
-        current value on every matched file. Returns once the work is queued. There is
-        no undo.
+        At least one flag has to be given; a flag left out keeps its current value on
+        every matched file. Returns once the work is queued. There is no undo.
 
         Args:
             query_string: A valid Elasticsearch Lucene query string, as returned by
                 suggest_queries, selecting the files to write to.
-            request: The flags to set on every matched file: seen marks them as seen
-                (True) or unseen (False), flagged flags (True) or unflags (False)
-                them, and hidden hides (True) or unhides (False) them.
+            seen: Mark every matched file as seen (True) or unseen (False).
+            flagged: Flag (True) or unflag (False) every matched file.
+            hidden: Hide (True) or unhide (False) every matched file.
         """
+        request = UpdateFileRequest(seen=seen, flagged=flagged, hidden=hidden)
         if request.sets_nothing:
             raise ModelRetry("Give at least one of seen, flagged or hidden to update.")
         approved = self._approved_query(

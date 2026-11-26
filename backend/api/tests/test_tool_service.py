@@ -492,6 +492,25 @@ def test_research_mode_defers_every_capability(
     assert all(c.defer_loading for c in caps)
 
 
+# sova: agent tool parameters stay flat
+@pytest.mark.parametrize("mode", [ModeId.WORK, ModeId.RESEARCH])
+def test_no_tool_takes_a_nested_object_parameter(
+    tool_service: ToolService,
+    mode: ModeId,
+):
+    """Models that cannot nest send an object parameter as a JSON string, which fails
+    validation on every retry; a flat parameter list is the only shape they all emit."""
+    for capability in tool_service.capabilities_for_mode(mode):
+        for tool in capability.tools:
+            schema = tool.function_schema.json_schema
+            nested = [
+                name
+                for name, param in schema["properties"].items()
+                if "$ref" in param or param.get("type") == "object"
+            ]
+            assert not nested, f"{tool.name} takes {nested} as object parameters"
+
+
 def test_search_and_browse_announces_its_ui_effect_in_work_mode_only(
     tool_service: ToolService,
 ):
@@ -789,9 +808,7 @@ def test_update_file_passes_only_the_flags_it_was_given(
         file_id=str(file_id), flagged=True
     )
 
-    tool_service.update_file(
-        _make_ctx(deps), str(file_id), UpdateFileRequest(flagged=True)
-    )
+    tool_service.update_file(_make_ctx(deps), str(file_id), flagged=True)
 
     task_call_service_mock.call_update_file_tool.assert_called_once_with(
         deps.context.id_, str(file_id), UpdateFileRequest(flagged=True)
@@ -804,6 +821,6 @@ def test_update_file_without_a_flag_writes_nothing(
     deps: AgentDeps,
 ):
     with pytest.raises(ModelRetry):
-        tool_service.update_file(_make_ctx(deps), str(uuid4()), UpdateFileRequest())
+        tool_service.update_file(_make_ctx(deps), str(uuid4()))
 
     task_call_service_mock.call_update_file_tool.assert_not_called()
