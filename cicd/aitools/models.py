@@ -39,10 +39,10 @@ class IssueRef(NamedTuple):
 
 
 class MilestoneRef(NamedTuple):
-    """Parsed GitLab milestone reference from a URL or bare milestone ID."""
+    """Parsed GitLab milestone reference from a URL or bare milestone IID."""
 
     project_path: str | None
-    milestone_id: int
+    milestone_iid: int
 
 
 class MRRef(NamedTuple):
