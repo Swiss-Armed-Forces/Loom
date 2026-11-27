@@ -237,7 +237,7 @@ def cmd_milestone_implement(args: argparse.Namespace) -> None:
             sys.exit(1)
         return
 
-    session = _strand_session(repo, milestone.id)
+    session = _strand_session(repo, milestone.iid)
     try:
         exit_code = _schedule_strands(issues, session, args)
     except RuntimeError as e:

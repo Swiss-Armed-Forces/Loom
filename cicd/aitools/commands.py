@@ -234,7 +234,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     )
     milestone_parser.add_argument(
         "milestone",
-        help="GitLab milestone URL (https://.../milestones/123) or bare milestone ID",
+        help="GitLab milestone URL (https://.../milestones/123) or bare milestone IID",
     )
     milestone_parser.add_argument(
         "--parallel",

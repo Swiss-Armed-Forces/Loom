@@ -270,28 +270,47 @@ def post_discussion_reply(
 
 
 def parse_milestone_url_or_id(value: str) -> MilestoneRef:
-    """Parse a GitLab milestone URL or bare ID into a MilestoneRef."""
+    """Parse a GitLab milestone URL or bare IID into a MilestoneRef."""
     url_match = re.match(r"https?://[^/]+/(.+?)/-/milestones/(\d+)", value)
     if url_match:
         return MilestoneRef(
-            project_path=url_match.group(1), milestone_id=int(url_match.group(2))
+            project_path=url_match.group(1), milestone_iid=int(url_match.group(2))
         )
     try:
-        return MilestoneRef(project_path=None, milestone_id=int(value))
+        return MilestoneRef(project_path=None, milestone_iid=int(value))
     except ValueError as exc:
-        raise ValueError(f"Cannot parse milestone URL or ID: {value!r}") from exc
+        raise ValueError(f"Cannot parse milestone URL or IID: {value!r}") from exc
 
 
 def fetch_milestone_by_ref(
     gl: gitlab.Gitlab, repo: Repo, ref: MilestoneRef
 ) -> ProjectMilestone:
-    """Fetch a GitLab milestone by MilestoneRef."""
+    """Fetch a GitLab milestone by MilestoneRef.
+
+    The number in a milestone's web URL is its project-scoped iid, while the milestones
+    API addresses a milestone by its global id, so the iid is resolved against the
+    project's milestone list rather than passed to a GET.
+    """
     project_path = ref.project_path or CI_PROJECT_ID or get_project_id_from_remote(repo)
     if not project_path:
         logger.error("Could not determine project ID from CI_PROJECT_ID or git remote")
         sys.exit(1)
     project = gl.projects.get(project_path)
-    return project.milestones.get(ref.milestone_id)
+    milestone = find_milestone_by_iid(project, ref.milestone_iid)
+    if milestone is None:
+        logger.error(
+            "No milestone with iid %d in project %s", ref.milestone_iid, project_path
+        )
+        sys.exit(1)
+    return milestone
+
+
+def find_milestone_by_iid(project: Project, iid: int) -> ProjectMilestone | None:
+    """Return the project milestone with the given iid, or None."""
+    for milestone in project.milestones.list(all=True):
+        if milestone.iid == iid:
+            return milestone
+    return None
 
 
 def fetch_open_issues_for_milestone(
