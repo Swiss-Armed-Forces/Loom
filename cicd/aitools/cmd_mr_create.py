@@ -11,12 +11,13 @@ from .aitools import (
     generate_commit_message_via_ai,
     is_ai_cli_installed,
     parse_commit_message,
-    run_ai_agentic,
+    run_agent,
 )
 from .config import EXCLUDED_PATHSPECS, MAX_DIFF_CHARS
 from .git_helpers import load_mr_template
 from .gitlab_api import get_project
 from .prompts import build_mr_create_commit_prompt
+from .worktree import current_checkout
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +91,12 @@ def cmd_mr_create(args: argparse.Namespace) -> None:
         print("Aborted.")
         return
 
-    run_ai_agentic(
+    # This command's input is the uncommitted work already in the invoking tree, which
+    # a worktree cannot carry, so it is the one command that works in place.
+    run = run_agent(
         build_mr_create_commit_prompt(parsed.title),
-        repo,
+        current_checkout(repo, branch_name),
+        "mr-create",
     )
 
     try:
@@ -101,7 +105,11 @@ def cmd_mr_create(args: argparse.Namespace) -> None:
         committed = []
 
     if not committed:
-        logger.error("No commit was made — aborting.")
+        logger.error(
+            "No commit was made — aborting (agent: %s, transcript: %s)",
+            run.error or "completed",
+            run.transcript_path,
+        )
         sys.exit(1)
 
     repo.git.push("--set-upstream", "origin", branch_name)

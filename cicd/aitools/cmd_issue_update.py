@@ -5,10 +5,10 @@ import sys
 import tempfile
 
 from git import Repo
-from gitlab.v4.objects import ProjectIssue, ProjectIssueDiscussion
+from gitlab.v4.objects import ProjectIssue, ProjectIssueDiscussion, ProjectIssueNote
 
 from ._common import _ask, _get_gitlab_client_or_exit
-from .aitools import generate_issue_note_reply, run_ai_agentic
+from .aitools import generate_issue_note_reply, run_agent
 from .gitlab_api import (
     fetch_issue_by_ref,
     fetch_issue_discussions,
@@ -20,8 +20,17 @@ from .gitlab_api import (
 )
 from .models import IssueNoteReply
 from .prompts import build_issue_update_prompt
+from .worktree import current_checkout
 
 logger = logging.getLogger(__name__)
+
+
+def _current_branch(repo: Repo) -> str:
+    """The branch the invoking checkout is on, or a label for a detached HEAD."""
+    try:
+        return repo.active_branch.name
+    except TypeError:
+        return "detached-head"
 
 
 def _get_discussion_author(discussion: ProjectIssueDiscussion) -> str:
@@ -80,6 +89,41 @@ def _generate_and_post_note_replies(
     print(f"Posted {len(replies)} reply/replies.")
 
 
+def _rewrite_description_via_ai(
+    issue: ProjectIssue, notes: list[ProjectIssueNote], repo: Repo
+) -> str:
+    """Let the agent rewrite the issue's description, and read back what it wrote."""
+    # Rewriting an issue description touches no branch, so this runs in the invoking
+    # checkout rather than acquiring a worktree.
+    worktree = current_checkout(repo, _current_branch(repo))
+
+    with tempfile.TemporaryDirectory(
+        prefix=".loom_issue_update_", dir=worktree.path
+    ) as context_dir:
+        with open(os.path.join(context_dir, "issue.md"), "w", encoding="utf-8") as f:
+            f.write(f"# {issue.title}\n\n{issue.description or ''}")
+        with open(os.path.join(context_dir, "comments.md"), "w", encoding="utf-8") as f:
+            f.write(format_issue_notes_for_context(notes))
+        proposed_path = os.path.join(context_dir, "proposed_description.md")
+        with open(proposed_path, "w", encoding="utf-8") as f:
+            f.write(issue.description or "")
+
+        prompt = build_issue_update_prompt(issue, context_dir)
+        run = run_agent(prompt, worktree, "issue-update")
+
+        with open(proposed_path, encoding="utf-8") as f:
+            new_description = f.read().strip()
+
+    if not new_description:
+        logger.error(
+            "proposed_description.md is empty — aborting (agent: %s, transcript: %s)",
+            run.error or "completed",
+            run.transcript_path,
+        )
+        sys.exit(1)
+    return new_description
+
+
 def cmd_issue_update(args: argparse.Namespace) -> None:
     """Update a GitLab issue description interactively using AI."""
     repo = Repo(os.getcwd())
@@ -102,26 +146,7 @@ def cmd_issue_update(args: argparse.Namespace) -> None:
 
     old_description = issue.description or ""
 
-    with tempfile.TemporaryDirectory(
-        prefix=".loom_issue_update_", dir=repo.working_dir
-    ) as context_dir:
-        with open(os.path.join(context_dir, "issue.md"), "w", encoding="utf-8") as f:
-            f.write(f"# {issue.title}\n\n{issue.description or ''}")
-        with open(os.path.join(context_dir, "comments.md"), "w", encoding="utf-8") as f:
-            f.write(format_issue_notes_for_context(notes))
-        proposed_path = os.path.join(context_dir, "proposed_description.md")
-        with open(proposed_path, "w", encoding="utf-8") as f:
-            f.write(issue.description or "")
-
-        prompt = build_issue_update_prompt(issue, context_dir)
-        run_ai_agentic(prompt, repo)
-
-        with open(proposed_path, encoding="utf-8") as f:
-            new_description = f.read().strip()
-
-    if not new_description:
-        logger.error("proposed_description.md is empty — aborting.")
-        sys.exit(1)
+    new_description = _rewrite_description_via_ai(issue, notes, repo)
 
     print("\n--- Proposed Description ---")
     print(new_description)

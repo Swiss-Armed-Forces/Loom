@@ -540,6 +540,22 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 
 **AI developer tools (`aitools` subcommands):**
 
+- `aitools implement <issue>` - Take one GitLab issue from open to a **green pipeline**, with no
+  user interaction anywhere: find or create its branch and merge request, run the implementation
+  agent, push, take the MR out of Draft, start exactly one pipeline for the head commit, run one
+  AI review pass that posts its findings as inline comments and then fixes them, and poll until
+  CI passes, fixing failures as they come. Exits non-zero unless the pipeline went green, which
+  is what `milestone-implement` reads back. Related flags: `--max-fix-rounds N` (default 5),
+  `--timeout-minutes N` (default 240), `--no-review`. The caps matter — they are the only brakes
+  on a loop that pushes to branches and can close and reopen merge requests unattended. It never
+  approves and never merges
+- `aitools milestone-implement <milestone> [--parallel N]` - The same thing for every open issue
+  in a milestone, `N` at a time (default 1), each strand in its own **tmux window** on a private
+  socket, with per-strand logs under `$XDG_STATE_HOME/loom/aitools-logs/`. The parent prints the
+  attach command, blocks until every strand finishes and exits non-zero if any did not go green;
+  `Ctrl-C` leaves the strands running rather than killing an agent mid-commit. tmux is required —
+  `--no-tmux` runs the issues in-process one after another instead. Takes the same caps as
+  `implement`
 - `aitools mr-review [<MR URL or IID>] [--fix]` - Run a multi-agent AI review of an MR and
   post findings as inline GitLab comments; omit the MR argument to auto-detect the MR for
   the current branch; pass `--fix` to auto-apply findings instead of posting them as comments
@@ -547,9 +563,27 @@ All commands below are provided by devenv scripts (run `devenv-help` to see full
 - `aitools mr-fix [<MR URL or IID>]` - Address unresolved MR review comments using Claude
   in agentic mode; omit the argument to fix the MR for the current branch
 - `aitools mr-create` / `mr-describe` / `mr-update` - MR lifecycle helpers
-- `aitools job-diagnose <job-id>` - Diagnose a specific CI job failure
-- All `aitools` subcommands operate on the branch of the *current* working tree, checking it out
-  in place - run them from your worktree, never from the user's primary checkout
+- `aitools job-diagnose <job-id>` - Diagnose a specific CI job failure, against a checkout of the
+  branch the job ran on
+- `aitools issue-update <issue>` / `release` / `pipeline-retry <pipeline>` - Rewrite an issue
+  description, cut a release with AI-generated notes, retry a pipeline
+- **Every subcommand that touches a branch works in a checkout dedicated to it**, added at
+  `../loom-worktrees/<branch>` and reused on later runs, so no subcommand moves the invoking
+  tree's branch and two runs can share a machine. A branch already checked out in the invoking
+  tree is used in place, since git refuses to check one out twice. The exception is `mr-create`,
+  whose input is the uncommitted work already sitting in the invoking tree. **Nothing removes a
+  worktree** — `cicd/git_cleanup_worktrees.py` is what prunes them
+- **The agent always runs inside that worktree's own devenv environment** (`direnv exec`), and a
+  run fails rather than falling back when the environment cannot be entered. Without it `python`,
+  `pytest`, `black` and `aitools` itself resolve to the *primary checkout's* sources, so the agent
+  tests code that is not the code it just wrote, and a worktree that has never been entered has no
+  `core.hooksPath`, so `git commit` skips the whole pre-commit set. Set `AITOOLS_SKIP_DEVENV=1`
+  only where the environment is baked in and there is no direnv
+- **No subcommand hands over the terminal.** The backend runs headlessly, bounded by silence on
+  its output stream (`AI_AGENT_IDLE_TIMEOUT`, 600s) rather than by wall clock
+  (`AI_AGENT_TIMEOUT`, 7200s, a backstop), with a JSONL transcript per run under
+  `$XDG_STATE_HOME/loom/aitools/<branch>/`. Nothing prunes those either. Whether an agent did any
+  work is still read from git, never from its exit code
 
 ## Development Workflow
 
@@ -754,8 +788,9 @@ If none of the documentation files need updating, proceed directly to the commit
 
 Implementation work that ends in a commit belongs in a dedicated git worktree.
 **Never implement directly in the primary checkout.** That checkout is where the user runs the
-cluster and keeps their own branch checked out, and every `aitools` subcommand checks out branches
-in the *current* working tree — running one there moves the user's branch under their feet.
+cluster and keeps their own branch checked out. `aitools` acquires a worktree per branch for
+itself, so running one there no longer moves the user's branch — but your own edits, commits and
+test runs still belong somewhere the user is not working.
 
 - Create the issue and let GitLab's "Create Merge Request" button name the branch (see
   `### Git Workflow` below), then `git worktree add ../loom-worktrees/<branch> <branch>`

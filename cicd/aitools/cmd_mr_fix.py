@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import sys
 import tempfile
 
 from git import Repo
@@ -10,10 +9,10 @@ from gitlab.v4.objects import ProjectMergeRequest, ProjectMergeRequestDiscussion
 from ._common import (
     _ask,
     _get_gitlab_client_or_exit,
-    checkout_mr_branch,
+    acquire_mr_worktree,
     resolve_mr_from_args_or_branch,
 )
-from .aitools import generate_discussion_reply, run_ai_agentic
+from .aitools import generate_discussion_reply, run_agent
 from .git_helpers import get_branch_diff
 from .gitlab_api import (
     extract_discussion_location,
@@ -89,21 +88,8 @@ def cmd_mr_fix(args: argparse.Namespace) -> None:
     gl = _get_gitlab_client_or_exit()
     mr = resolve_mr_from_args_or_branch(gl, args, repo)
 
-    source_branch = mr.source_branch
-    try:
-        on_mr_branch = repo.active_branch.name == source_branch
-    except TypeError:
-        on_mr_branch = False  # detached HEAD
-
-    if not on_mr_branch:
-        if repo.is_dirty(untracked_files=True):
-            logger.error(
-                "You have uncommitted changes. Please commit or stash them"
-                " before switching to branch %r.",
-                source_branch,
-            )
-            sys.exit(1)
-        checkout_mr_branch(mr, repo)
+    worktree = acquire_mr_worktree(mr, repo)
+    print(f"Worktree: {worktree.path}")
 
     discussions = fetch_unresolved_discussions(mr)
     if not discussions:
@@ -115,16 +101,19 @@ def cmd_mr_fix(args: argparse.Namespace) -> None:
     print()
 
     with tempfile.TemporaryDirectory(
-        prefix=".loom_mrfix_", dir=repo.working_dir
+        prefix=".loom_mrfix_", dir=worktree.path
     ) as context_dir:
         with open(
             os.path.join(context_dir, "review_comments.txt"), "w", encoding="utf-8"
         ) as f:
             f.write(format_discussions_for_prompt(discussions))
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(get_branch_diff(repo, target_branch=mr.target_branch))
+            f.write(get_branch_diff(worktree.repo, target_branch=mr.target_branch))
         prompt = build_mr_fix_prompt(mr, context_dir)
-        run_ai_agentic(prompt, repo)
+        run = run_agent(prompt, worktree, "mr-fix")
 
-    updated_diff = get_branch_diff(repo, target_branch=mr.target_branch)
-    _generate_and_post_replies(mr, discussions, updated_diff, repo)
+    if not run.ok:
+        logger.warning("Fix agent failed: %s", run.error)
+
+    updated_diff = get_branch_diff(worktree.repo, target_branch=mr.target_branch)
+    _generate_and_post_replies(mr, discussions, updated_diff, worktree.repo)
