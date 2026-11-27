@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from . import config
+from .autopilot import DEFAULT_AUTOPILOT_SETTINGS
 from .cmd_implement import cmd_implement, cmd_milestone_implement
 from .cmd_issue_update import cmd_issue_update
 from .cmd_job_diagnose import cmd_job_diagnose
@@ -26,6 +27,27 @@ def cmd_completions(_args: argparse.Namespace) -> None:
     _, subcommand_names = build_parser()
     subcommands = " ".join(subcommand_names)
     print(f'complete -W "{subcommands}" aitools')
+
+
+def _add_autopilot_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add the caps that bound an autonomous run to a subcommand's parser."""
+    parser.add_argument(
+        "--max-fix-rounds",
+        type=int,
+        default=DEFAULT_AUTOPILOT_SETTINGS.limits.max_fix_rounds,
+        help="How many times to let the AI fix a failing pipeline (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--timeout-minutes",
+        type=int,
+        default=DEFAULT_AUTOPILOT_SETTINGS.limits.overall_timeout_s // 60,
+        help="How long one issue may take in total (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--no-review",
+        action="store_true",
+        help="Skip the AI review pass that comments on the MR and fixes its findings",
+    )
 
 
 def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
@@ -94,12 +116,13 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # implement subcommand
     implement_parser = subparsers.add_parser(
         "implement",
-        help="Implement a GitLab issue using AI in agentic mode",
+        help="Implement a GitLab issue autonomously, through to a green pipeline",
     )
     implement_parser.add_argument(
         "issue_number",
         help="GitLab issue URL (https://.../issues/123 or .../work_items/123) or bare issue ID",
     )
+    _add_autopilot_arguments(implement_parser)
     implement_parser.set_defaults(func=cmd_implement)
 
     # mr-review subcommand
@@ -207,12 +230,24 @@ def build_parser() -> tuple[argparse.ArgumentParser, list[str]]:
     # milestone-implement subcommand
     milestone_parser = subparsers.add_parser(
         "milestone-implement",
-        help="Implement all open issues in a GitLab milestone",
+        help="Implement all open issues in a GitLab milestone, autonomously",
     )
     milestone_parser.add_argument(
         "milestone",
         help="GitLab milestone URL (https://.../milestones/123) or bare milestone ID",
     )
+    milestone_parser.add_argument(
+        "--parallel",
+        type=int,
+        default=1,
+        help="How many issues to implement at once, one tmux window each (default: 1)",
+    )
+    milestone_parser.add_argument(
+        "--no-tmux",
+        action="store_true",
+        help="Run the issues in this process, one after another, instead of in tmux",
+    )
+    _add_autopilot_arguments(milestone_parser)
     milestone_parser.set_defaults(func=cmd_milestone_implement)
 
     return parser, list(subparsers.choices.keys())
@@ -239,5 +274,12 @@ def main() -> None:
             config.MODEL = args.model
 
     config.AUTO_MODE = args.auto
+
+    if getattr(args, "parallel", 1) < 1:
+        parser.error("--parallel must be at least 1")
+    if getattr(args, "max_fix_rounds", 0) < 0:
+        parser.error("--max-fix-rounds cannot be negative")
+    if getattr(args, "timeout_minutes", 1) < 1:
+        parser.error("--timeout-minutes must be at least 1")
 
     args.func(args)

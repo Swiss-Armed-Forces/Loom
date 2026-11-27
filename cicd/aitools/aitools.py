@@ -1,8 +1,14 @@
+import json
 import logging
 import shutil
 import subprocess
-import sys
+import threading
+import time
+from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from pathlib import Path
+from typing import IO, TextIO
 
 from git import Repo
 from gitlab.v4.objects import ProjectIssueDiscussion, ProjectMergeRequestDiscussion
@@ -11,7 +17,18 @@ from . import config
 from .config import AI_TIMEOUT, MAX_DIFF_CHARS
 from .git_helpers import get_per_file_diffs, get_per_file_tag_diffs
 from .gitlab_api import extract_discussion_location, extract_discussion_thread
-from .models import CommitMessage, DiffChunk, FileDiffMap, MRContext
+from .models import (
+    AgentCommand,
+    AgentEvent,
+    AgentExecution,
+    AgentOutcome,
+    AgentRun,
+    BranchWorktree,
+    CommitMessage,
+    DiffChunk,
+    FileDiffMap,
+    MRContext,
+)
 from .prompts import (
     build_comment_reply_prompt,
     build_diff_chunk_summary_prompt,
@@ -19,11 +36,14 @@ from .prompts import (
     build_mr_update_prompt,
     build_release_notes_prompt,
 )
+from .worktree import ensure_environment, state_dir
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_MR_CONTEXT = MRContext()
 _DIFF_TRUNCATED_MARKER = "[Diff truncated at"
+_SUMMARY_WIDTH = 80
+_WATCHDOG_POLL_S = 15
 
 # Invoking an aitools subcommand is the authorisation for the edits and commands its
 # prompt describes, so Claude approves them itself rather than asking per operation.
@@ -267,24 +287,261 @@ def generate_release_notes_via_ai(
     return message if message else None
 
 
-def run_ai_agentic(prompt: str, repo: Repo) -> None:
-    """Run AI CLI in agentic mode, handing over the terminal to the user."""
-    if not repo.working_dir:
-        logger.error("No working directory available (bare repo?)")
-        sys.exit(1)
+def build_agent_command(backend: str, model: str, prompt: str) -> AgentCommand:
+    """Build the argv and stdin of one headless agentic run.
+
+    claude takes the prompt on stdin, which has no ARG_MAX ceiling and needs no quoting;
+    the review prompt alone is tens of kilobytes. Under --print its stream-json output
+    format additionally requires --verbose, and refuses to start without it.
+    """
+    if backend == "claude":
+        return AgentCommand(
+            argv=[
+                "claude",
+                "--print",
+                "--output-format",
+                "stream-json",
+                "--verbose",
+                "--no-session-persistence",
+                "--permission-mode",
+                CLAUDE_PERMISSION_MODE,
+            ],
+            stdin_text=prompt,
+        )
+
+    argv = ["opencode", "run", "--format", "json"]
+    if model != "none":
+        argv += ["--model", model]
+    # A headless process cannot answer a permission prompt, so auto-accept is not
+    # optional here the way it is for an opencode session a user is sitting in front of.
+    argv += ["--auto", "--", prompt]
+    return AgentCommand(argv=argv, stdin_text="")
+
+
+def _summarize_assistant_event(payload: dict) -> str:
+    """One line describing what the assistant did on this event."""
+    content = payload.get("message", {}).get("content", [])
+    if not isinstance(content, list):
+        return ""
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "text":
+            text = str(block.get("text", "")).strip()
+            if text:
+                return text.splitlines()[0][:_SUMMARY_WIDTH]
+        if block.get("type") == "tool_use":
+            name = block.get("name", "tool")
+            arguments = block.get("input", {})
+            detail = ""
+            if isinstance(arguments, dict):
+                detail = str(
+                    arguments.get("command")
+                    or arguments.get("file_path")
+                    or arguments.get("pattern")
+                    or ""
+                )
+            return f"{name}({detail[:_SUMMARY_WIDTH]})"
+    return ""
+
+
+def parse_stream_event(line: str) -> AgentEvent:
+    """Decode one line of a backend's streaming output.
+
+    Every field is read defensively: a line that is not JSON, or JSON of a shape this
+    does not know, is reported as "other" and never ends the run. The stream schema is
+    the backend's, and it changes between releases.
+    """
+    try:
+        payload = json.loads(line)
+    except (json.JSONDecodeError, ValueError):
+        return AgentEvent(kind="other", summary="", is_error=False, turns=0)
+    if not isinstance(payload, dict):
+        return AgentEvent(kind="other", summary="", is_error=False, turns=0)
+
+    kind = str(payload.get("type", "other"))
+    if kind == "system":
+        model = payload.get("model", "")
+        return AgentEvent(
+            kind=kind,
+            summary=f"session started{f' ({model})' if model else ''}",
+            is_error=False,
+            turns=0,
+        )
+    if kind == "assistant":
+        return AgentEvent(
+            kind=kind,
+            summary=_summarize_assistant_event(payload),
+            is_error=False,
+            turns=0,
+        )
+    if kind == "result":
+        turns = payload.get("num_turns", 0)
+        return AgentEvent(
+            kind=kind,
+            summary=str(payload.get("subtype", "")),
+            is_error=bool(payload.get("is_error", False)),
+            turns=turns if isinstance(turns, int) else 0,
+        )
+    return AgentEvent(kind="other", summary="", is_error=False, turns=0)
+
+
+def consume_stream(lines: Iterable[str], transcript: TextIO) -> AgentOutcome:
+    """Write every line to the transcript and report what the stream said."""
+    reported_error = False
+    turns = 0
+    last_text = ""
+    for line in lines:
+        transcript.write(line if line.endswith("\n") else f"{line}\n")
+        event = parse_stream_event(line.strip())
+        if event.kind == "result":
+            reported_error = event.is_error
+            turns = event.turns
+        if event.summary:
+            last_text = event.summary
+            logger.info("  %s", event.summary)
+    return AgentOutcome(reported_error=reported_error, turns=turns, last_text=last_text)
+
+
+def _transcript_path(branch: str, label: str, started: datetime) -> Path:
+    directory = state_dir() / "aitools" / branch.replace("/", "-")
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / f"{label}-{started.strftime('%Y%m%d-%H%M%S')}.jsonl"
+
+
+def _kill_when_stalled(
+    process: subprocess.Popen, deadline: float, last_event: list[float]
+) -> str:
+    """Kill the agent when it stops producing events, or outruns its total budget.
+
+    Returns the reason it was killed, or "" when it finished on its own.
+    """
+    while process.poll() is None:
+        time.sleep(_WATCHDOG_POLL_S)
+        now = time.monotonic()
+        if now > deadline:
+            reason = f"exceeded the total budget of {config.AI_AGENT_TIMEOUT}s"
+        elif now - last_event[0] > config.AI_AGENT_IDLE_TIMEOUT:
+            reason = f"produced no output for {config.AI_AGENT_IDLE_TIMEOUT}s"
+        else:
+            continue
+        process.kill()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            logger.warning("Agent process did not exit after being killed")
+        return reason
+    return ""
+
+
+def _execute_agent(
+    argv: list[str],
+    command: AgentCommand,
+    cwd: str,
+    start: float,
+    transcript: TextIO,
+) -> AgentExecution:
+    """Run the backend, stream its output to the transcript and watch for a hang."""
+    killed_reasons: list[str] = []
+    last_event = [time.monotonic()]
+    deadline = start + config.AI_AGENT_TIMEOUT
+    outcome = AgentOutcome(reported_error=False, turns=0, last_text="")
+
+    # stderr is inherited rather than captured: a second captured pipe needs a reader
+    # thread of its own or it deadlocks once full, and merging it into stdout would
+    # corrupt the transcript.
+    with subprocess.Popen(
+        argv,
+        cwd=cwd,
+        stdin=subprocess.PIPE if command.stdin_text else subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    ) as process:
+        if command.stdin_text and process.stdin:
+            process.stdin.write(command.stdin_text)
+            process.stdin.close()
+
+        def watch() -> None:
+            killed_reasons.append(_kill_when_stalled(process, deadline, last_event))
+
+        watchdog = threading.Thread(target=watch, daemon=True)
+        watchdog.start()
+
+        def touched(stream: IO[str]) -> Iterator[str]:
+            for line in stream:
+                last_event[0] = time.monotonic()
+                yield line
+
+        if process.stdout:
+            outcome = consume_stream(touched(process.stdout), transcript)
+        exit_code = process.wait()
+        watchdog.join(timeout=_WATCHDOG_POLL_S * 2)
+
+    return AgentExecution(
+        exit_code=exit_code,
+        killed=killed_reasons[0] if killed_reasons else "",
+        outcome=outcome,
+    )
+
+
+def run_agent(prompt: str, worktree: BranchWorktree, label: str) -> AgentRun:
+    """Run the AI backend headlessly in a worktree and report how it went.
+
+    Whether the agent actually did any work is a question for git, not for this result:
+    an agent can exit 0 having changed nothing, and can exit non-zero after a good
+    commit. The result says whether the run itself completed, and where to read it.
+    """
+    started_at = datetime.now()
+    transcript_path = _transcript_path(worktree.branch, label, started_at)
+    start = time.monotonic()
 
     if not is_ai_cli_installed():
-        logger.error("AI CLI is not installed.")
-        sys.exit(1)
+        return AgentRun(
+            ok=False,
+            exit_code=-1,
+            duration_s=0.0,
+            turns=0,
+            transcript_path=str(transcript_path),
+            error=f"{config.BACKEND} is not installed",
+        )
 
-    cmd = [config.BACKEND]
-    if config.BACKEND == "claude":
-        cmd += ["--permission-mode", CLAUDE_PERMISSION_MODE]
+    environment = ensure_environment(worktree)
+    if not environment.ready:
+        return AgentRun(
+            ok=False,
+            exit_code=-1,
+            duration_s=0.0,
+            turns=0,
+            transcript_path=str(transcript_path),
+            error=f"devenv environment unavailable: {environment.reason}",
+        )
+
+    command = build_agent_command(config.BACKEND, config.MODEL, prompt)
+    argv = environment.prefix + command.argv
+    logger.info("Running %s agent (%s) in %s", config.BACKEND, label, worktree.path)
+
+    with open(transcript_path, "w", encoding="utf-8") as transcript:
+        execution = _execute_agent(argv, command, worktree.path, start, transcript)
+
+    duration = time.monotonic() - start
+    if execution.killed:
+        error = f"agent killed: {execution.killed}"
+    elif execution.exit_code != 0:
+        error = f"{config.BACKEND} exited {execution.exit_code}"
+    elif execution.outcome.reported_error:
+        error = f"{config.BACKEND} reported an error: {execution.outcome.last_text}"
     else:
-        if config.AUTO_MODE:
-            cmd += ["--auto"]
-        cmd += ["--prompt"]
+        error = ""
 
-    cmd.append(prompt)
+    if error:
+        logger.warning("%s — transcript: %s", error, transcript_path)
 
-    subprocess.run(cmd, cwd=repo.working_dir, check=False)
+    return AgentRun(
+        ok=not error,
+        exit_code=-1 if execution.killed else execution.exit_code,
+        duration_s=duration,
+        turns=execution.outcome.turns,
+        transcript_path=str(transcript_path),
+        error=error,
+    )

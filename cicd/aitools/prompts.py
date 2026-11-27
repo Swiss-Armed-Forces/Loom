@@ -149,35 +149,13 @@ All context files are in: {context_dir}
 Implement the changes described in the issue. Follow the project conventions in CLAUDE.md.
 Make the necessary code changes, write tests where appropriate, and ensure the implementation
 is complete. When done, commit all changes with a conventional commit message
-(type(scope): description), then push the branch.
-"""
+(type(scope): description).
 
+Work only inside your current working directory. It is a checkout dedicated to this issue's
+branch, and the repository has others that other work depends on.
 
-def build_milestone_implement_prompt(issue: ProjectIssue, context_dir: str) -> str:
-    """Build the prompt for implementing a GitLab issue as part of milestone
-    automation."""
-    labels = ", ".join(issue.labels) if issue.labels else "(none)"
-
-    return f"""You are implementing a GitLab issue for the Loom project.
-
-## Issue
-
-Title: {issue.title}
-URL: {issue.web_url}
-Labels: {labels}
-
-## Context
-
-All context files are in: {context_dir}
-- issue.md — full issue description
-
-## Task
-
-Implement the changes described in the issue. Follow the project conventions in CLAUDE.md.
-Make the necessary code changes, write tests where appropriate, and ensure the implementation
-is complete.
-When done, commit all changes with a conventional commit message (type(scope): description),
-then push the branch.
+Do not push. Pushing, taking the merge request out of Draft and starting its pipeline all
+happen once you are finished.
 """
 
 

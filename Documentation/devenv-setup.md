@@ -149,6 +149,11 @@ it:
 It holds a credential, so `chmod 600 devenv.local.nix`, then `direnv reload`. See the
 [devenv documentation](https://devenv.sh/files-and-variables/) for more options.
 
+The file is gitignored, so it does not follow a checkout into a git worktree, and without it every
+`aitools` GitLab call there fails. When `aitools` adds a worktree of its own it copies this file in
+from the primary checkout, and never overwrites one that is already there — a worktree you added by
+hand needs the copy made by hand.
+
 [pat-docs]: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token
 
 ## OpenCode (optional)

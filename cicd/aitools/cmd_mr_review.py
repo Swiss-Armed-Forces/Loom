@@ -5,17 +5,26 @@ import os
 import tempfile
 
 from git import Repo
+from git.exc import GitCommandError
 from gitlab.v4.objects import ProjectMergeRequest
 
 from ._common import (
     _ask,
     _get_gitlab_client_or_exit,
+    acquire_mr_worktree,
     resolve_mr_from_args_or_branch,
 )
-from .aitools import run_ai_agentic
+from .aitools import run_agent
 from .git_helpers import get_branch_diff, resolve_diff_range
 from .gitlab_api import post_review_comment
-from .models import DiffRange, ReviewComment
+from .models import (
+    AgentRun,
+    BranchWorktree,
+    DiffRange,
+    ReviewComment,
+    ReviewCycleResult,
+    ReviewFindings,
+)
 from .prompts import build_mr_fix_prompt, build_mr_review_prompt
 
 logger = logging.getLogger(__name__)
@@ -106,16 +115,26 @@ def _format_comments_for_fix(comments: list[ReviewComment]) -> str:
     return "\n".join(lines)
 
 
+def post_all_review_comments(
+    mr: ProjectMergeRequest, comments: list[ReviewComment]
+) -> int:
+    """Post every finding to the MR and return how many were posted."""
+    for comment in comments:
+        post_review_comment(mr, comment)
+    print(f"Posted {len(comments)} comment(s) to MR !{mr.iid}.")
+    return len(comments)
+
+
 def _fix_from_comments(
     mr: ProjectMergeRequest,
     comments: list[ReviewComment],
-    repo: Repo,
+    worktree: BranchWorktree,
     diff_range: DiffRange,
-) -> None:
-    """Run a AI agent to fix all review findings without posting them as comments."""
+) -> AgentRun:
+    """Run an AI agent to fix all review findings."""
     print(f"\nRunning fix agent for {len(comments)} finding(s)...")
     with tempfile.TemporaryDirectory(
-        prefix=".loom_mrfix_", dir=repo.working_dir
+        prefix=".loom_mrfix_", dir=worktree.path
     ) as context_dir:
         with open(
             os.path.join(context_dir, "review_comments.txt"), "w", encoding="utf-8"
@@ -124,29 +143,82 @@ def _fix_from_comments(
         with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
             f.write(
                 get_branch_diff(
-                    repo, diff_range.ref, mr.target_branch, diff_range=diff_range
+                    worktree.repo,
+                    diff_range.ref,
+                    mr.target_branch,
+                    diff_range=diff_range,
                 )
             )
         prompt = build_mr_fix_prompt(mr, context_dir)
-        run_ai_agentic(prompt, repo)
+        return run_agent(prompt, worktree, "mr-review-fix")
 
 
-def _resolve_branch_ref(mr: ProjectMergeRequest, repo: Repo) -> str:
-    """Return the git ref to use for diffing the MR branch.
+def collect_review_comments(
+    mr: ProjectMergeRequest, worktree: BranchWorktree
+) -> ReviewFindings:
+    """Run the review agent over the MR branch and parse its findings."""
+    with tempfile.TemporaryDirectory(
+        prefix=".loom_mrreview_", dir=worktree.path
+    ) as context_dir:
+        comments_dir = os.path.join(context_dir, "comments")
+        os.makedirs(comments_dir)
 
-    If the MR's source branch is currently checked out, uses HEAD. Otherwise fetches the
-    remote branch and returns its origin/ ref so the review works without requiring a
-    local checkout.
+        diff_range = resolve_diff_range(worktree.repo, "HEAD", mr.target_branch)
+        with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
+            f.write(
+                get_branch_diff(
+                    worktree.repo, "HEAD", mr.target_branch, diff_range=diff_range
+                )
+            )
+
+        prompt = build_mr_review_prompt(mr, context_dir, comments_dir, diff_range)
+        run = run_agent(prompt, worktree, "mr-review")
+
+        comments = _read_comment_files(comments_dir)
+
+    return ReviewFindings(comments=comments, diff_range=diff_range, run_ok=run.ok)
+
+
+def run_review_cycle(
+    mr: ProjectMergeRequest,
+    worktree: BranchWorktree,
+    post_comments: bool,
+    fix: bool,
+) -> ReviewCycleResult:
+    """Review the MR, post the findings as inline comments, then fix them.
+
+    The branch has to be checked out in `worktree`: the fix agent commits there.
     """
-    source_branch = mr.source_branch
+    findings = collect_review_comments(mr, worktree)
+    if not findings.comments:
+        return ReviewCycleResult(
+            comments_found=0, comments_posted=0, fixed=False, commits_pushed=0
+        )
+
+    posted = post_all_review_comments(mr, findings.comments) if post_comments else 0
+    if not fix:
+        return ReviewCycleResult(
+            comments_found=len(findings.comments),
+            comments_posted=posted,
+            fixed=False,
+            commits_pushed=0,
+        )
+
+    _fix_from_comments(mr, findings.comments, worktree, findings.diff_range)
     try:
-        if repo.active_branch.name == source_branch:
-            return "HEAD"
-    except TypeError:
-        pass  # detached HEAD state
-    logger.info("MR branch %r not checked out — fetching from origin", source_branch)
-    repo.git.fetch("origin", source_branch)
-    return f"origin/{source_branch}"
+        ahead = list(worktree.repo.iter_commits(f"origin/{worktree.branch}..HEAD"))
+    except GitCommandError:
+        ahead = []
+    if ahead:
+        worktree.repo.git.push("origin", worktree.branch)
+        print(f"Pushed {len(ahead)} review-fix commit(s) to {worktree.branch}")
+
+    return ReviewCycleResult(
+        comments_found=len(findings.comments),
+        comments_posted=posted,
+        fixed=True,
+        commits_pushed=len(ahead),
+    )
 
 
 def cmd_mr_review(args: argparse.Namespace) -> None:
@@ -154,28 +226,17 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
     repo = Repo(os.getcwd())
     gl = _get_gitlab_client_or_exit()
     mr = resolve_mr_from_args_or_branch(gl, args, repo)
-    branch_ref = _resolve_branch_ref(mr, repo)
+    worktree = acquire_mr_worktree(mr, repo)
+    print(f"Worktree: {worktree.path}")
 
-    with tempfile.TemporaryDirectory(
-        prefix=".loom_mrreview_", dir=repo.working_dir
-    ) as context_dir:
-        comments_dir = os.path.join(context_dir, "comments")
-        os.makedirs(comments_dir)
+    findings = collect_review_comments(mr, worktree)
 
-        diff_range = resolve_diff_range(repo, branch_ref, mr.target_branch)
-        with open(os.path.join(context_dir, "branch.diff"), "w", encoding="utf-8") as f:
-            f.write(
-                get_branch_diff(
-                    repo, branch_ref, mr.target_branch, diff_range=diff_range
-                )
+    if not findings.comments:
+        if not findings.run_ok:
+            logger.warning(
+                "The review agent did not complete, so it found nothing to report"
             )
-
-        prompt = build_mr_review_prompt(mr, context_dir, comments_dir, diff_range)
-        run_ai_agentic(prompt, repo)
-
-        comments = _read_comment_files(comments_dir)
-
-    if not comments:
+            return
         print(f"\nReview complete. No issues found in MR !{mr.iid}.")
         if not args.fix:
             answer = _ask(f"Approve MR !{mr.iid}? [Y/n]: ")
@@ -184,8 +245,8 @@ def cmd_mr_review(args: argparse.Namespace) -> None:
                 print(f"Approved MR !{mr.iid}.")
         return
 
-    print(f"\nFound {len(comments)} review comment(s) for MR !{mr.iid}.")
+    print(f"\nFound {len(findings.comments)} review comment(s) for MR !{mr.iid}.")
     if args.fix:
-        _fix_from_comments(mr, comments, repo, diff_range)
+        _fix_from_comments(mr, findings.comments, worktree, findings.diff_range)
     else:
-        _review_comments_interactively(mr, comments)
+        _review_comments_interactively(mr, findings.comments)

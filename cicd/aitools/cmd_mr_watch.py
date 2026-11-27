@@ -1,72 +1,29 @@
 import argparse
 import logging
 import os
-import tempfile
 import time
 
 from git import Repo
-from git.exc import GitCommandError
 from gitlab.exceptions import GitlabError
-from gitlab.v4.objects import Project, ProjectMergeRequest, ProjectPipeline
+from gitlab.v4.objects import Project, ProjectMergeRequest
 
 from ._common import (
     _get_gitlab_client_or_exit,
     _maybe_update_mr_description,
-    checkout_mr_branch,
+    acquire_mr_worktree,
+    fix_failing_job_and_push,
     resolve_mr_from_args_or_branch,
 )
-from .aitools import run_ai_agentic
 from .gitlab_api import (
     PIPELINE_WAITING_STATUSES,
-    extract_job_artifacts,
-    fetch_first_failing_job,
-    fetch_job_log,
     fetch_latest_pipeline_for_mr,
     fetch_watched_mrs,
     get_project,
 )
-from .prompts import build_watch_fix_prompt
 
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 180  # seconds
-
-
-def _fix_failing_job_and_push(
-    project: Project, pipeline: ProjectPipeline, branch_name: str, repo: Repo
-) -> None:
-    """Diagnose the first failing job via AI and push any resulting commits."""
-    job = fetch_first_failing_job(project, pipeline)
-    if not job:
-        print("Pipeline failed but no failing job found.")
-        return
-
-    print(f"\nFailing job: #{job.id} '{job.name}' (stage: {job.stage})")
-
-    log = fetch_job_log(job)
-    with tempfile.TemporaryDirectory(
-        prefix=".loom_watch_", dir=repo.working_dir
-    ) as ctx:
-        with open(os.path.join(ctx, "job_log.txt"), "w", encoding="utf-8") as f:
-            f.write(log)
-        artifacts_dir = os.path.join(ctx, "artifacts")
-        os.makedirs(artifacts_dir)
-        extract_job_artifacts(job, artifacts_dir)
-        run_ai_agentic(
-            build_watch_fix_prompt(job, ctx, pipeline.id),
-            repo,
-        )
-
-    try:
-        ahead = list(repo.iter_commits(f"origin/{branch_name}..HEAD"))
-    except GitCommandError:
-        ahead = []
-
-    if ahead:
-        repo.git.push("origin", branch_name)
-        print(f"Pushed {len(ahead)} commit(s) to {branch_name}")
-    else:
-        print("No commits made.")
 
 
 def _watch_approved_mrs(project: Project, repo: Repo) -> None:
@@ -120,9 +77,11 @@ def _watch_approved_mrs(project: Project, repo: Repo) -> None:
                 if pipeline.status != "failed":
                     continue
 
+                # Acquired only now: an MR that is merely being observed should not
+                # grow a worktree, let alone a devenv environment inside it.
                 print(f"  -> Fixing MR !{mr.iid}: {mr.title}")
-                branch_name = checkout_mr_branch(mr, repo)
-                _fix_failing_job_and_push(project, pipeline, branch_name, repo)
+                worktree = acquire_mr_worktree(mr, repo)
+                fix_failing_job_and_push(project, pipeline, worktree)
 
             time.sleep(POLL_INTERVAL)
     except KeyboardInterrupt:
@@ -142,10 +101,11 @@ def cmd_mr_watch(args: argparse.Namespace) -> None:
         return
 
     mr = resolve_mr_from_args_or_branch(gl, args, repo)
-    branch_name = checkout_mr_branch(mr, repo)
+    worktree = acquire_mr_worktree(mr, repo)
 
     print(f"\nWatching MR !{mr.iid}: {mr.title}")
-    print(f"Branch: {branch_name}")
+    print(f"Branch: {worktree.branch}")
+    print(f"Worktree: {worktree.path}")
     print(f"URL: {mr.web_url}\n")
 
     try:
@@ -165,14 +125,14 @@ def cmd_mr_watch(args: argparse.Namespace) -> None:
 
             if pipeline.status == "success":
                 print("Pipeline passed! ✓")
-                _maybe_update_mr_description(mr, repo)
+                _maybe_update_mr_description(mr, worktree.repo)
                 break
 
             if pipeline.status != "failed":
                 print(f"Pipeline ended with status '{pipeline.status}' — stopping.")
                 break
 
-            _fix_failing_job_and_push(project, pipeline, branch_name, repo)
+            fix_failing_job_and_push(project, pipeline, worktree)
             time.sleep(POLL_INTERVAL)
     except KeyboardInterrupt:
         print("\nStopped watching.")

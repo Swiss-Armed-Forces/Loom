@@ -5,9 +5,10 @@ import sys
 import tempfile
 
 from git import Repo
+from git.exc import GitCommandError
 
 from ._common import _get_gitlab_client_or_exit
-from .aitools import run_ai_agentic
+from .aitools import run_agent
 from .config import CI_PROJECT_ID
 from .gitlab_api import (
     extract_job_artifacts,
@@ -15,9 +16,26 @@ from .gitlab_api import (
     get_project_id_from_remote,
     parse_job_url_or_id,
 )
+from .models import BranchWorktree
 from .prompts import build_diagnose_prompt
+from .worktree import acquire_branch_worktree, current_checkout
 
 logger = logging.getLogger(__name__)
+
+
+def _checkout_for_job_ref(repo: Repo, ref: str) -> BranchWorktree:
+    """The checkout holding the code the job ran, so the diagnosis reads that.
+
+    A job can also run on a tag or on a branch that has since been deleted, in which
+    case the invoking checkout is all there is.
+    """
+    try:
+        return acquire_branch_worktree(repo, ref)
+    except (GitCommandError, RuntimeError) as e:
+        logger.warning(
+            "No branch worktree for %r (%s) — diagnosing against this checkout", ref, e
+        )
+        return current_checkout(repo, ref)
 
 
 def cmd_job_diagnose(args: argparse.Namespace) -> None:
@@ -53,8 +71,11 @@ def cmd_job_diagnose(args: argparse.Namespace) -> None:
     log = fetch_job_log(job)
     logger.info("Job log: %d characters", len(log))
 
+    worktree = _checkout_for_job_ref(repo, str(job.ref))
+    print(f"Worktree: {worktree.path}")
+
     with tempfile.TemporaryDirectory(
-        prefix=".loom_diagnose_", dir=repo.working_dir
+        prefix=".loom_diagnose_", dir=worktree.path
     ) as context_dir:
         with open(os.path.join(context_dir, "job_log.txt"), "w", encoding="utf-8") as f:
             f.write(log)
@@ -68,4 +89,11 @@ def cmd_job_diagnose(args: argparse.Namespace) -> None:
             logger.info("No artifacts found")
 
         prompt = build_diagnose_prompt(job, context_dir, job.pipeline["id"])
-        run_ai_agentic(prompt, repo)
+        run = run_agent(prompt, worktree, "job-diagnose")
+
+    if not run.ok:
+        logger.warning(
+            "Diagnosis agent failed: %s (transcript: %s)",
+            run.error,
+            run.transcript_path,
+        )

@@ -2,11 +2,13 @@ import io
 import logging
 import re
 import sys
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import gitlab
 from git import Repo
+from gitlab.exceptions import GitlabError
 from gitlab.v4.objects import (
     Project,
     ProjectIssue,
@@ -22,14 +24,18 @@ from gitlab.v4.objects import (
 from .config import CI_JOB_TOKEN, CI_PROJECT_ID, CI_SERVER_HOST, GITLAB_TOKEN
 from .git_helpers import build_initial_mr_description
 from .models import (
+    AutopilotLimits,
     IssueBranchResult,
     IssueRef,
     JobRef,
     MilestoneRef,
     MRRef,
     PipelineRef,
+    PipelineStart,
     ReviewComment,
 )
+
+DRAFT_PREFIX = re.compile(r"^\s*draft:\s*", re.IGNORECASE)
 
 PIPELINE_WAITING_STATUSES: frozenset[str] = frozenset(
     {
@@ -501,6 +507,161 @@ def fetch_first_failing_job(
         if job.status == "failed":
             return project.jobs.get(job.id)
     return None
+
+
+def undraft_mr(mr: ProjectMergeRequest) -> bool:
+    """Take the MR out of Draft, returning whether the title changed.
+
+    A Draft MR runs no pipeline at all, so this is what makes CI possible for it. The
+    title change does not itself create one.
+    """
+    title = str(mr.title)
+    undrafted = DRAFT_PREFIX.sub("", title)
+    if undrafted == title:
+        return False
+    mr.title = undrafted
+    mr.save()
+    logger.info("Undrafted MR !%s", mr.iid)
+    return True
+
+
+def create_mr_pipeline(project: Project, mr: ProjectMergeRequest) -> ProjectPipeline:
+    """Create a pipeline through the merge-request pipelines endpoint.
+
+    The project pipelines endpoint would create a branch pipeline, which the
+    `workflow:rules` discard while a merge request is open for the branch.
+    """
+    created = mr.pipelines.create()
+    return project.pipelines.get(created.id)
+
+
+def reopen_mr(mr: ProjectMergeRequest) -> None:
+    """Close and reopen the MR so GitLab re-attaches it to its branch head."""
+    logger.info("Closing and reopening MR !%s to re-attach it to its branch", mr.iid)
+    mr.state_event = "close"
+    mr.save()
+    mr.state_event = "reopen"
+    mr.save()
+
+
+def branch_head_sha(project: Project, branch_name: str) -> str:
+    """The commit the branch currently points at on the server."""
+    return str(project.branches.get(branch_name).commit["id"])
+
+
+def mr_tracks_branch_head(
+    project: Project, mr: ProjectMergeRequest, branch_name: str
+) -> bool:
+    """Whether the MR has caught up with its branch's head commit."""
+    try:
+        return str(mr.sha) == branch_head_sha(project, branch_name)
+    except GitlabError as e:
+        logger.warning("Could not compare MR !%s against its branch: %s", mr.iid, e)
+        return False
+
+
+def pipeline_matches_head(pipeline: ProjectPipeline, head_sha: str) -> bool:
+    """Whether this pipeline ran the commit the branch currently points at."""
+    return str(getattr(pipeline, "sha", "")) == head_sha
+
+
+def _await_branch_head(
+    project: Project,
+    mr: ProjectMergeRequest,
+    branch_name: str,
+    limits: AutopilotLimits,
+) -> ProjectMergeRequest:
+    """Wait for the MR to report its branch's head commit, reopening it if it sticks."""
+    deadline = time.monotonic() + limits.pipeline_grace_s
+    while True:
+        if mr_tracks_branch_head(project, mr, branch_name):
+            return mr
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(limits.pipeline_grace_poll_s)
+        mr = project.mergerequests.get(mr.iid)
+
+    logger.warning(
+        "MR !%s still reports %s while its branch is elsewhere", mr.iid, mr.sha
+    )
+    reopen_mr(mr)
+    return project.mergerequests.get(mr.iid)
+
+
+def _adopt_head_pipeline(
+    project: Project,
+    mr: ProjectMergeRequest,
+    head_sha: str,
+    limits: AutopilotLimits,
+) -> ProjectPipeline | None:
+    """Wait briefly for a pipeline GitLab started for the head commit itself."""
+    deadline = time.monotonic() + limits.pipeline_grace_s
+    while True:
+        pipeline = fetch_latest_pipeline_for_mr(project, mr)
+        if pipeline and pipeline_matches_head(pipeline, head_sha):
+            return pipeline
+        if time.monotonic() >= deadline:
+            return None
+        time.sleep(limits.pipeline_grace_poll_s)
+
+
+def start_mr_pipeline(
+    project: Project,
+    mr: ProjectMergeRequest,
+    branch_name: str,
+    limits: AutopilotLimits,
+) -> PipelineStart:
+    """Undraft the MR and make sure exactly one pipeline is running its head commit.
+
+    An MR that is already open and non-draft gets a pipeline from GitLab for a push, so
+    that one is adopted; creating another would run the same commit twice. An MR that
+    was a Draft until a moment ago can have none, so one is created straight away.
+    """
+    title_changed = undraft_mr(mr)
+    mr = _await_branch_head(project, mr, branch_name, limits)
+    reopened = not mr_tracks_branch_head(project, mr, branch_name)
+
+    try:
+        head_sha = branch_head_sha(project, branch_name)
+    except GitlabError as e:
+        return PipelineStart(
+            pipeline=None, created=False, reopened=reopened, detail=str(e)
+        )
+
+    if not title_changed:
+        adopted = _adopt_head_pipeline(project, mr, head_sha, limits)
+        if adopted:
+            logger.info("Adopted pipeline #%s for %s", adopted.id, head_sha[:8])
+            return PipelineStart(
+                pipeline=adopted, created=False, reopened=reopened, detail=""
+            )
+
+    for attempt in (1, 2):
+        try:
+            created = create_mr_pipeline(project, mr)
+            logger.info("Created pipeline #%s for MR !%s", created.id, mr.iid)
+            return PipelineStart(
+                pipeline=created,
+                created=True,
+                reopened=reopened,
+                detail="",
+            )
+        except GitlabError as e:
+            if attempt == 2:
+                return PipelineStart(
+                    pipeline=None, created=False, reopened=reopened, detail=str(e)
+                )
+            # GitLab answers 405 while it is still preparing the merge request, which
+            # it stays in indefinitely once the MR has lost track of its branch.
+            logger.warning("Could not create a pipeline for MR !%s: %s", mr.iid, e)
+            reopen_mr(mr)
+            reopened = True
+            mr = project.mergerequests.get(mr.iid)
+            mr = _await_branch_head(project, mr, branch_name, limits)
+
+    return PipelineStart(
+        pipeline=None, created=False, reopened=reopened, detail="unreachable"
+    )
 
 
 def format_milestone_items(
